@@ -1,51 +1,65 @@
-# Welcome to your Convex + Next.js + Clerk app
+# Bcker / ブッカー サロン向け予約管理Saas
 
-This is a [Convex](https://convex.dev/) project created with [`npm create convex`](https://www.npmjs.com/package/create-convex).
+## 概要
 
-After the initial setup (<2 minutes) you'll have a working full-stack app using:
+Bcker SaaSはサロン向けの予約・管理システムです。顧客が簡単に予約を作成でき、スタッフが効率的に予約管理を行えることを目的としています。
 
-- Convex as your backend (database, server logic)
-- [React](https://react.dev/) as your frontend (web page interactivity)
-- [Next.js](https://nextjs.org/) for optimized web hosting and page routing
-- [Tailwind](https://tailwindcss.com/) for building great looking accessible UI
-- [Clerk](https://clerk.com/) for authentication
+## 技術スタック
 
-## Get started
+### フロントエンド
+- Next.js 15.1.3
+- React 19.0.0
+- Tailwind CSS
+- shadcn/ui
+- React Hook Form
+- Zod
+- Framer Motion
 
-If you just cloned this codebase and didn't use `npm create convex`, run:
+### バックエンド
+- Convex
+- Clerk
+
+### その他
+- Stripe
+- Sentry
+
+## プロジェクト構造
 
 ```
-npm install
-npm run dev
+app/
+├── (salon)/
+├── (auth)/
+└── reservation/
+
+convex/
+├── salon/
+├── staff/
+├── customer/
+├── reservation/
+├── menu/
+├── coupon/
+├── subscription/
+├── schedule/
+└── point/
 ```
 
-If you're reading this README on GitHub and want to use this template, run:
+## 機能一覧
 
-```
-npm create convex@latest -- -t nextjs-clerk
-```
+### 顧客向け
+- 予約システム（作成・変更・キャンセル）
+- 決済処理（Stripe対応）
+- ポイント取得・利用
+- クーポン適用
 
-Then:
+### スタッフ向け
+- 予約管理（確認・変更・キャンセル）
+- スケジュール管理
+- メニュー管理
+- 顧客管理
 
-1. Open your app. There should be a "Claim your application" button from Clerk in the bottom right of your app.
-2. Follow the steps to claim your application and link it to this app.
-3. Follow step 3 in the [Convex Clerk onboarding guide](https://docs.convex.dev/auth/clerk#get-started) to create a Convex JWT template.
-4. Uncomment the Clerk provider in `convex/auth.config.ts`
-5. Paste the Issuer URL as `CLERK_JWT_ISSUER_DOMAIN` to your dev deployment environment variable settings on the Convex dashboard (see [docs](https://docs.convex.dev/auth/clerk#configuring-dev-and-prod-instances))
+### サロン管理
+- サロン情報管理
+- スタッフ管理
+- サブスクリプション管理
+- クーポン・ポイント管理
 
-If you want to sync Clerk user data via webhooks, check out this [example repo](https://github.com/thomasballinger/convex-clerk-users-table/).
-
-## Learn more
-
-To learn more about developing your project with Convex, check out:
-
-- The [Tour of Convex](https://docs.convex.dev/get-started) for a thorough introduction to Convex principles.
-- The rest of [Convex docs](https://docs.convex.dev/) to learn about all Convex features.
-- [Stack](https://stack.convex.dev/) for in-depth articles on advanced topics.
-
-## Join the community
-
-Join thousands of developers building full-stack apps with Convex:
-
-- Join the [Convex Discord community](https://convex.dev/community) to get help in real-time.
-- Follow [Convex on GitHub](https://github.com/get-convex/), star and contribute to the open-source implementation of Convex.
