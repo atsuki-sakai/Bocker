@@ -1,0 +1,344 @@
+import { Webhook } from 'svix';
+import { headers } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { WebhookEvent } from '@clerk/nextjs/server';
+import Stripe from 'stripe';
+import { api } from '@/convex/_generated/api';
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import * as Sentry from "@sentry/nextjs";
+import { STRIPE_API_VERSION } from '@/lib/constants';
+import { withRetry } from '@/lib/utils';
+import { z } from 'zod';
+
+const clerkWebhookSchema = z.object({
+    type: z.string().min(1, { message: "イベントタイプが空です" }),
+    data: z.object({
+      id: z.string().min(1, { message: "ユーザーIDが空です" }),
+      email_addresses: z.array(z.object({ 
+        id: z.string(),
+        email_address: z.string().email({ message: "メールアドレスが無効です" }) 
+      })).optional(),
+      primary_email_address_id: z.string().optional(),
+    }),
+  });
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: STRIPE_API_VERSION
+});
+
+export async function POST(req: Request) {
+  // 1. Clerk署名検証の準備
+  const SIGNING_SECRET = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
+  if (!SIGNING_SECRET) {
+    console.error("Clerk署名用シークレットが設定されていません");
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
+  const wh = new Webhook(SIGNING_SECRET);
+
+  // Svix署名ヘッダーを取得
+  const headerPayload = await headers();
+  const svixId = headerPayload.get('svix-id');
+  const svixTimestamp = headerPayload.get('svix-timestamp');
+  const svixSignature = headerPayload.get('svix-signature');
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    Sentry.captureMessage("Clerk signing secret not configured", { level: "error" });
+    return NextResponse.json({ error: 'Missing svix headers' }, { status: 400 });
+  }
+
+  // リクエストボディを取得（文字列化して後で検証）
+  const payload = await req.json();
+  const payloadString = JSON.stringify(payload);
+
+  // 2. 署名検証
+  let evt: WebhookEvent;
+  try {
+    evt = wh.verify(payloadString, {
+      'svix-id': svixId,
+      'svix-timestamp': svixTimestamp,
+      'svix-signature': svixSignature,
+    }) as WebhookEvent;
+  } catch (err) {
+    Sentry.captureMessage("Missing svix headers", { level: "error" });
+    console.error("Clerk webhook署名の検証に失敗しました:", err);
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+  }
+
+  const validPayload = clerkWebhookSchema.safeParse(payload);
+  if (!validPayload.success) {
+    Sentry.captureMessage("Clerk webhook payload のバリデーションエラー", { level: "error" });
+    console.error("Clerk webhookペイロードの検証エラー:", validPayload.error);
+    return NextResponse.json({ error: "Invalid webhook payload" }, { status: 400 });
+  }
+
+
+  // 3. イベントタイプに応じた処理
+  const eventType = validPayload.data.type ?? evt.type;
+  const data = validPayload.data.data;
+
+  // 各イベントタイプの処理
+  try {
+    if (eventType === 'user.created') {
+      const { id, email_addresses = [] } = data;
+      const email = email_addresses[0]?.email_address || "no-email";
+      
+      console.log(`Clerk ID: ${id} の user.created イベントを処理中です (メール: ${email})`);
+      
+      // クリティカルな操作は再試行付きで実行
+      const existingSalon = await withRetry(() =>
+        fetchQuery(api.salon.core.getClerkId, { clerkId: id })
+          .catch(err => {
+            throw err;
+          })
+      ).catch(() => null); // 失敗時はnullを返して進行
+      if (!existingSalon) {
+        console.log(`Clerk ID: ${id} のために新しいサロンを作成します`);
+        
+        try {
+          try {
+            // 1. Stripe顧客作成 (エラーは再試行)
+            const customer = await withRetry(() => 
+              stripe.customers.create({
+                email: email || undefined,
+                metadata: { clerkId: id },
+              })
+            );
+            
+            try {
+              // 2. Convexへのユーザー登録 (エラーは再試行)
+              await withRetry(() =>
+                fetchMutation(api.salon.core.add, { 
+                  clerkId: id, 
+                  email, 
+                  stripeCustomerId: customer.id 
+                })
+              );
+            } catch (convexError) {
+              // Convex登録失敗時にはStripe顧客を削除して整合性を保つ
+              console.error(`Convexへのユーザー登録に失敗したため、Stripe顧客を削除します: ${customer.id}`);
+              try {
+                await stripe.customers.del(customer.id);
+              } catch (stripeDeleteError) {
+                // 削除失敗時はログのみ記録
+                console.error(`失敗したユーザー登録のStripe顧客削除に失敗: ${customer.id}`, stripeDeleteError);
+                Sentry.captureException(stripeDeleteError);
+              }
+              throw convexError; // 元のエラーを再スロー
+            }
+          } catch (error) {
+            // すべてのエラーを適切に処理
+            console.error(`Clerk ID: ${id} のサロン作成プロセスに失敗しました`, error);
+            Sentry.captureException(error);
+            throw error;
+          }
+        } catch (error) {
+          console.error(`Clerk ID: ${id} のサロンの作成に失敗しました:`, error);
+          // 重大なエラーが発生した場合は包括的にログを残す
+          Sentry.captureException(error, {
+            level: "error",
+            tags: {
+              clerkId: id,
+              eventType: "user.created",
+            },
+          });
+          throw error; // エラーを上位に伝播
+        }
+      } else {
+        console.log(`Clerk ID: ${id} のサロンは既に存在します。メールを更新します`);
+        
+        // 既存の場合はメールアドレスのみ更新
+        await withRetry(() =>
+          fetchMutation(api.salon.core.update, {
+            id: existingSalon._id,
+            email,
+            stripeCustomerId: existingSalon.stripeCustomerId
+          })
+        );
+      }
+    }
+    else if (eventType === 'user.updated') {
+      const { id, email_addresses = [], primary_email_address_id } = data;
+      
+      // プライマリーメールアドレスを取得
+      let email = "no-email";
+      if (primary_email_address_id && email_addresses.length > 0) {
+        // primary_email_address_idに一致するメールアドレスを検索
+        const primaryEmail = email_addresses.find(e => e.id === primary_email_address_id);
+        if (primaryEmail) {
+          email = primaryEmail.email_address;
+        } else {
+          // 見つからない場合は最初のメールを使用（フォールバック）
+          email = email_addresses[0]?.email_address || "no-email";
+        }
+      } else {
+        // 後方互換性のため
+        email = email_addresses[0]?.email_address || "no-email";
+      }
+      
+      console.log(`Clerk ID: ${id} の user.updated イベントを処理中です (プライマリーメール: ${email})`);
+      
+      // クエリはエラーでも続行するため、withRetryを使用
+      let existingSalon;
+      try {
+        existingSalon = await withRetry(() =>
+          fetchQuery(api.salon.core.getClerkId, { clerkId: id })
+        );
+      } catch (error) {
+        Sentry.captureException(error, {
+          level: "error",
+          tags: {
+            clerkId: id,
+            eventType: "user.updated",
+          },
+        });
+        existingSalon = null;
+      }
+      
+      if (existingSalon) {
+        
+        try {
+          // Stripeの顧客情報も同期的に更新
+          if (existingSalon.stripeCustomerId && typeof existingSalon.stripeCustomerId === 'string') {
+            await withRetry(() => 
+              stripe.customers.update(existingSalon.stripeCustomerId!, {
+                email: email || undefined,
+                metadata: { clerkId: id, updated: new Date().toISOString() }
+              })
+            );
+          }
+          
+          // Convexのサロン情報を更新
+          await withRetry(() => 
+            fetchMutation(api.salon.core.update, { 
+              id: existingSalon._id, 
+              clerkId: id, 
+              email, 
+              stripeCustomerId: existingSalon.stripeCustomerId 
+            })
+          );
+          
+          console.log(`Clerk ID: ${id} のサロンのメールアドレスを ${email} に更新しました`);
+        } catch (error) {
+          console.error(`Clerk ID: ${id} のサロンの更新に失敗しました:`, error);
+          Sentry.captureException(error, {
+            level: "error",
+            tags: {
+              clerkId: id,
+              eventType: "user.updated",
+            },
+          });
+          throw error;
+        }
+      } else {
+        // 存在しないユーザーの更新リクエスト - 異常ケース
+        console.warn(`Clerk user.updated イベントを受信しましたが、該当するユーザーが見つかりませんでした: ${id}`);
+        try {
+          // 念のための復旧処理として新規作成
+          const customer = await withRetry(() =>
+            stripe.customers.create({
+              email: email || undefined,
+              metadata: { clerkId: id },
+            })
+          );
+          
+          await withRetry(() => 
+            fetchMutation(api.salon.core.add, {
+              clerkId: id,
+              email,
+              stripeCustomerId: customer.id
+            })
+          );
+        } catch (recoveryError) {
+          console.error(`Clerk ID: ${id} の復旧処理に失敗しました:`, recoveryError);
+          Sentry.captureException(recoveryError, {
+            level: "error",
+            tags: {
+              clerkId: id,
+              eventType: "user.updated",
+            },
+          });
+        }
+      }
+    }
+    else if (eventType === 'user.deleted') {
+      const { id } = data as { id: string };
+      
+      let salonRecord;
+      try {
+        salonRecord = await withRetry(() => 
+          fetchQuery(api.salon.core.getClerkId, { clerkId: id })
+        );
+      } catch (error) {
+        console.error(`Clerk ID: ${id} のサロンの取得に失敗しました:`, error);
+        Sentry.captureException(error, {
+          level: "error",
+          tags: {
+            clerkId: id,
+            eventType: "user.deleted",
+          },
+        });
+        salonRecord = null;
+      }
+      
+      if (salonRecord) {
+        console.log(`Clerk ID: ${id} のサロンとStripe顧客データを削除します`);
+        
+        if (salonRecord.stripeCustomerId && typeof salonRecord.stripeCustomerId === 'string') {
+          try {
+            // Stripe顧客データの削除
+            await withRetry(() => 
+              stripe.customers.del(salonRecord.stripeCustomerId!)
+            );
+          } catch (stripeError) {
+            // Stripe削除エラーの詳細なログ
+            console.error("Stripe削除エラー:", stripeError);
+            Sentry.captureException(stripeError, {
+              level: "error",
+              tags: {
+                clerkId: id,
+                eventType: "user.deleted",
+              },
+            });
+          }
+        }
+        
+        try {
+          // Convexサロンデータの削除
+          await withRetry(() => 
+            fetchMutation(api.salon.core.trash, { id: salonRecord._id })
+          );
+        } catch (convexError) {
+          console.error("Convex削除エラー:", convexError);
+          Sentry.captureException(convexError, {
+            level: "error",
+            tags: {
+              clerkId: id,
+              eventType: "user.deleted",
+            },
+          });
+          throw convexError; // Convex削除エラーは上位に伝播
+        }
+      } else {
+        console.warn(`No salon found for deleted Clerk user with ID: ${id}`);
+      }
+    }
+  } catch (error) {
+    // 全体的なエラーハンドリング
+    console.error(`Clerk webhook（${eventType}）の処理中にエラーが発生しました:`, error);
+    Sentry.captureException(error, {
+      level: "error",
+      tags: {
+        eventType,
+        clerkUserId: data.id
+      },
+    });
+  }
+
+  return NextResponse.json({ status: 'success' }, { status: 200 });
+}
+
+export async function GET() {
+  return NextResponse.json(
+    { message: 'Clerk webhook endpoint is working. Please use POST for webhooks.' },
+    { status: 200 }
+  );
+}
