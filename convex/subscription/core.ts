@@ -10,25 +10,48 @@ import { trashRecord, handleConvexApiError, KillRecord, removeEmptyFields } from
 import { Doc } from "../_generated/dataModel";
 import { MAX_TEXT_LENGTH } from "../../lib/constants";
 
+const baseUrl =
+  process.env.NEXT_PUBLIC_MODE === 'development'
+    ? process.env.NEXT_PUBLIC_DEVELOP_URL
+    : process.env.NEXT_PUBLIC_DEPLOY_URL;
+
 // サブスクリプションのバリデーション
-function validateSubscription(args: Partial<Doc<"subscription">>) {
+function validateSubscription(args: Partial<Doc<'subscription'>>) {
   if (args.subscriptionId && args.subscriptionId.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({message: `サブスクリプションIDは${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
-  } 
-  if (args.stripeCustomerId && args.stripeCustomerId.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({message: `Stripe顧客IDは${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `サブスクリプションIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
-  if (args.stripeCustomerId && args.stripeCustomerId === "") {
-    throw new ConvexError({message: "Stripe顧客IDが指定されていません", code: ERROR_CODES.INVALID_ARGUMENT});
+  if (args.stripeCustomerId && args.stripeCustomerId.length > MAX_TEXT_LENGTH) {
+    throw new ConvexError({
+      message: `Stripe顧客IDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
+  }
+  if (args.stripeCustomerId && args.stripeCustomerId === '') {
+    throw new ConvexError({
+      message: 'Stripe顧客IDが指定されていません',
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
   if (args.status && args.status.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({message: `ステータスは${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `ステータスは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
   if (args.priceId && args.priceId.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({message: `価格IDは${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `価格IDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
   if (args.planName && args.planName.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({message: `プラン名は${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `プラン名は${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
 }
 
@@ -42,28 +65,38 @@ export const syncSubscription = mutation({
       priceId: v.string(),
       currentPeriodEnd: v.number(),
       planName: v.string(),
-      billingPeriod: v.union(v.literal("monthly"), v.literal("yearly")),
-    })
+      billingPeriod: v.union(v.literal('monthly'), v.literal('yearly')),
+    }),
   },
   handler: async (ctx, args) => {
     try {
       // 既存のサブスクリプションを検索
       const existingSubscription = await ctx.db
-        .query("subscription")
-        .withIndex("by_subscription_id", (q) => q.eq("subscriptionId", args.subscription.subscriptionId).eq("isArchive", false))
+        .query('subscription')
+        .withIndex('by_subscription_id', (q) =>
+          q.eq('subscriptionId', args.subscription.subscriptionId).eq('isArchive', false)
+        )
         .first();
 
       // サロンの存在確認とロック取得（楽観的ロック）
       const existingSalon = await ctx.db
-        .query("salon")
-        .withIndex("by_stripe_customer_id", (q) => q.eq("stripeCustomerId", args.subscription.stripeCustomerId).eq("isArchive", false))
+        .query('salon')
+        .withIndex('by_stripe_customer_id', (q) =>
+          q.eq('stripeCustomerId', args.subscription.stripeCustomerId).eq('isArchive', false)
+        )
         .first();
       if (!existingSalon) {
-        console.warn(`stripeCustomerId: ${args.subscription.stripeCustomerId} のサロンが見つかりません`);
+        console.warn(
+          `stripeCustomerId: ${args.subscription.stripeCustomerId} のサロンが見つかりません`
+        );
         // サロンが見つからない場合でもサブスクリプション自体の更新は継続
-        console.log(`stripeCustomerId: ${args.subscription.stripeCustomerId} のサロンが見つかりません`);
+        console.log(
+          `stripeCustomerId: ${args.subscription.stripeCustomerId} のサロンが見つかりません`
+        );
       } else {
-        console.log(`stripeCustomerId: ${args.subscription.stripeCustomerId} に対応するサロンを発見: ${existingSalon._id}`);
+        console.log(
+          `stripeCustomerId: ${args.subscription.stripeCustomerId} に対応するサロンを発見: ${existingSalon._id}`
+        );
       }
 
       // 既存レコードの更新または新規レコードの作成
@@ -71,12 +104,12 @@ export const syncSubscription = mutation({
       try {
         if (existingSubscription && existingSubscription.isArchive !== true) {
           console.log(`既存のサブスクリプションを更新: ${existingSubscription._id}`);
-          
+
           // サブスクリプションの検証 - 顧客IDが変わっていないことを確認
           if (existingSubscription.stripeCustomerId !== args.subscription.stripeCustomerId) {
             console.warn(
               `サブスクリプション ${args.subscription.subscriptionId} の顧客IDが一致しません。` +
-              `既存: ${existingSubscription.stripeCustomerId}, 新規: ${args.subscription.stripeCustomerId}`
+                `既存: ${existingSubscription.stripeCustomerId}, 新規: ${args.subscription.stripeCustomerId}`
             );
           }
 
@@ -88,7 +121,7 @@ export const syncSubscription = mutation({
           // 新規サブスクリプションの追加
           validateSubscription(args.subscription);
           console.log(`新規サブスクリプションレコードを作成: ${args.subscription.subscriptionId}`);
-          subscriptionResult = await ctx.db.insert("subscription", {
+          subscriptionResult = await ctx.db.insert('subscription', {
             subscriptionId: args.subscription.subscriptionId,
             stripeCustomerId: args.subscription.stripeCustomerId,
             status: args.subscription.status,
@@ -99,7 +132,7 @@ export const syncSubscription = mutation({
             isArchive: false,
           });
         }
-        
+
         // サロンが存在する場合は更新して、両テーブルの状態を一致させる
         if (existingSalon) {
           validateSubscription(args.subscription);
@@ -110,85 +143,116 @@ export const syncSubscription = mutation({
             planName: args.subscription.planName,
             priceId: args.subscription.priceId,
           });
-          console.log(`サロンのサブスクリプションステータスを更新: ${existingSalon._id} → ${args.subscription.status}`);
+          console.log(
+            `サロンのサブスクリプションステータスを更新: ${existingSalon._id} → ${args.subscription.status}`
+          );
         }
       } catch (error) {
-        console.error(`サブスクリプションまたはサロンの更新中にエラーが発生しました: ${args.subscription.subscriptionId}`, error);
+        console.error(
+          `サブスクリプションまたはサロンの更新中にエラーが発生しました: ${args.subscription.subscriptionId}`,
+          error
+        );
         throw error; // エラーを上位に伝播して処理を中断
       }
 
       return subscriptionResult;
     } catch (error) {
-      handleConvexApiError("サブスクリプション同期エラー", ERROR_CODES.INTERNAL_ERROR, error, { subscriptionId: args.subscription.subscriptionId });
+      handleConvexApiError('サブスクリプション同期エラー', ERROR_CODES.INTERNAL_ERROR, error, {
+        subscriptionId: args.subscription.subscriptionId,
+      });
     }
   },
 });
 
 // サブスクリプションの支払いが失敗した場合の処理
 export const paymentFailed = mutation({
-  args: { 
+  args: {
     subscriptionId: v.string(),
     stripeCustomerId: v.string(),
     // トランザクションIDを追加して同一操作を識別できるようにする
-    transactionId: v.optional(v.string())
+    transactionId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     try {
-      const transactionId = args.transactionId || `payment_failed_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      console.log(`[${transactionId}] サブスクリプション: ${args.subscriptionId} の支払い失敗を処理中`);
+      const transactionId =
+        args.transactionId ||
+        `payment_failed_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log(
+        `[${transactionId}] サブスクリプション: ${args.subscriptionId} の支払い失敗を処理中`
+      );
 
       // サブスクリプションIDによる検索
       let subscription = await ctx.db
-        .query("subscription")
-        .withIndex("by_subscription_id", (q) => q.eq("subscriptionId", args.subscriptionId).eq("isArchive", false))
+        .query('subscription')
+        .withIndex('by_subscription_id', (q) =>
+          q.eq('subscriptionId', args.subscriptionId).eq('isArchive', false)
+        )
         .first();
-      
+
       // 見つからなかった場合は顧客IDで検索（バックアップ）
       if (!subscription) {
-        console.log(`[${transactionId}] IDでサブスクリプションが見つからないため、顧客ID: ${args.stripeCustomerId} で検索中`);
+        console.log(
+          `[${transactionId}] IDでサブスクリプションが見つからないため、顧客ID: ${args.stripeCustomerId} で検索中`
+        );
         subscription = await ctx.db
-          .query("subscription")
-          .withIndex("by_stripe_customer_id", (q) => q.eq("stripeCustomerId", args.stripeCustomerId).eq("isArchive", false))
+          .query('subscription')
+          .withIndex('by_stripe_customer_id', (q) =>
+            q.eq('stripeCustomerId', args.stripeCustomerId).eq('isArchive', false)
+          )
           .first();
       }
-      
+
       if (!subscription) {
-        console.warn(`[${transactionId}] サブスクリプションが見つかりません: ${args.subscriptionId}`);
+        console.warn(
+          `[${transactionId}] サブスクリプションが見つかりません: ${args.subscriptionId}`
+        );
         return null;
       }
-      
+
       // サロンの存在確認 - 同時に更新するため
       const salon = await ctx.db
-        .query("salon")
-        .withIndex("by_stripe_customer_id", (q) => q.eq("stripeCustomerId", args.stripeCustomerId).eq("isArchive", false))
+        .query('salon')
+        .withIndex('by_stripe_customer_id', (q) =>
+          q.eq('stripeCustomerId', args.stripeCustomerId).eq('isArchive', false)
+        )
         .first();
-        
+
       // トランザクション的にアトミックに処理するため配列で結果を保持
       const results = [];
-      
+
       // サブスクリプションのステータスを更新
-      console.log(`[${transactionId}] サブスクリプション ${args.subscriptionId} のステータスを payment_failed に更新`);
-      const subscriptionResult = await ctx.db.patch(subscription._id, { 
-        status: "payment_failed",
+      console.log(
+        `[${transactionId}] サブスクリプション ${args.subscriptionId} のステータスを payment_failed に更新`
+      );
+      const subscriptionResult = await ctx.db.patch(subscription._id, {
+        status: 'payment_failed',
       });
       results.push({ type: 'subscription', id: subscription._id, result: subscriptionResult });
-      
+
       // サロンが存在する場合は同時に更新
       if (salon) {
-        console.log(`[${transactionId}] サロン ${salon._id} のサブスクリプションステータスも payment_failed に更新`);
+        console.log(
+          `[${transactionId}] サロン ${salon._id} のサブスクリプションステータスも payment_failed に更新`
+        );
         const salonResult = await ctx.db.patch(salon._id, {
-          subscriptionStatus: "payment_failed",
+          subscriptionStatus: 'payment_failed',
         });
         results.push({ type: 'salon', id: salon._id, result: salonResult });
       } else {
-        console.warn(`[${transactionId}] stripeCustomerId: ${args.stripeCustomerId} のサロンが見つかりません`);
+        console.warn(
+          `[${transactionId}] stripeCustomerId: ${args.stripeCustomerId} のサロンが見つかりません`
+        );
       }
-      
+
       // サブスクリプション更新結果を返す（互換性のため）
       return subscriptionResult;
     } catch (error) {
-      
-      handleConvexApiError("サブスクリプションの支払い失敗処理中にエラー", ERROR_CODES.INTERNAL_ERROR, error, { subscriptionId: args.subscriptionId });
+      handleConvexApiError(
+        'サブスクリプションの支払い失敗処理中にエラー',
+        ERROR_CODES.INTERNAL_ERROR,
+        error,
+        { subscriptionId: args.subscriptionId }
+      );
     }
   },
 });
@@ -208,7 +272,10 @@ export const createSubscriptionSession = action({
       });
 
       if (args.trialDays && (args.trialDays < 0 || args.trialDays > 15)) {
-        throw new ConvexError({message: "試用期間は0以上15日以内で入力してください", code: ERROR_CODES.INVALID_ARGUMENT});
+        throw new ConvexError({
+          message: '試用期間は0以上15日以内で入力してください',
+          code: ERROR_CODES.INVALID_ARGUMENT,
+        });
       }
       validateSubscription(args);
       const session = await stripe.checkout.sessions.create({
@@ -216,19 +283,23 @@ export const createSubscriptionSession = action({
         payment_method_types: ['card'],
         customer: args.stripeCustomerId,
         line_items: [{ price: args.priceId, quantity: 1 }],
-        success_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/subscription/success`,
-        cancel_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/subscription`,
+        success_url: `${baseUrl}/dashboard/subscription/success`,
+        cancel_url: `${baseUrl}/dashboard/subscription`,
         client_reference_id: args.clerkUserId,
         metadata: {
           clerkUserId: args.clerkUserId,
         },
-        ...(args.trialDays ? {subscription_data: {trial_period_days: args.trialDays}} : {})
+        ...(args.trialDays ? { subscription_data: { trial_period_days: args.trialDays } } : {}),
       });
 
       return { checkoutUrl: session.url };
     } catch (error) {
-      
-      handleConvexApiError("サブスクリプションセッションの作成に失敗しました", ERROR_CODES.INTERNAL_ERROR, error, { clerkUserId: args.clerkUserId });
+      handleConvexApiError(
+        'サブスクリプションセッションの作成に失敗しました',
+        ERROR_CODES.INTERNAL_ERROR,
+        error,
+        { clerkUserId: args.clerkUserId }
+      );
     }
   },
 });

@@ -10,36 +10,37 @@ const publicPaths = [
 ];
 
 // ngrokの公開URL
-const ngrokUrl = process.env.NGROK_TUNNEL_URL || "";
+const deployUrl =
+  process.env.NEXT_PUBLIC_MODE === 'development'
+    ? process.env.NEXT_PUBLIC_DEVELOP_URL
+    : process.env.NEXT_PUBLIC_DEPLOY_URL || '';
 
 // 認証ページのパス
-const authPaths = ["/sign-in", "/sign-up", "/staff/login"];
+const authPaths = ['/sign-in', '/sign-up', '/staff/login'];
 
 // 認証が必要なAPIエンドポイント
-const protectedApiPaths = [
-  "/api/verify-password",
-  "/dashboard/:path*",
-];
+const protectedApiPaths = ['/api/verify-password', '/dashboard/:path*'];
 
 const isPublicPath = (pathname: string): boolean => {
   // 認証ページも公開パスとして扱う
   if (isAuthPath(pathname)) {
     return true;
   }
-  
+
   // 公開パスのチェック
-  if (publicPaths.some(
-    (publicPath) => 
-      pathname === publicPath || pathname.startsWith(`${publicPath}/`)
-  )) {
+  if (
+    publicPaths.some(
+      (publicPath) => pathname === publicPath || pathname.startsWith(`${publicPath}/`)
+    )
+  ) {
     return true;
   }
-  
+
   // ngrokのURLとの一致確認
-  if (ngrokUrl && (pathname === ngrokUrl || pathname.startsWith(`${ngrokUrl}/`))) {
+  if (deployUrl && (pathname === deployUrl || pathname.startsWith(`${deployUrl}/`))) {
     return true;
   }
-  
+
   return false;
 };
 
