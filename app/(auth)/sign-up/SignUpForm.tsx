@@ -410,12 +410,12 @@ export default function SignUpPage() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        toast.success("認証に成功しました");
+        toast.success('認証に成功しました');
 
-        // withRetryでClerk webhookの処理完了を待つ
+        // retryOperationでClerk webhookの処理完了を待つ
         const currentUser = clerkClient.user;
         if (!currentUser) {
-          throw new Error("ユーザー情報が取得できませんでした");
+          throw new Error('ユーザー情報が取得できませんでした');
         }
         router.push(`/dashboard`);
       } else {

@@ -8,13 +8,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // 指数バックオフで再試行を行う関数
-export async function withRetry<T>(
-  operation: () => Promise<T>, 
-  maxRetries = 3, 
+export async function retryOperation<T>(
+  operation: () => Promise<T>,
+  maxRetries = 3,
   baseDelay = 500
 ): Promise<T> {
   let retries = 0;
-  
+
   while (true) {
     try {
       return await operation();
@@ -24,11 +24,11 @@ export async function withRetry<T>(
         console.error(`最大${maxRetries}回の再試行後、処理に失敗しました:`, error);
         throw error;
       }
-      
+
       // 指数バックオフ (baseDelay, baseDelay*2, baseDelay*4...)
       const delay = Math.pow(2, retries - 1) * baseDelay;
       console.log(`処理を ${delay}ms 後に再試行します (試行回数: ${retries}/${maxRetries})`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 }
