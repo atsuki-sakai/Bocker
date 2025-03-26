@@ -3,7 +3,7 @@
 import { useAuth } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import { Loading } from "@/components/common";
-import { useQuery } from "convex/react";
+import { useQuery } from 'convex-helpers/react/cache';
 import { useEffect } from "react";
 import { useSalon } from "@/hooks/useSalon";
 
