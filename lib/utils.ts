@@ -24,9 +24,13 @@ export async function retryOperation<T>(
         console.error(`最大${maxRetries}回の再試行後、処理に失敗しました:`, error);
         throw error;
       }
+      // 指数バックオフ + ランダム要素（ジッター）を適用
+      const exponentialDelay = Math.min(5000, Math.pow(2, retries - 1) * baseDelay);
+      // ジッター適用後に最小1秒、最大5秒の範囲に収める
+      const jitter = Math.random();
+      // 1000ms〜exponentialDelayの範囲になるよう調整
+      const delay = Math.max(1000, Math.floor(exponentialDelay * jitter));
 
-      // 指数バックオフ (baseDelay, baseDelay*2, baseDelay*4...)
-      const delay = Math.pow(2, retries - 1) * baseDelay;
       console.log(`処理を ${delay}ms 後に再試行します (試行回数: ${retries}/${maxRetries})`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
