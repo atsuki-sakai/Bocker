@@ -10,24 +10,36 @@ import { handleConvexApiError, removeEmptyFields, trashRecord } from "../helpers
 import { MAX_TEXT_LENGTH } from "../../lib/constants";
 
 // サロンのバリデーション
-function validateSalon(args: Partial<Doc<"salon">>) {
+export function validateSalon(args: Partial<Doc<'salon'>>) {
   if (args.clerkId && args.clerkId.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({message: `Clerk IDは${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `Clerk IDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
-  if(args.clerkId && args.clerkId === "") {
-    throw new ConvexError({message: "Clerk IDが空です", code:ERROR_CODES.INVALID_ARGUMENT})
+  if (args.clerkId && args.clerkId === '') {
+    throw new ConvexError({ message: 'Clerk IDが空です', code: ERROR_CODES.INVALID_ARGUMENT });
   }
-  if (args.email && args.email.length > MAX_TEXT_LENGTH) {  
-    throw new ConvexError({message: `メールアドレスは${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+  if (args.email && args.email.length > MAX_TEXT_LENGTH) {
+    throw new ConvexError({
+      message: `メールアドレスは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
-  if(args.email && !args.email.includes('@')){
-    throw new ConvexError({ message: "メールアドレスの形式が正しくありません", code: ERROR_CODES.INVALID_ARGUMENT})
+  if (args.email && !args.email.includes('@')) {
+    throw new ConvexError({
+      message: 'メールアドレスの形式が正しくありません',
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
   if (args.stripeCustomerId && args.stripeCustomerId.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({message: `Stripe顧客IDは${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `Stripe顧客IDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
-  if(args.stripeCustomerId && args.stripeCustomerId === ""){
-    throw new ConvexError({message: "Stripe顧客IDが空です", code: ERROR_CODES.INVALID_ARGUMENT})
+  if (args.stripeCustomerId && args.stripeCustomerId === '') {
+    throw new ConvexError({ message: 'Stripe顧客IDが空です', code: ERROR_CODES.INVALID_ARGUMENT });
   }
 }
 
