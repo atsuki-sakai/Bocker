@@ -8,11 +8,10 @@ import {
   reservationStatusType,
   salonScheduleExceptionType,
   staffScheduleType,
+  menuPaymentMethodType,
   paymentMethodType,
   staffRoleType,
-  transactionType,
   pointTransactionType,
-  timeSlotType,
 } from './types';
 
 /**
@@ -125,7 +124,7 @@ export default defineSchema({
     postalCode: v.optional(v.number()), // 郵便番号
     address: v.optional(v.string()), // 住所
     reservationRules: v.optional(v.string()), // 予約ルール
-    imgFileId: v.optional(v.string()), // 画像ファイルID
+    imgPath: v.optional(v.string()), // 画像ファイルパス
     description: v.optional(v.string()), // 説明
     ...commonFields,
   }).index('by_salon_id', ['salonId', 'isArchive']),
@@ -197,8 +196,8 @@ export default defineSchema({
     type: v.optional(staffScheduleType), // タイプ
     ...commonFields,
   })
-    .index('by_salon_staff_date', ['salonId', 'staffId', 'date'])
-    .index('by_salon_staff_date_type', ['salonId', 'staffId', 'date', 'type']),
+    .index('by_salon_staff_date', ['salonId', 'staffId', 'date', 'isArchive'])
+    .index('by_salon_staff_date_type', ['salonId', 'staffId', 'date', 'type', 'isArchive']),
 
   // =====================
   // CUSTOMER
@@ -259,8 +258,8 @@ export default defineSchema({
   carte_detail: defineTable({
     carteId: v.id('carte'), // カルテID
     reservationId: v.id('reservation'), // 予約ID
-    beforeHairImgFileId: v.optional(v.string()), // 施術前の髪型画像ファイルID
-    afterHairImgFileId: v.optional(v.string()), // 施術後の髪型画像ファイルID
+    beforeHairimgPath: v.optional(v.string()), // 施術前の髪型画像ファイルパス
+    afterHairimgPath: v.optional(v.string()), // 施術後の髪型画像ファイルパス
     notes: v.optional(v.string()), // メモ
     ...commonFields,
   }).index('by_carte_id', ['carteId', 'isArchive']),
@@ -275,7 +274,7 @@ export default defineSchema({
     email: v.optional(v.string()), // メールアドレス
     gender: v.optional(genderType), // 性別
     description: v.optional(v.string()), // 説明
-    imgFileId: v.optional(v.string()), // 画像ファイルID
+    imgPath: v.optional(v.string()), // 画像ファイルパス
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
     ...commonFields,
   })
@@ -331,12 +330,13 @@ export default defineSchema({
     salePrice: v.optional(v.number()), // セール価格
     timeToMin: v.optional(v.number()), // 時間(分)
     category: v.optional(v.string()), // カテゴリ
-    imgFileId: v.optional(v.string()), // 画像ファイルID
+    imgPath: v.optional(v.string()), // 画像ファイルパス
     description: v.optional(v.string()), // 説明
     couponIds: v.optional(v.array(v.id('coupon'))), // 使用可能なクーポンID
     targetGender: v.optional(genderType), // 対象性別
     availableStaffIds: v.optional(v.array(v.id('staff'))), // 施術可能なスタッフID
     tags: v.optional(v.array(v.string())), // タグ
+    paymentMethod: v.optional(menuPaymentMethodType), // 許可する支払い方法
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
     ...commonFields,
   })
@@ -412,7 +412,7 @@ export default defineSchema({
     endTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
     usePoints: v.optional(v.number()), // 使用ポイント数
     couponId: v.optional(v.id('coupon')), // クーポンID
-    featuredHairImgFileId: v.optional(v.string()), // 顧客が希望する髪型の画像ファイルID
+    featuredHairimgPath: v.optional(v.string()), // 顧客が希望する髪型の画像ファイルパス
     notes: v.optional(v.string()), // 備考
     paymentMethod: v.optional(paymentMethodType), // 支払い方法
     ...commonFields,
