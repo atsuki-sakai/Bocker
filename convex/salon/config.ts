@@ -9,37 +9,65 @@ import { MAX_TEXT_LENGTH, MAX_PHONE_LENGTH, MAX_NOTES_LENGTH, MAX_POSTAL_CODE_LE
 
 
 // サロンの設定のバリデーション
-function validateSalonConfig(args: Partial<Doc<"salon_config">>) {
-  if (args.salonName && args.salonName.trim() === "") {
-    throw new ConvexError({message: "サロン名は空ではいけません", code: ERROR_CODES.INVALID_ARGUMENT});
+export function validateSalonConfig(args: Partial<Doc<'salon_config'>>) {
+  if (args.salonName && args.salonName.trim() === '') {
+    throw new ConvexError({
+      message: 'サロン名は空ではいけません',
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
-  if (args.email && args.email.trim() !== "") {
-    if (!args.email.includes("@")) {
-      throw new ConvexError({message: "メールアドレスが有効ではありません", code: ERROR_CODES.INVALID_ARGUMENT});
+  if (args.email && args.email.trim() !== '') {
+    if (!args.email.includes('@')) {
+      throw new ConvexError({
+        message: 'メールアドレスが有効ではありません',
+        code: ERROR_CODES.INVALID_ARGUMENT,
+      });
     }
     if (args.email.length > MAX_TEXT_LENGTH) {
-      throw new ConvexError({message: `メールアドレスは${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+      throw new ConvexError({
+        message: `メールアドレスは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+        code: ERROR_CODES.INVALID_ARGUMENT,
+      });
     }
   }
   if (args.phone && args.phone.toString().length > MAX_PHONE_LENGTH) {
-    throw new ConvexError({message: `電話番号は${MAX_PHONE_LENGTH}桁以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `電話番号は${MAX_PHONE_LENGTH}桁以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
-  if (args.postalCode && (args.postalCode.toString().length > MAX_POSTAL_CODE_LENGTH || args.postalCode.toString().length < MAX_POSTAL_CODE_LENGTH)) {
-    throw new ConvexError({message: `郵便番号は${MAX_POSTAL_CODE_LENGTH}桁で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+  if (
+    args.postalCode &&
+    (args.postalCode.toString().length > MAX_POSTAL_CODE_LENGTH ||
+      args.postalCode.toString().length < MAX_POSTAL_CODE_LENGTH)
+  ) {
+    throw new ConvexError({
+      message: `郵便番号は${MAX_POSTAL_CODE_LENGTH}桁で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
-  if (args.address && args.address.trim() === "") {
+  if (args.address && args.address.trim() === '') {
     if (args.address.length > MAX_ADDRESS_LENGTH) {
-      throw new ConvexError({message: `住所は${MAX_ADDRESS_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+      throw new ConvexError({
+        message: `住所は${MAX_ADDRESS_LENGTH}文字以内で入力してください`,
+        code: ERROR_CODES.INVALID_ARGUMENT,
+      });
     }
   }
-  if (args.reservationRules && args.reservationRules.trim() === "") {
+  if (args.reservationRules && args.reservationRules.trim() === '') {
     if (args.reservationRules.length > MAX_NOTES_LENGTH) {
-      throw new ConvexError({message: `予約ルールは${MAX_NOTES_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+      throw new ConvexError({
+        message: `予約ルールは${MAX_NOTES_LENGTH}文字以内で入力してください`,
+        code: ERROR_CODES.INVALID_ARGUMENT,
+      });
     }
   }
-  if (args.description && args.description.trim() === "") {
+  if (args.description && args.description.trim() === '') {
     if (args.description.length > MAX_NOTES_LENGTH) {
-      throw new ConvexError({message: `説明は${MAX_NOTES_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+      throw new ConvexError({
+        message: `説明は${MAX_NOTES_LENGTH}文字以内で入力してください`,
+        code: ERROR_CODES.INVALID_ARGUMENT,
+      });
     }
   }
 }
