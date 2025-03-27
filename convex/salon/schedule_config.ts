@@ -7,18 +7,30 @@ import { Doc } from "../_generated/dataModel";
 import { MAX_AVAILABLE_CANCEL_DAYS } from "../../lib/constants";
 
 // サロンスケジュール設定のバリデーション
-function validateSalonScheduleConfig(args: Partial<Doc<"salon_schedule_config">>) {
+export function validateSalonScheduleConfig(args: Partial<Doc<'salon_schedule_config'>>) {
   if (args.commonOpenHour && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(args.commonOpenHour)) {
-    throw new ConvexError({message: "基本営業開始時間は「HH:MM」形式で入力してください", code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: '基本営業開始時間は「HH:MM」形式で入力してください',
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
   if (args.commonCloseHour && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(args.commonCloseHour)) {
-    throw new ConvexError({message: "基本営業終了時間は「HH:MM」形式で入力してください", code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: '基本営業終了時間は「HH:MM」形式で入力してください',
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
   if (args.availableCancelDays && args.availableCancelDays < 0) {
-    throw new ConvexError({message: "キャンセル可能日数は0以上で入力してください", code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: 'キャンセル可能日数は0以上で入力してください',
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
   if (args.availableCancelDays && args.availableCancelDays > MAX_AVAILABLE_CANCEL_DAYS) {
-    throw new ConvexError({message: `キャンセル可能日数は${MAX_AVAILABLE_CANCEL_DAYS}日以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `キャンセル可能日数は${MAX_AVAILABLE_CANCEL_DAYS}日以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
 }
 
