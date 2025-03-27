@@ -75,67 +75,74 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   // navigation の current は削除し、表示時に pathname と比較する
   const navigation = [
     {
-      name: "ダッシュボード",
+      name: 'ダッシュボード',
       href: `/dashboard`,
       icon: HomeIcon,
-      requiredRole: "staff", //スタッフ以上
-      requiredPlan: "Lite",
+      requiredRole: 'staff', //スタッフ以上
+      requiredPlan: 'Lite',
     },
     {
-      name: "予約カレンダー",
+      name: '予約カレンダー',
       href: `/dashboard/reservation`,
       icon: CalendarIcon,
-      requiredRole: "staff", //スタッフ以上
-      requiredPlan: "Lite",
+      requiredRole: 'staff', //スタッフ以上
+      requiredPlan: 'Lite',
     },
     {
-      name: "タイムライン",
+      name: 'タイムライン',
       href: `/dashboard/timeline`,
       icon: CalendarIcon,
-      requiredRole: "staff", // スタッフ以上
-      requiredPlan: "Pro",
+      requiredRole: 'staff', // スタッフ以上
+      requiredPlan: 'Pro',
     },
     {
-      name: "スタッフ一覧",
+      name: 'スタッフ一覧',
       href: `/dashboard/staff`,
       icon: FolderIcon,
-      requiredRole: "admin", // 管理者のみ
-      requiredPlan: "Lite",
+      requiredRole: 'admin', // 管理者のみ
+      requiredPlan: 'Lite',
     },
     {
-      name: "メニュー一覧",
+      name: 'メニュー一覧',
       href: `/dashboard/menu`,
-      icon:FileIcon,
-      requiredRole: "manager", // マネージャー以上
-      requiredPlan: "Lite",
+      icon: FileIcon,
+      requiredRole: 'manager', // マネージャー以上
+      requiredPlan: 'Lite',
     },
     {
-      name: "顧客一覧",
+      name: '顧客一覧',
       href: `/dashboard/customer`,
       icon: UserCircleIcon,
-      requiredRole: "manager", // マネージャー以上
-      requiredPlan: "Lite",
+      requiredRole: 'manager', // マネージャー以上
+      requiredPlan: 'Lite',
     },
     {
-      name: "オプション一覧",
+      name: '顧客カルテ',
+      href: `/dashboard/carte`,
+      icon: TicketIcon,
+      requiredRole: 'manager', // マネージャー以上
+      requiredPlan: 'Pro',
+    },
+    {
+      name: 'オプション一覧',
       href: `/dashboard/option`,
       icon: SettingsIcon,
-      requiredRole: "manager", // マネージャー以上
-      requiredPlan: "Pro",
+      requiredRole: 'manager', // マネージャー以上
+      requiredPlan: 'Pro',
     },
     {
-      name: "クーポン設定",
+      name: 'クーポン設定',
       href: `/dashboard/coupon`,
       icon: GiftIcon,
-      requiredRole: "manager", // マネージャー以上
-      requiredPlan: "Pro",
+      requiredRole: 'manager', // マネージャー以上
+      requiredPlan: 'Pro',
     },
     {
-      name: "ポイント設定",
+      name: 'ポイント設定',
       href: `/dashboard/point`,
       icon: TicketIcon,
-      requiredRole: "manager", // マネージャー以上
-      requiredPlan: "Pro",
+      requiredRole: 'manager', // マネージャー以上
+      requiredPlan: 'Pro',
     },
   ];
 
