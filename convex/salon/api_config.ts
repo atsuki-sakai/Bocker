@@ -7,18 +7,30 @@ import { Doc } from "../_generated/dataModel";
 import { MAX_TEXT_LENGTH } from "../../lib/constants";
 
 // サロンAPI設定のバリデーション
-function validateSalonApiConfig(args: Partial<Doc<"salon_api_config">>) {
+export function validateSalonApiConfig(args: Partial<Doc<'salon_api_config'>>) {
   if (args.lineAccessToken && args.lineAccessToken.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({message: `LINEアクセストークンは${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `LINEアクセストークンは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
   if (args.lineChannelSecret && args.lineChannelSecret.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({message: `LINEチャンネルシークレットは${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `LINEチャンネルシークレットは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
   if (args.liffId && args.liffId.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({message: `LIFF IDは${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `LIFF IDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
   if (args.destinationId && args.destinationId.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({message: `LINE公式アカウント識別子は${MAX_TEXT_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
+    throw new ConvexError({
+      message: `LINE公式アカウント識別子は${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
 }
 
