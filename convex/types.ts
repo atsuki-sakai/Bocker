@@ -79,6 +79,6 @@ export const ImgDirectoryType = v.union(
   v.literal('salon'),
   v.literal('staff'),
   v.literal('menu'),
-  v.literal('option'),
+  v.literal('carte'),
   v.literal('other')
 );
