@@ -1,44 +1,80 @@
-// convex/storage.ts
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
-import { ERROR_CODES } from "../errors";
-import { handleConvexApiError} from "../helpers";
+'use node';
 
-export const generateUploadUrl = mutation({
+import { action } from '../_generated/server';
+import { v } from 'convex/values';
+import { GoogleStorageService } from '@/services/gcp/cloud_storage/GoogleStorageService';
+import { handleConvexApiError } from '../helpers';
+import { ERROR_CODES } from '../errors';
+import { ImgDirectoryType } from '../types';
+
+// GCSクライアントのシングルトンインスタンス
+const gcsClient = new GoogleStorageService();
+
+/**
+ * 画像をGoogle Cloud Storageにアップロードするaction
+ */
+export const uploadImage = action({
   args: {
+    // ファイルデータをBase64でエンコードした文字列
+    base64Data: v.string(),
+    // ファイルのパス
+    filePath: v.string(),
+    // ファイルのMIMEタイプ
+    contentType: v.string(),
+    // 保存先のディレクトリ
+    directory: ImgDirectoryType,
   },
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     try {
-      const url = await ctx.storage.generateUploadUrl();
-      return url;
+      // Base64データをデコードしてバッファに変換
+      const binaryData = Buffer.from(args.base64Data, 'base64');
+
+      // Fileオブジェクトを作成
+      const file = new File([binaryData], args.filePath, {
+        type: args.contentType,
+      });
+
+      // GCSにアップロード
+      return await gcsClient.uploadFile(file, args.directory);
     } catch (error) {
-      handleConvexApiError("ストレージのアップロードURL生成中にエラーが発生しました", ERROR_CODES.UNEXPECTED_ERROR, error);
+      console.error('画像のアップロードに失敗しました', error);
+      handleConvexApiError('画像のアップロードに失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
 
-export const getUrl = query({
+/**
+ * Google Cloud Storageからファイルを削除するaction
+ */
+export const deleteImage = action({
   args: {
-    storageId: v.string(),
+    // 削除するファイルのパス
+    filename: v.string(),
   },
   handler: async (ctx, args) => {
     try {
-      return await ctx.storage.getUrl(args.storageId);
+      await gcsClient.deleteFile(args.filename);
     } catch (error) {
-      handleConvexApiError("ストレージのURL取得中にエラーが発生しました", ERROR_CODES.UNEXPECTED_ERROR, error);
+      console.error('画像の削除に失敗しました', error);
+      handleConvexApiError('画像の削除に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
 
-export const trash = mutation({
+/**
+ * Google Cloud Storageからファイルの公開URLを取得するaction
+ */
+export const getImageUrl = action({
   args: {
-    storageId: v.string(),
+    // ファイルのパス
+    filename: v.string(),
   },
   handler: async (ctx, args) => {
     try {
-      await ctx.storage.delete(args.storageId);
+      return await gcsClient.getPublicUrl(args.filename);
     } catch (error) {
-      handleConvexApiError("ストレージの削除中にエラーが発生しました", ERROR_CODES.UNEXPECTED_ERROR, error);
+      console.error('画像URLの取得に失敗しました', error);
+      handleConvexApiError('画像URLの取得に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
