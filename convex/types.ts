@@ -33,17 +33,12 @@ export const reservationStatusType = v.union(
 );
 
 // サロンスケジュール例外タイプの定義
-export const salonScheduleExceptionType = v.union(
-  v.literal('holiday'),
-  v.literal('work'),
-  v.literal('other')
-);
+export const salonScheduleExceptionType = v.union(v.literal('holiday'), v.literal('other'));
 
 // スタッフスケジュール例外タイプの定義
 export const staffScheduleType = v.union(
   v.literal('holiday'),
   v.literal('reservation'),
-  v.literal('work'),
   v.literal('other')
 );
 
