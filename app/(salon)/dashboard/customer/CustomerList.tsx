@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
-import { api } from "@/convex/_generated/api";
-import { usePaginatedQuery } from "convex/react";
+import { api } from '@/convex/_generated/api';
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import {
   Card,
