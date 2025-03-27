@@ -23,14 +23,14 @@ function validateCarteDetail(args: Partial<Doc<'carte_detail'>>) {
     });
   }
 
-  if (args.beforeHairImgFileId && args.beforeHairImgFileId.length > MAX_TEXT_LENGTH) {
+  if (args.beforeHairimgPath && args.beforeHairimgPath.length > MAX_TEXT_LENGTH) {
     throw new ConvexError({
       message: `施術前の髪型画像ファイルIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
       code: ERROR_CODES.INVALID_ARGUMENT,
     });
   }
 
-  if (args.afterHairImgFileId && args.afterHairImgFileId.length > MAX_TEXT_LENGTH) {
+  if (args.afterHairimgPath && args.afterHairimgPath.length > MAX_TEXT_LENGTH) {
     throw new ConvexError({
       message: `施術後の髪型画像ファイルIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
       code: ERROR_CODES.INVALID_ARGUMENT,
