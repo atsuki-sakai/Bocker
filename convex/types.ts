@@ -32,11 +32,19 @@ export const commonFields = {
     v.literal("refunded")
   );
   
-  // スケジュール例外タイプの定義
-  export const scheduleExceptionType = v.union(
-    v.literal("holiday"),
-    v.literal("work"),
-    v.literal("other")
+  // サロンスケジュール例外タイプの定義
+  export const salonScheduleExceptionType = v.union(
+    v.literal('holiday'),
+    v.literal('work'),
+    v.literal('other')
+  );
+
+  // スタッフスケジュール例外タイプの定義
+  export const staffScheduleType = v.union(
+    v.literal('holiday'),
+    v.literal('reservation'),
+    v.literal('work'),
+    v.literal('other')
   );
 
   export const timeSlotType = v.object({

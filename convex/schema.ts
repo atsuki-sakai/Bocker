@@ -1,6 +1,19 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { commonFields, dayOfWeekType, genderType, billingPeriodType, reservationStatusType, scheduleExceptionType, paymentMethodType, staffRoleType, transactionType, pointTransactionType, timeSlotType } from "./types";
+import {
+  commonFields,
+  dayOfWeekType,
+  genderType,
+  billingPeriodType,
+  reservationStatusType,
+  salonScheduleExceptionType,
+  staffScheduleType,
+  paymentMethodType,
+  staffRoleType,
+  transactionType,
+  pointTransactionType,
+  timeSlotType,
+} from './types';
 
 /**
  * Convexスキーマ定義
@@ -134,7 +147,7 @@ export default defineSchema({
   // =====================
 
   // サロンの曜日毎のスケジュールテーブル
-  salon_schedule: defineTable({
+  salon_week_schedule: defineTable({
     salonId: v.id('salon'),
     isOpen: v.optional(v.boolean()), // 営業日フラグ
     dayOfWeek: v.optional(dayOfWeekType), // 曜日
@@ -146,50 +159,46 @@ export default defineSchema({
   // サロンのスケジュール例外テーブル 事前に登録する
   salon_schedule_exception: defineTable({
     salonId: v.id('salon'), // フィルタリング用
-    type: v.optional(scheduleExceptionType), // 例外タイプ
+    type: v.optional(salonScheduleExceptionType), // 例外タイプ
     date: v.string(), // 日付 "YYYY-MM-DD" 形式
     startTime_unix: v.optional(v.number()), // 開始時間 UNIXタイム
     endTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
     notes: v.optional(v.string()), // メモ
     ...commonFields,
-  }).index('by_salon_date', ['salonId', 'date']),
+  })
+    .index('by_salon_date', ['salonId', 'date'])
+    .index('by_salon_date_type', ['salonId', 'date', 'type', 'isArchive']),
 
   // スタッフの曜日毎のスケジュールテーブル
-  staff_schedule: defineTable({
+  staff_week_schedule: defineTable({
     staffId: v.id('staff'),
     salonId: v.id('salon'),
+    isOpen: v.optional(v.boolean()), // 営業日フラグ
     dayOfWeek: v.optional(dayOfWeekType), // 曜日
     startHour: v.optional(v.string()), // 開始時間 例: 09:00
     endHour: v.optional(v.string()), // 終了時間 例: 18:00
     ...commonFields,
-  }).index('by_salon_staff_week', ['salonId', 'staffId', 'dayOfWeek']),
+  }).index('by_salon_staff_week_is_open', [
+    'salonId',
+    'staffId',
+    'dayOfWeek',
+    'isOpen',
+    'isArchive',
+  ]),
 
-  // スタッフのスケジュール例外テーブル 事前に登録する
-  staff_schedule_exception: defineTable({
+  // スタッフのスケジュールテーブル 事前に登録する
+  staff_schedule: defineTable({
     staffId: v.id('staff'),
     salonId: v.id('salon'),
     date: v.optional(v.string()), // "YYYY-MM-DD" 形式
     startTime_unix: v.optional(v.number()), // 開始時間 UNIXタイム
     endTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
     notes: v.optional(v.string()), // メモ
-    type: v.optional(scheduleExceptionType), // 例外タイプ
+    type: v.optional(staffScheduleType), // タイプ
     ...commonFields,
-  }).index('by_salon_staff_date', ['salonId', 'staffId', 'date']),
-
-  // =====================
-  // 目的：予約時間の計算を毎回計算するのはコストが高いのでこのテーブルを参照すればスタッフの空き時間を取得できるようにするため
-  // スタッフの日付毎の予約スロットテーブル
-  // 予約時間の空きを管理し、予約のCRUD操作時に更新
-  // 過去のスロットは定期的に削除する
-  // =====================
-  staff_available_slots: defineTable({
-    salonId: v.id('salon'),
-    staffId: v.id('staff'),
-    date: v.optional(v.string()), // "YYYY-MM-DD" 形式
-    availableSlots: v.optional(v.array(timeSlotType)),
-    lastUpdated: v.optional(v.number()), // 最終更新日時 UNIXタイム
-    ...commonFields,
-  }).index('by_salon_staff_date', ['salonId', 'staffId', 'date']),
+  })
+    .index('by_salon_staff_date', ['salonId', 'staffId', 'date'])
+    .index('by_salon_staff_date_type', ['salonId', 'staffId', 'date', 'type']),
 
   // =====================
   // CUSTOMER
@@ -218,6 +227,7 @@ export default defineSchema({
     customerId: v.id('customer'),
     email: v.optional(v.string()), // メールアドレス
     age: v.optional(v.number()), // 年齢
+    birthday: v.optional(v.string()), // 誕生日
     gender: v.optional(genderType), // 性別
     notes: v.optional(v.string()), // メモ
     ...commonFields,
@@ -231,6 +241,29 @@ export default defineSchema({
     lastTransactionDate_unix: v.optional(v.number()), // 最終トランザクション日時
     ...commonFields,
   }).index('by_salon_customer_archive', ['salonId', 'customerId', 'isArchive']),
+
+  // =====================
+  // CARTE
+  // =====================
+  carte: defineTable({
+    salonId: v.id('salon'), // サロンID
+    customerId: v.id('customer'), // 顧客ID
+    skinType: v.optional(v.string()), // 肌質
+    hairType: v.optional(v.string()), // 髪質
+    allergyHistory: v.optional(v.string()), // アレルギー歴
+    medicalHistory: v.optional(v.string()), // 持病
+    ...commonFields,
+  }).index('by_salon_customer', ['salonId', 'customerId', 'isArchive']),
+
+  // 最大保存期間は1~2年間
+  carte_detail: defineTable({
+    carteId: v.id('carte'), // カルテID
+    reservationId: v.id('reservation'), // 予約ID
+    beforeHairImgFileId: v.optional(v.string()), // 施術前の髪型画像ファイルID
+    afterHairImgFileId: v.optional(v.string()), // 施術後の髪型画像ファイルID
+    notes: v.optional(v.string()), // メモ
+    ...commonFields,
+  }).index('by_carte_id', ['carteId', 'isArchive']),
 
   // =====================
   // STAFF
@@ -365,6 +398,7 @@ export default defineSchema({
   // =====================
   // RESERVATION
   // =====================
+  // 最大保存期間は1~2年間
   reservation: defineTable({
     customerId: v.id('customer'), // 顧客ID
     staffId: v.id('staff'), // スタッフID
@@ -376,22 +410,21 @@ export default defineSchema({
     status: v.optional(reservationStatusType), // 予約ステータス
     startTime_unix: v.optional(v.number()), // 開始時間 UNIXタイム
     endTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
-    hairImgFileId: v.optional(v.string()), // 髪型画像ファイルID
     usePoints: v.optional(v.number()), // 使用ポイント数
     couponId: v.optional(v.id('coupon')), // クーポンID
+    featuredHairImgFileId: v.optional(v.string()), // 顧客が希望する髪型の画像ファイルID
     notes: v.optional(v.string()), // 備考
     paymentMethod: v.optional(paymentMethodType), // 支払い方法
     ...commonFields,
   })
-    .index('by_customer_id', ['customerId', 'isArchive'])
-    .index('by_staff_id', ['staffId', 'isArchive'])
-    .index('by_menu_id', ['menuId', 'isArchive'])
     .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_status', ['status', 'isArchive'])
+    .index('by_customer_id', ['salonId', 'customerId', 'isArchive'])
+    .index('by_staff_id', ['salonId', 'staffId', 'isArchive'])
+    .index('by_menu_id', ['salonId', 'menuId', 'isArchive'])
+    .index('by_status', ['salonId', 'status', 'isArchive'])
     .index('by_salon_date_archive', ['salonId', 'startTime_unix', 'isArchive'])
-    .index('by_staff_date_archive', ['staffId', 'startTime_unix', 'isArchive'])
-    .index('by_customer_date_archive', ['customerId', 'startTime_unix', 'isArchive'])
-    .index('by_salon_status_archive', ['salonId', 'status', 'isArchive']),
+    .index('by_staff_date_archive', ['salonId', 'staffId', 'startTime_unix', 'isArchive'])
+    .index('by_customer_date_archive', ['salonId', 'customerId', 'startTime_unix', 'isArchive']),
 
   // =====================
   // POINT

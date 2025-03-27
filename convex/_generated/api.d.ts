@@ -14,6 +14,8 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as admin_core from "../admin/core.js";
+import type * as carte_core from "../carte/core.js";
+import type * as carte_detail from "../carte/detail.js";
 import type * as coupon_config from "../coupon/config.js";
 import type * as coupon_core from "../coupon/core.js";
 import type * as coupon_transaction from "../coupon/transaction.js";
@@ -33,11 +35,10 @@ import type * as salon_api_config from "../salon/api_config.js";
 import type * as salon_config from "../salon/config.js";
 import type * as salon_core from "../salon/core.js";
 import type * as salon_schedule_config from "../salon/schedule_config.js";
-import type * as schedule_salon_exception_schedule from "../schedule/salon_exception_schedule.js";
-import type * as schedule_salon_schedule from "../schedule/salon_schedule.js";
-import type * as schedule_staff_available_slots from "../schedule/staff_available_slots.js";
-import type * as schedule_staff_schedule from "../schedule/staff_schedule.js";
+import type * as schedule_salon_schedule_exception from "../schedule/salon_schedule_exception.js";
+import type * as schedule_salon_week_schedule from "../schedule/salon_week_schedule.js";
 import type * as schedule_staff_schedule_exception from "../schedule/staff_schedule_exception.js";
+import type * as schedule_staff_week_schedule from "../schedule/staff_week_schedule.js";
 import type * as staff_auth from "../staff/auth.js";
 import type * as staff_config from "../staff/config.js";
 import type * as staff_core from "../staff/core.js";
@@ -57,6 +58,8 @@ import type * as types from "../types.js";
  */
 declare const fullApi: ApiFromModules<{
   "admin/core": typeof admin_core;
+  "carte/core": typeof carte_core;
+  "carte/detail": typeof carte_detail;
   "coupon/config": typeof coupon_config;
   "coupon/core": typeof coupon_core;
   "coupon/transaction": typeof coupon_transaction;
@@ -76,11 +79,10 @@ declare const fullApi: ApiFromModules<{
   "salon/config": typeof salon_config;
   "salon/core": typeof salon_core;
   "salon/schedule_config": typeof salon_schedule_config;
-  "schedule/salon_exception_schedule": typeof schedule_salon_exception_schedule;
-  "schedule/salon_schedule": typeof schedule_salon_schedule;
-  "schedule/staff_available_slots": typeof schedule_staff_available_slots;
-  "schedule/staff_schedule": typeof schedule_staff_schedule;
+  "schedule/salon_schedule_exception": typeof schedule_salon_schedule_exception;
+  "schedule/salon_week_schedule": typeof schedule_salon_week_schedule;
   "schedule/staff_schedule_exception": typeof schedule_staff_schedule_exception;
+  "schedule/staff_week_schedule": typeof schedule_staff_week_schedule;
   "staff/auth": typeof staff_auth;
   "staff/config": typeof staff_config;
   "staff/core": typeof staff_core;

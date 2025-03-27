@@ -234,13 +234,16 @@ export const kill = mutation({
 // 顧客IDから予約一覧を取得
 export const getByCustomerId = query({
   args: {
-    customerId: v.id("customer"),
+    customerId: v.id('customer'),
+    salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("reservation")
-      .withIndex("by_customer_id", (q) => q.eq("customerId", args.customerId).eq("isArchive", false))
+      .query('reservation')
+      .withIndex('by_customer_id', (q) =>
+        q.eq('salonId', args.salonId).eq('customerId', args.customerId).eq('isArchive', false)
+      )
       .paginate(args.paginationOpts);
   },
 });
@@ -248,13 +251,16 @@ export const getByCustomerId = query({
 // スタッフIDから予約一覧を取得
 export const getByStaffId = query({
   args: {
-    staffId: v.id("staff"),
+    staffId: v.id('staff'),
+    salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("reservation")
-      .withIndex("by_staff_id", (q) => q.eq("staffId", args.staffId).eq("isArchive", false))
+      .query('reservation')
+      .withIndex('by_staff_id', (q) =>
+        q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+      )
       .paginate(args.paginationOpts);
   },
 });
@@ -262,13 +268,16 @@ export const getByStaffId = query({
 // メニューIDから予約一覧を取得
 export const getByMenuId = query({
   args: {
-    menuId: v.id("menu"),
+    menuId: v.id('menu'),
+    salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("reservation")
-      .withIndex("by_menu_id", (q) => q.eq("menuId", args.menuId).eq("isArchive", false))
+      .query('reservation')
+      .withIndex('by_menu_id', (q) =>
+        q.eq('salonId', args.salonId).eq('menuId', args.menuId).eq('isArchive', false)
+      )
       .paginate(args.paginationOpts);
   },
 });
@@ -276,13 +285,13 @@ export const getByMenuId = query({
 // サロンIDから予約一覧を取得
 export const getBySalonId = query({
   args: {
-    salonId: v.id("salon"),
+    salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("reservation")
-      .withIndex("by_salon_id", (q) => q.eq("salonId", args.salonId).eq("isArchive", false))
+      .query('reservation')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
       .paginate(args.paginationOpts);
   },
 });
@@ -291,12 +300,15 @@ export const getBySalonId = query({
 export const getByStatus = query({
   args: {
     status: reservationStatusType,
+    salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("reservation")
-      .withIndex("by_status", (q) => q.eq("status", args.status).eq("isArchive", false))
+      .query('reservation')
+      .withIndex('by_status', (q) =>
+        q.eq('salonId', args.salonId).eq('status', args.status).eq('isArchive', false)
+      )
       .paginate(args.paginationOpts);
   },
 });
@@ -304,14 +316,19 @@ export const getByStatus = query({
 // サロンIDと日付から予約一覧を取得
 export const getBySalonAndDate = query({
   args: {
-    salonId: v.id("salon"),
+    salonId: v.id('salon'),
     startTime_unix: v.number(),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("reservation")
-      .withIndex("by_salon_date_archive", (q) => q.eq("salonId", args.salonId).eq("startTime_unix", args.startTime_unix).eq("isArchive", false))
+      .query('reservation')
+      .withIndex('by_salon_date_archive', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('startTime_unix', args.startTime_unix)
+          .eq('isArchive', false)
+      )
       .paginate(args.paginationOpts);
   },
 });
@@ -319,14 +336,21 @@ export const getBySalonAndDate = query({
 // スタッフIDと日付から予約一覧を取得
 export const getByStaffAndDate = query({
   args: {
-    staffId: v.id("staff"),
+    staffId: v.id('staff'),
+    salonId: v.id('salon'),
     startTime_unix: v.number(),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("reservation")
-      .withIndex("by_staff_date_archive", (q) => q.eq("staffId", args.staffId).eq("startTime_unix", args.startTime_unix).eq("isArchive", false))
+      .query('reservation')
+      .withIndex('by_staff_date_archive', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('staffId', args.staffId)
+          .eq('startTime_unix', args.startTime_unix)
+          .eq('isArchive', false)
+      )
       .paginate(args.paginationOpts);
   },
 });
@@ -334,14 +358,21 @@ export const getByStaffAndDate = query({
 // 顧客IDと日付から予約一覧を取得
 export const getByCustomerAndDate = query({
   args: {
-    customerId: v.id("customer"),
+    customerId: v.id('customer'),
+    salonId: v.id('salon'),
     startTime_unix: v.number(),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("reservation")
-      .withIndex("by_customer_date_archive", (q) => q.eq("customerId", args.customerId).eq("startTime_unix", args.startTime_unix).eq("isArchive", false))
+      .query('reservation')
+      .withIndex('by_customer_date_archive', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('customerId', args.customerId)
+          .eq('startTime_unix', args.startTime_unix)
+          .eq('isArchive', false)
+      )
       .paginate(args.paginationOpts);
   },
 });
@@ -349,14 +380,16 @@ export const getByCustomerAndDate = query({
 // サロンIDとステータスから予約一覧を取得
 export const getBySalonAndStatus = query({
   args: {
-    salonId: v.id("salon"),
+    salonId: v.id('salon'),
     status: reservationStatusType,
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("reservation")
-      .withIndex("by_salon_status_archive", (q) => q.eq("salonId", args.salonId).eq("status", args.status).eq("isArchive", false))
+      .query('reservation')
+      .withIndex('by_status', (q) =>
+        q.eq('salonId', args.salonId).eq('status', args.status).eq('isArchive', false)
+      )
       .paginate(args.paginationOpts);
   },
 });
