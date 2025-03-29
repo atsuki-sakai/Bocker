@@ -2,12 +2,7 @@ import { NextResponse } from "next/server";
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
 // 認証不要なパス
-const publicPaths = [
-  "/", 
-  "/api/webhook/clerk", 
-  "/api/webhook/stripe",
-  "/reservation/:path*",
-];
+const publicPaths = ['/', '/api/webhook/clerk', '/api/webhook/stripe', '/reservation/:path*'];
 
 // ngrokの公開URL
 const deployUrl =
