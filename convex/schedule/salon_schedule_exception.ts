@@ -5,7 +5,6 @@ import { handleConvexApiError, removeEmptyFields, trashRecord, KillRecord } from
 import { paginationOptsValidator } from 'convex/server';
 import { ERROR_CODES } from '../errors';
 import { Doc } from '../_generated/dataModel';
-import { MAX_NOTES_LENGTH } from '../../lib/constants';
 import { salonScheduleExceptionType, dayOfWeekType } from '../types';
 
 // サロンスケジュール例外のバリデーション
@@ -13,12 +12,6 @@ function validateSalonScheduleException(args: Partial<Doc<'salon_schedule_except
   if (args.date && !/^\d{4}-\d{2}-\d{2}$/.test(args.date)) {
     throw new ConvexError({
       message: '日付は「YYYY-MM-DD」形式で入力してください',
-      code: ERROR_CODES.INVALID_ARGUMENT,
-    });
-  }
-  if (args.notes && args.notes.length > MAX_NOTES_LENGTH) {
-    throw new ConvexError({
-      message: `メモは${MAX_NOTES_LENGTH}文字以内で入力してください`,
       code: ERROR_CODES.INVALID_ARGUMENT,
     });
   }
@@ -31,8 +24,6 @@ export const add = mutation({
     type: v.optional(salonScheduleExceptionType),
     week: v.optional(dayOfWeekType),
     date: v.string(),
-    startTime_unix: v.optional(v.number()),
-    endTime_unix: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -70,8 +61,6 @@ export const update = mutation({
     type: v.optional(salonScheduleExceptionType),
     week: v.optional(dayOfWeekType),
     date: v.optional(v.string()),
-    startTime_unix: v.optional(v.number()),
-    endTime_unix: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -141,8 +130,6 @@ export const upsert = mutation({
     type: v.optional(salonScheduleExceptionType),
     week: v.optional(dayOfWeekType),
     date: v.string(),
-    startTime_unix: v.optional(v.number()),
-    endTime_unix: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -180,6 +167,28 @@ export const kill = mutation({
     } catch (error) {
       handleConvexApiError(
         'サロンスケジュール例外の削除に失敗しました',
+        ERROR_CODES.INTERNAL_ERROR,
+        error
+      );
+    }
+  },
+});
+
+export const getByScheduleList = query({
+  args: {
+    salonId: v.id('salon'),
+  },
+  handler: async (ctx, args) => {
+    try {
+      return await ctx.db
+        .query('salon_schedule_exception')
+        .withIndex('by_salon_type', (q) =>
+          q.eq('salonId', args.salonId).eq('type', 'holiday').eq('isArchive', false)
+        )
+        .collect();
+    } catch (error) {
+      handleConvexApiError(
+        'サロンスケジュール例外の取得に失敗しました',
         ERROR_CODES.INTERNAL_ERROR,
         error
       );

@@ -67,10 +67,24 @@ export const add = mutation({
   },
 });
 
+export const get = query({
+  args: {
+    salonApiConfigId: v.id('salon_api_config'),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const salonApiConfig = await ctx.db.get(args.salonApiConfigId);
+      return salonApiConfig;
+    } catch (error) {
+      handleConvexApiError('サロンAPI設定の取得に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
+    }
+  },
+});
+
 // サロンAPI設定の更新
 export const update = mutation({
   args: {
-    salonApiConfigId: v.id("salon_api_config"),
+    salonApiConfigId: v.id('salon_api_config'),
     lineAccessToken: v.optional(v.string()),
     lineChannelSecret: v.optional(v.string()),
     liffId: v.optional(v.string()),
@@ -82,7 +96,7 @@ export const update = mutation({
       const salonApiConfig = await ctx.db.get(args.salonApiConfigId);
       if (!salonApiConfig || salonApiConfig.isArchive) {
         throw new ConvexError({
-          message: "指定されたサロンAPI設定が存在しません",
+          message: '指定されたサロンAPI設定が存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
@@ -96,7 +110,7 @@ export const update = mutation({
       const newSalonApiConfigId = await ctx.db.patch(args.salonApiConfigId, updateData);
       return newSalonApiConfigId;
     } catch (error) {
-      handleConvexApiError("サロンAPI設定の更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('サロンAPI設定の更新に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
@@ -104,7 +118,7 @@ export const update = mutation({
 // サロンAPI設定の削除
 export const trash = mutation({
   args: {
-    salonApiConfigId: v.id("salon_api_config"),
+    salonApiConfigId: v.id('salon_api_config'),
   },
   handler: async (ctx, args) => {
     try {
@@ -112,7 +126,7 @@ export const trash = mutation({
       const salonApiConfig = await ctx.db.get(args.salonApiConfigId);
       if (!salonApiConfig) {
         throw new ConvexError({
-          message: "指定されたサロンAPI設定が存在しません",
+          message: '指定されたサロンAPI設定が存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
@@ -120,15 +134,19 @@ export const trash = mutation({
       await trashRecord(ctx, salonApiConfig._id);
       return true;
     } catch (error) {
-      handleConvexApiError("サロンAPI設定のアーカイブに失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError(
+        'サロンAPI設定のアーカイブに失敗しました',
+        ERROR_CODES.INTERNAL_ERROR,
+        error
+      );
     }
   },
 });
 
 export const upsert = mutation({
   args: {
-    salonApiConfigId: v.id("salon_api_config"),
-    salonId: v.id("salon"),
+    salonApiConfigId: v.id('salon_api_config'),
+    salonId: v.id('salon'),
     lineAccessToken: v.optional(v.string()),
     lineChannelSecret: v.optional(v.string()),
     liffId: v.optional(v.string()),
@@ -140,18 +158,22 @@ export const upsert = mutation({
 
       if (!existingSalonApiConfig || existingSalonApiConfig.isArchive) {
         validateSalonApiConfig(args);
-        return await ctx.db.insert("salon_api_config", {
+        return await ctx.db.insert('salon_api_config', {
           ...args,
           isArchive: false,
         });
       } else {
         validateSalonApiConfig(args);
-        const updateData = removeEmptyFields(args);
+        const updateData = removeEmptyFields(args, true);
         delete updateData.salonApiConfigId;
         return await ctx.db.patch(existingSalonApiConfig._id, updateData);
       }
     } catch (error) {
-      handleConvexApiError("サロンAPI設定の追加/更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError(
+        'サロンAPI設定の追加/更新に失敗しました',
+        ERROR_CODES.INTERNAL_ERROR,
+        error
+      );
     }
   },
 });

@@ -8,15 +8,9 @@ import { MAX_AVAILABLE_CANCEL_DAYS } from "../../lib/constants";
 
 // サロンスケジュール設定のバリデーション
 export function validateSalonScheduleConfig(args: Partial<Doc<'salon_schedule_config'>>) {
-  if (args.commonOpenHour && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(args.commonOpenHour)) {
+  if (args.reservationLimitDays && args.reservationLimitDays < 0) {
     throw new ConvexError({
-      message: '基本営業開始時間は「HH:MM」形式で入力してください',
-      code: ERROR_CODES.INVALID_ARGUMENT,
-    });
-  }
-  if (args.commonCloseHour && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(args.commonCloseHour)) {
-    throw new ConvexError({
-      message: '基本営業終了時間は「HH:MM」形式で入力してください',
+      message: '予約可能日数は0以上で入力してください',
       code: ERROR_CODES.INVALID_ARGUMENT,
     });
   }
@@ -37,32 +31,55 @@ export function validateSalonScheduleConfig(args: Partial<Doc<'salon_schedule_co
 // サロンスケジュール設定の追加
 export const add = mutation({
   args: {
-    salonId: v.id("salon"),
-    commonOpenHour: v.optional(v.string()),
-    commonCloseHour: v.optional(v.string()),
+    salonId: v.id('salon'),
+    reservationLimitDays: v.optional(v.number()),
     availableCancelDays: v.optional(v.number()),
-    reservationIntervalMinutes: v.optional(v.union(v.literal(5), v.literal(10), v.literal(15), v.literal(20), v.literal(30))),
+    reservationIntervalMinutes: v.optional(
+      v.union(v.literal(5), v.literal(10), v.literal(15), v.literal(20), v.literal(30))
+    ),
   },
   handler: async (ctx, args) => {
     try {
       // サロンの存在確認
       const salon = await ctx.db.get(args.salonId);
       if (!salon) {
-        console.error("指定されたサロンが存在しません", args.salonId);
+        console.error('指定されたサロンが存在しません', args.salonId);
         throw new ConvexError({
-          message: "指定されたサロンが存在しません",
+          message: '指定されたサロンが存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
 
       validateSalonScheduleConfig(args);
-      const salonScheduleConfigId = await ctx.db.insert("salon_schedule_config", {
+      const salonScheduleConfigId = await ctx.db.insert('salon_schedule_config', {
         ...args,
         isArchive: false,
       });
       return salonScheduleConfigId;
     } catch (error) {
-      handleConvexApiError("サロンスケジュール設定の追加に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError(
+        'サロンスケジュール設定の追加に失敗しました',
+        ERROR_CODES.INTERNAL_ERROR,
+        error
+      );
+    }
+  },
+});
+
+export const get = query({
+  args: {
+    scheduleConfigId: v.id('salon_schedule_config'),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const salonScheduleConfig = await ctx.db.get(args.scheduleConfigId);
+      return salonScheduleConfig;
+    } catch (error) {
+      handleConvexApiError(
+        'サロンスケジュール設定の取得に失敗しました',
+        ERROR_CODES.INTERNAL_ERROR,
+        error
+      );
     }
   },
 });
@@ -70,11 +87,12 @@ export const add = mutation({
 // サロンスケジュール設定の更新
 export const update = mutation({
   args: {
-    salonScheduleConfigId: v.id("salon_schedule_config"),
-    commonOpenHour: v.optional(v.string()),
-    commonCloseHour: v.optional(v.string()),
+    salonScheduleConfigId: v.id('salon_schedule_config'),
+    reservationLimitDays: v.optional(v.number()),
     availableCancelDays: v.optional(v.number()),
-    reservationIntervalMinutes: v.optional(v.union(v.literal(5), v.literal(10), v.literal(15), v.literal(20), v.literal(30))),
+    reservationIntervalMinutes: v.optional(
+      v.union(v.literal(5), v.literal(10), v.literal(15), v.literal(20), v.literal(30))
+    ),
   },
   handler: async (ctx, args) => {
     try {
@@ -82,7 +100,7 @@ export const update = mutation({
       const salonScheduleConfig = await ctx.db.get(args.salonScheduleConfigId);
       if (!salonScheduleConfig || salonScheduleConfig.isArchive) {
         throw new ConvexError({
-          message: "指定されたサロンスケジュール設定が存在しません",
+          message: '指定されたサロンスケジュール設定が存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
@@ -96,7 +114,11 @@ export const update = mutation({
       const newSalonScheduleConfigId = await ctx.db.patch(args.salonScheduleConfigId, updateData);
       return newSalonScheduleConfigId;
     } catch (error) {
-      handleConvexApiError("サロンスケジュール設定の更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError(
+        'サロンスケジュール設定の更新に失敗しました',
+        ERROR_CODES.INTERNAL_ERROR,
+        error
+      );
     }
   },
 });
@@ -104,7 +126,7 @@ export const update = mutation({
 // サロンスケジュール設定の削除
 export const trash = mutation({
   args: {
-    salonScheduleConfigId: v.id("salon_schedule_config"),
+    salonScheduleConfigId: v.id('salon_schedule_config'),
   },
   handler: async (ctx, args) => {
     try {
@@ -112,7 +134,7 @@ export const trash = mutation({
       const salonScheduleConfig = await ctx.db.get(args.salonScheduleConfigId);
       if (!salonScheduleConfig) {
         throw new ConvexError({
-          message: "指定されたサロンスケジュール設定が存在しません",
+          message: '指定されたサロンスケジュール設定が存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
@@ -120,19 +142,24 @@ export const trash = mutation({
       await trashRecord(ctx, salonScheduleConfig._id);
       return true;
     } catch (error) {
-      handleConvexApiError("サロンスケジュール設定のアーカイブに失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError(
+        'サロンスケジュール設定のアーカイブに失敗しました',
+        ERROR_CODES.INTERNAL_ERROR,
+        error
+      );
     }
   },
 });
 
 export const upsert = mutation({
   args: {
-    salonScheduleConfigId: v.id("salon_schedule_config"),
-    salonId: v.id("salon"),
-    commonOpenHour: v.optional(v.string()),
-    commonCloseHour: v.optional(v.string()),
+    salonScheduleConfigId: v.id('salon_schedule_config'),
+    salonId: v.id('salon'),
+    reservationLimitDays: v.optional(v.number()),
     availableCancelDays: v.optional(v.number()),
-    reservationIntervalMinutes: v.optional(v.union(v.literal(5), v.literal(10), v.literal(15), v.literal(20), v.literal(30))),
+    reservationIntervalMinutes: v.optional(
+      v.union(v.literal(5), v.literal(10), v.literal(15), v.literal(20), v.literal(30))
+    ),
   },
   handler: async (ctx, args) => {
     try {
@@ -143,7 +170,7 @@ export const upsert = mutation({
         const updateData = removeEmptyFields(args);
         delete updateData.salonScheduleConfigId;
 
-        return await ctx.db.insert("salon_schedule_config", {
+        return await ctx.db.insert('salon_schedule_config', {
           ...updateData,
           salonId: args.salonId,
           isArchive: false,
@@ -154,7 +181,11 @@ export const upsert = mutation({
         return await ctx.db.patch(existingSalonScheduleConfig._id, updateData);
       }
     } catch (error) {
-      handleConvexApiError("サロンスケジュール設定の追加/更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError(
+        'サロンスケジュール設定の追加/更新に失敗しました',
+        ERROR_CODES.INTERNAL_ERROR,
+        error
+      );
     }
   },
 });

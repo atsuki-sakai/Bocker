@@ -42,8 +42,8 @@ export const add = mutation({
   args: {
     carteId: v.id('carte'),
     reservationId: v.id('reservation'),
-    beforeHairImgFileId: v.optional(v.string()),
-    afterHairImgFileId: v.optional(v.string()),
+    beforeHairImgPath: v.optional(v.string()),
+    afterHairImgPath: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -99,8 +99,8 @@ export const get = query({
 export const update = mutation({
   args: {
     id: v.id('carte_detail'),
-    beforeHairImgFileId: v.optional(v.string()),
-    afterHairImgFileId: v.optional(v.string()),
+    beforeHairImgPath: v.optional(v.string()),
+    afterHairImgPath: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -138,8 +138,8 @@ export const upsert = mutation({
     id: v.optional(v.id('carte_detail')),
     carteId: v.id('carte'),
     reservationId: v.id('reservation'),
-    beforeHairImgFileId: v.optional(v.string()),
-    afterHairImgFileId: v.optional(v.string()),
+    beforeHairImgPath: v.optional(v.string()),
+    afterHairImgPath: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

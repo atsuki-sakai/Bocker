@@ -27,13 +27,13 @@ function validateStaff(args: Partial<Doc<"staff">>) {
 // スタッフの追加
 export const add = mutation({
   args: {
-    salonId: v.id("salon"),
+    salonId: v.id('salon'),
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
     gender: v.optional(genderType),
     description: v.optional(v.string()),
-    imgFileId: v.optional(v.string()),
+    imgFilePath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -41,21 +41,21 @@ export const add = mutation({
       // サロンの存在確認
       const salon = await ctx.db.get(args.salonId);
       if (!salon) {
-        console.error("指定されたサロンが存在しません", args.salonId);
+        console.error('指定されたサロンが存在しません', args.salonId);
         throw new ConvexError({
-          message: "指定されたサロンが存在しません",
+          message: '指定されたサロンが存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
 
       validateStaff(args);
-      const staffId = await ctx.db.insert("staff", {
+      const staffId = await ctx.db.insert('staff', {
         ...args,
         isArchive: false,
       });
       return staffId;
     } catch (error) {
-      handleConvexApiError("スタッフの追加に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('スタッフの追加に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
@@ -63,13 +63,13 @@ export const add = mutation({
 // スタッフ情報の更新
 export const update = mutation({
   args: {
-    staffId: v.id("staff"),
+    staffId: v.id('staff'),
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
     gender: v.optional(genderType),
     description: v.optional(v.string()),
-    imgFileId: v.optional(v.string()),
+    imgFilePath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -78,7 +78,7 @@ export const update = mutation({
       const staff = await ctx.db.get(args.staffId);
       if (!staff || staff.isArchive) {
         throw new ConvexError({
-          message: "指定されたスタッフが存在しません",
+          message: '指定されたスタッフが存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
@@ -92,7 +92,7 @@ export const update = mutation({
       const newStaffId = await ctx.db.patch(args.staffId, updateData);
       return newStaffId;
     } catch (error) {
-      handleConvexApiError("スタッフ情報の更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('スタッフ情報の更新に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
@@ -123,14 +123,14 @@ export const trash = mutation({
 
 export const upsert = mutation({
   args: {
-    staffId: v.id("staff"),
-    salonId: v.id("salon"),
+    staffId: v.id('staff'),
+    salonId: v.id('salon'),
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
     gender: v.optional(genderType),
     description: v.optional(v.string()),
-    imgFileId: v.optional(v.string()),
+    imgFilePath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -138,9 +138,8 @@ export const upsert = mutation({
       validateStaff(args);
       const existingStaff = await ctx.db.get(args.staffId);
 
-
       if (!existingStaff || existingStaff.isArchive) {
-        return await ctx.db.insert("staff", {
+        return await ctx.db.insert('staff', {
           ...args,
           salonId: args.salonId,
           isArchive: false,
@@ -151,7 +150,7 @@ export const upsert = mutation({
         return await ctx.db.patch(existingStaff._id, updateData);
       }
     } catch (error) {
-      handleConvexApiError("スタッフの追加/更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('スタッフの追加/更新に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });

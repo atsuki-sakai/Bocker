@@ -24,6 +24,7 @@ import type * as customer_detail from "../customer/detail.js";
 import type * as customer_points from "../customer/points.js";
 import type * as errors from "../errors.js";
 import type * as helpers from "../helpers.js";
+import type * as link_process_salon from "../link_process/salon.js";
 import type * as menu_core from "../menu/core.js";
 import type * as option_core from "../option/core.js";
 import type * as point_auth from "../point/auth.js";
@@ -68,6 +69,7 @@ declare const fullApi: ApiFromModules<{
   "customer/points": typeof customer_points;
   errors: typeof errors;
   helpers: typeof helpers;
+  "link_process/salon": typeof link_process_salon;
   "menu/core": typeof menu_core;
   "option/core": typeof option_core;
   "point/auth": typeof point_auth;

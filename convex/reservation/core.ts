@@ -42,19 +42,19 @@ function validateReservation(args: Partial<Doc<"reservation">>) {
 // 予約の追加
 export const add = mutation({
   args: {
-    customerId: v.id("customer"),
-    staffId: v.id("staff"),
-    menuId: v.id("menu"),
-    salonId: v.id("salon"),
-    optionIds: v.optional(v.array(v.id("salon_option"))),
+    customerId: v.id('customer'),
+    staffId: v.id('staff'),
+    menuId: v.id('menu'),
+    salonId: v.id('salon'),
+    optionIds: v.optional(v.array(v.id('salon_option'))),
     unitPrice: v.optional(v.number()),
     totalPrice: v.optional(v.number()),
     status: v.optional(reservationStatusType),
     startTime_unix: v.optional(v.number()),
     endTime_unix: v.optional(v.number()),
-    hairImgFileId: v.optional(v.string()),
+    hairImgFilePath: v.optional(v.string()),
     usePoints: v.optional(v.number()),
-    couponId: v.optional(v.id("coupon")),
+    couponId: v.optional(v.id('coupon')),
     notes: v.optional(v.string()),
     paymentMethod: v.optional(paymentMethodType),
   },
@@ -63,9 +63,9 @@ export const add = mutation({
       // 顧客の存在確認
       const customer = await ctx.db.get(args.customerId);
       if (!customer) {
-        console.error("指定された顧客が存在しません", args.customerId);
+        console.error('指定された顧客が存在しません', args.customerId);
         throw new ConvexError({
-          message: "指定された顧客が存在しません",
+          message: '指定された顧客が存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
@@ -73,9 +73,9 @@ export const add = mutation({
       // スタッフの存在確認
       const staff = await ctx.db.get(args.staffId);
       if (!staff) {
-        console.error("指定されたスタッフが存在しません", args.staffId);
+        console.error('指定されたスタッフが存在しません', args.staffId);
         throw new ConvexError({
-          message: "指定されたスタッフが存在しません",
+          message: '指定されたスタッフが存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
@@ -83,9 +83,9 @@ export const add = mutation({
       // メニューの存在確認
       const menu = await ctx.db.get(args.menuId);
       if (!menu) {
-        console.error("指定されたメニューが存在しません", args.menuId);
+        console.error('指定されたメニューが存在しません', args.menuId);
         throw new ConvexError({
-          message: "指定されたメニューが存在しません",
+          message: '指定されたメニューが存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
@@ -93,21 +93,21 @@ export const add = mutation({
       // サロンの存在確認
       const salon = await ctx.db.get(args.salonId);
       if (!salon) {
-        console.error("指定されたサロンが存在しません", args.salonId);
+        console.error('指定されたサロンが存在しません', args.salonId);
         throw new ConvexError({
-          message: "指定されたサロンが存在しません",
+          message: '指定されたサロンが存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
 
       validateReservation(args);
-      const reservationId = await ctx.db.insert("reservation", {
+      const reservationId = await ctx.db.insert('reservation', {
         ...args,
         isArchive: false,
       });
       return reservationId;
     } catch (error) {
-      handleConvexApiError("予約の追加に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('予約の追加に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
@@ -115,16 +115,16 @@ export const add = mutation({
 // 予約情報の更新
 export const update = mutation({
   args: {
-    reservationId: v.id("reservation"),
-    optionIds: v.optional(v.array(v.id("salon_option"))),
+    reservationId: v.id('reservation'),
+    optionIds: v.optional(v.array(v.id('salon_option'))),
     unitPrice: v.optional(v.number()),
     totalPrice: v.optional(v.number()),
     status: v.optional(reservationStatusType),
     startTime_unix: v.optional(v.number()),
     endTime_unix: v.optional(v.number()),
-    hairImgFileId: v.optional(v.string()),
+    hairImgFilePath: v.optional(v.string()),
     usePoints: v.optional(v.number()),
-    couponId: v.optional(v.id("coupon")),
+    couponId: v.optional(v.id('coupon')),
     notes: v.optional(v.string()),
     paymentMethod: v.optional(paymentMethodType),
   },
@@ -134,7 +134,7 @@ export const update = mutation({
       const reservation = await ctx.db.get(args.reservationId);
       if (!reservation || reservation.isArchive) {
         throw new ConvexError({
-          message: "指定された予約が存在しません",
+          message: '指定された予約が存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
@@ -145,11 +145,10 @@ export const update = mutation({
 
       validateReservation(updateData);
 
-
       const newReservationId = await ctx.db.patch(args.reservationId, updateData);
       return newReservationId;
     } catch (error) {
-      handleConvexApiError("予約情報の更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('予約情報の更新に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
@@ -180,20 +179,20 @@ export const trash = mutation({
 
 export const upsert = mutation({
   args: {
-    reservationId: v.id("reservation"),
-    customerId: v.id("customer"),
-    staffId: v.id("staff"),
-    menuId: v.id("menu"),
-    salonId: v.id("salon"),
-    optionIds: v.optional(v.array(v.id("salon_option"))),
+    reservationId: v.id('reservation'),
+    customerId: v.id('customer'),
+    staffId: v.id('staff'),
+    menuId: v.id('menu'),
+    salonId: v.id('salon'),
+    optionIds: v.optional(v.array(v.id('salon_option'))),
     unitPrice: v.optional(v.number()),
     totalPrice: v.optional(v.number()),
     status: v.optional(reservationStatusType),
     startTime_unix: v.optional(v.number()),
     endTime_unix: v.optional(v.number()),
-    hairImgFileId: v.optional(v.string()),
+    hairImgFilePath: v.optional(v.string()),
     usePoints: v.optional(v.number()),
-    couponId: v.optional(v.id("coupon")),
+    couponId: v.optional(v.id('coupon')),
     notes: v.optional(v.string()),
     paymentMethod: v.optional(paymentMethodType),
   },
@@ -203,7 +202,7 @@ export const upsert = mutation({
 
       validateReservation(args);
       if (!existingReservation || existingReservation.isArchive) {
-        return await ctx.db.insert("reservation", {
+        return await ctx.db.insert('reservation', {
           ...args,
           isArchive: false,
         });
@@ -213,7 +212,7 @@ export const upsert = mutation({
         return await ctx.db.patch(existingReservation._id, updateData);
       }
     } catch (error) {
-      handleConvexApiError("予約の追加/更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('予約の追加/更新に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });

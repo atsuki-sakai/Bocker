@@ -68,6 +68,32 @@ export const add = mutation({
   },
 });
 
+// サロンスケジュールの取得
+export const get = query({
+  args: {
+    salonId: v.id('salon'),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('salon_week_schedule')
+      .withIndex('by_salon', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .first();
+  },
+});
+
+// サロンIDに基づいて全ての曜日スケジュールを取得
+export const getAllBySalonId = query({
+  args: {
+    salonId: v.id('salon'),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('salon_week_schedule')
+      .withIndex('by_salon', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .collect();
+  },
+});
+
 // サロンスケジュールの更新
 export const update = mutation({
   args: {
@@ -223,7 +249,7 @@ export const getBySalonWeekAndIsOpen = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query('salon_week_schedule')
-      .withIndex('by_salon_week_is_open', (q) =>
+      .withIndex('by_salon_week_is_open_day_of_week', (q) =>
         q
           .eq('salonId', args.salonId)
           .eq('dayOfWeek', args.dayOfWeek)
@@ -231,5 +257,78 @@ export const getBySalonWeekAndIsOpen = query({
           .eq('isArchive', false)
       )
       .first();
+  },
+});
+
+export const updateWeekSchedule = mutation({
+  args: {
+    salonId: v.id('salon'),
+    scheduleSettings: v.record(
+      v.string(),
+      v.object({
+        isOpen: v.boolean(),
+        startHour: v.string(),
+        endHour: v.string(),
+        scheduleId: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { salonId, scheduleSettings } = args;
+
+    // 曜日の一覧
+    const dayKeys = Object.keys(scheduleSettings);
+
+    // 曜日ごとにレコードを upsert (存在しなければ作成、あれば更新)
+    for (const day of dayKeys) {
+      const { isOpen, startHour, endHour } = scheduleSettings[day];
+
+      // 有効な曜日かチェック
+      if (
+        !['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].includes(
+          day
+        )
+      ) {
+        continue; // 無効な曜日はスキップ
+      }
+
+      const dayOfWeek = day as
+        | 'monday'
+        | 'tuesday'
+        | 'wednesday'
+        | 'thursday'
+        | 'friday'
+        | 'saturday'
+        | 'sunday';
+
+      // 既存レコードがあるか確認
+      const existing = await ctx.db
+        .query('salon_week_schedule')
+        .withIndex('by_salon_week_is_open_day_of_week', (q) =>
+          q.eq('salonId', salonId).eq('dayOfWeek', dayOfWeek)
+        )
+        .first();
+
+      if (existing) {
+        // 既にレコードがある場合 → 更新
+        await ctx.db.patch(existing._id, {
+          isOpen,
+          startHour,
+          endHour,
+        });
+      } else {
+        // レコードがない場合 → 新規作成
+        await ctx.db.insert('salon_week_schedule', {
+          salonId,
+          dayOfWeek,
+          isOpen,
+          startHour,
+          endHour,
+          isArchive: false,
+        });
+      }
+    }
+
+    return true; // フロントエンドへ返す値
   },
 });

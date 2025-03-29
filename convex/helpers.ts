@@ -19,11 +19,91 @@ export function handleConvexApiError(
   error?: unknown,
   context: Record<string, any> = {}
 ) {
-  console.error(code, message, { ...context }, error instanceof Error ? error.message : error);
-  throw new ConvexError({
-    message,
-    code: code,
-  });
+  console.log('error', error);
+  // エラーの詳細情報を取得
+  let errorDetails: Record<string, any> = {
+    type: typeof error,
+  };
+
+  // 元のエラーメッセージとコードを保持
+  let originalMessage = '';
+  let originalCode: ERROR_CODES | undefined;
+
+  // Errorオブジェクトの場合は詳細プロパティを取得
+  if (error instanceof Error) {
+    errorDetails = {
+      ...errorDetails,
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    };
+
+    originalMessage = error.message;
+
+    // エラーオブジェクトの追加プロパティも取得
+    Object.keys(error).forEach((key) => {
+      try {
+        const value = (error as any)[key];
+        if (typeof value !== 'function') {
+          errorDetails[key] = value;
+          // codeプロパティがあれば保存
+          if (key === 'code') {
+            originalCode = value;
+          }
+        }
+      } catch (e) {
+        // プロパティアクセス失敗は無視
+      }
+    });
+  } else if (error instanceof ConvexError) {
+    // ConvexErrorの詳細情報をJSON化
+    const errorJson = {
+      message: error.message,
+      code: error.data?.code,
+      data: error.data,
+    };
+
+    errorDetails.stringified = JSON.stringify(errorJson);
+
+    // ConvexErrorの場合は元のメッセージとコードを使用
+    originalMessage = error.message;
+    originalCode = error.data?.code;
+  } else if (error && typeof error === 'object') {
+    // オブジェクトの場合はJSON化を試みる
+    try {
+      errorDetails.stringified = JSON.stringify(error);
+
+      // エラーオブジェクトにmessageプロパティがあれば保存
+      if ('message' in error) {
+        originalMessage = (error as { message: string }).message;
+      }
+      // コードプロパティがあれば保存
+      if ('code' in error) {
+        originalCode = (error as { code: ERROR_CODES }).code;
+      }
+    } catch (e) {
+      errorDetails.stringifyFailed = true;
+    }
+  }
+
+  // エラー詳細をコンソールに出力
+  console.error(code, message, { ...context }, errorDetails);
+
+  // エラーがある場合は元のエラー情報を使用
+  if (originalMessage) {
+    throw new ConvexError({
+      message: originalMessage,
+      code: originalCode || code,
+      originalError: error instanceof ConvexError ? error.data : undefined,
+    });
+  } else {
+    // デフォルトのエラーメッセージと共に新しいエラーをスロー
+    throw new ConvexError({
+      message,
+      code,
+      originalError: error instanceof ConvexError ? error.data : undefined,
+    });
+  }
 }
 
 /**
@@ -38,13 +118,30 @@ export function getCurrentUnixTime(addDays?: number) {
 /**
  * オブジェクトから undefined のデータを削除
  * @param object オブジェクト
+ * @param emptyStringAsEmpty 空文字列を空として扱うかどうか
+ * @param emptyStringAsNull 空文字列をnullに変換するかどうか
  * @returns 削除後のオブジェクト
  */
-export const removeEmptyFields = <T extends Record<string, unknown>>(object: T): Partial<T> => {
+export const removeEmptyFields = <T extends Record<string, unknown>>(
+  object: T,
+  emptyStringAsEmpty = false,
+  emptyStringAsNull = false
+): Partial<T> => {
   const result: Partial<T> = {};
   for (const key of Object.keys(object) as (keyof T)[]) {
     const value = object[key];
     if (value !== undefined && value !== null) {
+      // 空文字列の処理
+      if (typeof value === 'string' && value.trim() === '') {
+        if (emptyStringAsEmpty) {
+          // 空文字列を空として扱う場合はスキップ
+          continue;
+        } else if (emptyStringAsNull) {
+          // 空文字列をnullとして扱う場合
+          result[key] = null as any;
+          continue;
+        }
+      }
       result[key] = value;
     }
   }

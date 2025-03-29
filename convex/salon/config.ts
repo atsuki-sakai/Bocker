@@ -1,12 +1,16 @@
-
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import { ERROR_CODES } from "../errors";
-import { handleConvexApiError, removeEmptyFields, trashRecord, KillRecord } from "../helpers";
-import { Doc } from "../_generated/dataModel";
-import { MAX_TEXT_LENGTH, MAX_PHONE_LENGTH, MAX_NOTES_LENGTH, MAX_POSTAL_CODE_LENGTH, MAX_ADDRESS_LENGTH } from "../../lib/constants";
-
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
+import { ConvexError } from 'convex/values';
+import { ERROR_CODES } from '../errors';
+import { handleConvexApiError, removeEmptyFields, trashRecord, KillRecord } from '../helpers';
+import { Doc } from '../_generated/dataModel';
+import {
+  MAX_TEXT_LENGTH,
+  MAX_PHONE_LENGTH,
+  MAX_NOTES_LENGTH,
+  MAX_POSTAL_CODE_LENGTH,
+  MAX_ADDRESS_LENGTH,
+} from '../../lib/constants';
 
 // サロンの設定のバリデーション
 export function validateSalonConfig(args: Partial<Doc<'salon_config'>>) {
@@ -46,101 +50,95 @@ export function validateSalonConfig(args: Partial<Doc<'salon_config'>>) {
       code: ERROR_CODES.INVALID_ARGUMENT,
     });
   }
-  if (args.address && args.address.trim() === '') {
-    if (args.address.length > MAX_ADDRESS_LENGTH) {
-      throw new ConvexError({
-        message: `住所は${MAX_ADDRESS_LENGTH}文字以内で入力してください`,
-        code: ERROR_CODES.INVALID_ARGUMENT,
-      });
-    }
+  if (args.address && args.address.length > MAX_ADDRESS_LENGTH) {
+    throw new ConvexError({
+      message: `住所は${MAX_ADDRESS_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
-  if (args.reservationRules && args.reservationRules.trim() === '') {
-    if (args.reservationRules.length > MAX_NOTES_LENGTH) {
-      throw new ConvexError({
-        message: `予約ルールは${MAX_NOTES_LENGTH}文字以内で入力してください`,
-        code: ERROR_CODES.INVALID_ARGUMENT,
-      });
-    }
+  if (args.reservationRules && args.reservationRules.length > MAX_NOTES_LENGTH) {
+    throw new ConvexError({
+      message: `予約ルールは${MAX_NOTES_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
-  if (args.description && args.description.trim() === '') {
-    if (args.description.length > MAX_NOTES_LENGTH) {
-      throw new ConvexError({
-        message: `説明は${MAX_NOTES_LENGTH}文字以内で入力してください`,
-        code: ERROR_CODES.INVALID_ARGUMENT,
-      });
-    }
+  if (args.description && args.description.length > MAX_NOTES_LENGTH) {
+    throw new ConvexError({
+      message: `説明は${MAX_NOTES_LENGTH}文字以内で入力してください`,
+      code: ERROR_CODES.INVALID_ARGUMENT,
+    });
   }
 }
 
 export const add = mutation({
   args: {
-    salonId: v.id("salon"),
+    salonId: v.id('salon'),
     salonName: v.optional(v.string()), // サロン名
     email: v.optional(v.string()), // サロンのメールアドレス
-    phone: v.optional(v.number()), // サロンの電話番号
-    postalCode: v.optional(v.number()), // サロンの郵便番号
+    phone: v.optional(v.string()), // サロンの電話番号
+    postalCode: v.optional(v.string()), // サロンの郵便番号
     address: v.optional(v.string()), // サロンの住所
     reservationRules: v.optional(v.string()), // サロンの予約ルール
-    imgFileId: v.optional(v.string()), // サロンの画像ファイルID
+    imgPath: v.optional(v.string()), // サロンの画像ファイルID
     description: v.optional(v.string()), // サロンの説明
   },
   handler: async (ctx, args) => {
     try {
-      
       const salon = await ctx.db.get(args.salonId);
       if (!salon || salon.isArchive) {
-          console.error("サロンが見つかりません", args.salonId);
-          throw new ConvexError({message: "サロンが見つかりません", code: ERROR_CODES.NOT_FOUND});
+        console.error('サロンが見つかりません', args.salonId);
+        throw new ConvexError({ message: 'サロンが見つかりません', code: ERROR_CODES.NOT_FOUND });
       }
       const salonConfig = await ctx.db.get(args.salonId);
       if (salonConfig) {
-          console.error("サロンの設定が既に存在します", args.salonId);
-          throw new ConvexError({message: "サロンの設定が既に存在します", code: ERROR_CODES.DUPLICATE_RECORD});
+        console.error('サロンの設定が既に存在します', args.salonId);
+        throw new ConvexError({
+          message: 'サロンの設定が既に存在します',
+          code: ERROR_CODES.DUPLICATE_RECORD,
+        });
       }
 
       validateSalonConfig(args);
 
-      const salonConfigId = await ctx.db.insert("salon_config", {
+      const salonConfigId = await ctx.db.insert('salon_config', {
         ...args,
         isArchive: false,
       });
 
       return salonConfigId;
     } catch (error) {
-      handleConvexApiError("サロンの設定の追加に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('サロンの設定の追加に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
 
 export const get = query({
   args: {
-    salonId: v.id("salon"),
+    salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
     try {
-      
-      const salonConfig = await ctx.db.query("salon_config").withIndex("by_salon_id", q => q.eq("salonId", args.salonId)).first();
-      if (!salonConfig) {
-        console.error("サロンの設定が見つかりません", args.salonId);
-        throw new ConvexError({message: "サロンの設定が見つかりません", code: ERROR_CODES.NOT_FOUND});
-      }
+      const salonConfig = await ctx.db
+        .query('salon_config')
+        .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+        .first();
       return salonConfig;
     } catch (error) {
-      handleConvexApiError("サロンの設定の取得に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('サロンの設定の取得に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
 
 export const update = mutation({
   args: {
-    salonId: v.id("salon"),
+    salonId: v.id('salon'),
     salonName: v.optional(v.string()), // サロン名
     email: v.optional(v.string()), // サロンのメールアドレス
-    phone: v.optional(v.number()), // サロンの電話番号
-    postalCode: v.optional(v.number()), // サロンの郵便番号
+    phone: v.optional(v.string()), // サロンの電話番号
+    postalCode: v.optional(v.string()), // サロンの郵便番号
     address: v.optional(v.string()), // サロンの住所
     reservationRules: v.optional(v.string()), // サロンの予約ルール
-    imgFileId: v.optional(v.string()), // サロンの画像ファイルID
+    imgFilePath: v.optional(v.string()), // サロンの画像ファイルID
     description: v.optional(v.string()), // サロンの説明
   },
   handler: async (ctx, args) => {
@@ -148,91 +146,115 @@ export const update = mutation({
       validateSalonConfig(args);
       const salonConfig = await ctx.db.get(args.salonId);
       if (!salonConfig || salonConfig.isArchive) {
-        console.error("サロンの設定が見つかりません", args.salonId);
-        throw new ConvexError({message: "サロンの設定が見つかりません", code: ERROR_CODES.NOT_FOUND});
+        console.error('サロンの設定が見つかりません', args.salonId);
+        throw new ConvexError({
+          message: 'サロンの設定が見つかりません',
+          code: ERROR_CODES.NOT_FOUND,
+        });
       }
-      const updateData = removeEmptyFields({...args});
+      const updateData = removeEmptyFields({ ...args });
       await ctx.db.patch(salonConfig._id, {
         ...updateData,
       });
       return true;
     } catch (error) {
-      handleConvexApiError("サロンの設定の更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('サロンの設定の更新に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
 
-
 export const upsert = mutation({
   args: {
-    salonId: v.id("salon"),
+    salonId: v.id('salon'),
     salonName: v.optional(v.string()), // サロン名
     email: v.optional(v.string()), // サロンのメールアドレス
-    phone: v.optional(v.number()), // サロンの電話番号
-    postalCode: v.optional(v.number()), // サロンの郵便番号
+    phone: v.optional(v.string()), // サロンの電話番号
+    postalCode: v.optional(v.string()), // サロンの郵便番号
     address: v.optional(v.string()), // サロンの住所
     reservationRules: v.optional(v.string()), // サロンの予約ルール
-    imgFileId: v.optional(v.string()), // サロンの画像ファイルID
+    imgPath: v.optional(v.string()), // サロンの画像ファイルID
     description: v.optional(v.string()), // サロンの説明
   },
   handler: async (ctx, args) => {
     try {
-      validateSalonConfig(args);
-      const salonConfig = await ctx.db.get(args.salonId);
-      if (!salonConfig) {
-        console.error("サロンの設定が見つかりません", args.salonId);
-        throw new ConvexError({message: "サロンの設定が見つかりません", code: ERROR_CODES.NOT_FOUND});
-      }
+      console.log('upsert開始', { args });
 
-      if (salonConfig && !salonConfig.isArchive) {
-        const updateData = removeEmptyFields({...args});
-        await ctx.db.patch(salonConfig._id, {
+      // バリデーションエラーは直接伝播させる
+      validateSalonConfig(args);
+      console.log('validateSalonConfig 成功');
+
+      const existingSalonConfig = await ctx.db
+        .query('salon_config')
+        .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId))
+        .first();
+
+      if (existingSalonConfig && !existingSalonConfig.isArchive) {
+        const updateData = removeEmptyFields({ ...args });
+        console.log('更新処理開始', { updateData });
+        await ctx.db.patch(existingSalonConfig._id, {
           ...updateData,
         });
+        console.log('更新成功');
       } else {
-        await ctx.db.insert("salon_config", {
+        console.log('挿入処理開始', { data: { ...args, isArchive: false } });
+        await ctx.db.insert('salon_config', {
           ...args,
           isArchive: false,
         });
+        console.log('挿入成功');
       }
+
+      console.log('upsert 完了');
       return true;
     } catch (error) {
-      handleConvexApiError("サロンの設定の更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      console.error('サロンの設定の更新に失敗しました', error);
+
+      // ConvexError型のエラーは直接再スロー
+      if (error instanceof ConvexError) {
+        throw error;
+      }
+
+      // それ以外のエラーは共通エラーハンドラーでラップ
+      handleConvexApiError('サロンの設定の更新に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
 
-
 export const trash = mutation({
   args: {
-    salonId: v.id("salon"),
+    salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-
     try {
-      const salongConfig = await ctx.db.query("salon_config").withIndex("by_salon_id", q => q.eq("salonId", args.salonId)).first();
+      const salongConfig = await ctx.db
+        .query('salon_config')
+        .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId))
+        .first();
       if (!salongConfig) {
-          console.error("サロンの設定が見つかりません", args.salonId);
-          throw new ConvexError({message: "サロンの設定が見つかりません", code: ERROR_CODES.NOT_FOUND});
+        console.error('サロンの設定が見つかりません', args.salonId);
+        throw new ConvexError({
+          message: 'サロンの設定が見つかりません',
+          code: ERROR_CODES.NOT_FOUND,
+        });
       }
       await trashRecord(ctx, salongConfig._id);
       return true;
     } catch (error) {
-      handleConvexApiError("サロンの設定の削除に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('サロンの設定の削除に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
 
 export const kill = mutation({
   args: {
-    salonId: v.id("salon"),
+    salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
     try {
       await KillRecord(ctx, args.salonId);
       return true;
     } catch (error) {
-      handleConvexApiError("サロンの設定の削除に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('サロンの設定の削除に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });

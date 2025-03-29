@@ -38,17 +38,17 @@ function validateMenu(args: Partial<Doc<"menu">>) {
 // メニューの追加
 export const add = mutation({
   args: {
-    salonId: v.id("salon"),
+    salonId: v.id('salon'),
     name: v.optional(v.string()),
     price: v.optional(v.number()),
     salePrice: v.optional(v.number()),
     timeToMin: v.optional(v.number()),
     category: v.optional(v.string()),
-    imgFileId: v.optional(v.string()),
+    imgFilePath: v.optional(v.string()),
     description: v.optional(v.string()),
-    couponIds: v.optional(v.array(v.id("coupon"))),
-    targetGender: v.optional(genderType), 
-    availableStaffIds: v.optional(v.array(v.id("staff"))),
+    couponIds: v.optional(v.array(v.id('coupon'))),
+    targetGender: v.optional(genderType),
+    availableStaffIds: v.optional(v.array(v.id('staff'))),
     tags: v.optional(v.array(v.string())),
     isActive: v.optional(v.boolean()),
   },
@@ -57,21 +57,21 @@ export const add = mutation({
       // サロンの存在確認
       const salon = await ctx.db.get(args.salonId);
       if (!salon) {
-        console.error("指定されたサロンが存在しません", args.salonId);
+        console.error('指定されたサロンが存在しません', args.salonId);
         throw new ConvexError({
-          message: "指定されたサロンが存在しません",
+          message: '指定されたサロンが存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
 
       validateMenu(args);
-      const menuId = await ctx.db.insert("menu", {
+      const menuId = await ctx.db.insert('menu', {
         ...args,
         isArchive: false,
       });
       return menuId;
     } catch (error) {
-      handleConvexApiError("メニューの追加に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('メニューの追加に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
@@ -79,17 +79,17 @@ export const add = mutation({
 // メニュー情報の更新
 export const update = mutation({
   args: {
-    menuId: v.id("menu"),
+    menuId: v.id('menu'),
     name: v.optional(v.string()),
     price: v.optional(v.number()),
     salePrice: v.optional(v.number()),
     timeToMin: v.optional(v.number()),
     category: v.optional(v.string()),
-    imgFileId: v.optional(v.string()),
+    imgFilePath: v.optional(v.string()),
     description: v.optional(v.string()),
-    couponIds: v.optional(v.array(v.id("coupon"))),
+    couponIds: v.optional(v.array(v.id('coupon'))),
     targetGender: v.optional(genderType),
-    availableStaffIds: v.optional(v.array(v.id("staff"))),
+    availableStaffIds: v.optional(v.array(v.id('staff'))),
     tags: v.optional(v.array(v.string())),
     isActive: v.optional(v.boolean()),
   },
@@ -99,7 +99,7 @@ export const update = mutation({
       const menu = await ctx.db.get(args.menuId);
       if (!menu || menu.isArchive) {
         throw new ConvexError({
-          message: "指定されたメニューが存在しません",
+          message: '指定されたメニューが存在しません',
           code: ERROR_CODES.NOT_FOUND,
         });
       }
@@ -113,7 +113,7 @@ export const update = mutation({
       const newMenuId = await ctx.db.patch(args.menuId, updateData);
       return newMenuId;
     } catch (error) {
-      handleConvexApiError("メニュー情報の更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('メニュー情報の更新に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
@@ -144,18 +144,18 @@ export const trash = mutation({
 
 export const upsert = mutation({
   args: {
-    menuId: v.id("menu"),
-    salonId: v.id("salon"),
+    menuId: v.id('menu'),
+    salonId: v.id('salon'),
     name: v.optional(v.string()),
     price: v.optional(v.number()),
     salePrice: v.optional(v.number()),
     timeToMin: v.optional(v.number()),
     category: v.optional(v.string()),
-    imgFileId: v.optional(v.string()),
+    imgFilePath: v.optional(v.string()),
     description: v.optional(v.string()),
-    couponIds: v.optional(v.array(v.id("coupon"))),
+    couponIds: v.optional(v.array(v.id('coupon'))),
     targetGender: v.optional(genderType),
-    availableStaffIds: v.optional(v.array(v.id("staff"))),
+    availableStaffIds: v.optional(v.array(v.id('staff'))),
     tags: v.optional(v.array(v.string())),
     isActive: v.optional(v.boolean()),
   },
@@ -165,7 +165,7 @@ export const upsert = mutation({
       const existingMenu = await ctx.db.get(args.menuId);
 
       if (!existingMenu || existingMenu.isArchive) {
-        return await ctx.db.insert("menu", {
+        return await ctx.db.insert('menu', {
           ...args,
           salonId: args.salonId,
           isArchive: false,
@@ -177,7 +177,7 @@ export const upsert = mutation({
         return await ctx.db.patch(existingMenu._id, updateData);
       }
     } catch (error) {
-      handleConvexApiError("メニューの追加/更新に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+      handleConvexApiError('メニューの追加/更新に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
   },
 });
