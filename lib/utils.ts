@@ -158,3 +158,19 @@ export function getPriceStrFromPlanAndPeriod(planStr: string, period: BillingPer
     }
   }
 }
+
+// ファイルをBase64に変換する関数
+export async function fileToBase64(file: File): Promise<string> {
+  const base64Promise = new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      // data:image/jpeg;base64,の部分を除去
+      const base64Data = base64String.split(',')[1];
+      resolve(base64Data);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  return base64Promise;
+}
