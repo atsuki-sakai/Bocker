@@ -75,5 +75,6 @@ export const ImgDirectoryType = v.union(
   v.literal('staff'),
   v.literal('menu'),
   v.literal('carte'),
+  v.literal('customer'),
   v.literal('other')
 );
