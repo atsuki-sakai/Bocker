@@ -120,8 +120,8 @@ export default defineSchema({
     salonId: v.id('salon'),
     salonName: v.optional(v.string()), // サロン名
     email: v.optional(v.string()), // メールアドレス
-    phone: v.optional(v.number()), // 電話番号
-    postalCode: v.optional(v.number()), // 郵便番号
+    phone: v.optional(v.string()), // 電話番号
+    postalCode: v.optional(v.string()), // 郵便番号
     address: v.optional(v.string()), // 住所
     reservationRules: v.optional(v.string()), // 予約ルール
     imgPath: v.optional(v.string()), // 画像ファイルパス
@@ -132,9 +132,8 @@ export default defineSchema({
   // サロンの営業スケジュール設定テーブル
   salon_schedule_config: defineTable({
     salonId: v.id('salon'),
-    commonOpenHour: v.optional(v.string()), // 基本営業開始時間 例: 09:00
-    commonCloseHour: v.optional(v.string()), // 基本営業終了時間 例: 18:00
-    availableCancelDays: v.optional(v.number()), // キャンセル可能日数
+    reservationLimitDays: v.optional(v.number()), // 予約可能日数
+    availableCancelDays: v.optional(v.number()), // 予約キャンセル可能日数
     reservationIntervalMinutes: v.optional(
       v.union(v.literal(5), v.literal(10), v.literal(15), v.literal(20), v.literal(30))
     ), // 予約時間間隔(分)
@@ -153,20 +152,20 @@ export default defineSchema({
     startHour: v.optional(v.string()), // 開始時間 例: 09:00
     endHour: v.optional(v.string()), // 終了時間 例: 18:00
     ...commonFields,
-  }).index('by_salon_week_is_open', ['salonId', 'dayOfWeek', 'isOpen', 'isArchive']),
+  })
+    .index('by_salon', ['salonId', 'isArchive'])
+    .index('by_salon_week_is_open_day_of_week', ['salonId', 'dayOfWeek', 'isOpen', 'isArchive']),
 
   // サロンのスケジュール例外テーブル 事前に登録する
   salon_schedule_exception: defineTable({
     salonId: v.id('salon'), // フィルタリング用
     type: v.optional(salonScheduleExceptionType), // 例外タイプ
     date: v.string(), // 日付 "YYYY-MM-DD" 形式
-    startTime_unix: v.optional(v.number()), // 開始時間 UNIXタイム
-    endTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
-    notes: v.optional(v.string()), // メモ
     ...commonFields,
   })
-    .index('by_salon_date', ['salonId', 'date'])
-    .index('by_salon_date_type', ['salonId', 'date', 'type', 'isArchive']),
+    .index('by_salon_date', ['salonId', 'date', 'isArchive'])
+    .index('by_salon_date_type', ['salonId', 'date', 'type', 'isArchive'])
+    .index('by_salon_type', ['salonId', 'type', 'isArchive']),
 
   // スタッフの曜日毎のスケジュールテーブル
   staff_week_schedule: defineTable({
