@@ -88,7 +88,10 @@ export async function POST(req: Request) {
 
       // クリティカルな操作は再試行付きで実行
       const existingSalon = await retryOperation(() =>
-        fetchQuery(api.salon.core.getClerkId, { clerkId: id }).catch((err) => {
+        fetchQuery(api.salon.core.getClerkId, {
+          clerkId: id,
+          secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
+        }).catch((err) => {
           throw err;
         })
       ).catch(() => null); // 失敗時はnullを返して進行
@@ -112,6 +115,7 @@ export async function POST(req: Request) {
                   clerkId: id,
                   email,
                   stripeCustomerId: customer.id,
+                  secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
                 })
               );
             } catch (convexError) {
@@ -158,6 +162,7 @@ export async function POST(req: Request) {
             id: existingSalon._id,
             email,
             stripeCustomerId: existingSalon.stripeCustomerId,
+            secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
           })
         );
       }
@@ -188,7 +193,10 @@ export async function POST(req: Request) {
       let existingSalon;
       try {
         existingSalon = await retryOperation(() =>
-          fetchQuery(api.salon.core.getClerkId, { clerkId: id })
+          fetchQuery(api.salon.core.getClerkId, {
+            clerkId: id,
+            secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
+          })
         );
       } catch (error) {
         Sentry.captureException(error, {
@@ -223,6 +231,7 @@ export async function POST(req: Request) {
               clerkId: id,
               email,
               stripeCustomerId: existingSalon.stripeCustomerId,
+              secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
             })
           );
 
@@ -257,6 +266,7 @@ export async function POST(req: Request) {
               clerkId: id,
               email,
               stripeCustomerId: customer.id,
+              secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
             })
           );
         } catch (recoveryError) {
@@ -276,7 +286,10 @@ export async function POST(req: Request) {
       let salonRecord;
       try {
         salonRecord = await retryOperation(() =>
-          fetchQuery(api.salon.core.getClerkId, { clerkId: id })
+          fetchQuery(api.salon.core.getClerkId, {
+            clerkId: id,
+            secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
+          })
         );
       } catch (error) {
         console.error(`Clerk ID: ${id} のサロンの取得に失敗しました:`, error);
@@ -312,7 +325,12 @@ export async function POST(req: Request) {
 
         try {
           // Convexサロンデータの削除
-          await retryOperation(() => fetchMutation(api.salon.core.trash, { id: salonRecord._id }));
+          await retryOperation(() =>
+            fetchMutation(api.salon.core.trash, {
+              id: salonRecord._id,
+              secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
+            })
+          );
         } catch (convexError) {
           console.error('Convex削除エラー:', convexError);
           Sentry.captureException(convexError, {
@@ -326,6 +344,81 @@ export async function POST(req: Request) {
         }
       } else {
         console.warn(`No salon found for deleted Clerk user with ID: ${id}`);
+      }
+    } else if (eventType === 'email.created') {
+      const { id, email_addresses, primary_email_address_id } = data;
+      if (!email_addresses) {
+        console.error(
+          `Clerk ID: ${id} のメールアドレス作成イベントを受信しましたが、メールアドレスが存在しません`
+        );
+        return NextResponse.json(
+          { status: 'error', message: 'No email addresses found' },
+          { status: 400 }
+        );
+      }
+
+      // プライマリーメールアドレスを取得
+      let email = 'no-email';
+      if (primary_email_address_id && email_addresses.length > 0) {
+        const primaryEmail = email_addresses.find((e) => e.id === primary_email_address_id);
+        if (primaryEmail) {
+          email = primaryEmail.email_address;
+        } else {
+          email = email_addresses[0]?.email_address || 'no-email';
+        }
+      } else {
+        email = email_addresses[0]?.email_address || 'no-email';
+      }
+
+      console.log(`Clerk ID: ${id} のメールアドレスが作成されました: ${email}`);
+
+      try {
+        // サロン情報を取得
+        const existingSalon = await retryOperation(() =>
+          fetchQuery(api.salon.core.getClerkId, {
+            clerkId: id,
+            secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
+          })
+        );
+
+        if (existingSalon) {
+          // Stripeの顧客情報を更新
+          if (
+            existingSalon.stripeCustomerId &&
+            typeof existingSalon.stripeCustomerId === 'string'
+          ) {
+            await retryOperation(() =>
+              stripe.customers.update(existingSalon.stripeCustomerId!, {
+                email: email || undefined,
+                metadata: { clerkId: id, updated: new Date().toISOString() },
+              })
+            );
+          }
+
+          // Convexのサロン情報を更新
+          await retryOperation(() =>
+            fetchMutation(api.salon.core.update, {
+              id: existingSalon._id,
+              clerkId: id,
+              email,
+              stripeCustomerId: existingSalon.stripeCustomerId,
+              secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
+            })
+          );
+
+          console.log(`Clerk ID: ${id} のサロンとStripeのメールアドレスを ${email} に更新しました`);
+        } else {
+          console.warn(`メールアドレス更新対象のサロンが見つかりませんでした: ${id}`);
+        }
+      } catch (error) {
+        console.error(`Clerk ID: ${id} のメールアドレス更新処理中にエラーが発生しました:`, error);
+        Sentry.captureException(error, {
+          level: 'error',
+          tags: {
+            clerkId: id,
+            eventType: 'email.created',
+          },
+        });
       }
     }
   } catch (error) {
