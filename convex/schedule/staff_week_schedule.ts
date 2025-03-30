@@ -1,27 +1,10 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
-import { handleConvexApiError, removeEmptyFields, trashRecord, KillRecord } from '../helpers';
-import { ERROR_CODES } from '../errors';
-import { Doc } from '../_generated/dataModel';
+import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
+import { CONVEX_ERROR_CODES } from '../constants';
 import { dayOfWeekType } from '../types';
-import { paginationOptsValidator } from 'convex/server';
-
-// スタッフスケジュールのバリデーション
-function validateStaffSchedule(args: Partial<Doc<'staff_week_schedule'>>) {
-  if (args.startHour && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(args.startHour)) {
-    throw new ConvexError({
-      message: '開始時間は「HH:MM」形式で入力してください',
-      code: ERROR_CODES.INVALID_ARGUMENT,
-    });
-  }
-  if (args.endHour && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(args.endHour)) {
-    throw new ConvexError({
-      message: '終了時間は「HH:MM」形式で入力してください',
-      code: ERROR_CODES.INVALID_ARGUMENT,
-    });
-  }
-}
+import { validateStaffWeekSchedule } from '../validators';
 
 // スタッフスケジュールの追加
 export const add = mutation({
@@ -33,40 +16,42 @@ export const add = mutation({
     endHour: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    try {
-      // スタッフの存在確認
-      const staff = await ctx.db.get(args.staffId);
-      if (!staff) {
-        console.error('指定されたスタッフが存在しません', args.staffId);
-        throw new ConvexError({
-          message: '指定されたスタッフが存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      // サロンの存在確認
-      const salon = await ctx.db.get(args.salonId);
-      if (!salon) {
-        console.error('指定されたサロンが存在しません', args.salonId);
-        throw new ConvexError({
-          message: '指定されたサロンが存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      validateStaffSchedule(args);
-      const staffScheduleId = await ctx.db.insert('staff_schedule', {
-        ...args,
-        isArchive: false,
+    authCheck(ctx);
+    validateStaffWeekSchedule(args);
+    // スタッフの存在確認
+    const staff = await ctx.db.get(args.staffId);
+    if (!staff) {
+      console.error('AddStaffWeekSchedule: 指定されたスタッフが存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定されたスタッフが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          staffId: args.staffId,
+        },
       });
-      return staffScheduleId;
-    } catch (error) {
-      handleConvexApiError(
-        'スタッフスケジュールの追加に失敗しました',
-        ERROR_CODES.INTERNAL_ERROR,
-        error
-      );
     }
+
+    // サロンの存在確認
+    const salon = await ctx.db.get(args.salonId);
+    if (!salon) {
+      console.error('AddStaffWeekSchedule: 指定されたサロンが存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定されたサロンが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          salonId: args.salonId,
+        },
+      });
+    }
+
+    return await ctx.db.insert('staff_schedule', {
+      ...args,
+      isArchive: false,
+    });
   },
 });
 
@@ -79,31 +64,29 @@ export const update = mutation({
     endHour: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    try {
-      // スタッフスケジュールの存在確認
-      const staffWeekSchedule = await ctx.db.get(args.staffWeekScheduleId);
-      if (!staffWeekSchedule || staffWeekSchedule.isArchive) {
-        throw new ConvexError({
-          message: '指定されたスタッフスケジュールが存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      const updateData = removeEmptyFields(args);
-      // staffWeekScheduleId はパッチ対象から削除する
-      delete updateData.staffWeekScheduleId;
-
-      validateStaffSchedule(updateData);
-
-      const newStaffWeekScheduleId = await ctx.db.patch(args.staffWeekScheduleId, updateData);
-      return newStaffWeekScheduleId;
-    } catch (error) {
-      handleConvexApiError(
-        'スタッフスケジュール情報の更新に失敗しました',
-        ERROR_CODES.INTERNAL_ERROR,
-        error
-      );
+    authCheck(ctx);
+    validateStaffWeekSchedule(args);
+    // スタッフスケジュールの存在確認
+    const staffWeekSchedule = await ctx.db.get(args.staffWeekScheduleId);
+    if (!staffWeekSchedule || staffWeekSchedule.isArchive) {
+      console.error('UpdateStaffWeekSchedule: 指定されたスタッフスケジュールが存在しません', {
+        ...args,
+      });
+      throw new ConvexError({
+        message: '指定されたスタッフスケジュールが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          staffWeekScheduleId: args.staffWeekScheduleId,
+        },
+      });
     }
+
+    const updateData = removeEmptyFields(args);
+    // staffWeekScheduleId はパッチ対象から削除する
+    delete updateData.staffWeekScheduleId;
+    return await ctx.db.patch(args.staffWeekScheduleId, updateData);
   },
 });
 
@@ -113,25 +96,24 @@ export const trash = mutation({
     staffScheduleId: v.id('staff_schedule'),
   },
   handler: async (ctx, args) => {
-    try {
-      // スタッフスケジュールの存在確認
-      const staffSchedule = await ctx.db.get(args.staffScheduleId);
-      if (!staffSchedule) {
-        throw new ConvexError({
-          message: '指定されたスタッフスケジュールが存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      await trashRecord(ctx, staffSchedule._id);
-      return true;
-    } catch (error) {
-      handleConvexApiError(
-        'スタッフスケジュールのアーカイブに失敗しました',
-        ERROR_CODES.INTERNAL_ERROR,
-        error
-      );
+    authCheck(ctx);
+    // スタッフスケジュールの存在確認
+    const staffSchedule = await ctx.db.get(args.staffScheduleId);
+    if (!staffSchedule) {
+      console.error('TrashStaffWeekSchedule: 指定されたスタッフスケジュールが存在しません', {
+        ...args,
+      });
+      throw new ConvexError({
+        message: '指定されたスタッフスケジュールが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          staffScheduleId: args.staffScheduleId,
+        },
+      });
     }
+    return await trashRecord(ctx, staffSchedule._id);
   },
 });
 
@@ -145,26 +127,19 @@ export const upsert = mutation({
     endHour: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    try {
-      validateStaffSchedule(args);
-      const existingStaffSchedule = await ctx.db.get(args.staffScheduleId);
+    authCheck(ctx);
+    validateStaffWeekSchedule(args);
+    const existingStaffSchedule = await ctx.db.get(args.staffScheduleId);
 
-      if (!existingStaffSchedule || existingStaffSchedule.isArchive) {
-        return await ctx.db.insert('staff_schedule', {
-          ...args,
-          isArchive: false,
-        });
-      } else {
-        const updateData = removeEmptyFields(args);
-        delete updateData.staffScheduleId;
-        return await ctx.db.patch(existingStaffSchedule._id, updateData);
-      }
-    } catch (error) {
-      handleConvexApiError(
-        'スタッフスケジュールの追加/更新に失敗しました',
-        ERROR_CODES.INTERNAL_ERROR,
-        error
-      );
+    if (!existingStaffSchedule || existingStaffSchedule.isArchive) {
+      return await ctx.db.insert('staff_schedule', {
+        ...args,
+        isArchive: false,
+      });
+    } else {
+      const updateData = removeEmptyFields(args);
+      delete updateData.staffScheduleId;
+      return await ctx.db.patch(existingStaffSchedule._id, updateData);
     }
   },
 });
@@ -174,15 +149,8 @@ export const kill = mutation({
     staffScheduleId: v.id('staff_schedule'),
   },
   handler: async (ctx, args) => {
-    try {
-      await KillRecord(ctx, args.staffScheduleId);
-    } catch (error) {
-      handleConvexApiError(
-        'スタッフスケジュールの削除に失敗しました',
-        ERROR_CODES.INTERNAL_ERROR,
-        error
-      );
-    }
+    authCheck(ctx);
+    return await KillRecord(ctx, args.staffScheduleId);
   },
 });
 
@@ -194,23 +162,16 @@ export const getBySalonStaffAndWeek = query({
     dayOfWeek: dayOfWeekType,
   },
   handler: async (ctx, args) => {
-    try {
-      return await ctx.db
-        .query('staff_week_schedule')
-        .withIndex('by_salon_staff_week_is_open', (q) =>
-          q
-            .eq('salonId', args.salonId)
-            .eq('staffId', args.staffId)
-            .eq('dayOfWeek', args.dayOfWeek)
-            .eq('isOpen', true)
-            .eq('isArchive', false)
-        );
-    } catch (error) {
-      handleConvexApiError(
-        'スタッフスケジュールの取得に失敗しました',
-        ERROR_CODES.INTERNAL_ERROR,
-        error
+    authCheck(ctx);
+    return await ctx.db
+      .query('staff_week_schedule')
+      .withIndex('by_salon_staff_week_is_open', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('staffId', args.staffId)
+          .eq('dayOfWeek', args.dayOfWeek)
+          .eq('isOpen', true)
+          .eq('isArchive', false)
       );
-    }
   },
 });

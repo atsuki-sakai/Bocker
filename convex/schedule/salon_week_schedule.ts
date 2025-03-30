@@ -1,70 +1,42 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
-import { handleConvexApiError, removeEmptyFields, trashRecord, KillRecord } from '../helpers';
-import { ERROR_CODES } from '../errors';
-import { Doc } from '../_generated/dataModel';
-
-// サロンスケジュールのバリデーション
-function validateSalonSchedule(args: Partial<Doc<'salon_week_schedule'>>) {
-  if (args.startHour && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(args.startHour)) {
-    throw new ConvexError({
-      message: '開始時間は「HH:MM」形式で入力してください',
-      code: ERROR_CODES.INVALID_ARGUMENT,
-    });
-  }
-  if (args.endHour && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(args.endHour)) {
-    throw new ConvexError({
-      message: '終了時間は「HH:MM」形式で入力してください',
-      code: ERROR_CODES.INVALID_ARGUMENT,
-    });
-  }
-}
+import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
+import { CONVEX_ERROR_CODES } from '../constants';
+import { validateSalonSchedule } from '../validators';
+import { dayOfWeekType, DayOfWeek } from '../types';
 
 // サロンスケジュールの追加
 export const add = mutation({
   args: {
     salonId: v.id('salon'),
     isOpen: v.optional(v.boolean()),
-    dayOfWeek: v.optional(
-      v.union(
-        v.literal('sunday'),
-        v.literal('monday'),
-        v.literal('tuesday'),
-        v.literal('wednesday'),
-        v.literal('thursday'),
-        v.literal('friday'),
-        v.literal('saturday')
-      )
-    ),
+    dayOfWeek: v.optional(dayOfWeekType),
     startHour: v.optional(v.string()),
     endHour: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    try {
-      // サロンの存在確認
-      const salon = await ctx.db.get(args.salonId);
-      if (!salon) {
-        console.error('指定されたサロンが存在しません', args.salonId);
-        throw new ConvexError({
-          message: '指定されたサロンが存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      validateSalonSchedule(args);
-      const salonScheduleId = await ctx.db.insert('salon_week_schedule', {
-        ...args,
-        isArchive: false,
+    authCheck(ctx);
+    validateSalonSchedule(args);
+    // サロンの存在確認
+    const salon = await ctx.db.get(args.salonId);
+    if (!salon) {
+      console.error('AddSalonWeekSchedule: 指定されたサロンが存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定されたサロンが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          salonId: args.salonId,
+        },
       });
-      return salonScheduleId;
-    } catch (error) {
-      handleConvexApiError(
-        'サロンスケジュールの追加に失敗しました',
-        ERROR_CODES.INTERNAL_ERROR,
-        error
-      );
     }
+
+    return await ctx.db.insert('salon_week_schedule', {
+      ...args,
+      isArchive: false,
+    });
   },
 });
 
@@ -74,6 +46,7 @@ export const get = query({
     salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('salon_week_schedule')
       .withIndex('by_salon', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
@@ -87,6 +60,7 @@ export const getAllBySalonId = query({
     salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('salon_week_schedule')
       .withIndex('by_salon', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
@@ -99,46 +73,35 @@ export const update = mutation({
   args: {
     salonWeekScheduleId: v.id('salon_week_schedule'),
     isOpen: v.optional(v.boolean()),
-    dayOfWeek: v.optional(
-      v.union(
-        v.literal('sunday'),
-        v.literal('monday'),
-        v.literal('tuesday'),
-        v.literal('wednesday'),
-        v.literal('thursday'),
-        v.literal('friday'),
-        v.literal('saturday')
-      )
-    ),
+    dayOfWeek: v.optional(dayOfWeekType),
     startHour: v.optional(v.string()),
     endHour: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    try {
-      // サロンスケジュールの存在確認
-      const salonWeekSchedule = await ctx.db.get(args.salonWeekScheduleId);
-      if (!salonWeekSchedule || salonWeekSchedule.isArchive) {
-        throw new ConvexError({
-          message: '指定されたサロンスケジュールが存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      const updateData = removeEmptyFields(args);
-      // salonWeekScheduleId はパッチ対象から削除する
-      delete updateData.salonWeekScheduleId;
-
-      validateSalonSchedule(updateData);
-
-      const newSalonWeekScheduleId = await ctx.db.patch(args.salonWeekScheduleId, updateData);
-      return newSalonWeekScheduleId;
-    } catch (error) {
-      handleConvexApiError(
-        'サロンスケジュールの更新に失敗しました',
-        ERROR_CODES.INTERNAL_ERROR,
-        error
-      );
+    authCheck(ctx);
+    validateSalonSchedule(args);
+    // サロンスケジュールの存在確認
+    const salonWeekSchedule = await ctx.db.get(args.salonWeekScheduleId);
+    if (!salonWeekSchedule || salonWeekSchedule.isArchive) {
+      console.error('UpdateSalonWeekSchedule: 指定されたサロンスケジュールが存在しません', {
+        ...args,
+      });
+      throw new ConvexError({
+        message: '指定されたサロンスケジュールが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          salonWeekScheduleId: args.salonWeekScheduleId,
+        },
+      });
     }
+
+    const updateData = removeEmptyFields(args);
+    // salonWeekScheduleId はパッチ対象から削除する
+    delete updateData.salonWeekScheduleId;
+
+    return await ctx.db.patch(args.salonWeekScheduleId, updateData);
   },
 });
 
@@ -148,25 +111,24 @@ export const trash = mutation({
     salonWeekScheduleId: v.id('salon_week_schedule'),
   },
   handler: async (ctx, args) => {
-    try {
-      // サロンスケジュールの存在確認
-      const salonWeekSchedule = await ctx.db.get(args.salonWeekScheduleId);
-      if (!salonWeekSchedule) {
-        throw new ConvexError({
-          message: '指定されたサロンスケジュールが存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      await trashRecord(ctx, salonWeekSchedule._id);
-      return true;
-    } catch (error) {
-      handleConvexApiError(
-        'サロンスケジュールのアーカイブに失敗しました',
-        ERROR_CODES.INTERNAL_ERROR,
-        error
-      );
+    authCheck(ctx);
+    // サロンスケジュールの存在確認
+    const salonWeekSchedule = await ctx.db.get(args.salonWeekScheduleId);
+    if (!salonWeekSchedule) {
+      console.error('TrashSalonWeekSchedule: 指定されたサロンスケジュールが存在しません', {
+        ...args,
+      });
+      throw new ConvexError({
+        message: '指定されたサロンスケジュールが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          salonWeekScheduleId: args.salonWeekScheduleId,
+        },
+      });
     }
+    return await trashRecord(ctx, salonWeekSchedule._id);
   },
 });
 
@@ -175,41 +137,24 @@ export const upsert = mutation({
     salonWeekScheduleId: v.id('salon_week_schedule'),
     salonId: v.id('salon'),
     isOpen: v.optional(v.boolean()),
-    dayOfWeek: v.optional(
-      v.union(
-        v.literal('sunday'),
-        v.literal('monday'),
-        v.literal('tuesday'),
-        v.literal('wednesday'),
-        v.literal('thursday'),
-        v.literal('friday'),
-        v.literal('saturday')
-      )
-    ),
+    dayOfWeek: v.optional(dayOfWeekType),
     startHour: v.optional(v.string()),
     endHour: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    try {
-      const existingSalonWeekSchedule = await ctx.db.get(args.salonWeekScheduleId);
+    authCheck(ctx);
+    validateSalonSchedule(args);
+    const existingSalonWeekSchedule = await ctx.db.get(args.salonWeekScheduleId);
 
-      validateSalonSchedule(args);
-      if (!existingSalonWeekSchedule || existingSalonWeekSchedule.isArchive) {
-        return await ctx.db.insert('salon_week_schedule', {
-          ...args,
-          isArchive: false,
-        });
-      } else {
-        const updateData = removeEmptyFields(args);
-        delete updateData.salonWeekScheduleId;
-        return await ctx.db.patch(existingSalonWeekSchedule._id, updateData);
-      }
-    } catch (error) {
-      handleConvexApiError(
-        'サロンスケジュールの追加/更新に失敗しました',
-        ERROR_CODES.INTERNAL_ERROR,
-        error
-      );
+    if (!existingSalonWeekSchedule || existingSalonWeekSchedule.isArchive) {
+      return await ctx.db.insert('salon_week_schedule', {
+        ...args,
+        isArchive: false,
+      });
+    } else {
+      const updateData = removeEmptyFields(args);
+      delete updateData.salonWeekScheduleId;
+      return await ctx.db.patch(existingSalonWeekSchedule._id, updateData);
     }
   },
 });
@@ -219,15 +164,8 @@ export const kill = mutation({
     salonWeekScheduleId: v.id('salon_week_schedule'),
   },
   handler: async (ctx, args) => {
-    try {
-      await KillRecord(ctx, args.salonWeekScheduleId);
-    } catch (error) {
-      handleConvexApiError(
-        'サロンスケジュールの削除に失敗しました',
-        ERROR_CODES.INTERNAL_ERROR,
-        error
-      );
-    }
+    authCheck(ctx);
+    return await KillRecord(ctx, args.salonWeekScheduleId);
   },
 });
 
@@ -235,18 +173,11 @@ export const kill = mutation({
 export const getBySalonWeekAndIsOpen = query({
   args: {
     salonId: v.id('salon'),
-    dayOfWeek: v.union(
-      v.literal('sunday'),
-      v.literal('monday'),
-      v.literal('tuesday'),
-      v.literal('wednesday'),
-      v.literal('thursday'),
-      v.literal('friday'),
-      v.literal('saturday')
-    ),
-    isOpen: v.boolean(),
+    dayOfWeek: v.optional(dayOfWeekType),
+    isOpen: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('salon_week_schedule')
       .withIndex('by_salon_week_is_open_day_of_week', (q) =>
@@ -269,15 +200,43 @@ export const updateWeekSchedule = mutation({
         isOpen: v.boolean(),
         startHour: v.string(),
         endHour: v.string(),
-        scheduleId: v.optional(v.string()),
       })
     ),
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     const { salonId, scheduleSettings } = args;
 
     // 曜日の一覧
     const dayKeys = Object.keys(scheduleSettings);
+    const successResults: { day: string; action: string; id?: string }[] = [];
+
+    // バリデーション - 時間形式を確認
+    for (const day of dayKeys) {
+      const { startHour, endHour } = scheduleSettings[day];
+      
+      // 時間形式のバリデーション（HH:MM形式かチェック）
+      if (!/^([01]?[0-9]|2[0-4]):[0-5][0-9]$/.test(startHour)) {
+        throw new ConvexError({
+          message: `開始時間「${startHour}」は「HH:MM」形式で入力してください`,
+          code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
+          severity: 'low',
+          status: 400,
+        });
+      }
+      
+      if (!/^([01]?[0-9]|2[0-4]):[0-5][0-9]$/.test(endHour)) {
+        throw new ConvexError({
+          message: `終了時間「${endHour}」は「HH:MM」形式で入力してください`,
+          code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
+          severity: 'low',
+          status: 400,
+        });
+      }
+    }
+
+    // 保存処理の結果を格納する変数
+    let savedCount = 0;
 
     // 曜日ごとにレコードを upsert (存在しなければ作成、あれば更新)
     for (const day of dayKeys) {
@@ -289,46 +248,70 @@ export const updateWeekSchedule = mutation({
           day
         )
       ) {
+        console.log(`Skipping invalid day: ${day}`);
         continue; // 無効な曜日はスキップ
       }
 
-      const dayOfWeek = day as
-        | 'monday'
-        | 'tuesday'
-        | 'wednesday'
-        | 'thursday'
-        | 'friday'
-        | 'saturday'
-        | 'sunday';
+      const dayOfWeek = day as DayOfWeek;
 
-      // 既存レコードがあるか確認
-      const existing = await ctx.db
-        .query('salon_week_schedule')
-        .withIndex('by_salon_week_is_open_day_of_week', (q) =>
-          q.eq('salonId', salonId).eq('dayOfWeek', dayOfWeek)
-        )
-        .first();
+      try {
+        // 既存レコードがあるか確認 - インデックスは曜日のみで検索
+        const existing = await ctx.db
+          .query('salon_week_schedule')
+          .withIndex('by_salon', (q) => q.eq('salonId', salonId).eq('isArchive', false))
+          .filter((q) => q.eq(q.field('dayOfWeek'), dayOfWeek))
+          .first();
 
-      if (existing) {
-        // 既にレコードがある場合 → 更新
-        await ctx.db.patch(existing._id, {
-          isOpen,
-          startHour,
-          endHour,
-        });
-      } else {
-        // レコードがない場合 → 新規作成
-        await ctx.db.insert('salon_week_schedule', {
-          salonId,
-          dayOfWeek,
-          isOpen,
-          startHour,
-          endHour,
-          isArchive: false,
-        });
+        if (existing) {
+          // 既にレコードがある場合 → 更新
+          await ctx.db.patch(existing._id, {
+            isOpen,
+            startHour,
+            endHour,
+          });
+          
+          // パッチ操作は結果を返さないので、直接結果を追加
+          successResults.push({
+            day: dayOfWeek,
+            action: 'updated',
+            id: existing._id
+          });
+          
+          console.log(`Updated schedule for ${day}`);
+          savedCount++;
+        } else {
+          // レコードがない場合 → 新規作成
+          const newId = await ctx.db.insert('salon_week_schedule', {
+            salonId,
+            dayOfWeek,
+            isOpen,
+            startHour,
+            endHour,
+            isArchive: false,
+          });
+          
+          successResults.push({
+            day: dayOfWeek,
+            action: 'created',
+            id: newId
+          });
+          
+          console.log(`Created new schedule for ${day}`);
+          savedCount++;
+        }
+      } catch (error) {
+        console.error(`Error processing ${day}:`, error);
+        throw error;
       }
     }
-
-    return true; // フロントエンドへ返す値
+    
+    return { 
+      success: true, 
+      count: savedCount, 
+      days: dayKeys.filter(day => 
+        ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].includes(day)
+      ),
+      operations: successResults 
+    };
   },
 });
