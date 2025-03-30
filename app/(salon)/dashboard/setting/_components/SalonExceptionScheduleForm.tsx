@@ -6,7 +6,7 @@ import { api } from '@/convex/_generated/api';
 import { useSalon } from '@/hooks/useSalon';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { handleErrorToMessage } from '@/lib/errors';
+import { handleError } from '@/lib/errors';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loading } from '@/components/common';
 import { format, startOfToday } from 'date-fns';
@@ -187,7 +187,8 @@ export default function SalonExceptionScheduleForm() {
           setTimeout(() => setShowSuccess(false), 3000);
         } catch (error: unknown) {
           console.error('休業日の保存に失敗しました', error);
-          toast.error(handleErrorToMessage(error));
+          const errorDetails = handleError(error);
+          toast.error(errorDetails.message);
         } finally {
           setIsSaving(false);
         }

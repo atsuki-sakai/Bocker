@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useZodForm } from '@/hooks/useZodForm';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { handleErrorToMessage } from '@/lib/errors';
+import { handleError } from '@/lib/errors';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FormField } from '@/components/common';
 import { Clock, Save, Calendar, Clock3, Check } from 'lucide-react';
@@ -209,8 +209,8 @@ export default function SalonScheduleForm() {
         );
       } catch (error) {
         console.error('ERROR:', error);
-        const errorMessage = handleErrorToMessage(error);
-        toast.error(errorMessage);
+        const errorDetails = handleError(error);
+        toast.error(errorDetails.message);
       }
     },
     [

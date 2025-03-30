@@ -12,14 +12,14 @@ import SalonExceptionScheduleForm from './_components/SalonExceptionScheduleForm
 
 export default function SettingPage() {
   const { salonId } = useSalon();
-  const [activeTab, setActiveTab] = useState('basic');
+  const [currentTab, setCurrentTab] = useState('basic');
   if (!salonId) {
     return <Loading />;
   }
 
   return (
     <DashboardSection title="設定" backLink="/dashboard" backLinkTitle="ダッシュボードに戻る">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={currentTab} onValueChange={setCurrentTab}>
         <TabsList className="mb-6 space-x-2">
           <TabsTrigger
             value="basic"

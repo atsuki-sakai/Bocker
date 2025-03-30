@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -139,7 +141,7 @@ export default function WeekHourSchedule() {
   const { salonId } = useSalon();
   const [showToast, setShowToast] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('common');
+  const [scheduleTab, setScheduleTab] = useState('common');
 
   // スケジュールデータの状態
   const [weekScheduleData, setWeekScheduleData] = useState<WeekScheduleData>({
@@ -198,10 +200,7 @@ export default function WeekHourSchedule() {
   // DBから取得したスケジュールデータを初期表示に反映
   useEffect(() => {
     if (salonWeekSchedules && Array.isArray(salonWeekSchedules) && salonWeekSchedules.length > 0) {
-      // スケジュールデータが配列で取得された場合（複数の曜日設定がある場合）
       const newScheduleSettings = { ...weekScheduleData.scheduleSettings };
-
-      // 各曜日の設定を反映
       salonWeekSchedules.forEach((schedule) => {
         if (schedule.dayOfWeek && typeof schedule.dayOfWeek === 'string') {
           const dayOfWeek = schedule.dayOfWeek as DayOfWeek;
@@ -209,22 +208,17 @@ export default function WeekHourSchedule() {
             isOpen: schedule.isOpen ?? false,
             startHour: schedule.startHour || '09:00',
             endHour: schedule.endHour || '18:00',
-            scheduleId: schedule._id, // スケジュールIDを保存しておく
+            scheduleId: schedule._id,
           };
         }
       });
 
-      // 状態を更新
       setWeekScheduleData((prev) => ({
         ...prev,
         scheduleSettings: newScheduleSettings,
-        // 依存配列に含まれていない週スケジュールデータも更新
-        useCommonHours: prev.useCommonHours,
-        commonStartHour: prev.commonStartHour,
-        commonEndHour: prev.commonEndHour,
       }));
     }
-  }, [salonWeekSchedules, weekScheduleData.scheduleSettings]);
+  }, [salonWeekSchedules]);
 
   // 営業日変更時の処理
   const handleDayToggle = useCallback((day: DayOfWeek) => {
@@ -243,12 +237,18 @@ export default function WeekHourSchedule() {
             isOpen: true,
             startHour: prev.commonStartHour,
             endHour: prev.commonEndHour,
+            ...(newScheduleSettings[dayId].scheduleId
+              ? { scheduleId: newScheduleSettings[dayId].scheduleId }
+              : {}),
           };
         } else {
           newScheduleSettings[dayId] = {
             isOpen: true,
             startHour: newScheduleSettings[dayId].startHour,
             endHour: newScheduleSettings[dayId].endHour,
+            ...(newScheduleSettings[dayId].scheduleId
+              ? { scheduleId: newScheduleSettings[dayId].scheduleId }
+              : {}),
           };
         }
       } else {
@@ -256,6 +256,9 @@ export default function WeekHourSchedule() {
         newScheduleSettings[dayId] = {
           ...newScheduleSettings[dayId],
           isOpen: false,
+          ...(newScheduleSettings[dayId].scheduleId
+            ? { scheduleId: newScheduleSettings[dayId].scheduleId }
+            : {}),
         };
       }
 
@@ -418,10 +421,12 @@ export default function WeekHourSchedule() {
     });
 
     try {
-      await updateWeekSchedule({
+      console.log('Sending scheduleSettings:', cleanedScheduleSettings);
+      const result = await updateWeekSchedule({
         salonId: salonId as Id<'salon'>,
         scheduleSettings: cleanedScheduleSettings,
       });
+      console.log('Update result:', result);
 
       // 成功メッセージ
       toast.success('スケジュールを更新しました', {
@@ -435,9 +440,9 @@ export default function WeekHourSchedule() {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (err) {
-      console.error(err);
+      console.error('Error updating schedule:', err);
       toast.error('エラーが発生しました', {
-        description: 'スケジュールの更新に失敗しました。もう一度お試しください。',
+        description: `スケジュールの更新に失敗しました: ${err instanceof Error ? err.message : '不明なエラー'}`,
       });
     } finally {
       setIsSaving(false);
@@ -542,7 +547,7 @@ export default function WeekHourSchedule() {
                 <h3 className="text-lg font-semibold">営業時間設定</h3>
               </div>
 
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <Tabs value={scheduleTab} onValueChange={setScheduleTab} className="w-full">
                 <TabsList className="mb-4 bg-blue-50 p-1 rounded-lg">
                   <TabsTrigger
                     value="common"

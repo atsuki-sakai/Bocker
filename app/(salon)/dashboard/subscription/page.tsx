@@ -1,22 +1,32 @@
-import SubscriptionForm from "./SubscriptionForm";
-import { preloadQuery, preloadedQueryResult } from "convex/nextjs";
-import { api } from "@/convex/_generated/api";
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import SubscriptionForm from './SubscriptionForm';
+import { preloadQuery, preloadedQueryResult } from 'convex/nextjs';
+import { api } from '@/convex/_generated/api';
+import { serverConvexAuth } from '@/lib/auth-server';
+import { redirect } from 'next/navigation';
 
 export default async function SubscriptionPage() {
-  const { userId } = await auth();
-  if (!userId) {
-    redirect("/sign-in");
-  }
+  const { userId, token } = await serverConvexAuth();
 
-  const salonPreloaded = await preloadQuery(api.salon.core.getClerkId, { clerkId: userId });
+  const salonPreloaded = await preloadQuery(
+    api.salon.core.getClerkId,
+    { clerkId: userId },
+    { token: token }
+  );
   // preloadedQueryResultを使用してサーバー側でデータにアクセス
   const salon = preloadedQueryResult(salonPreloaded);
   if (!salon?.stripeCustomerId) {
-    redirect("/dashboard/subscription");
+    redirect('/dashboard/subscription');
   }
-  const subscriptionPreloaded = await preloadQuery(api.subscription.core.get, { stripeCustomerId: salon?.stripeCustomerId });
+  const subscriptionPreloaded = await preloadQuery(
+    api.subscription.core.get,
+    { stripeCustomerId: salon?.stripeCustomerId },
+    { token: token }
+  );
 
-  return <SubscriptionForm salonPreloaded={salonPreloaded} subscriptionPreloaded={subscriptionPreloaded} />;
+  return (
+    <SubscriptionForm
+      salonPreloaded={salonPreloaded}
+      subscriptionPreloaded={subscriptionPreloaded}
+    />
+  );
 }

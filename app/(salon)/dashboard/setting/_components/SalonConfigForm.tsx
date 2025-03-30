@@ -13,7 +13,7 @@ import { fileToBase64 } from '@/lib/utils';
 import { useZodForm } from '@/hooks/useZodForm';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { handleErrorToMessage } from '@/lib/errors';
+import { handleError } from '@/lib/errors';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FormField } from '@/components/common';
 import {
@@ -174,8 +174,8 @@ export default function SalonConfigForm() {
         setTimeout(() => setSaveSuccess(false), 3000);
       } catch (error) {
         console.error('ERROR:', error);
-        const errorMessage = handleErrorToMessage(error);
-        toast.error(errorMessage);
+        const errorDetails = handleError(error);
+        toast.error(errorDetails.message);
       }
     },
     [updateSalonConfig, salonId, setSaveSuccess]
