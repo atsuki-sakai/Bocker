@@ -1,30 +1,54 @@
-export const handleErrorToMessage = (error: unknown) => {
-  // Convexエラーオブジェクトからメッセージとコードを取得
-  let errorMessage = 'エラーが発生しました';
+import { ConvexError } from 'convex/values';
 
-  if (error && typeof error === 'object') {
-    // エラーオブジェクトのデータ構造をコンソール出力して確認
-    console.log('Error structure:', JSON.stringify(error, null, 2));
+export const handleError = (
+  error: unknown
+): {
+  message: string;
+  code: string | null;
+  status: number | null;
+  severity: string | null;
+  context: object | null;
+} => {
+  // デフォルトのエラーメッセージ
+  const errorInfo = {
+    message: 'エラーが発生しました',
+    code: null,
+    status: null,
+    severity: null,
+    context: null,
+  };
 
-    if ('data' in error && error.data && typeof error.data === 'object') {
-      // データオブジェクトの内容を確認
-      console.log('Error data:', JSON.stringify(error.data, null, 2));
+  // ConvexErrorかどうかを確認
+  if (error instanceof ConvexError) {
+    // ConvexErrorの場合、dataプロパティから情報を取得
+    const errorData = error.data;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorData = error.data as { message?: string; code?: string; originalError?: any };
-
-      // originalErrorがある場合はそのメッセージを優先
-      if (errorData.originalError && typeof errorData.originalError === 'object') {
-        if (errorData.originalError.message) {
-          errorMessage = errorData.originalError.message;
-        }
-      } else if (errorData.message) {
-        errorMessage = errorData.message;
+    // データの型に応じて処理
+    if (typeof errorData === 'string') {
+      // 文字列の場合はそのまま使用
+      errorInfo.message = errorData;
+    } else if (errorData && typeof errorData === 'object') {
+      // オブジェクトの場合はmessageプロパティを探す
+      if ('message' in errorData && typeof errorData.message === 'string') {
+        errorInfo.message = errorData.message;
       }
-    } else if ('message' in error) {
-      errorMessage = (error as { message: string }).message;
+      if ('code' in errorData && typeof errorData.code === 'string') {
+        errorInfo.code = errorData.code;
+      }
+      if ('status' in errorData && typeof errorData.status === 'number') {
+        errorInfo.status = errorData.status;
+      }
+      if ('severity' in errorData && typeof errorData.severity === 'string') {
+        errorInfo.severity = errorData.severity;
+      }
+      if ('context' in errorData && typeof errorData.context === 'object') {
+        errorInfo.context = errorData.context;
+      }
     }
+  } else if (error instanceof Error) {
+    // 通常のErrorオブジェクトの場合
+    errorInfo.message = error.message;
   }
 
-  return errorMessage;
+  return errorInfo;
 };

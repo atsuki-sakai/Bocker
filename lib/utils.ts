@@ -3,8 +3,9 @@ import { twMerge } from "tailwind-merge"
 import Stripe from "stripe";
 import { BillingPeriod } from "@/lib/types";
 
+
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 // 指数バックオフで再試行を行う関数
@@ -47,15 +48,15 @@ export function timestampToJSTISO(timestamp: number) {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false
+    hour12: false,
   }).formatToParts(date);
 
-  const year  = parts.find(p => p.type === 'year')?.value;
-  const month = parts.find(p => p.type === 'month')?.value;
-  const day   = parts.find(p => p.type === 'day')?.value;
-  const hour  = parts.find(p => p.type === 'hour')?.value;
-  const minute = parts.find(p => p.type === 'minute')?.value;
-  const second = parts.find(p => p.type === 'second')?.value;
+  const year = parts.find((p) => p.type === 'year')?.value;
+  const month = parts.find((p) => p.type === 'month')?.value;
+  const day = parts.find((p) => p.type === 'day')?.value;
+  const hour = parts.find((p) => p.type === 'hour')?.value;
+  const minute = parts.find((p) => p.type === 'minute')?.value;
+  const second = parts.find((p) => p.type === 'second')?.value;
 
   return `${year}-${month}-${day}T${hour}:${minute}:${second}+09:00`;
 }
@@ -67,23 +68,23 @@ export function normalizeSubscriptionStatus(subscription: Stripe.Subscription): 
   // Status handling for business logic
   switch (status) {
     // Treat as active: make sure these are considered valid subscriptions
-    case "incomplete":
-    case "trialing":
-      return "active";
-    
+    case 'incomplete':
+    case 'trialing':
+      return 'active';
+
     // Handle payment issues
-    case "past_due":      // 支払い期限切れ
-    case "unpaid":        // 未払い
+    case 'past_due': // 支払い期限切れ
+    case 'unpaid': // 未払い
       console.log(`支払い問題を検出: サブスクリプション ${subscription.id} は ${status} 状態です`);
       // ここでは "payment_issue" として返すことも可能
-      return status; 
-    
-    // Other standard states
-    case "active":
-    case "canceled":
-    case "incomplete_expired":
       return status;
-      
+
+    // Other standard states
+    case 'active':
+    case 'canceled':
+    case 'incomplete_expired':
+      return status;
+
     // Fallback for unknown/future states
     default:
       console.warn(`未知のサブスクリプションステータス: ${status}, ID: ${subscription.id}`);
@@ -91,70 +92,68 @@ export function normalizeSubscriptionStatus(subscription: Stripe.Subscription): 
   }
 }
 
-
 // Stripeの課金期間をConvexの課金期間に変換
 export function priceIdToPlanInfo(priceId: string) {
-
   switch (priceId) {
     case process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID:
       return {
-        name: "Lite",
+        name: 'Lite',
         price: 6000,
       };
     case process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID:
       return {
-        name: "Lite",
+        name: 'Lite',
         price: 50000,
       };
     case process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID:
       return {
-        name: "Pro",
+        name: 'Pro',
         price: 10000,
       };
     case process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID:
       return {
-        name: "Pro",
+        name: 'Pro',
         price: 100000,
       };
     case process.env.NEXT_PUBLIC_ENTRPIS_MONTHLY_PRC_ID:
       return {
-        name: "Enterprise",
+        name: 'Enterprise',
         price: 16000,
       };
     case process.env.NEXT_PUBLIC_ENTRPIS_YEARLY_PRC_ID:
       return {
-        name: "Enterprise",
+        name: 'Enterprise',
         price: 153600,
       };
     default:
-      return new Error("Invalid priceId");
+      return new Error('Invalid priceId');
   }
 }
 
 // プランと課金期間から価格IDを取得する関数
 export function getPriceStrFromPlanAndPeriod(planStr: string, period: BillingPeriod): string {
   planStr = planStr.toLowerCase();
-  if (period === "monthly") {
+  if (period === 'monthly') {
     switch (planStr) {
-      case "lite":
+      case 'lite':
         return process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID!;
-      case "pro":
+      case 'pro':
         return process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID!;
-      case "enterprise":
+      case 'enterprise':
         return process.env.NEXT_PUBLIC_ENTRPIS_MONTHLY_PRC_ID!;
       default:
-        throw new Error("Invalid plan ID");
+        throw new Error('Invalid plan ID');
     }
   } else {
     switch (planStr) {
-      case "lite":
+      case 'lite':
         return process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID!;
-      case "pro":
+      case 'pro':
         return process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID!;
-      case "enterprise":
+      case 'enterprise':
         return process.env.NEXT_PUBLIC_ENTRPIS_YEARLY_PRC_ID!;
       default:
-        throw new Error("Invalid plan ID");
+        throw new Error('Invalid plan ID');
     }
   }
 }
