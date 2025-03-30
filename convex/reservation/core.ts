@@ -1,43 +1,17 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
-import { handleConvexApiError, removeEmptyFields, trashRecord, KillRecord } from "../helpers";
-import { paginationOptsValidator } from "convex/server";
-import { ERROR_CODES } from "../errors";
-import { Doc } from "../_generated/dataModel";
-import { reservationStatusType, paymentMethodType } from "../types";
-import { MAX_NOTES_LENGTH, MAX_TOTAL_PRICE, MAX_USE_POINTS } from "../../lib/constants";
-// 予約のバリデーション
-function validateReservation(args: Partial<Doc<"reservation">>) {
-  if (args.notes && args.notes.length > MAX_NOTES_LENGTH) {
-    throw new ConvexError({message: `備考は${MAX_NOTES_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
-  }
-  if (args.usePoints && args.usePoints < 0) {
-    throw new ConvexError({message: "使用ポイントは0以上で入力してください", code: ERROR_CODES.INVALID_ARGUMENT});
-  }
-  if (args.unitPrice && args.unitPrice < 0) {
-    throw new ConvexError({message: "単価は0以上で入力してください", code: ERROR_CODES.INVALID_ARGUMENT});
-  }
-  if(args.unitPrice && args.unitPrice > MAX_TOTAL_PRICE) {
-    throw new ConvexError({message: `単価は${MAX_TOTAL_PRICE}円以下で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
-  }
-  if(args.totalPrice && args.totalPrice < 0) {
-    throw new ConvexError({message: "合計金額は0以上で入力してください", code: ERROR_CODES.INVALID_ARGUMENT});
-  }
-  if(args.totalPrice && args.totalPrice > MAX_TOTAL_PRICE) {
-    throw new ConvexError({message: `合計金額は${MAX_TOTAL_PRICE}円以下で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
-  }
-  if(args.usePoints && args.totalPrice && args.usePoints > args.totalPrice) {
-    throw new ConvexError({message: "使用ポイントは合計金額以下で入力してください", code: ERROR_CODES.INVALID_ARGUMENT});
-  }
-  if(args.usePoints && args.usePoints > MAX_USE_POINTS) {
-    throw new ConvexError({message: `使用ポイントは${MAX_USE_POINTS}ポイント以下で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
-  }
-  if(args.notes && args.notes.length > MAX_NOTES_LENGTH) {
-    throw new ConvexError({message: `備考は${MAX_NOTES_LENGTH}文字以内で入力してください`, code: ERROR_CODES.INVALID_ARGUMENT});
-  }
-
-}
+import {
+  handleConvexApiError,
+  removeEmptyFields,
+  trashRecord,
+  KillRecord,
+  authCheck,
+} from '../helpers';
+import { paginationOptsValidator } from 'convex/server';
+import { CONVEX_ERROR_CODES } from '../constants';
+import { reservationStatusType, paymentMethodType } from '../types';
+import { validateReservation } from '../validators';
 
 // 予約の追加
 export const add = mutation({
@@ -59,56 +33,73 @@ export const add = mutation({
     paymentMethod: v.optional(paymentMethodType),
   },
   handler: async (ctx, args) => {
-    try {
-      // 顧客の存在確認
-      const customer = await ctx.db.get(args.customerId);
-      if (!customer) {
-        console.error('指定された顧客が存在しません', args.customerId);
-        throw new ConvexError({
-          message: '指定された顧客が存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      // スタッフの存在確認
-      const staff = await ctx.db.get(args.staffId);
-      if (!staff) {
-        console.error('指定されたスタッフが存在しません', args.staffId);
-        throw new ConvexError({
-          message: '指定されたスタッフが存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      // メニューの存在確認
-      const menu = await ctx.db.get(args.menuId);
-      if (!menu) {
-        console.error('指定されたメニューが存在しません', args.menuId);
-        throw new ConvexError({
-          message: '指定されたメニューが存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      // サロンの存在確認
-      const salon = await ctx.db.get(args.salonId);
-      if (!salon) {
-        console.error('指定されたサロンが存在しません', args.salonId);
-        throw new ConvexError({
-          message: '指定されたサロンが存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      validateReservation(args);
-      const reservationId = await ctx.db.insert('reservation', {
-        ...args,
-        isArchive: false,
+    authCheck(ctx);
+    validateReservation(args);
+    // 顧客の存在確認
+    const customer = await ctx.db.get(args.customerId);
+    if (!customer) {
+      console.error('AddReservation: 指定された顧客が存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定された顧客が存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          customerId: args.customerId,
+        },
       });
-      return reservationId;
-    } catch (error) {
-      handleConvexApiError('予約の追加に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
     }
+
+    // スタッフの存在確認
+    const staff = await ctx.db.get(args.staffId);
+    if (!staff) {
+      console.error('AddReservation: 指定されたスタッフが存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定されたスタッフが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          staffId: args.staffId,
+        },
+      });
+    }
+
+    // メニューの存在確認
+    const menu = await ctx.db.get(args.menuId);
+    if (!menu) {
+      console.error('AddReservation: 指定されたメニューが存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定されたメニューが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          menuId: args.menuId,
+        },
+      });
+    }
+
+    // サロンの存在確認
+    const salon = await ctx.db.get(args.salonId);
+    if (!salon) {
+      console.error('AddReservation: 指定されたサロンが存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定されたサロンが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          salonId: args.salonId,
+        },
+      });
+    }
+
+    const reservationId = await ctx.db.insert('reservation', {
+      ...args,
+      isArchive: false,
+    });
+    return reservationId;
   },
 });
 
@@ -129,51 +120,55 @@ export const update = mutation({
     paymentMethod: v.optional(paymentMethodType),
   },
   handler: async (ctx, args) => {
-    try {
-      // 予約の存在確認
-      const reservation = await ctx.db.get(args.reservationId);
-      if (!reservation || reservation.isArchive) {
-        throw new ConvexError({
-          message: '指定された予約が存在しません',
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      const updateData = removeEmptyFields(args);
-      // reservationId はパッチ対象から削除する
-      delete updateData.reservationId;
-
-      validateReservation(updateData);
-
-      const newReservationId = await ctx.db.patch(args.reservationId, updateData);
-      return newReservationId;
-    } catch (error) {
-      handleConvexApiError('予約情報の更新に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
+    authCheck(ctx);
+    validateReservation(args);
+    // 予約の存在確認
+    const reservation = await ctx.db.get(args.reservationId);
+    if (!reservation || reservation.isArchive) {
+      console.error('UpdateReservation: 指定された予約が存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定された予約が存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          reservationId: args.reservationId,
+        },
+      });
     }
+
+    const updateData = removeEmptyFields(args);
+    // reservationId はパッチ対象から削除する
+    delete updateData.reservationId;
+
+    return await ctx.db.patch(args.reservationId, updateData);
   },
 });
 
 // 予約の削除
 export const trash = mutation({
   args: {
-    reservationId: v.id("reservation"),
+    reservationId: v.id('reservation'),
   },
   handler: async (ctx, args) => {
-    try {
-      // 予約の存在確認
-      const reservation = await ctx.db.get(args.reservationId);
-      if (!reservation) {
-        throw new ConvexError({
-          message: "指定された予約が存在しません",
-          code: ERROR_CODES.NOT_FOUND,
-        });
-      }
-
-      await trashRecord(ctx, reservation._id);
-      return true;
-    } catch (error) {
-      handleConvexApiError("予約のアーカイブに失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+    authCheck(ctx);
+    // 予約の存在確認
+    const reservation = await ctx.db.get(args.reservationId);
+    if (!reservation) {
+      console.error('TrashReservation: 指定された予約が存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定された予約が存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          reservationId: args.reservationId,
+        },
+      });
     }
+
+    await trashRecord(ctx, reservation._id);
+    return true;
   },
 });
 
@@ -197,36 +192,42 @@ export const upsert = mutation({
     paymentMethod: v.optional(paymentMethodType),
   },
   handler: async (ctx, args) => {
-    try {
-      const existingReservation = await ctx.db.get(args.reservationId);
-
-      validateReservation(args);
-      if (!existingReservation || existingReservation.isArchive) {
-        return await ctx.db.insert('reservation', {
-          ...args,
-          isArchive: false,
-        });
-      } else {
-        const updateData = removeEmptyFields(args);
-        delete updateData.reservationId;
-        return await ctx.db.patch(existingReservation._id, updateData);
-      }
-    } catch (error) {
-      handleConvexApiError('予約の追加/更新に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
+    authCheck(ctx);
+    validateReservation(args);
+    const existingReservation = await ctx.db.get(args.reservationId);
+    if (!existingReservation || existingReservation.isArchive) {
+      return await ctx.db.insert('reservation', {
+        ...args,
+        isArchive: false,
+      });
+    } else {
+      const updateData = removeEmptyFields(args);
+      delete updateData.reservationId;
+      return await ctx.db.patch(existingReservation._id, updateData);
     }
   },
 });
 
 export const kill = mutation({
   args: {
-    reservationId: v.id("reservation"),
+    reservationId: v.id('reservation'),
   },
   handler: async (ctx, args) => {
-    try {
-      await KillRecord(ctx, args.reservationId);
-    } catch (error) {
-      handleConvexApiError("予約の削除に失敗しました", ERROR_CODES.INTERNAL_ERROR, error);
+    authCheck(ctx);
+    const reservation = await ctx.db.get(args.reservationId);
+    if (!reservation) {
+      console.error('KillReservation: 指定された予約が存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定された予約が存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          reservationId: args.reservationId,
+        },
+      });
     }
+    return await KillRecord(ctx, args.reservationId);
   },
 });
 
@@ -238,6 +239,7 @@ export const getByCustomerId = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('reservation')
       .withIndex('by_customer_id', (q) =>
@@ -255,6 +257,7 @@ export const getByStaffId = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('reservation')
       .withIndex('by_staff_id', (q) =>
@@ -272,6 +275,7 @@ export const getByMenuId = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('reservation')
       .withIndex('by_menu_id', (q) =>
@@ -288,6 +292,7 @@ export const getBySalonId = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('reservation')
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
@@ -303,6 +308,7 @@ export const getByStatus = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('reservation')
       .withIndex('by_status', (q) =>
@@ -320,6 +326,7 @@ export const getBySalonAndDate = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('reservation')
       .withIndex('by_salon_date_archive', (q) =>
@@ -341,6 +348,7 @@ export const getByStaffAndDate = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('reservation')
       .withIndex('by_staff_date_archive', (q) =>
@@ -363,6 +371,7 @@ export const getByCustomerAndDate = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('reservation')
       .withIndex('by_customer_date_archive', (q) =>
@@ -384,6 +393,7 @@ export const getBySalonAndStatus = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    authCheck(ctx);
     return await ctx.db
       .query('reservation')
       .withIndex('by_status', (q) =>
