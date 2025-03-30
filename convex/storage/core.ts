@@ -3,10 +3,11 @@
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { GoogleStorageService } from '@/services/gcp/cloud_storage/GoogleStorageService';
-import { handleConvexApiError } from '../helpers';
-import { ERROR_CODES } from '../errors';
+import { authCheck } from '../helpers';
+import { CONVEX_ERROR_CODES } from '../constants';
 import { ImgDirectoryType } from '../types';
-import { STORAGE_URL } from '@/services/gcp/cloud_storage/constants';
+import { ConvexError } from 'convex/values';
+
 // GCSクライアントのシングルトンインスタンス
 const gcsClient = new GoogleStorageService();
 
@@ -25,45 +26,47 @@ export const uploadImage = action({
     directory: ImgDirectoryType,
   },
   handler: async (ctx, args) => {
-    try {
-      // ファイル名とMIMEタイプの検証
-      if (!args.filePath) {
-        handleConvexApiError('ファイル名が指定されていません', ERROR_CODES.VALIDATION_ERROR);
-        return { error: 'ファイル名が指定されていません' };
-      }
-
-      if (!args.contentType) {
-        handleConvexApiError('ファイルタイプが指定されていません', ERROR_CODES.VALIDATION_ERROR);
-        return { error: 'ファイルタイプが指定されていません' };
-      }
-
-      // Base64データをデコードしてバッファに変換
-      const binaryData = Buffer.from(args.base64Data, 'base64');
-
-      if (binaryData.length === 0) {
-        handleConvexApiError('ファイルデータが空です', ERROR_CODES.VALIDATION_ERROR);
-        return { error: 'ファイルデータが空です' };
-      }
-
-      console.log(
-        `アップロード処理開始: ファイル=${args.filePath}, タイプ=${args.contentType}, サイズ=${binaryData.length}バイト, ディレクトリ=${args.directory}`
-      );
-
-      // GCSにアップロード - Fileオブジェクトを使わずに直接バッファを渡す
-      const result = await gcsClient.uploadFileBuffer(
-        binaryData,
-        args.filePath,
-        args.contentType,
-        args.directory
-      );
-
-      console.log(`アップロード完了: ${result.filePath}`);
-
-      return result;
-    } catch (error) {
-      console.error('画像のアップロードに失敗しました', error);
-      handleConvexApiError('画像のアップロードに失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
+    authCheck(ctx);
+    // ファイル名とMIMEタイプの検証
+    if (!args.filePath) {
+      console.error('UploadImage: ファイル名が指定されていません', { ...args });
+      throw new ConvexError({
+        message: 'ファイル名が指定されていません',
+        code: CONVEX_ERROR_CODES.VALIDATION_ERROR,
+        severity: 'low',
+        status: 400,
+      });
     }
+
+    if (!args.contentType) {
+      console.error('UploadImage: ファイルタイプが指定されていません', { ...args });
+      throw new ConvexError({
+        message: 'ファイルタイプが指定されていません',
+        code: CONVEX_ERROR_CODES.VALIDATION_ERROR,
+        severity: 'low',
+        status: 400,
+      });
+    }
+
+    // Base64データをデコードしてバッファに変換
+    const binaryData = Buffer.from(args.base64Data, 'base64');
+
+    if (binaryData.length === 0) {
+      console.error('UploadImage: ファイルデータが空です', { ...args });
+      throw new ConvexError({
+        message: 'ファイルデータが空です',
+        code: CONVEX_ERROR_CODES.VALIDATION_ERROR,
+        severity: 'low',
+        status: 400,
+      });
+    }
+    // GCSにアップロード - Fileオブジェクトを使わずに直接バッファを渡す
+    return await gcsClient.uploadFileBuffer(
+      binaryData,
+      args.filePath,
+      args.contentType,
+      args.directory
+    );
   },
 });
 
@@ -76,12 +79,8 @@ export const deleteImage = action({
     imgUrl: v.string(),
   },
   handler: async (ctx, args) => {
-    try {
-      await gcsClient.deleteImage(args.imgUrl);
-      return { success: true };
-    } catch (error) {
-      console.error('画像の削除に失敗しました', error);
-      handleConvexApiError('画像の削除に失敗しました', ERROR_CODES.INTERNAL_ERROR, error);
-    }
+    authCheck(ctx);
+    await gcsClient.deleteImage(args.imgUrl);
+    return { success: true };
   },
 });
