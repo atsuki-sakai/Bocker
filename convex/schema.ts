@@ -261,7 +261,9 @@ export default defineSchema({
     afterHairimgPath: v.optional(v.string()), // 施術後の髪型画像ファイルパス
     notes: v.optional(v.string()), // メモ
     ...commonFields,
-  }).index('by_carte_id', ['carteId', 'isArchive']),
+  })
+    .index('by_carte_id_reservation_id', ['carteId', 'reservationId', 'isArchive'])
+    .index('by_carte_id', ['carteId', 'isArchive']),
 
   // =====================
   // STAFF
@@ -358,7 +360,6 @@ export default defineSchema({
   // クーポンテーブル
   coupon: defineTable({
     salonId: v.id('salon'),
-    menuIds: v.optional(v.array(v.id('menu'))), // 利用できるメニューID
     couponUId: v.optional(v.string()), // クーポン識別ID (8桁の大文字英語と数字)
     name: v.optional(v.string()), // クーポン名
     discountType: v.optional(v.union(v.literal('fixed'), v.literal('percentage'))), // 割引タイプ
@@ -367,9 +368,18 @@ export default defineSchema({
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
     ...commonFields,
   })
-    .index('by_salon_id', ['salonId', 'isActive', 'isArchive'])
-    .index('by_name', ['name', 'isActive', 'isArchive'])
+    .index('by_salon_id', ['salonId', 'isArchive'])
+    .index('by_name', ['name', 'isArchive'])
     .index('by_salon_coupon_uid', ['salonId', 'couponUId']),
+
+  coupon_available_menu: defineTable({
+    salonId: v.id('salon'), // サロンID
+    couponId: v.id('coupon'), // クーポンID
+    menuId: v.id('menu'), // メニューID
+    ...commonFields,
+  })
+    .index('by_salon_menu_id', ['salonId', 'menuId', 'isArchive'])
+    .index('by_salon_coupon_id_menu_id', ['salonId', 'couponId', 'menuId', 'isArchive']),
 
   // クーポンの設定テーブル
   coupon_config: defineTable({

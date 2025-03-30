@@ -1,6 +1,6 @@
-import { MutationCtx } from './_generated/server';
+import { MutationCtx, QueryCtx, ActionCtx } from './_generated/server';
 import { ConvexError } from 'convex/values';
-import { ERROR_CODES } from './errors';
+import { CONVEX_ERROR_CODES } from './constants';
 import { DataModel } from './_generated/dataModel';
 import { Id } from './_generated/dataModel';
 import { PropertyValidators } from 'convex/values';
@@ -15,7 +15,7 @@ import { v } from 'convex/values';
 // eslint-disable-next-line
 export function handleConvexApiError(
   message: string,
-  code: ERROR_CODES,
+  code: CONVEX_ERROR_CODES,
   error?: unknown,
   context: Record<string, any> = {}
 ) {
@@ -27,7 +27,7 @@ export function handleConvexApiError(
 
   // 元のエラーメッセージとコードを保持
   let originalMessage = '';
-  let originalCode: ERROR_CODES | undefined;
+  let originalCode: CONVEX_ERROR_CODES | undefined;
 
   // Errorオブジェクトの場合は詳細プロパティを取得
   if (error instanceof Error) {
@@ -79,7 +79,7 @@ export function handleConvexApiError(
       }
       // コードプロパティがあれば保存
       if ('code' in error) {
-        originalCode = (error as { code: ERROR_CODES }).code;
+        originalCode = (error as { code: CONVEX_ERROR_CODES }).code;
       }
     } catch (e) {
       errorDetails.stringifyFailed = true;
@@ -118,14 +118,12 @@ export function getCurrentUnixTime(addDays?: number) {
 /**
  * オブジェクトから undefined のデータを削除
  * @param object オブジェクト
- * @param emptyStringAsEmpty 空文字列を空として扱うかどうか
- * @param emptyStringAsNull 空文字列をnullに変換するかどうか
+ * @param emptyStringAsUndefined 空文字列をundefinedに変換するかどうか
  * @returns 削除後のオブジェクト
  */
 export const removeEmptyFields = <T extends Record<string, unknown>>(
   object: T,
-  emptyStringAsEmpty = false,
-  emptyStringAsNull = false
+  emptyStringAsUndefined = false
 ): Partial<T> => {
   const result: Partial<T> = {};
   for (const key of Object.keys(object) as (keyof T)[]) {
@@ -133,12 +131,9 @@ export const removeEmptyFields = <T extends Record<string, unknown>>(
     if (value !== undefined && value !== null) {
       // 空文字列の処理
       if (typeof value === 'string' && value.trim() === '') {
-        if (emptyStringAsEmpty) {
-          // 空文字列を空として扱う場合はスキップ
-          continue;
-        } else if (emptyStringAsNull) {
-          // 空文字列をnullとして扱う場合
-          result[key] = null as any;
+        if (emptyStringAsUndefined) {
+          // 空文字列をundefinedとして扱う場合
+          result[key] = undefined;
           continue;
         }
       }
@@ -148,7 +143,9 @@ export const removeEmptyFields = <T extends Record<string, unknown>>(
   if (Object.keys(result).length === 0) {
     throw new ConvexError({
       message: '更新するデータがありません',
-      code: ERROR_CODES.INVALID_ARGUMENT,
+      code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
+      status: 400,
+      severity: 'low',
     });
   }
   return result;
@@ -166,7 +163,9 @@ export async function trashRecord<T extends keyof DataModel>(ctx: MutationCtx, i
     console.error('指定されたレコードが存在しないか、アーカイブされています', id);
     throw new ConvexError({
       message: '指定されたレコードが存在しないか、アーカイブされています',
-      code: ERROR_CODES.NOT_FOUND,
+      code: CONVEX_ERROR_CODES.NOT_FOUND,
+      status: 404,
+      severity: 'low',
     });
   }
   // eslint-disable-next-line
@@ -188,7 +187,9 @@ export async function KillRecord<T extends keyof DataModel>(ctx: MutationCtx, id
     console.error('指定されたレコードが存在しないか、アーカイブされています', id);
     throw new ConvexError({
       message: '指定されたレコードが存在しないか、アーカイブされています',
-      code: ERROR_CODES.NOT_FOUND,
+      code: CONVEX_ERROR_CODES.NOT_FOUND,
+      status: 404,
+      severity: 'low',
     });
   }
   // eslint-disable-next-line
@@ -201,7 +202,6 @@ export async function KillRecord<T extends keyof DataModel>(ctx: MutationCtx, id
  * @param fieldsToExclude 除外するフィールド
  * @returns 除外後のフィールド
  */
-
 export function excludeFields(tableFields: PropertyValidators, fieldsToExclude: string[]) {
   const remainingFields = { ...tableFields };
   fieldsToExclude.forEach((field) => {
@@ -210,4 +210,19 @@ export function excludeFields(tableFields: PropertyValidators, fieldsToExclude: 
     }
   });
   return v.object(remainingFields);
+}
+
+export async function authCheck(ctx: MutationCtx | QueryCtx | ActionCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new ConvexError({
+      message: '未認証のユーザーは操作できません',
+      code: CONVEX_ERROR_CODES.AUTHENTICATION,
+      status: 401,
+      severity: 'high',
+      context: {
+        identity,
+      },
+    });
+  }
 }

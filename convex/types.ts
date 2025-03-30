@@ -17,6 +17,16 @@ export const dayOfWeekType = v.union(
   v.literal('sunday')
 );
 
+// TypeScriptでの曜日タイプ
+export type DayOfWeek = 
+  | 'monday' 
+  | 'tuesday' 
+  | 'wednesday' 
+  | 'thursday' 
+  | 'friday' 
+  | 'saturday' 
+  | 'sunday';
+
 // 性別の型定義
 export const genderType = v.union(v.literal('未設定'), v.literal('男性'), v.literal('女性'));
 
