@@ -200,25 +200,32 @@ export default function WeekHourSchedule() {
   // DBから取得したスケジュールデータを初期表示に反映
   useEffect(() => {
     if (salonWeekSchedules && Array.isArray(salonWeekSchedules) && salonWeekSchedules.length > 0) {
-      const newScheduleSettings = { ...weekScheduleData.scheduleSettings };
-      salonWeekSchedules.forEach((schedule) => {
-        if (schedule.dayOfWeek && typeof schedule.dayOfWeek === 'string') {
-          const dayOfWeek = schedule.dayOfWeek as DayOfWeek;
-          newScheduleSettings[dayOfWeek] = {
-            isOpen: schedule.isOpen ?? false,
-            startHour: schedule.startHour || '09:00',
-            endHour: schedule.endHour || '18:00',
-            scheduleId: schedule._id,
-          };
-        }
-      });
+      // 初期データロード時のみ反映するために、scheduleIdが設定されていない場合のみ更新する
+      const shouldUpdateSchedule = Object.values(weekScheduleData.scheduleSettings).some(
+        (setting) => !setting.scheduleId
+      );
 
-      setWeekScheduleData((prev) => ({
-        ...prev,
-        scheduleSettings: newScheduleSettings,
-      }));
+      if (shouldUpdateSchedule) {
+        const newScheduleSettings = { ...weekScheduleData.scheduleSettings };
+        salonWeekSchedules.forEach((schedule) => {
+          if (schedule.dayOfWeek && typeof schedule.dayOfWeek === 'string') {
+            const dayOfWeek = schedule.dayOfWeek as DayOfWeek;
+            newScheduleSettings[dayOfWeek] = {
+              isOpen: schedule.isOpen ?? false,
+              startHour: schedule.startHour || '09:00',
+              endHour: schedule.endHour || '18:00',
+              scheduleId: schedule._id,
+            };
+          }
+        });
+
+        setWeekScheduleData((prev) => ({
+          ...prev,
+          scheduleSettings: newScheduleSettings,
+        }));
+      }
     }
-  }, [salonWeekSchedules]);
+  }, [salonWeekSchedules]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 営業日変更時の処理
   const handleDayToggle = useCallback((day: DayOfWeek) => {
