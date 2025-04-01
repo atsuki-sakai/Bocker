@@ -1,8 +1,8 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-import Stripe from "stripe";
-import { BillingPeriod } from "@/lib/types";
-
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import Stripe from 'stripe';
+import { BillingPeriod } from '@/lib/types';
+import imageCompression from 'browser-image-compression';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -172,4 +172,80 @@ export async function fileToBase64(file: File): Promise<string> {
   });
 
   return base64Promise;
+}
+
+// 画像圧縮とWebP変換の関数を追加
+export async function compressAndConvertToWebP(
+  file: File,
+  options?: {
+    maxSizeMB?: number;
+    maxWidthOrHeight?: number;
+    webpQuality?: number;
+    useWebWorker?: boolean;
+  }
+): Promise<File> {
+  try {
+    // 画像を圧縮（デフォルト値を改善）
+    const compressionOptions = {
+      maxSizeMB: options?.maxSizeMB ?? 0.5, // 最大サイズを0.5MBに引き上げ（デフォルト）
+      maxWidthOrHeight: options?.maxWidthOrHeight ?? 1024, // 最大幅/高さを1024pxに引き上げ
+      useWebWorker: options?.useWebWorker ?? true,
+    };
+
+    const compressedFile = await imageCompression(file, compressionOptions);
+
+    // WebP形式に変換
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (!event.target?.result) {
+          reject(new Error('画像の読み込みに失敗しました'));
+          return;
+        }
+
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Canvasコンテキストの取得に失敗しました'));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0);
+
+          // WebP形式に変換（品質を0.9に向上）
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('WebP変換に失敗しました'));
+                return;
+              }
+
+              // 新しいファイル名を生成（元のファイル名の拡張子をwebpに変更）
+              const fileName = file.name.replace(/\.[^/.]+$/, '') + '.webp';
+
+              // Blobから新しいFileオブジェクトを作成
+              const webpFile = new File([blob], fileName, { type: 'image/webp' });
+              resolve(webpFile);
+            },
+            'image/webp',
+            options?.webpQuality ?? 0.8 // 品質を0.9に向上（デフォルト）
+          );
+        };
+
+        img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
+        img.src = event.target.result as string;
+      };
+
+      reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
+      reader.readAsDataURL(compressedFile);
+    });
+  } catch (error) {
+    console.error('画像圧縮/変換エラー:', error);
+    throw new Error('画像の圧縮または変換に失敗しました');
+  }
 }
