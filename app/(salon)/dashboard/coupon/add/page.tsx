@@ -30,7 +30,6 @@ import {
   AlertCircle,
   Menu,
   Plus,
-  Zap,
   Gift,
   Ticket,
 } from 'lucide-react';
@@ -65,7 +64,6 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MAX_COUPON_UID_LENGTH } from '@/lib/constants';
 // スキーマとタイプ定義
-type DiscountType = 'percentage' | 'fixed';
 
 const couponSchema = z.object({
   name: z.string().min(1, 'クーポン名を入力してください'),
@@ -194,7 +192,7 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
     if (!date) return '未設定';
     try {
       return format(date, 'yyyy/MM/dd', { locale: ja });
-    } catch (error) {
+    } catch {
       return '無効な日付';
     }
   };
@@ -264,11 +262,9 @@ function CouponForm() {
   const [selectedMenuIds, setSelectedMenuIds] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [step, setStep] = useState(1);
   const { salon } = useSalon();
   const addCoupon = useMutation(api.coupon.core.add);
   const addCouponConfig = useMutation(api.coupon.config.add);
-  const addCouponAvailableMenu = useMutation(api.coupon.coupon_available_menu.add);
   // フォーム管理
   const {
     register,
@@ -276,7 +272,7 @@ function CouponForm() {
     control,
     reset,
     watch,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useZodForm(couponSchema);
 
   // フォームの値を監視
@@ -322,9 +318,6 @@ function CouponForm() {
 
       // 注意: 現在のデモ実装では仮のメニューIDを使用しているため、
       // 実際の本番環境では、以下のコードは実際のメニューIDを使用するように修正が必要です
-
-      // 3. 実際のメニューのコンテキストがある場合に、対象メニューを登録する
-      // 現在のダミーメニューID（数値）では対応できないため、一時的にこの部分はスキップします
 
       // 本来は実際のメニューIDを使って以下のようなコードになります：
 
@@ -417,16 +410,7 @@ function CouponForm() {
             variants={fadeIn}
             className="bg-white rounded-lg p-6 shadow-sm border"
           >
-            <Accordion
-              type="single"
-              defaultValue="item-1"
-              collapsible
-              onValueChange={(value) => {
-                if (value === 'item-1') setStep(1);
-                else if (value === 'item-2') setStep(2);
-                else if (value === 'item-3') setStep(3);
-              }}
-            >
+            <Accordion type="single" defaultValue="item-1" collapsible>
               <AccordionItem value="item-1">
                 <AccordionTrigger className="text-lg font-medium">
                   <div className="flex items-center gap-3">
