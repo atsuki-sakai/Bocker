@@ -1,4 +1,5 @@
 import { DashboardSection } from '@/components/common';
+import Image from 'next/image';
 
 const dammmyMenus = [
   {
@@ -184,7 +185,13 @@ export default function MenuForm() {
                     {dammmyMenus.map((menu) => (
                       <tr key={menu.name}>
                         <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6">
-                          <img src={menu.imgPath} alt={menu.name} className="w-10 h-10" />
+                          <Image
+                            src={menu.imgPath}
+                            alt={menu.name}
+                            width={40}
+                            height={40}
+                            className="w-10 h-10 object-cover"
+                          />
                         </td>
                         <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6">
                           {menu.name}
