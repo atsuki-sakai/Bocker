@@ -90,7 +90,6 @@ export async function POST(req: Request) {
       const existingSalon = await retryOperation(() =>
         fetchQuery(api.salon.core.getClerkId, {
           clerkId: id,
-          secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
         }).catch((err) => {
           throw err;
         })
@@ -115,7 +114,6 @@ export async function POST(req: Request) {
                   clerkId: id,
                   email,
                   stripeCustomerId: customer.id,
-                  secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
                 })
               );
             } catch (convexError) {
@@ -162,7 +160,6 @@ export async function POST(req: Request) {
             id: existingSalon._id,
             email,
             stripeCustomerId: existingSalon.stripeCustomerId,
-            secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
           })
         );
       }
@@ -195,7 +192,6 @@ export async function POST(req: Request) {
         existingSalon = await retryOperation(() =>
           fetchQuery(api.salon.core.getClerkId, {
             clerkId: id,
-            secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
           })
         );
       } catch (error) {
@@ -231,7 +227,6 @@ export async function POST(req: Request) {
               clerkId: id,
               email,
               stripeCustomerId: existingSalon.stripeCustomerId,
-              secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
             })
           );
 
@@ -266,7 +261,6 @@ export async function POST(req: Request) {
               clerkId: id,
               email,
               stripeCustomerId: customer.id,
-              secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
             })
           );
         } catch (recoveryError) {
@@ -288,7 +282,6 @@ export async function POST(req: Request) {
         salonRecord = await retryOperation(() =>
           fetchQuery(api.salon.core.getClerkId, {
             clerkId: id,
-            secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
           })
         );
       } catch (error) {
@@ -328,7 +321,6 @@ export async function POST(req: Request) {
           await retryOperation(() =>
             fetchMutation(api.salon.core.trash, {
               id: salonRecord._id,
-              secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
             })
           );
         } catch (convexError) {
@@ -377,7 +369,6 @@ export async function POST(req: Request) {
         const existingSalon = await retryOperation(() =>
           fetchQuery(api.salon.core.getClerkId, {
             clerkId: id,
-            secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
           })
         );
 
@@ -402,7 +393,6 @@ export async function POST(req: Request) {
               clerkId: id,
               email,
               stripeCustomerId: existingSalon.stripeCustomerId,
-              secretToken: process.env.NEXT_PUBLIC_CONVEX_SECRET_TOKEN,
             })
           );
 
