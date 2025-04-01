@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     try {
       const body = await request.json();
       salonId = body.salonId;
-    } catch (error) {
+    } catch {
       // JSONでない場合は処理継続（後でsalonIdをチェック）
     }
 
