@@ -1,4 +1,77 @@
-export const STRIPE_API_VERSION = "2025-02-24.acacia";
+export const STRIPE_API_VERSION = '2025-02-24.acacia';
+
+export const SALON_SCHEDULE_INTERVAL_MINUTES = [5, 10, 15, 20, 30];
+export const SALON_SCHEDULE_HOURS = [
+  '00:00',
+  '01:00',
+  '02:00',
+  '03:00',
+  '04:00',
+  '05:00',
+  '06:00',
+  '07:00',
+  '08:00',
+  '09:00',
+  '10:00',
+  '11:00',
+  '12:00',
+  '13:00',
+  '15:00',
+  '16:00',
+  '17:00',
+  '18:00',
+  '19:00',
+  '20:00',
+  '21:00',
+  '22:00',
+  '23:00',
+];
+export const SALON_RESERVATION_CANCEL_LIMIT_DAYS = [
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+  '10',
+  '11',
+  '12',
+  '13',
+  '14',
+  '15',
+  '16',
+  '17',
+  '18',
+  '19',
+  '20',
+  '21',
+  '22',
+  '23',
+  '24',
+  '25',
+  '26',
+  '27',
+  '28',
+  '29',
+  '30',
+];
+export const SALON_RESERVATION_LIMIT_DAYS = [
+  '30',
+  '60',
+  '90',
+  '120',
+  '150',
+  '180',
+  '210',
+  '240',
+  '270',
+  '300',
+  '330',
+  '360',
+];
 
 // 価格設定（月額）
 const MONTHLY_PRICES = {
@@ -17,13 +90,9 @@ const YEARLY_PRICES = {
 // Stripe Subscription Plans
 export const SUBSCRIPTION_PLANS = {
   LITE: {
-    id: "lite",
-    name: "Lite",
-    features: [
-      "予約カレンダー基本機能",
-      "最大3名までのスタッフ管理",
-      "基本的なお客様情報管理",
-    ],
+    id: 'lite',
+    name: 'Lite',
+    features: ['予約カレンダー基本機能', '最大3名までのスタッフ管理', '基本的なお客様情報管理'],
     monthly: {
       priceId: process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID!,
       price: MONTHLY_PRICES.LITE,
@@ -35,13 +104,13 @@ export const SUBSCRIPTION_PLANS = {
     },
   },
   PRO: {
-    id: "pro",
-    name: "Pro",
+    id: 'pro',
+    name: 'Pro',
     features: [
-      "Liteプランの全機能",
-      "最大8名までのスタッフ管理",
-      "詳細な顧客管理機能",
-      "予約自動リマインド",
+      'Liteプランの全機能',
+      '最大8名までのスタッフ管理',
+      '詳細な顧客管理機能',
+      '予約自動リマインド',
     ],
     monthly: {
       priceId: process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID!,
@@ -54,14 +123,14 @@ export const SUBSCRIPTION_PLANS = {
     },
   },
   ENTERPRISE: {
-    id: "enterprise",
-    name: "Enterprise",
+    id: 'enterprise',
+    name: 'Enterprise',
     features: [
-      "Proプランの全機能",
-      "スタッフ人数無制限",
-      "高度な予約分析と統計",
-      "カスタマーサポート優先対応",
-      "ポイント機能",
+      'Proプランの全機能',
+      'スタッフ人数無制限',
+      '高度な予約分析と統計',
+      'カスタマーサポート優先対応',
+      'ポイント機能',
     ],
     monthly: {
       priceId: process.env.NEXT_PUBLIC_ENTRPIS_MONTHLY_PRC_ID!,
@@ -72,7 +141,7 @@ export const SUBSCRIPTION_PLANS = {
       price: YEARLY_PRICES.ENTERPRISE,
       savingPercent: 20,
     },
-  }
+  },
 };
 
 // Staff Auth
@@ -108,7 +177,7 @@ export const LIMIT_USE_COUPON_COUNT = 10000;
 // テキストの最大文字数
 export const MAX_TEXT_LENGTH = 255;
 // クーポン識別IDの文字数
-export const MAX_COUPON_UID_LENGTH = 8;
+export const MAX_COUPON_UID_LENGTH = 24;
 // タグの最大文字数
 export const MAX_TAG_LENGTH = 20;
 // タグの最大数
@@ -135,3 +204,13 @@ export const MAX_HOURLY_RATE = 100000;
 export const MAX_EXTRA_CHARGE = 100000;
 // 優先度の最大値
 export const MAX_PRIORITY = 100;
+
+// UI
+export const POINT_EXPIRATION_DAYS = [
+  { value: 365, label: '1年' },
+  { value: 730, label: '2年' },
+  { value: 1095, label: '3年' },
+  { value: 1460, label: '4年' },
+  { value: 1825, label: '5年' },
+  { value: Infinity, label: '無制限' },
+];

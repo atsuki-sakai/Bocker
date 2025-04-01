@@ -63,21 +63,17 @@ export default function SubscriptionForm({
     async (planStr: string, billingPeriod: BillingPeriod) => {
       try {
         setIsSubmitting(true);
-        const preview = await getSubscriptionUpdatePreview({
+        // previewデータを取得し状態を更新
+        const result = await getSubscriptionUpdatePreview({
           subscriptionId: salon?.subscriptionId ?? '',
           newPriceId: getPriceStrFromPlanAndPeriod(planStr, billingPeriod),
           customerId: salon?.stripeCustomerId ?? '',
         });
 
-        if (preview.success) {
-          // @ts-expect-error Stripeの返却型と自前の型が完全に一致しないため
-          setPreviewData({ ...preview, status: preview.status });
-          setShowConfirmDialog(true);
-        } else {
-          const errorMessage = preview.error || 'プレビューの取得に失敗しました';
-          setError(errorMessage);
-          toast.error(errorMessage);
-        }
+        // プレビューデータを設定
+        setPreviewData(result as StripePreviewData);
+        // ダイアログを表示
+        setShowConfirmDialog(true);
       } catch (err) {
         console.error('Preview error:', err);
         const errorMessage =
@@ -107,10 +103,6 @@ export default function SubscriptionForm({
 
         if (result.success) {
           toast.success('サブスクリプションを更新しました');
-        } else {
-          const errorMessage = result.error || 'サブスクリプションの更新に失敗しました';
-          setError(errorMessage);
-          toast.error(errorMessage);
         }
       } catch (err) {
         console.error('Update confirmation error:', err);

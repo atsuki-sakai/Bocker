@@ -1,4 +1,5 @@
+import MenuForm from './menuForm';
 
 export default function MenuPage() {
-  return <div>MenuPage</div>;
+  return <MenuForm />;
 }

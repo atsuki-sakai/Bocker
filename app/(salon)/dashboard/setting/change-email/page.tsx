@@ -38,19 +38,18 @@ import {
 // メールアドレス変更用のバリデーションスキーマ
 const changeEmailSchema = z
   .object({
-    currentPassword: z.string().min(6, "現在のパスワードを入力してください"),
     newEmail: z
       .string()
-      .email("有効なメールアドレスを入力してください")
-      .min(1, "メールアドレスを入力してください"),
+      .email('有効なメールアドレスを入力してください')
+      .min(1, 'メールアドレスを入力してください'),
     confirmNewEmail: z
       .string()
-      .email("有効なメールアドレスを入力してください")
-      .min(1, "確認用メールアドレスを入力してください"),
+      .email('有効なメールアドレスを入力してください')
+      .min(1, '確認用メールアドレスを入力してください'),
   })
   .refine((data) => data.newEmail === data.confirmNewEmail, {
-    message: "新しいメールアドレスと確認用メールアドレスが一致しません",
-    path: ["confirmNewEmail"],
+    message: '新しいメールアドレスと確認用メールアドレスが一致しません',
+    path: ['confirmNewEmail'],
   });
 
 // パスワードトグルボタンのコンポーネント（パフォーマンス向上のためmemo化）

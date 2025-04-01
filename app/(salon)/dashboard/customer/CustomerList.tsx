@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
-import { api } from "@/convex/_generated/api";
-import { usePaginatedQuery } from "convex/react";
+import { api } from '@/convex/_generated/api';
+import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import {
   Card,
   CardContent,
@@ -88,11 +88,11 @@ export default function CustomerList({ id, searchParams }: CustomerListProps) {
     results: customers,
     loadMore,
     status,
-  } = usePaginatedQuery(
+  } = useStablePaginatedQuery(
     api.customer.core.customersBySalonId,
-    { 
-      salonId: id as Id<"salon">, 
-      direction: sortDirection as "asc" | "desc"
+    {
+      salonId: id as Id<'salon'>,
+      direction: sortDirection as 'asc' | 'desc',
     },
     { initialNumItems: 10 }
   );

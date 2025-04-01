@@ -1,4 +1,5 @@
+import PointForm from './PointForm';
 
 export default function PointPage() {
-  return <div>PointPage</div>;
+  return <PointForm />;
 }
