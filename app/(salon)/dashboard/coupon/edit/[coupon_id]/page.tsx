@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
-import { UseFormRegister, FieldErrors, Controller } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { api } from '@/convex/_generated/api';
 import { useQuery, useMutation } from 'convex/react';
@@ -9,13 +9,10 @@ import { useZodForm } from '@/hooks/useZodForm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { use } from 'react';
-import type { Usable } from 'react';
 
 // コンポーネントのインポート
 import { DashboardSection } from '@/components/common';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import {
   CalendarIcon,
   Edit,
@@ -62,8 +59,7 @@ import {
 import type { Id } from '@/convex/_generated/dataModel';
 import { handleError } from '@/lib/errors';
 import { toast } from 'sonner';
-// スキーマとタイプ定義
-type DiscountType = 'percentage' | 'fixed';
+import { ZodTextField } from '@/components/common';
 
 const couponSchema = z.object({
   name: z.string().min(1, 'クーポン名を入力してください'),
@@ -101,58 +97,32 @@ const fadeIn = {
   exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
 };
 
-// ZodTextField コンポーネント - 再利用可能なフォームフィールド
-function ZodTextField({
-  register,
-  errors,
-  name,
-  label,
-  type = 'text',
-  icon,
-  placeholder,
-  className,
-}: {
-  register: UseFormRegister<z.infer<typeof couponSchema>>;
-  errors: FieldErrors<z.infer<typeof couponSchema>>;
-  name: keyof z.infer<typeof couponSchema>;
-  label: string;
-  type?: string;
-  icon?: React.ReactNode;
-  placeholder?: string;
-  className?: string;
-}) {
+interface PageProps {
+  params: Promise<{ coupon_id: Id<'coupon'> }>;
+}
+// ページコンポーネント
+export default async function Page({ params }: PageProps) {
+  const { coupon_id } = await params;
   return (
-    <div className={`flex flex-col gap-2 ${className}`}>
-      <Label htmlFor={name} className="flex items-center gap-2 text-gray-700">
-        {icon}
-        {label}
-      </Label>
-      <div className="relative">
-        <Input
-          id={name}
-          type={type}
-          {...register(name, {
-            valueAsNumber: type === 'number',
-          })}
-          placeholder={placeholder}
-          className={`${errors[name] ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-        />
-      </div>
-      <AnimatePresence>
-        {errors[name] && (
-          <motion.p
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            variants={fadeIn}
-            className="mt-1 text-sm text-red-500 flex items-center gap-1"
-          >
-            <AlertCircle size={14} />
-            {errors[name]?.message}
-          </motion.p>
-        )}
-      </AnimatePresence>
-    </div>
+    <DashboardSection
+      title="クーポンを編集"
+      backLink="/dashboard/coupon"
+      backLinkTitle="クーポン一覧へ戻る"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col gap-6"
+      >
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-gray-500">クーポン情報を編集して保存できます。</p>
+          <Separator className="my-2" />
+        </div>
+
+        <CouponForm couponId={coupon_id} />
+      </motion.div>
+    </DashboardSection>
   );
 }
 
@@ -162,7 +132,7 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
     if (!date) return '未設定';
     try {
       return format(date, 'yyyy/MM/dd', { locale: ja });
-    } catch (error) {
+    } catch {
       return '無効な日付';
     }
   };
@@ -243,13 +213,11 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
   const updateCouponConfig = useMutation(api.coupon.config.update);
 
   // フォーム管理
-  // フォーム管理
   const {
     register,
     handleSubmit,
     control,
     reset,
-    setValue,
     watch,
     formState: { isSubmitting, errors, isDirty },
   } = useZodForm(couponSchema);
@@ -269,7 +237,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     console.log('selectedMenuIds', selectedMenuIds);
 
     try {
-      const newCouponId = await updateCoupon({
+      await updateCoupon({
         couponId: couponId,
         couponUid: coupon?.couponUid,
         name: submitData.name,
@@ -291,8 +259,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
       toast.success('クーポンを更新しました');
       router.push(`/dashboard/coupon`);
     } catch (e) {
-      const { message, code, status, severity, context } = handleError(e);
-      toast.error(message);
+      const { message: errorMessage } = handleError(e);
+      toast.error(errorMessage);
     }
   };
 
@@ -732,32 +700,5 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         </div>
       </div>
     </form>
-  );
-}
-
-// ページコンポーネント
-export default function Page({ params }: { params: Usable<{ coupon_id: string }> }) {
-  const unwrappedParams = use(params);
-
-  return (
-    <DashboardSection
-      title="クーポンを編集"
-      backLink="/dashboard/coupon"
-      backLinkTitle="クーポン一覧へ戻る"
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col gap-6"
-      >
-        <div className="flex flex-col gap-2">
-          <p className="text-sm text-gray-500">クーポン情報を編集して保存できます。</p>
-          <Separator className="my-2" />
-        </div>
-
-        <CouponForm couponId={unwrappedParams.coupon_id as Id<'coupon'>} />
-      </motion.div>
-    </DashboardSection>
   );
 }
