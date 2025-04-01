@@ -9,6 +9,7 @@ import SalonApiConfigForm from './_components/SalonApiConfigForm';
 import SalonScheduleForm from './_components/SalonScheduleForm';
 import WeekHourSchedule from './_components/WeekHourSchedule';
 import SalonExceptionScheduleForm from './_components/SalonExceptionScheduleForm';
+import StripeConnectStatus from './_components/StripeConnectStatus';
 
 export default function SettingPage() {
   const { salonId } = useSalon();
@@ -51,6 +52,12 @@ export default function SettingPage() {
           >
             休業日設定
           </TabsTrigger>
+          <TabsTrigger
+            value="payment"
+            className="data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300"
+          >
+            決済設定
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic" className="mt-0">
@@ -67,6 +74,9 @@ export default function SettingPage() {
         </TabsContent>
         <TabsContent value="exception-schedule" className="mt-0">
           <SalonExceptionScheduleForm />
+        </TabsContent>
+        <TabsContent value="payment" className="mt-0">
+          <StripeConnectStatus />
         </TabsContent>
       </Tabs>
     </DashboardSection>

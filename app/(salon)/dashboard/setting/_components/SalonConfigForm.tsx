@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { handleError } from '@/lib/errors';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FormField } from '@/components/common';
+import { compressAndConvertToWebP } from '@/lib/utils';
 import {
   Mail,
   Phone,
@@ -62,6 +63,7 @@ export default function SalonConfigForm() {
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [connectedAccountId, setConnectedAccountId] = useState<string | null>(null);
 
   const salonConfig = useQuery(api.salon.config.get, salonId ? { salonId } : 'skip');
   const updateSalonConfig = useMutation(api.salon.config.upsert);
@@ -128,14 +130,20 @@ export default function SalonConfigForm() {
           await deleteImage({ imgUrl: salonConfig.imgPath });
         }
 
-        const base64Data = await fileToBase64(currentFile);
-        const filePath = `${Date.now()}-${currentFile.name}`;
+        // 画像を圧縮してWebP形式に変換
+        const processedFile = await compressAndConvertToWebP(currentFile);
+        console.log(
+          `元のサイズ: ${currentFile.size / 1024} KB, 圧縮後: ${processedFile.size / 1024} KB`
+        );
+
+        const base64Data = await fileToBase64(processedFile);
+        const filePath = `${Date.now()}-${processedFile.name}`;
 
         const data = await uploadImage({
           directory: 'salon',
           base64Data,
           filePath,
-          contentType: currentFile.type,
+          contentType: processedFile.type,
         });
 
         if (data && 'publicUrl' in data) {
@@ -211,6 +219,7 @@ export default function SalonConfigForm() {
     return <Loading />;
   }
 
+  console.log('connectedAccountId', connectedAccountId);
   return (
     <motion.div
       className=""
@@ -248,6 +257,7 @@ export default function SalonConfigForm() {
                 transition={{ duration: 0.2 }}
               >
                 <ImageDrop
+                  maxSizeMB={4}
                   onFileSelect={(file) => {
                     setCurrentFile(file);
                   }}
