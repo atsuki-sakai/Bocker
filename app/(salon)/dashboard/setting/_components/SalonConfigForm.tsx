@@ -63,7 +63,6 @@ export default function SalonConfigForm() {
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [connectedAccountId, setConnectedAccountId] = useState<string | null>(null);
 
   const salonConfig = useQuery(api.salon.config.get, salonId ? { salonId } : 'skip');
   const updateSalonConfig = useMutation(api.salon.config.upsert);
@@ -219,7 +218,6 @@ export default function SalonConfigForm() {
     return <Loading />;
   }
 
-  console.log('connectedAccountId', connectedAccountId);
   return (
     <motion.div
       className=""
