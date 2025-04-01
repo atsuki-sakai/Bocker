@@ -1,6 +1,6 @@
-import { mutation, query } from "./../_generated/server";
-import { v } from "convex/values";
-import { ConvexError } from "convex/values";
+import { mutation, query } from './../_generated/server';
+import { v } from 'convex/values';
+import { ConvexError } from 'convex/values';
 import { removeEmptyFields, trashRecord, KillRecord, authCheck } from './../helpers';
 import { paginationOptsValidator } from 'convex/server';
 import { CONVEX_ERROR_CODES } from './../constants';
@@ -11,7 +11,7 @@ import { validateCoupon } from './../validators';
 export const add = mutation({
   args: {
     salonId: v.id('salon'),
-    couponUId: v.optional(v.string()),
+    couponUid: v.optional(v.string()),
     name: v.optional(v.string()),
     discountType: v.optional(couponDiscountType),
     percentageDiscountValue: v.optional(v.number()),
@@ -43,12 +43,20 @@ export const add = mutation({
   },
 });
 
+export const getById = query({
+  args: {
+    couponId: v.id('coupon'),
+  },
+  handler: async (ctx, args) => {
+    authCheck(ctx);
+    return await ctx.db.get(args.couponId);
+  },
+});
 // クーポン情報の更新
 export const update = mutation({
   args: {
     couponId: v.id('coupon'),
-    menuIds: v.optional(v.array(v.id('menu'))),
-    couponUId: v.optional(v.string()),
+    couponUid: v.optional(v.string()),
     name: v.optional(v.string()),
     discountType: v.optional(couponDiscountType),
     percentageDiscountValue: v.optional(v.number()),
@@ -113,8 +121,7 @@ export const upsert = mutation({
   args: {
     couponId: v.id('coupon'),
     salonId: v.id('salon'),
-    menuIds: v.optional(v.array(v.id('menu'))),
-    couponUId: v.optional(v.string()),
+    couponUid: v.optional(v.string()),
     name: v.optional(v.string()),
     discountType: v.optional(couponDiscountType),
     percentageDiscountValue: v.optional(v.number()),
@@ -158,12 +165,28 @@ export const kill = mutation({
         },
       });
     }
+    const couponConfig = await ctx.db
+      .query('coupon_config')
+      .withIndex('by_coupon_id', (q) => q.eq('couponId', args.couponId))
+      .first();
+    if (!couponConfig) {
+      console.error('KillCoupon: 指定されたクーポン設定が存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定されたクーポン設定が存在しません',
+      });
+    }
     await KillRecord(ctx, args.couponId);
+    await KillRecord(ctx, couponConfig._id);
+
+    return {
+      deletedCouponId: args.couponId,
+      deletedCouponConfigId: couponConfig._id,
+    };
   },
 });
 
 // サロンIDからクーポン一覧を取得
-export const getBySalonId = query({
+export const getAllBySalonId = query({
   args: {
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
@@ -178,17 +201,17 @@ export const getBySalonId = query({
 });
 
 // クーポンUIDからクーポン情報を取得
-export const getByCouponUId = query({
+export const getByCouponUid = query({
   args: {
     salonId: v.id('salon'),
-    couponUId: v.string(),
+    couponUid: v.string(),
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
     return await ctx.db
       .query('coupon')
       .withIndex('by_salon_coupon_uid', (q) =>
-        q.eq('salonId', args.salonId).eq('couponUId', args.couponUId)
+        q.eq('salonId', args.salonId).eq('couponUid', args.couponUid)
       )
       .first();
   },

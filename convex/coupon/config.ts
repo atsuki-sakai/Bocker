@@ -1,13 +1,14 @@
-import { mutation, query } from "./../_generated/server";
-import { v } from "convex/values";
-import { ConvexError } from "convex/values";
+import { mutation, query } from './../_generated/server';
+import { v } from 'convex/values';
+import { ConvexError } from 'convex/values';
 import { removeEmptyFields, trashRecord, KillRecord, authCheck } from './../helpers';
 import { CONVEX_ERROR_CODES } from './../constants';
 import { validateCouponConfig } from './../validators';
-
+import { paginationOptsValidator } from 'convex/server';
 // クーポン設定の追加
 export const add = mutation({
   args: {
+    salonId: v.id('salon'),
     couponId: v.id('coupon'),
     startDate_unix: v.optional(v.number()),
     endDate_unix: v.optional(v.number()),
@@ -17,29 +18,27 @@ export const add = mutation({
   handler: async (ctx, args) => {
     authCheck(ctx);
     validateCouponConfig(args);
-
-    // クーポンの存在確認
-    const coupon = await ctx.db.get(args.couponId);
-    if (coupon) {
-      console.error('AddCouponConfig: 指定されたクーポンはすでに存在します', { ...args });
-      throw new ConvexError({
-        message: '指定されたクーポンはすでに存在します',
-        code: CONVEX_ERROR_CODES.DUPLICATE_RECORD,
-        status: 400,
-        severity: 'low',
-        context: {
-          couponId: args.couponId,
-        },
-      });
-    }
     const couponConfigId = await ctx.db.insert('coupon_config', {
       ...args,
+      salonId: args.salonId,
       isArchive: false,
     });
     return couponConfigId;
   },
 });
 
+export const get = query({
+  args: {
+    couponId: v.id('coupon'),
+  },
+  handler: async (ctx, args) => {
+    authCheck(ctx);
+    return await ctx.db
+      .query('coupon_config')
+      .withIndex('by_coupon_id', (q) => q.eq('couponId', args.couponId).eq('isArchive', false))
+      .first();
+  },
+});
 // クーポン設定の更新
 export const update = mutation({
   args: {
@@ -107,6 +106,7 @@ export const trash = mutation({
 
 export const upsert = mutation({
   args: {
+    salonId: v.id('salon'),
     couponConfigId: v.id('coupon_config'),
     couponId: v.id('coupon'),
     startDate_unix: v.optional(v.number()),
@@ -157,15 +157,16 @@ export const kill = mutation({
 });
 
 // クーポンIDからクーポン設定を取得
-export const getByCouponId = query({
+export const getAllByCouponId = query({
   args: {
     couponId: v.id('coupon'),
+    paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
     return await ctx.db
       .query('coupon_config')
       .withIndex('by_coupon_id', (q) => q.eq('couponId', args.couponId).eq('isArchive', false))
-      .first();
+      .paginate(args.paginationOpts);
   },
 });
