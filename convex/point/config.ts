@@ -51,23 +51,10 @@ export const get = query({
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
-    const salonMenuPointConfig = await ctx.db
-      .query('point_config')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
-      .first();
-    if (!salonMenuPointConfig) {
-      console.error('GetPointConfig: 指定されたサロンのポイント設定が見つかりません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンのポイント設定が見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
-      });
-    }
-    return salonMenuPointConfig;
+      return await ctx.db
+        .query('point_config')
+        .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+        .first();
   },
 });
 
