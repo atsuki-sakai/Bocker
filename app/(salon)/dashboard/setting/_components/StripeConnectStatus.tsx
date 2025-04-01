@@ -89,7 +89,10 @@ export default function StripeConnectStatus() {
   );
 
   // API呼び出しの共通処理
-  const fetchApi = async <T,>(url: string, data: any): Promise<{ data?: T; error?: string }> => {
+  const fetchApi = async <T,>(
+    url: string,
+    data: Record<string, unknown>
+  ): Promise<{ data?: T; error?: string }> => {
     setIsLoading(true);
     try {
       const response = await fetch(url, {
@@ -138,7 +141,7 @@ export default function StripeConnectStatus() {
   const handleConnectStripe = async () => {
     if (!salonId) return;
 
-    const { data, error } = await fetchApi<{ account: string; accountLink: string }>(
+    const { data } = await fetchApi<{ account: string; accountLink: string }>(
       '/api/stripe/connect',
       { salonId }
     );
