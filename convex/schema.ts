@@ -92,7 +92,9 @@ export default defineSchema({
   // サロンテーブル
   salon: defineTable({
     clerkId: v.string(), // ClerkのユーザーID
-    stripeConnectId: v.optional(v.string()), // StripeConnect連携アカウントID ※未実装
+    stripeConnectId: v.optional(v.string()), // StripeConnect連携アカウントID
+    stripeConnectStatus: v.optional(v.string()), // StripeConnect連携状態
+    stripeConnectCreatedAt: v.optional(v.string()), // StripeConnect作成日時
     stripeCustomerId: v.optional(v.string()), // Stripe顧客ID
     email: v.optional(v.string()), // Emailアドレス
     subscriptionId: v.optional(v.string()), // 現在のサブスクリプションID
@@ -335,7 +337,6 @@ export default defineSchema({
     description: v.optional(v.string()), // 説明
     couponIds: v.optional(v.array(v.id('coupon'))), // 使用可能なクーポンID
     targetGender: v.optional(genderType), // 対象性別
-    availableStaffIds: v.optional(v.array(v.id('staff'))), // 施術可能なスタッフID
     tags: v.optional(v.array(v.string())), // タグ
     paymentMethod: v.optional(menuPaymentMethodType), // 許可する支払い方法
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
@@ -354,13 +355,21 @@ export default defineSchema({
       filterFields: ['category', 'description', 'isActive', 'isArchive'],
     }),
 
+  menu_available_staff: defineTable({
+    salonId: v.id('salon'), // サロンID
+    menuId: v.id('menu'), // メニューID
+    staffId: v.id('staff'), // スタッフID
+    staffName: v.optional(v.string()), // スタッフ名
+    ...commonFields,
+  }).index('by_salon_menu_staff', ['salonId', 'menuId', 'staffId', 'isArchive']),
+
   // =====================
   // COUPON
   // =====================
   // クーポンテーブル
   coupon: defineTable({
     salonId: v.id('salon'),
-    couponUId: v.optional(v.string()), // クーポン識別ID (8桁の大文字英語と数字)
+    couponUid: v.optional(v.string()), // クーポン識別ID (8桁の大文字英語と数字)
     name: v.optional(v.string()), // クーポン名
     discountType: v.optional(v.union(v.literal('fixed'), v.literal('percentage'))), // 割引タイプ
     percentageDiscountValue: v.optional(v.number()), // 割引率
@@ -370,7 +379,7 @@ export default defineSchema({
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_name', ['name', 'isArchive'])
-    .index('by_salon_coupon_uid', ['salonId', 'couponUId']),
+    .index('by_salon_coupon_uid', ['salonId', 'couponUid']),
 
   coupon_available_menu: defineTable({
     salonId: v.id('salon'), // サロンID
@@ -383,13 +392,16 @@ export default defineSchema({
 
   // クーポンの設定テーブル
   coupon_config: defineTable({
+    salonId: v.id('salon'), // サロンID
     couponId: v.id('coupon'), // クーポンID
     startDate_unix: v.optional(v.number()), // 開始日 UNIXタイム
     endDate_unix: v.optional(v.number()), // 終了日 UNIXタイム
     maxUseCount: v.optional(v.number()), // 最大利用回数
     numberOfUse: v.optional(v.number()), // 現在の利用回数
     ...commonFields,
-  }).index('by_coupon_id', ['couponId', 'isArchive']),
+  })
+    .index('by_salon_coupon_id', ['salonId', 'couponId', 'isArchive'])
+    .index('by_coupon_id', ['couponId', 'isArchive']),
 
   // クーポン取引テーブル
   coupon_transaction: defineTable({
@@ -442,13 +454,19 @@ export default defineSchema({
   // サロンのポイント基本設定テーブル
   point_config: defineTable({
     salonId: v.id('salon'),
-    menuIds: v.optional(v.array(v.id('menu'))), // 適用されるメニューID
     isFixedPoint: v.optional(v.boolean()), // 固定ポイントかどうか
     pointRate: v.optional(v.number()), // ポイント付与率 (例: 0.1なら10%)
     fixedPoint: v.optional(v.number()), // 固定ポイント (例: 100円につき1ポイント)
     pointExpirationDays: v.optional(v.number()), // ポイントの有効期限(日)
     ...commonFields,
   }).index('by_salon_id', ['salonId', 'isArchive']),
+
+  point_config_available_menu: defineTable({
+    salonId: v.id('salon'), // サロンID
+    pointConfigId: v.id('point_config'), // ポイント基本設定ID
+    menuId: v.id('menu'), // メニューID
+    ...commonFields,
+  }).index('by_salon_point_config_menu', ['salonId', 'pointConfigId', 'menuId', 'isArchive']),
 
   // ポイント付与キュー (定期処理で実行後に削除)
   point_task_queue: defineTable({

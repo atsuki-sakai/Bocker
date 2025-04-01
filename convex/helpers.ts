@@ -212,7 +212,10 @@ export function excludeFields(tableFields: PropertyValidators, fieldsToExclude: 
   return v.object(remainingFields);
 }
 
-export async function authCheck(ctx: MutationCtx | QueryCtx | ActionCtx) {
+export async function authCheck(ctx: MutationCtx | QueryCtx | ActionCtx, skip: boolean = false) {
+  if (skip) {
+    return;
+  }
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new ConvexError({

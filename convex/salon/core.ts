@@ -4,9 +4,11 @@ import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
 import { CONVEX_ERROR_CODES } from '../constants';
-import { Doc } from '../_generated/dataModel';
-import { handleConvexApiError, removeEmptyFields, trashRecord, authCheck } from '../helpers';
+import { Doc, Id } from '../_generated/dataModel';
+import { removeEmptyFields, trashRecord, authCheck } from '../helpers';
 import { validateSalon } from '../validators';
+
+// FIXME: Webhookで使用するためのクエリを簡易的にskipしているので、セキュリティーに不安がある
 
 export const add = mutation({
   args: {
@@ -15,7 +17,7 @@ export const add = mutation({
     stripeCustomerId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    authCheck(ctx, true);
     validateSalon(args);
     // 既存ユーザーの検索
     const existingSalon = await ctx.db
@@ -78,7 +80,7 @@ export const update = mutation({
     stripeCustomerId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    authCheck(ctx, true);
     validateSalon(args);
     // サロンの存在確認
     const salon = await ctx.db.get(args.id);
@@ -167,7 +169,7 @@ export const getClerkId = query({
     clerkId: v.string(),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    authCheck(ctx, true);
     validateSalon(args);
     // 指定されたClerk IDを持つサロンを検索
     return await ctx.db

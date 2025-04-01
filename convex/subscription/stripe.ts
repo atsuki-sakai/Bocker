@@ -126,38 +126,3 @@ export const confirmSubscriptionUpdate = action({
     };
   },
 });
-
-export const updateCustomerEmail = action({
-  args: {
-    customerId: v.string(),
-    newEmail: v.string(),
-  },
-  handler: async (ctx, args) => {
-    authCheck(ctx);
-
-    // Stripe クライアントの初期化
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-      apiVersion: STRIPE_API_VERSION,
-    });
-
-    try {
-      // 顧客のメールアドレスを更新
-      const updatedCustomer = await stripe.customers.update(args.customerId, {
-        email: args.newEmail,
-      });
-
-      return {
-        success: true,
-        customer: updatedCustomer,
-      };
-    } catch (error) {
-      console.error('Stripe の顧客メールアドレス更新に失敗しました', error, { ...args });
-      throw new ConvexError({
-        message: 'Stripe の顧客メールアドレス更新に失敗しました',
-        code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-        severity: 'low',
-        status: 400,
-      });
-    }
-  },
-});

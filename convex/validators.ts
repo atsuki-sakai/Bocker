@@ -236,9 +236,12 @@ export function validateCoupon(args: Partial<Doc<'coupon'>>) {
       status: 400,
     });
   }
-  if (args.couponUId && args.couponUId.length !== MAX_COUPON_UID_LENGTH) {
+  if (
+    args.couponUid &&
+    (args.couponUid.length < 1 || args.couponUid.length > MAX_COUPON_UID_LENGTH)
+  ) {
     throw new ConvexError({
-      message: `クーポン識別IDは${MAX_COUPON_UID_LENGTH}文字で入力してください`,
+      message: `クーポン識別IDは${MAX_COUPON_UID_LENGTH}文字以内で入力してください`,
       code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
       severity: 'low',
       status: 400,
@@ -247,28 +250,19 @@ export function validateCoupon(args: Partial<Doc<'coupon'>>) {
 }
 
 export function validateCouponAvailableMenu(args: Partial<Doc<'coupon_available_menu'>>) {
-  if (args.couponId && args.couponId === '') {
+  if (args.menuId && args.menuId.length > MAX_TEXT_LENGTH) {
     throw new ConvexError({
-      message: 'クーポンIDが必須です',
-      code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-      status: 400,
-      severity: 'low',
+      message: `メニューIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
     });
   }
-  if (args.menuId && args.menuId === '') {
+  if (args.couponId && args.couponId.length > MAX_TEXT_LENGTH) {
     throw new ConvexError({
-      message: 'メニューIDが必須です',
-      code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-      severity: 'low',
-      status: 400,
+      message: `クーポンIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
     });
   }
-  if (args.salonId && args.salonId === '') {
+  if (args.salonId && args.salonId.length > MAX_TEXT_LENGTH) {
     throw new ConvexError({
-      message: 'サロンIDが必須です',
-      code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-      status: 400,
-      severity: 'low',
+      message: `サロンIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
     });
   }
 }
@@ -568,6 +562,24 @@ export const validateOption = (args: Partial<Doc<'salon_option'>>) => {
   }
 };
 
+export function validateMenuAvailableStaff(args: Partial<Doc<'menu_available_staff'>>) {
+  if (args.menuId && args.menuId.length > MAX_TEXT_LENGTH) {
+    throw new ConvexError({
+      message: `メニューIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+    });
+  }
+  if (args.staffId && args.staffId.length > MAX_TEXT_LENGTH) {
+    throw new ConvexError({
+      message: `スタッフIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+    });
+  }
+  if (args.salonId && args.salonId.length > MAX_TEXT_LENGTH) {
+    throw new ConvexError({
+      message: `サロンIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+    });
+  }
+}
+
 //================================================
 // POINT
 //================================================
@@ -700,6 +712,30 @@ export function validatePointTransaction(args: Partial<Doc<'point_transaction'>>
     });
   }
 }
+
+export function validatePointConfigAvailableMenu(
+  args: Partial<Doc<'point_config_available_menu'>>
+) {
+  if (args.menuId && args.menuId.length > MAX_TEXT_LENGTH) {
+    throw new ConvexError({
+      message: `メニューIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+    });
+  }
+  if (args.pointConfigId && args.pointConfigId.length > MAX_TEXT_LENGTH) {
+    throw new ConvexError({
+      message: `ポイント基本設定IDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+    });
+  }
+  if (args.salonId && args.salonId.length > MAX_TEXT_LENGTH) {
+    throw new ConvexError({
+      message: `サロンIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+    });
+  }
+}
+
+
+
+
 
 //================================================
 // RESERVATION
