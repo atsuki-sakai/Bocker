@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Id } from '@/convex/_generated/dataModel';
+import { handleError } from '@/lib/errors';
 import {
   Select,
   SelectContent,
@@ -447,10 +448,8 @@ export default function WeekHourSchedule() {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (err) {
-      console.error('Error updating schedule:', err);
-      toast.error('エラーが発生しました', {
-        description: `スケジュールの更新に失敗しました: ${err instanceof Error ? err.message : '不明なエラー'}`,
-      });
+      const errorDetails = handleError(err);
+      toast.error(errorDetails.message);
     } finally {
       setIsSaving(false);
     }
