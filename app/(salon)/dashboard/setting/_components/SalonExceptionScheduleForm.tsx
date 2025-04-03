@@ -6,7 +6,6 @@ import { api } from '@/convex/_generated/api';
 import { useSalon } from '@/hooks/useSalon';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/errors';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loading } from '@/components/common';
 import { format, startOfToday } from 'date-fns';
@@ -23,6 +22,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Id } from '@/convex/_generated/dataModel';
+import { handleError } from '@/lib/errors';
 
 // カスタムカレンダーコンポーネントをインポート
 import CalendarMultiSelect from '@/components/common/CalendarMultiSelect';
