@@ -18,6 +18,7 @@ interface ImageDropProps {
   className?: string;
   placeholderText?: string;
   accept?: string;
+  initialImageUrl?: string;
 }
 
 export default function ImageDrop({
@@ -29,14 +30,15 @@ export default function ImageDrop({
   className = '',
   placeholderText = '画像をドラッグするか、クリックして選択',
   accept = 'image/*',
+  initialImageUrl,
 }: ImageDropProps) {
   // 内部状態の管理
   const [isDragging, setIsDragging] = useState(false);
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(initialImageUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 実際に使用するプレビュー画像（外部から渡されるか内部で管理されるか）
-  const previewImage = previewImageUrl !== null ? previewImageUrl : null;
+  const displayImageUrl = previewImageUrl || initialImageUrl;
 
   // ファイル変更時の処理
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,9 +131,13 @@ export default function ImageDrop({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    setPreviewImageUrl(null);
+    setPreviewImageUrl(initialImageUrl || null);
     if (onPreviewChange) {
-      onPreviewChange(null);
+      onPreviewChange(initialImageUrl || null);
+    }
+    if (onFileSelect) {
+      // Pass null or a specific signal to indicate clearing
+      // onFileSelect(null as unknown as File); // Example, adjust as needed
     }
   };
 
@@ -147,10 +153,10 @@ export default function ImageDrop({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {previewImage ? (
+      {displayImageUrl ? (
         <div className="relative flex flex-col items-center justify-center w-full h-full">
           <Image
-            src={previewImage}
+            src={displayImageUrl}
             alt="Preview"
             className="mx-auto rounded-md object-contain max-h-[192px] max-w-[192px]"
             width={previewWidth}
@@ -201,7 +207,7 @@ export default function ImageDrop({
         accept={accept}
         onChange={handleFileChange}
         className={`${
-          previewImage ? 'hidden' : 'opacity-0 absolute inset-0 cursor-pointer w-full h-full'
+          displayImageUrl ? 'hidden' : 'opacity-0 absolute inset-0 cursor-pointer w-full h-full'
         }`}
       />
     </div>
