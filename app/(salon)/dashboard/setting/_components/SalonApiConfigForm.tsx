@@ -159,7 +159,15 @@ const ApiSettingsCard = () => {
         </CardHeader>
 
         <CardContent className="pt-6">
-          <form onSubmit={handleSubmit(onApiSubmit)} className="space-y-6">
+          <form
+            onSubmit={handleSubmit(onApiSubmit)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                e.preventDefault();
+              }
+            }}
+            className="space-y-6"
+          >
             <div className="space-y-4">
               <div className="p-1">
                 <motion.div
