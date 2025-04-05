@@ -147,7 +147,7 @@ export default function SalonScheduleForm() {
 
         if (salonScheduleConfig?._id) {
           // 既存のデータを更新する場合
-          const updated = await updateSalonScheduleConfig({
+          await updateSalonScheduleConfig({
             salonScheduleConfigId: salonScheduleConfig._id,
             availableCancelDays: cancelDays,
             reservationIntervalMinutes: intervalMinutes,
@@ -155,12 +155,12 @@ export default function SalonScheduleForm() {
           });
         } else {
           // 新規作成の場合
-          const created = await addSalonScheduleConfig({
-            salonId,
-            availableCancelDays: cancelDays,
-            reservationIntervalMinutes: intervalMinutes,
-            reservationLimitDays: limitDays,
-          });
+          await addSalonScheduleConfig({
+             salonId,
+             availableCancelDays: cancelDays,
+             reservationIntervalMinutes: intervalMinutes,
+             reservationLimitDays: limitDays,
+           });
         }
 
         toast.success('スケジュール設定を保存しました');
@@ -223,7 +223,14 @@ export default function SalonScheduleForm() {
           <CardDescription>通常の営業時間帯と予約間隔を設定してください</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                e.preventDefault();
+              }
+            }}
+          >
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
