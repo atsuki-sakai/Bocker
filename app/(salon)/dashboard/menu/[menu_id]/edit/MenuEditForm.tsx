@@ -196,16 +196,16 @@ export default function MenuEditForm() {
   const isActive = watch('isActive');
 
   // デバッグ用の追加 useEffect を先に移動（順序を固定するため）
-  useEffect(() => {
-    if (scheduleTime !== undefined && targetType && targetGender && paymentMethod) {
-      console.log('状態変数の値:', {
-        scheduleTime,
-        targetType,
-        targetGender,
-        paymentMethod,
-      });
-    }
-  }, [scheduleTime, targetType, targetGender, paymentMethod]);
+  // useEffect(() => {
+  //   if (scheduleTime !== undefined && targetType && targetGender && paymentMethod) {
+  //     console.log('状態変数の値:', {
+  //       scheduleTime,
+  //       targetType,
+  //       targetGender,
+  //       paymentMethod,
+  //     });
+  //   }
+  // }, [scheduleTime, targetType, targetGender, paymentMethod]);
 
   // データ取得後にフォームを初期化
   useEffect(() => {
@@ -281,7 +281,7 @@ export default function MenuEditForm() {
 
     const updatedTags = [...newTags, ...tagsToAdd].slice(0, 5);
     setCurrentTags(updatedTags);
-    setValue('tags', updatedTags as string[], { shouldValidate: true }); // 型アサーションを使用
+    setValue('tags', updatedTags, { shouldValidate: true }); // 型アサーションを削除
     setTagInput('');
   };
 
@@ -289,7 +289,7 @@ export default function MenuEditForm() {
     const newTags = [...currentTags];
     newTags.splice(index, 1);
     setCurrentTags(newTags);
-    setValue('tags', newTags as string[], { shouldValidate: true }); // 型アサーションを使用
+    setValue('tags', newTags, { shouldValidate: true }); // 型アサーションを削除
   };
 
   // 支払い方法の選択ロジック
@@ -304,30 +304,14 @@ export default function MenuEditForm() {
 
   // フォーム送信処理
   const onSubmit = async (data: Partial<z.infer<typeof schemaMenu>>) => {
+    let uploadImagePath: string | undefined;
     try {
       if (!salon?._id) {
         toast.error('サロン情報が必要です');
         return;
       }
 
-      // 必須フィールドの検証
-      if (!data.timeToMin || !data.targetGender || !data.targetType) {
-        if (!data.timeToMin && scheduleTime) {
-          data.timeToMin = scheduleTime.toString();
-        }
-        if (!data.targetGender && targetGender) {
-          data.targetGender = targetGender;
-        }
-        if (!data.targetType && targetType) {
-          data.targetType = targetType;
-        }
-        if (!data.paymentMethod && paymentMethod) {
-          data.paymentMethod = paymentMethod;
-        }
-      }
-
-      let imageUrl = existingImageUrl; // デフォルトは既存の画像URL
-
+      uploadImagePath = existingImageUrl;
       // 新しいファイルが選択された場合のみアップロード
       if (currentFile) {
         setIsUploading(true);
@@ -335,31 +319,42 @@ export default function MenuEditForm() {
         const base64Data = await fileToBase64(processedFile);
         const filePath = `${Date.now()}-${processedFile.name}`;
 
+        // 既存の画像を削除 (新しい画像をアップロードする場合のみ)
         if (existingImageUrl) {
-          await deleteImage({
-            imgUrl: existingImageUrl,
-          });
+          try {
+            await deleteImage({ imgUrl: existingImageUrl });
+          } catch (deleteError) {
+            // 削除エラーは警告としてログに残すが、処理は続行
+            console.warn('Failed to delete existing image:', deleteError);
+          }
         }
+
         const uploadResult = await uploadImage({
           directory: 'menu',
           base64Data,
           filePath,
           contentType: processedFile.type,
         });
-        imageUrl = uploadResult?.publicUrl || '';
+        uploadImagePath = uploadResult?.publicUrl;
+        setExistingImageUrl(uploadImagePath); // アップロード成功時に既存画像URLを更新
         setIsUploading(false);
       }
 
       // メニュー更新
-      // dataからsalePriceとimgFilePathを除外する
-      const { salePrice, imgFilePath, ...restMenuUpdateData } = data;
+      // dataからsalePriceを除外し、imgFilePathは使用しないため変数を作成しない
+      const { salePrice, ...restMenuUpdateData } = data;
 
       // APIに送信するデータを作成
       const updateData: Partial<Doc<'menu'>> = {
-        ...restMenuUpdateData, // imgFilePathが含まれていないことを確認
-        imgPath: imageUrl,
+        ...restMenuUpdateData,
+        imgPath: uploadImagePath || existingImageUrl,
         tags: currentTags,
       };
+
+      // imgFilePathプロパティが残っている場合は明示的に削除
+      if ('imgFilePath' in updateData) {
+        delete updateData.imgFilePath;
+      }
 
       // 明示的にundefinedを設定して、DBでnullとして扱われるようにする
       if (
@@ -381,9 +376,24 @@ export default function MenuEditForm() {
       toast.success('メニューを更新しました');
       router.push('/dashboard/menu');
     } catch (error) {
+      // エラーハンドリング：新しくアップロードした画像が存在し、かつ元の画像と異なる場合のみ削除
+      if (uploadImagePath && uploadImagePath !== existingImageUrl && currentFile) {
+        try {
+          await deleteImage({
+            imgUrl: uploadImagePath,
+          });
+          // 削除成功後、表示用の画像URLを元に戻すかクリアする
+          setExistingImageUrl(menuData?.imgPath); // menuDataから元のURLを再設定
+        } catch (deleteError) {
+          console.error('Failed to delete the uploaded image after an error:', deleteError);
+          // ここでユーザーに追加の指示を出すことも検討 (例: 手動での削除依頼)
+        }
+      }
       const errorDetails = handleError(error);
       toast.error(errorDetails.message);
     } finally {
+      // isUploading は try ブロック内で適切に false に設定されるため、ここでの再設定は不要な場合がある
+      // ただし、tryブロックの途中で予期せず終了する可能性を考慮すると残しておいても安全
       setIsUploading(false);
     }
   };
