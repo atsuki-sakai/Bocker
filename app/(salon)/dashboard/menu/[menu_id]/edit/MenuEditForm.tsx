@@ -182,6 +182,7 @@ export default function MenuEditForm() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   const uploadImage = useAction(api.storage.core.uploadImage);
+  const deleteImage = useAction(api.storage.core.deleteImage);
   const updateMenu = useMutation(api.menu.core.update);
 
   const {
@@ -334,6 +335,11 @@ export default function MenuEditForm() {
         const base64Data = await fileToBase64(processedFile);
         const filePath = `${Date.now()}-${processedFile.name}`;
 
+        if (existingImageUrl) {
+          await deleteImage({
+            imgUrl: existingImageUrl,
+          });
+        }
         const uploadResult = await uploadImage({
           directory: 'menu',
           base64Data,
@@ -345,12 +351,12 @@ export default function MenuEditForm() {
       }
 
       // メニュー更新
-      const { salePrice, ...restMenuUpdateData } = data; // imgFilePathとsalePriceを分離
+      // dataからsalePriceとimgFilePathを除外する
+      const { salePrice, imgFilePath, ...restMenuUpdateData } = data;
 
       // APIに送信するデータを作成
       const updateData: Partial<Doc<'menu'>> = {
-        salonId: salon._id,
-        ...restMenuUpdateData,
+        ...restMenuUpdateData, // imgFilePathが含まれていないことを確認
         imgPath: imageUrl,
         tags: currentTags,
       };
