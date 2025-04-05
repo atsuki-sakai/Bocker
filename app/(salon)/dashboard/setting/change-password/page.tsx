@@ -282,7 +282,7 @@ export default function ChangePasswordPage() {
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               transition={{
-                type: "spring",
+                type: 'spring',
                 stiffness: 260,
                 damping: 20,
               }}
@@ -300,9 +300,7 @@ export default function ChangePasswordPage() {
                 </Tooltip>
               </TooltipProvider>
             </motion.div>
-            <CardTitle className="text-2xl font-bold text-center">
-              パスワード変更
-            </CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">パスワード変更</CardTitle>
             <CardDescription className="text-center text-muted-foreground">
               安全なパスワードを設定して、アカウントを保護しましょう
             </CardDescription>
@@ -317,13 +315,16 @@ export default function ChangePasswordPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.3 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}
             >
               <PasswordInput
                 id="currentPassword"
                 label="現在のパスワード"
-                icon={
-                  <KeyIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                }
+                icon={<KeyIcon className="h-4 w-4 mr-2 text-muted-foreground" />}
                 placeholder="現在のパスワードを入力"
                 register={register}
                 showPassword={showCurrentPassword}
@@ -334,9 +335,7 @@ export default function ChangePasswordPage() {
               <PasswordInput
                 id="newPassword"
                 label="新しいパスワード"
-                icon={
-                  <LockIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                }
+                icon={<LockIcon className="h-4 w-4 mr-2 text-muted-foreground" />}
                 placeholder="新しいパスワードを入力"
                 register={register}
                 showPassword={showNewPassword}
@@ -344,16 +343,12 @@ export default function ChangePasswordPage() {
                 error={errors.newPassword}
               />
 
-              {newPasswordValue && (
-                <PasswordStrengthIndicator password={newPasswordValue} />
-              )}
+              {newPasswordValue && <PasswordStrengthIndicator password={newPasswordValue} />}
 
               <PasswordInput
                 id="confirmNewPassword"
                 label="新しいパスワード（確認）"
-                icon={
-                  <ShieldCheckIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                }
+                icon={<ShieldCheckIcon className="h-4 w-4 mr-2 text-muted-foreground" />}
                 placeholder="新しいパスワードを再入力"
                 register={register}
                 showPassword={showConfirmPassword}
@@ -384,7 +379,7 @@ export default function ChangePasswordPage() {
                         transition={{
                           repeat: Infinity,
                           duration: 1,
-                          ease: "linear",
+                          ease: 'linear',
                         }}
                       />
                       処理中...
