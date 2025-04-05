@@ -1,6 +1,6 @@
 export const STRIPE_API_VERSION = '2025-02-24.acacia';
 
-export const SALON_SCHEDULE_INTERVAL_MINUTES = [5, 10, 15, 20, 30];
+export const SALON_SCHEDULE_INTERVAL_MINUTES = [5, 10, 20, 30, 40, 50, 60];
 export const SALON_SCHEDULE_HOURS = [
   '00:00',
   '01:00',
@@ -212,5 +212,4 @@ export const POINT_EXPIRATION_DAYS = [
   { value: 1095, label: '3年' },
   { value: 1460, label: '4年' },
   { value: 1825, label: '5年' },
-  { value: Infinity, label: '無制限' },
 ];
