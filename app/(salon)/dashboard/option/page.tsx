@@ -7,7 +7,7 @@ export default function OptionPage() {
       title="オプション一覧"
       backLink="/dashboard"
       backLinkTitle="ダッシュボード"
-      infoBtn={{ text: 'オプション追加', link: '/dashboard/option/add' }}
+      infoBtn={{ text: 'オプションを作成', link: '/dashboard/option/add' }}
     >
       <OptionList />
     </DashboardSection>
