@@ -51,8 +51,6 @@ export default function SalonScheduleForm() {
     salonId ? { salonId } : 'skip'
   );
 
-  console.log('salonScheduleConfig 受信データ:', salonScheduleConfig);
-
   const addSalonScheduleConfig = useMutation(api.salon.schedule_config.add);
   const updateSalonScheduleConfig = useMutation(api.salon.schedule_config.update);
 
@@ -77,19 +75,11 @@ export default function SalonScheduleForm() {
       availableCancelDays: availableCancelDaysValue || '',
       reservationIntervalMinutes: reservationIntervalMinutesValue || '',
     });
-
-    console.log('フォーム値変更:', {
-      reservationLimitDays: reservationLimitDaysValue,
-      availableCancelDays: availableCancelDaysValue,
-      reservationIntervalMinutes: reservationIntervalMinutesValue,
-    });
   }, [reservationLimitDaysValue, availableCancelDaysValue, reservationIntervalMinutesValue]);
 
   // スケジュール設定が変更されたらフォームをリセット
   useEffect(() => {
     if (salonScheduleConfig) {
-      console.log('初期値設定 - salonScheduleConfig:', salonScheduleConfig);
-
       // 受信データをサニタイズ
       const scheduleLimitDays = salonScheduleConfig.reservationLimitDays;
       const scheduleCancelDays = salonScheduleConfig.availableCancelDays;
@@ -111,8 +101,6 @@ export default function SalonScheduleForm() {
           ? String(scheduleIntervalMinutes)
           : '30';
 
-      console.log('変換後の初期値:', { limitDays, cancelDays, intervalMinutes });
-
       // フォーム値をクリアしてから新しい値を設定
       reset({}, { keepValues: false });
 
@@ -125,12 +113,6 @@ export default function SalonScheduleForm() {
         setValue('reservationLimitDays', limitDays);
         setValue('availableCancelDays', cancelDays);
         setValue('reservationIntervalMinutes', intervalMinutes);
-
-        console.log('フォーム初期値設定完了:', {
-          reservationLimitDays: limitDays,
-          availableCancelDays: cancelDays,
-          reservationIntervalMinutes: intervalMinutes,
-        });
       }, 0);
     } else if (salonId) {
       // 初期値設定
@@ -163,38 +145,26 @@ export default function SalonScheduleForm() {
           | 20
           | 30;
 
-        console.log('送信データ:', {
-          ...data,
-          reservationLimitDays: limitDays,
-          availableCancelDays: cancelDays,
-          reservationIntervalMinutes: intervalMinutes,
-        });
-
         if (salonScheduleConfig?._id) {
           // 既存のデータを更新する場合
-          const updated = await updateSalonScheduleConfig({
+          await updateSalonScheduleConfig({
             salonScheduleConfigId: salonScheduleConfig._id,
             availableCancelDays: cancelDays,
             reservationIntervalMinutes: intervalMinutes,
             reservationLimitDays: limitDays,
           });
-
-          console.log('更新完了 - 更新後データ:', updated);
         } else {
           // 新規作成の場合
-          const created = await addSalonScheduleConfig({
-            salonId,
-            availableCancelDays: cancelDays,
-            reservationIntervalMinutes: intervalMinutes,
-            reservationLimitDays: limitDays,
-          });
-
-          console.log('新規作成完了 - 作成データ:', created);
+          await addSalonScheduleConfig({
+             salonId,
+             availableCancelDays: cancelDays,
+             reservationIntervalMinutes: intervalMinutes,
+             reservationLimitDays: limitDays,
+           });
         }
 
         toast.success('スケジュール設定を保存しました');
         setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
 
         // フォームのdirty状態をリセット
         reset(
@@ -208,7 +178,6 @@ export default function SalonScheduleForm() {
           { keepDirty: false }
         );
       } catch (error) {
-        console.error('ERROR:', error);
         const errorDetails = handleError(error);
         toast.error(errorDetails.message);
       }
@@ -254,7 +223,14 @@ export default function SalonScheduleForm() {
           <CardDescription>通常の営業時間帯と予約間隔を設定してください</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                e.preventDefault();
+              }
+            }}
+          >
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

@@ -9,26 +9,30 @@ import { Loading } from '@/components/common';
 import { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { Doc } from '@/convex/_generated/dataModel';
+import { useState } from 'react';
+import { Dialog } from '@/components/common';
 
-export default function CouponForm() {
+export default function CouponList() {
   const { salon } = useSalon();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedCouponId, setSelectedCouponId] = useState<Id<'coupon'> | null>(null);
   const deleteCoupon = useMutation(api.coupon.core.kill);
 
-  const { results, loadMore } = usePaginatedQuery(
+  const { results, loadMore, status } = usePaginatedQuery(
     api.coupon.core.getAllBySalonId,
-    { salonId: salon?._id as Id<'salon'> },
+    salon ? { salonId: salon._id as Id<'salon'> } : 'skip',
     { initialNumItems: 10 }
   );
 
-  const handleDelete = (e: React.MouseEvent<HTMLButtonElement>, id: Id<'coupon'>) => {
-    e.preventDefault();
+  const showDialog = (id: Id<'coupon'>) => {
+    setSelectedCouponId(id);
+    setIsDialogOpen(true);
+  };
 
-    const isConfirmed = window.confirm('クーポンを削除しますか？');
-
-    if (isConfirmed) {
-      deleteCoupon({ couponId: id });
-      toast.success('クーポンを削除しました。');
-    }
+  const handleDelete = (id: Id<'coupon'>) => {
+    deleteCoupon({ couponId: id });
+    toast.success('クーポンを削除しました。');
+    setIsDialogOpen(false);
   };
 
   if (!salon) {
@@ -116,7 +120,7 @@ export default function CouponForm() {
                             variant="ghost"
                             className="text-red-600 hover:text-red-900"
                             size="sm"
-                            onClick={(e) => handleDelete(e, coupon._id)}
+                            onClick={() => showDialog(coupon._id)}
                           >
                             削除<span className="sr-only">, {coupon.name}</span>
                           </Button>
@@ -137,8 +141,19 @@ export default function CouponForm() {
         </div>
       </div>
       <div className="flex justify-center">
-        {results?.length > 10 && <Button onClick={() => loadMore(10)}>もっと見る</Button>}
+        {results?.length > 10 && status === 'CanLoadMore' && (
+          <Button onClick={() => loadMore(10)}>もっと見る</Button>
+        )}
       </div>
+      <Dialog
+        title="クーポンを削除しますか？"
+        description="この操作は元に戻すことができません。"
+        confirmTitle="削除する"
+        cancelTitle="キャンセル"
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onConfirmAction={() => selectedCouponId && handleDelete(selectedCouponId)}
+      />
     </div>
   );
 }

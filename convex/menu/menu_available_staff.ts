@@ -3,7 +3,7 @@ import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
 import { KillRecord, trashRecord, authCheck } from './../helpers';
 import { CONVEX_ERROR_CODES } from './../constants';
-import { validateMenuAvailableStaff } from './../validators';
+import { validateMenuExclusionStaff } from './../validators';
 
 export const add = mutation({
   args: {
@@ -14,9 +14,9 @@ export const add = mutation({
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
-    validateMenuAvailableStaff(args);
-    const availableStaff = await ctx.db
-      .query('menu_available_staff')
+    validateMenuExclusionStaff(args);
+    const exclusionStaff = await ctx.db
+      .query('menu_exclusion_staff')
       .withIndex('by_salon_menu_staff', (q) =>
         q
           .eq('salonId', args.salonId)
@@ -25,12 +25,12 @@ export const add = mutation({
           .eq('isArchive', false)
       )
       .first();
-    if (availableStaff) {
-      console.error('AddMenuAvailableStaff: 指定されたメニュー利用可能スタッフはすでに存在します', {
+    if (exclusionStaff) {
+      console.error('AddMenuExclusionStaff: 指定されたメニュー除外スタッフはすでに存在します', {
         ...args,
       });
       throw new ConvexError({
-        message: '指定されたメニュー利用可能スタッフはすでに存在します',
+        message: '指定されたメニュー除外スタッフはすでに存在します',
         code: CONVEX_ERROR_CODES.DUPLICATE_RECORD,
         status: 400,
         severity: 'low',
@@ -40,11 +40,11 @@ export const add = mutation({
         },
       });
     }
-    const menuAvailableStaffId = await ctx.db.insert('menu_available_staff', {
+    const menuExclusionStaffId = await ctx.db.insert('menu_exclusion_staff', {
       ...args,
       isArchive: false,
     });
-    return menuAvailableStaffId;
+    return menuExclusionStaffId;
   },
 });
 
@@ -56,8 +56,8 @@ export const get = query({
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
-    const availableStaff = await ctx.db
-      .query('menu_available_staff')
+    const exclusionStaff = await ctx.db
+      .query('menu_exclusion_staff')
       .withIndex('by_salon_menu_staff', (q) =>
         q
           .eq('salonId', args.salonId)
@@ -66,7 +66,7 @@ export const get = query({
           .eq('isArchive', false)
       )
       .first();
-    return availableStaff;
+    return exclusionStaff;
   },
 });
 
@@ -78,8 +78,8 @@ export const trash = mutation({
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
-    const menuAvailableStaff = await ctx.db
-      .query('menu_available_staff')
+    const menuExclusionStaff = await ctx.db
+      .query('menu_exclusion_staff')
       .withIndex('by_salon_menu_staff', (q) =>
         q
           .eq('salonId', args.salonId)
@@ -88,12 +88,12 @@ export const trash = mutation({
           .eq('isArchive', false)
       )
       .first();
-    if (!menuAvailableStaff || menuAvailableStaff.isArchive) {
-      console.error('TrashMenuAvailableStaff: 指定されたメニュー利用可能スタッフが存在しません', {
+    if (!menuExclusionStaff || menuExclusionStaff.isArchive) {
+      console.error('TrashMenuExclusionStaff: 指定されたメニュー除外スタッフが存在しません', {
         ...args,
       });
       throw new ConvexError({
-        message: '指定されたメニュー利用可能スタッフが存在しません',
+        message: '指定されたメニュー除外スタッフが存在しません',
         code: CONVEX_ERROR_CODES.NOT_FOUND,
         status: 404,
         severity: 'low',
@@ -104,7 +104,7 @@ export const trash = mutation({
         },
       });
     }
-    return await trashRecord(ctx, menuAvailableStaff._id);
+    return await trashRecord(ctx, menuExclusionStaff._id);
   },
 });
 
@@ -116,8 +116,8 @@ export const kill = mutation({
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
-    const menuAvailableStaff = await ctx.db
-      .query('menu_available_staff')
+    const menuExclusionStaff = await ctx.db
+      .query('menu_exclusion_staff')
       .withIndex('by_salon_menu_staff', (q) =>
         q
           .eq('salonId', args.salonId)
@@ -126,12 +126,12 @@ export const kill = mutation({
           .eq('isArchive', false)
       )
       .first();
-    if (!menuAvailableStaff || menuAvailableStaff.isArchive) {
-      console.error('KillMenuAvailableStaff: 指定されたメニュー利用可能スタッフが存在しません', {
+    if (!menuExclusionStaff || menuExclusionStaff.isArchive) {
+      console.error('KillMenuExclusionStaff: 指定されたメニュー除外スタッフが存在しません', {
         ...args,
       });
       throw new ConvexError({
-        message: '指定されたメニュー利用可能スタッフが存在しません',
+        message: '指定されたメニュー除外スタッフが存在しません',
         code: CONVEX_ERROR_CODES.NOT_FOUND,
         status: 404,
         severity: 'low',
@@ -142,7 +142,7 @@ export const kill = mutation({
         },
       });
     }
-    return await KillRecord(ctx, menuAvailableStaff._id);
+    return await KillRecord(ctx, menuExclusionStaff._id);
   },
 });
 
@@ -155,8 +155,8 @@ export const isAvailableStaff = query({
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
-    const availableStaff = await ctx.db
-      .query('menu_available_staff')
+    const exclusionStaff = await ctx.db
+      .query('menu_exclusion_staff')
       .withIndex('by_salon_menu_staff', (q) =>
         q
           .eq('salonId', args.salonId)
@@ -166,6 +166,6 @@ export const isAvailableStaff = query({
       )
       .first();
 
-    return !!availableStaff;
+    return !!exclusionStaff;
   },
 });

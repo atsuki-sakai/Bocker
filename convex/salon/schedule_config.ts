@@ -1,13 +1,7 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
-import {
-  handleConvexApiError,
-  removeEmptyFields,
-  trashRecord,
-  KillRecord,
-  authCheck,
-} from '../helpers';
+import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
 import { CONVEX_ERROR_CODES } from '../constants';
 import { validateSalonScheduleConfig } from '../validators';
 

@@ -1,5 +1,5 @@
 import { DashboardSection } from '@/components/common';
-import CouponForm from './CouponForm';
+import CouponList from './CouponList';
 
 export default async function CouponPage() {
   return (
@@ -12,7 +12,7 @@ export default async function CouponPage() {
         link: '/dashboard/coupon/add',
       }}
     >
-      <CouponForm />
+      <CouponList />
     </DashboardSection>
   );
 }

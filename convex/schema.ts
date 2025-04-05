@@ -12,6 +12,7 @@ import {
   paymentMethodType,
   staffRoleType,
   pointTransactionType,
+  targetType,
 } from './types';
 
 /**
@@ -73,18 +74,12 @@ export default defineSchema({
     orderLimit: v.optional(v.number()), // 注文制限
     timeToMin: v.optional(v.number()), // 時間(分)
     tags: v.optional(v.array(v.string())), // タグ
-    category: v.optional(v.string()), // カテゴリ
     description: v.optional(v.string()), // 説明
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
     ...commonFields,
   })
-    .index('by_salon_id', ['salonId', 'isActive', 'isArchive'])
-    .index('by_category', ['category', 'isActive', 'isArchive'])
-    .index('by_salon_category', ['salonId', 'category', 'isActive', 'isArchive'])
-    .searchIndex('search_by_name', {
-      searchField: 'name',
-      filterFields: ['salonId', 'isActive', 'isArchive'],
-    }),
+    .index('by_salon_id', ['salonId', 'isArchive'])
+    .index('by_salon_id_name', ['salonId', 'name', 'isArchive']),
 
   // =====================
   // SALON
@@ -331,31 +326,22 @@ export default defineSchema({
     name: v.optional(v.string()), // メニュー名
     price: v.optional(v.number()), // 価格
     salePrice: v.optional(v.number()), // セール価格
-    timeToMin: v.optional(v.number()), // 時間(分)
-    category: v.optional(v.string()), // カテゴリ
+    timeToMin: v.optional(v.string()), // 時間(分) HH:MM 形式
     imgPath: v.optional(v.string()), // 画像ファイルパス
     description: v.optional(v.string()), // 説明
-    couponIds: v.optional(v.array(v.id('coupon'))), // 使用可能なクーポンID
     targetGender: v.optional(genderType), // 対象性別
+    targetType: v.optional(targetType), // 対象タイプ
     tags: v.optional(v.array(v.string())), // タグ
     paymentMethod: v.optional(menuPaymentMethodType), // 許可する支払い方法
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
     ...commonFields,
   })
-    .index('by_salon_id', ['salonId', 'isActive', 'isArchive'])
-    .index('by_name', ['name', 'isActive', 'isArchive'])
-    .index('by_is_archive', ['isArchive'])
-    .index('by_category', ['category', 'isActive', 'isArchive'])
-    .index('by_price', ['price', 'isActive', 'isArchive'])
-    .index('by_target_gender', ['targetGender', 'isActive', 'isArchive'])
-    .index('by_salon_id_category', ['salonId', 'category', 'isActive', 'isArchive'])
-    .index('by_salon_id_gender', ['salonId', 'targetGender', 'isActive', 'isArchive'])
-    .searchIndex('search_by_name', {
-      searchField: 'name',
-      filterFields: ['category', 'description', 'isActive', 'isArchive'],
-    }),
+    .index('by_salon_id', ['salonId', 'isArchive'])
+    .index('by_salon_id_name', ['salonId', 'name', 'isArchive'])
+    .index('by_salon_id_gender', ['salonId', 'targetGender', 'isArchive'])
+    .index('by_salon_id_type', ['salonId', 'targetType', 'isArchive']),
 
-  menu_available_staff: defineTable({
+  menu_exclusion_staff: defineTable({
     salonId: v.id('salon'), // サロンID
     menuId: v.id('menu'), // メニューID
     staffId: v.id('staff'), // スタッフID
@@ -381,13 +367,14 @@ export default defineSchema({
     .index('by_name', ['name', 'isArchive'])
     .index('by_salon_coupon_uid', ['salonId', 'couponUid']),
 
-  coupon_available_menu: defineTable({
+  coupon_exclusion_menu: defineTable({
     salonId: v.id('salon'), // サロンID
     couponId: v.id('coupon'), // クーポンID
     menuId: v.id('menu'), // メニューID
     ...commonFields,
   })
     .index('by_salon_menu_id', ['salonId', 'menuId', 'isArchive'])
+    .index('by_salon_coupon_id', ['salonId', 'couponId', 'isArchive'])
     .index('by_salon_coupon_id_menu_id', ['salonId', 'couponId', 'menuId', 'isArchive']),
 
   // クーポンの設定テーブル
@@ -461,12 +448,14 @@ export default defineSchema({
     ...commonFields,
   }).index('by_salon_id', ['salonId', 'isArchive']),
 
-  point_config_available_menu: defineTable({
+  point_exclusion_menu: defineTable({
     salonId: v.id('salon'), // サロンID
     pointConfigId: v.id('point_config'), // ポイント基本設定ID
     menuId: v.id('menu'), // メニューID
     ...commonFields,
-  }).index('by_salon_point_config_menu', ['salonId', 'pointConfigId', 'menuId', 'isArchive']),
+  })
+    .index('by_salon_point_config_menu', ['salonId', 'pointConfigId', 'menuId', 'isArchive'])
+    .index('by_salon_point_config_id', ['salonId', 'pointConfigId', 'isArchive']),
 
   // ポイント付与キュー (定期処理で実行後に削除)
   point_task_queue: defineTable({

@@ -26,6 +26,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { handleError } from '@/lib/errors';
 
 // スタイル定義
 const statusColorMap: Record<string, string> = {
@@ -111,10 +112,8 @@ export default function StripeConnectStatus() {
 
       return { data: responseData };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
-      console.error(`API error (${url}):`, error);
-      toast.error(errorMessage);
-      return { error: errorMessage };
+      const errorDetails = handleError(error);
+      return { error: errorDetails.message };
     } finally {
       setIsLoading(false);
     }
@@ -140,14 +139,18 @@ export default function StripeConnectStatus() {
   // Stripe Connectアカウントを作成する処理
   const handleConnectStripe = async () => {
     if (!salonId) return;
+    try {
+      const { data } = await fetchApi<{ account: string; accountLink: string }>(
+        '/api/stripe/connect',
+        { salonId }
+      );
 
-    const { data } = await fetchApi<{ account: string; accountLink: string }>(
-      '/api/stripe/connect',
-      { salonId }
-    );
-
-    if (data && data.account && data.accountLink) {
-      window.location.href = data.accountLink;
+      if (data && data.account && data.accountLink) {
+        window.location.href = data.accountLink;
+      }
+    } catch (error) {
+      const errorDetails = handleError(error);
+      toast.error(errorDetails.message);
     }
   };
 
@@ -156,19 +159,24 @@ export default function StripeConnectStatus() {
     e.preventDefault();
     if (!salonId || !connectAccount?.accountId) return;
 
-    const { data } = await fetchApi<{ url: string; isOnboarding: boolean }>(
-      '/api/stripe/connect/login',
-      {
-        salonId,
-        accountId: connectAccount.accountId,
-      }
-    );
+    try {
+      const { data } = await fetchApi<{ url: string; isOnboarding: boolean }>(
+        '/api/stripe/connect/login',
+        {
+          salonId,
+          accountId: connectAccount.accountId,
+        }
+      );
 
-    if (data?.url) {
-      if (data.isOnboarding) {
-        toast.info('Stripeアカウントの設定を完了してください');
+      if (data?.url) {
+        if (data.isOnboarding) {
+          toast.info('Stripeアカウントの設定を完了してください');
+        }
+        window.open(data.url, '_blank');
       }
-      window.open(data.url, '_blank');
+    } catch (error) {
+      const errorDetails = handleError(error);
+      toast.error(errorDetails.message);
     }
   };
 
@@ -345,7 +353,7 @@ export default function StripeConnectStatus() {
         <CardFooter className="bg-gray-50 px-6 py-4 dark:bg-gray-800/50">
           <div className="w-full flex flex-col-reverse sm:flex-row justify-between gap-3">
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              <p className="text-xs font-bold">決済手数料: 3.6% + 40円/件</p>
+              <p className="text-xs font-bold">決済手数料: 4% + 40円/件</p>
               <div className="flex items-center gap-2 mt-2">
                 <p className="text-xs">※ 売り上げは毎月25日に設定した銀行口座へ振込まれます。</p>
               </div>

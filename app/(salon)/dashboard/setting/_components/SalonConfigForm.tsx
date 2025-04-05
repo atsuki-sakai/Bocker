@@ -327,7 +327,14 @@ export default function SalonConfigForm() {
               </TabsTrigger>
             </TabsList>
 
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}
+            >
               <TabsContent value="basic" className="pt-4">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}

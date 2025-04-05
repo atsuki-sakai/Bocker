@@ -20,6 +20,7 @@ type ZodTextFieldProps<TSchema extends z.ZodTypeAny> = {
   icon?: React.ReactNode;
   placeholder?: string;
   className?: string;
+  required?: boolean;
 };
 
 // ZodTextField コンポーネント - 再利用可能なフォームフィールド
@@ -32,12 +33,14 @@ export default function ZodTextField({
   icon,
   placeholder,
   className,
+  required = false,
 }: ZodTextFieldProps<z.ZodType>) {
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       <Label htmlFor={name} className="flex items-center gap-2 text-gray-700">
         {icon}
         {label}
+        {required && <span className="text-red-500">*</span>}
       </Label>
       <div className="relative">
         <Input
@@ -45,6 +48,20 @@ export default function ZodTextField({
           type={type}
           {...register(name, {
             valueAsNumber: type === 'number',
+            setValueAs:
+              type === 'number'
+                ? (value) => {
+                    if (
+                      value === '' ||
+                      value === undefined ||
+                      value === 0 ||
+                      isNaN(Number(value))
+                    ) {
+                      return null;
+                    }
+                    return Number(value);
+                  }
+                : undefined,
           })}
           placeholder={placeholder}
           className={`${errors[name] ? 'border-red-500 focus-visible:ring-red-500' : ''}`}

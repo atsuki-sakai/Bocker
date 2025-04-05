@@ -34,6 +34,7 @@ export const useSalon = () => {
     salon: salonData,
     isLoading: salonData === undefined && user?.id !== undefined && !error,
     error,
-    salonId: salonData?._id as Id<"salon"> | undefined
+    stripeConnectStatus: salonData?.stripeConnectStatus,
+    salonId: salonData?._id as Id<'salon'> | undefined,
   };
 };

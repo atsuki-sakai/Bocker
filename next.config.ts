@@ -4,7 +4,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
-    domains: ['placehold.co', 'storage.googleapis.com'],
+    domains: ['placehold.co', 'storage.googleapis.com', 'via.placeholder.com'],
   },
 };
 

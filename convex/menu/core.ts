@@ -4,7 +4,7 @@ import { ConvexError } from "convex/values";
 import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
 import { paginationOptsValidator } from 'convex/server';
 import { CONVEX_ERROR_CODES } from '../constants';
-import { genderType } from '../types';
+import { genderType, targetType, menuPaymentMethodType } from '../types';
 import { validateMenu } from '../validators';
 
 // メニューの追加
@@ -14,14 +14,13 @@ export const add = mutation({
     name: v.optional(v.string()),
     price: v.optional(v.number()),
     salePrice: v.optional(v.number()),
-    timeToMin: v.optional(v.number()),
-    category: v.optional(v.string()),
-    imgFilePath: v.optional(v.string()),
+    timeToMin: v.optional(v.string()),
+    imgPath: v.optional(v.string()),
     description: v.optional(v.string()),
-    couponIds: v.optional(v.array(v.id('coupon'))),
     targetGender: v.optional(genderType),
-    availableStaffIds: v.optional(v.array(v.id('staff'))),
+    targetType: v.optional(targetType),
     tags: v.optional(v.array(v.string())),
+    paymentMethod: v.optional(menuPaymentMethodType),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -57,15 +56,14 @@ export const update = mutation({
     name: v.optional(v.string()),
     price: v.optional(v.number()),
     salePrice: v.optional(v.number()),
-    timeToMin: v.optional(v.number()),
-    category: v.optional(v.string()),
-    imgFilePath: v.optional(v.string()),
+    timeToMin: v.optional(v.string()),
+    imgPath: v.optional(v.string()),
     description: v.optional(v.string()),
-    couponIds: v.optional(v.array(v.id('coupon'))),
     targetGender: v.optional(genderType),
-    availableStaffIds: v.optional(v.array(v.id('staff'))),
+    targetType: v.optional(targetType),
     tags: v.optional(v.array(v.string())),
     isActive: v.optional(v.boolean()),
+    paymentMethod: v.optional(menuPaymentMethodType),
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
@@ -128,13 +126,11 @@ export const upsert = mutation({
     name: v.optional(v.string()),
     price: v.optional(v.number()),
     salePrice: v.optional(v.number()),
-    timeToMin: v.optional(v.number()),
-    category: v.optional(v.string()),
-    imgFilePath: v.optional(v.string()),
+    timeToMin: v.optional(v.string()),
+    imgPath: v.optional(v.string()),
     description: v.optional(v.string()),
-    couponIds: v.optional(v.array(v.id('coupon'))),
     targetGender: v.optional(genderType),
-    availableStaffIds: v.optional(v.array(v.id('staff'))),
+    targetType: v.optional(targetType),
     tags: v.optional(v.array(v.string())),
     isActive: v.optional(v.boolean()),
   },
@@ -184,8 +180,32 @@ export const kill = mutation({
   },
 });
 
+// メニューIDからメニューを取得
+export const getById = query({
+  args: {
+    menuId: v.id('menu'),
+  },
+  handler: async (ctx, args) => {
+    authCheck(ctx);
+    const menu = await ctx.db.get(args.menuId);
+    if (!menu || menu.isArchive) {
+      console.error('指定されたメニューが存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定されたメニューが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        status: 404,
+        severity: 'low',
+        context: {
+          menuId: args.menuId,
+        },
+      });
+    }
+    return menu;
+  },
+});
+
 // サロンIDからメニュー一覧を取得
-export const getBySalonId = query({
+export const getAllBySalonId = query({
   args: {
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
@@ -194,30 +214,24 @@ export const getBySalonId = query({
     authCheck(ctx);
     return await ctx.db
       .query('menu')
-      .withIndex('by_salon_id', (q) =>
-        q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
-      )
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
       .paginate(args.paginationOpts);
   },
 });
 
-// カテゴリでメニューを取得
-export const getByCategory = query({
+// タイプでメニューを取得
+export const getByType = query({
   args: {
     salonId: v.id('salon'),
-    category: v.string(),
+    targetType: targetType,
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
     return await ctx.db
       .query('menu')
-      .withIndex('by_salon_id_category', (q) =>
-        q
-          .eq('salonId', args.salonId)
-          .eq('category', args.category)
-          .eq('isActive', true)
-          .eq('isArchive', false)
+      .withIndex('by_salon_id_type', (q) =>
+        q.eq('salonId', args.salonId).eq('targetType', args.targetType).eq('isArchive', false)
       )
       .paginate(args.paginationOpts);
   },
@@ -235,28 +249,7 @@ export const getByGender = query({
     return await ctx.db
       .query('menu')
       .withIndex('by_salon_id_gender', (q) =>
-        q
-          .eq('salonId', args.salonId)
-          .eq('targetGender', args.targetGender)
-          .eq('isActive', true)
-          .eq('isArchive', false)
-      )
-      .paginate(args.paginationOpts);
-  },
-});
-
-// 名前でメニューを検索
-export const searchByName = query({
-  args: {
-    searchText: v.string(),
-    paginationOpts: paginationOptsValidator,
-  },
-  handler: async (ctx, args) => {
-    authCheck(ctx);
-    return await ctx.db
-      .query('menu')
-      .withSearchIndex('search_by_name', (q) =>
-        q.search('name', args.searchText).eq('isActive', true).eq('isArchive', false)
+        q.eq('salonId', args.salonId).eq('targetGender', args.targetGender).eq('isArchive', false)
       )
       .paginate(args.paginationOpts);
   },

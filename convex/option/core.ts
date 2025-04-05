@@ -5,7 +5,7 @@ import { CONVEX_ERROR_CODES } from '../constants';
 import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
 import { paginationOptsValidator } from 'convex/server';
 import { validateOption } from '../validators';
-
+import { menuPaymentMethodType } from '../types';
 // オプションメニューの追加
 export const add = mutation({
   args: {
@@ -16,7 +16,6 @@ export const add = mutation({
     orderLimit: v.optional(v.number()), // 注文制限
     timeToMin: v.number(), // 時間(分)
     tags: v.optional(v.array(v.string())), // タグ
-    category: v.optional(v.string()), // カテゴリ
     description: v.optional(v.string()), // 説明
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
   },
@@ -60,7 +59,6 @@ export const update = mutation({
     orderLimit: v.optional(v.number()), // 注文制限
     timeToMin: v.optional(v.number()), // 時間(分)
     tags: v.optional(v.array(v.string())), // タグ
-    category: v.optional(v.string()), // カテゴリ
     description: v.optional(v.string()), // 説明
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
   },
@@ -103,7 +101,6 @@ export const upsert = mutation({
     orderLimit: v.optional(v.number()), // 注文制限
     timeToMin: v.number(), // 時間(分)
     tags: v.optional(v.array(v.string())), // タグ
-    category: v.optional(v.string()), // カテゴリ
     description: v.optional(v.string()), // 説明
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
   },
@@ -180,56 +177,29 @@ export const kill = mutation({
     return true;
   },
 });
-// サロンIDからオプションメニュー一覧を取得
-export const getBySalonId = query({
-  args: {
-    salonId: v.id('salon'),
-    paginationOpts: paginationOptsValidator,
-    activeOnly: v.optional(v.boolean()),
-  },
-  handler: async (ctx, args) => {
-    authCheck(ctx);
-    return await ctx.db
-      .query('salon_option')
-      .withIndex('by_salon_id', (q) =>
-        q.eq('salonId', args.salonId).eq('isActive', args.activeOnly).eq('isArchive', false)
-      )
-      .paginate(args.paginationOpts);
-  },
-});
 
-// オプションIDからオプションメニュー情報を取得
-export const getById = query({
+export const get = query({
   args: {
     salonOptionId: v.id('salon_option'),
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
-    const salonOption = await ctx.db.get(args.salonOptionId);
-    return salonOption;
+    return await ctx.db.get(args.salonOptionId);
   },
 });
 
-// カテゴリでオプションメニューを検索
-export const getByCategory = query({
+// サロンIDからオプションメニュー一覧を取得
+export const getAllBySalonId = query({
   args: {
     salonId: v.id('salon'),
-    category: v.string(),
     paginationOpts: paginationOptsValidator,
     activeOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
-    // すべてのオプションを検索
     return await ctx.db
       .query('salon_option')
-      .withIndex('by_salon_category', (q) =>
-        q
-          .eq('salonId', args.salonId)
-          .eq('category', args.category)
-          .eq('isActive', args.activeOnly)
-          .eq('isArchive', false)
-      )
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
       .paginate(args.paginationOpts);
   },
 });
@@ -247,10 +217,9 @@ export const searchByName = query({
     // searchIndexを使用して効率的に検索
     return await ctx.db
       .query('salon_option')
-      .withSearchIndex('search_by_name', (q) =>
-        q.search('name', args.name).eq('isActive', args.activeOnly).eq('isArchive', false)
+      .withIndex('by_salon_id_name', (q) =>
+        q.eq('salonId', args.salonId).eq('name', args.name).eq('isArchive', false)
       )
-      .filter((q) => q.eq(q.field('salonId'), args.salonId))
       .paginate(args.paginationOpts);
   },
 });
