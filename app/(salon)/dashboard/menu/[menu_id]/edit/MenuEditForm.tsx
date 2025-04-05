@@ -195,17 +195,6 @@ export default function MenuEditForm() {
   } = useZodForm(schemaMenu);
   const isActive = watch('isActive');
 
-  // デバッグ用の追加 useEffect を先に移動（順序を固定するため）
-  // useEffect(() => {
-  //   if (scheduleTime !== undefined && targetType && targetGender && paymentMethod) {
-  //     console.log('状態変数の値:', {
-  //       scheduleTime,
-  //       targetType,
-  //       targetGender,
-  //       paymentMethod,
-  //     });
-  //   }
-  // }, [scheduleTime, targetType, targetGender, paymentMethod]);
 
   // データ取得後にフォームを初期化
   useEffect(() => {
