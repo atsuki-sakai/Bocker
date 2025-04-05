@@ -276,7 +276,7 @@ export default function ChangeEmailPage() {
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               transition={{
-                type: "spring",
+                type: 'spring',
                 stiffness: 260,
                 damping: 20,
               }}
@@ -294,9 +294,7 @@ export default function ChangeEmailPage() {
                 </Tooltip>
               </TooltipProvider>
             </motion.div>
-            <CardTitle className="text-2xl font-bold text-center">
-              メールアドレス変更
-            </CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">メールアドレス変更</CardTitle>
             <CardDescription className="text-center text-muted-foreground">
               新しいメールアドレスを入力してください
             </CardDescription>
@@ -311,14 +309,16 @@ export default function ChangeEmailPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.3 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}
             >
-
               <EmailInput
                 id="newEmail"
                 label="新しいメールアドレス"
-                icon={
-                  <MailIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                }
+                icon={<MailIcon className="h-4 w-4 mr-2 text-muted-foreground" />}
                 placeholder="新しいメールアドレスを入力"
                 register={register}
                 error={errors.newEmail}
@@ -327,9 +327,7 @@ export default function ChangeEmailPage() {
               <EmailInput
                 id="confirmNewEmail"
                 label="新しいメールアドレス（確認）"
-                icon={
-                  <ShieldCheckIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                }
+                icon={<ShieldCheckIcon className="h-4 w-4 mr-2 text-muted-foreground" />}
                 placeholder="新しいメールアドレスを再入力"
                 register={register}
                 error={errors.confirmNewEmail}
@@ -358,7 +356,7 @@ export default function ChangeEmailPage() {
                         transition={{
                           repeat: Infinity,
                           duration: 1,
-                          ease: "linear",
+                          ease: 'linear',
                         }}
                       />
                       処理中...
