@@ -249,7 +249,7 @@ export function validateCoupon(args: Partial<Doc<'coupon'>>) {
   }
 }
 
-export function validateCouponAvailableMenu(args: Partial<Doc<'coupon_available_menu'>>) {
+export function validateCouponExclusionMenu(args: Partial<Doc<'coupon_exclusion_menu'>>) {
   if (args.menuId && args.menuId.length > MAX_TEXT_LENGTH) {
     throw new ConvexError({
       message: `メニューIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
@@ -387,9 +387,9 @@ export function validateCustomerDetail(args: Partial<Doc<'customer_detail'>>) {
       status: 400,
     });
   }
-  if (args.gender && args.gender !== '未設定' && args.gender !== '男性' && args.gender !== '女性') {
+  if (args.gender && args.gender !== 'all' && args.gender !== 'male' && args.gender !== 'female') {
     throw new ConvexError({
-      message: '性別は未設定、男性、女性のいずれかで入力してください',
+      message: '性別はall、male、femaleのいずれかで入力してください',
       code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
       severity: 'low',
       status: 400,
@@ -436,30 +436,16 @@ export function validateMenu(args: Partial<Doc<'menu'>>) {
       status: 400,
     });
   }
-  if (args.salePrice && args.salePrice < 0) {
+
+  if (args.timeToMin && args.timeToMin.length === 0) {
     throw new ConvexError({
-      message: 'セール価格は0以上で入力してください',
+      message: '施術時間を入力してください',
       code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
       severity: 'low',
       status: 400,
     });
   }
-  if (args.timeToMin && args.timeToMin < 0) {
-    throw new ConvexError({
-      message: '施術時間は0以上で入力してください',
-      code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-      severity: 'low',
-      status: 400,
-    });
-  }
-  if (args.category && args.category.length > MAX_CATEGORY_LENGTH) {
-    throw new ConvexError({
-      message: `カテゴリは${MAX_CATEGORY_LENGTH}文字以内で入力してください`,
-      code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-      severity: 'low',
-      status: 400,
-    });
-  }
+
   if (args.description && args.description.length > MAX_NOTES_LENGTH) {
     throw new ConvexError({
       message: `説明は${MAX_NOTES_LENGTH}文字以内で入力してください`,
@@ -485,7 +471,6 @@ export function validateMenu(args: Partial<Doc<'menu'>>) {
     });
   }
 }
-
 // OPTION
 export const validateOption = (args: Partial<Doc<'salon_option'>>) => {
   if (args.unitPrice !== undefined && args.unitPrice < 0) {
@@ -544,14 +529,6 @@ export const validateOption = (args: Partial<Doc<'salon_option'>>) => {
       status: 400,
     });
   }
-  if (args.category !== undefined && args.category.length > MAX_TEXT_LENGTH) {
-    throw new ConvexError({
-      message: `カテゴリは${MAX_TEXT_LENGTH}文字以下である必要があります`,
-      code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-      severity: 'low',
-      status: 400,
-    });
-  }
   if (args.description !== undefined && args.description.length > MAX_NOTES_LENGTH) {
     throw new ConvexError({
       message: `説明は${MAX_NOTES_LENGTH}文字以下である必要があります`,
@@ -562,7 +539,7 @@ export const validateOption = (args: Partial<Doc<'salon_option'>>) => {
   }
 };
 
-export function validateMenuAvailableStaff(args: Partial<Doc<'menu_available_staff'>>) {
+export function validateMenuExclusionStaff(args: Partial<Doc<'menu_exclusion_staff'>>) {
   if (args.menuId && args.menuId.length > MAX_TEXT_LENGTH) {
     throw new ConvexError({
       message: `メニューIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
@@ -664,15 +641,6 @@ export function validatePointConfig(args: Partial<Doc<'point_config'>>) {
       status: 400,
     });
   }
-
-  if (args.isFixedPoint === false && args.pointRate === undefined) {
-    throw new ConvexError({
-      message: '変動ポイント設定時はポイント付与率を設定してください',
-      code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-      severity: 'low',
-      status: 400,
-    });
-  }
 }
 
 export function validatePointQueue(args: Partial<Doc<'point_task_queue'>>) {
@@ -713,9 +681,7 @@ export function validatePointTransaction(args: Partial<Doc<'point_transaction'>>
   }
 }
 
-export function validatePointConfigAvailableMenu(
-  args: Partial<Doc<'point_config_available_menu'>>
-) {
+export function validatePointExclusionMenu(args: Partial<Doc<'point_exclusion_menu'>>) {
   if (args.menuId && args.menuId.length > MAX_TEXT_LENGTH) {
     throw new ConvexError({
       message: `メニューIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
