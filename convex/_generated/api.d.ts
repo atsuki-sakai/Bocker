@@ -19,7 +19,7 @@ import type * as carte_detail from "../carte/detail.js";
 import type * as constants from "../constants.js";
 import type * as coupon_config from "../coupon/config.js";
 import type * as coupon_core from "../coupon/core.js";
-import type * as coupon_coupon_available_menu from "../coupon/coupon_available_menu.js";
+import type * as coupon_coupon_exclusion_menu from "../coupon/coupon_exclusion_menu.js";
 import type * as coupon_transaction from "../coupon/transaction.js";
 import type * as customer_core from "../customer/core.js";
 import type * as customer_detail from "../customer/detail.js";
@@ -30,7 +30,7 @@ import type * as menu_menu_available_staff from "../menu/menu_available_staff.js
 import type * as option_core from "../option/core.js";
 import type * as point_auth from "../point/auth.js";
 import type * as point_config from "../point/config.js";
-import type * as point_point_available_menu from "../point/point_available_menu.js";
+import type * as point_exclusion_menu from "../point/exclusion_menu.js";
 import type * as point_task_queue from "../point/task_queue.js";
 import type * as point_transaction from "../point/transaction.js";
 import type * as reservation_core from "../reservation/core.js";
@@ -68,7 +68,7 @@ declare const fullApi: ApiFromModules<{
   constants: typeof constants;
   "coupon/config": typeof coupon_config;
   "coupon/core": typeof coupon_core;
-  "coupon/coupon_available_menu": typeof coupon_coupon_available_menu;
+  "coupon/coupon_exclusion_menu": typeof coupon_coupon_exclusion_menu;
   "coupon/transaction": typeof coupon_transaction;
   "customer/core": typeof customer_core;
   "customer/detail": typeof customer_detail;
@@ -79,7 +79,7 @@ declare const fullApi: ApiFromModules<{
   "option/core": typeof option_core;
   "point/auth": typeof point_auth;
   "point/config": typeof point_config;
-  "point/point_available_menu": typeof point_point_available_menu;
+  "point/exclusion_menu": typeof point_exclusion_menu;
   "point/task_queue": typeof point_task_queue;
   "point/transaction": typeof point_transaction;
   "reservation/core": typeof reservation_core;
