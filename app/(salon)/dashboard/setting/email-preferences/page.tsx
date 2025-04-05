@@ -3,31 +3,22 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { 
-  MailIcon, 
-  Trash2Icon, 
-  CheckCircleIcon, 
+import {
+  MailIcon,
+  CheckCircleIcon,
   AlertCircleIcon,
   StarIcon,
   MailQuestionIcon,
   LoaderCircleIcon,
   SendIcon,
-  RefreshCwIcon
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { DashboardSection } from "@/components/common";
+  RefreshCwIcon,
+} from 'lucide-react';
+import { Dialog } from '@/components/common';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { DashboardSection } from '@/components/common';
 import type { ClerkEmailAddress } from '@/lib/types';
 
 export default function EmailPreferencesPage() {
@@ -266,47 +257,17 @@ export default function EmailPreferencesPage() {
 
                     {!email.primary && (
                       <Dialog
+                        title="メールアドレスを削除しますか？"
+                        description={`このメールアドレスでのログインができなくなります。
+                        ${email.emailAddress}
+                        `}
+                        onConfirmAction={() => deleteEmail(email.id)}
                         open={showDeleteDialog && emailToDelete === email.id}
                         onOpenChange={(open) => {
                           if (!open) setShowDeleteDialog(false);
                           if (open) setEmailToDelete(email.id);
                         }}
-                      >
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 sm:flex-initial text-destructive hover:text-destructive"
-                            disabled={isProcessing}
-                            onClick={() => {
-                              setEmailToDelete(email.id);
-                              setShowDeleteDialog(true);
-                            }}
-                          >
-                            <Trash2Icon className="h-4 w-4 mr-2" />
-                            削除
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>メールアドレスを削除しますか？</DialogTitle>
-                            <DialogDescription>
-                              このメールアドレスでのログインができなくなります。
-                              <div className="mt-2 p-2 bg-muted rounded font-medium">
-                                {email.emailAddress}
-                              </div>
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter className="flex justify-end gap-2 mt-4">
-                            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                              キャンセル
-                            </Button>
-                            <Button variant="destructive" onClick={() => deleteEmail(email.id)}>
-                              削除する
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                      />
                     )}
                   </div>
                 </div>
