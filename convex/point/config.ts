@@ -2,19 +2,12 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { CONVEX_ERROR_CODES } from '../constants';
-import {
-  handleConvexApiError,
-  removeEmptyFields,
-  trashRecord,
-  KillRecord,
-  authCheck,
-} from '../helpers';
+import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
 import { validatePointConfig } from '../validators';
 
 export const add = mutation({
   args: {
     salonId: v.id('salon'),
-    menuIds: v.optional(v.array(v.id('menu'))), // 適応されるメニューID
     isFixedPoint: v.optional(v.boolean()), // 固定ポイントかどうか
     pointRate: v.optional(v.number()), // ポイント付与率  利用金額に対しての付与率 (例: 0.1なら10%)
     fixedPoint: v.optional(v.number()), // 固定ポイント (例: 100円につき1ポイント)
@@ -51,17 +44,16 @@ export const get = query({
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
-      return await ctx.db
-        .query('point_config')
-        .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
-        .first();
+    return await ctx.db
+      .query('point_config')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .first();
   },
 });
 
 export const update = mutation({
   args: {
     salonId: v.id('salon'),
-    menuIds: v.optional(v.array(v.id('menu'))), // 適応されるメニューID
     isFixedPoint: v.optional(v.boolean()), // 固定ポイントかどうか
     pointRate: v.optional(v.number()), // ポイント付与率  利用金額に対しての付与率 (例: 0.1なら10%)
     fixedPoint: v.optional(v.number()), // 固定ポイント (例: 100円につき1ポイント)
@@ -105,7 +97,6 @@ export const update = mutation({
 export const upsert = mutation({
   args: {
     salonId: v.id('salon'),
-    menuIds: v.optional(v.array(v.id('menu'))), // 適応されるメニューID
     isFixedPoint: v.optional(v.boolean()), // 固定ポイントかどうか
     pointRate: v.optional(v.number()), // ポイント付与率  利用金額に対しての付与率 (例: 0.1なら10%)
     fixedPoint: v.optional(v.number()), // 固定ポイント (例: 100円につき1ポイント)
@@ -123,7 +114,8 @@ export const upsert = mutation({
     if (existingConfig) {
       const updateData = removeEmptyFields(args);
       delete updateData.salonId;
-      return await ctx.db.patch(existingConfig._id, updateData);
+      await ctx.db.patch(existingConfig._id, updateData);
+      return existingConfig._id;
     } else {
       return await ctx.db.insert('point_config', {
         ...args,
