@@ -28,7 +28,10 @@ export type DayOfWeek =
   | 'sunday';
 
 // 性別の型定義
-export const genderType = v.union(v.literal('未設定'), v.literal('男性'), v.literal('女性'));
+export const genderType = v.union(v.literal('all'), v.literal('male'), v.literal('female'));
+
+// 対象タイプの型定義
+export const targetType = v.union(v.literal('all'), v.literal('first'), v.literal('repeat'));
 
 // サブスクリプション関連の型定義
 export const billingPeriodType = v.union(v.literal('monthly'), v.literal('yearly'));
