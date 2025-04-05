@@ -169,6 +169,7 @@ export default function MenuAddForm() {
   const [tagInput, setTagInput] = useState<string>('');
 
   const uploadImage = useAction(api.storage.core.uploadImage);
+  const deleteImage = useAction(api.storage.core.deleteImage);
   const createMenu = useMutation(api.menu.core.add);
 
   const {
@@ -227,6 +228,7 @@ export default function MenuAddForm() {
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
     console.log('data', data);
+    let uploadImagePath: string | undefined;
     try {
       if (!currentFile || !salon?._id) {
         toast.error('画像とサロン情報が必要です');
@@ -250,12 +252,18 @@ export default function MenuAddForm() {
 
       // メニュー登録
       const { salePrice, ...restMenuData } = data;
+      uploadImagePath = uploadResult?.publicUrl;
 
       // APIに送信するデータを作成
       const createData: Partial<Doc<'menu'>> = {
         ...restMenuData,
-        imgPath: uploadResult?.publicUrl || '',
+        imgPath: uploadImagePath || '',
       };
+
+      // imgFilePathプロパティが残っている場合は明示的に削除
+      if ('imgFilePath' in createData) {
+        delete createData.imgFilePath;
+      }
 
       // 明示的にundefinedを設定して、DBでnullとして扱われるようにする
       if (
@@ -278,6 +286,11 @@ export default function MenuAddForm() {
       router.push('/dashboard/menu');
     } catch (error) {
       console.error('エラー詳細:', error);
+      if (uploadImagePath) {
+        await deleteImage({
+          imgUrl: uploadImagePath,
+        });
+      }
       const errorDetails = handleError(error);
       toast.error('メニュー登録に失敗しました: ' + errorDetails.message);
     } finally {
