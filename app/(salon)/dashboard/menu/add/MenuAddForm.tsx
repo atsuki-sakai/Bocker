@@ -52,16 +52,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
 import { Doc } from '@/convex/_generated/dataModel';
-
-// 型定義
-export const genderType = ['male', 'female', 'all'] as const;
-export const targetType = ['all', 'first', 'repeat'] as const;
-export const menuPaymentMethodType = ['cash', 'credit_card', 'all'] as const;
-
-export type GenderType = (typeof genderType)[number];
-export type TargetType = (typeof targetType)[number];
-export type MenuPaymentMethodType = (typeof menuPaymentMethodType)[number];
-
+import {
+  genderType,
+  targetType,
+  menuPaymentMethodType,
+  GenderType,
+  TargetType,
+  MenuPaymentMethodType,
+} from '@/lib/types';
 // バリデーションスキーマ
 const schemaMenu = z
   .object({
