@@ -55,6 +55,12 @@ export default function CouponList() {
                       scope="col"
                       className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6"
                     >
+                      ステータス
+                    </th>
+                    <th
+                      scope="col"
+                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                    >
                       クーポン名
                     </th>
 
@@ -71,13 +77,6 @@ export default function CouponList() {
                       割引額
                     </th>
 
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                    >
-                      ステータス
-                    </th>
-
                     <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
                       <span className="sr-only">編集</span>
                     </th>
@@ -90,6 +89,15 @@ export default function CouponList() {
                   {results.length > 0 ? (
                     results?.map((coupon: Doc<'coupon'>, index: number) => (
                       <tr key={`${coupon._id.slice(0, 4)}-${index}`}>
+                        <td
+                          className={`py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6 `}
+                        >
+                          <span
+                            className={`font-bold text-xs ${coupon.isActive ? 'bg-green-600' : 'bg-gray-400'} text-white px-2 py-1 rounded-md`}
+                          >
+                            {coupon.isActive ? '有効' : '無効'}
+                          </span>
+                        </td>
                         <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6">
                           {coupon.name}
                           <br />
@@ -104,9 +112,7 @@ export default function CouponList() {
                             ? `${coupon.percentageDiscountValue}%`
                             : `${coupon.fixedDiscountValue}円`}
                         </td>
-                        <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
-                          {coupon.isActive ? '有効' : '無効'}
-                        </td>
+
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                           <Link
                             href={`/dashboard/coupon/edit/${coupon._id}`}
