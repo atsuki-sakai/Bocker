@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { Loading, Dialog } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { useMutation } from 'convex/react';
-import { Id } from '@/convex/_generated/dataModel';
+import { Id, Doc } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { handleError } from '@/lib/errors';
 
@@ -71,7 +71,7 @@ export default function OptionList() {
                     scope="col"
                     className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6"
                   >
-                    有効/無効
+                    ステータス
                   </th>
                   <th
                     scope="col"
@@ -113,7 +113,7 @@ export default function OptionList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {options.map((option) => (
+                {options.map((option: Doc<'salon_option'>) => (
                   <tr key={option._id}>
                     <td
                       className={`py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6 `}
@@ -179,7 +179,7 @@ export default function OptionList() {
           </div>
         </div>
       </div>
-      {options && options.length === 0 && status == 'CanLoadMore' && (
+      {options && options.length > 0 && status == 'CanLoadMore' && (
         <div className="flex justify-center mt-4">
           <Button variant="outline" onClick={() => loadMore(numberOfItems)}>
             オプションをさらに読み込む
