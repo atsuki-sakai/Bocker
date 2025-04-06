@@ -255,3 +255,37 @@ export const getByCustomerId = query({
     return detail;
   },
 });
+
+// 利用回数の更新
+export const updateUseCount = mutation({
+  args: {
+    customerId: v.id('customer'),
+    type: v.union(v.literal('increment'), v.literal('decrement')),
+  },
+  handler: async (ctx, args) => {
+    authCheck(ctx);
+    const customer = await ctx.db.get(args.customerId);
+    if (!customer) {
+      console.error('UpdateUseCount: 指定された顧客が存在しません', { ...args });
+      throw new ConvexError({
+        message: '指定された顧客が存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        status: 404,
+        severity: 'low',
+        context: {
+          customerId: args.customerId,
+        },
+      });
+    }
+
+    if (args.type === 'increment') {
+      return await ctx.db.patch(args.customerId, {
+        useCount: customer.useCount ? customer.useCount + 1 : 1,
+      });
+    } else {
+      return await ctx.db.patch(args.customerId, {
+        useCount: customer.useCount ? customer.useCount - 1 : 0,
+      });
+    }
+  },
+});
