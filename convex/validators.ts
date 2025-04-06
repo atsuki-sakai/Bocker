@@ -333,7 +333,7 @@ export function validateCustomer(args: Partial<Doc<'customer'>>) {
       status: 400,
     });
   }
-  if (args.tags && args.email?.includes('@')) {
+  if (args.email && args.email?.includes('@')) {
     throw new ConvexError({
       message: 'メールアドレスが不正です',
       code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
@@ -699,10 +699,6 @@ export function validatePointExclusionMenu(args: Partial<Doc<'point_exclusion_me
   }
 }
 
-
-
-
-
 //================================================
 // RESERVATION
 //================================================
@@ -1048,9 +1044,9 @@ export function validateStaffAuth(args: Partial<Doc<'staff_auth'>>) {
       status: 400,
     });
   }
-  if (args.hashPinCode && args.hashPinCode.length > MAX_HASH_PIN_CODE_LENGTH) {
+  if (args.hashPinCode && args.hashPinCode.length > MAX_HASH_PIN_CODE_LENGTH * 10) {
     throw new ConvexError({
-      message: `ハッシュ化されたピンコードは${MAX_HASH_PIN_CODE_LENGTH}文字以内で入力してください`,
+      message: `ハッシュ化されたピンコードは${MAX_HASH_PIN_CODE_LENGTH * 10}文字以内で入力してください`,
       code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
       severity: 'low',
       status: 400,
