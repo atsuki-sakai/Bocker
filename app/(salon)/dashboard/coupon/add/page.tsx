@@ -48,7 +48,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MAX_COUPON_UID_LENGTH } from '@/lib/constants';
-import ExclusionMenu from '../_components/ExculusionMenu';
+import ExclusionMenu from '../_components/ExclusionMenu';
 import { Id } from '@/convex/_generated/dataModel';
 // スキーマとタイプ定義
 
