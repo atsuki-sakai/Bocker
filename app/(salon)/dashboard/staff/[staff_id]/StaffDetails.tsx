@@ -38,6 +38,7 @@ import {
   Calendar,
   Info,
   FileEdit,
+  LucideIcon,
 } from 'lucide-react';
 
 // アニメーション設定
@@ -70,7 +71,7 @@ const InfoField = ({
   value,
   tooltip,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   value: string | number;
   tooltip?: string;
@@ -106,7 +107,7 @@ const SectionHeader = ({
   title,
   description,
 }: {
-  icon: any;
+  icon: LucideIcon;
   title: string;
   description?: string;
 }) => (
