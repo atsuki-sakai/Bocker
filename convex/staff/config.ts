@@ -140,6 +140,8 @@ export const upsert = mutation({
     } else {
       const updateData = removeEmptyFields(args);
       delete updateData.staffConfigId;
+      delete updateData.staffId;
+      delete updateData.salonId;
       return await ctx.db.patch(existingStaffConfig._id, updateData);
     }
   },
