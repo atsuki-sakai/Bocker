@@ -225,16 +225,6 @@ export const createSubscriptionSession = action({
     const successUrl = `${baseUrl}/dashboard/subscription/success`;
     const cancelUrl = `${baseUrl}/dashboard/subscription`;
 
-    // URLが有効でない場合はエラーをスロー
-    if (!successUrl.startsWith('http') || !cancelUrl.startsWith('http')) {
-      throw new ConvexError({
-        message: '有効なリダイレクトURLが設定されていません',
-        code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-        severity: 'medium',
-        status: 500,
-      });
-    }
-
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
