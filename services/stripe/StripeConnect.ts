@@ -305,8 +305,8 @@ export class StripeConnect {
         // オンボーディングが完了していない場合、アカウントリンク（オンボーディング用）を生成
         const accountLink = await this.stripe.accountLinks.create({
           account: accountId,
-          refresh_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/dashboard/setting?refresh=true`,
-          return_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/dashboard/setting?success=true`,
+          refresh_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/setting?refresh=true`,
+          return_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/setting?success=true`,
           type: 'account_onboarding',
         });
 

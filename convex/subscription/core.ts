@@ -8,10 +8,11 @@ import { CONVEX_ERROR_CODES } from '../constants';
 import { trashRecord, KillRecord, removeEmptyFields, authCheck } from '../helpers';
 import { validateSubscription } from '../validators';
 
+// 環境変数が設定されていない場合のデフォルト値を追加
 const baseUrl =
   process.env.NEXT_PUBLIC_NODE_ENV === 'development'
-    ? process.env.NEXT_PUBLIC_DEVELOP_URL!
-    : process.env.NEXT_PUBLIC_DEPLOY_URL!;
+    ? process.env.NEXT_PUBLIC_DEVELOP_URL || 'http://localhost:3000'
+    : process.env.NEXT_PUBLIC_DEPLOY_URL || 'https://bcker-project.vercel.app';
 
 // DBとStripeのサブスクリプションを同期
 export const syncSubscription = mutation({
@@ -221,9 +222,14 @@ export const createSubscriptionSession = action({
     }
     validateSubscription(args);
 
-    // URLが有効かどうか確認
+    // 常に有効なURLが設定されるようにする
     const successUrl = `${baseUrl}/dashboard/subscription/success`;
     const cancelUrl = `${baseUrl}/dashboard/subscription`;
+
+    // URLが有効かどうか確認 - ロギング追加
+    console.log(
+      `サブスクリプションのリダイレクトURL設定: successUrl=${successUrl}, cancelUrl=${cancelUrl}`
+    );
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
