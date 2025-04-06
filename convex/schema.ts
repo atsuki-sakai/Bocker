@@ -13,6 +13,7 @@ import {
   staffRoleType,
   pointTransactionType,
   targetType,
+  staffGenderType,
 } from './types';
 
 /**
@@ -208,6 +209,7 @@ export default defineSchema({
     firstName: v.optional(v.string()), // 名前
     lastName: v.optional(v.string()), // 苗字
     fullName: v.optional(v.string()), // 検索用フルネーム
+    useCount: v.optional(v.number()), // 利用回数
     lastReservationDate_unix: v.optional(v.number()), // 最終予約日
     tags: v.optional(v.array(v.string())), // タグ
     ...commonFields,
@@ -270,7 +272,7 @@ export default defineSchema({
     name: v.optional(v.string()), // スタッフ名
     age: v.optional(v.number()), // 年齢
     email: v.optional(v.string()), // メールアドレス
-    gender: v.optional(genderType), // 性別
+    gender: v.optional(staffGenderType), // 性別
     description: v.optional(v.string()), // 説明
     imgPath: v.optional(v.string()), // 画像ファイルパス
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
