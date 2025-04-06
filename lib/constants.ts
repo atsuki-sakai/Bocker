@@ -167,7 +167,7 @@ export const MAX_STAFF_AUTH_CODE_LENGTH = 6;
 // ポイントの有効期限の最大値
 export const MAX_POINT_EXPIRATION_DAYS = 365;
 // ポイント付与率の最大値
-export const MAX_POINT_RATE = 0.9;
+export const MAX_POINT_RATE = 100;
 // 固定ポイントの最大値
 export const MAX_FIXED_POINT = 10000;
 // ポイントの最大値
@@ -199,11 +199,11 @@ export const MAX_PIN_CODE_LENGTH = 20;
 // ハッシュ化されたピンコードの最大文字数
 export const MAX_HASH_PIN_CODE_LENGTH = 255;
 // 時間給の最大値
-export const MAX_HOURLY_RATE = 100000;
+export const MAX_HOURLY_RATE = 9999;
 // 指名料金の最大値
-export const MAX_EXTRA_CHARGE = 100000;
+export const MAX_EXTRA_CHARGE = 9999;
 // 優先度の最大値
-export const MAX_PRIORITY = 100;
+export const MAX_PRIORITY = 999;
 
 // UI
 export const POINT_EXPIRATION_DAYS = [
