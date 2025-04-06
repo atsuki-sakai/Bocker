@@ -13,7 +13,7 @@ import { ja } from 'date-fns/locale';
 import { useSalon } from '@/hooks/useSalon';
 // コンポーネントのインポート
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ExclusionMenu from '../../_components/ExculusionMenu';
+import ExclusionMenu from '../../_components/ExclusionMenu';
 import { DashboardSection } from '@/components/common';
 import { Label } from '@/components/ui/label';
 import {
