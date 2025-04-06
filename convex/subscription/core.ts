@@ -1,17 +1,17 @@
-
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
-import Stripe from "stripe";
-import { action } from "../_generated/server";
-import { ConvexError } from "convex/values";
-import { STRIPE_API_VERSION } from "@/lib/constants";
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
+import Stripe from 'stripe';
+import { action } from '../_generated/server';
+import { ConvexError } from 'convex/values';
+import { STRIPE_API_VERSION } from '@/lib/constants';
 import { CONVEX_ERROR_CODES } from '../constants';
 import { trashRecord, KillRecord, removeEmptyFields, authCheck } from '../helpers';
 import { validateSubscription } from '../validators';
+
 const baseUrl =
   process.env.NEXT_PUBLIC_NODE_ENV === 'development'
-    ? process.env.NEXT_PUBLIC_DEVELOP_URL
-    : process.env.NEXT_PUBLIC_DEPLOY_URL;
+    ? process.env.NEXT_PUBLIC_DEVELOP_URL!
+    : process.env.NEXT_PUBLIC_DEPLOY_URL!;
 
 // DBとStripeのサブスクリプションを同期
 export const syncSubscription = mutation({
@@ -220,13 +220,28 @@ export const createSubscriptionSession = action({
       });
     }
     validateSubscription(args);
+
+    // URLが有効かどうか確認
+    const successUrl = `${baseUrl}/dashboard/subscription/success`;
+    const cancelUrl = `${baseUrl}/dashboard/subscription`;
+
+    // URLが有効でない場合はエラーをスロー
+    if (!successUrl.startsWith('http') || !cancelUrl.startsWith('http')) {
+      throw new ConvexError({
+        message: '有効なリダイレクトURLが設定されていません',
+        code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
+        severity: 'medium',
+        status: 500,
+      });
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       customer: args.stripeCustomerId,
       line_items: [{ price: args.priceId, quantity: 1 }],
-      success_url: `${baseUrl}/dashboard/subscription/success`,
-      cancel_url: `${baseUrl}/dashboard/subscription`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       client_reference_id: args.clerkUserId,
       metadata: {
         clerkUserId: args.clerkUserId,
