@@ -1,16 +1,10 @@
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import {
-  handleConvexApiError,
-  removeEmptyFields,
-  trashRecord,
-  KillRecord,
-  authCheck,
-} from '../helpers';
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
+import { ConvexError } from 'convex/values';
+import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
 import { paginationOptsValidator } from 'convex/server';
 import { CONVEX_ERROR_CODES } from '../constants';
-import { genderType } from '../types';
+import { staffGenderType } from '../types';
 import { validateStaff } from '../validators';
 
 // スタッフの追加
@@ -20,9 +14,9 @@ export const add = mutation({
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
-    gender: v.optional(genderType),
+    gender: v.optional(staffGenderType),
     description: v.optional(v.string()),
-    imgFilePath: v.optional(v.string()),
+    imgPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -50,6 +44,17 @@ export const add = mutation({
   },
 });
 
+// スタッフの取得
+export const get = query({
+  args: {
+    staffId: v.id('staff'),
+  },
+  handler: async (ctx, args) => {
+    authCheck(ctx);
+    return await ctx.db.get(args.staffId);
+  },
+});
+
 // スタッフ情報の更新
 export const update = mutation({
   args: {
@@ -57,9 +62,9 @@ export const update = mutation({
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
-    gender: v.optional(genderType),
+    gender: v.optional(staffGenderType),
     description: v.optional(v.string()),
-    imgFilePath: v.optional(v.string()),
+    imgPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -121,9 +126,9 @@ export const upsert = mutation({
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
-    gender: v.optional(genderType),
+    gender: v.optional(staffGenderType),
     description: v.optional(v.string()),
-    imgFilePath: v.optional(v.string()),
+    imgPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -134,12 +139,12 @@ export const upsert = mutation({
     if (!existingStaff || existingStaff.isArchive) {
       return await ctx.db.insert('staff', {
         ...args,
-        salonId: args.salonId,
         isArchive: false,
       });
     } else {
       const updateData = removeEmptyFields(args);
       delete updateData.staffId;
+      delete updateData.salonId;
       return await ctx.db.patch(existingStaff._id, updateData);
     }
   },
@@ -148,10 +153,26 @@ export const upsert = mutation({
 export const kill = mutation({
   args: {
     staffId: v.id('staff'),
+    staffConfigId: v.id('staff_config'),
+    staffAuthId: v.id('staff_auth'),
   },
   handler: async (ctx, args) => {
     authCheck(ctx);
-    return await KillRecord(ctx, args.staffId);
+
+    if (args.staffConfigId) {
+      await KillRecord(ctx, args.staffConfigId);
+    }
+    if (args.staffAuthId) {
+      await KillRecord(ctx, args.staffAuthId);
+    }
+    if (args.staffId) {
+      await KillRecord(ctx, args.staffId);
+    }
+    return {
+      deletedStaffConfigId: args.staffConfigId,
+      deletedStaffAuthId: args.staffAuthId,
+      deletedStaffId: args.staffId,
+    };
   },
 });
 
@@ -247,5 +268,111 @@ export const getBySalonIdAndEmail = query({
           .eq('isArchive', false)
       )
       .paginate(args.paginationOpts);
+  },
+});
+
+// 関連するテーブルの取得
+export const getRelatedTables = query({
+  args: {
+    staffId: v.id('staff'),
+    salonId: v.id('salon'),
+  },
+  handler: async (ctx, args) => {
+    authCheck(ctx);
+
+    // staffの取得にもisArchiveチェックを追加
+    const staff = await ctx.db.get(args.staffId);
+    if (!staff) {
+      throw new ConvexError({
+        message: '指定されたスタッフが存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          staffId: args.staffId,
+          salonId: args.salonId,
+        },
+      });
+    }
+
+    // 残りのデータを並列で取得
+    const [staffConfig, staffAuth] = await Promise.all([
+      ctx.db
+        .query('staff_config')
+        .withIndex('by_staff_id', (q) =>
+          q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+        )
+        .first(),
+      ctx.db
+        .query('staff_auth')
+        .withIndex('by_staff_id', (q) => q.eq('staffId', args.staffId).eq('isArchive', false))
+        .first(),
+    ]);
+
+    if (!staffConfig) {
+      throw new ConvexError({
+        message: '指定されたスタッフの設定が存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          staffId: args.staffId,
+          salonId: args.salonId,
+        },
+      });
+    }
+
+    if (!staffAuth) {
+      throw new ConvexError({
+        message: '指定されたスタッフの認証情報が存在しません',
+        code: CONVEX_ERROR_CODES.NOT_FOUND,
+        severity: 'low',
+        status: 404,
+        context: {
+          staffId: args.staffId,
+          salonId: args.salonId,
+        },
+      });
+    }
+
+    return {
+      salonId: staff.salonId,
+      staffId: staff._id,
+      name: staff.name,
+      age: staff.age,
+      email: staff.email,
+      gender: staff.gender,
+      description: staff.description,
+      imgPath: staff.imgPath,
+      isActive: staff.isActive,
+      staffAuthId: staffAuth._id,
+      pinCode: staffAuth.pinCode,
+      role: staffAuth.role,
+      staffConfigId: staffConfig._id,
+      hourlyRate: staffConfig.hourlyRate,
+      extraCharge: staffConfig.extraCharge,
+      priority: staffConfig.priority,
+    };
+  },
+});
+
+export const removeImgPath = mutation({
+  args: {
+    staffId: v.id('staff'),
+  },
+  handler: async (ctx, args) => {
+    authCheck(ctx);
+    const staff = await ctx.db.get(args.staffId);
+    if (!staff) {
+      throw new ConvexError({
+        message: '指定されたスタッフが存在しません',
+      });
+    }
+    const deletedStaffImage = await ctx.db.patch(args.staffId, {
+      imgPath: undefined,
+    });
+    return {
+      deletedStaffImage,
+    };
   },
 });
