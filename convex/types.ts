@@ -29,7 +29,11 @@ export type DayOfWeek =
 
 // 性別の型定義
 export const genderType = v.union(v.literal('all'), v.literal('male'), v.literal('female'));
-
+export const staffGenderType = v.union(
+  v.literal('unselected'),
+  v.literal('male'),
+  v.literal('female')
+);
 // 対象タイプの型定義
 export const targetType = v.union(v.literal('all'), v.literal('first'), v.literal('repeat'));
 
