@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import { Menu, Search, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Id } from '@/convex/_generated/dataModel';
+import { Id, Doc } from '@/convex/_generated/dataModel';
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import { api } from '@/convex/_generated/api';
 import { useSalon } from '@/hooks/useSalon';
@@ -46,7 +46,7 @@ export default function ExclusionMenu({ selectedMenuIds, setSelectedMenuIds }: E
   function handleToggleAll() {
     if (!menus || menus.length === 0) return;
 
-    const allMenuIds = menus.map((menu) => menu._id);
+    const allMenuIds = menus.map((menu: Doc<'menu'>) => menu._id);
     const isAllSelected = menus.length > 0 && menus.length === selectedMenuIds.length;
 
     setSelectedMenuIds(isAllSelected ? [] : allMenuIds);
@@ -58,7 +58,7 @@ export default function ExclusionMenu({ selectedMenuIds, setSelectedMenuIds }: E
     if (!searchTerm.trim()) return menus;
 
     return menus.filter(
-      (menu) =>
+      (menu: Doc<'menu'>) =>
         (menu.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (menu.price?.toString() || '').includes(searchTerm)
     );
@@ -77,7 +77,7 @@ export default function ExclusionMenu({ selectedMenuIds, setSelectedMenuIds }: E
   // 選択されたメニューの情報を取得
   const selectedMenus = useMemo(() => {
     if (!menus) return [];
-    return menus.filter((menu) => selectedMenuIds.includes(menu._id));
+    return menus.filter((menu: Doc<'menu'>) => selectedMenuIds.includes(menu._id));
   }, [menus, selectedMenuIds]);
 
   return (
@@ -111,7 +111,7 @@ export default function ExclusionMenu({ selectedMenuIds, setSelectedMenuIds }: E
           {/* 選択済みメニューのサマリー表示 */}
           {selectedMenus.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
-              {selectedMenus.map((menu) => (
+              {selectedMenus.map((menu: Doc<'menu'>) => (
                 <Badge
                   key={menu._id}
                   variant="secondary"
@@ -152,7 +152,7 @@ export default function ExclusionMenu({ selectedMenuIds, setSelectedMenuIds }: E
           {/* メニューリスト */}
           <ScrollArea className="max-h-[80vh] rounded-md border p-2">
             <div className="space-y-1">
-              {filteredMenus.map((menu) => (
+              {filteredMenus.map((menu: Doc<'menu'>) => (
                 <div
                   key={menu._id}
                   className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"
