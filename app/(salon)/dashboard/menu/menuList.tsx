@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog } from '@/components/common';
+import { Doc } from '@/convex/_generated/dataModel';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +32,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSalon } from '@/hooks/useSalon';
 import { useMutation, useAction } from 'convex/react';
+
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
@@ -519,7 +521,7 @@ export default function MenuList() {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence>
-            {menus.map((menu) => (
+            {menus.map((menu: Doc<'menu'>) => (
               <MenuItem
                 key={menu._id}
                 menu={menu}
