@@ -54,7 +54,6 @@ import {
   Trash,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { de } from 'date-fns/locale';
 
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
