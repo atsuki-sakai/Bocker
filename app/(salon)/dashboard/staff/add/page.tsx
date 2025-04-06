@@ -1,4 +1,5 @@
 'use client';
+
 import { DashboardSection } from '@/components/common';
 import { useZodForm } from '@/hooks/useZodForm';
 import { useMutation, useAction } from 'convex/react';
@@ -47,7 +48,7 @@ import {
   Clipboard,
   Check,
   X,
-  Image,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -287,7 +288,7 @@ export default function StaffAddPage() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <div className="mb-2 flex items-center">
-                      <Image className="h-4 w-4 mr-2 text-gray-500" />
+                      <ImageIcon className="h-4 w-4 mr-2 text-gray-500" />
                       <span className="text-sm font-medium text-gray-700">スタッフ画像</span>
                     </div>
 
