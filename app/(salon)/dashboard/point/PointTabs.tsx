@@ -6,7 +6,7 @@ import { Coins, Gift } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Id } from '@/convex/_generated/dataModel';
 import { useZodForm } from '@/hooks/useZodForm';
-import ExclusionMenu from '../coupon/_components/ExculusionMenu';
+import ExclusionMenu from '../coupon/_components/ExclusionMenu';
 import { z } from 'zod';
 import { POINT_EXPIRATION_DAYS } from '@/lib/constants';
 import { toast } from 'sonner';
@@ -39,8 +39,8 @@ import xor from 'lodash-es/xor';
 const pointConfigSchema = z.object({
   id: z.string().optional(),
   isFixedPoint: z.boolean().default(false),
-  pointRate: z.number().min(0).max(1).optional(),
-  fixedPoint: z.number().min(0).optional(),
+  pointRate: z.number().min(0).max(100).optional(),
+  fixedPoint: z.number().min(0).max(10000).optional(),
   pointExpirationDays: z.number().min(1).optional().default(POINT_EXPIRATION_DAYS[0].value),
 });
 
@@ -171,30 +171,25 @@ export default function PointTabs() {
                           <Label htmlFor="point-type" className="text-sm font-medium">
                             ポイント付与タイプ
                           </Label>
-                          <div className="flex items-center justify-between p-3 rounded-md bg-slate-50 dark:bg-slate-800">
+                          <div
+                            className={`flex items-center justify-between p-3 rounded-md ${
+                              watchedIsFixedPoint
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'bg-green-50 text-green-700'
+                            }`}
+                          >
                             <span className="text-sm">
                               {watchedIsFixedPoint ? '固定ポイント' : 'ポイント付与率'}
                             </span>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Switch
-                                    id="point-type"
-                                    checked={watchedIsFixedPoint}
-                                    onCheckedChange={(checked) => {
-                                      setValue('isFixedPoint', checked, { shouldDirty: true });
-                                    }}
-                                  />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>
-                                    {watchedIsFixedPoint
-                                      ? '料金に関わらず固定ポイントを付与'
-                                      : '料金に対する割合でポイントを付与'}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+
+                            <Switch
+                              id="point-type"
+                              checked={watchedIsFixedPoint}
+                              onCheckedChange={(checked) => {
+                                setValue('isFixedPoint', checked, { shouldDirty: true });
+                              }}
+                              className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-green-600"
+                            />
                           </div>
                         </div>
 
@@ -233,10 +228,10 @@ export default function PointTabs() {
                                 <Input
                                   id="pointRate"
                                   type="number"
-                                  placeholder="例: 0.05 (5%)"
-                                  step="0.01"
+                                  placeholder="例: 5 (5%)"
+                                  step="1"
                                   min="0"
-                                  max="1"
+                                  max="100"
                                   value={
                                     watch('pointRate') !== undefined ? watch('pointRate') || 0 : ''
                                   }
@@ -335,9 +330,7 @@ export default function PointTabs() {
                                 <span className="text-slate-500 dark:text-slate-400">
                                   ポイント付与率:
                                 </span>
-                                <span className="font-medium">
-                                  {((watch('pointRate') || 0) * 100).toFixed(1)}%
-                                </span>
+                                <span className="font-medium">{watch('pointRate') || 0}%</span>
                               </p>
                             )}
                             <p className="flex justify-between">
@@ -364,7 +357,7 @@ export default function PointTabs() {
                                 <p className="text-lg font-bold">
                                   {watchedIsFixedPoint
                                     ? watch('fixedPoint') || 0
-                                    : Math.floor((watch('pointRate') || 0) * 1000)}{' '}
+                                    : Math.floor((watch('pointRate') || 0) * 10)}{' '}
                                   ポイント
                                 </p>
                               </div>
@@ -375,7 +368,7 @@ export default function PointTabs() {
                                 <p className="text-lg font-bold">
                                   {watchedIsFixedPoint
                                     ? watch('fixedPoint') || 0
-                                    : Math.floor((watch('pointRate') || 0) * 5000)}{' '}
+                                    : Math.floor((watch('pointRate') || 0) * 50)}{' '}
                                   ポイント
                                 </p>
                               </div>
