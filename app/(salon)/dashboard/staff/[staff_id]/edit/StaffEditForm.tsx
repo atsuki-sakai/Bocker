@@ -319,7 +319,7 @@ export default function StaffEditForm() {
   if (!staffAllData) {
     return <Loading />;
   }
-  console.log(errors);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
