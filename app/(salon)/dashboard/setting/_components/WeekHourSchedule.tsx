@@ -763,7 +763,7 @@ export default function WeekHourSchedule() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="flex items-center text-green-600 bg-green-50 py-2 px-4 rounded"
+                  className="flex items-center text-green-600"
                 >
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   設定を保存しました
@@ -777,19 +777,39 @@ export default function WeekHourSchedule() {
                   <Button
                     type="submit"
                     size="lg"
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="min-w-[120px]"
                     onClick={handleSubmit(onSubmit)}
                     disabled={isSaving}
                   >
                     {isSaving ? (
                       <>
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        >
+                          <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                        </motion.div>
                         保存中...
                       </>
                     ) : (
                       <>
-                        <Save className="mr-2 h-4 w-4" />
-                        設定を保存
+                        <Save className="h-4 w-4" />
+                        営業時間を保存
                       </>
                     )}
                   </Button>
