@@ -20,7 +20,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Pencil,
   Trash2,
-  Plus,
   ChevronDown,
   MoreHorizontal,
   Eye,
