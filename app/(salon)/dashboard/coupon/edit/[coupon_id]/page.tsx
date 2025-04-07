@@ -294,7 +294,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         <Tabs defaultValue="preview" className="md:col-span-2">
           <TabsList>
             <TabsTrigger value="preview">基本設定</TabsTrigger>
-            <TabsTrigger value="detail">対象メニュー設定</TabsTrigger>
+            <TabsTrigger value="detail">除外メニュー設定</TabsTrigger>
           </TabsList>
           <TabsContent value="preview">
             {/* フォーム入力部分 */}
