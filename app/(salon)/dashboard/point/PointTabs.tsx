@@ -86,10 +86,10 @@ export default function PointTabs() {
   const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([]);
   const [initialExclusionMenuIds, setInitialExclusionMenuIds] = useState<Id<'menu'>[]>([]);
 
-  const getPointConfig = useQuery(api.point.config.get, salon ? { salonId: salon._id } : 'skip');
+  const pointConfig = useQuery(api.point.config.get, salon ? { salonId: salon._id } : 'skip');
   const initialExclusionData = useQuery(
     api.point.exclusion_menu.list,
-    getPointConfig?._id ? { salonId: salon!._id, pointConfigId: getPointConfig._id } : 'skip'
+    pointConfig?._id ? { salonId: salon!._id, pointConfigId: pointConfig._id } : 'skip'
   );
   const upsertPointConfig = useMutation(api.point.config.upsert);
   const upsertExclusionMenu = useMutation(api.point.exclusion_menu.upsert);
@@ -110,19 +110,19 @@ export default function PointTabs() {
   };
 
   useEffect(() => {
-    if (getPointConfig) {
+    if (pointConfig) {
       reset({
-        pointRate: getPointConfig.pointRate,
-        fixedPoint: getPointConfig.fixedPoint,
-        pointExpirationDays: getPointConfig.pointExpirationDays ?? POINT_EXPIRATION_DAYS[0].value,
-        isFixedPoint: getPointConfig.isFixedPoint,
+        pointRate: pointConfig.pointRate,
+        fixedPoint: pointConfig.fixedPoint,
+        pointExpirationDays: pointConfig.pointExpirationDays ?? POINT_EXPIRATION_DAYS[0].value,
+        isFixedPoint: pointConfig.isFixedPoint,
       });
       if (initialExclusionData) {
         setInitialExclusionMenuIds(initialExclusionData);
         setSelectedMenuIds(initialExclusionData);
       }
     }
-  }, [getPointConfig, initialExclusionData, reset]);
+  }, [pointConfig, initialExclusionData, reset]);
 
   const isExclusionDirty = useMemo(() => {
     return xor(initialExclusionMenuIds, selectedMenuIds).length > 0;
@@ -155,7 +155,7 @@ export default function PointTabs() {
     }
   };
 
-  if (!getPointConfig) {
+  if (!salon) {
     return <Loading />;
   }
 
