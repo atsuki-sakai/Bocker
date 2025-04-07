@@ -135,8 +135,8 @@ export default function CouponList() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={10} className="text-start  py-6 pl-6">
-                        <span className="text-gray-400 text-sm">クーポンがありません。</span>
+                      <td colSpan={10} className="text-gray-400 text-sm text-center py-6">
+                        クーポンがありません。
                       </td>
                     </tr>
                   )}
