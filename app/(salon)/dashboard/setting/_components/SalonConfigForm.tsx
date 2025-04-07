@@ -36,7 +36,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const salonConfigFormSchema = z.object({
   salonId: z.string(),
-  salonName: z.string().optional(), // サロン名
+  salonName: z
+    .string()
+    .min(1, 'サロン名は必須です')
+    .max(120, 'サロン名は120文字以内で入力してください'), // サロン名
   email: z.string().email('メールアドレスの形式が正しくありません').optional(), // メールアドレス（入力された場合はメール形式をチェック）
   phone: z
     .string()
@@ -235,11 +238,7 @@ export default function SalonConfigForm() {
         </CardHeader>
         <CardContent className="pt-6">
           <motion.div className="flex flex-col md:flex-row gap-6 items-center" layout>
-            <motion.div
-              className="relative w-full md:w-1/2 aspect-video overflow-hidden rounded-lg bg-muted"
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
+            <div className="relative w-full md:w-1/2 aspect-video overflow-hidden rounded-lg bg-muted">
               <Image
                 src={previewUrl}
                 alt="salon logo"
@@ -247,7 +246,7 @@ export default function SalonConfigForm() {
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
-            </motion.div>
+            </div>
             <div className="w-full md:w-1/2 flex flex-col gap-4">
               <motion.div
                 whileHover={{ scale: 1.01 }}
@@ -520,7 +519,7 @@ export default function SalonConfigForm() {
                   <Button
                     type="submit"
                     disabled={isSubmitting || !isDirty}
-                    className="min-w-[120px] bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all duration-300"
+                    className="min-w-[120px]"
                   >
                     {isSubmitting ? (
                       <>
