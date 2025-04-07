@@ -202,106 +202,103 @@ export default function StaffDetails() {
   return (
     <motion.div initial="hidden" animate="visible" variants={containerVariants}>
       {/* スタッフヘッダーカード */}
-      <motion.div variants={itemVariants}>
-        <Card className="mb-6 overflow-hidden border shadow-md hover:shadow-lg transition-all duration-300">
-          <CardContent className="p-0">
-            <div className="flex flex-col md:flex-row">
-              {/* サムネイル部分 */}
-              <div className="relative bg-gradient-to-br from-primary/20 to-primary/5 p-6 flex items-center justify-center md:w-1/3">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
-                  <Avatar className="h-48 w-48 border-4 border-white shadow-lg">
-                    {staffAllData.imgPath ? (
-                      <AvatarImage src={staffAllData.imgPath} alt={staffAllData.name} />
-                    ) : (
-                      <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                        {getInitials(staffAllData.name || '')}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                </motion.div>
-              </div>
 
-              {/* 情報部分 */}
-              <div className="p-6 md:w-2/3">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h2 className="text-2xl font-bold">{staffAllData.name}</h2>
-                    <p className="text-muted-foreground">
-                      {getGenderText(staffAllData.gender || '')} • {staffAllData.age}歳
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Badge
-                      variant={staffAllData.isActive ? 'default' : 'destructive'}
-                      className={`transition-all duration-300 ${
-                        staffAllData.isActive
-                          ? 'bg-green-500 hover:bg-green-600'
-                          : 'bg-red-500 hover:bg-red-600'
-                      }`}
-                    >
-                      {staffAllData.isActive ? 'アクティブ' : '非アクティブ'}
-                    </Badge>
-                    <Badge variant="outline" className="border-primary/50 text-primary">
-                      {getRoleDisplay(staffAllData.role || '')}
-                    </Badge>
-                  </div>
-                </div>
-                <p className="mt-2 text-gray-600">
-                  {staffAllData.description || '説明がありません'}
-                </p>
-
-                <div className="grid grid-cols-3 gap-4 mt-4">
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-3 rounded-lg">
-                    <div className="flex items-center gap-2 text-blue-600 mb-1">
-                      <Clock className="h-4 w-4" />
-                      <p className="text-xs font-medium">時給</p>
-                    </div>
-                    <p className="font-bold text-lg">¥{staffAllData.hourlyRate || 0}</p>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-3 rounded-lg">
-                    <div className="flex items-center gap-2 text-purple-600 mb-1">
-                      <Tag className="h-4 w-4" />
-                      <p className="text-xs font-medium">指名料金</p>
-                    </div>
-                    <p className="font-bold text-lg">¥{staffAllData.extraCharge || 0}</p>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-3 rounded-lg">
-                    <div className="flex items-center gap-2 text-amber-600 mb-1">
-                      <Star className="h-4 w-4" />
-                      <p className="text-xs font-medium">優先度</p>
-                    </div>
-                    <p className="font-bold text-lg">{staffAllData.priority || 0}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="bg-muted/30 px-6 py-3 flex justify-end">
-            <div className="flex gap-2">
-              <Button
-                variant="destructive"
-                size="sm"
-                className="gap-1"
-                onClick={handleShowDeleteDialog}
+      <Card className="mb-6 overflow-hidden border">
+        <CardContent className="p-0">
+          <div className="flex flex-col md:flex-row">
+            {/* サムネイル部分 */}
+            <div className="relative bg-gradient-to-br from-primary/20 to-primary/5 p-6 flex items-center justify-center md:w-1/3">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: 'spring', stiffness: 300 }}
               >
-                <Trash className="h-4 w-4" />
-                削除
-              </Button>
-              <Link href={`/dashboard/staff/${staff_id}/edit`}>
-                <Button variant="default" size="sm" className="gap-1">
-                  <FileEdit className="h-4 w-4" />
-                  編集
-                </Button>
-              </Link>
+                <Avatar className="h-48 w-48 border-4 border-white shadow-lg">
+                  {staffAllData.imgPath ? (
+                    <AvatarImage src={staffAllData.imgPath} alt={staffAllData.name} />
+                  ) : (
+                    <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+                      {getInitials(staffAllData.name || '')}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+              </motion.div>
             </div>
-          </CardFooter>
-        </Card>
-      </motion.div>
+
+            {/* 情報部分 */}
+            <div className="p-6 md:w-2/3">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h2 className="text-2xl font-bold">{staffAllData.name}</h2>
+                  <p className="text-muted-foreground">
+                    {getGenderText(staffAllData.gender || '')} • {staffAllData.age}歳
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Badge
+                    variant={staffAllData.isActive ? 'default' : 'destructive'}
+                    className={`transition-all duration-300 ${
+                      staffAllData.isActive
+                        ? 'bg-green-500 hover:bg-green-600'
+                        : 'bg-red-500 hover:bg-red-600'
+                    }`}
+                  >
+                    {staffAllData.isActive ? 'アクティブ' : '非アクティブ'}
+                  </Badge>
+                  <Badge variant="outline" className="border-primary/50 text-primary">
+                    {getRoleDisplay(staffAllData.role || '')}
+                  </Badge>
+                </div>
+              </div>
+              <p className="mt-2 text-gray-600">{staffAllData.description || '説明がありません'}</p>
+
+              <div className="grid grid-cols-3 gap-4 mt-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-blue-600 mb-1">
+                    <Clock className="h-4 w-4" />
+                    <p className="text-xs font-medium">時給</p>
+                  </div>
+                  <p className="font-bold text-lg">¥{staffAllData.hourlyRate || 0}</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-purple-600 mb-1">
+                    <Tag className="h-4 w-4" />
+                    <p className="text-xs font-medium">指名料金</p>
+                  </div>
+                  <p className="font-bold text-lg">¥{staffAllData.extraCharge || 0}</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-amber-600 mb-1">
+                    <Star className="h-4 w-4" />
+                    <p className="text-xs font-medium">優先度</p>
+                  </div>
+                  <p className="font-bold text-lg">{staffAllData.priority || 0}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="bg-muted/30 px-6 py-3 flex justify-end">
+          <div className="flex gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-1"
+              onClick={handleShowDeleteDialog}
+            >
+              <Trash className="h-4 w-4" />
+              削除
+            </Button>
+            <Link href={`/dashboard/staff/${staff_id}/edit`}>
+              <Button variant="default" size="sm" className="gap-1">
+                <FileEdit className="h-4 w-4" />
+                編集
+              </Button>
+            </Link>
+          </div>
+        </CardFooter>
+      </Card>
 
       {/* 詳細タブ */}
       <motion.div variants={itemVariants}>
