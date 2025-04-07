@@ -27,7 +27,6 @@ import {
   AlertCircle,
   X,
   Check,
-  RefreshCw,
   CalendarClock,
 } from 'lucide-react';
 import { api } from '@/convex/_generated/api';
