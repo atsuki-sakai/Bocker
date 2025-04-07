@@ -166,6 +166,7 @@ const ApiSettingsCard = () => {
                 e.preventDefault();
               }
             }}
+            autoComplete="off"
             className="space-y-6"
           >
             <div className="space-y-4">
@@ -200,7 +201,7 @@ const ApiSettingsCard = () => {
                     >
                       <div className="flex items-center gap-2 relative">
                         <Input
-                          type={showFields.lineAccessToken ? 'text' : 'password'}
+                          type={showFields.lineAccessToken ? 'text' : 'new-password'}
                           {...register('lineAccessToken')}
                           placeholder="LINE アクセストークン"
                           className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
@@ -239,7 +240,8 @@ const ApiSettingsCard = () => {
                     >
                       <div className="flex items-center gap-2 relative">
                         <Input
-                          type={showFields.lineChannelSecret ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          type={showFields.lineChannelSecret ? 'text' : 'new-password'}
                           {...register('lineChannelSecret')}
                           placeholder="LINE チャンネルシークレット"
                           className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
@@ -278,7 +280,7 @@ const ApiSettingsCard = () => {
                     >
                       <div className="flex items-center gap-2 relative">
                         <Input
-                          type={showFields.liffId ? 'text' : 'password'}
+                          type={showFields.liffId ? 'text' : 'new-password'}
                           {...register('liffId')}
                           placeholder="LIFF ID"
                           className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
@@ -317,7 +319,7 @@ const ApiSettingsCard = () => {
                     >
                       <div className="flex items-center gap-2 relative">
                         <Input
-                          type={showFields.destinationId ? 'text' : 'password'}
+                          type={showFields.destinationId ? 'text' : 'new-password'}
                           {...register('destinationId')}
                           placeholder="LINE公式アカウント識別子"
                           className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
