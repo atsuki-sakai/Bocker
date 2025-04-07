@@ -59,11 +59,30 @@ const couponSchema = z.object({
     .min(1, '1文字以上の値を入力してください')
     .max(MAX_COUPON_UID_LENGTH, `${MAX_COUPON_UID_LENGTH}文字以内で入力してください`),
   discountType: z.enum(['percentage', 'fixed']),
-  percentageDiscountValue: z
-    .number()
-    .min(0, '0以上の値を入力してください')
-    .max(100, '100以下の値を入力してください'),
-  fixedDiscountValue: z.number().min(0, '0以上の値を入力してください'),
+  percentageDiscountValue: z.preprocess(
+    (val) => {
+      // 空文字列の場合はnullを返す
+      if (val === '' || val === null || val === undefined) return null;
+      // 数値に変換できない場合もnullを返す
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    },
+    z.number().max(100, { message: '割引率は100%以下で入力してください' }).nullable().optional()
+  ),
+  fixedDiscountValue: z.preprocess(
+    (val) => {
+      // 空文字列の場合はnullを返す
+      if (val === '' || val === null || val === undefined) return null;
+      // 数値に変換できない場合もnullを返す
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    },
+    z
+      .number()
+      .max(99999, { message: '割引額は99999円以下で入力してください' })
+      .nullable()
+      .optional()
+  ),
   isActive: z.boolean(),
   startDate: z.date(),
   endDate: z.date().refine(
@@ -282,8 +301,8 @@ function CouponForm() {
         couponUid: data.couponUid,
         name: data.name,
         discountType: data.discountType,
-        percentageDiscountValue: data.percentageDiscountValue,
-        fixedDiscountValue: data.fixedDiscountValue,
+        percentageDiscountValue: data.percentageDiscountValue ?? undefined,
+        fixedDiscountValue: data.fixedDiscountValue ?? undefined,
         isActive: data.isActive,
       });
 
@@ -293,8 +312,8 @@ function CouponForm() {
         couponId,
         startDate_unix,
         endDate_unix,
-        maxUseCount: data.maxUseCount,
-        numberOfUse: data.numberOfUse,
+        maxUseCount: data.maxUseCount ?? undefined,
+        numberOfUse: 0,
       });
 
       upsertExclusionMenu({
@@ -313,6 +332,14 @@ function CouponForm() {
     }
   };
 
+  // フォームのエラーをデバッグ用に監視
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.log('フォームエラー:', errors);
+      toast.error('入力内容に誤りがあります。各項目を確認してください。');
+    }
+  }, [errors]);
+
   // 初期データの設定
   useEffect(() => {
     // 新規作成用の初期値設定
@@ -324,13 +351,14 @@ function CouponForm() {
       name: '',
       couponUid: '',
       discountType: 'percentage',
-      percentageDiscountValue: 10,
-      fixedDiscountValue: 1000,
+      percentageDiscountValue: undefined,
+      fixedDiscountValue: undefined,
       isActive: true,
       startDate: today,
       endDate: oneMonthLater,
       maxUseCount: 100,
       numberOfUse: 0,
+      selectedMenus: [],
     });
   }, [reset]);
 
