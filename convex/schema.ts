@@ -278,11 +278,11 @@ export default defineSchema({
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
     ...commonFields,
   })
-    .index('by_salon_id', ['salonId', 'isActive', 'isArchive'])
-    .index('by_name', ['name', 'isActive', 'isArchive'])
-    .index('by_email', ['email', 'isActive', 'isArchive'])
-    .index('by_salon_id_name', ['salonId', 'name', 'isActive', 'isArchive'])
-    .index('by_salon_id_email', ['salonId', 'email', 'isActive', 'isArchive']),
+    .index('by_salon_id', ['salonId', 'isArchive'])
+    .index('by_name', ['name', 'isArchive'])
+    .index('by_email', ['email', 'isArchive'])
+    .index('by_salon_id_name', ['salonId', 'name', 'isArchive'])
+    .index('by_salon_id_email', ['salonId', 'email', 'isArchive']),
 
   // スタッフの認証テーブル
   staff_auth: defineTable({
