@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loading } from '@/components/common';
 import { format, startOfToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { CalendarX2, Save, Info, CheckCircle, RefreshCw, Calendar } from 'lucide-react';
+import { CalendarX2, Save, Info, CheckCircle, Calendar } from 'lucide-react';
 import {
   Card,
   CardContent,
