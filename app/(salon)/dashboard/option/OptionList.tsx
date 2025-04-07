@@ -113,67 +113,75 @@ export default function OptionList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {options.map((option: Doc<'salon_option'>) => (
-                  <tr key={option._id}>
-                    <td
-                      className={`py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6 `}
-                    >
-                      <span
-                        className={`font-bold text-xs ${option.isActive ? 'bg-green-600' : 'bg-gray-400'} text-white px-2 py-1 rounded-md`}
+                {options && options.length > 0 ? (
+                  options.map((option: Doc<'salon_option'>) => (
+                    <tr key={option._id}>
+                      <td
+                        className={`py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6 `}
                       >
-                        {option.isActive ? '有効' : '無効'}
-                      </span>
-                    </td>
-                    <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6">
-                      {option.name}
-                    </td>
-                    <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
-                      {option.salePrice ? (
-                        <span className="line-through text-gray-500 text-xs">
-                          ¥{option.unitPrice?.toLocaleString()}
+                        <span
+                          className={`font-bold text-xs ${option.isActive ? 'bg-green-600' : 'bg-gray-400'} text-white px-2 py-1 rounded-md`}
+                        >
+                          {option.isActive ? '有効' : '無効'}
                         </span>
-                      ) : (
-                        <span className="text-sm text-gray-700">
-                          ¥{option.unitPrice?.toLocaleString()}
-                        </span>
-                      )}
-                      {option.salePrice ? (
-                        <span className="text-sm text-gray-700">
-                          / ¥{option.salePrice.toLocaleString()}
-                        </span>
-                      ) : (
-                        ''
-                      )}
-                    </td>
+                      </td>
+                      <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6">
+                        {option.name}
+                      </td>
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                        {option.salePrice ? (
+                          <span className="line-through text-gray-500 text-xs">
+                            ¥{option.unitPrice?.toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-700">
+                            ¥{option.unitPrice?.toLocaleString()}
+                          </span>
+                        )}
+                        {option.salePrice ? (
+                          <span className="text-sm text-gray-700">
+                            / ¥{option.salePrice.toLocaleString()}
+                          </span>
+                        ) : (
+                          ''
+                        )}
+                      </td>
 
-                    <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
-                      {option.orderLimit ? `${option.orderLimit}個` : '未設定'}
-                    </td>
-                    <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
-                      {option.timeToMin ? `${option.timeToMin}分` : '未設定'}
-                    </td>
-                    <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
-                      {option.tags && option.tags.length > 0 ? option.tags.join(', ') : '未設定'}
-                    </td>
-                    <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
-                      <Link
-                        href={`/dashboard/option/${option._id}/edit`}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        編集<span className="sr-only">, {option.name}</span>
-                      </Link>
-                    </td>
-                    <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
-                      <Button
-                        variant="ghost"
-                        onClick={() => showDeleteDialog(option._id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        削除<span className="sr-only">, {option.name}</span>
-                      </Button>
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                        {option.orderLimit ? `${option.orderLimit}個` : '未設定'}
+                      </td>
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                        {option.timeToMin ? `${option.timeToMin}分` : '未設定'}
+                      </td>
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                        {option.tags && option.tags.length > 0 ? option.tags.join(', ') : '未設定'}
+                      </td>
+                      <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
+                        <Link
+                          href={`/dashboard/option/${option._id}/edit`}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          編集<span className="sr-only">, {option.name}</span>
+                        </Link>
+                      </td>
+                      <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
+                        <Button
+                          variant="ghost"
+                          onClick={() => showDeleteDialog(option._id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          削除<span className="sr-only">, {option.name}</span>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="text-center py-6 text-sm text-gray-500">
+                      オプションがありません
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
