@@ -9,8 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useState, memo, useCallback, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useState, memo, useCallback, useEffect } from 'react';
 import {
   EyeOffIcon,
   EyeIcon,
@@ -202,7 +201,6 @@ PasswordStrengthIndicator.displayName = "PasswordStrengthIndicator";
 export default function ChangePasswordPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
-  const { id } = useParams();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
