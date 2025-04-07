@@ -589,7 +589,7 @@ export function validatePointAuth(args: Partial<Doc<'point_auth'>>) {
 
 export function validatePointConfig(args: Partial<Doc<'point_config'>>) {
   // pointRateのバリデーション
-  if (args.pointRate !== undefined) {
+  if (args.pointRate) {
     if (args.pointRate < 0 || args.pointRate > MAX_POINT_RATE) {
       throw new ConvexError({
         message: `ポイント付与率は0〜${MAX_POINT_RATE}の間で設定してください`,
@@ -601,7 +601,7 @@ export function validatePointConfig(args: Partial<Doc<'point_config'>>) {
   }
 
   // fixedPointのバリデーション
-  if (args.fixedPoint !== undefined) {
+  if (args.fixedPoint) {
     if (args.fixedPoint <= 0) {
       throw new ConvexError({
         message: `固定ポイントは0より大きい値を設定してください`,
