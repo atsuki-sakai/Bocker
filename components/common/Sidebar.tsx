@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
-import { usePathname } from "next/navigation";
-import { usePreloadedQuery } from "convex/react";
-import { useStaffAuth } from "@/hooks/useStaffAuth";
-import { Loading } from "@/components/common";
-import RoleBasedView from "./RoleBasedView";
+import { usePathname } from 'next/navigation';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { useState } from 'react';
+import { usePreloadedQuery } from 'convex/react';
+import { useStaffAuth } from '@/hooks/useStaffAuth';
+import { Loading } from '@/components/common';
+import RoleBasedView from './RoleBasedView';
 import {
   Dialog,
   DialogBackdrop,
@@ -16,7 +17,7 @@ import {
   MenuItem,
   MenuItems,
   TransitionChild,
-} from "@headlessui/react";
+} from '@headlessui/react';
 import {
   MenuIcon,
   CalendarIcon,
@@ -31,13 +32,13 @@ import {
   LogOutIcon,
   TicketIcon,
   GiftIcon,
-} from "lucide-react";
-import { useClerk, useAuth } from "@clerk/nextjs";
-import { api } from "@/convex/_generated/api";
-import { Preloaded } from "convex/react";
+} from 'lucide-react';
+import { useClerk, useAuth } from '@clerk/nextjs';
+import { api } from '@/convex/_generated/api';
+import { Preloaded } from 'convex/react';
 
 function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
+  return classes.filter(Boolean).join(' ');
 }
 
 interface SidebarProps {
@@ -51,7 +52,13 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   const { isSignedIn } = useAuth();
   const salon = usePreloadedQuery(preloadedSalon);
 
-  const { isAuthenticated: isStaffAuthenticated, logout: staffLogout, name: staffName, role: staffRole, salonId } = useStaffAuth();
+  const {
+    isAuthenticated: isStaffAuthenticated,
+    logout: staffLogout,
+    name: staffName,
+    role: staffRole,
+    salonId,
+  } = useStaffAuth();
   const pathname = usePathname(); // 現在のパスを取得
 
   // オーナーかスタッフかを判定
@@ -61,7 +68,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   // オーナーログアウト処理
   const handleOwnerSignOut = () => {
     signOut(() => {
-      window.location.href = "/sign-in";
+      window.location.href = '/sign-in';
     });
   };
 
@@ -71,7 +78,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
       staffLogout(salonId);
     }
   };
-  console.log("salon", salon);
+  console.log('salon', salon);
   // navigation の current は削除し、表示時に pathname と比較する
   const navigation = [
     {
@@ -149,14 +156,19 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   // オーナーのみに表示する項目
   const ownerOnlyNavigation = [
     {
-      name: "サブスクリプション",
+      name: 'サブスクリプション',
       href: `/dashboard/subscription`,
       icon: CreditCardIcon,
-    }
+    },
   ];
 
   if (!salon) {
     return <Loading />;
+  }
+
+  // サブスクリプションがアクティブでない場合はリダイレクト
+  if (salon?.subscriptionStatus !== 'active' && pathname !== '/dashboard/subscription') {
+    return redirect('/dashboard/subscription');
   }
 
   return (
@@ -193,7 +205,19 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                   </h1>
                   <p className="text-xs text-slate-500">サロンの予約・管理をもっと簡単に。</p>
                 </div>
+
                 <nav className="flex flex-1 flex-col">
+                  {isOwner && salon?.subscriptionStatus !== 'active' && (
+                    <div className="flex flex-col my-2 bg-green-50 p-2 rounded-md">
+                      <p className="text-xs text-green-700">
+                        <span className="inline-block font-bold mb-2">
+                          サブスクリプションをご契約ください。
+                        </span>
+                        <br />
+                        以下のリンクから契約後にプラン毎の機能をご利用いただけます。
+                      </p>
+                    </div>
+                  )}
                   <ul role="list" className="flex flex-1 flex-col gap-y-7">
                     <li>
                       <ul role="list" className="-mx-2 space-y-1">
@@ -296,17 +320,18 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                         />
                         ログアウト
                       </a>
-
-                      <a
-                        href={`/dashboard/setting`}
-                        className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 text-slate-600 hover:bg-gray-50 hover:text-slate-800"
-                      >
-                        <SettingsIcon
-                          aria-hidden="true"
-                          className="size-6 shrink-0 text-slate-600 group-hover:text-slate-800"
-                        />
-                        設定
-                      </a>
+                      {isOwner && salon?.subscriptionStatus === 'active' && (
+                        <a
+                          href={`/dashboard/setting`}
+                          className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 text-slate-600 hover:bg-gray-50 hover:text-slate-800"
+                        >
+                          <SettingsIcon
+                            aria-hidden="true"
+                            className="size-6 shrink-0 text-slate-600 group-hover:text-slate-800"
+                          />
+                          設定
+                        </a>
+                      )}
                     </li>
                   </ul>
                 </nav>
@@ -324,6 +349,17 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
               <p className="text-xs text-slate-500">サロンの予約・管理をもっと簡単に。</p>
             </div>
             <nav className="flex flex-1 flex-col">
+              {isOwner && salon?.subscriptionStatus !== 'active' && (
+                <div className="flex flex-col my-2 bg-green-50 p-2 rounded-md">
+                  <p className="text-xs text-green-700">
+                    <span className="inline-block font-bold mb-2">
+                      サブスクリプションをご契約ください。
+                    </span>
+                    <br />
+                    以下のリンクから契約後にプラン毎の機能をご利用いただけます。
+                  </p>
+                </div>
+              )}
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
                 <li>
                   <ul role="list" className="-mx-2 space-y-1">
@@ -362,7 +398,9 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                               (salon?.planName === 'Lite' || salon?.planName === 'Pro')) ||
                             (item.requiredPlan === 'Pro' && salon?.planName === 'Pro');
 
-                          return hasPlanAccess ? <li key={item.name}>{linkContent}</li> : null;
+                          return hasPlanAccess && salon?.subscriptionStatus === 'active' ? (
+                            <li key={item.name}>{linkContent}</li>
+                          ) : null;
                         }
                         return <li key={item.name}>{linkContent}</li>;
                       } else if (item.requiredRole) {
@@ -414,7 +452,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                   </ul>
                 </li>
 
-                {isOwner && (
+                {isOwner && salon?.subscriptionStatus === 'active' && (
                   <li className="mt-auto">
                     <a
                       href={`/dashboard/setting`}
@@ -489,7 +527,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                       transition
                       className="absolute right-0 z-10 mt-2.5 w-52 origin-top-right rounded-md bg-white py-2 ring-1 shadow-lg ring-gray-900/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
                     >
-                      {isOwner && (
+                      {isOwner && salon?.subscriptionStatus === 'active' && (
                         <MenuItem key="emailPreferences">
                           <Link
                             href={`/dashboard/setting/email-preferences`}
@@ -499,7 +537,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                           </Link>
                         </MenuItem>
                       )}
-                      {isOwner && (
+                      {isOwner && salon?.subscriptionStatus === 'active' && (
                         <MenuItem key="changeEmail">
                           <Link
                             href={`/dashboard/setting/change-email`}
@@ -509,7 +547,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                           </Link>
                         </MenuItem>
                       )}
-                      {isOwner && (
+                      {isOwner && salon?.subscriptionStatus === 'active' && (
                         <MenuItem key="changePassword">
                           <Link
                             href={`/dashboard/setting/change-password`}
