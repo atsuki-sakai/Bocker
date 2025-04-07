@@ -88,7 +88,7 @@ export default function StaffList() {
                     <tr key={staff.email}>
                       <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6">
                         {staff.isActive ? (
-                          <Badge variant="outline" className="bg-green-500 text-white">
+                          <Badge variant="outline" className="bg-green-600 text-white">
                             有効
                           </Badge>
                         ) : (
