@@ -38,8 +38,34 @@ import xor from 'lodash-es/xor';
 const pointConfigSchema = z.object({
   id: z.string().optional(),
   isFixedPoint: z.boolean().default(false),
-  pointRate: z.number().min(0).max(100).optional(),
-  fixedPoint: z.number().min(0).max(10000).optional(),
+  pointRate: z.preprocess(
+    (val) => {
+      // 空文字列の場合はnullを返す
+      if (val === '' || val === null || val === undefined) return null;
+      // 数値に変換できない場合もnullを返す
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    },
+    z
+      .number()
+      .max(100, { message: 'ポイント付与率は100%以下で入力してください' })
+      .nullable()
+      .optional()
+  ),
+  fixedPoint: z.preprocess(
+    (val) => {
+      // 空文字列の場合はnullを返す
+      if (val === '' || val === null || val === undefined) return null;
+      // 数値に変換できない場合もnullを返す
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    },
+    z
+      .number()
+      .max(99999, { message: '固定ポイントは99999円以下で入力してください' })
+      .nullable()
+      .optional()
+  ),
   pointExpirationDays: z.number().min(1).optional().default(POINT_EXPIRATION_DAYS[0].value),
 });
 
@@ -89,7 +115,7 @@ export default function PointTabs() {
         pointRate: getPointConfig.pointRate,
         fixedPoint: getPointConfig.fixedPoint,
         pointExpirationDays: getPointConfig.pointExpirationDays ?? POINT_EXPIRATION_DAYS[0].value,
-        isFixedPoint: getPointConfig.isFixedPoint ?? false,
+        isFixedPoint: getPointConfig.isFixedPoint,
       });
       if (initialExclusionData) {
         setInitialExclusionMenuIds(initialExclusionData);
@@ -109,7 +135,13 @@ export default function PointTabs() {
         toast.error('サロンが見つかりません');
         return;
       }
-      const pointConfigId = await upsertPointConfig({ salonId: salon._id, ...data });
+      const pointConfigId = await upsertPointConfig({
+        salonId: salon._id,
+        pointRate: data.pointRate ?? undefined,
+        fixedPoint: data.fixedPoint ?? undefined,
+        pointExpirationDays: data.pointExpirationDays ?? undefined,
+        isFixedPoint: data.isFixedPoint ?? undefined,
+      });
       await upsertExclusionMenu({
         salonId: salon._id,
         pointConfigId: pointConfigId as Id<'point_config'>,
@@ -123,7 +155,7 @@ export default function PointTabs() {
     }
   };
 
-  if (!getPointConfig && !salon) {
+  if (!getPointConfig) {
     return <Loading />;
   }
 
