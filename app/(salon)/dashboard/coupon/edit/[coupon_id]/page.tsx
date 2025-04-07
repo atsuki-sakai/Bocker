@@ -51,11 +51,30 @@ import { ZodTextField } from '@/components/common';
 const couponSchema = z.object({
   name: z.string().min(1, 'クーポン名を入力してください'),
   discountType: z.enum(['percentage', 'fixed']),
-  percentageDiscountValue: z
-    .number()
-    .min(0, '0以上の値を入力してください')
-    .max(100, '100以下の値を入力してください'),
-  fixedDiscountValue: z.number().min(0, '0以上の値を入力してください'),
+  percentageDiscountValue: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return 0;
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    },
+    z
+      .number()
+      .min(0, { message: '0以上の値を入力してください' })
+      .max(100, { message: '割引率は100%以下で入力してください' })
+      .optional()
+  ),
+  fixedDiscountValue: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return 0;
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    },
+    z
+      .number()
+      .min(0, { message: '0以上の値を入力してください' })
+      .max(99999, { message: '割引額は99999円以下で入力してください' })
+      .optional()
+  ),
   isActive: z.boolean(),
   startDate: z.date(),
   endDate: z
@@ -228,8 +247,10 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         couponUid: coupon?.couponUid,
         name: submitData.name,
         discountType: submitData.discountType,
-        percentageDiscountValue: submitData.percentageDiscountValue,
-        fixedDiscountValue: submitData.fixedDiscountValue,
+        percentageDiscountValue:
+          submitData.percentageDiscountValue !== undefined ? submitData.percentageDiscountValue : 0,
+        fixedDiscountValue:
+          submitData.fixedDiscountValue !== undefined ? submitData.fixedDiscountValue : 0,
         isActive: submitData.isActive,
       });
       if (!couponConfig) {
@@ -581,15 +602,35 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
             <motion.div initial="hidden" animate="visible" variants={fadeIn} className="mt-6">
               <Button type="submit" disabled={isSubmitting} className="w-full" size="lg">
                 {isSubmitting ? (
-                  <span className="flex items-center gap-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                    保存中...
-                  </span>
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                    </motion.div>
+                    追加中...
+                  </>
                 ) : (
-                  <span className="flex items-center gap-2">
-                    <Save size={16} />
-                    保存する
-                  </span>
+                  <>
+                    <Save className="h-4 w-4" />
+                    クーポンを更新
+                  </>
                 )}
               </Button>
 
