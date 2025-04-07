@@ -162,11 +162,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   return (
     <>
       <div>
-        <Dialog
-          open={sidebarOpen}
-          onClose={setSidebarOpen}
-          className="relative z-50 lg:hidden"
-        >
+        <Dialog open={sidebarOpen} onClose={setSidebarOpen} className="relative z-50 lg:hidden">
           <DialogBackdrop
             transition
             className="fixed inset-0 bg-gray-900/80 transition-opacity duration-300 ease-linear data-closed:opacity-0"
@@ -185,10 +181,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                     className="-m-2.5 p-2.5"
                   >
                     <span className="sr-only">閉じる</span>
-                    <XIcon
-                      aria-hidden="true"
-                      className="size-6 text-white"
-                    />
+                    <XIcon aria-hidden="true" className="size-6 text-white" />
                   </button>
                 </div>
               </TransitionChild>
@@ -198,9 +191,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-800 bg-clip-text text-transparent">
                     Booker
                   </h1>
-                  <p className="text-xs text-slate-500">
-                    サロンの予約・管理をもっと簡単に。
-                  </p>
+                  <p className="text-xs text-slate-500">サロンの予約・管理をもっと簡単に。</p>
                 </div>
                 <nav className="flex flex-1 flex-col">
                   <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -215,18 +206,18 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                               href={item.href}
                               className={classNames(
                                 isCurrent
-                                  ? "bg-gray-50 text-blue-600 font-bold"
-                                  : "text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-light",
-                                "group flex gap-x-3 rounded-md p-2 text-sm/6"
+                                  ? 'bg-gray-50 text-blue-600 font-bold'
+                                  : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-light',
+                                'group flex gap-x-3 rounded-md p-2 text-sm/6'
                               )}
                             >
                               <item.icon
                                 aria-hidden="true"
                                 className={classNames(
                                   isCurrent
-                                    ? "text-blue-600 font-bold"
-                                    : "text-gray-400 group-hover:text-blue-600 font-light",
-                                  "size-6 shrink-0"
+                                    ? 'text-blue-600 font-bold'
+                                    : 'text-gray-400 group-hover:text-blue-600 font-light',
+                                  'size-6 shrink-0'
                                 )}
                               />
                               {item.name}
@@ -237,10 +228,11 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                           if (isOwner) {
                             // オーナーの場合でもプランに基づいた表示制御
                             if (item.requiredPlan) {
-                              const hasPlanAccess = 
-                                (item.requiredPlan === 'Lite' && (salon?.planName === 'Lite' || salon?.planName === 'Pro')) ||
+                              const hasPlanAccess =
+                                (item.requiredPlan === 'Lite' &&
+                                  (salon?.planName === 'Lite' || salon?.planName === 'Pro')) ||
                                 (item.requiredPlan === 'Pro' && salon?.planName === 'Pro');
-                              
+
                               return hasPlanAccess ? <li key={item.name}>{linkContent}</li> : null;
                             }
                             return <li key={item.name}>{linkContent}</li>;
@@ -248,13 +240,8 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                             return (
                               <li key={item.name}>
                                 <RoleBasedView
-                                  requiredRole={
-                                    item.requiredRole as
-                                      | "staff"
-                                      | "admin"
-                                      | "manager"
-                                  }
-                                  requiredPlan={item.requiredPlan as "Lite" | "Pro" | undefined}
+                                  requiredRole={item.requiredRole as 'staff' | 'admin' | 'manager'}
+                                  requiredPlan={item.requiredPlan as 'Lite' | 'Pro' | undefined}
                                   currentPlan={salon?.planName}
                                 >
                                   {linkContent}
@@ -276,18 +263,18 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                                   href={item.href}
                                   className={classNames(
                                     isCurrent
-                                      ? "bg-gray-50 text-blue-600 font-bold"
-                                      : "text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-light",
-                                    "group flex gap-x-3 rounded-md p-2 text-sm/6"
+                                      ? 'bg-gray-50 text-blue-600 font-bold'
+                                      : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-light',
+                                    'group flex gap-x-3 rounded-md p-2 text-sm/6'
                                   )}
                                 >
                                   <item.icon
                                     aria-hidden="true"
                                     className={classNames(
                                       isCurrent
-                                        ? "text-blue-600 font-bold"
-                                        : "text-gray-400 group-hover:text-blue-600 font-light",
-                                      "size-6 shrink-0"
+                                        ? 'text-blue-600 font-bold'
+                                        : 'text-gray-400 group-hover:text-blue-600 font-light',
+                                      'size-6 shrink-0'
                                     )}
                                   />
                                   {item.name}
@@ -300,9 +287,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
 
                     <li className="mt-auto">
                       <a
-                        onClick={
-                          isOwner ? handleOwnerSignOut : handleStaffSignOut
-                        }
+                        onClick={isOwner ? handleOwnerSignOut : handleStaffSignOut}
                         className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 text-slate-600 hover:bg-gray-50 hover:text-slate-800 cursor-pointer"
                       >
                         <LogOutIcon
@@ -336,9 +321,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-800 bg-clip-text text-transparent">
                 Bocker
               </h1>
-              <p className="text-xs text-slate-500">
-                サロンの予約・管理をもっと簡単に。
-              </p>
+              <p className="text-xs text-slate-500">サロンの予約・管理をもっと簡単に。</p>
             </div>
             <nav className="flex flex-1 flex-col">
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -352,18 +335,18 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                           href={item.href}
                           className={classNames(
                             isCurrent
-                              ? "bg-gray-50 text-blue-600 font-bold"
-                              : "text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-light",
-                            "group flex gap-x-3 rounded-md p-2 text-sm/6"
+                              ? 'bg-gray-50 text-blue-600 font-bold'
+                              : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-light',
+                            'group flex gap-x-3 rounded-md p-2 text-sm/6'
                           )}
                         >
                           <item.icon
                             aria-hidden="true"
                             className={classNames(
                               isCurrent
-                                ? "text-blue-600"
-                                : "text-gray-400 group-hover:text-blue-600",
-                              "size-6 shrink-0"
+                                ? 'text-blue-600'
+                                : 'text-gray-400 group-hover:text-blue-600',
+                              'size-6 shrink-0'
                             )}
                           />
                           {item.name}
@@ -374,10 +357,11 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                       if (isOwner) {
                         // オーナーの場合でもプランに基づいた表示制御
                         if (item.requiredPlan) {
-                          const hasPlanAccess = 
-                            (item.requiredPlan === 'Lite' && (salon?.planName === 'Lite' || salon?.planName === 'Pro')) ||
+                          const hasPlanAccess =
+                            (item.requiredPlan === 'Lite' &&
+                              (salon?.planName === 'Lite' || salon?.planName === 'Pro')) ||
                             (item.requiredPlan === 'Pro' && salon?.planName === 'Pro');
-                          
+
                           return hasPlanAccess ? <li key={item.name}>{linkContent}</li> : null;
                         }
                         return <li key={item.name}>{linkContent}</li>;
@@ -385,13 +369,8 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                         return (
                           <li key={item.name}>
                             <RoleBasedView
-                              requiredRole={
-                                item.requiredRole as
-                                  | "staff"
-                                  | "admin"
-                                  | "manager"
-                              }
-                              requiredPlan={item.requiredPlan as "Lite" | "Pro" | undefined}
+                              requiredRole={item.requiredRole as 'staff' | 'admin' | 'manager'}
+                              requiredPlan={item.requiredPlan as 'Lite' | 'Pro' | undefined}
                               currentPlan={salon?.planName}
                             >
                               {linkContent}
@@ -413,18 +392,18 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                               href={item.href}
                               className={classNames(
                                 isCurrent
-                                  ? "bg-gray-50 text-blue-600 font-bold"
-                                  : "text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-light",
-                                "group flex gap-x-3 rounded-md p-2 text-sm/6"
+                                  ? 'bg-gray-50 text-blue-600 font-bold'
+                                  : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-light',
+                                'group flex gap-x-3 rounded-md p-2 text-sm/6'
                               )}
                             >
                               <item.icon
                                 aria-hidden="true"
                                 className={classNames(
                                   isCurrent
-                                    ? "text-blue-600"
-                                    : "text-gray-400 group-hover:text-blue-600",
-                                  "size-6 shrink-0"
+                                    ? 'text-blue-600'
+                                    : 'text-gray-400 group-hover:text-blue-600',
+                                  'size-6 shrink-0'
                                 )}
                               />
                               {item.name}
@@ -435,18 +414,20 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                   </ul>
                 </li>
 
-                <li className="mt-auto">
-                  <a
-                    href={`/dashboard/setting`}
-                    className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-gray-50 hover:text-blue-600"
-                  >
-                    <SettingsIcon
-                      aria-hidden="true"
-                      className="size-6 shrink-0 text-gray-400 group-hover:text-blue-600"
-                    />
-                    設定
-                  </a>
-                </li>
+                {isOwner && (
+                  <li className="mt-auto">
+                    <a
+                      href={`/dashboard/setting`}
+                      className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                    >
+                      <SettingsIcon
+                        aria-hidden="true"
+                        className="size-6 shrink-0 text-gray-400 group-hover:text-blue-600"
+                      />
+                      設定
+                    </a>
+                  </li>
+                )}
               </ul>
             </nav>
           </div>
@@ -463,34 +444,29 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                 <MenuIcon aria-hidden="true" className="size-6" />
               </button>
 
-              <div
-                aria-hidden="true"
-                className="h-6 w-px bg-gray-200 lg:hidden"
-              />
+              <div aria-hidden="true" className="h-6 w-px bg-gray-200 lg:hidden" />
 
               <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                 <div className="flex items-center justify-start w-full"></div>
                 <div className="flex items-center gap-x-4 lg:gap-x-6">
                   {/* プロプランバッジは管理者のみ表示 */}
-                  {
-                    salon?.planName && (
-                      <div className="flex items-center gap-x-4 lg:gap-x-6">
-                        <p className="text-sm tracking-wider w-32 text-center font-bold border border-blue-700 rounded-full px-2 py-1 bg-blue-100 text-blue-700">
-                          {salon?.planName}
-                        </p>
-                      </div>
-                    )
-                  }
+                  {salon?.planName && (
+                    <div className="flex items-center gap-x-4 lg:gap-x-6">
+                      <p className="text-sm tracking-wider w-32 text-center font-bold border border-blue-700 rounded-full px-2 py-1 bg-blue-100 text-blue-700">
+                        {salon?.planName}
+                      </p>
+                    </div>
+                  )}
 
                   {/* スタッフバッジを表示 */}
                   {!isOwner && staffRole ? (
                     <div className="flex items-center gap-x-4 lg:gap-x-6">
                       <p className="text-xs w-32 text-center font-bold border border-blue-700 rounded-full px-2 py-1 bg-blue-100 text-blue-700">
-                        {staffRole === "admin"
-                          ? "管理者"
-                          : staffRole === "manager"
-                            ? "マネージャー"
-                            : "スタッフ"}
+                        {staffRole === 'admin'
+                          ? '管理者'
+                          : staffRole === 'manager'
+                            ? 'マネージャー'
+                            : 'スタッフ'}
                       </p>
                     </div>
                   ) : null}
@@ -504,22 +480,16 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                       <span className="sr-only">ユーザーメニューを開く</span>
                       <span className="hidden lg:flex lg:items-center">
                         <h5 className="text-sm text-gray-700">
-                          {isOwner
-                            ? salon?.email ?? ""
-                            : staffName ?? ""}
+                          {isOwner ? (salon?.email ?? '') : (staffName ?? '')}
                         </h5>
-                        <ChevronDownIcon
-                          aria-hidden="true"
-                          className="ml-2 size-5 text-gray-400"
-                        />
+                        <ChevronDownIcon aria-hidden="true" className="ml-2 size-5 text-gray-400" />
                       </span>
                     </MenuButton>
                     <MenuItems
                       transition
                       className="absolute right-0 z-10 mt-2.5 w-52 origin-top-right rounded-md bg-white py-2 ring-1 shadow-lg ring-gray-900/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
                     >
-                    
-                    {isOwner && (
+                      {isOwner && (
                         <MenuItem key="emailPreferences">
                           <Link
                             href={`/dashboard/setting/email-preferences`}
@@ -551,9 +521,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                       )}
                       <MenuItem key="signOut">
                         <a
-                          onClick={
-                            isOwner ? handleOwnerSignOut : handleStaffSignOut
-                          }
+                          onClick={isOwner ? handleOwnerSignOut : handleStaffSignOut}
                           className="block px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden cursor-pointer hover:bg-gray-50"
                         >
                           ログアウト
