@@ -507,12 +507,6 @@ export default function MenuList() {
       return (
         <Card className="col-span-full p-10 text-center">
           <p className="text-muted-foreground">メニューがありません</p>
-          <Link href="/dashboard/menu/new" className="mt-4 inline-block">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              新規メニューを作成
-            </Button>
-          </Link>
         </Card>
       );
     }
