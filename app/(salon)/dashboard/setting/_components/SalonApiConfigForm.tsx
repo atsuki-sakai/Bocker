@@ -201,7 +201,8 @@ const ApiSettingsCard = () => {
                     >
                       <div className="flex items-center gap-2 relative">
                         <Input
-                          type={showFields.lineAccessToken ? 'text' : 'new-password'}
+                          type={showFields.lineAccessToken ? 'text' : 'password'}
+                          autoComplete="new-password"
                           {...register('lineAccessToken')}
                           placeholder="LINE アクセストークン"
                           className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
@@ -241,7 +242,7 @@ const ApiSettingsCard = () => {
                       <div className="flex items-center gap-2 relative">
                         <Input
                           autoComplete="new-password"
-                          type={showFields.lineChannelSecret ? 'text' : 'new-password'}
+                          type={showFields.lineChannelSecret ? 'text' : 'password'}
                           {...register('lineChannelSecret')}
                           placeholder="LINE チャンネルシークレット"
                           className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
@@ -280,11 +281,13 @@ const ApiSettingsCard = () => {
                     >
                       <div className="flex items-center gap-2 relative">
                         <Input
-                          type={showFields.liffId ? 'text' : 'new-password'}
+                          type={showFields.liffId ? 'text' : 'password'}
+                          autoComplete="new-password"
                           {...register('liffId')}
                           placeholder="LIFF ID"
                           className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
                         />
+
                         <Button
                           className="absolute right-0"
                           variant="outline"
@@ -319,7 +322,8 @@ const ApiSettingsCard = () => {
                     >
                       <div className="flex items-center gap-2 relative">
                         <Input
-                          type={showFields.destinationId ? 'text' : 'new-password'}
+                          type={showFields.destinationId ? 'text' : 'password'}
+                          autoComplete="new-password"
                           {...register('destinationId')}
                           placeholder="LINE公式アカウント識別子"
                           className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
@@ -362,40 +366,37 @@ const ApiSettingsCard = () => {
                 whileHover={{ scale: isDirty ? 1.03 : 1 }}
                 whileTap={{ scale: isDirty ? 0.97 : 1 }}
               >
-                <Button
-                  type="submit"
-                  disabled={submitting || !isDirty}
-                  className="min-w-[140px] bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all duration-300"
-                >
+                <Button type="submit" disabled={submitting || !isDirty} className="min-w-[140px]">
                   {submitting ? (
-                    <div className="flex items-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                       >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
+                        <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                      </motion.div>
                       保存中...
-                    </div>
+                    </>
                   ) : (
-                    <div className="flex items-center">
-                      <Save className="mr-2 h-4 w-4" />
+                    <>
+                      <Save className="h-4 w-4" />
                       API設定を保存
-                    </div>
+                    </>
                   )}
                 </Button>
               </motion.div>
