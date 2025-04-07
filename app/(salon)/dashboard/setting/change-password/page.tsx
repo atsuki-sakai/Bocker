@@ -258,7 +258,7 @@ export default function ChangePasswordPage() {
         icon: <CheckCircle2Icon className="h-4 w-4 text-green-500" />,
       });
 
-      router.push(`/dashboard/${id}`);
+      router.push(`/dashboard`);
     } catch (error) {
       console.error(error);
       toast.error("パスワードの更新に失敗しました", {
