@@ -24,7 +24,7 @@ interface ImageDropProps {
 export default function ImageDrop({
   onFileSelect,
   onPreviewChange,
-  maxSizeMB = 2,
+  maxSizeMB = 4,
   previewWidth = 192,
   previewHeight = 192,
   className = '',
