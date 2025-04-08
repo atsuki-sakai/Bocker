@@ -94,10 +94,7 @@ const schemaMenu = z
       .min(1, { message: '時間は必須です' })
       .max(5, { message: '時間は5文字で入力してください' })
       .refine((val) => val !== '', { message: '時間は必須です' }),
-    imgFilePath: z
-      .string()
-      .max(100, { message: '画像は100文字以内で入力してください' })
-      .refine((val) => val !== '', { message: '画像は必須です' }),
+    imgFilePath: z.string().max(512).optional(),
     description: z
       .string()
       .min(1, { message: '説明は必須です' })
@@ -229,29 +226,31 @@ export default function MenuAddForm() {
     console.log('data', data);
     let uploadImagePath: string | undefined;
     try {
-      if (!currentFile || !salon?._id) {
-        toast.error('画像とサロン情報が必要です');
+      if (!salon?._id) {
+        toast.error('サロン情報が必要です');
         return;
       }
 
-      setIsUploading(true);
+      if (currentFile) {
+        setIsUploading(true);
 
-      // 画像処理
-      const processedFile = await compressAndConvertToWebP(currentFile);
-      const base64Data = await fileToBase64(processedFile);
-      const filePath = `${Date.now()}-${processedFile.name}`;
+        // 画像処理
+        const processedFile = await compressAndConvertToWebP(currentFile);
+        const base64Data = await fileToBase64(processedFile);
+        const filePath = `${Date.now()}-${processedFile.name}`;
 
-      // 画像アップロード
-      const uploadResult = await uploadImage({
-        directory: 'menu',
-        base64Data,
-        filePath,
-        contentType: processedFile.type,
-      });
+        // 画像アップロード
+        const uploadResult = await uploadImage({
+          directory: 'menu',
+          base64Data,
+          filePath,
+          contentType: processedFile.type,
+        });
+        uploadImagePath = uploadResult?.publicUrl;
+      }
 
       // メニュー登録
       const { salePrice, ...restMenuData } = data;
-      uploadImagePath = uploadResult?.publicUrl;
 
       // APIに送信するデータを作成
       const createData: Partial<Doc<'menu'>> = {
@@ -346,7 +345,6 @@ export default function MenuAddForm() {
                     <CardTitle className="text-base flex items-center gap-2">
                       <ImageIcon size={18} className="text-gray-600" />
                       メニュー画像
-                      <span className="text-red-500 ml-1">*</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="flex-grow flex items-center justify-center">
