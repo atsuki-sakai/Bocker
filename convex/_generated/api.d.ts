@@ -26,7 +26,7 @@ import type * as customer_detail from "../customer/detail.js";
 import type * as customer_points from "../customer/points.js";
 import type * as helpers from "../helpers.js";
 import type * as menu_core from "../menu/core.js";
-import type * as menu_menu_available_staff from "../menu/menu_available_staff.js";
+import type * as menu_menu_exclusion_staff from "../menu/menu_exclusion_staff.js";
 import type * as option_core from "../option/core.js";
 import type * as point_auth from "../point/auth.js";
 import type * as point_config from "../point/config.js";
@@ -75,7 +75,7 @@ declare const fullApi: ApiFromModules<{
   "customer/points": typeof customer_points;
   helpers: typeof helpers;
   "menu/core": typeof menu_core;
-  "menu/menu_available_staff": typeof menu_menu_available_staff;
+  "menu/menu_exclusion_staff": typeof menu_menu_exclusion_staff;
   "option/core": typeof option_core;
   "point/auth": typeof point_auth;
   "point/config": typeof point_config;

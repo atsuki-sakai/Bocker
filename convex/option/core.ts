@@ -200,6 +200,7 @@ export const getAllBySalonId = query({
     return await ctx.db
       .query('salon_option')
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .order('desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -220,6 +221,7 @@ export const searchByName = query({
       .withIndex('by_salon_id_name', (q) =>
         q.eq('salonId', args.salonId).eq('name', args.name).eq('isArchive', false)
       )
+      .order('desc')
       .paginate(args.paginationOpts);
   },
 });

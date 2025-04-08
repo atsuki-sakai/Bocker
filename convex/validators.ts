@@ -545,6 +545,7 @@ export function validateMenuExclusionStaff(args: Partial<Doc<'menu_exclusion_sta
       message: `メニューIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
     });
   }
+
   if (args.staffId && args.staffId.length > MAX_TEXT_LENGTH) {
     throw new ConvexError({
       message: `スタッフIDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
@@ -1055,22 +1056,6 @@ export function validateStaffAuth(args: Partial<Doc<'staff_auth'>>) {
 }
 
 export function validateStaffConfig(args: Partial<Doc<'staff_config'>>) {
-  if (args.hourlyRate && args.hourlyRate < 0) {
-    throw new ConvexError({
-      message: '時間給は0以上で入力してください',
-      code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-      severity: 'low',
-      status: 400,
-    });
-  }
-  if (args.hourlyRate && args.hourlyRate > MAX_HOURLY_RATE) {
-    throw new ConvexError({
-      message: `時間給は${MAX_HOURLY_RATE}円以下で入力してください`,
-      code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-      severity: 'low',
-      status: 400,
-    });
-  }
   if (args.extraCharge && args.extraCharge < 0) {
     throw new ConvexError({
       message: '指名料金は0以上で入力してください',

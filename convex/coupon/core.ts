@@ -196,6 +196,7 @@ export const getAllBySalonId = query({
     return await ctx.db
       .query('coupon')
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .order('desc')
       .paginate(args.paginationOpts);
   },
 });

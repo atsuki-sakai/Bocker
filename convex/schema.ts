@@ -313,7 +313,6 @@ export default defineSchema({
   staff_config: defineTable({
     staffId: v.id('staff'),
     salonId: v.id('salon'),
-    hourlyRate: v.optional(v.number()), // 時間給
     extraCharge: v.optional(v.number()), // 指名料金
     priority: v.optional(v.number()), // 予約時の優先度
     ...commonFields,
@@ -347,9 +346,11 @@ export default defineSchema({
     salonId: v.id('salon'), // サロンID
     menuId: v.id('menu'), // メニューID
     staffId: v.id('staff'), // スタッフID
-    staffName: v.optional(v.string()), // スタッフ名
     ...commonFields,
-  }).index('by_salon_menu_staff', ['salonId', 'menuId', 'staffId', 'isArchive']),
+  })
+    .index('by_salon_menu_staff', ['salonId', 'menuId', 'staffId', 'isArchive'])
+    .index('by_salon_menu_id', ['salonId', 'menuId', 'isArchive'])
+    .index('by_salon_staff_id', ['salonId', 'staffId', 'isArchive']),
 
   // =====================
   // COUPON
