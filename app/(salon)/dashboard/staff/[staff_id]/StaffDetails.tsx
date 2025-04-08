@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -12,7 +13,6 @@ import { Dialog } from '@/components/common';
 import Link from 'next/link';
 // Shadcn UI コンポーネント
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -137,6 +137,16 @@ export default function StaffDetails() {
       : 'skip'
   );
 
+  const exclusionMenus = useQuery(
+    api.menu.menu_exclusion_staff.getExclusionMenus,
+    salon?._id
+      ? {
+          salonId: salon?._id,
+          staffId: staff_id as Id<'staff'>,
+        }
+      : 'skip'
+  );
+
   const staffKill = useMutation(api.staff.core.kill);
   const deleteImage = useAction(api.storage.core.deleteImage);
 
@@ -149,7 +159,7 @@ export default function StaffDetails() {
 
   // 性別を日本語で表示
   const getGenderText = (gender: string) => {
-    return gender === 'male' ? '男性' : gender === 'female' ? '女性' : 'その他';
+    return gender === 'male' ? '男性' : gender === 'female' ? '女性' : '未選択';
   };
 
   // roleをわかりやすい表示に変換
@@ -208,20 +218,21 @@ export default function StaffDetails() {
           <div className="flex flex-col md:flex-row">
             {/* サムネイル部分 */}
             <div className="relative bg-gradient-to-br from-primary/20 to-primary/5 p-6 flex items-center justify-center md:w-1/3">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <Avatar className="h-48 w-48 border-4 border-white shadow-lg">
-                  {staffAllData.imgPath ? (
-                    <AvatarImage src={staffAllData.imgPath} alt={staffAllData.name} />
-                  ) : (
-                    <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                      {getInitials(staffAllData.name || '')}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-              </motion.div>
+              <div className="h-full w-full">
+                {staffAllData.imgPath ? (
+                  <Image
+                    src={staffAllData.imgPath}
+                    alt={staffAllData.name || ''}
+                    width={192}
+                    height={192}
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="text-2xl flex items-center justify-center h-full w-full">
+                    {getInitials(staffAllData.name || '')}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* 情報部分 */}
@@ -252,14 +263,6 @@ export default function StaffDetails() {
               <p className="mt-2 text-gray-600">{staffAllData.description || '説明がありません'}</p>
 
               <div className="grid grid-cols-3 gap-4 mt-4">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-3 rounded-lg">
-                  <div className="flex items-center gap-2 text-blue-600 mb-1">
-                    <Clock className="h-4 w-4" />
-                    <p className="text-xs font-medium">時給</p>
-                  </div>
-                  <p className="font-bold text-lg">¥{staffAllData.hourlyRate || 0}</p>
-                </div>
-
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-3 rounded-lg">
                   <div className="flex items-center gap-2 text-purple-600 mb-1">
                     <Tag className="h-4 w-4" />
@@ -275,6 +278,23 @@ export default function StaffDetails() {
                   </div>
                   <p className="font-bold text-lg">{staffAllData.priority || 0}</p>
                 </div>
+              </div>
+              <div>
+                {exclusionMenus && exclusionMenus.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-semibold mb-2">対応外メニュー</h3>
+                    <ul className="flex flex-wrap gap-2">
+                      {exclusionMenus.map((menu, index) => (
+                        <li
+                          key={index}
+                          className="bg-orange-50 border border-orange-300 p-1 text-sm text-orange-700 rounded-md"
+                        >
+                          {menu.menuName}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -360,7 +380,11 @@ export default function StaffDetails() {
                     value={getGenderText(staffAllData.gender || '')}
                   />
                   <Separator />
-                  <InfoField icon={Calendar} label="年齢" value={`${staffAllData.age || '-'}歳`} />
+                  <InfoField
+                    icon={Calendar}
+                    label="年齢"
+                    value={`${staffAllData.age ? `${staffAllData.age}歳` : '未設定'}`}
+                  />
                   <Separator />
 
                   <InfoField
@@ -384,7 +408,7 @@ export default function StaffDetails() {
                 <Alert className="mb-4 bg-amber-50 border-amber-100">
                   <Info className="h-4 w-4 text-amber-500" />
                   <AlertDescription className="text-amber-700 text-sm">
-                    これらの設定は予約や給与計算に影響します。正確に設定してください。
+                    これらの設定は予約時のサービス料金に影響します。正確に設定してください。
                   </AlertDescription>
                 </Alert>
 
@@ -394,13 +418,6 @@ export default function StaffDetails() {
                   initial="hidden"
                   animate="visible"
                 >
-                  <InfoField
-                    icon={Clock}
-                    label="時給"
-                    value={`¥${staffAllData.hourlyRate || 0}`}
-                    tooltip="スタッフの時間あたりの給料です。給与計算に使用されます。"
-                  />
-                  <Separator />
                   <InfoField
                     icon={DollarSign}
                     label="指名料金"

@@ -9,7 +9,6 @@ import {
   authCheck,
 } from '../helpers';
 import { CONVEX_ERROR_CODES } from '../constants';
-import { staffRoleType } from '../types';
 import { validateStaffConfig } from '../validators';
 
 // スタッフ設定の追加
@@ -17,7 +16,6 @@ export const add = mutation({
   args: {
     staffId: v.id('staff'),
     salonId: v.id('salon'),
-    hourlyRate: v.optional(v.number()),
     extraCharge: v.optional(v.number()),
     priority: v.optional(v.number()),
   },
@@ -63,7 +61,6 @@ export const add = mutation({
 export const update = mutation({
   args: {
     staffConfigId: v.id('staff_config'),
-    hourlyRate: v.optional(v.number()),
     extraCharge: v.optional(v.number()),
     priority: v.optional(v.number()),
   },
@@ -124,7 +121,6 @@ export const upsert = mutation({
     staffConfigId: v.id('staff_config'),
     staffId: v.id('staff'),
     salonId: v.id('salon'),
-    hourlyRate: v.optional(v.number()),
     extraCharge: v.optional(v.number()),
     priority: v.optional(v.number()),
   },

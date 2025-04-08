@@ -187,6 +187,7 @@ export const getStaffListBySalonId = query({
     return await ctx.db
       .query('staff')
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .order('desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -202,6 +203,7 @@ export const getStaffListByName = query({
     return await ctx.db
       .query('staff')
       .withIndex('by_name', (q) => q.eq('name', args.name).eq('isArchive', false))
+      .order('desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -217,6 +219,7 @@ export const getStaffListByEmail = query({
     return await ctx.db
       .query('staff')
       .withIndex('by_email', (q) => q.eq('email', args.email).eq('isArchive', false))
+      .order('desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -235,6 +238,7 @@ export const getStaffListBySalonIdAndName = query({
       .withIndex('by_salon_id_name', (q) =>
         q.eq('salonId', args.salonId).eq('name', args.name).eq('isArchive', false)
       )
+      .order('desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -253,6 +257,7 @@ export const getBySalonIdAndEmail = query({
       .withIndex('by_salon_id_email', (q) =>
         q.eq('salonId', args.salonId).eq('email', args.email).eq('isArchive', false)
       )
+      .order('desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -335,7 +340,6 @@ export const getRelatedTables = query({
       pinCode: staffAuth.pinCode,
       role: staffAuth.role,
       staffConfigId: staffConfig._id,
-      hourlyRate: staffConfig.hourlyRate,
       extraCharge: staffConfig.extraCharge,
       priority: staffConfig.priority,
     };
