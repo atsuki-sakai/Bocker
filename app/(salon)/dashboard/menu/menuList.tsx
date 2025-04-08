@@ -137,6 +137,7 @@ const MenuItem = ({ menu, onEdit, onDelete, staffs }: MenuItemProps) => {
     return staffs.filter((staff: Staff) => staff.menuId === menu._id);
   }, [staffs, menu._id]);
 
+  console.log('menu', menu.imgPath);
   return (
     <motion.div
       layout
@@ -148,15 +149,15 @@ const MenuItem = ({ menu, onEdit, onDelete, staffs }: MenuItemProps) => {
     >
       <Card className="h-full overflow-hidden hover:shadow-md transition-all">
         <div className="relative h-48 w-full">
-          <Image
-            src={menu.imgPath || '/placeholder.png'}
-            alt={menu.name || ''}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+          {menu.imgPath ? (
+            <Image src={menu.imgPath} alt={menu.name || ''} fill className="object-cover" />
+          ) : (
+            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+              <p className="text-gray-500 text-base font-bold uppercase">
+                {menu.name?.slice(0, 1)}
+              </p>
+            </div>
+          )}
           <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
             {menu.tags?.map((tag: string, idx: number) => (
               <Badge key={idx} variant="secondary" className="bg-blue-600 text-white">
@@ -305,13 +306,20 @@ const MenuListContent = ({ menus, staffs, onDelete }: MenuListContentProps) => {
                     </Badge>
                   )}
                   <div className="relative h-16 w-24 rounded-md overflow-hidden flex-shrink-0">
-                    <Image
-                      src={menu.imgPath || '/placeholder.png'}
-                      alt={menu.name || ''}
-                      fill
-                      sizes="120px"
-                      loading="lazy"
-                    />
+                    {menu.imgPath ? (
+                      <Image
+                        src={menu.imgPath}
+                        alt={menu.name || ''}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                        <p className="text-gray-500 text-base font-bold uppercase">
+                          {menu.name?.slice(0, 1)}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
