@@ -215,6 +215,7 @@ export const getAllBySalonId = query({
     return await ctx.db
       .query('menu')
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .order('desc')
       .paginate(args.paginationOpts);
   },
 });

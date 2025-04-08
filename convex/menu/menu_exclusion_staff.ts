@@ -70,6 +70,60 @@ export const get = query({
   },
 });
 
+export const upsert = mutation({
+  args: {
+    salonId: v.id('salon'),
+    staffId: v.id('staff'),
+    selectedMenuIds: v.array(v.id('menu')),
+  },
+  handler: async (ctx, args) => {
+    authCheck(ctx);
+
+    // 1. 現在DBに保存されている除外メニューを取得
+    const currentExclusionMenus = await ctx.db
+      .query('menu_exclusion_staff')
+      .withIndex('by_salon_staff_id', (q) =>
+        q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+      )
+      .collect();
+
+    const currentMenuIds = new Set(currentExclusionMenus.map((item) => item.menuId));
+    const newMenuIds = new Set(args.selectedMenuIds);
+
+    // 2. 削除すべきメニューを特定（DBにあるが新しいリストにない）
+    const menuIdsToRemove = [...currentMenuIds].filter((id) => !newMenuIds.has(id));
+
+    // 3. 追加すべきメニューを特定（新しいリストにあるがDBにない）
+    const menuIdsToAdd = [...newMenuIds].filter((id) => !currentMenuIds.has(id));
+
+    // 4. トランザクション内で削除と追加を実行
+    const removedIds = [];
+    for (const menuId of menuIdsToRemove) {
+      const menuToRemove = currentExclusionMenus.find((item) => item.menuId === menuId);
+      if (menuToRemove) {
+        await ctx.db.delete(menuToRemove._id);
+        removedIds.push(menuId);
+      }
+    }
+
+    const addedIds = [];
+    for (const menuId of menuIdsToAdd) {
+      await ctx.db.insert('menu_exclusion_staff', {
+        salonId: args.salonId,
+        staffId: args.staffId,
+        menuId: menuId,
+        isArchive: false,
+      });
+      addedIds.push(menuId);
+    }
+
+    return {
+      added: addedIds,
+      removed: removedIds,
+    };
+  },
+});
+
 export const trash = mutation({
   args: {
     salonId: v.id('salon'),
@@ -167,5 +221,52 @@ export const isAvailableStaff = query({
       .first();
 
     return !!exclusionStaff;
+  },
+});
+
+export const getExclusionMenuIds = query({
+  args: {
+    salonId: v.id('salon'),
+    staffId: v.id('staff'),
+  },
+  handler: async (ctx, args) => {
+    authCheck(ctx);
+    const exclusionStaff = await ctx.db
+      .query('menu_exclusion_staff')
+      .withIndex('by_salon_staff_id', (q) =>
+        q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+      )
+      .collect();
+    return exclusionStaff.map((item) => item.menuId);
+  },
+});
+
+export const getExclusionMenus = query({
+  args: {
+    salonId: v.id('salon'),
+    staffId: v.id('staff'),
+  },
+  handler: async (ctx, args) => {
+    authCheck(ctx);
+    const exclusionStaff = await ctx.db
+      .query('menu_exclusion_staff')
+      .withIndex('by_salon_staff_id', (q) =>
+        q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+      )
+      .collect();
+
+    if (exclusionStaff.length === 0) {
+      return [];
+    }
+    const menus = await Promise.all(
+      exclusionStaff.map(async (item) => {
+        const menu = await ctx.db.get(item.menuId);
+        return {
+          menuId: item.menuId,
+          menuName: menu?.name,
+        };
+      })
+    );
+    return menus;
   },
 });
