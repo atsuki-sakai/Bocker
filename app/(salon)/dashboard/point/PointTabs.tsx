@@ -6,7 +6,7 @@ import { Coins, Gift } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Id } from '@/convex/_generated/dataModel';
 import { useZodForm } from '@/hooks/useZodForm';
-import ExclusionMenu from '../coupon/_components/ExclusionMenu';
+import { ExclusionMenu } from '@/components/common';
 import { z } from 'zod';
 import { POINT_EXPIRATION_DAYS } from '@/lib/constants';
 import { toast } from 'sonner';
@@ -416,8 +416,9 @@ export default function PointTabs() {
 
           <TabsContent value="exclusions" key="exclusions-tab">
             <ExclusionMenu
+              title="適用しないメニュー"
               selectedMenuIds={selectedMenuIds}
-              setSelectedMenuIds={setSelectedMenuIds}
+              setSelectedMenuIdsAction={setSelectedMenuIds}
             />
           </TabsContent>
         </AnimatePresence>
