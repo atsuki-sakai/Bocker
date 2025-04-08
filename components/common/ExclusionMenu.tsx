@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import { Menu, Search, Plus, Minus } from 'lucide-react';
@@ -15,11 +17,16 @@ import { Card, CardContent } from '@/components/ui/card';
 const numberOfMenus = 10;
 
 interface ExclusionMenuProps {
+  title?: string;
   selectedMenuIds: Id<'menu'>[];
-  setSelectedMenuIds: (menuIds: Id<'menu'>[]) => void;
+  setSelectedMenuIdsAction: (menuIds: Id<'menu'>[]) => void;
 }
 
-export default function ExclusionMenu({ selectedMenuIds, setSelectedMenuIds }: ExclusionMenuProps) {
+export default function ExclusionMenu({
+  title,
+  selectedMenuIds,
+  setSelectedMenuIdsAction,
+}: ExclusionMenuProps) {
   const { salon } = useSalon();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -39,7 +46,7 @@ export default function ExclusionMenu({ selectedMenuIds, setSelectedMenuIds }: E
       ? selectedMenuIds.filter((id) => id !== menuId)
       : [...selectedMenuIds, menuId];
 
-    setSelectedMenuIds(newSelectedIds);
+    setSelectedMenuIdsAction(newSelectedIds);
   }
 
   // 単純な全選択/全解除処理
@@ -49,7 +56,7 @@ export default function ExclusionMenu({ selectedMenuIds, setSelectedMenuIds }: E
     const allMenuIds = menus.map((menu: Doc<'menu'>) => menu._id);
     const isAllSelected = menus.length > 0 && menus.length === selectedMenuIds.length;
 
-    setSelectedMenuIds(isAllSelected ? [] : allMenuIds);
+    setSelectedMenuIdsAction(isAllSelected ? [] : allMenuIds);
   }
 
   // 検索フィルタリング
@@ -88,7 +95,7 @@ export default function ExclusionMenu({ selectedMenuIds, setSelectedMenuIds }: E
           <div className="flex items-center justify-between">
             <Label className="flex items-center gap-2 text-gray-700 font-medium">
               <Menu size={16} />
-              クーポンを適用しないメニュー
+              {title ?? '除外するメニュー'}
             </Label>
             <div className="flex gap-2 items-center">
               <span className="text-sm text-gray-500">{selectionText}</span>

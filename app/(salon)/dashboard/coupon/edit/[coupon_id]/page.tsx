@@ -13,7 +13,7 @@ import { ja } from 'date-fns/locale';
 import { useSalon } from '@/hooks/useSalon';
 // コンポーネントのインポート
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ExclusionMenu from '../../_components/ExclusionMenu';
+import { ExclusionMenu } from '@/components/common';
 import { DashboardSection } from '@/components/common';
 import { Label } from '@/components/ui/label';
 import {
@@ -577,10 +577,9 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
           </TabsContent>
           <TabsContent value="detail">
             <ExclusionMenu
+              title="適用しないメニュー"
               selectedMenuIds={selectedMenuIds}
-              setSelectedMenuIds={(menuIds: string[]) =>
-                setSelectedMenuIds(menuIds as Id<'menu'>[])
-              }
+              setSelectedMenuIdsAction={(menuIds: Id<'menu'>[]) => setSelectedMenuIds(menuIds)}
             />
           </TabsContent>
         </Tabs>
