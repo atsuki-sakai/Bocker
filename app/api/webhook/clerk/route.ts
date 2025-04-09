@@ -5,10 +5,11 @@ import { WebhookEvent } from '@clerk/nextjs/server';
 import Stripe from 'stripe';
 import { api } from '@/convex/_generated/api';
 import { fetchMutation, fetchQuery } from 'convex/nextjs';
-import * as Sentry from "@sentry/nextjs";
+import * as Sentry from '@sentry/nextjs';
 import { STRIPE_API_VERSION } from '@/lib/constants';
 import { retryOperation } from '@/lib/utils';
 import { z } from 'zod';
+import { clerkClient } from '@clerk/nextjs/server';
 
 const clerkWebhookSchema = z.object({
   type: z.string().min(1, { message: 'イベントタイプが空です' }),
@@ -81,8 +82,12 @@ export async function POST(req: Request) {
   // 各イベントタイプの処理
   try {
     if (eventType === 'user.created') {
+      const client = await clerkClient();
       const { id, email_addresses = [] } = data;
+      const salonName = payload.data.unsafe_metadata.salonName;
       const email = email_addresses[0]?.email_address || 'no-email';
+
+      console.log('payload', payload);
 
       console.log(`Clerk ID: ${id} の user.created イベントを処理中です (メール: ${email})`);
 
@@ -109,13 +114,44 @@ export async function POST(req: Request) {
 
             try {
               // 2. Convexへのユーザー登録 (エラーは再試行)
-              await retryOperation(() =>
+              const salonId = await retryOperation(() =>
                 fetchMutation(api.salon.core.add, {
                   clerkId: id,
                   email,
                   stripeCustomerId: customer.id,
                 })
               );
+
+              // 組織を作成
+              const organization = await client.organizations.createOrganization({
+                name: salonName,
+              });
+
+              // メンバーシップを作成
+              await client.organizations.createOrganizationMembership({
+                organizationId: organization.id,
+                userId: id,
+                role: 'org:admin', // デフォルトの管理者ロール
+              });
+
+              // メンバーシップのメタデータを更新
+              await client.organizations.updateOrganizationMembershipMetadata({
+                organizationId: organization.id,
+                userId: id,
+                publicMetadata: {
+                  role: 'owner',
+                },
+              });
+
+              // ユーザーのメタデータを更新
+              await client.users.updateUserMetadata(id, {
+                publicMetadata: {
+                  salonId: organization.id,
+                },
+              });
+
+              // 取得したサロンIDをログに出力 (任意)
+              console.log(`新しいサロンが作成されました。ID: ${salonId}`); // newSalon を直接使用
             } catch (convexError) {
               // Convex登録失敗時にはStripe顧客を削除して整合性を保つ
               console.error(
