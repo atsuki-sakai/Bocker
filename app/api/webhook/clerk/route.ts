@@ -1,3 +1,4 @@
+import { Id } from './../../../../convex/_generated/dataModel.d';
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -122,33 +123,39 @@ export async function POST(req: Request) {
                 })
               );
 
-              // 組織を作成
-              const organization = await client.organizations.createOrganization({
-                name: salonName,
-              });
+              try {
+                // 組織を作成
+                const organization = await client.organizations.createOrganization({
+                  name: salonName,
+                  createdBy: id,
+                });
 
-              // メンバーシップを作成
-              await client.organizations.createOrganizationMembership({
-                organizationId: organization.id,
-                userId: id,
-                role: 'org:admin', // デフォルトの管理者ロール
-              });
+                // メンバーシップを作成
+                await client.organizations.createOrganizationMembership({
+                  organizationId: organization.id,
+                  userId: id,
+                  role: 'org:admin', // デフォルトの管理者ロール
+                });
 
-              // メンバーシップのメタデータを更新
-              await client.organizations.updateOrganizationMembershipMetadata({
-                organizationId: organization.id,
-                userId: id,
-                publicMetadata: {
-                  role: 'owner',
-                },
-              });
+                // メンバーシップのメタデータを更新
+                await client.organizations.updateOrganizationMembershipMetadata({
+                  organizationId: organization.id,
+                  userId: id,
+                  publicMetadata: {
+                    role: 'owner',
+                  },
+                });
 
-              // ユーザーのメタデータを更新
-              await client.users.updateUserMetadata(id, {
-                publicMetadata: {
-                  salonId: organization.id,
-                },
-              });
+                // ユーザーのメタデータを更新
+                await client.users.updateUserMetadata(id, {
+                  publicMetadata: {
+                    salonId: organization.id,
+                  },
+                });
+              } catch (error) {
+                console.error(`Clerk ID: ${id}の組織更新に失敗しました:`, error);
+                Sentry.captureException(error);
+              }
 
               // 取得したサロンIDをログに出力 (任意)
               console.log(`新しいサロンが作成されました。ID: ${salonId}`); // newSalon を直接使用
