@@ -113,15 +113,6 @@ export async function POST(req: Request) {
             );
 
             try {
-              // 2. Convexへのユーザー登録 (エラーは再試行)
-              const salonId = await retryOperation(() =>
-                fetchMutation(api.salon.core.add, {
-                  clerkId: id,
-                  email,
-                  stripeCustomerId: customer.id,
-                })
-              );
-
               try {
                 // 組織を作成
                 const organization = await client.organizations.createOrganization({
@@ -133,7 +124,7 @@ export async function POST(req: Request) {
                 await client.organizations.createOrganizationMembership({
                   organizationId: organization.id,
                   userId: id,
-                  role: 'org:admin', // デフォルトの管理者ロール
+                  role: 'org:owner', // デフォルトの管理者ロール
                 });
 
                 // メンバーシップのメタデータを更新
@@ -151,13 +142,23 @@ export async function POST(req: Request) {
                     salonId: organization.id,
                   },
                 });
+
+                // 2. Convexへのユーザー登録 (エラーは再試行)
+                await retryOperation(() =>
+                  fetchMutation(api.salon.core.add, {
+                    clerkId: id,
+                    email,
+                    stripeCustomerId: customer.id,
+                    organizationId: organization.id,
+                  })
+                );
               } catch (error) {
                 console.error(`Clerk ID: ${id}の組織更新に失敗しました:`, error);
                 Sentry.captureException(error);
               }
 
               // 取得したサロンIDをログに出力 (任意)
-              console.log(`新しいサロンが作成されました。ID: ${salonId}`); // newSalon を直接使用
+              console.log(`新しいサロンが作成されました。`); // newSalon を直接使用
             } catch (convexError) {
               // Convex登録失敗時にはStripe顧客を削除して整合性を保つ
               console.error(
