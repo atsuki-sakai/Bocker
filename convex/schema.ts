@@ -88,6 +88,7 @@ export default defineSchema({
   // サロンテーブル
   salon: defineTable({
     clerkId: v.string(), // ClerkのユーザーID
+    organizationId: v.optional(v.string()), // Clerkの組織ID
     stripeConnectId: v.optional(v.string()), // StripeConnect連携アカウントID
     stripeConnectStatus: v.optional(v.string()), // StripeConnect連携状態
     stripeConnectCreatedAt: v.optional(v.string()), // StripeConnect作成日時
