@@ -1,7 +1,7 @@
 import SubscriptionForm from './SubscriptionForm';
 import { preloadQuery, preloadedQueryResult } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
-import { serverConvexAuth } from '@/lib/auth-server';
+import { serverConvexAuth } from '@/lib/auth/auth-server';
 import { redirect } from 'next/navigation';
 
 export default async function SubscriptionPage() {
