@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import * as Sentry from "@sentry/nextjs";
+import * as Sentry from '@sentry/nextjs';
 import {
   Card,
   CardContent,
@@ -15,74 +15,68 @@ import {
   CardTitle,
   CardFooter,
   CardDescription,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import Link from "next/link";
-import { useZodForm } from "@/hooks/useZodForm";
-import { toast } from "sonner";
-import {
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  ArrowRight,
-  CheckCircle,
-  User,
-  Loader2,
-} from "lucide-react";
-import { UseFormRegister, FieldErrors } from "react-hook-form";
-import { z } from "zod";
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import Link from 'next/link';
+import { useZodForm } from '@/hooks/useZodForm';
+import { toast } from 'sonner';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle, User, Loader2 } from 'lucide-react';
+import { UseFormRegister, FieldErrors } from 'react-hook-form';
+import { z } from 'zod';
 
-export const signUpSchema = z.object({
+export const signUpSchema = z
+  .object({
+    salonName: z.string().min(1, { message: '店舗名を入力してください' }),
     email: z
       .string()
-      .min(1, { message: "メールアドレスを入力してください" })
-      .email({ message: "有効なメールアドレスを入力してください" }),
+      .min(1, { message: 'メールアドレスを入力してください' })
+      .email({ message: '有効なメールアドレスを入力してください' }),
     password: z
-    .string()
-    .min(8, { message: "パスワードは8文字以上で入力してください" })
-    .max(100, { message: "パスワードは100文字以下で入力してください" })
-    .regex(/[a-z]/, { message: "パスワードには小文字を含める必要があります" })
-    .regex(/[A-Z]/, { message: "パスワードには大文字を含める必要があります" })
-    .regex(/[0-9]/, { message: "パスワードには数字を含める必要があります" }),
-    confirmPassword: z.string().min(1, { message: "確認用パスワードを入力してください" }),
-  }).refine((data) => data.password === data.confirmPassword, {
-    message: "パスワードと確認用パスワードが一致しません",
-    path: ["confirmPassword"],
+      .string()
+      .min(8, { message: 'パスワードは8文字以上で入力してください' })
+      .max(100, { message: 'パスワードは100文字以下で入力してください' })
+      .regex(/[a-z]/, { message: 'パスワードには小文字を含める必要があります' })
+      .regex(/[A-Z]/, { message: 'パスワードには大文字を含める必要があります' })
+      .regex(/[0-9]/, { message: 'パスワードには数字を含める必要があります' }),
+    confirmPassword: z.string().min(1, { message: '確認用パスワードを入力してください' }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'パスワードと確認用パスワードが一致しません',
+    path: ['confirmPassword'],
   });
 
 // パスワード強度の型定義
-type PasswordStrength = "empty" | "weak" | "medium" | "strong" | "veryStrong";
+type PasswordStrength = 'empty' | 'weak' | 'medium' | 'strong' | 'veryStrong';
 
 // パスワード強度に基づく色を取得
 const getStrengthColor = (strength: PasswordStrength) => {
   switch (strength) {
-    case "weak":
-      return "bg-red-500";
-    case "medium":
-      return "bg-yellow-500";
-    case "strong":
-      return "bg-green-500";
-    case "veryStrong":
-      return "bg-emerald-600";
+    case 'weak':
+      return 'bg-red-500';
+    case 'medium':
+      return 'bg-yellow-500';
+    case 'strong':
+      return 'bg-green-500';
+    case 'veryStrong':
+      return 'bg-emerald-600';
     default:
-      return "bg-gray-200";
+      return 'bg-gray-200';
   }
 };
 
 // パスワード強度に基づくテキストを取得
 const getStrengthText = (strength: PasswordStrength) => {
   switch (strength) {
-    case "weak":
-      return "弱い";
-    case "medium":
-      return "普通";
-    case "strong":
-      return "強い";
-    case "veryStrong":
-      return "非常に強い";
+    case 'weak':
+      return '弱い';
+    case 'medium':
+      return '普通';
+    case 'strong':
+      return '強い';
+    case 'veryStrong':
+      return '非常に強い';
     default:
-      return "";
+      return '';
   }
 };
 
@@ -90,7 +84,7 @@ const getStrengthText = (strength: PasswordStrength) => {
 const CheckIcon = ({ fulfilled }: { fulfilled: boolean }) => (
   <div
     className={`flex items-center justify-center w-4 h-4 rounded-full transition-colors duration-300 
-      ${fulfilled ? "bg-green-600 text-white" : "bg-gray-200"}`}
+      ${fulfilled ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
   >
     {fulfilled && <CheckCircle className="w-3 h-3" />}
   </div>
@@ -122,26 +116,22 @@ const PasswordInput = ({
         <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
         <Input
           id="password"
-          type={showPassword ? "text" : "password"}
-          {...register("password")}
+          type={showPassword ? 'text' : 'password'}
+          {...register('password')}
           placeholder="パスワードを入力"
           required
           className="pl-10 pr-10"
-          aria-invalid={errors.password ? "true" : "false"}
-          aria-describedby={errors.password ? "password-error" : undefined}
+          aria-invalid={errors.password ? 'true' : 'false'}
+          aria-describedby={errors.password ? 'password-error' : undefined}
           autoComplete="new-password"
         />
         <button
           type="button"
           onClick={toggleShowPassword}
           className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
-          aria-label={showPassword ? "パスワードを隠す" : "パスワードを表示"}
+          aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
         >
-          {showPassword ? (
-            <EyeOff className="h-4 w-4" />
-          ) : (
-            <Eye className="h-4 w-4" />
-          )}
+          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
       {errors.password && (
@@ -170,21 +160,20 @@ const itemVariants = {
   visible: {
     y: 0,
     opacity: 1,
-    transition: { type: "spring", stiffness: 100 },
+    transition: { type: 'spring', stiffness: 100 },
   },
 };
 
 export default function SignUpPage() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const [pendingVerification, setPendingVerification] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [password, setPassword] = useState("");
-  const [passwordStrength, setPasswordStrength] =
-    useState<PasswordStrength>("empty");
+  const [verificationCode, setVerificationCode] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('empty');
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const clerkClient = useClerk();
-  
+
   const {
     register,
     handleSubmit,
@@ -192,7 +181,9 @@ export default function SignUpPage() {
     watch,
   } = useZodForm(signUpSchema);
 
-  const email = watch("email");
+  const salonName = watch('salonName');
+
+  const email = watch('email');
 
   // メモ化されたトグル関数
   const toggleShowPassword = useCallback(() => {
@@ -214,8 +205,8 @@ export default function SignUpPage() {
   // パスワード値の監視
   useEffect(() => {
     const subscription = watch((value, { name }) => {
-      if (name === "password") {
-        setPassword(value.password || "");
+      if (name === 'password') {
+        setPassword(value.password || '');
       }
     });
     return () => subscription.unsubscribe();
@@ -224,7 +215,7 @@ export default function SignUpPage() {
   // パスワード強度を計算 - パスワードが変わった時だけ実行
   useEffect(() => {
     if (!password) {
-      setPasswordStrength("empty");
+      setPasswordStrength('empty');
       return;
     }
 
@@ -242,13 +233,13 @@ export default function SignUpPage() {
 
     // 強度の判定
     if (strength <= 2) {
-      setPasswordStrength("weak");
+      setPasswordStrength('weak');
     } else if (strength <= 3) {
-      setPasswordStrength("medium");
+      setPasswordStrength('medium');
     } else if (strength <= 4) {
-      setPasswordStrength("strong");
+      setPasswordStrength('strong');
     } else {
-      setPasswordStrength("veryStrong");
+      setPasswordStrength('veryStrong');
     }
   }, [password]);
 
@@ -267,15 +258,15 @@ export default function SignUpPage() {
           <span className="text-xs text-gray-600">パスワード強度:</span>
           <span
             className={`text-xs font-medium ${
-              passwordStrength === "weak"
-                ? "text-red-700"
-                : passwordStrength === "medium"
-                  ? "text-yellow-700"
-                  : passwordStrength === "strong"
-                    ? "text-green-700"
-                    : passwordStrength === "veryStrong"
-                      ? "text-emerald-700"
-                      : ""
+              passwordStrength === 'weak'
+                ? 'text-red-700'
+                : passwordStrength === 'medium'
+                  ? 'text-yellow-700'
+                  : passwordStrength === 'strong'
+                    ? 'text-green-700'
+                    : passwordStrength === 'veryStrong'
+                      ? 'text-emerald-700'
+                      : ''
             }`}
           >
             {getStrengthText(passwordStrength)}
@@ -286,15 +277,15 @@ export default function SignUpPage() {
             initial={{ width: 0 }}
             animate={{
               width:
-                passwordStrength === "empty"
-                  ? "0%"
-                  : passwordStrength === "weak"
-                    ? "25%"
-                    : passwordStrength === "medium"
-                      ? "50%"
-                      : passwordStrength === "strong"
-                        ? "75%"
-                        : "100%",
+                passwordStrength === 'empty'
+                  ? '0%'
+                  : passwordStrength === 'weak'
+                    ? '25%'
+                    : passwordStrength === 'medium'
+                      ? '50%'
+                      : passwordStrength === 'strong'
+                        ? '75%'
+                        : '100%',
             }}
             transition={{ duration: 0.4 }}
             className={`h-full ${getStrengthColor(passwordStrength)}`}
@@ -319,7 +310,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.length} />
             <span
-              className={`text-xs ${passwordCriteria.length ? "text-green-700 font-medium" : "text-gray-500"}`}
+              className={`text-xs ${passwordCriteria.length ? 'text-green-700 font-medium' : 'text-gray-500'}`}
             >
               8文字以上
             </span>
@@ -328,7 +319,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.uppercase} />
             <span
-              className={`text-xs ${passwordCriteria.uppercase ? "text-green-700 font-medium" : "text-gray-500"}`}
+              className={`text-xs ${passwordCriteria.uppercase ? 'text-green-700 font-medium' : 'text-gray-500'}`}
             >
               大文字を含む
             </span>
@@ -337,7 +328,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.lowercase} />
             <span
-              className={`text-xs ${passwordCriteria.lowercase ? "text-green-700 font-medium" : "text-gray-500"}`}
+              className={`text-xs ${passwordCriteria.lowercase ? 'text-green-700 font-medium' : 'text-gray-500'}`}
             >
               小文字を含む
             </span>
@@ -346,7 +337,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.number} />
             <span
-              className={`text-xs ${passwordCriteria.number ? "text-green-700 font-medium" : "text-gray-500"}`}
+              className={`text-xs ${passwordCriteria.number ? 'text-green-700 font-medium' : 'text-gray-500'}`}
             >
               数字を含む
             </span>
@@ -355,7 +346,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.special} />
             <span
-              className={`text-xs ${passwordCriteria.special ? "text-green-700 font-medium" : "text-gray-500"}`}
+              className={`text-xs ${passwordCriteria.special ? 'text-green-700 font-medium' : 'text-gray-500'}`}
             >
               特殊文字を含む (例: !@#$%^&*)
             </span>
@@ -373,28 +364,32 @@ export default function SignUpPage() {
       // 既存のセッションがあるかチェックして、ある場合はサインアウト
       if (clerkClient.session) {
         await clerkClient.signOut();
-        toast.info("既存のセッションからサインアウトしました");
+        toast.info('既存のセッションからサインアウトしました');
       }
-      
+
       // Clerkでユーザー作成
-      await signUp.create({
+      await signUp?.create({
         emailAddress: data.email,
         password: data.password,
+        unsafeMetadata: {
+          salonName: salonName,
+        },
       });
 
       // メール確認コードを送信
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setPendingVerification(true);
-      toast.success("アカウントが作成されました。メールを確認してください");
+
+      toast.success('アカウントが作成されました。メールを確認してください');
     } catch (err) {
       Sentry.captureException(err, {
-        level: "error",
+        level: 'error',
         tags: {
-          operation: "signUp.create",
+          operation: 'signUp.create',
           email: data.email,
         },
       });
-      toast.error("アカウントの作成に失敗しました");
+      toast.error('アカウントの作成に失敗しました');
     }
   };
 
@@ -408,28 +403,22 @@ export default function SignUpPage() {
         code: verificationCode,
       });
 
-      if (result.status === "complete") {
+      if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
         toast.success('認証に成功しました');
-
-        // retryOperationでClerk webhookの処理完了を待つ
-        const currentUser = clerkClient.user;
-        if (!currentUser) {
-          throw new Error('ユーザー情報が取得できませんでした');
-        }
         router.push(`/dashboard`);
       } else {
-        toast.error("認証に失敗しました");
+        toast.error('認証に失敗しました');
       }
     } catch (err) {
       Sentry.captureException(err, {
-        level: "error",
+        level: 'error',
         tags: {
-          operation: "signUp.attemptEmailAddressVerification",
+          operation: 'signUp.attemptEmailAddressVerification',
           email: email,
         },
       });
-      toast.error("認証コードの検証に失敗しました");
+      toast.error('認証コードの検証に失敗しました');
     }
   };
   return (
@@ -468,6 +457,27 @@ export default function SignUpPage() {
                   noValidate
                 >
                   <motion.div variants={itemVariants} className="space-y-2">
+                    <Label htmlFor="salonName" className="text-sm font-medium">
+                      店舗名
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="salonName"
+                        type="text"
+                        {...register('salonName')}
+                        placeholder="店舗名を入力"
+                        className="pl-3"
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    {errors.salonName && (
+                      <p id="salonName-error" className="text-xs text-red-600" role="alert">
+                        {errors.salonName.message}
+                      </p>
+                    )}
+                  </motion.div>
+                  <motion.div variants={itemVariants} className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
                       メールアドレス
                     </Label>
@@ -476,24 +486,18 @@ export default function SignUpPage() {
                       <Input
                         id="email"
                         type="email"
-                        {...register("email")}
+                        {...register('email')}
                         placeholder="メールアドレスを入力"
                         className="pl-10"
                         required
-                        aria-invalid={errors.email ? "true" : "false"}
-                        aria-describedby={
-                          errors.email ? "email-error" : undefined
-                        }
+                        aria-invalid={errors.email ? 'true' : 'false'}
+                        aria-describedby={errors.email ? 'email-error' : undefined}
                         autoComplete="email"
                         autoFocus
                       />
                     </div>
                     {errors.email && (
-                      <p
-                        id="email-error"
-                        className="text-xs text-red-600"
-                        role="alert"
-                      >
+                      <p id="email-error" className="text-xs text-red-600" role="alert">
                         {errors.email.message}
                       </p>
                     )}
@@ -509,10 +513,7 @@ export default function SignUpPage() {
                   </motion.div>
 
                   <motion.div variants={itemVariants} className="space-y-2">
-                    <Label
-                      htmlFor="confirmPassword"
-                      className="text-sm font-medium"
-                    >
+                    <Label htmlFor="confirmPassword" className="text-sm font-medium">
                       確認用パスワード
                     </Label>
                     <div className="relative">
@@ -520,23 +521,17 @@ export default function SignUpPage() {
                       <Input
                         id="confirmPassword"
                         type="password"
-                        {...register("confirmPassword")}
+                        {...register('confirmPassword')}
                         placeholder="同じパスワードを再入力"
                         className="pl-10"
                         required
-                        aria-invalid={errors.confirmPassword ? "true" : "false"}
-                        aria-describedby={
-                          errors.confirmPassword ? "password-error" : undefined
-                        }
+                        aria-invalid={errors.confirmPassword ? 'true' : 'false'}
+                        aria-describedby={errors.confirmPassword ? 'password-error' : undefined}
                         autoComplete="new-password"
                       />
                     </div>
                     {errors.confirmPassword && (
-                      <p
-                        id="confirmPassword-error"
-                        className="text-xs text-red-600"
-                        role="alert"
-                      >
+                      <p id="confirmPassword-error" className="text-xs text-red-600" role="alert">
                         {errors.confirmPassword.message}
                       </p>
                     )}
@@ -556,7 +551,7 @@ export default function SignUpPage() {
                       disabled={isSubmitting}
                       aria-busy={isSubmitting}
                     >
-                      {isSubmitting ? "処理中..." : "登録する"}
+                      {isSubmitting ? '処理中...' : '登録する'}
                       {isSubmitting ? (
                         <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                       ) : (
@@ -588,10 +583,7 @@ export default function SignUpPage() {
                   </motion.div>
 
                   <div className="space-y-2">
-                    <Label
-                      htmlFor="verification-code"
-                      className="text-xs font-medium"
-                    >
+                    <Label htmlFor="verification-code" className="text-xs font-medium">
                       認証コード
                     </Label>
                     <Input
@@ -625,18 +617,18 @@ export default function SignUpPage() {
                       onClick={async () => {
                         try {
                           await signUp?.prepareEmailAddressVerification({
-                            strategy: "email_code",
+                            strategy: 'email_code',
                           });
-                          toast.success("認証コードを再送信しました");
+                          toast.success('認証コードを再送信しました');
                         } catch (err) {
                           Sentry.captureException(err, {
-                            level: "error",
+                            level: 'error',
                             tags: {
-                              operation: "signUp.prepareEmailAddressVerification",
+                              operation: 'signUp.prepareEmailAddressVerification',
                               email: email,
                             },
                           });
-                          toast.error("認証コードの再送信に失敗しました");
+                          toast.error('認証コードの再送信に失敗しました');
                         }
                       }}
                     >
@@ -652,7 +644,7 @@ export default function SignUpPage() {
             <Separator className="bg-gray-200 dark:bg-gray-700 w-1/2 mx-auto my-2" />
             <motion.div variants={itemVariants} className="w-full text-center">
               <p className="text-xs text-gray-600 dark:text-gray-400">
-                すでにアカウントをお持ちですか？{" "}
+                すでにアカウントをお持ちですか？{' '}
                 <Link
                   href="/sign-in"
                   className="inline-flex items-center text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
