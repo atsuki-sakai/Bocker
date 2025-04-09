@@ -3,7 +3,7 @@ import { DashboardSection } from '@/components/common';
 import { Id } from '@/convex/_generated/dataModel';
 import { fetchQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
-import { serverConvexAuth } from '@/lib/auth-server';
+import { serverConvexAuth } from '@/lib/auth/auth-server';
 import { MenuDetailContent } from './MenuDetailContent';
 
 interface MenuDetailPageProps {
