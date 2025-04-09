@@ -888,6 +888,14 @@ export function validateSalonConfig(args: Partial<Doc<'salon_config'>>) {
 }
 
 export function validateSalon(args: Partial<Doc<'salon'>>) {
+  if (args.organizationId && args.organizationId.length > MAX_TEXT_LENGTH) {
+    throw new ConvexError({
+      message: `組織IDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
+      severity: 'low',
+      status: 400,
+    });
+  }
   if (args.clerkId && args.clerkId.length > MAX_TEXT_LENGTH) {
     throw new ConvexError({
       message: `Clerk IDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
