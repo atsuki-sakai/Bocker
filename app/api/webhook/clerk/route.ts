@@ -1,4 +1,3 @@
-import { Id } from './../../../../convex/_generated/dataModel.d';
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
