@@ -346,7 +346,7 @@ export const get = query({
     stripeCustomerId: v.string(),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    authCheck(ctx, true);
     validateSubscription(args);
     const subscription = await ctx.db
       .query('subscription')
