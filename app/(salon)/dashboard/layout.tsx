@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { preloadQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
 import { Sidebar } from '@/components/common';
-import { serverConvexAuth } from '@/lib/auth-server';
+import { serverConvexAuth } from '@/lib/auth/auth-server';
 import '../../globals.css';
 
 export const metadata: Metadata = {
