@@ -17,4 +17,5 @@ export enum CONVEX_ERROR_CODES {
   CONFLICT = 'CONFLICT', // リソースが競合しています
   STRIPE_ERROR = 'STRIPE_ERROR', // Stripeエラーが発生しました
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED', // レート制限を超えました
+  FORBIDDEN = 'FORBIDDEN', // アクセスが禁止されています
 }

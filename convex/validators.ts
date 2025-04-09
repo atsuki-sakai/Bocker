@@ -1099,6 +1099,7 @@ export function validateStaff(args: Partial<Doc<'staff'>>) {
       status: 400,
     });
   }
+
   if (args.age && (args.age < 0 || args.age > 120)) {
     throw new ConvexError({
       message: '年齢は0以上120以下で入力してください',
