@@ -4,7 +4,7 @@ import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
 import { CONVEX_ERROR_CODES } from '../constants';
-import { Doc, Id } from '../_generated/dataModel';
+import { Doc } from '../_generated/dataModel';
 import { removeEmptyFields, trashRecord, authCheck } from '../helpers';
 import { validateSalon } from '../validators';
 
@@ -13,6 +13,7 @@ import { validateSalon } from '../validators';
 export const add = mutation({
   args: {
     clerkId: v.string(),
+    organizationId: v.optional(v.string()),
     email: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
   },
