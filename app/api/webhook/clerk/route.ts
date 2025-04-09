@@ -105,53 +105,43 @@ export async function POST(req: Request) {
         try {
           try {
             // 1. Stripe顧客作成 (エラーは再試行)
+            console.log(`Stripe顧客作成を開始: email=${email}, clerkId=${id}`);
             const customer = await retryOperation(() =>
               stripe.customers.create({
                 email: email || undefined,
                 metadata: { clerkId: id },
               })
             );
+            console.log(`Stripe顧客作成成功: customerId=${customer.id}`);
 
             try {
               try {
                 // 組織を作成
+                console.log(`組織作成を開始: salonName=${salonName}, clerkId=${id}`);
                 const organization = await client.organizations.createOrganization({
                   name: salonName,
                   createdBy: id,
                 });
 
-                // メンバーシップを作成
-                await client.organizations.createOrganizationMembership({
-                  organizationId: organization.id,
-                  userId: id,
-                  role: 'org:owner', // デフォルトの管理者ロール
-                });
-
-                // メンバーシップのメタデータを更新
-                await client.organizations.updateOrganizationMembershipMetadata({
-                  organizationId: organization.id,
-                  userId: id,
-                  publicMetadata: {
-                    role: 'owner',
-                  },
-                });
-
-                // ユーザーのメタデータを更新
-                await client.users.updateUserMetadata(id, {
-                  publicMetadata: {
-                    salonId: organization.id,
-                  },
-                });
-
-                // 2. Convexへのユーザー登録 (エラーは再試行)
-                await retryOperation(() =>
-                  fetchMutation(api.salon.core.add, {
-                    clerkId: id,
-                    email,
-                    stripeCustomerId: customer.id,
-                    organizationId: organization.id,
-                  })
-                );
+                try {
+                  // 2. Convexへのユーザー登録 (エラーは再試行)
+                  console.log(
+                    `Convexへのサロン登録を開始: clerkId=${id}, organizationId=${organization.id}, email=${email}, stripeCustomerId=${customer.id}`
+                  );
+                  await retryOperation(() =>
+                    fetchMutation(api.salon.core.add, {
+                      clerkId: id,
+                      organizationId: organization.id ?? 'ERROR',
+                      email,
+                      stripeCustomerId: customer.id,
+                    })
+                  );
+                  console.log('Convexへのサロン登録成功');
+                } catch (error) {
+                  console.error(`Clerk ID: ${id}のサロン登録に失敗しました:`, error);
+                  console.error('エラーの詳細:', JSON.stringify(error, null, 2));
+                  Sentry.captureException(error);
+                }
               } catch (error) {
                 console.error(`Clerk ID: ${id}の組織更新に失敗しました:`, error);
                 Sentry.captureException(error);
