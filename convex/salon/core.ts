@@ -53,6 +53,9 @@ export const add = mutation({
     if (args.stripeCustomerId) {
       salonData.stripeCustomerId = args.stripeCustomerId;
     }
+    if (args.organizationId) {
+      salonData.organizationId = args.organizationId;
+    }
     salonData.isArchive = false;
 
     // データベースに挿入
@@ -147,7 +150,7 @@ export const upsert = mutation({
 export const trash = mutation({
   args: { id: v.id('salon') },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    authCheck(ctx, true);
     // より効率的なクエリでサロンを取得
     const salon = await ctx.db.get(args.id);
     if (!salon) {
