@@ -3,12 +3,12 @@
 // ------------------------------------------------------
 
 import { cn, getPriceStrFromPlanAndPeriod } from "@/lib/utils";
-import { BillingPeriod } from "@/lib/types";
+import { BillingPeriod } from '@/convex/shared/types/common';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Doc } from "@/convex/_generated/dataModel";
-import { StripePreviewData } from "@/lib/types";
+import { StripePreviewData } from '@/lib/type';
 import { useMemo, useCallback } from "react";
 
 // Utility functions

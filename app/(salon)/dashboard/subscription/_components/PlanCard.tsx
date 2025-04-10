@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Star, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { BillingPeriod } from "@/lib/types";
+import { BillingPeriod } from '@/convex/shared/types/common';
 import { Separator } from "@/components/ui/separator";
 import { useMemo, useCallback } from "react";
 

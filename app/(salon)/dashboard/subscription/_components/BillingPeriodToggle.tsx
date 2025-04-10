@@ -4,7 +4,7 @@
 // ------------------------------------------------------
 
 import { cn } from "@/lib/utils";
-import { BillingPeriod } from "@/lib/types";
+import { BillingPeriod } from '@/convex/shared/types/common';
 import { useMemo, useCallback } from "react";
 
 interface BillingPeriodToggleProps {
