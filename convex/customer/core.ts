@@ -1,10 +1,10 @@
 import { mutation, query } from './../_generated/server';
 import { v } from 'convex/values';
-import { ConvexError } from 'convex/values';
-import { removeEmptyFields, trashRecord, KillRecord, authCheck } from './../helpers';
+import { removeEmptyFields, archiveRecord, KillRecord } from './../shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { CONVEX_ERROR_CODES } from './../constants';
-import { validateCustomer } from './../validators';
+import { validateCustomer, validateRequired } from './../shared/utils/validation';
+import { ConvexCustomError } from './../shared/utils/error';
+import { checkAuth } from './../shared/utils/auth';
 
 // 顧客の追加
 export const add = mutation({
@@ -20,19 +20,13 @@ export const add = mutation({
     lastReservationDate_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateCustomer(args);
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      console.error('AddCustomer: 指定されたサロンが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -64,19 +58,13 @@ export const update = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateCustomer(args);
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer || customer.isArchive) {
-      console.error('UpdateCustomer: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -112,18 +100,12 @@ export const trash = mutation({
     customerId: v.id('customer'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      console.error('TrashCustomer: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -133,18 +115,12 @@ export const trash = mutation({
       .withIndex('by_customer_id', (q) => q.eq('customerId', args.customerId))
       .first();
     if (!customerDetail) {
-      console.error('DeleteCustomer: 指定された顧客の詳細が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客の詳細が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客の詳細が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
-    await trashRecord(ctx, customer._id);
-    await trashRecord(ctx, customerDetail._id);
+    await archiveRecord(ctx, customer._id);
+    await archiveRecord(ctx, customerDetail._id);
     return true;
   },
 });
@@ -163,7 +139,7 @@ export const upsert = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateCustomer(args);
     const existingCustomer = await ctx.db.get(args.customerId);
     let fullName = '';
@@ -200,19 +176,8 @@ export const kill = mutation({
     customerId: v.id('customer'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const customer = await ctx.db.get(args.customerId);
-    if (!customer || customer.isArchive) {
-      console.error('DeleteCustomer: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        context: {
-          customerId: args.customerId,
-        },
-      });
-    }
+    checkAuth(ctx);
+    validateRequired(args.customerId, 'customerId');
 
     await KillRecord(ctx, args.customerId);
   },
@@ -223,12 +188,18 @@ export const getBySalonId = query({
   args: {
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
     return await ctx.db
       .query('customer')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isArchive', args.includeArchive || false)
+      )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -238,13 +209,18 @@ export const getByLineId = query({
   args: {
     salonId: v.id('salon'),
     lineId: v.string(),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
     return await ctx.db
       .query('customer')
       .withIndex('by_salon_line_id', (q) =>
-        q.eq('salonId', args.salonId).eq('lineId', args.lineId).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('lineId', args.lineId)
+          .eq('isArchive', args.includeArchive || false)
       )
       .first();
   },
@@ -255,13 +231,18 @@ export const getByPhone = query({
   args: {
     salonId: v.id('salon'),
     phone: v.string(),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
     return await ctx.db
       .query('customer')
       .withIndex('by_salon_phone', (q) =>
-        q.eq('salonId', args.salonId).eq('phone', args.phone).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('phone', args.phone)
+          .eq('isArchive', args.includeArchive || false)
       )
       .first();
   },
@@ -275,14 +256,13 @@ export const searchByName = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const result = await ctx.db
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
+    return await ctx.db
       .query('customer')
       .withIndex('by_salon_id_full_name', (q) => q.eq('salonId', args.salonId))
       .filter((q) => q.eq(q.field('fullName'), args.searchName))
       .paginate(args.paginationOpts);
-
-    return result;
   },
 });
 
@@ -290,14 +270,18 @@ export const customersBySalonId = query({
   args: {
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
-    direction: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
     return await ctx.db
       .query('customer')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
-      .order(args.direction === 'asc' ? 'asc' : 'desc')
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isArchive', args.includeArchive || false)
+      )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });

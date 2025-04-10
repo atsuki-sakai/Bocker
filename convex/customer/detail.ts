@@ -1,11 +1,11 @@
 import { mutation, query } from "./../_generated/server";
 import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import { CONVEX_ERROR_CODES } from './../constants';
-import { removeEmptyFields, trashRecord, KillRecord, authCheck } from './../helpers';
-import { genderType } from './../types';
-import { validateCustomerDetail } from './../validators';
-
+import { removeEmptyFields, archiveRecord, KillRecord } from './../shared/utils/helper';
+import { genderType } from './../shared/types/common';
+import { validateCustomerDetail, validateRequired } from './../shared/utils/validation';
+import { checkAuth } from './../shared/utils/auth';
+import { ConvexCustomError } from './../shared/utils/error';
+import { updateType } from './../shared/types/common';
 // 顧客詳細情報の追加
 export const add = mutation({
   args: {
@@ -16,19 +16,12 @@ export const add = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateCustomerDetail(args);
     const customer = await ctx.db.get(args.customerId);
     if (!customer || customer.isArchive) {
-      console.error('AddCustomerDetail: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -41,16 +34,15 @@ export const add = mutation({
       .first();
 
     if (existingDetail) {
-      console.error('AddCustomerDetail: すでに顧客詳細情報が存在します', { ...args });
-      throw new ConvexError({
-        message: 'すでに顧客詳細情報が存在します',
-        code: CONVEX_ERROR_CODES.DUPLICATE_RECORD,
-        status: 400,
-        severity: 'low',
-        context: {
-          customerId: args.customerId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '指定された顧客詳細情報が存在します',
+        'DUPLICATE_RECORD',
+        400,
+        {
+          ...args,
+        }
+      );
     }
     const detailId = await ctx.db.insert('customer_detail', {
       ...args,
@@ -70,34 +62,20 @@ export const update = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateCustomerDetail(args);
     const detail = await ctx.db.get(args.detailId);
     if (!detail || detail.isArchive) {
-      console.error('UpdateCustomerDetail: 指定された顧客詳細情報が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客詳細情報が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          detailId: args.detailId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客詳細情報が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // 顧客情報の取得
     const customer = await ctx.db.get(detail.customerId);
     if (!customer || customer.isArchive) {
-      console.error('UpdateCustomerDetail: 関連する顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '関連する顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          customerId: detail.customerId,
-        },
+      throw new ConvexCustomError('low', '関連する顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -119,19 +97,12 @@ export const upsert = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateCustomerDetail(args);
     const customer = await ctx.db.get(args.customerId);
     if (!customer || customer.isArchive) {
-      console.error('UpsertCustomerDetail: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -160,44 +131,14 @@ export const upsert = mutation({
 });
 
 // 顧客詳細情報の削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     detailId: v.id('customer_detail'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // 顧客詳細情報の存在確認
-    const detail = await ctx.db.get(args.detailId);
-    if (!detail) {
-      console.error('TrashCustomerDetail: 指定された顧客詳細情報が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客詳細情報が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          detailId: args.detailId,
-        },
-      });
-    }
-
-    // 顧客情報の取得
-    const customer = await ctx.db.get(detail.customerId);
-    if (!customer) {
-      console.error('TrashCustomerDetail: 関連する顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '関連する顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          customerId: detail.customerId,
-        },
-      });
-    }
-
-    await trashRecord(ctx, args.detailId);
-    return true;
+    checkAuth(ctx);
+    validateRequired(args.detailId, 'detailId');
+    return await archiveRecord(ctx, args.detailId);
   },
 });
 
@@ -206,22 +147,9 @@ export const kill = mutation({
     detailId: v.id('customer_detail'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // 顧客詳細情報の存在確認
-    const detail = await ctx.db.get(args.detailId);
-    if (!detail) {
-      console.error('KillCustomerDetail: 指定された顧客詳細情報が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客詳細情報が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          detailId: args.detailId,
-        },
-      });
-    }
-    await KillRecord(ctx, args.detailId);
+    checkAuth(ctx);
+    validateRequired(args.detailId, 'detailId');
+    return await KillRecord(ctx, args.detailId);
   },
 });
 
@@ -231,19 +159,13 @@ export const getByCustomerId = query({
     customerId: v.id('customer'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.customerId, 'customerId');
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      console.error('GetCustomerDetail: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -260,21 +182,15 @@ export const getByCustomerId = query({
 export const updateUseCount = mutation({
   args: {
     customerId: v.id('customer'),
-    type: v.union(v.literal('increment'), v.literal('decrement')),
+    type: updateType,
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.customerId, 'customerId');
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      console.error('UpdateUseCount: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
