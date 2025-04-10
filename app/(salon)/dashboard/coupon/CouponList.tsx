@@ -16,7 +16,7 @@ export default function CouponList() {
   const { salon } = useSalon();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCouponId, setSelectedCouponId] = useState<Id<'coupon'> | null>(null);
-  const deleteCoupon = useMutation(api.coupon.core.kill);
+  const deleteCoupon = useMutation(api.coupon.core.killRelatedTables);
 
   const { results, loadMore, status } = usePaginatedQuery(
     api.coupon.core.getAllBySalonId,
