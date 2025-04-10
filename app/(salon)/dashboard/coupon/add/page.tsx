@@ -11,7 +11,7 @@ import { ja } from 'date-fns/locale';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useSalon } from '@/hooks/useSalon';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 import { Loading } from '@/components/common';
 import { toast } from 'sonner';
 // コンポーネントのインポート
@@ -47,7 +47,7 @@ import { Badge } from '@/components/ui/badge';
 
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MAX_COUPON_UID_LENGTH } from '@/lib/constants';
+import { MAX_COUPON_UID_LENGTH } from '@/convex/constants';
 import { ExclusionMenu } from '@/components/common';
 import { Id } from '@/convex/_generated/dataModel';
 // スキーマとタイプ定義

@@ -44,7 +44,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
 import type { Id } from '@/convex/_generated/dataModel';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 import { toast } from 'sonner';
 import { ZodTextField } from '@/components/common';
 
@@ -203,7 +203,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
   // 状態管理
   const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([]);
   // Convex
-  const coupon = useQuery(api.coupon.core.getById, {
+  const coupon = useQuery(api.coupon.core.get, {
     couponId: couponId as Id<'coupon'>,
   });
   const couponConfig = useQuery(api.coupon.config.get, {
