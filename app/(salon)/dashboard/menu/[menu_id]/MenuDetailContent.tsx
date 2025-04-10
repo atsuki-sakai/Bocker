@@ -26,7 +26,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 
 // アニメーション用の設定
 const fadeIn = {
@@ -192,10 +192,12 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                           <span className="text-black text-base font-bold">
                             {formatPrice(menu.salePrice || 0)}
                           </span>{' '}
-                          / <span className="line-through">{formatPrice(menu.price || 0)}</span>
+                          / <span className="line-through">{formatPrice(menu.unitPrice || 0)}</span>
                         </p>
                       ) : (
-                        <p className="ml-2 text-base  text-black">{formatPrice(menu.price || 0)}</p>
+                        <p className="ml-2 text-base  text-black">
+                          {formatPrice(menu.unitPrice || 0)}
+                        </p>
                       )}
                     </div>
                   </div>

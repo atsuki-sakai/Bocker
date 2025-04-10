@@ -18,7 +18,7 @@ export default async function MenuDetailPage({ params }: MenuDetailPageProps) {
 
   let menu = null;
   try {
-    menu = await fetchQuery(api.menu.core.getById, { menuId: menu_id as Id<'menu'> }, { token });
+    menu = await fetchQuery(api.menu.core.get, { menuId: menu_id as Id<'menu'> }, { token });
   } catch (error) {
     console.error('メニュー取得エラー:', error);
     // エラーハンドリングはここで行います
