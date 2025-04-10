@@ -1,6 +1,6 @@
 export const STRIPE_API_VERSION = '2025-02-24.acacia';
 
-export const SALON_SCHEDULE_INTERVAL_MINUTES = [5, 10, 20, 30, 40, 50, 60];
+export const SALON_SCHEDULE_INTERVAL_MINUTES = [0, 5, 10, 20, 30, 40, 50, 60];
 export const SALON_SCHEDULE_HOURS = [
   '00:00',
   '01:00',
@@ -151,59 +151,6 @@ export const STAFF_TOKEN_COOKIE = 'bcker_staff_token';
 export const COOKIE_EXPIRES_DAYS = 7;
 // クライアントサイドでのローカルストレージのキー
 export const STAFF_TOKEN_STORAGE_KEY = 'bcker_staff_auth_token';
-
-// ############################################################
-// CONVEX API
-// ############################################################
-
-// ポイントの最大利用数
-export const MAX_USE_POINTS = 10000;
-// 合計金額の最大値
-export const MAX_TOTAL_PRICE = 1000000;
-// 備考の最大文字数
-export const MAX_NOTES_LENGTH = 1000;
-// スタッフ認証コードの文字数
-export const MAX_STAFF_AUTH_CODE_LENGTH = 6;
-// ポイントの有効期限の最大値
-export const MAX_POINT_EXPIRATION_DAYS = 365;
-// ポイント付与率の最大値
-export const MAX_POINT_RATE = 100;
-// 固定ポイントの最大値
-export const MAX_FIXED_POINT = 10000;
-// ポイントの最大値
-export const MAX_POINTS = 10000;
-// クーポンの最大利用回数
-export const LIMIT_USE_COUPON_COUNT = 10000;
-// テキストの最大文字数
-export const MAX_TEXT_LENGTH = 255;
-// クーポン識別IDの文字数
-export const MAX_COUPON_UID_LENGTH = 24;
-// タグの最大文字数
-export const MAX_TAG_LENGTH = 20;
-// タグの最大数
-export const LIMIT_TAG_COUNT = 5;
-// 電話番号の最大文字数
-export const MAX_PHONE_LENGTH = 11;
-// 注文制限の最大値
-export const MAX_ORDER_LIMIT = 50;
-// カテゴリの最大文字数
-export const MAX_CATEGORY_LENGTH = 20;
-// 郵便番号の最大文字数
-export const MAX_POSTAL_CODE_LENGTH = 7;
-// 住所の最大文字数
-export const MAX_ADDRESS_LENGTH = 200;
-// 何日前までキャンセル可能日数の最大値
-export const MAX_AVAILABLE_CANCEL_DAYS = 30;
-// ピンコードの最大文字数
-export const MAX_PIN_CODE_LENGTH = 20;
-// ハッシュ化されたピンコードの最大文字数
-export const MAX_HASH_PIN_CODE_LENGTH = 255;
-// 時間給の最大値
-export const MAX_HOURLY_RATE = 9999;
-// 指名料金の最大値
-export const MAX_EXTRA_CHARGE = 9999;
-// 優先度の最大値
-export const MAX_PRIORITY = 999;
 
 // UI
 export const POINT_EXPIRATION_DAYS = [
