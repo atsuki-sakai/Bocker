@@ -22,7 +22,7 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 

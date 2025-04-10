@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useZodForm } from '@/hooks/useZodForm';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FormField } from '@/components/common';
 import { Clock, Save, Calendar, Clock3, Check } from 'lucide-react';
