@@ -1,15 +1,9 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import {
-  handleConvexApiError,
-  removeEmptyFields,
-  trashRecord,
-  KillRecord,
-  authCheck,
-} from '../helpers';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { validateStaffConfig } from '../validators';
+import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
+import { validateStaffConfig, validateRequired } from '../shared/utils/validation';
 
 // スタッフ設定の追加
 export const add = mutation({
@@ -23,30 +17,16 @@ export const add = mutation({
     // スタッフの存在確認
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      console.error('AddStaffConfig: 指定されたスタッフが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたスタッフが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffId: args.staffId,
-        },
+      throw new ConvexCustomError('low', '指定されたスタッフが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      console.error('AddStaffConfig: 指定されたサロンが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -65,20 +45,13 @@ export const update = mutation({
     priority: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateStaffConfig(args);
     // スタッフ設定の存在確認
     const staffConfig = await ctx.db.get(args.staffConfigId);
     if (!staffConfig || staffConfig.isArchive) {
-      console.error('UpdateStaffConfig: 指定されたスタッフ設定が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたスタッフ設定が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffConfigId: args.staffConfigId,
-        },
+      throw new ConvexCustomError('low', '指定されたスタッフ設定が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -91,28 +64,14 @@ export const update = mutation({
 });
 
 // スタッフ設定の削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     staffConfigId: v.id('staff_config'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // スタッフ設定の存在確認
-    const staffConfig = await ctx.db.get(args.staffConfigId);
-    if (!staffConfig) {
-      console.error('TrashStaffConfig: 指定されたスタッフ設定が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたスタッフ設定が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffConfigId: args.staffConfigId,
-        },
-      });
-    }
-
-    return await trashRecord(ctx, staffConfig._id);
+    checkAuth(ctx);
+    validateRequired(args.staffConfigId, 'staffConfigId');
+    return await archiveRecord(ctx, args.staffConfigId);
   },
 });
 
@@ -125,7 +84,7 @@ export const upsert = mutation({
     priority: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateStaffConfig(args);
     const existingStaffConfig = await ctx.db.get(args.staffConfigId);
     if (!existingStaffConfig || existingStaffConfig.isArchive) {
@@ -148,23 +107,25 @@ export const kill = mutation({
     staffConfigId: v.id('staff_config'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.staffConfigId, 'staffConfigId');
     return await KillRecord(ctx, args.staffConfigId);
   },
 });
 
-// サロンIDとスタッフIDからスタッフ設定を取得
-export const getBySalonAndStaffId = query({
+//スタッフIDからスタッフ設定を取得
+export const getByStaffId = query({
   args: {
-    salonId: v.id('salon'),
     staffId: v.id('staff'),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateStaffConfig(args);
     return await ctx.db
       .query('staff_config')
       .withIndex('by_staff_id', (q) =>
-        q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+        q.eq('staffId', args.staffId).eq('isArchive', args.includeArchive || false)
       )
       .first();
   },

@@ -1,10 +1,10 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { validateStaffAuth } from '../validators';
-import { staffRoleType } from '../types';
+import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
+import { validateStaffAuth, validateRequired } from '../shared/utils/validation';
+import { roleType } from '../shared/types/common';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
 
 // スタッフ認証の追加
 export const add = mutation({
@@ -12,23 +12,16 @@ export const add = mutation({
     staffId: v.id('staff'),
     pinCode: v.optional(v.string()),
     hashPinCode: v.optional(v.string()),
-    role: v.optional(staffRoleType),
+    role: v.optional(roleType),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateStaffAuth(args);
     // スタッフの存在確認
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      console.error('AddStaffAuth: 指定されたスタッフが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたスタッフが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffId: args.staffId,
-        },
+      throw new ConvexCustomError('low', '指定されたスタッフが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
     return await ctx.db.insert('staff_auth', {
@@ -44,23 +37,16 @@ export const update = mutation({
     staffAuthId: v.id('staff_auth'),
     pinCode: v.optional(v.string()),
     hashPinCode: v.optional(v.string()),
-    role: v.optional(staffRoleType),
+    role: v.optional(roleType),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateStaffAuth(args);
     // スタッフ認証の存在確認
     const staffAuth = await ctx.db.get(args.staffAuthId);
     if (!staffAuth || staffAuth.isArchive) {
-      console.error('UpdateStaffAuth: 指定されたスタッフ認証が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたスタッフ認証が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffAuthId: args.staffAuthId,
-        },
+      throw new ConvexCustomError('low', '指定されたスタッフ認証が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -73,28 +59,14 @@ export const update = mutation({
 });
 
 // スタッフ認証の削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     staffAuthId: v.id('staff_auth'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // スタッフ認証の存在確認
-    const staffAuth = await ctx.db.get(args.staffAuthId);
-    if (!staffAuth) {
-      console.error('TrashStaffAuth: 指定されたスタッフ認証が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたスタッフ認証が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffAuthId: args.staffAuthId,
-        },
-      });
-    }
-
-    return await trashRecord(ctx, staffAuth._id);
+    checkAuth(ctx);
+    validateRequired(args.staffAuthId, 'staffAuthId');
+    return await archiveRecord(ctx, args.staffAuthId);
   },
 });
 
@@ -104,10 +76,10 @@ export const upsert = mutation({
     staffId: v.id('staff'),
     pinCode: v.optional(v.string()),
     hashPinCode: v.optional(v.string()),
-    role: v.optional(staffRoleType),
+    role: v.optional(roleType),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateStaffAuth(args);
     const existingStaffAuth = await ctx.db.get(args.staffAuthId);
 
@@ -130,7 +102,8 @@ export const kill = mutation({
     staffAuthId: v.id('staff_auth'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.staffAuthId, 'staffAuthId');
     return await KillRecord(ctx, args.staffAuthId);
   },
 });
@@ -139,12 +112,16 @@ export const kill = mutation({
 export const getByStaffId = query({
   args: {
     staffId: v.id('staff'),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.staffId, 'staffId');
     return await ctx.db
       .query('staff_auth')
-      .withIndex('by_staff_id', (q) => q.eq('staffId', args.staffId).eq('isArchive', false))
+      .withIndex('by_staff_id', (q) =>
+        q.eq('staffId', args.staffId).eq('isArchive', args.includeArchive || false)
+      )
       .first();
   },
 });
