@@ -1,18 +1,11 @@
 import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import {
-  handleConvexApiError,
-  removeEmptyFields,
-  trashRecord,
-  KillRecord,
-  authCheck,
-} from '../helpers';
+import { v } from 'convex/values';
+import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { reservationStatusType, paymentMethodType } from '../types';
-import { validateReservation } from '../validators';
-
+import { reservationStatusType, paymentMethodType } from '../shared/types/common';
+import { validateReservation, validateRequired } from '../shared/utils/validation';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
 // 予約の追加
 export const add = mutation({
   args: {
@@ -33,65 +26,37 @@ export const add = mutation({
     paymentMethod: v.optional(paymentMethodType),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateReservation(args);
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      console.error('AddReservation: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // スタッフの存在確認
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      console.error('AddReservation: 指定されたスタッフが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたスタッフが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffId: args.staffId,
-        },
+      throw new ConvexCustomError('low', '指定されたスタッフが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // メニューの存在確認
     const menu = await ctx.db.get(args.menuId);
     if (!menu) {
-      console.error('AddReservation: 指定されたメニューが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたメニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          menuId: args.menuId,
-        },
+      throw new ConvexCustomError('low', '指定されたメニューが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      console.error('AddReservation: 指定されたサロンが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -120,20 +85,13 @@ export const update = mutation({
     paymentMethod: v.optional(paymentMethodType),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateReservation(args);
     // 予約の存在確認
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation || reservation.isArchive) {
-      console.error('UpdateReservation: 指定された予約が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された予約が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          reservationId: args.reservationId,
-        },
+      throw new ConvexCustomError('low', '指定された予約が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -146,29 +104,14 @@ export const update = mutation({
 });
 
 // 予約の削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     reservationId: v.id('reservation'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // 予約の存在確認
-    const reservation = await ctx.db.get(args.reservationId);
-    if (!reservation) {
-      console.error('TrashReservation: 指定された予約が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された予約が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          reservationId: args.reservationId,
-        },
-      });
-    }
-
-    await trashRecord(ctx, reservation._id);
-    return true;
+    checkAuth(ctx);
+    validateRequired(args.reservationId, 'reservationId');
+    return await archiveRecord(ctx, args.reservationId);
   },
 });
 
@@ -192,7 +135,7 @@ export const upsert = mutation({
     paymentMethod: v.optional(paymentMethodType),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateReservation(args);
     const existingReservation = await ctx.db.get(args.reservationId);
     if (!existingReservation || existingReservation.isArchive) {
@@ -213,20 +156,8 @@ export const kill = mutation({
     reservationId: v.id('reservation'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const reservation = await ctx.db.get(args.reservationId);
-    if (!reservation) {
-      console.error('KillReservation: 指定された予約が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された予約が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          reservationId: args.reservationId,
-        },
-      });
-    }
+    checkAuth(ctx);
+    validateRequired(args.reservationId, 'reservationId');
     return await KillRecord(ctx, args.reservationId);
   },
 });
@@ -237,14 +168,21 @@ export const getByCustomerId = query({
     customerId: v.id('customer'),
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateReservation(args);
     return await ctx.db
       .query('reservation')
       .withIndex('by_customer_id', (q) =>
-        q.eq('salonId', args.salonId).eq('customerId', args.customerId).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('customerId', args.customerId)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -255,14 +193,21 @@ export const getByStaffId = query({
     staffId: v.id('staff'),
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateReservation(args);
     return await ctx.db
       .query('reservation')
       .withIndex('by_staff_id', (q) =>
-        q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('staffId', args.staffId)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -273,14 +218,21 @@ export const getByMenuId = query({
     menuId: v.id('menu'),
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateReservation(args);
     return await ctx.db
       .query('reservation')
       .withIndex('by_menu_id', (q) =>
-        q.eq('salonId', args.salonId).eq('menuId', args.menuId).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('menuId', args.menuId)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -290,12 +242,18 @@ export const getBySalonId = query({
   args: {
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateReservation(args);
     return await ctx.db
       .query('reservation')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isArchive', args.includeArchive || false)
+      )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -306,14 +264,21 @@ export const getByStatus = query({
     status: reservationStatusType,
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateReservation(args);
     return await ctx.db
       .query('reservation')
       .withIndex('by_status', (q) =>
-        q.eq('salonId', args.salonId).eq('status', args.status).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('status', args.status)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -324,17 +289,21 @@ export const getBySalonAndDate = query({
     salonId: v.id('salon'),
     startTime_unix: v.number(),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateReservation(args);
     return await ctx.db
       .query('reservation')
-      .withIndex('by_salon_date_archive', (q) =>
+      .withIndex('by_salon_date', (q) =>
         q
           .eq('salonId', args.salonId)
           .eq('startTime_unix', args.startTime_unix)
-          .eq('isArchive', false)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -346,18 +315,22 @@ export const getByStaffAndDate = query({
     salonId: v.id('salon'),
     startTime_unix: v.number(),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateReservation(args);
     return await ctx.db
       .query('reservation')
-      .withIndex('by_staff_date_archive', (q) =>
+      .withIndex('by_staff_date', (q) =>
         q
           .eq('salonId', args.salonId)
           .eq('staffId', args.staffId)
           .eq('startTime_unix', args.startTime_unix)
-          .eq('isArchive', false)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -369,18 +342,22 @@ export const getByCustomerAndDate = query({
     salonId: v.id('salon'),
     startTime_unix: v.number(),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateReservation(args);
     return await ctx.db
       .query('reservation')
-      .withIndex('by_customer_date_archive', (q) =>
+      .withIndex('by_customer_date', (q) =>
         q
           .eq('salonId', args.salonId)
           .eq('customerId', args.customerId)
           .eq('startTime_unix', args.startTime_unix)
-          .eq('isArchive', false)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -391,14 +368,21 @@ export const getBySalonAndStatus = query({
     salonId: v.id('salon'),
     status: reservationStatusType,
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    validateReservation(args);
+    checkAuth(ctx);
     return await ctx.db
       .query('reservation')
       .withIndex('by_status', (q) =>
-        q.eq('salonId', args.salonId).eq('status', args.status).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('status', args.status)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
