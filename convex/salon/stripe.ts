@@ -1,41 +1,21 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
-import { ConvexError } from 'convex/values';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { authCheck } from '../helpers';
-import { Id } from '../_generated/dataModel';
-
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
+import { validateRequired } from '../shared/utils/validation';
 // Stripe Connectアカウント情報の取得
 export const getConnectAccount = query({
   args: {
-    salonId: v.string(),
+    salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    // 認証チェック
-    // authCheck(ctx);
-
-    // サロンIDチェック
-    if (!args.salonId) {
-      throw new ConvexError({
-        message: 'サロンIDが指定されていません',
-        code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-        severity: 'low',
-        status: 400,
-      });
-    }
-
-    // サロン取得
-    const salon = await ctx.db
-      .query('salon')
-      .filter((q) => q.eq(q.field('_id'), args.salonId))
-      .first();
+    checkAuth(ctx, true);
+    validateRequired(args.salonId, 'salonId');
+    const salon = await ctx.db.get(args.salonId);
 
     if (!salon) {
-      throw new ConvexError({
-        message: 'サロンが見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
+      throw new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -50,37 +30,27 @@ export const getConnectAccount = query({
 // Stripe Connectアカウント情報の作成/更新
 export const createConnectAccount = mutation({
   args: {
-    salonId: v.string(),
+    salonId: v.id('salon'),
     accountId: v.string(),
     status: v.string(),
     createdAt: v.string(),
   },
   handler: async (ctx, args) => {
-    // 認証チェック
-    // authCheck(ctx);
-
+    checkAuth(ctx, true);
+    validateRequired(args.salonId, 'salonId');
     // サロンIDチェック
     if (!args.salonId) {
-      throw new ConvexError({
-        message: 'サロンIDが指定されていません',
-        code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-        severity: 'low',
-        status: 400,
+      throw new ConvexCustomError('low', 'サロンIDが指定されていません', 'INVALID_ARGUMENT', 400, {
+        ...args,
       });
     }
 
     // サロン取得
-    const salon = await ctx.db
-      .query('salon')
-      .filter((q) => q.eq(q.field('_id'), args.salonId))
-      .first();
+    const salon = await ctx.db.get(args.salonId);
 
     if (!salon) {
-      throw new ConvexError({
-        message: 'サロンが見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
+      throw new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -96,25 +66,17 @@ export const createConnectAccount = mutation({
 // Stripe Connectアカウント状態の更新
 export const updateConnectStatus = mutation({
   args: {
-    salonId: v.string(),
+    salonId: v.id('salon'),
     status: v.string(),
   },
   handler: async (ctx, args) => {
-    // 認証チェック
-    // authCheck(ctx);
-
-    // サロン取得
-    const salon = await ctx.db
-      .query('salon')
-      .filter((q) => q.eq(q.field('_id'), args.salonId))
-      .first();
+    checkAuth(ctx, true);
+    validateRequired(args.salonId, 'salonId');
+    const salon = await ctx.db.get(args.salonId);
 
     if (!salon) {
-      throw new ConvexError({
-        message: 'サロンが見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
+      throw new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -131,21 +93,25 @@ export const findSalonByConnectId = query({
     accountId: v.string(),
   },
   handler: async (ctx, args) => {
-    // 認証チェックをスキップ（Webhookからの呼び出し対応）
+    checkAuth(ctx, true);
+    validateRequired(args.accountId, 'accountId');
 
     if (!args.accountId) {
-      throw new ConvexError({
-        message: 'アカウントIDが指定されていません',
-        code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-        severity: 'low',
-        status: 400,
-      });
+      throw new ConvexCustomError(
+        'low',
+        'StripeConnectアカウントIDが指定されていません',
+        'INVALID_ARGUMENT',
+        400,
+        {
+          ...args,
+        }
+      );
     }
 
     // Stripe ConnectIDに紐づくサロンを検索
     const salons = await ctx.db
       .query('salon')
-      .filter((q) => q.eq(q.field('stripeConnectId'), args.accountId))
+      .withIndex('by_stripe_connect_id', (q) => q.eq('stripeConnectId', args.accountId))
       .collect();
 
     return salons;
@@ -155,34 +121,18 @@ export const findSalonByConnectId = query({
 // Stripe Connect アカウントの詳細情報を取得
 export const getConnectAccountDetails = query({
   args: {
-    salonId: v.string(),
+    salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    // 認証チェック
-    // authCheck(ctx);
-
-    // サロンIDチェック
-    if (!args.salonId) {
-      throw new ConvexError({
-        message: 'サロンIDが指定されていません',
-        code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-        severity: 'low',
-        status: 400,
-      });
-    }
+    validateRequired(args.salonId, 'salonId');
+    checkAuth(ctx, true);
 
     // サロン取得
-    const salon = await ctx.db
-      .query('salon')
-      .filter((q) => q.eq(q.field('_id'), args.salonId))
-      .first();
+    const salon = await ctx.db.get(args.salonId);
 
     if (!salon) {
-      throw new ConvexError({
-        message: 'サロンが見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
+      throw new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 

@@ -2,13 +2,10 @@
 
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
-import { ConvexError } from 'convex/values';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { Doc } from '../_generated/dataModel';
-import { removeEmptyFields, trashRecord, authCheck } from '../helpers';
-import { validateSalon } from '../validators';
-
-// FIXME: Webhookで使用するためのクエリを簡易的にskipしているので、セキュリティーに不安がある
+import { removeEmptyFields, archiveRecord } from '../shared/utils/helper';
+import { validateSalon, validateRequired } from '../shared/utils/validation';
+import { ConvexCustomError } from '../shared/utils/error';
+import { checkAuth } from '../shared/utils/auth';
 
 export const add = mutation({
   args: {
@@ -18,51 +15,24 @@ export const add = mutation({
     stripeCustomerId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx, true);
+    checkAuth(ctx);
     validateSalon(args);
     // 既存ユーザーの検索
     const existingSalon = await ctx.db
       .query('salon')
-      .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.clerkId).eq('isArchive', false))
+      .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.clerkId))
       .first();
 
     if (existingSalon) {
-      throw new ConvexError({
-        message: '既に存在するClerk IDです',
-        code: CONVEX_ERROR_CODES.DUPLICATE_RECORD,
-        severity: 'low',
-        status: 400,
-        context: {
-          clerkId: args.clerkId,
-        },
+      throw new ConvexCustomError('low', '既に存在するClerk IDです', 'DUPLICATE_RECORD', 400, {
+        clerkId: args.clerkId,
       });
     }
-
-    // 必須でないフィールドの検証
-    const email = args.email || 'no-email';
-
-    // 挿入するデータの準備
-
-    const salonData: Partial<Doc<'salon'>> = {
-      clerkId: args.clerkId,
-      email: email,
-    };
-
-    validateSalon(salonData);
-    // 任意フィールドを条件付きで追加
-    if (args.stripeCustomerId) {
-      salonData.stripeCustomerId = args.stripeCustomerId;
-    }
-    if (args.organizationId) {
-      salonData.organizationId = args.organizationId;
-    }
-    salonData.isArchive = false;
-
     // データベースに挿入
     return await ctx.db.insert('salon', {
-      ...salonData,
+      ...args,
       isArchive: false,
-    } as Doc<'salon'>);
+    });
   },
 });
 
@@ -71,7 +41,8 @@ export const get = query({
     id: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.id, 'id');
     return await ctx.db.get(args.id);
   },
 });
@@ -84,20 +55,14 @@ export const update = mutation({
     stripeCustomerId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx, true);
+    checkAuth(ctx);
     validateSalon(args);
     // サロンの存在確認
     const salon = await ctx.db.get(args.id);
 
     if (!salon || salon.isArchive) {
-      throw new ConvexError({
-        message: 'サロンが見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.id,
-        },
+      throw new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -128,7 +93,7 @@ export const upsert = mutation({
     stripeCustomerId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateSalon(args);
     const salon = await ctx.db.get(args.id);
     if (!salon || salon.isArchive) {
@@ -147,24 +112,13 @@ export const upsert = mutation({
   },
 });
 
-export const trash = mutation({
+export const archive = mutation({
   args: { id: v.id('salon') },
   handler: async (ctx, args) => {
-    authCheck(ctx, true);
-    // より効率的なクエリでサロンを取得
-    const salon = await ctx.db.get(args.id);
-    if (!salon) {
-      throw new ConvexError({
-        message: '存在しないサロンの削除が試行されました',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.id,
-        },
-      });
-    }
-    return trashRecord(ctx, args.id);
+    checkAuth(ctx);
+    validateRequired(args.id, 'id');
+
+    return await archiveRecord(ctx, args.id);
   },
 });
 
@@ -173,7 +127,7 @@ export const getClerkId = query({
     clerkId: v.string(),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx, true);
+    checkAuth(ctx);
     validateSalon(args);
     // 指定されたClerk IDを持つサロンを検索
     return await ctx.db
@@ -191,13 +145,15 @@ export const updateSubscription = mutation({
     stripeCustomerId: v.string(),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateSalon(args);
 
     // 1. 顧客IDでサロンを検索
     let salon = await ctx.db
       .query('salon')
-      .withIndex('by_stripe_customer_id', (q) => q.eq('stripeCustomerId', args.stripeCustomerId))
+      .withIndex('by_stripe_customer_id', (q) =>
+        q.eq('stripeCustomerId', args.stripeCustomerId).eq('isArchive', false)
+      )
       .first();
 
     // 2. 顧客IDでサロンが見つからない場合
@@ -209,7 +165,9 @@ export const updateSubscription = mutation({
       // 2.1. サブスクリプションIDからレコードを検索
       const subRecord = await ctx.db
         .query('subscription')
-        .withIndex('by_subscription_id', (q) => q.eq('subscriptionId', args.subscriptionId))
+        .withIndex('by_subscription_id', (q) =>
+          q.eq('subscriptionId', args.subscriptionId).eq('isArchive', false)
+        )
         .first();
 
       if (!subRecord) {
@@ -221,7 +179,7 @@ export const updateSubscription = mutation({
       salon = await ctx.db
         .query('salon')
         .withIndex('by_stripe_customer_id', (q) =>
-          q.eq('stripeCustomerId', subRecord.stripeCustomerId)
+          q.eq('stripeCustomerId', subRecord.stripeCustomerId).eq('isArchive', false)
         )
         .first();
 
@@ -246,7 +204,7 @@ export const subscriptionStatus = query({
     clerkId: v.string(),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateSalon(args);
     return await ctx.db
       .query('salon')
