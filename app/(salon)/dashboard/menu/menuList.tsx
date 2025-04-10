@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Pencil,
@@ -38,13 +37,6 @@ import { toast } from 'sonner';
 import { handleError } from '@/lib/error';
 import { Id } from '@/convex/_generated/dataModel';
 
-// スタッフの型定義
-interface Staff {
-  salonId: string;
-  menuId: string;
-  staffId: string;
-  staffName?: string;
-}
 
 const numberOfMenus = 10;
 
