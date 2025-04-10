@@ -2,12 +2,11 @@ import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import Stripe from 'stripe';
 import { action } from '../_generated/server';
-import { ConvexError } from 'convex/values';
 import { STRIPE_API_VERSION } from '@/lib/constants';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { trashRecord, KillRecord, removeEmptyFields, authCheck } from '../helpers';
-import { validateSubscription } from '../validators';
-
+import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
+import { validateSubscription, validateRequired } from '../shared/utils/validation';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
 // 環境変数が設定されていない場合のデフォルト値を追加
 const baseUrl =
   process.env.NEXT_PUBLIC_NODE_ENV === 'development'
@@ -26,13 +25,17 @@ export const syncSubscription = mutation({
       planName: v.string(),
       billingPeriod: v.union(v.literal('monthly'), v.literal('yearly')),
     }),
+    includeArchive: v.optional(v.boolean()) || false,
   },
   handler: async (ctx, args) => {
+    validateSubscription(args.subscription);
     // 既存のサブスクリプションを検索
     const existingSubscription = await ctx.db
       .query('subscription')
       .withIndex('by_subscription_id', (q) =>
-        q.eq('subscriptionId', args.subscription.subscriptionId).eq('isArchive', false)
+        q
+          .eq('subscriptionId', args.subscription.subscriptionId)
+          .eq('isArchive', args.includeArchive)
       )
       .first();
 
@@ -40,13 +43,12 @@ export const syncSubscription = mutation({
     const existingSalon = await ctx.db
       .query('salon')
       .withIndex('by_stripe_customer_id', (q) =>
-        q.eq('stripeCustomerId', args.subscription.stripeCustomerId).eq('isArchive', false)
+        q
+          .eq('stripeCustomerId', args.subscription.stripeCustomerId)
+          .eq('isArchive', args.includeArchive)
       )
       .first();
     if (!existingSalon) {
-      console.warn(
-        `stripeCustomerId: ${args.subscription.stripeCustomerId} のサロンが見つかりません`
-      );
       // サロンが見つからない場合でもサブスクリプション自体の更新は継続
       console.log(
         `stripeCustomerId: ${args.subscription.stripeCustomerId} のサロンが見つかりません`
@@ -72,35 +74,19 @@ export const syncSubscription = mutation({
         }
 
         const updateData = removeEmptyFields(args.subscription);
-        validateSubscription(updateData);
         // 既存レコードを更新
         subscriptionResult = await ctx.db.patch(existingSubscription._id, updateData);
       } else {
         // 新規サブスクリプションの追加
-        validateSubscription(args.subscription);
         console.log(`新規サブスクリプションレコードを作成: ${args.subscription.subscriptionId}`);
         subscriptionResult = await ctx.db.insert('subscription', {
-          subscriptionId: args.subscription.subscriptionId,
-          stripeCustomerId: args.subscription.stripeCustomerId,
-          status: args.subscription.status,
-          priceId: args.subscription.priceId,
-          planName: args.subscription.planName,
-          billingPeriod: args.subscription.billingPeriod,
-          currentPeriodEnd: Number(args.subscription.currentPeriodEnd),
+          ...args.subscription,
           isArchive: false,
         });
       }
-
       // サロンが存在する場合は更新して、両テーブルの状態を一致させる
       if (existingSalon) {
-        validateSubscription(args.subscription);
-        await ctx.db.patch(existingSalon._id, {
-          subscriptionId: args.subscription.subscriptionId,
-          subscriptionStatus: args.subscription.status,
-          billingPeriod: args.subscription.billingPeriod,
-          planName: args.subscription.planName,
-          priceId: args.subscription.priceId,
-        });
+        await ctx.db.patch(existingSalon._id, args.subscription);
         console.log(
           `サロンのサブスクリプションステータスを更新: ${existingSalon._id} → ${args.subscription.status}`
         );
@@ -124,8 +110,10 @@ export const paymentFailed = mutation({
     stripeCustomerId: v.string(),
     // トランザクションIDを追加して同一操作を識別できるようにする
     transactionId: v.optional(v.string()),
+    includeArchive: v.optional(v.boolean()) || false,
   },
   handler: async (ctx, args) => {
+    validateSubscription(args);
     const transactionId =
       args.transactionId ||
       `payment_failed_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -137,7 +125,7 @@ export const paymentFailed = mutation({
     let subscription = await ctx.db
       .query('subscription')
       .withIndex('by_subscription_id', (q) =>
-        q.eq('subscriptionId', args.subscriptionId).eq('isArchive', false)
+        q.eq('subscriptionId', args.subscriptionId).eq('isArchive', args.includeArchive)
       )
       .first();
 
@@ -149,7 +137,7 @@ export const paymentFailed = mutation({
       subscription = await ctx.db
         .query('subscription')
         .withIndex('by_stripe_customer_id', (q) =>
-          q.eq('stripeCustomerId', args.stripeCustomerId).eq('isArchive', false)
+          q.eq('stripeCustomerId', args.stripeCustomerId).eq('isArchive', args.includeArchive)
         )
         .first();
     }
@@ -163,7 +151,7 @@ export const paymentFailed = mutation({
     const salon = await ctx.db
       .query('salon')
       .withIndex('by_stripe_customer_id', (q) =>
-        q.eq('stripeCustomerId', args.stripeCustomerId).eq('isArchive', false)
+        q.eq('stripeCustomerId', args.stripeCustomerId).eq('isArchive', args.includeArchive)
       )
       .first();
 
@@ -208,28 +196,23 @@ export const createSubscriptionSession = action({
     trialDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    validateSubscription(args);
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: STRIPE_API_VERSION,
     });
 
     if (args.trialDays && (args.trialDays < 0 || args.trialDays > 15)) {
-      throw new ConvexError({
-        message: '試用期間は0以上15日以内で入力してください',
-        code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-        severity: 'low',
-        status: 400,
-      });
+      throw new ConvexCustomError(
+        'low',
+        '試用期間は0以上15日以内で入力してください',
+        'INVALID_ARGUMENT',
+        400
+      );
     }
-    validateSubscription(args);
 
     // 常に有効なURLが設定されるようにする
     const successUrl = `${baseUrl}/dashboard/subscription/success`;
     const cancelUrl = `${baseUrl}/dashboard/subscription`;
-
-    // URLが有効かどうか確認 - ロギング追加
-    console.log(
-      `サブスクリプションのリダイレクトURL設定: successUrl=${successUrl}, cancelUrl=${cancelUrl}`
-    );
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -251,8 +234,9 @@ export const createSubscriptionSession = action({
 
 // サロンのサブスクリプションを確認
 export const isSubscribed = query({
-  args: { salonId: v.id('salon') },
+  args: { salonId: v.id('salon'), includeArchive: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
+    validateRequired(args.salonId, 'salonId');
     // ログ識別子
     const queryId = `sub_check_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     console.log(`[${queryId}] サロン: ${args.salonId} のサブスクリプションステータスを確認中`);
@@ -277,7 +261,7 @@ export const isSubscribed = query({
       ctx.db
         .query('subscription')
         .withIndex('by_stripe_customer_id', (q) =>
-          q.eq('stripeCustomerId', stripeCustomerId).eq('isArchive', false)
+          q.eq('stripeCustomerId', stripeCustomerId).eq('isArchive', args.includeArchive || false)
         )
         .first(),
     ]);
@@ -294,9 +278,12 @@ export const isSubscribed = query({
             `subscription.status=${salonSubscription.status}`
         );
 
-        // この不一致は自動修正を検討する必要がある
-        // 実際のアプリケーションでは、この処理はバックグラウンドジョブで行うべき
-        // ここでは問題があることをログするだけ
+        throw new ConvexCustomError(
+          'critical',
+          'サロンのサブスクリプションステータスが一致しません',
+          'INVALID_ARGUMENT',
+          400
+        );
       }
 
       console.log(
@@ -329,10 +316,10 @@ export const createBillingPortalSession = action({
     returnUrl: v.string(), // 顧客がポータルから戻る URL
   },
   handler: async (ctx, args) => {
+    validateSubscription(args);
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: STRIPE_API_VERSION,
     });
-    validateSubscription(args);
     const session = await stripe.billingPortal.sessions.create({
       customer: args.stripeCustomerId,
       return_url: args.returnUrl,
@@ -344,27 +331,31 @@ export const createBillingPortalSession = action({
 export const get = query({
   args: {
     stripeCustomerId: v.string(),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx, true);
+    checkAuth(ctx, true);
     validateSubscription(args);
     const subscription = await ctx.db
       .query('subscription')
       .withIndex('by_stripe_customer_id', (q) =>
-        q.eq('stripeCustomerId', args.stripeCustomerId).eq('isArchive', false)
+        q
+          .eq('stripeCustomerId', args.stripeCustomerId)
+          .eq('isArchive', args.includeArchive || false)
       )
       .first();
     return subscription;
   },
 });
 
-export const trash = mutation({
+export const archive = mutation({
   args: {
     id: v.id('subscription'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    return await trashRecord(ctx, args.id);
+    checkAuth(ctx);
+    validateRequired(args.id, 'id');
+    return await archiveRecord(ctx, args.id);
   },
 });
 
@@ -373,7 +364,8 @@ export const kill = mutation({
     id: v.id('subscription'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.id, 'id');
     return await KillRecord(ctx, args.id);
   },
 });
