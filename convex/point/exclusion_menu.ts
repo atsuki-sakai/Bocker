@@ -1,9 +1,9 @@
 import { mutation, query } from './../_generated/server';
 import { v } from 'convex/values';
-import { ConvexError } from 'convex/values';
-import { KillRecord, trashRecord, authCheck } from './../helpers';
-import { CONVEX_ERROR_CODES } from './../constants';
-import { validatePointExclusionMenu } from './../validators';
+import { KillRecord, removeEmptyFields, archiveRecord } from '../shared/utils/helper';
+import { validatePointExclusionMenu, validateRequired } from '../shared/utils/validation';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
 
 export const add = mutation({
   args: {
@@ -12,7 +12,7 @@ export const add = mutation({
     menuId: v.id('menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validatePointExclusionMenu(args);
     const pointExclusionMenu = await ctx.db
       .query('point_exclusion_menu')
@@ -25,19 +25,15 @@ export const add = mutation({
       )
       .first();
     if (pointExclusionMenu) {
-      console.error(
-        'AddPointExclusionMenu: 指定されたポイント基本設定除外メニューはすでに存在します',
-        { ...args }
+      throw new ConvexCustomError(
+        'low',
+        '指定されたポイント基本設定除外メニューはすでに存在します',
+        'DUPLICATE_RECORD',
+        400,
+        {
+          ...args,
+        }
       );
-      throw new ConvexError({
-        message: '指定されたポイント基本設定除外メニューはすでに存在します',
-        code: CONVEX_ERROR_CODES.DUPLICATE_RECORD,
-        status: 400,
-        severity: 'low',
-        context: {
-          pointConfigId: args.pointConfigId,
-        },
-      });
     }
     const pointExclusionMenuId = await ctx.db.insert('point_exclusion_menu', {
       ...args,
@@ -54,7 +50,8 @@ export const get = query({
     menuId: v.id('menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validatePointExclusionMenu(args);
     const exclusionMenu = await ctx.db
       .query('point_exclusion_menu')
       .withIndex('by_salon_point_config_menu', (q) =>
@@ -76,7 +73,8 @@ export const upsert = mutation({
     selectedMenuIds: v.array(v.id('menu')),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validatePointExclusionMenu(args);
 
     // 1. 現在DBに保存されている除外メニューを取得
     const currentExclusionMenus = await ctx.db
@@ -129,7 +127,8 @@ export const list = query({
     pointConfigId: v.id('point_config'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validatePointExclusionMenu(args);
     const exclusionMenus = await ctx.db
       .query('point_exclusion_menu')
       .withIndex('by_salon_point_config_id', (q) =>
@@ -140,84 +139,24 @@ export const list = query({
   },
 });
 
-export const trash = mutation({
+export const archive = mutation({
   args: {
-    salonId: v.id('salon'),
-    pointConfigId: v.id('point_config'),
-    menuId: v.id('menu'),
+    id: v.id('point_exclusion_menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const pointExclusionMenu = await ctx.db
-      .query('point_exclusion_menu')
-      .withIndex('by_salon_point_config_menu', (q) =>
-        q
-          .eq('salonId', args.salonId)
-          .eq('pointConfigId', args.pointConfigId)
-          .eq('menuId', args.menuId)
-          .eq('isArchive', false)
-      )
-      .first();
-    if (!pointExclusionMenu || pointExclusionMenu.isArchive) {
-      console.error(
-        'TrashPointExclusionMenu: 指定されたポイント基本設定除外メニューが存在しません',
-        {
-          ...args,
-        }
-      );
-      throw new ConvexError({
-        message: '指定されたポイント基本設定除外メニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          salonId: args.salonId,
-          pointConfigId: args.pointConfigId,
-          menuId: args.menuId,
-        },
-      });
-    }
-    return await trashRecord(ctx, pointExclusionMenu._id);
+    checkAuth(ctx);
+    validateRequired(args.id, 'id');
+    return await archiveRecord(ctx, args.id);
   },
 });
 
 export const kill = mutation({
   args: {
-    salonId: v.id('salon'),
-    pointConfigId: v.id('point_config'),
-    menuId: v.id('menu'),
+    id: v.id('point_exclusion_menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const pointExclusionMenu = await ctx.db
-      .query('point_exclusion_menu')
-      .withIndex('by_salon_point_config_menu', (q) =>
-        q
-          .eq('salonId', args.salonId)
-          .eq('pointConfigId', args.pointConfigId)
-          .eq('menuId', args.menuId)
-          .eq('isArchive', false)
-      )
-      .first();
-    if (!pointExclusionMenu || pointExclusionMenu.isArchive) {
-      console.error(
-        'KillPointExclusionMenu: 指定されたポイント基本設定除外メニューが存在しません',
-        {
-          ...args,
-        }
-      );
-      throw new ConvexError({
-        message: '指定されたポイント基本設定除外メニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          salonId: args.salonId,
-          pointConfigId: args.pointConfigId,
-          menuId: args.menuId,
-        },
-      });
-    }
-    return await KillRecord(ctx, pointExclusionMenu._id);
+    checkAuth(ctx);
+    validateRequired(args.id, 'id');
+    return await KillRecord(ctx, args.id);
   },
 });
