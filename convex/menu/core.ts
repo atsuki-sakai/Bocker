@@ -1,11 +1,11 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
+import { removeEmptyFields, KillRecord, archiveRecord } from '../shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { genderType, targetType, menuPaymentMethodType } from '../types';
-import { validateMenu } from '../validators';
+import { validateMenu, validateRequired } from '../shared/utils/validation';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
+import { genderType, targetType, menuPaymentMethodType } from '../shared/types/common';
 
 // メニューの追加
 export const add = mutation({
@@ -14,7 +14,7 @@ export const add = mutation({
     name: v.optional(v.string()),
     price: v.optional(v.number()),
     salePrice: v.optional(v.number()),
-    timeToMin: v.optional(v.string()),
+    timeToMin: v.optional(v.number()),
     imgPath: v.optional(v.string()),
     description: v.optional(v.string()),
     targetGender: v.optional(genderType),
@@ -24,20 +24,13 @@ export const add = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateMenu(args);
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      console.error('指定されたサロンが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -56,7 +49,7 @@ export const update = mutation({
     name: v.optional(v.string()),
     price: v.optional(v.number()),
     salePrice: v.optional(v.number()),
-    timeToMin: v.optional(v.string()),
+    timeToMin: v.optional(v.number()),
     imgPath: v.optional(v.string()),
     description: v.optional(v.string()),
     targetGender: v.optional(genderType),
@@ -66,20 +59,13 @@ export const update = mutation({
     paymentMethod: v.optional(menuPaymentMethodType),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateMenu(args);
     // メニューの存在確認
     const menu = await ctx.db.get(args.menuId);
     if (!menu || menu.isArchive) {
-      console.error('指定されたメニューが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたメニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          menuId: args.menuId,
-        },
+      throw new ConvexCustomError('low', '指定されたメニューが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -93,29 +79,14 @@ export const update = mutation({
 });
 
 // メニューの削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     menuId: v.id('menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // メニューの存在確認
-    const menu = await ctx.db.get(args.menuId);
-    if (!menu) {
-      console.error('指定されたメニューが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたメニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          menuId: args.menuId,
-        },
-      });
-    }
-
-    await trashRecord(ctx, menu._id);
-    return true;
+    checkAuth(ctx);
+    validateRequired(args.menuId, 'menuId');
+    return await archiveRecord(ctx, args.menuId);
   },
 });
 
@@ -126,7 +97,7 @@ export const upsert = mutation({
     name: v.optional(v.string()),
     price: v.optional(v.number()),
     salePrice: v.optional(v.number()),
-    timeToMin: v.optional(v.string()),
+    timeToMin: v.optional(v.number()),
     imgPath: v.optional(v.string()),
     description: v.optional(v.string()),
     targetGender: v.optional(genderType),
@@ -135,7 +106,7 @@ export const upsert = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateMenu(args);
     // メニューの存在確認
     const existingMenu = await ctx.db.get(args.menuId);
@@ -160,47 +131,21 @@ export const kill = mutation({
     menuId: v.id('menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // メニューの存在確認
-    const menu = await ctx.db.get(args.menuId);
-    if (!menu) {
-      console.error('指定されたメニューが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたメニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          menuId: args.menuId,
-        },
-      });
-    }
-
+    checkAuth(ctx);
+    validateRequired(args.menuId, 'menuId');
     await KillRecord(ctx, args.menuId);
   },
 });
 
 // メニューIDからメニューを取得
-export const getById = query({
+export const get = query({
   args: {
     menuId: v.id('menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const menu = await ctx.db.get(args.menuId);
-    if (!menu || menu.isArchive) {
-      console.error('指定されたメニューが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたメニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          menuId: args.menuId,
-        },
-      });
-    }
-    return menu;
+    checkAuth(ctx);
+    validateRequired(args.menuId, 'menuId');
+    return await ctx.db.get(args.menuId);
   },
 });
 
@@ -209,13 +154,19 @@ export const getAllBySalonId = query({
   args: {
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    activeOnly: v.optional(v.boolean()),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateMenu(args);
     return await ctx.db
       .query('menu')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
-      .order('desc')
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isArchive', args.includeArchive || false)
+      )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -226,14 +177,22 @@ export const getByType = query({
     salonId: v.id('salon'),
     targetType: targetType,
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    activeOnly: v.optional(v.boolean()),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateMenu(args);
     return await ctx.db
       .query('menu')
       .withIndex('by_salon_id_type', (q) =>
-        q.eq('salonId', args.salonId).eq('targetType', args.targetType).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('targetType', args.targetType)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -244,14 +203,22 @@ export const getByGender = query({
     salonId: v.id('salon'),
     targetGender: genderType,
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    activeOnly: v.optional(v.boolean()),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateMenu(args);
     return await ctx.db
       .query('menu')
       .withIndex('by_salon_id_gender', (q) =>
-        q.eq('salonId', args.salonId).eq('targetGender', args.targetGender).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('targetGender', args.targetGender)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
