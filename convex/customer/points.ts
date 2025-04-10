@@ -1,9 +1,9 @@
 import { mutation, query } from "./../_generated/server";
 import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import { removeEmptyFields, trashRecord, KillRecord, authCheck } from './../helpers';
-import { CONVEX_ERROR_CODES } from './../constants';
-import { validateCustomerPoints } from './../validators';
+import { removeEmptyFields, archiveRecord, KillRecord } from './../shared/utils/helper';
+import { validateCustomerPoints, validateRequired } from './../shared/utils/validation';
+import { checkAuth } from './../shared/utils/auth';
+import { ConvexCustomError } from './../shared/utils/error';
 
 // 顧客ポイントの追加
 export const add = mutation({
@@ -14,34 +14,20 @@ export const add = mutation({
     lastTransactionDate_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateCustomerPoints(args);
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      console.error('AddCustomerPoints: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      console.error('AddCustomerPoints: 指定されたサロンが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -61,20 +47,13 @@ export const update = mutation({
     lastTransactionDate_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateCustomerPoints(args);
     // 顧客ポイントの存在確認
     const customerPoints = await ctx.db.get(args.customerPointsId);
     if (!customerPoints || customerPoints.isArchive) {
-      console.error('UpdateCustomerPoints: 指定された顧客ポイントが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客ポイントが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          customerPointsId: args.customerPointsId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客ポイントが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -87,29 +66,14 @@ export const update = mutation({
 });
 
 // 顧客ポイントの削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     customerPointsId: v.id('customer_points'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // 顧客ポイントの存在確認
-    const customerPoints = await ctx.db.get(args.customerPointsId);
-    if (!customerPoints) {
-      console.error('TrashCustomerPoints: 指定された顧客ポイントが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客ポイントが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          customerPointsId: args.customerPointsId,
-        },
-      });
-    }
-
-    await trashRecord(ctx, customerPoints._id);
-    return true;
+    checkAuth(ctx);
+    validateRequired(args.customerPointsId, 'customerPointsId');
+    return await archiveRecord(ctx, args.customerPointsId);
   },
 });
 
@@ -122,7 +86,7 @@ export const upsert = mutation({
     lastTransactionDate_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateCustomerPoints(args);
     const existingCustomerPoints = await ctx.db
       .query('customer_points')
@@ -139,6 +103,8 @@ export const upsert = mutation({
     } else {
       const updateData = removeEmptyFields(args);
       delete updateData.customerPointsId;
+      delete updateData.customerId;
+      delete updateData.salonId;
       return await ctx.db.patch(existingCustomerPoints._id, {
         ...updateData,
       });
@@ -151,21 +117,8 @@ export const kill = mutation({
     customerPointsId: v.id('customer_points'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-
-    const customerPoints = await ctx.db.get(args.customerPointsId);
-    if (!customerPoints) {
-      console.error('KillCustomerPoints: 指定された顧客ポイントが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客ポイントが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          customerPointsId: args.customerPointsId,
-        },
-      });
-    }
+    checkAuth(ctx);
+    validateRequired(args.customerPointsId, 'customerPointsId');
     await KillRecord(ctx, args.customerPointsId);
   },
 });
@@ -177,7 +130,8 @@ export const getBySalonAndCustomerId = query({
     customerId: v.id('customer'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateCustomerPoints(args);
     return await ctx.db
       .query('customer_points')
       .withIndex('by_salon_customer_archive', (q) =>
