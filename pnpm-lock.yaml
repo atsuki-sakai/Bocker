@@ -20,6 +20,9 @@ importers:
       '@convex-dev/action-retrier':
         specifier: ^0.2.0
         version: 0.2.0(convex@1.23.0(@clerk/clerk-react@5.25.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0))
+      '@convex-dev/migrations':
+        specifier: ^0.2.5
+        version: 0.2.5(convex@1.23.0(@clerk/clerk-react@5.25.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0))
       '@google-cloud/storage':
         specifier: ^7.15.2
         version: 7.15.2
@@ -445,6 +448,11 @@ packages:
 
   '@convex-dev/action-retrier@0.2.0':
     resolution: {integrity: sha512-Q24S5b0L97l4yCfiaBLQkdzccSksumeat5wkTSt/v6Nv7QI8Gyd0Hfo5fEo3kGmDW8xOVDGgcyUVP7A5RFD8lA==}
+    peerDependencies:
+      convex: ~1.16.5 || >=1.17.0 <1.25.0
+
+  '@convex-dev/migrations@0.2.5':
+    resolution: {integrity: sha512-qxIVTaIatOt4WbKygUZ1Wuu3e0EJ/hSxZVl5jrGCiLPlUjIQ9MpfstQquQmbcHtJOGkzt+CcVoJsISGXPciS/g==}
     peerDependencies:
       convex: ~1.16.5 || >=1.17.0 <1.25.0
 
@@ -5305,6 +5313,10 @@ snapshots:
       csstype: 3.1.3
 
   '@convex-dev/action-retrier@0.2.0(convex@1.23.0(@clerk/clerk-react@5.25.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0))':
+    dependencies:
+      convex: 1.23.0(@clerk/clerk-react@5.25.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+
+  '@convex-dev/migrations@0.2.5(convex@1.23.0(@clerk/clerk-react@5.25.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0))':
     dependencies:
       convex: 1.23.0(@clerk/clerk-react@5.25.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
 
