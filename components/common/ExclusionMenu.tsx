@@ -67,7 +67,7 @@ export default function ExclusionMenu({
     return menus.filter(
       (menu: Doc<'menu'>) =>
         (menu.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (menu.price?.toString() || '').includes(searchTerm)
+        (menu.unitPrice?.toString() || '').includes(searchTerm)
     );
   }, [menus, searchTerm]);
 
@@ -175,7 +175,7 @@ export default function ExclusionMenu({
                     className="flex flex-1 justify-between items-center cursor-pointer text-sm py-1"
                   >
                     <span className="font-medium">{menu.name}</span>
-                    <span className="text-gray-500">¥{menu.price?.toLocaleString()}</span>
+                    <span className="text-gray-500">¥{menu.unitPrice?.toLocaleString()}</span>
                   </label>
                 </div>
               ))}
