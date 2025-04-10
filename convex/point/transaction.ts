@@ -1,18 +1,12 @@
 import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import {
-  handleConvexApiError,
-  removeEmptyFields,
-  trashRecord,
-  KillRecord,
-  authCheck,
-} from '../helpers';
+import { v } from 'convex/values';
+import { removeEmptyFields, KillRecord, archiveRecord } from '../shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { validatePointTransaction } from '../validators';
-import { pointTransactionType } from '../types';
-
+import { validatePointTransaction, validateRequired } from '../shared/utils/validation';
+import { pointTransactionType } from '../shared/types/common';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
+import { reservationStatusType } from '../shared/types/common';
 // ポイント取引の追加
 export const add = mutation({
   args: {
@@ -25,50 +19,29 @@ export const add = mutation({
     transactionDate_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validatePointTransaction(args);
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      console.error('AddPointTransaction: 指定されたサロンが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // 予約の存在確認
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation) {
-      console.error('AddPointTransaction: 指定された予約が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された予約が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          reservationId: args.reservationId,
-        },
+      throw new ConvexCustomError('low', '指定された予約が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      console.error('AddPointTransaction: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -76,15 +49,8 @@ export const add = mutation({
     if (args.menuId) {
       const menu = await ctx.db.get(args.menuId);
       if (!menu) {
-        console.error('AddPointTransaction: 指定されたメニューが存在しません', { ...args });
-        throw new ConvexError({
-          message: '指定されたメニューが存在しません',
-          code: CONVEX_ERROR_CODES.NOT_FOUND,
-          severity: 'low',
-          status: 404,
-          context: {
-            menuId: args.menuId,
-          },
+        throw new ConvexCustomError('low', '指定されたメニューが存在しません', 'NOT_FOUND', 404, {
+          ...args,
         });
       }
     }
@@ -101,26 +67,17 @@ export const update = mutation({
   args: {
     pointTransactionId: v.id('point_transaction'),
     points: v.optional(v.number()),
-    transactionType: v.optional(
-      v.union(v.literal('earned'), v.literal('used'), v.literal('adjusted'), v.literal('expired'))
-    ),
+    transactionType: v.optional(pointTransactionType),
     transactionDate_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validatePointTransaction(args);
     // ポイント取引の存在確認
     const pointTransaction = await ctx.db.get(args.pointTransactionId);
     if (!pointTransaction || pointTransaction.isArchive) {
-      console.error('UpdatePointTransaction: 指定されたポイント取引が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたポイント取引が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          pointTransactionId: args.pointTransactionId,
-        },
+      throw new ConvexCustomError('low', '指定されたポイント取引が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -133,29 +90,15 @@ export const update = mutation({
 });
 
 // ポイント取引の削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     pointTransactionId: v.id('point_transaction'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // ポイント取引の存在確認
-    const pointTransaction = await ctx.db.get(args.pointTransactionId);
-    if (!pointTransaction) {
-      console.error('TrashPointTransaction: 指定されたポイント取引が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたポイント取引が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          pointTransactionId: args.pointTransactionId,
-        },
-      });
-    }
+    checkAuth(ctx);
+    validateRequired(args.pointTransactionId, 'pointTransactionId');
 
-    await trashRecord(ctx, pointTransaction._id);
-    return true;
+    return await archiveRecord(ctx, args.pointTransactionId);
   },
 });
 
@@ -167,13 +110,11 @@ export const upsert = mutation({
     customerId: v.id('customer'),
     points: v.optional(v.number()),
     menuId: v.optional(v.id('menu')),
-    transactionType: v.optional(
-      v.union(v.literal('earned'), v.literal('used'), v.literal('adjusted'), v.literal('expired'))
-    ),
+    transactionType: v.optional(pointTransactionType),
     transactionDate_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validatePointTransaction(args);
     const existingPointTransaction = await ctx.db.get(args.pointTransactionId);
     if (!existingPointTransaction || existingPointTransaction.isArchive) {
@@ -184,6 +125,9 @@ export const upsert = mutation({
     } else {
       const updateData = removeEmptyFields(args);
       delete updateData.pointTransactionId;
+      delete updateData.salonId;
+      delete updateData.customerId;
+      delete updateData.reservationId;
       return await ctx.db.patch(existingPointTransaction._id, updateData);
     }
   },
@@ -194,15 +138,9 @@ export const kill = mutation({
     pointTransactionId: v.id('point_transaction'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const pointTransaction = await ctx.db.get(args.pointTransactionId);
-    if (!pointTransaction) {
-      console.error('KillPointTransaction: 指定されたポイント取引が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたポイント取引が存在しません',
-      });
-    }
-    await KillRecord(ctx, args.pointTransactionId);
+    checkAuth(ctx);
+    validateRequired(args.pointTransactionId, 'pointTransactionId');
+    return await KillRecord(ctx, args.pointTransactionId);
   },
 });
 
@@ -213,7 +151,9 @@ export const getBySalonAndReservationId = query({
     reservationId: v.id('reservation'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
+    validateRequired(args.reservationId, 'reservationId');
     return await ctx.db
       .query('point_transaction')
       .withIndex('by_salon_reservation_id', (q) =>
@@ -226,16 +166,25 @@ export const getBySalonAndReservationId = query({
 // サロンと顧客IDからポイント取引を取得
 export const getBySalonAndCustomerId = query({
   args: {
-    salonId: v.id("salon"),
-    customerId: v.id("customer"),
+    salonId: v.id('salon'),
+    customerId: v.id('customer'),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
+    validateRequired(args.customerId, 'customerId');
     return await ctx.db
-      .query("point_transaction")
-      .withIndex("by_salon_customer_id", (q) => 
-        q.eq("salonId", args.salonId).eq("customerId", args.customerId).eq("isArchive", false)
+      .query('point_transaction')
+      .withIndex('by_salon_customer_id', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('customerId', args.customerId)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -243,18 +192,21 @@ export const getBySalonAndCustomerId = query({
 // サロンと顧客と予約IDからポイント取引を取得
 export const getBySalonCustomerAndReservation = query({
   args: {
-    salonId: v.id("salon"),
-    customerId: v.id("customer"),
-    reservationId: v.id("reservation"),
+    salonId: v.id('salon'),
+    customerId: v.id('customer'),
+    reservationId: v.id('reservation'),
   },
   handler: async (ctx, args) => {
+    checkAuth(ctx);
+    validatePointTransaction(args);
     return await ctx.db
-      .query("point_transaction")
-      .withIndex("by_salon_customer_reservation", (q) => 
-        q.eq("salonId", args.salonId)
-         .eq("customerId", args.customerId)
-         .eq("reservationId", args.reservationId)
-         .eq("isArchive", false)
+      .query('point_transaction')
+      .withIndex('by_salon_customer_reservation', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('customerId', args.customerId)
+          .eq('reservationId', args.reservationId)
+          .eq('isArchive', false)
       )
       .first();
   },

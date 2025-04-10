@@ -1,15 +1,13 @@
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
-import { ConvexError } from "convex/values";
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
+import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
 import {
-  handleConvexApiError,
-  removeEmptyFields,
-  trashRecord,
-  KillRecord,
-  authCheck,
-} from '../helpers';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { validatePointAuth } from '../validators';
+  validatePointAuth,
+  validateRequired,
+  validateRequiredNumber,
+} from '../shared/utils/validation';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
 
 // 予約ポイント認証の追加
 export const add = mutation({
@@ -21,35 +19,21 @@ export const add = mutation({
     points: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx, true);
     validatePointAuth(args);
     // 予約の存在確認
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation) {
-      console.error('AddPointAuth: 指定された予約が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された予約が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          reservationId: args.reservationId,
-        },
+      throw new ConvexCustomError('low', '指定された予約が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      console.error('AddPointAuth: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -70,21 +54,20 @@ export const update = mutation({
     points: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx, true);
     validatePointAuth(args);
     // 予約ポイント認証の存在確認
     const pointAuth = await ctx.db.get(args.pointAuthId);
     if (!pointAuth || pointAuth.isArchive) {
-      console.error('UpdatePointAuth: 指定された予約ポイント認証が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された予約ポイント認証が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          pointAuthId: args.pointAuthId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '指定された予約ポイント認証が存在しません',
+        'NOT_FOUND',
+        404,
+        {
+          ...args,
+        }
+      );
     }
 
     const updateData = removeEmptyFields(args);
@@ -97,30 +80,14 @@ export const update = mutation({
 });
 
 // 予約ポイント認証の削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     pointAuthId: v.id('point_auth'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-
-    // 予約ポイント認証の存在確認
-    const pointAuth = await ctx.db.get(args.pointAuthId);
-    if (!pointAuth) {
-      console.error('TrashPointAuth: 指定された予約ポイント認証が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された予約ポイント認証が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          pointAuthId: args.pointAuthId,
-        },
-      });
-    }
-
-    await trashRecord(ctx, pointAuth._id);
-    return true;
+    checkAuth(ctx);
+    validateRequired(args.pointAuthId, 'pointAuthId');
+    return await archiveRecord(ctx, args.pointAuthId);
   },
 });
 
@@ -134,7 +101,7 @@ export const upsert = mutation({
     points: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx, true);
     validatePointAuth(args);
     const existingPointAuth = await ctx.db.get(args.pointAuthId);
 
@@ -146,6 +113,8 @@ export const upsert = mutation({
     } else {
       const updateData = removeEmptyFields(args);
       delete updateData.pointAuthId;
+      delete updateData.reservationId;
+      delete updateData.customerId;
       return await ctx.db.patch(existingPointAuth._id, updateData);
     }
   },
@@ -156,16 +125,9 @@ export const kill = mutation({
     pointAuthId: v.id('point_auth'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const pointAuth = await ctx.db.get(args.pointAuthId);
-    if (!pointAuth || pointAuth.isArchive) {
-      console.error('KillPointAuth: 指定された予約ポイント認証が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された予約ポイント認証が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-      });
-    }
-    await KillRecord(ctx, args.pointAuthId);
+    validateRequired(args.pointAuthId, 'pointAuthId');
+    checkAuth(ctx, true);
+    return await KillRecord(ctx, args.pointAuthId);
   },
 });
 
@@ -175,7 +137,8 @@ export const getByReservationId = query({
     reservationId: v.id('reservation'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    validateRequired(args.reservationId, 'reservationId');
+    checkAuth(ctx, true);
     return await ctx.db
       .query('point_auth')
       .withIndex('by_reservation_id', (q) =>
@@ -191,7 +154,8 @@ export const getByCustomerId = query({
     customerId: v.id('customer'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    validateRequired(args.customerId, 'customerId');
+    checkAuth(ctx, true);
     return await ctx.db
       .query('point_auth')
       .withIndex('by_customer_id', (q) =>
@@ -207,7 +171,8 @@ export const getByExpirationTime = query({
     expirationTime_unix: v.number(),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    validateRequiredNumber(args.expirationTime_unix, 'expirationTime_unix');
+    checkAuth(ctx, true);
     return await ctx.db
       .query('point_auth')
       .withIndex('by_expiration_time', (q) =>

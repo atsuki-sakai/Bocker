@@ -1,17 +1,10 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import {
-  handleConvexApiError,
-  removeEmptyFields,
-  trashRecord,
-  KillRecord,
-  authCheck,
-} from '../helpers';
+import { removeEmptyFields, KillRecord, archiveRecord } from '../shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { validatePointQueue } from '../validators';
-
+import { validatePointQueue, validateRequired } from '../shared/utils/validation';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
 // ポイントキューの追加
 export const add = mutation({
   args: {
@@ -21,35 +14,21 @@ export const add = mutation({
     scheduledFor_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validatePointQueue(args);
     // 予約の存在確認
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation) {
-      console.error('AddPointQueue: 指定された予約が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された予約が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          reservationId: args.reservationId,
-        },
+      throw new ConvexCustomError('low', '指定された予約が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      console.error('AddPointQueue: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -69,21 +48,20 @@ export const update = mutation({
     scheduledFor_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validatePointQueue(args);
     // ポイントキューの存在確認
     const pointQueue = await ctx.db.get(args.pointQueueId);
     if (!pointQueue || pointQueue.isArchive) {
-      console.error('UpdatePointQueue: 指定されたポイントキューが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたポイントキューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          pointQueueId: args.pointQueueId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '指定されたポイントキューが存在しません',
+        'NOT_FOUND',
+        404,
+        {
+          ...args,
+        }
+      );
     }
 
     const updateData = removeEmptyFields(args);
@@ -96,28 +74,15 @@ export const update = mutation({
 });
 
 // ポイントキューの削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     pointQueueId: v.id('point_task_queue'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const pointQueue = await ctx.db.get(args.pointQueueId);
-    if (!pointQueue) {
-      console.error('TrashPointQueue: 指定されたポイントキューが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたポイントキューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          pointQueueId: args.pointQueueId,
-        },
-      });
-    }
+    checkAuth(ctx);
+    validateRequired(args.pointQueueId, 'pointQueueId');
 
-    await trashRecord(ctx, pointQueue._id);
-    return true;
+    return await archiveRecord(ctx, args.pointQueueId);
   },
 });
 
@@ -130,7 +95,7 @@ export const upsert = mutation({
     scheduledFor_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validatePointQueue(args);
     const existingPointQueue = await ctx.db.get(args.pointQueueId);
 
@@ -154,22 +119,10 @@ export const kill = mutation({
     pointQueueId: v.id('point_task_queue'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const pointQueue = await ctx.db.get(args.pointQueueId);
-    if (!pointQueue) {
-      console.error('KillPointQueue: 指定されたポイントキューが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたポイントキューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          pointQueueId: args.pointQueueId,
-        },
-      });
-    }
+    checkAuth(ctx);
+    validateRequired(args.pointQueueId, 'pointQueueId');
 
-    await KillRecord(ctx, args.pointQueueId);
+    return await KillRecord(ctx, args.pointQueueId);
   },
 });
 
@@ -179,7 +132,8 @@ export const getByReservationId = query({
     reservationId: v.id('reservation'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.reservationId, 'reservationId');
     return await ctx.db
       .query('point_task_queue')
       .withIndex('by_reservation_id', (q) =>
@@ -196,7 +150,8 @@ export const getByCustomerId = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validatePointQueue(args);
     return await ctx.db
       .query('point_task_queue')
       .withIndex('by_customer_id', (q) =>
@@ -213,7 +168,8 @@ export const getByScheduledFor = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validatePointQueue(args);
     return await ctx.db
       .query('point_task_queue')
       .withIndex('by_scheduled_for', (q) =>

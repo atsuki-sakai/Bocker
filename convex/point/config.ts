@@ -1,9 +1,9 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import { CONVEX_ERROR_CODES } from '../constants';
-import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
-import { validatePointConfig } from '../validators';
+import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
+import { validatePointConfig, validateRequired } from '../shared/utils/validation';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
 
 export const add = mutation({
   args: {
@@ -14,19 +14,12 @@ export const add = mutation({
     pointExpirationDays: v.optional(v.number()), // ポイントの有効期限(日)
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validatePointConfig(args);
     const salon = await ctx.db.get(args.salonId);
     if (!salon || salon.isArchive) {
-      console.error('AddPointConfig: 指定されたサロンが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -43,7 +36,8 @@ export const get = query({
     salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    validateRequired(args.salonId, 'salonId');
+    checkAuth(ctx);
     return await ctx.db
       .query('point_config')
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
@@ -60,32 +54,25 @@ export const update = mutation({
     pointExpirationDays: v.optional(v.number()), // ポイントの有効期限(日)
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validatePointConfig(args);
     const salonMenuPointConfig = await ctx.db
       .query('point_config')
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
       .first();
     if (!salonMenuPointConfig) {
-      console.error('UpdatePointConfig: 指定されたサロンのポイント設定が見つかりません', {
-        ...args,
-      });
-      throw new ConvexError({
-        message: '指定されたサロンのポイント設定が見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '指定されたサロンのポイント設定が見つかりません',
+        'NOT_FOUND',
+        404,
+        {
+          ...args,
+        }
+      );
     }
 
     const updateData = removeEmptyFields({ ...args });
-
-    // 更新前のデータと新しいデータをマージして検証
-    const mergedData = { ...salonMenuPointConfig, ...updateData };
-    validatePointConfig(mergedData);
 
     await ctx.db.patch(salonMenuPointConfig._id, {
       ...updateData,
@@ -103,7 +90,7 @@ export const upsert = mutation({
     pointExpirationDays: v.optional(v.number()), // ポイントの有効期限(日)
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validatePointConfig(args);
 
     const existingConfig = await ctx.db
@@ -125,34 +112,14 @@ export const upsert = mutation({
   },
 });
 
-export const trash = mutation({
+export const archive = mutation({
   args: {
     salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // まず対象のドキュメントを検索
-    const salonMenuPointConfig = await ctx.db
-      .query('point_config')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId))
-      .first();
-
-    if (!salonMenuPointConfig) {
-      console.error('TrashPointConfig: 指定されたサロンのポイント設定が見つかりません', {
-        ...args,
-      });
-      throw new ConvexError({
-        message: '指定されたサロンのポイント設定が見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
-      });
-    }
-    await trashRecord(ctx, salonMenuPointConfig._id);
-    return true;
+    validateRequired(args.salonId, 'salonId');
+    checkAuth(ctx);
+    return await archiveRecord(ctx, args.salonId);
   },
 });
 
@@ -161,24 +128,8 @@ export const kill = mutation({
     salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const salonMenuPointConfig = await ctx.db
-      .query('point_config')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId))
-      .first();
-    if (!salonMenuPointConfig) {
-      console.error('KillPointConfig: 指定されたサロンのポイント設定が見つかりません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンのポイント設定が見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
-      });
-    }
-    await KillRecord(ctx, args.salonId);
-    return true;
+    validateRequired(args.salonId, 'salonId');
+    checkAuth(ctx);
+    return await KillRecord(ctx, args.salonId);
   },
 });
