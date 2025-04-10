@@ -35,25 +35,8 @@ import { useMutation, useAction } from 'convex/react';
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 import { Id } from '@/convex/_generated/dataModel';
-
-// メニューの型定義
-interface Menu {
-  _id: Id<'menu'>;
-  salonId: Id<'salon'>;
-  name?: string;
-  price?: number;
-  salePrice?: number;
-  timeToMin?: string;
-  imgPath?: string;
-  description?: string;
-  targetGender?: string;
-  targetType?: string;
-  tags?: string[];
-  paymentMethod?: string;
-  isActive?: boolean;
-}
 
 // スタッフの型定義
 interface Staff {
@@ -63,81 +46,16 @@ interface Staff {
   staffName?: string;
 }
 
-// 元のデータ構造を維持
-const availableStaffs: Staff[] = [
-  {
-    salonId: '1',
-    menuId: '1',
-    staffId: '1',
-    staffName: 'スタッフ1',
-  },
-  {
-    salonId: '1',
-    menuId: '2',
-    staffId: '2',
-    staffName: 'スタッフ2',
-  },
-  {
-    salonId: '1',
-    menuId: '1',
-    staffId: '3',
-    staffName: 'スタッフ3',
-  },
-  {
-    salonId: '1',
-    menuId: '2',
-    staffId: '2',
-    staffName: 'スタッフ2',
-  },
-  {
-    salonId: '1',
-    menuId: '1',
-    staffId: '3',
-    staffName: 'スタッフ3',
-  },
-  {
-    salonId: '1',
-    menuId: '2',
-    staffId: '2',
-    staffName: 'スタッフ2',
-  },
-  {
-    salonId: '1',
-    menuId: '1',
-    staffId: '3',
-    staffName: 'スタッフ3',
-  },
-  {
-    salonId: '1',
-    menuId: '2',
-    staffId: '2',
-    staffName: 'スタッフ2',
-  },
-  {
-    salonId: '1',
-    menuId: '1',
-    staffId: '3',
-    staffName: 'スタッフ3',
-  },
-];
-
 const numberOfMenus = 10;
 
 // パフォーマンス最適化のためメモ化したメニューアイテムコンポーネント
 interface MenuItemProps {
-  menu: Menu;
+  menu: Doc<'menu'>;
   onEdit: (menuId: Id<'menu'>) => void;
   onDelete: (menuId: Id<'menu'>, imgPath: string) => void;
-  staffs: Staff[];
 }
 
-const MenuItem = ({ menu, onEdit, onDelete, staffs }: MenuItemProps) => {
-  // 対象メニューに関連するスタッフをフィルタリング
-  const menuStaffs = useMemo(() => {
-    return staffs.filter((staff: Staff) => staff.menuId === menu._id);
-  }, [staffs, menu._id]);
-
-  console.log('menu', menu.imgPath);
+const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
   return (
     <motion.div
       layout
@@ -205,34 +123,17 @@ const MenuItem = ({ menu, onEdit, onDelete, staffs }: MenuItemProps) => {
               <div className="text-sm text-muted-foreground">
                 {menu.salePrice ? (
                   <div className="flex items-center gap-2">
-                    <span className="line-through text-xs">{menu.price}円</span>
+                    <span className="line-through text-xs">{menu.unitPrice}円</span>
                     <span className="font-bold text-primary">{menu.salePrice}円</span>
                   </div>
                 ) : (
-                  <span className="font-medium">{menu.price}円</span>
+                  <span className="font-medium">{menu.unitPrice}円</span>
                 )}
               </div>
               <div className="flex items-center text-sm text-muted-foreground mt-1">
                 <Clock className="h-3 w-3 mr-1" />
                 {menu.timeToMin}分
               </div>
-            </div>
-
-            <div className="flex -space-x-2">
-              {menuStaffs.slice(0, 3).map((staff: Staff, idx: number) => (
-                <Avatar key={idx} className="h-7 w-7 border-2 border-background">
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                    {staff.staffName?.slice(0, 1)}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              {menuStaffs.length > 3 && (
-                <Avatar className="h-7 w-7 border-2 border-background">
-                  <AvatarFallback className="text-xs bg-muted">
-                    +{menuStaffs.length - 3}
-                  </AvatarFallback>
-                </Avatar>
-              )}
             </div>
           </div>
 
@@ -254,12 +155,11 @@ const MenuItem = ({ menu, onEdit, onDelete, staffs }: MenuItemProps) => {
 
 // メニューリスト表示コンポーネント
 interface MenuListContentProps {
-  menus: Menu[];
-  staffs: Staff[];
+  menus: Doc<'menu'>[];
   onDelete: (menuId: Id<'menu'>, imgPath: string) => void;
 }
 
-const MenuListContent = ({ menus, staffs, onDelete }: MenuListContentProps) => {
+const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
   const listContainerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -284,9 +184,7 @@ const MenuListContent = ({ menus, staffs, onDelete }: MenuListContentProps) => {
       className="space-y-2"
     >
       <AnimatePresence>
-        {menus.map((menu: Menu) => {
-          const menuStaffs = staffs.filter((staff: Staff) => staff.menuId === menu._id);
-
+        {menus.map((menu: Doc<'menu'>) => {
           return (
             <motion.div
               key={menu._id}
@@ -329,11 +227,11 @@ const MenuListContent = ({ menus, staffs, onDelete }: MenuListContentProps) => {
                       <div className="flex items-center">
                         {menu.salePrice ? (
                           <div className="flex items-center gap-2">
-                            <span className="line-through text-xs">{menu.price}円</span>
+                            <span className="line-through text-xs">{menu.unitPrice}円</span>
                             <span className="font-medium text-primary">{menu.salePrice}円</span>
                           </div>
                         ) : (
-                          <span>{menu.price}円</span>
+                          <span>{menu.unitPrice}円</span>
                         )}
                       </div>
 
@@ -368,23 +266,6 @@ const MenuListContent = ({ menus, staffs, onDelete }: MenuListContentProps) => {
                   </div>
 
                   <div className="flex items-center gap-2 self-end sm:self-center mt-2 sm:mt-0">
-                    <div className="flex -space-x-2 mr-4">
-                      {menuStaffs.slice(0, 3).map((staff: Staff, idx: number) => (
-                        <Avatar key={idx} className="h-7 w-7 border-2 border-background">
-                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                            {staff.staffName?.slice(0, 1)}
-                          </AvatarFallback>
-                        </Avatar>
-                      ))}
-                      {menuStaffs.length > 3 && (
-                        <Avatar className="h-7 w-7 border-2 border-background">
-                          <AvatarFallback className="text-xs bg-muted">
-                            +{menuStaffs.length - 3}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
-
                     <Link href={`/dashboard/menu/${menu._id}`}>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <Eye className="h-4 w-4" />
@@ -526,7 +407,6 @@ export default function MenuList() {
               <MenuItem
                 key={menu._id}
                 menu={menu}
-                staffs={availableStaffs}
                 onEdit={navigateToEdit}
                 onDelete={openDeleteDialog}
               />
@@ -536,7 +416,7 @@ export default function MenuList() {
       );
     }
 
-    return <MenuListContent menus={menus} staffs={availableStaffs} onDelete={openDeleteDialog} />;
+    return <MenuListContent menus={menus} onDelete={openDeleteDialog} />;
   };
 
   // メインレンダリング

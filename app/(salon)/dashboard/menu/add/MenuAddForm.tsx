@@ -12,7 +12,7 @@ import { compressAndConvertToWebP, fileToBase64, cn } from '@/lib/utils';
 import { useAction, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { TagBadge } from '@/components/common';
@@ -40,7 +40,6 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { SALON_SCHEDULE_INTERVAL_MINUTES } from '@/lib/constants';
 import {
   Card,
   CardContent,
@@ -52,15 +51,11 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
-import { Doc } from '@/convex/_generated/dataModel';
-import {
-  genderType,
-  targetType,
-  menuPaymentMethodType,
-  GenderType,
-  TargetType,
-  MenuPaymentMethodType,
-} from '@/lib/types';
+import { Gender, Target, MenuPaymentMethod } from '@/convex/shared/types/common';
+
+const GenderList = ['unselected', 'male', 'female'] as const;
+const TargetList = ['all', 'first', 'repeat'] as const;
+const PaymentMethodList = ['cash', 'credit_card', 'all'] as const;
 // バリデーションスキーマ
 const schemaMenu = z
   .object({
@@ -89,19 +84,17 @@ const schemaMenu = z
         .nullable()
         .optional()
     ),
-    timeToMin: z
-      .string()
-      .min(1, { message: '時間は必須です' })
-      .max(5, { message: '時間は5文字で入力してください' })
-      .refine((val) => val !== '', { message: '時間は必須です' }),
+    timeToMin: z.number().refine((val) => val !== 0 && val !== null && val !== undefined, {
+      message: '時間は必須です',
+    }),
     imgFilePath: z.string().max(512).optional(),
     description: z
       .string()
       .min(1, { message: '説明は必須です' })
       .max(1000, { message: '説明は1000文字以内で入力してください' })
       .optional(),
-    targetGender: z.enum(genderType, { message: '性別は必須です' }),
-    targetType: z.enum(targetType, { message: '対象タイプは必須です' }),
+    targetGender: z.enum(GenderList, { message: '性別は必須です' }),
+    targetType: z.enum(TargetList, { message: '対象タイプは必須です' }),
     tags: z.preprocess(
       (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
       z
@@ -118,7 +111,9 @@ const schemaMenu = z
         )
         .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
     ),
-    paymentMethod: z.enum(menuPaymentMethodType, { message: '支払い方法は必須です' }),
+    paymentMethod: z.enum(PaymentMethodList, {
+      message: '支払い方法は必須です',
+    }),
     isActive: z.boolean({ message: '有効/無効フラグは必須です' }),
   })
   .refine(
@@ -158,9 +153,9 @@ export default function MenuAddForm() {
   const { salon } = useSalon();
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [targetType, setTargetType] = useState<TargetType>('all');
-  const [targetGender, setTargetGender] = useState<GenderType>('all');
-  const [paymentMethod, setPaymentMethod] = useState<MenuPaymentMethodType>('cash');
+  const [targetType, setTargetType] = useState<Target>('all');
+  const [targetGender, setTargetGender] = useState<Gender>('unselected');
+  const [paymentMethod, setPaymentMethod] = useState<MenuPaymentMethod>('cash');
   const [currentTags, setCurrentTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState<string>('');
 
@@ -214,7 +209,7 @@ export default function MenuAddForm() {
   // 支払い方法の選択ロジック
   const handlePaymentMethod = (
     e: React.MouseEvent<HTMLButtonElement>,
-    method: MenuPaymentMethodType
+    method: MenuPaymentMethod
   ) => {
     e.preventDefault();
     setPaymentMethod(method);
@@ -249,31 +244,20 @@ export default function MenuAddForm() {
         uploadImagePath = uploadResult?.publicUrl;
       }
 
-      // メニュー登録
-      const { salePrice, ...restMenuData } = data;
-
       // APIに送信するデータを作成
-      const createData: Partial<Doc<'menu'>> = {
-        ...restMenuData,
+      const createData = {
+        name: data.name,
+        price: data.price,
+        timeToMin: data.timeToMin,
+        description: data.description,
+        targetGender: data.targetGender,
+        targetType: data.targetType,
+        tags: data.tags,
+        paymentMethod: data.paymentMethod,
+        isActive: data.isActive,
         imgPath: uploadImagePath || '',
+        salePrice: data.salePrice || 0,
       };
-
-      // imgFilePathプロパティが残っている場合は明示的に削除
-      if ('imgFilePath' in createData) {
-        delete createData.imgFilePath;
-      }
-
-      // 明示的にundefinedを設定して、DBでnullとして扱われるようにする
-      if (
-        salePrice === null ||
-        salePrice === undefined ||
-        (typeof salePrice === 'string' && salePrice === '') ||
-        isNaN(Number(salePrice))
-      ) {
-        createData.salePrice = 0; // 空の場合は0を設定
-      } else {
-        createData.salePrice = Number(salePrice);
-      }
 
       await createMenu({
         ...createData,
@@ -303,10 +287,10 @@ export default function MenuAddForm() {
         name: '',
         price: null as unknown as number,
         salePrice: null as unknown as number,
-        timeToMin: '',
+        timeToMin: 0,
         imgFilePath: '',
         description: '',
-        targetGender: 'all',
+        targetGender: 'unselected',
         targetType: 'all',
         tags: '' as unknown as string[],
         paymentMethod: 'cash',
@@ -369,7 +353,6 @@ export default function MenuAddForm() {
               {/* 右カラム - 基本情報 */}
               <div className="md:col-span-2 space-y-5">
                 {/* メニュー名 */}
-
                 <ZodTextField
                   name="name"
                   label="メニュー名"
@@ -380,7 +363,6 @@ export default function MenuAddForm() {
                   required
                   className="border-gray-200 focus-within:border-blue-500 transition-colors"
                 />
-
                 {/* 価格関連 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ZodTextField
@@ -406,9 +388,7 @@ export default function MenuAddForm() {
                     className="border-gray-200 focus-within:border-blue-500 transition-colors"
                   />
                 </div>
-
                 {/* 施術時間 */}
-
                 <div className="max-w-md">
                   <Label className="text-sm flex items-center gap-2">
                     <Clock size={16} className="text-gray-500" />
@@ -416,14 +396,14 @@ export default function MenuAddForm() {
                   </Label>
                   <Select
                     onValueChange={(value) => {
-                      setValue('timeToMin', value, { shouldValidate: true });
+                      setValue('timeToMin', parseInt(value), { shouldValidate: true });
                     }}
                   >
                     <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
                       <SelectValue placeholder="施術時間を選択" />
                     </SelectTrigger>
                     <SelectContent>
-                      {getMinuteMultiples(SALON_SCHEDULE_INTERVAL_MINUTES[0], 360).map((time) => (
+                      {getMinuteMultiples(5, 360).map((time) => (
                         <SelectItem key={time} value={time.toString()}>
                           {time}分
                         </SelectItem>
@@ -432,11 +412,9 @@ export default function MenuAddForm() {
                   </Select>
                   {errors.timeToMin && <ErrorMessage message={errors.timeToMin.message} />}
                 </div>
-
-                {/* 対象と性別 */}
+                ;{/* 対象と性別 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* 対象タイプ */}
-
                   <div>
                     <Label className="flex items-center gap-2 text-sm">
                       <Repeat size={16} className="text-gray-500" />
@@ -448,8 +426,8 @@ export default function MenuAddForm() {
                     <Select
                       value={targetType}
                       onValueChange={(value) => {
-                        setTargetType(value as TargetType);
-                        setValue('targetType', value as TargetType);
+                        setTargetType(value as Target);
+                        setValue('targetType', value as Target);
                       }}
                     >
                       <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
@@ -462,8 +440,7 @@ export default function MenuAddForm() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* 性別 */}
+                  ;{/* 性別 */}
                   <div>
                     <Label className="flex items-center gap-2 text-sm">
                       <Users size={16} className="text-gray-500" />
@@ -475,15 +452,15 @@ export default function MenuAddForm() {
                     <Select
                       value={targetGender}
                       onValueChange={(value) => {
-                        setTargetGender(value as GenderType);
-                        setValue('targetGender', value as GenderType);
+                        setTargetGender(value as Gender);
+                        setValue('targetGender', value as Gender);
                       }}
                     >
                       <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
-                        <SelectValue defaultValue={'all'} />
+                        <SelectValue defaultValue={'unselected'} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all" className="flex items-center gap-2">
+                        <SelectItem value="unselected" className="flex items-center gap-2">
                           男性・女性
                         </SelectItem>
                         <SelectItem value="male" className="flex items-center gap-2">
@@ -495,7 +472,9 @@ export default function MenuAddForm() {
                       </SelectContent>
                     </Select>
                   </div>
+                  ;
                 </div>
+                ;;
               </div>
             </div>
 
