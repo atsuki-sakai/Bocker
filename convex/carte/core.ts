@@ -1,9 +1,9 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
-import { ConvexError } from 'convex/values';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { removeEmptyFields, trashRecord, authCheck } from '../helpers';
-import { validateCarte } from '../validators';
+import { removeEmptyFields, archiveRecord, KillRecord } from './../shared/utils/helper';
+import { validateCarte, validateRequired } from './../shared/utils/validation';
+import { checkAuth } from './../shared/utils/auth';
+import { ConvexCustomError } from './../shared/utils/error';
 
 export const add = mutation({
   args: {
@@ -16,8 +16,7 @@ export const add = mutation({
   },
   handler: async (ctx, args) => {
     // 認証チェック
-    authCheck(ctx);
-    // 入力検証
+    checkAuth(ctx);
     validateCarte(args);
 
     // 同じ顧客・サロンのカルテが存在しないか確認
@@ -29,23 +28,18 @@ export const add = mutation({
       .first();
 
     if (existingCarte) {
-      console.error('AddCarte: 既に同じ顧客のカルテが存在します', {
-        ...args,
-      });
-      throw new ConvexError({
-        message: '既に同じ顧客のカルテが存在します',
-        code: CONVEX_ERROR_CODES.DUPLICATE_RECORD,
-        status: 400,
-        severity: 'low',
-        context: {
-          carteId: existingCarte._id,
-          customerId: args.customerId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '既に同じ顧客のカルテが存在します',
+        'DUPLICATE_RECORD',
+        400,
+        {
+          ...args,
+        }
+      );
     }
-    // データベースに挿入
-    const newCarteId = await ctx.db.insert('carte', { ...args, isArchive: false });
-    return newCarteId;
+
+    return await ctx.db.insert('carte', { ...args, isArchive: false });
   },
 });
 
@@ -54,7 +48,8 @@ export const get = query({
     id: v.id('carte'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.id, 'id');
     return await ctx.db.get(args.id);
   },
 });
@@ -69,22 +64,13 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     // 認証チェック
-    authCheck(ctx);
-    // 入力検証
+    checkAuth(ctx);
     validateCarte(args);
     // カルテの存在確認
     const carte = await ctx.db.get(args.id);
     if (!carte || carte.isArchive) {
-      console.error('UpdateCarte: カルテが見つかりません', { ...args });
-      throw new ConvexError({
-        message: 'カルテが見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          carteId: args.id,
-          customerId: carte?.customerId,
-        },
+      throw new ConvexCustomError('low', 'カルテが見つかりません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -108,7 +94,7 @@ export const upsert = mutation({
     medicalHistory: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateCarte(args);
 
     const existingCarte = await ctx.db
@@ -117,73 +103,33 @@ export const upsert = mutation({
         q.eq('salonId', args.salonId).eq('customerId', args.customerId).eq('isArchive', false)
       )
       .first();
-
-    // IDが指定されていないか、指定されたレコードが存在しない場合は
-    // 同じ顧客・サロンのカルテを検索
     if (existingCarte) {
-      // 既存レコードがある場合は更新
       const updateData = removeEmptyFields(args);
       delete updateData.id;
+      delete updateData.salonId;
+      delete updateData.customerId;
       return await ctx.db.patch(existingCarte._id, updateData);
     } else {
-      // 新規レコードを作成
       return await ctx.db.insert('carte', { ...args, isArchive: false });
     }
   },
 });
 
-export const trash = mutation({
+export const archive = mutation({
   args: { id: v.id('carte') },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const carte = await ctx.db.get(args.id);
-    if (!carte) {
-      console.error('TrashCarte: 存在しないカルテの削除が試行されました', { ...args });
-      throw new ConvexError({
-        message: '存在しないカルテの削除が試行されました',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          carteId: args.id,
-        },
-      });
-    }
-    return trashRecord(ctx, args.id);
+    checkAuth(ctx);
+    validateRequired(args.id, 'id');
+    return await archiveRecord(ctx, args.id);
   },
 });
 
 export const kill = mutation({
   args: { id: v.id('carte') },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const carte = await ctx.db.get(args.id);
-    if (!carte) {
-      console.error('KillCarte: 存在しないカルテの完全削除が試行されました', { ...args });
-      throw new ConvexError({
-        message: '存在しないカルテの完全削除が試行されました',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          carteId: args.id,
-        },
-      });
-    }
-
-    // 関連するカルテ詳細も削除
-    const carteDetails = await ctx.db
-      .query('carte_detail')
-      .withIndex('by_carte_id', (q) => q.eq('carteId', args.id))
-      .collect();
-
-    for (const detail of carteDetails) {
-      await ctx.db.delete(detail._id);
-    }
-
-    // カルテ自体を削除
-    await ctx.db.delete(args.id);
-    return args.id;
+    checkAuth(ctx);
+    validateRequired(args.id, 'id');
+    return await KillRecord(ctx, args.id);
   },
 });
 
@@ -193,6 +139,8 @@ export const getCustomerCarte = query({
     customerId: v.id('customer'),
   },
   handler: async (ctx, args) => {
+    checkAuth(ctx);
+    validateCarte(args);
     const carte = await ctx.db
       .query('carte')
       .withIndex('by_salon_customer', (q) =>
