@@ -26,7 +26,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 
 // スタイル定義
 const statusColorMap: Record<string, string> = {

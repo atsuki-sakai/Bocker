@@ -22,7 +22,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Id } from '@/convex/_generated/dataModel';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 
 // カスタムカレンダーコンポーネントをインポート
 import CalendarMultiSelect from '@/components/common/CalendarMultiSelect';

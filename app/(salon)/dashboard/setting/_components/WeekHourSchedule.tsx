@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Id } from '@/convex/_generated/dataModel';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 import {
   Select,
   SelectContent,

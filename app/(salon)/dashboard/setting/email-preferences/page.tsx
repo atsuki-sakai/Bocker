@@ -19,7 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { DashboardSection } from '@/components/common';
-import type { ClerkEmailAddress } from '@/lib/types';
+import type { ClerkEmailAddress } from '@/lib/type';
 
 export default function EmailPreferencesPage() {
   const { user, isLoaded } = useUser();
