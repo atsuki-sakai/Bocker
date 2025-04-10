@@ -3,7 +3,7 @@ import { useSalon } from '@/hooks/useSalon';
 import { z } from 'zod';
 import { Info } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { MAX_TEXT_LENGTH } from '@/lib/constants';
+import { MAX_TEXT_LENGTH } from '@/convex/constants';
 import { useZodForm } from '@/hooks/useZodForm';
 import { api } from '@/convex/_generated/api';
 import { useMutation } from 'convex/react';
@@ -28,8 +28,6 @@ import { getMinuteMultiples } from '@/lib/schedule';
 import { Loading } from '@/components/common';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-export const menuPaymentMethodType = ['cash', 'credit_card', 'all'] as const;
-export type MenuPaymentMethodType = (typeof menuPaymentMethodType)[number];
 
 const optionSchema = z
   .object({

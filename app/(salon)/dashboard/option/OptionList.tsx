@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useMutation } from 'convex/react';
 import { Id, Doc } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 
 const numberOfItems = 10;
 export default function OptionList() {
