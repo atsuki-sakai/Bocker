@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
 import { STRIPE_API_VERSION } from '@/lib/constants';
-
+import { Id } from '@/convex/_generated/dataModel';
 // 共通の戻り値の型定義
 type StripeResult<T> = {
   success: boolean;
@@ -133,7 +133,7 @@ export class StripeConnect {
    * 手動でアカウントステータスを確認・更新
    */
   async checkAndUpdateAccountStatus(
-    salonId: string,
+    salonId: Id<'salon'>,
     accountId: string
   ): Promise<
     StripeResult<{
@@ -201,7 +201,7 @@ export class StripeConnect {
    * Stripeアカウント連携用のアカウントリンクを生成
    */
   async createConnectAccountLink(
-    salonId: string
+    salonId: Id<'salon'>
   ): Promise<StripeResult<{ account: Stripe.Account; accountLink: Stripe.AccountLink }>> {
     try {
       console.log(`Creating Connect account for salon: ${salonId}`);
