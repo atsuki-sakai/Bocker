@@ -1,9 +1,9 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
-import { ConvexError } from 'convex/values';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
-import { validateSalonConfig } from '../validators';
+import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
+import { validateSalonConfig, validateRequired } from '../shared/utils/validation';
+import { ConvexCustomError } from '../shared/utils/error';
+import { checkAuth } from '../shared/utils/auth';
 
 export const add = mutation({
   args: {
@@ -18,32 +18,18 @@ export const add = mutation({
     description: v.optional(v.string()), // サロンの説明
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateSalonConfig(args);
     const salon = await ctx.db.get(args.salonId);
     if (!salon || salon.isArchive) {
-      console.error('AddSalonConfig: 指定されたサロンが見つかりません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンが見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたサロンが見つかりません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
     const salonConfig = await ctx.db.get(args.salonId);
     if (salonConfig) {
-      console.error('AddSalonConfig: サロンの設定が既に存在します', { ...args });
-      throw new ConvexError({
-        message: 'サロンの設定が既に存在します',
-        code: CONVEX_ERROR_CODES.DUPLICATE_RECORD,
-        severity: 'low',
-        status: 400,
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', 'サロンの設定が既に存在します', 'DUPLICATE_RECORD', 400, {
+        ...args,
       });
     }
 
@@ -61,10 +47,11 @@ export const get = query({
     salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
     const salonConfig = await ctx.db
       .query('salon_config')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId))
       .first();
     return salonConfig;
   },
@@ -83,19 +70,12 @@ export const update = mutation({
     description: v.optional(v.string()), // サロンの説明
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateSalonConfig(args);
     const salonConfig = await ctx.db.get(args.salonId);
     if (!salonConfig || salonConfig.isArchive) {
-      console.error('UpdateSalonConfig: サロンの設定が見つかりません', { ...args });
-      throw new ConvexError({
-        message: 'サロンの設定が見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', 'サロンの設定が見つかりません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
     const updateData = removeEmptyFields({ ...args });
@@ -119,7 +99,7 @@ export const upsert = mutation({
     description: v.optional(v.string()), // サロンの説明
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateSalonConfig(args);
     const existingSalonConfig = await ctx.db
       .query('salon_config')
@@ -139,29 +119,23 @@ export const upsert = mutation({
   },
 });
 
-export const trash = mutation({
+export const archive = mutation({
   args: {
     salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
     const salongConfig = await ctx.db
       .query('salon_config')
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId))
       .first();
     if (!salongConfig) {
-      console.error('TrashSalonConfig: サロンの設定が見つかりません', { ...args });
-      throw new ConvexError({
-        message: 'サロンの設定が見つかりません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', 'サロンの設定が見つかりません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
-    return await trashRecord(ctx, salongConfig._id);
+    return await archiveRecord(ctx, salongConfig._id);
   },
 });
 
@@ -170,7 +144,8 @@ export const kill = mutation({
     salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
     return await KillRecord(ctx, args.salonId);
   },
 });

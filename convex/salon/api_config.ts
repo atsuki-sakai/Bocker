@@ -1,9 +1,9 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { validateSalonApiConfig } from '../validators';
+import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
+import { validateSalonApiConfig, validateRequired } from '../shared/utils/validation';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
 
 // サロンAPI設定の追加
 export const add = mutation({
@@ -15,19 +15,13 @@ export const add = mutation({
     destinationId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateSalonApiConfig(args);
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      console.error('AddSalonApiConfig: 指定されたサロンが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
     const salonApiConfigId = await ctx.db.insert('salon_api_config', {
@@ -43,7 +37,8 @@ export const get = query({
     salonApiConfigId: v.id('salon_api_config'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.salonApiConfigId, 'salonApiConfigId');
     return await ctx.db.get(args.salonApiConfigId);
   },
 });
@@ -58,21 +53,20 @@ export const update = mutation({
     destinationId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateSalonApiConfig(args);
     // サロンAPI設定の存在確認
     const salonApiConfig = await ctx.db.get(args.salonApiConfigId);
     if (!salonApiConfig || salonApiConfig.isArchive) {
-      console.error('UpdateSalonApiConfig: 指定されたサロンAPI設定が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンAPI設定が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonApiConfigId: args.salonApiConfigId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '指定されたサロンAPI設定が存在しません',
+        'NOT_FOUND',
+        404,
+        {
+          ...args,
+        }
+      );
     }
 
     const updateData = removeEmptyFields(args);
@@ -84,28 +78,15 @@ export const update = mutation({
 });
 
 // サロンAPI設定の削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     salonApiConfigId: v.id('salon_api_config'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // サロンAPI設定の存在確認
-    const salonApiConfig = await ctx.db.get(args.salonApiConfigId);
-    if (!salonApiConfig) {
-      console.error('TrashSalonApiConfig: 指定されたサロンAPI設定が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンAPI設定が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonApiConfigId: args.salonApiConfigId,
-        },
-      });
-    }
+    checkAuth(ctx);
+    validateRequired(args.salonApiConfigId, 'salonApiConfigId');
 
-    return await trashRecord(ctx, salonApiConfig._id);
+    return await archiveRecord(ctx, args.salonApiConfigId);
   },
 });
 
@@ -119,7 +100,7 @@ export const upsert = mutation({
     destinationId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateSalonApiConfig(args);
     const existingSalonApiConfig = await ctx.db.get(args.salonApiConfigId);
 
@@ -131,6 +112,7 @@ export const upsert = mutation({
     } else {
       const updateData = removeEmptyFields(args, true);
       delete updateData.salonApiConfigId;
+      delete updateData.salonId;
       return await ctx.db.patch(existingSalonApiConfig._id, updateData);
     }
   },
@@ -141,20 +123,8 @@ export const kill = mutation({
     salonApiConfigId: v.id('salon_api_config'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const salonApiConfig = await ctx.db.get(args.salonApiConfigId);
-    if (!salonApiConfig) {
-      console.error('KillSalonApiConfig: 指定されたサロンAPI設定が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンAPI設定が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonApiConfigId: args.salonApiConfigId,
-        },
-      });
-    }
+    checkAuth(ctx);
+    validateRequired(args.salonApiConfigId, 'salonApiConfigId');
     return await KillRecord(ctx, args.salonApiConfigId);
   },
 });
@@ -163,12 +133,16 @@ export const kill = mutation({
 export const getBySalonId = query({
   args: {
     salonId: v.id('salon'),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateSalonApiConfig(args);
     return await ctx.db
       .query('salon_api_config')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isArchive', args.includeArchive || false)
+      )
       .first();
   },
 });
