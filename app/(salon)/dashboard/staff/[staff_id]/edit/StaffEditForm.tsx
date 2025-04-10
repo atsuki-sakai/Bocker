@@ -11,11 +11,10 @@ import { useEffect, useState } from 'react';
 import { ImageDrop, Loading, Dialog } from '@/components/common';
 import { ExclusionMenu } from '@/components/common';
 import { z } from 'zod';
-import { staffGenderType, StaffGenderType } from '@/lib/types';
-import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH, MAX_PIN_CODE_LENGTH } from '@/lib/constants';
+import { Gender, Role, GENDER_VALUES, ROLE_VALUES } from '@/convex/shared/types/common';
+import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH, MAX_PIN_CODE_LENGTH } from '@/convex/constants';
 import { Textarea } from '@/components/ui/textarea';
 import { ZodTextField } from '@/components/common';
-import { staffRoleType, StaffRoleType } from '@/lib/types';
 import {
   Select,
   SelectContent,
@@ -25,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
 import { compressAndConvertToWebP, fileToBase64, encryptString } from '@/lib/utils';
 import { Id } from '@/convex/_generated/dataModel';
@@ -58,7 +57,7 @@ import { useMemo } from 'react';
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
-  gender: z.enum(staffGenderType),
+  gender: z.enum(GENDER_VALUES),
   age: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
@@ -73,7 +72,7 @@ const staffAddSchema = z.object({
   imgPath: z.string().max(512).optional(),
   isActive: z.boolean(),
   pinCode: z.string().min(1, { message: 'ピンコードは必須です' }).max(MAX_PIN_CODE_LENGTH),
-  role: z.enum(staffRoleType),
+  role: z.enum(ROLE_VALUES),
   extraCharge: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
@@ -114,7 +113,7 @@ export default function StaffEditForm() {
   const staffUpsert = useMutation(api.staff.core.upsert);
   const staffConfigUpsert = useMutation(api.staff.config.upsert);
   const staffAuthUpsert = useMutation(api.staff.auth.upsert);
-  const staffKill = useMutation(api.staff.core.kill);
+  const staffKill = useMutation(api.staff.core.killRelatedTables);
   const uploadImage = useAction(api.storage.core.uploadImage);
   const deleteImage = useAction(api.storage.core.deleteImage);
   const removeImgPath = useMutation(api.staff.core.removeImgPath);
@@ -479,14 +478,14 @@ export default function StaffEditForm() {
                           <Select
                             value={watch('gender') || staffAllData?.gender}
                             onValueChange={(value) =>
-                              setValue('gender', value as StaffGenderType, { shouldDirty: true })
+                              setValue('gender', value as Gender, { shouldDirty: true })
                             }
                           >
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="性別を選択してください" />
                             </SelectTrigger>
                             <SelectContent>
-                              {staffGenderType.map((gender) => (
+                              {GENDER_VALUES.map((gender) => (
                                 <SelectItem key={gender} value={gender}>
                                   {gender === 'male'
                                     ? '男性'
@@ -609,7 +608,11 @@ export default function StaffEditForm() {
                               label: 'マネージャー',
                               desc: 'スタッフ管理と基本設定の変更が可能',
                             },
-                            { role: 'admin', label: '管理者', desc: 'すべての機能にアクセス可能' },
+                            {
+                              role: 'owner',
+                              label: 'オーナー',
+                              desc: 'すべての機能にアクセス可能',
+                            },
                           ].map((item) => (
                             <motion.div
                               key={item.role}
@@ -620,7 +623,7 @@ export default function StaffEditForm() {
                                   : 'border-gray-200'
                               }`}
                               onClick={() =>
-                                setValue('role', item.role as StaffRoleType, { shouldDirty: true })
+                                setValue('role', item.role as Role, { shouldDirty: true })
                               }
                             >
                               <div className="font-medium text-sm mb-1">{item.label}</div>
