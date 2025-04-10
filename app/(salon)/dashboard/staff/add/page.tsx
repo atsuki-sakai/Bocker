@@ -10,11 +10,10 @@ import { Label } from '@/components/ui/label';
 import { useEffect, useState } from 'react';
 import { ImageDrop } from '@/components/common';
 import { z } from 'zod';
-import { staffGenderType, StaffGenderType } from '@/lib/types';
-import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH, MAX_PIN_CODE_LENGTH } from '@/lib/constants';
+import { Gender, GENDER_VALUES, Role, ROLE_VALUES } from '@/convex/shared/types/common';
+import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH, MAX_PIN_CODE_LENGTH } from '@/convex/constants';
 import { Textarea } from '@/components/ui/textarea';
 import { ZodTextField } from '@/components/common';
-import { staffRoleType, StaffRoleType } from '@/lib/types';
 import {
   Select,
   SelectContent,
@@ -24,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
 import { compressAndConvertToWebP, fileToBase64, encryptString } from '@/lib/utils';
 import { Id } from '@/convex/_generated/dataModel';
@@ -56,7 +55,7 @@ import { ExclusionMenu } from '@/components/common';
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
-  gender: z.enum(staffGenderType),
+  gender: z.enum(GENDER_VALUES),
   age: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
@@ -71,7 +70,7 @@ const staffAddSchema = z.object({
   imgPath: z.string().max(512).optional(),
   isActive: z.boolean(),
   pinCode: z.string().min(1, { message: 'ピンコードは必須です' }).max(MAX_PIN_CODE_LENGTH),
-  role: z.enum(staffRoleType),
+  role: z.enum(ROLE_VALUES),
   extraCharge: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
@@ -108,7 +107,7 @@ export default function StaffAddPage() {
   const staffAdd = useMutation(api.staff.core.add);
   const staffConfigAdd = useMutation(api.staff.config.add);
   const staffAuthAdd = useMutation(api.staff.auth.add);
-  const staffKill = useMutation(api.staff.core.kill);
+  const staffKill = useMutation(api.staff.core.killRelatedTables);
   const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.upsert);
 
   const uploadImage = useAction(api.storage.core.uploadImage);
@@ -346,15 +345,13 @@ export default function StaffAddPage() {
                             </Label>
                             <Select
                               defaultValue="unselected"
-                              onValueChange={(value) =>
-                                setValue('gender', value as StaffGenderType)
-                              }
+                              onValueChange={(value) => setValue('gender', value as Gender)}
                             >
                               <SelectTrigger className="w-full">
                                 <SelectValue placeholder="性別を選択してください" />
                               </SelectTrigger>
                               <SelectContent>
-                                {staffGenderType.map((gender) => (
+                                {GENDER_VALUES.map((gender) => (
                                   <SelectItem key={gender} value={gender}>
                                     {gender === 'male'
                                       ? '男性'
@@ -489,7 +486,7 @@ export default function StaffAddPage() {
                                     ? 'border-blue-500 bg-blue-50'
                                     : 'border-gray-200'
                                 }`}
-                                onClick={() => setValue('role', item.role as StaffRoleType)}
+                                onClick={() => setValue('role', item.role as Role)}
                               >
                                 <div className="font-medium text-sm mb-1">{item.label}</div>
                                 <div className="text-xs text-gray-500">{item.desc}</div>

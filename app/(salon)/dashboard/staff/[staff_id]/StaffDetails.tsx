@@ -21,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 
 // アイコン
 import {
@@ -147,7 +147,7 @@ export default function StaffDetails() {
       : 'skip'
   );
 
-  const staffKill = useMutation(api.staff.core.kill);
+  const staffKill = useMutation(api.staff.core.killRelatedTables);
   const deleteImage = useAction(api.storage.core.deleteImage);
 
   if (!staffAllData && !isDeleting) return <Loading />;
