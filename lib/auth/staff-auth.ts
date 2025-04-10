@@ -19,13 +19,15 @@ export interface StaffTokenPayload {
 /**
  * スタッフ認証用JWTトークンを生成 (Edge互換)
  */
-export async function generateStaffToken(staffData: Omit<StaffTokenPayload, 'iat' | 'exp'>): Promise<string> {
+export async function generateStaffToken(
+  staffData: Omit<StaffTokenPayload, 'iat' | 'exp'>
+): Promise<string> {
   const jwt = await new SignJWT({ ...staffData })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('8h') // 8時間有効なトークン
     .sign(SECRET_KEY);
-  
+
   return jwt;
 }
 
@@ -49,9 +51,9 @@ export async function verifyStaffToken(token: string): Promise<StaffTokenPayload
  */
 export function hasPermission(userRole: string, requiredRole: string): boolean {
   const roleHierarchy = {
-    'admin': 3,
-    'manager': 2,
-    'staff': 1
+    admin: 3,
+    manager: 2,
+    staff: 1,
   };
 
   const userRoleLevel = roleHierarchy[userRole as keyof typeof roleHierarchy] || 0;

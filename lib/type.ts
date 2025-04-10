@@ -40,20 +40,3 @@ export type ClerkEmailAddress = {
   };
   primary?: boolean;
 };
-
-// UI
-export const genderType = ['male', 'female', 'all'] as const;
-export const targetType = ['all', 'first', 'repeat'] as const;
-export const menuPaymentMethodType = ['cash', 'credit_card', 'all'] as const;
-
-export type GenderType = (typeof genderType)[number];
-export type TargetType = (typeof targetType)[number];
-export type MenuPaymentMethodType = (typeof menuPaymentMethodType)[number];
-
-// スタッフ権限
-export const staffRoleType = ['admin', 'manager', 'staff'] as const;
-export type StaffRoleType = (typeof staffRoleType)[number];
-
-// スタッフ性別
-export const staffGenderType = ['male', 'female', 'unselected'] as const;
-export type StaffGenderType = (typeof staffGenderType)[number];
