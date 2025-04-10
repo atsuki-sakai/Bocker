@@ -1,12 +1,11 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
-import { ConvexError } from 'convex/values';
-import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
+import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { staffGenderType } from '../types';
-import { validateStaff } from '../validators';
-
+import { validateStaff, validateRequired } from '../shared/utils/validation';
+import { checkAuth } from '../shared/utils/auth';
+import { ConvexCustomError } from '../shared/utils/error';
+import { genderType } from '../shared/types/common';
 // スタッフの追加
 export const add = mutation({
   args: {
@@ -14,26 +13,19 @@ export const add = mutation({
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
-    gender: v.optional(staffGenderType),
+    gender: v.optional(genderType),
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateStaff(args);
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      console.error('AddStaff: 指定されたサロンが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -50,7 +42,8 @@ export const get = query({
     staffId: v.id('staff'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.staffId, 'staffId');
     return await ctx.db.get(args.staffId);
   },
 });
@@ -62,26 +55,19 @@ export const update = mutation({
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
-    gender: v.optional(staffGenderType),
+    gender: v.optional(genderType),
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateStaff(args);
     // スタッフの存在確認
     const staff = await ctx.db.get(args.staffId);
     if (!staff || staff.isArchive) {
-      console.error('UpdateStaff: 指定されたスタッフが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたスタッフが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffId: args.staffId,
-        },
+      throw new ConvexCustomError('low', '指定されたスタッフが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -94,28 +80,14 @@ export const update = mutation({
 });
 
 // スタッフの削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     staffId: v.id('staff'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // スタッフの存在確認
-    const staff = await ctx.db.get(args.staffId);
-    if (!staff) {
-      console.error('TrashStaff: 指定されたスタッフが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたスタッフが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffId: args.staffId,
-        },
-      });
-    }
-
-    return await trashRecord(ctx, staff._id);
+    checkAuth(ctx);
+    validateRequired(args.staffId, 'staffId');
+    return await archiveRecord(ctx, args.staffId);
   },
 });
 
@@ -126,13 +98,13 @@ export const upsert = mutation({
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
-    gender: v.optional(staffGenderType),
+    gender: v.optional(genderType),
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateStaff(args);
     const existingStaff = await ctx.db.get(args.staffId);
 
@@ -150,14 +122,14 @@ export const upsert = mutation({
   },
 });
 
-export const kill = mutation({
+export const killRelatedTables = mutation({
   args: {
     staffId: v.id('staff'),
     staffConfigId: v.id('staff_config'),
     staffAuthId: v.id('staff_auth'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
 
     if (args.staffConfigId) {
       await KillRecord(ctx, args.staffConfigId);
@@ -181,12 +153,18 @@ export const getStaffListBySalonId = query({
   args: {
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateStaff(args);
     return await ctx.db
       .query('staff')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isArchive', args.includeArchive || false)
+      )
+      .order(args.sort ?? 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -196,12 +174,18 @@ export const getStaffListByName = query({
   args: {
     name: v.string(),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateStaff(args);
     return await ctx.db
       .query('staff')
-      .withIndex('by_name', (q) => q.eq('name', args.name).eq('isArchive', false))
+      .withIndex('by_name', (q) =>
+        q.eq('name', args.name).eq('isArchive', args.includeArchive || false)
+      )
+      .order(args.sort ?? 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -211,12 +195,18 @@ export const getStaffListByEmail = query({
   args: {
     email: v.string(),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateStaff(args);
     return await ctx.db
       .query('staff')
-      .withIndex('by_email', (q) => q.eq('email', args.email).eq('isArchive', false))
+      .withIndex('by_email', (q) =>
+        q.eq('email', args.email).eq('isArchive', args.includeArchive || false)
+      )
+      .order(args.sort ?? 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -227,14 +217,21 @@ export const getStaffListBySalonIdAndName = query({
     salonId: v.id('salon'),
     name: v.string(),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateStaff(args);
     return await ctx.db
       .query('staff')
       .withIndex('by_salon_id_name', (q) =>
-        q.eq('salonId', args.salonId).eq('name', args.name).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('name', args.name)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort ?? 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -245,14 +242,21 @@ export const getBySalonIdAndEmail = query({
     salonId: v.id('salon'),
     email: v.string(),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateStaff(args);
     return await ctx.db
       .query('staff')
       .withIndex('by_salon_id_email', (q) =>
-        q.eq('salonId', args.salonId).eq('email', args.email).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('email', args.email)
+          .eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort ?? 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -262,22 +266,16 @@ export const getRelatedTables = query({
   args: {
     staffId: v.id('staff'),
     salonId: v.id('salon'),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-
+    checkAuth(ctx);
+    validateStaff(args);
     // staffの取得にもisArchiveチェックを追加
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      throw new ConvexError({
-        message: '指定されたスタッフが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffId: args.staffId,
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたスタッフが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -286,39 +284,39 @@ export const getRelatedTables = query({
       ctx.db
         .query('staff_config')
         .withIndex('by_staff_id', (q) =>
-          q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+          q.eq('staffId', args.staffId).eq('isArchive', args.includeArchive || false)
         )
         .first(),
       ctx.db
         .query('staff_auth')
-        .withIndex('by_staff_id', (q) => q.eq('staffId', args.staffId).eq('isArchive', false))
+        .withIndex('by_staff_id', (q) =>
+          q.eq('staffId', args.staffId).eq('isArchive', args.includeArchive || false)
+        )
         .first(),
     ]);
 
     if (!staffConfig) {
-      throw new ConvexError({
-        message: '指定されたスタッフの設定が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffId: args.staffId,
-          salonId: args.salonId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '指定されたスタッフの設定が存在しません',
+        'NOT_FOUND',
+        404,
+        {
+          ...args,
+        }
+      );
     }
 
     if (!staffAuth) {
-      throw new ConvexError({
-        message: '指定されたスタッフの認証情報が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          staffId: args.staffId,
-          salonId: args.salonId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '指定されたスタッフの認証情報が存在しません',
+        'NOT_FOUND',
+        404,
+        {
+          ...args,
+        }
+      );
     }
 
     return {
@@ -337,6 +335,7 @@ export const getRelatedTables = query({
       staffConfigId: staffConfig._id,
       extraCharge: staffConfig.extraCharge,
       priority: staffConfig.priority,
+      _creationTime: staff._creationTime,
     };
   },
 });
@@ -346,11 +345,12 @@ export const removeImgPath = mutation({
     staffId: v.id('staff'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.staffId, 'staffId');
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      throw new ConvexError({
-        message: '指定されたスタッフが存在しません',
+      throw new ConvexCustomError('low', '指定されたスタッフが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
     const deletedStaffImage = await ctx.db.patch(args.staffId, {
