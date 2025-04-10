@@ -92,7 +92,7 @@ export default function CustomerList({ id, searchParams }: CustomerListProps) {
     api.customer.core.customersBySalonId,
     {
       salonId: id as Id<'salon'>,
-      direction: sortDirection as 'asc' | 'desc',
+      sort: sortDirection as 'asc' | 'desc',
     },
     { initialNumItems: 10 }
   );
