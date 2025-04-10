@@ -1,10 +1,9 @@
 import { mutation, query } from './../_generated/server';
 import { v } from 'convex/values';
-import { ConvexError } from 'convex/values';
-import { KillRecord, trashRecord, authCheck, removeEmptyFields } from './../helpers';
-import { CONVEX_ERROR_CODES } from './../constants';
-import { validateCouponExclusionMenu } from './../validators';
-
+import { KillRecord, archiveRecord, removeEmptyFields } from './../shared/utils/helper';
+import { validateCouponExclusionMenu, validateRequired } from './../shared/utils/validation';
+import { ConvexCustomError } from './../shared/utils/error';
+import { checkAuth } from './../shared/utils/auth';
 export const add = mutation({
   args: {
     salonId: v.id('salon'),
@@ -12,7 +11,7 @@ export const add = mutation({
     menuId: v.id('menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateCouponExclusionMenu(args);
     const couponExclusionMenu = await ctx.db
       .query('coupon_exclusion_menu')
@@ -25,18 +24,15 @@ export const add = mutation({
       )
       .first();
     if (couponExclusionMenu) {
-      console.error('AddCouponExclusionMenu: 指定されたクーポン除外メニューはすでに存在します', {
-        ...args,
-      });
-      throw new ConvexError({
-        message: '指定されたクーポン除外メニューはすでに存在します',
-        code: CONVEX_ERROR_CODES.DUPLICATE_RECORD,
-        status: 400,
-        severity: 'low',
-        context: {
-          couponId: args.couponId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '指定されたクーポン除外メニューはすでに存在します',
+        'DUPLICATE_RECORD',
+        400,
+        {
+          ...args,
+        }
+      );
     }
     const couponExclusionMenuId = await ctx.db.insert('coupon_exclusion_menu', {
       ...args,
@@ -53,7 +49,8 @@ export const get = query({
     menuId: v.id('menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateCouponExclusionMenu(args);
     const exclusionMenu = await ctx.db
       .query('coupon_exclusion_menu')
       .withIndex('by_salon_coupon_id_menu_id', (q) =>
@@ -75,7 +72,8 @@ export const upsert = mutation({
     selectedMenuIds: v.array(v.id('menu')),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateCouponExclusionMenu(args);
 
     // 1. 現在DBに保存されている除外メニューを取得
     const currentExclusionMenus = await ctx.db
@@ -122,14 +120,15 @@ export const upsert = mutation({
   },
 });
 
-export const trash = mutation({
+export const archive = mutation({
   args: {
     salonId: v.id('salon'),
     couponId: v.id('coupon'),
     menuId: v.id('menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateCouponExclusionMenu(args);
     const couponExclusionMenu = await ctx.db
       .query('coupon_exclusion_menu')
       .withIndex('by_salon_coupon_id_menu_id', (q) =>
@@ -141,22 +140,17 @@ export const trash = mutation({
       )
       .first();
     if (!couponExclusionMenu || couponExclusionMenu.isArchive) {
-      console.error('TrashCouponExclusionMenu: 指定されたクーポン除外メニューが存在しません', {
-        ...args,
-      });
-      throw new ConvexError({
-        message: '指定されたクーポン除外メニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          salonId: args.salonId,
-          couponId: args.couponId,
-          menuId: args.menuId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '指定されたクーポン除外メニューが存在しません',
+        'NOT_FOUND',
+        404,
+        {
+          ...args,
+        }
+      );
     }
-    return await trashRecord(ctx, couponExclusionMenu._id);
+    return await archiveRecord(ctx, couponExclusionMenu._id);
   },
 });
 
@@ -167,7 +161,8 @@ export const kill = mutation({
     menuId: v.id('menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateCouponExclusionMenu(args);
     const couponExclusionMenu = await ctx.db
       .query('coupon_exclusion_menu')
       .withIndex('by_salon_coupon_id_menu_id', (q) =>
@@ -179,20 +174,15 @@ export const kill = mutation({
       )
       .first();
     if (!couponExclusionMenu || couponExclusionMenu.isArchive) {
-      console.error('KillCouponExclusionMenu: 指定されたクーポン除外メニューが存在しません', {
-        ...args,
-      });
-      throw new ConvexError({
-        message: '指定されたクーポン除外メニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          salonId: args.salonId,
-          couponId: args.couponId,
-          menuId: args.menuId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '指定されたクーポン除外メニューが存在しません',
+        'NOT_FOUND',
+        404,
+        {
+          ...args,
+        }
+      );
     }
     return await KillRecord(ctx, couponExclusionMenu._id);
   },
@@ -205,7 +195,8 @@ export const getExclusionMenus = query({
     couponId: v.id('coupon'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateCouponExclusionMenu(args);
     const exclusionMenu = await ctx.db
       .query('coupon_exclusion_menu')
       .withIndex('by_salon_coupon_id', (q) =>
@@ -225,7 +216,8 @@ export const isExclusionMenu = query({
     menuId: v.id('menu'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateCouponExclusionMenu(args);
     const exclusionMenu = await ctx.db
       .query('coupon_exclusion_menu')
       .withIndex('by_salon_coupon_id_menu_id', (q) =>

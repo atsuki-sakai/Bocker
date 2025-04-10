@@ -1,9 +1,11 @@
 import { mutation, query } from "./../_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
-import { removeEmptyFields, trashRecord, KillRecord, authCheck } from './../helpers';
+import { removeEmptyFields, archiveRecord, KillRecord } from './../shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { CONVEX_ERROR_CODES } from './../constants';
+import { validateCouponTransaction, validateRequired } from './../shared/utils/validation';
+import { checkAuth } from './../shared/utils/auth';
+import { ConvexCustomError } from './../shared/utils/error';
 
 // クーポン取引の追加
 export const add = mutation({
@@ -14,48 +16,28 @@ export const add = mutation({
     transactionDate_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateCouponTransaction(args);
     const coupon = await ctx.db.get(args.couponId);
     if (!coupon) {
-      console.error('AddCouponTransaction: 指定されたクーポンが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたクーポンが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          couponId: args.couponId,
-        },
+      throw new ConvexCustomError('low', '指定されたクーポンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      console.error('AddCouponTransaction: 指定された顧客が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された顧客が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          customerId: args.customerId,
-        },
+      throw new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
     // 予約の存在確認
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation) {
-      console.error('AddCouponTransaction: 指定された予約が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定された予約が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          reservationId: args.reservationId,
-        },
+      throw new ConvexCustomError('low', '指定された予約が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -74,19 +56,13 @@ export const update = mutation({
     transactionDate_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateCouponTransaction(args);
     // クーポン取引の存在確認
     const couponTransaction = await ctx.db.get(args.couponTransactionId);
     if (!couponTransaction || couponTransaction.isArchive) {
-      console.error('UpdateCouponTransaction: 指定されたクーポン取引が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたクーポン取引が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          couponTransactionId: args.couponTransactionId,
-        },
+      throw new ConvexCustomError('low', '指定されたクーポン取引が存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -100,29 +76,14 @@ export const update = mutation({
 });
 
 // クーポン取引の削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     couponTransactionId: v.id('coupon_transaction'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // クーポン取引の存在確認
-    const couponTransaction = await ctx.db.get(args.couponTransactionId);
-    if (!couponTransaction) {
-      console.error('TrashCouponTransaction: 指定されたクーポン取引が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたクーポン取引が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          couponTransactionId: args.couponTransactionId,
-        },
-      });
-    }
-
-    await trashRecord(ctx, couponTransaction._id);
-    return true;
+    checkAuth(ctx);
+    validateRequired(args.couponTransactionId, 'couponTransactionId');
+    return await archiveRecord(ctx, args.couponTransactionId);
   },
 });
 
@@ -135,7 +96,8 @@ export const upsert = mutation({
     transactionDate_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateCouponTransaction(args);
     const existingCouponTransaction = await ctx.db.get(args.couponTransactionId);
 
     if (!existingCouponTransaction || existingCouponTransaction.isArchive) {
@@ -161,22 +123,9 @@ export const kill = mutation({
     couponTransactionId: v.id('coupon_transaction'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    const transaction = await ctx.db.get(args.couponTransactionId);
-    if (!transaction || transaction.isArchive) {
-      console.error('KillCouponTransaction: 指定されたクーポン取引が存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたクーポン取引が存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        status: 404,
-        severity: 'low',
-        context: {
-          couponTransactionId: args.couponTransactionId,
-        },
-      });
-    }
-
-    await KillRecord(ctx, args.couponTransactionId);
+    checkAuth(ctx);
+    validateRequired(args.couponTransactionId, 'couponTransactionId');
+    return await KillRecord(ctx, args.couponTransactionId);
   },
 });
 
@@ -185,12 +134,18 @@ export const getByCouponId = query({
   args: {
     couponId: v.id('coupon'),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.couponId, 'couponId');
     return await ctx.db
       .query('coupon_transaction')
-      .withIndex('by_coupon_id', (q) => q.eq('couponId', args.couponId).eq('isArchive', false))
+      .withIndex('by_coupon_id', (q) =>
+        q.eq('couponId', args.couponId).eq('isArchive', args.includeArchive || false)
+      )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -200,14 +155,18 @@ export const getByCustomerId = query({
   args: {
     customerId: v.id('customer'),
     paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.customerId, 'customerId');
     return await ctx.db
       .query('coupon_transaction')
       .withIndex('by_customer_id', (q) =>
-        q.eq('customerId', args.customerId).eq('isArchive', false)
+        q.eq('customerId', args.customerId).eq('isArchive', args.includeArchive || false)
       )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -216,14 +175,19 @@ export const getByCustomerId = query({
 export const getByReservationId = query({
   args: {
     reservationId: v.id('reservation'),
+    paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.reservationId, 'reservationId');
     return await ctx.db
       .query('coupon_transaction')
       .withIndex('by_reservation_id', (q) =>
-        q.eq('reservationId', args.reservationId).eq('isArchive', false)
+        q.eq('reservationId', args.reservationId).eq('isArchive', args.includeArchive || false)
       )
-      .first();
+      .order(args.sort || 'desc')
+      .paginate(args.paginationOpts);
   },
 });
