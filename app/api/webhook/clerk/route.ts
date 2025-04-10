@@ -352,7 +352,7 @@ export async function POST(req: Request) {
         try {
           // Convexサロンデータの削除
           await retryOperation(() =>
-            fetchMutation(api.salon.core.trash, {
+            fetchMutation(api.salon.core.archive, {
               id: salonRecord._id,
             })
           );
