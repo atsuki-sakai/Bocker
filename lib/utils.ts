@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Stripe from 'stripe';
-import { BillingPeriod } from '@/lib/types';
+import { BillingPeriod } from '@/convex/shared/types/common';
 import imageCompression from 'browser-image-compression';
 
 export function cn(...inputs: ClassValue[]) {

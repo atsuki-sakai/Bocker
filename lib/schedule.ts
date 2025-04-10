@@ -1,4 +1,13 @@
 /**
+ * 現在のUnixタイムスタンプを取得
+ * @param addHours 加算する時間
+ * @returns 現在のUnixタイムスタンプ
+ */
+export function getCurrentUnixTime(addHours?: number) {
+  return addHours ? Math.floor(Date.now() / 1000) + addHours * 3600 : Math.floor(Date.now() / 1000);
+}
+
+/**
  * 指定された分単位の間隔の倍数を計算し、最大180分以内のリストを返す関数
  * @param interval - 分単位の間隔（例: 5, 10）
  * @returns 指定された最大分以下の倍数（分単位）のリスト
@@ -71,4 +80,3 @@ export function canScheduling(
   }
   return true;
 }
-
