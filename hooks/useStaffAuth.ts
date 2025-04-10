@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
-import { generateStaffToken, hasPermission } from '@/lib/staff-auth';
+import { generateStaffToken, hasPermission } from '@/lib/auth/staff-auth';
 import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 import { STAFF_TOKEN_COOKIE, STAFF_TOKEN_STORAGE_KEY, COOKIE_EXPIRES_DAYS } from '@/lib/constants';
