@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 import { SUBSCRIPTION_PLANS } from '@/lib/constants';
 import { getPriceStrFromPlanAndPeriod } from '@/lib/utils';
 import { Doc } from '@/convex/_generated/dataModel';
-import { StripePreviewData, BillingPeriod } from '@/lib/types';
+import { StripePreviewData, BillingPeriod } from '@/lib/type';
 
 const baseUrl =
   process.env.NEXT_PUBLIC_NODE_ENV === 'development'
