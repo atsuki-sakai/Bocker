@@ -2,10 +2,9 @@ import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import Stripe from 'stripe';
 import { STRIPE_API_VERSION } from '@/lib/constants';
-import { ConvexError } from 'convex/values';
-import { CONVEX_ERROR_CODES } from '../constants';
-import { authCheck } from '../helpers';
-import { validateSubscriptionUpdate } from '../validators';
+import { StripeError } from '../shared/utils/error';
+import { validateSubscriptionUpdate } from '../shared/utils/validation';
+import type { BillingPeriod } from '../shared/types/common';
 
 // サブスクリプションの変更のプレビューを取得
 export const getSubscriptionUpdatePreview = action({
@@ -15,49 +14,72 @@ export const getSubscriptionUpdatePreview = action({
     customerId: v.string(),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
     validateSubscriptionUpdate(args);
-
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-      apiVersion: STRIPE_API_VERSION,
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new StripeError(
+        'critical',
+        'Stripeの秘密鍵が設定されていません',
+        'INVALID_ARGUMENT',
+        400,
+        {
+          ...args,
+        }
+      );
+    }
+    if (!STRIPE_API_VERSION) {
+      throw new StripeError(
+        'critical',
+        'StripeのAPIバージョンが設定されていません',
+        'INVALID_ARGUMENT',
+        400,
+        {
+          ...args,
+        }
+      );
+    }
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: STRIPE_API_VERSION!,
     });
-    const { subscriptionId, newPriceId, customerId } = args;
-
+    // プロラーション日を取得
     const prorationDate = Math.floor(Date.now() / 1000);
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    const subscription = await stripe.subscriptions.retrieve(args.subscriptionId);
     const items = [
       {
         id: subscription.items.data[0].id,
-        price: newPriceId,
+        price: args.newPriceId,
       },
     ];
 
     if (!subscription) {
-      console.error('サブスクリプションの取得に失敗しました', { ...args });
-      throw new ConvexError({
-        message: 'サブスクリプションの取得に失敗しました',
-        code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-        severity: 'low',
-        status: 400,
-      });
+      throw new StripeError(
+        'low',
+        'サブスクリプションの取得に失敗しました',
+        'INVALID_ARGUMENT',
+        400,
+        {
+          ...args,
+        }
+      );
     }
 
     // 更新前に請求書プレビューのみを取得
     const upcomingInvoice = await stripe.invoices.retrieveUpcoming({
-      customer: customerId,
-      subscription: subscriptionId,
+      customer: args.customerId,
+      subscription: args.subscriptionId,
       subscription_items: items,
       subscription_proration_date: prorationDate,
     });
 
     if (!upcomingInvoice) {
-      console.error('請求書プレビューの取得に失敗しました', { ...args });
-      throw new ConvexError({
-        message: '請求書プレビューの取得に失敗しました',
-        code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-        severity: 'low',
-        status: 400,
-      });
+      throw new StripeError(
+        'low',
+        '請求書プレビューの取得に失敗しました',
+        'INVALID_ARGUMENT',
+        400,
+        {
+          ...args,
+        }
+      );
     }
     return {
       success: true,
@@ -78,36 +100,58 @@ export const confirmSubscriptionUpdate = action({
     prorationDate: v.number(),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
     validateSubscriptionUpdate(args);
-    const { subscriptionId, items, prorationDate } = args;
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-      apiVersion: STRIPE_API_VERSION,
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new StripeError(
+        'critical',
+        'Stripeの秘密鍵が設定されていません',
+        'INVALID_ARGUMENT',
+        400,
+        {
+          ...args,
+        }
+      );
+    }
+    if (!STRIPE_API_VERSION) {
+      throw new StripeError(
+        'critical',
+        'StripeのAPIバージョンが設定されていません',
+        'INVALID_ARGUMENT',
+        400,
+        {
+          ...args,
+        }
+      );
+    }
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: STRIPE_API_VERSION!,
     });
 
     let updatedSubscription;
     try {
       // ユーザーが確認した後、実際にサブスクリプションを更新
-      updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
-        items,
-        proration_date: prorationDate,
+      updatedSubscription = await stripe.subscriptions.update(args.subscriptionId, {
+        items: args.items,
+        proration_date: args.prorationDate,
       });
     } catch (error) {
-      console.error('サブスクリプションの変更に失敗しました', error, { ...args });
-      throw new ConvexError({
-        message: 'サブスクリプションの変更に失敗しました',
-        code: CONVEX_ERROR_CODES.INVALID_ARGUMENT,
-        severity: 'low',
-        status: 400,
-      });
+      throw new StripeError(
+        'low',
+        'サブスクリプションの変更に失敗しました',
+        'INVALID_ARGUMENT',
+        400,
+        {
+          ...args,
+        }
+      );
     }
 
-    const intervalMapping: Record<string, 'monthly' | 'yearly'> = {
+    const intervalMapping: Record<string, BillingPeriod> = {
       month: 'monthly',
       year: 'yearly',
     };
 
-    let billingPeriod: 'monthly' | 'yearly' = 'monthly';
+    let billingPeriod: BillingPeriod = 'monthly';
 
     if (
       updatedSubscription.items.data &&
