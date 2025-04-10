@@ -31,7 +31,7 @@ import { ZodTextField } from '@/components/common';
 import { Save } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { handleError } from '@/lib/errors';
+import { handleError } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
 import xor from 'lodash-es/xor';
 
