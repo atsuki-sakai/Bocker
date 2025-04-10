@@ -1,11 +1,10 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import { CONVEX_ERROR_CODES } from '../constants';
-import { removeEmptyFields, trashRecord, KillRecord, authCheck } from '../helpers';
+import { removeEmptyFields, KillRecord, archiveRecord } from '../shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { validateOption } from '../validators';
-import { menuPaymentMethodType } from '../types';
+import { validateOption, validateRequired } from '../shared/utils/validation';
+import { ConvexCustomError } from '../shared/utils/error';
+import { checkAuth } from '../shared/utils/auth';
 // オプションメニューの追加
 export const add = mutation({
   args: {
@@ -20,20 +19,13 @@ export const add = mutation({
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateOption(args);
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon || salon.isArchive) {
-      console.error('指定されたサロンが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたサロンが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonId: args.salonId,
-        },
+      throw new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
       });
     }
 
@@ -63,21 +55,20 @@ export const update = mutation({
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateOption(args);
     // オプションメニューの存在確認
     const salonOption = await ctx.db.get(args.salonOptionId);
     if (!salonOption || salonOption.isArchive) {
-      console.error('指定されたオプションメニューが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたオプションメニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonOptionId: args.salonOptionId,
-        },
-      });
+      throw new ConvexCustomError(
+        'low',
+        '指定されたオプションメニューが存在しません',
+        'NOT_FOUND',
+        404,
+        {
+          ...args,
+        }
+      );
     }
 
     // 更新データの準備（空フィールドを削除）
@@ -105,7 +96,7 @@ export const upsert = mutation({
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
     validateOption(args);
     // オプションメニューの存在確認
     const existingSalonOption = await ctx.db.get(args.salonOptionId);
@@ -126,29 +117,15 @@ export const upsert = mutation({
 });
 
 // オプションメニューの論理削除
-export const trash = mutation({
+export const archive = mutation({
   args: {
     salonOptionId: v.id('salon_option'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // オプションメニューの存在確認
-    const salonOption = await ctx.db.get(args.salonOptionId);
-    if (!salonOption) {
-      console.error('指定されたオプションメニューが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたオプションメニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonOptionId: args.salonOptionId,
-        },
-      });
-    }
-    // 論理削除の実装（isActiveをfalseに設定）
-    await trashRecord(ctx, args.salonOptionId);
-    return true;
+    checkAuth(ctx);
+    validateRequired(args.salonOptionId, 'salonOptionId');
+
+    return await archiveRecord(ctx, args.salonOptionId);
   },
 });
 
@@ -157,24 +134,9 @@ export const kill = mutation({
     salonOptionId: v.id('salon_option'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // オプションメニューの存在確認
-    const salonOption = await ctx.db.get(args.salonOptionId);
-    if (!salonOption) {
-      console.error('指定されたオプションメニューが存在しません', { ...args });
-      throw new ConvexError({
-        message: '指定されたオプションメニューが存在しません',
-        code: CONVEX_ERROR_CODES.NOT_FOUND,
-        severity: 'low',
-        status: 404,
-        context: {
-          salonOptionId: args.salonOptionId,
-        },
-      });
-    }
-
-    await KillRecord(ctx, args.salonOptionId);
-    return true;
+    checkAuth(ctx);
+    validateRequired(args.salonOptionId, 'salonOptionId');
+    return await KillRecord(ctx, args.salonOptionId);
   },
 });
 
@@ -183,7 +145,8 @@ export const get = query({
     salonOptionId: v.id('salon_option'),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.salonOptionId, 'salonOptionId');
     return await ctx.db.get(args.salonOptionId);
   },
 });
@@ -194,13 +157,18 @@ export const getAllBySalonId = query({
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
     activeOnly: v.optional(v.boolean()),
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
     return await ctx.db
       .query('salon_option')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
-      .order('desc')
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isArchive', args.includeArchive || false)
+      )
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
@@ -212,16 +180,21 @@ export const searchByName = query({
     name: v.string(),
     paginationOpts: paginationOptsValidator,
     activeOnly: v.optional(v.boolean()),
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    authCheck(ctx);
-    // searchIndexを使用して効率的に検索
+    checkAuth(ctx);
+    validateRequired(args.salonId, 'salonId');
     return await ctx.db
       .query('salon_option')
       .withIndex('by_salon_id_name', (q) =>
-        q.eq('salonId', args.salonId).eq('name', args.name).eq('isArchive', false)
+        q
+          .eq('salonId', args.salonId)
+          .eq('name', args.name)
+          .eq('isArchive', args.includeArchive || false)
       )
-      .order('desc')
+      .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
 });
