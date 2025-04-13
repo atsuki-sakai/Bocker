@@ -14,7 +14,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx, true);
     validateSalonApiConfig(args);
-    return await salonService.upsertConfig(ctx, args);
+    return await salonService.upsertConfig(ctx, args, true);
   },
 });
 
