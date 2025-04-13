@@ -1,9 +1,16 @@
 import { mutation, query } from './../_generated/server';
 import { v } from 'convex/values';
-import { KillRecord, archiveRecord, removeEmptyFields } from './../shared/utils/helper';
-import { validateCouponExclusionMenu, validateRequired } from './../shared/utils/validation';
-import { ConvexCustomError } from './../shared/utils/error';
-import { checkAuth } from './../shared/utils/auth';
+import {
+  killRecord,
+  archiveRecord,
+  removeEmptyFields,
+} from '../../services/convex/shared/utils/helper';
+import {
+  validateCouponExclusionMenu,
+  validateRequired,
+} from '../../services/convex/shared/utils/validation';
+import { ConvexCustomError } from '../../services/convex/shared/utils/error';
+import { checkAuth } from '../../services/convex/shared/utils/auth';
 export const add = mutation({
   args: {
     salonId: v.id('salon'),
@@ -184,7 +191,7 @@ export const kill = mutation({
         }
       );
     }
-    return await KillRecord(ctx, couponExclusionMenu._id);
+    return await killRecord(ctx, couponExclusionMenu._id);
   },
 });
 

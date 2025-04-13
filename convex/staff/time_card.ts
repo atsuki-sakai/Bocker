@@ -1,11 +1,15 @@
 // convex/queries/timeCard.ts
 import { query, mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { paginationOptsValidator } from "convex/server";
-import { KillRecord, removeEmptyFields, archiveRecord } from '../shared/utils/helper';
-import { ConvexCustomError } from '../shared/utils/error';
-import { checkAuth } from '../shared/utils/auth';
-import { validateTimeCard, validateRequired } from '../shared/utils/validation';
+import { v } from 'convex/values';
+import { paginationOptsValidator } from 'convex/server';
+import {
+  killRecord,
+  removeEmptyFields,
+  archiveRecord,
+} from '@/services/convex/shared/utils/helper';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { validateTimeCard, validateRequired } from '@/services/convex/shared/utils/validation';
 
 export const add = mutation({
   args: {
@@ -109,7 +113,7 @@ export const kill = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateRequired(args.timeCardId, 'timeCardId');
-    return await KillRecord(ctx, args.timeCardId);
+    return await killRecord(ctx, args.timeCardId);
   },
 });
 

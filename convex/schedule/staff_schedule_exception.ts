@@ -1,10 +1,17 @@
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
-import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
-import { checkAuth } from '../shared/utils/auth';
-import { staffScheduleType } from '../shared/types/common';
-import { validateStaffScheduleException, validateRequired } from '../shared/utils/validation';
-import { ConvexCustomError } from '../shared/utils/error';
+import {
+  removeEmptyFields,
+  archiveRecord,
+  killRecord,
+} from '@/services/convex/shared/utils/helper';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { staffScheduleType } from '@/services/convex/shared/types/common';
+import {
+  validateStaffScheduleException,
+  validateRequired,
+} from '@/services/convex/shared/utils/validation';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 
 // スタッフスケジュール例外の追加
 export const add = mutation({
@@ -127,7 +134,7 @@ export const kill = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateRequired(args.staffScheduleId, 'staffScheduleId');
-    return await KillRecord(ctx, args.staffScheduleId);
+    return await killRecord(ctx, args.staffScheduleId);
   },
 });
 

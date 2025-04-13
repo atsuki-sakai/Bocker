@@ -1,13 +1,17 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
-import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
+import {
+  removeEmptyFields,
+  archiveRecord,
+  killRecord,
+} from '@/services/convex/shared/utils/helper';
 import {
   validatePointAuth,
   validateRequired,
   validateRequiredNumber,
-} from '../shared/utils/validation';
-import { checkAuth } from '../shared/utils/auth';
-import { ConvexCustomError } from '../shared/utils/error';
+} from '@/services/convex/shared/utils/validation';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 
 // 予約ポイント認証の追加
 export const add = mutation({
@@ -127,7 +131,7 @@ export const kill = mutation({
   handler: async (ctx, args) => {
     validateRequired(args.pointAuthId, 'pointAuthId');
     checkAuth(ctx, true);
-    return await KillRecord(ctx, args.pointAuthId);
+    return await killRecord(ctx, args.pointAuthId);
   },
 });
 

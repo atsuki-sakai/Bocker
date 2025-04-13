@@ -1,11 +1,18 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
-import { ConvexCustomError } from '../shared/utils/error';
-import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import {
+  removeEmptyFields,
+  archiveRecord,
+  killRecord,
+} from '@/services/convex/shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { salonScheduleExceptionType, dayOfWeekType } from '../shared/types/common';
-import { validateRequired, validateSalonScheduleException } from '../shared/utils/validation';
-import { checkAuth } from '../shared/utils/auth';
+import { salonScheduleExceptionType, dayOfWeekType } from '@/services/convex/shared/types/common';
+import {
+  validateRequired,
+  validateSalonScheduleException,
+} from '@/services/convex/shared/utils/validation';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
 
 // サロンスケジュール例外の追加
 export const add = mutation({
@@ -80,6 +87,17 @@ export const archive = mutation({
   },
 });
 
+export const kill = mutation({
+  args: {
+    salonScheduleExceptionId: v.id('salon_schedule_exception'),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+    validateRequired(args.salonScheduleExceptionId, 'salonScheduleExceptionId');
+    return await killRecord(ctx, args.salonScheduleExceptionId);
+  },
+});
+
 export const upsert = mutation({
   args: {
     salonScheduleExceptionId: v.id('salon_schedule_exception'),
@@ -92,36 +110,52 @@ export const upsert = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateSalonScheduleException(args);
-    const existingSalonScheduleException = await ctx.db
-      .query('salon_schedule_exception')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
-      .first();
 
-    if (!existingSalonScheduleException || existingSalonScheduleException.isArchive) {
+    // デバッグ出力
+    console.log('検索条件:', {
+      salonId: args.salonId,
+      date: args.date,
+      type: args.type,
+    });
+
+    // まず日付とサロンIDのみで検索
+    let query = ctx.db
+      .query('salon_schedule_exception')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false));
+
+    // 結果を絞り込み
+    const allExistingExceptions = await query.collect();
+
+    // 日付とタイプでフィルタリング（タイプはundefinedの可能性もあるため、JavaScriptフィルタを使用）
+    const existingExceptions = allExistingExceptions.filter(
+      (ex) => ex.date === args.date && ex.type === args.type
+    );
+
+    console.log('既存レコード:', existingExceptions);
+
+    if (existingExceptions.length === 0) {
+      // 新規作成
+      console.log('新規作成します');
       return await ctx.db.insert('salon_schedule_exception', {
         ...args,
         isArchive: false,
       });
     } else {
+      // 既存レコードを更新（最初のレコードを使用）
+      const existingRecord = existingExceptions[0];
+      console.log('更新します。ID:', existingRecord._id);
+
+      // 更新データの準備
       const updateData = removeEmptyFields(args);
       delete updateData.salonScheduleExceptionId;
-      delete updateData.salonId;
-      return await ctx.db.patch(existingSalonScheduleException._id, updateData);
+      delete updateData.salonId; // パッチ時にはサロンIDも更新不要
+
+      return await ctx.db.patch(existingRecord._id, updateData);
     }
   },
 });
 
-export const kill = mutation({
-  args: {
-    salonScheduleExceptionId: v.id('salon_schedule_exception'),
-  },
-  handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateRequired(args.salonScheduleExceptionId, 'salonScheduleExceptionId');
-    return await KillRecord(ctx, args.salonScheduleExceptionId);
-  },
-});
-
+// 取得関数の修正
 export const getByScheduleList = query({
   args: {
     salonId: v.id('salon'),
@@ -130,15 +164,30 @@ export const getByScheduleList = query({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
-    return await ctx.db
+
+    // デバッグ出力
+    console.log('検索条件:', {
+      salonId: args.salonId,
+      type: args.type,
+      includeArchive: args.includeArchive || false,
+    });
+
+    // 基本クエリ
+    let query = ctx.db
       .query('salon_schedule_exception')
-      .withIndex('by_salon_type', (q) =>
-        q
-          .eq('salonId', args.salonId)
-          .eq('type', args.type)
-          .eq('isArchive', args.includeArchive || false)
-      )
-      .collect();
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isArchive', args.includeArchive || false)
+      );
+
+    // タイプが指定されている場合は、結果をフィルタリング
+    const results = await query.collect();
+
+    if (args.type !== undefined) {
+      // JavaScriptでフィルタリング
+      return results.filter((ex) => ex.type === args.type);
+    }
+
+    return results;
   },
 });
 

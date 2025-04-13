@@ -1,10 +1,14 @@
 import { mutation, query } from './../_generated/server';
 import { v } from 'convex/values';
-import { removeEmptyFields, archiveRecord, KillRecord } from './../shared/utils/helper';
+import {
+  removeEmptyFields,
+  archiveRecord,
+  killRecord,
+} from '../../services/convex/shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { validateCustomer, validateRequired } from './../shared/utils/validation';
-import { ConvexCustomError } from './../shared/utils/error';
-import { checkAuth } from './../shared/utils/auth';
+import { validateCustomer, validateRequired } from '../../services/convex/shared/utils/validation';
+import { ConvexCustomError } from '../../services/convex/shared/utils/error';
+import { checkAuth } from '../../services/convex/shared/utils/auth';
 
 // 顧客の追加
 export const add = mutation({
@@ -179,7 +183,7 @@ export const kill = mutation({
     checkAuth(ctx);
     validateRequired(args.customerId, 'customerId');
 
-    await KillRecord(ctx, args.customerId);
+    await killRecord(ctx, args.customerId);
   },
 });
 

@@ -25,6 +25,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["./**/*"],
+  "include": ["./**/*", "../services/convex/shared"],
   "exclude": ["./_generated"]
 }

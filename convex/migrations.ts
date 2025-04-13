@@ -141,3 +141,47 @@ export const migrateStaffAuthAdminRole = internalMutation({
     };
   },
 });
+
+export const migrateStripeConnectCreatedAtToNumber = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    console.log('Starting migration: stripeConnectCreatedAt from string to number');
+
+    // 全てのsalonレコードを取得
+    const salons = await ctx.db.query('salon').collect();
+
+    let updatedCount = 0;
+
+    // stripeConnectCreatedAtが文字列のレコードをすべて数値に更新
+    for (const salon of salons) {
+      if (
+        salon.stripeConnectCreatedAt !== undefined &&
+        typeof salon.stripeConnectCreatedAt === 'string'
+      ) {
+        // 文字列の日付をタイムスタンプに変換
+        const timestamp = new Date(salon.stripeConnectCreatedAt as string).getTime();
+
+        if (!isNaN(timestamp)) {
+          await ctx.db.patch(salon._id, {
+            stripeConnectCreatedAt: timestamp,
+          });
+          console.log(
+            `Updated salon ${salon._id}: stripeConnectCreatedAt from "${salon.stripeConnectCreatedAt}" to ${timestamp}`
+          );
+          updatedCount++;
+        } else {
+          console.warn(
+            `Invalid stripeConnectCreatedAt value for salon ${salon._id}: "${salon.stripeConnectCreatedAt}"`
+          );
+        }
+      }
+    }
+
+    console.log(`Migration completed: ${updatedCount} salon records updated from string to number`);
+
+    return {
+      success: true,
+      updatedCount,
+    };
+  },
+});

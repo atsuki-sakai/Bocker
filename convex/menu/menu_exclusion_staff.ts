@@ -1,9 +1,9 @@
 import { mutation, query } from './../_generated/server';
 import { v } from 'convex/values';
-import { KillRecord, archiveRecord } from './../shared/utils/helper';
-import { validateMenuExclusionStaff, validateRequired } from './../shared/utils/validation';
-import { checkAuth } from './../shared/utils/auth';
-import { ConvexCustomError } from './../shared/utils/error';
+import { killRecord, archiveRecord } from '@/services/convex/shared/utils/helper';
+import { validateMenuExclusionStaff } from '@/services/convex/shared/utils/validation';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 
 export const add = mutation({
   args: {
@@ -184,7 +184,7 @@ export const kill = mutation({
         { ...args }
       );
     }
-    return await KillRecord(ctx, menuExclusionStaff._id);
+    return await killRecord(ctx, menuExclusionStaff._id);
   },
 });
 

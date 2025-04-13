@@ -1,7 +1,7 @@
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
+import { defineSchema, defineTable } from 'convex/server';
+import { v } from 'convex/values';
 import {
-  commonFields,
+  CommonFields,
   dayOfWeekType,
   billingPeriodType,
   reservationStatusType,
@@ -14,7 +14,7 @@ import {
   targetType,
   genderType,
   reservationIntervalMinutesType,
-} from './shared/types/common';
+} from '../services/convex/shared/types/common';
 
 /**
  * Convexスキーマ定義
@@ -42,7 +42,7 @@ export default defineSchema({
     clerkId: v.string(),
     email: v.string(),
     password: v.string(),
-    ...commonFields,
+    ...CommonFields,
   }).index('by_clerk_id', ['clerkId']),
 
   // =====================
@@ -57,7 +57,7 @@ export default defineSchema({
     planName: v.optional(v.string()), // プラン名 ("Lite", "Pro", "Enterprise")
     billingPeriod: v.optional(billingPeriodType), // 課金期間 (月額 or 年額)
     currentPeriodEnd: v.optional(v.number()), // 現在の課金期間の終了タイムスタンプ
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_subscription_id', ['subscriptionId', 'isArchive'])
     .index('by_stripe_customer_id', ['stripeCustomerId', 'isArchive']),
@@ -77,7 +77,7 @@ export default defineSchema({
     tags: v.optional(v.array(v.string())), // タグ
     description: v.optional(v.string()), // 説明
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_salon_id_name', ['salonId', 'name', 'isArchive']),
@@ -91,7 +91,7 @@ export default defineSchema({
     organizationId: v.optional(v.string()), // Clerkの組織ID
     stripeConnectId: v.optional(v.string()), // StripeConnect連携アカウントID
     stripeConnectStatus: v.optional(v.string()), // StripeConnect連携状態
-    stripeConnectCreatedAt: v.optional(v.string()), // StripeConnect作成日時
+    stripeConnectCreatedAt: v.optional(v.number()), // StripeConnect作成日時
     stripeCustomerId: v.optional(v.string()), // Stripe顧客ID
     email: v.optional(v.string()), // Emailアドレス
     subscriptionId: v.optional(v.string()), // 現在のサブスクリプションID
@@ -99,7 +99,7 @@ export default defineSchema({
     planName: v.optional(v.string()), // プラン名 ("lite", "pro", "enterprise")
     priceId: v.optional(v.string()), // 購読プランID (Price ID)
     billingPeriod: v.optional(billingPeriodType), // 課金期間 (月額 or 年額)
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_clerk_id', ['clerkId', 'isArchive'])
     .index('by_stripe_connect_id', ['stripeConnectId', 'isArchive'])
@@ -112,7 +112,7 @@ export default defineSchema({
     lineChannelSecret: v.optional(v.string()), // LINEチャンネルシークレット
     liffId: v.optional(v.string()), // LIFF ID
     destinationId: v.optional(v.string()), // LINE公式アカウント識別子
-    ...commonFields,
+    ...CommonFields,
   }).index('by_salon_id', ['salonId', 'isArchive']),
 
   // サロンの基本設定テーブル
@@ -126,7 +126,7 @@ export default defineSchema({
     reservationRules: v.optional(v.string()), // 予約ルール
     imgPath: v.optional(v.string()), // 画像ファイルパス
     description: v.optional(v.string()), // 説明
-    ...commonFields,
+    ...CommonFields,
   }).index('by_salon_id', ['salonId', 'isArchive']),
 
   // サロンの営業スケジュール設定テーブル
@@ -135,7 +135,7 @@ export default defineSchema({
     reservationLimitDays: v.optional(v.number()), // 予約可能日数
     availableCancelDays: v.optional(v.number()), // 予約キャンセル可能日数
     reservationIntervalMinutes: v.optional(reservationIntervalMinutesType) || 0, // 予約時間間隔(分)
-    ...commonFields,
+    ...CommonFields,
   }).index('by_salon_id', ['salonId', 'isArchive']),
 
   // =====================
@@ -149,7 +149,7 @@ export default defineSchema({
     dayOfWeek: v.optional(dayOfWeekType), // 曜日
     startHour: v.optional(v.string()), // 開始時間 例: 09:00
     endHour: v.optional(v.string()), // 終了時間 例: 18:00
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_salon_week_is_open_day_of_week', ['salonId', 'dayOfWeek', 'isOpen', 'isArchive']),
@@ -159,7 +159,7 @@ export default defineSchema({
     salonId: v.id('salon'), // フィルタリング用
     type: v.optional(salonScheduleExceptionType), // 例外タイプ
     date: v.string(), // 日付 "YYYY-MM-DD" 形式
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_salon_date', ['salonId', 'date', 'isArchive'])
@@ -174,7 +174,7 @@ export default defineSchema({
     dayOfWeek: v.optional(dayOfWeekType), // 曜日
     startHour: v.optional(v.string()), // 開始時間 例: 09:00
     endHour: v.optional(v.string()), // 終了時間 例: 18:00
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_staff_week_is_open', [
       'salonId',
@@ -194,7 +194,7 @@ export default defineSchema({
     endTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
     notes: v.optional(v.string()), // メモ
     type: v.optional(staffScheduleType), // タイプ
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_staff_date', ['salonId', 'staffId', 'date', 'isArchive'])
     .index('by_salon_staff_date_type', ['salonId', 'staffId', 'date', 'type', 'isArchive']),
@@ -215,7 +215,7 @@ export default defineSchema({
     useCount: v.optional(v.number()), // 利用回数
     lastReservationDate_unix: v.optional(v.number()), // 最終予約日
     tags: v.optional(v.array(v.string())), // タグ
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_salon_line_id', ['salonId', 'lineId', 'isArchive'])
@@ -230,7 +230,7 @@ export default defineSchema({
     birthday: v.optional(v.string()), // 誕生日
     gender: v.optional(genderType), // 性別
     notes: v.optional(v.string()), // メモ
-    ...commonFields,
+    ...CommonFields,
   }).index('by_customer_id', ['customerId', 'isArchive']),
 
   // 顧客のポイント残高
@@ -239,7 +239,7 @@ export default defineSchema({
     salonId: v.id('salon'), // サロンID
     totalPoints: v.optional(v.number()), // 保有ポイント
     lastTransactionDate_unix: v.optional(v.number()), // 最終トランザクション日時
-    ...commonFields,
+    ...CommonFields,
   }).index('by_salon_customer_archive', ['salonId', 'customerId', 'isArchive']),
 
   // =====================
@@ -252,7 +252,7 @@ export default defineSchema({
     hairType: v.optional(v.string()), // 髪質
     allergyHistory: v.optional(v.string()), // アレルギー歴
     medicalHistory: v.optional(v.string()), // 持病
-    ...commonFields,
+    ...CommonFields,
   }).index('by_salon_customer', ['salonId', 'customerId', 'isArchive']),
 
   // 最大保存期間は1~2年間
@@ -262,7 +262,7 @@ export default defineSchema({
     beforeHairimgPath: v.optional(v.string()), // 施術前の髪型画像ファイルパス
     afterHairimgPath: v.optional(v.string()), // 施術後の髪型画像ファイルパス
     notes: v.optional(v.string()), // メモ
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_carte_id_reservation_id', ['carteId', 'reservationId', 'isArchive'])
     .index('by_carte_id', ['carteId', 'isArchive']),
@@ -279,7 +279,7 @@ export default defineSchema({
     description: v.optional(v.string()), // 説明
     imgPath: v.optional(v.string()), // 画像ファイルパス
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_name', ['name', 'isArchive'])
@@ -290,10 +290,11 @@ export default defineSchema({
   // スタッフの認証テーブル
   staff_auth: defineTable({
     staffId: v.id('staff'),
+    organizationId: v.optional(v.string()), // 組織ID
     pinCode: v.optional(v.string()), // ピンコード(ログイン用)
     hashPinCode: v.optional(v.string()), // ハッシュ化されたピンコード
     role: v.optional(roleType), // スタッフ権限
-    ...commonFields,
+    ...CommonFields,
   }).index('by_staff_id', ['staffId', 'isArchive']),
 
   // スタッフのタイムカードテーブル
@@ -304,7 +305,7 @@ export default defineSchema({
     endDateTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
     workedTime: v.optional(v.number()), // 勤務時間(分)
     notes: v.optional(v.string()), // メモ
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_staff', ['salonId', 'staffId', 'isArchive'])
     .index('by_salon_staff_start_time', ['salonId', 'staffId', 'isArchive', 'startDateTime_unix'])
@@ -318,7 +319,7 @@ export default defineSchema({
     salonId: v.id('salon'),
     extraCharge: v.optional(v.number()), // 指名料金
     priority: v.optional(v.number()), // 予約時の優先度
-    ...commonFields,
+    ...CommonFields,
   }).index('by_staff_id', ['staffId', 'isArchive']),
 
   // =====================
@@ -338,7 +339,7 @@ export default defineSchema({
     tags: v.optional(v.array(v.string())), // タグ
     paymentMethod: v.optional(menuPaymentMethodType), // 許可する支払い方法
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_salon_id_name', ['salonId', 'name', 'isArchive'])
@@ -349,7 +350,7 @@ export default defineSchema({
     salonId: v.id('salon'), // サロンID
     menuId: v.id('menu'), // メニューID
     staffId: v.id('staff'), // スタッフID
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_menu_staff', ['salonId', 'menuId', 'staffId', 'isArchive'])
     .index('by_salon_menu_id', ['salonId', 'menuId', 'isArchive'])
@@ -367,7 +368,7 @@ export default defineSchema({
     percentageDiscountValue: v.optional(v.number()), // 割引率
     fixedDiscountValue: v.optional(v.number()), // 固定割引額
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_name', ['name', 'isArchive'])
@@ -377,7 +378,7 @@ export default defineSchema({
     salonId: v.id('salon'), // サロンID
     couponId: v.id('coupon'), // クーポンID
     menuId: v.id('menu'), // メニューID
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_menu_id', ['salonId', 'menuId', 'isArchive'])
     .index('by_salon_coupon_id', ['salonId', 'couponId', 'isArchive'])
@@ -391,7 +392,7 @@ export default defineSchema({
     endDate_unix: v.optional(v.number()), // 終了日 UNIXタイム
     maxUseCount: v.optional(v.number()), // 最大利用回数
     numberOfUse: v.optional(v.number()), // 現在の利用回数
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_coupon_id', ['salonId', 'couponId', 'isArchive'])
     .index('by_coupon_id', ['couponId', 'isArchive']),
@@ -402,7 +403,7 @@ export default defineSchema({
     customerId: v.id('customer'), // 顧客ID
     reservationId: v.id('reservation'), // 予約ID
     transactionDate_unix: v.optional(v.number()), // 利用日時 UNIXタイム
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_coupon_id', ['couponId', 'isArchive'])
     .index('by_customer_id', ['customerId', 'isArchive'])
@@ -429,7 +430,7 @@ export default defineSchema({
     featuredHairimgPath: v.optional(v.string()), // 顧客が希望する髪型の画像ファイルパス
     notes: v.optional(v.string()), // 備考
     paymentMethod: v.optional(paymentMethodType), // 支払い方法
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_customer_id', ['salonId', 'customerId', 'isArchive'])
@@ -451,14 +452,14 @@ export default defineSchema({
     pointRate: v.optional(v.number()), // ポイント付与率 (例: 0.1なら10%)
     fixedPoint: v.optional(v.number()), // 固定ポイント (例: 100円につき1ポイント)
     pointExpirationDays: v.optional(v.number()), // ポイントの有効期限(日)
-    ...commonFields,
+    ...CommonFields,
   }).index('by_salon_id', ['salonId', 'isArchive']),
 
   point_exclusion_menu: defineTable({
     salonId: v.id('salon'), // サロンID
     pointConfigId: v.id('point_config'), // ポイント基本設定ID
     menuId: v.id('menu'), // メニューID
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_point_config_menu', ['salonId', 'pointConfigId', 'menuId', 'isArchive'])
     .index('by_salon_point_config_id', ['salonId', 'pointConfigId', 'isArchive']),
@@ -469,7 +470,7 @@ export default defineSchema({
     customerId: v.id('customer'), // 顧客ID
     points: v.optional(v.number()), // 加算ポイント
     scheduledFor_unix: v.optional(v.number()), // 付与予定日時 UNIXタイム
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_reservation_id', ['reservationId', 'isArchive'])
     .index('by_customer_id', ['customerId', 'isArchive'])
@@ -482,7 +483,7 @@ export default defineSchema({
     authCode: v.optional(v.string()), // 認証コード (6桁の大文字英語と数字)
     expirationTime_unix: v.optional(v.number()), // 有効期限 UNIXタイム
     points: v.optional(v.number()), // 利用ポイント
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_reservation_id', ['reservationId', 'isArchive'])
     .index('by_customer_id', ['customerId', 'isArchive'])
@@ -497,7 +498,7 @@ export default defineSchema({
     menuId: v.optional(v.id('menu')), // メニューID
     transactionType: v.optional(pointTransactionType), // トランザクションタイプ
     transactionDate_unix: v.optional(v.number()), // 取引日時 UNIXタイム
-    ...commonFields,
+    ...CommonFields,
   })
     .index('by_salon_reservation_id', ['salonId', 'reservationId', 'isArchive'])
     .index('by_salon_customer_id', ['salonId', 'customerId', 'isArchive'])
@@ -508,4 +509,3 @@ export default defineSchema({
       'isArchive',
     ]),
 });
-
