@@ -21,7 +21,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     try {
-      checkAuth(ctx);
+      checkAuth(ctx, true);
       validateSalon(args);
 
       return await salonService.createSalon(ctx, args);
