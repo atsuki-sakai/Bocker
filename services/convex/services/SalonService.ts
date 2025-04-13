@@ -54,7 +54,7 @@ class SalonService {
 
   // Core
   async createSalon(ctx: MutationCtx, salonData: SalonCreateInput) {
-    return await this.salonRepo.create(ctx, salonData);
+    return await this.salonRepo.createSalon(ctx, salonData);
   }
   async getSalon(ctx: QueryCtx, salonId: Id<'salon'>) {
     return await this.salonRepo.get(ctx, salonId);
@@ -67,7 +67,7 @@ class SalonService {
   }
   async upsertSalon(ctx: MutationCtx, id: Id<'salon'>, data: SalonCreateInput) {
     await checkSalonAccess(ctx, id);
-    return await this.salonRepo.upsert(ctx, id, data);
+    return await this.salonRepo.upsertSalon(ctx, id, data);
   }
 
   // Config
