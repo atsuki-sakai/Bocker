@@ -52,13 +52,9 @@ class StripeService {
    */
   public async processStripeWebhookRequest(
     req: Request,
-    isConnect: boolean
+    webhookSecret?: string
   ): Promise<{ event?: Stripe.Event; error?: string }> {
     const sig = req.headers.get('stripe-signature');
-    const webhookSecret = isConnect
-      ? process.env.STRIPE_CONNECT_WEBHOOK_SECRET
-      : process.env.STRIPE_WEBHOOK_SECRET;
-
     if (!sig || !webhookSecret) {
       return {
         error: 'Stripeの署名が設定されていません',
@@ -84,7 +80,25 @@ class StripeService {
     signature: string | null,
     webhookSecret: string | null
   ): Promise<Stripe.Event> {
-    return await this.connectRepo.verifyWebhookSignature(body, signature, webhookSecret);
+    if (!signature || !webhookSecret) {
+      if (process.env.NEXT_PUBLIC_NODE_ENV === 'development') {
+        console.warn('⚠️ 開発環境で署名検証をスキップします');
+        return JSON.parse(body) as Stripe.Event;
+      } else {
+        throw new StripeError(
+          'high',
+          'Webhook署名またはシークレットがありません',
+          'NOT_FOUND',
+          404,
+          {
+            signature,
+            webhookSecret,
+          }
+        );
+      }
+    }
+
+    return this.stripe.webhooks.constructEvent(body, signature, webhookSecret);
   }
 
   /**
