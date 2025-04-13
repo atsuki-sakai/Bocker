@@ -15,8 +15,8 @@ export const useSalon = () => {
   
   // clerkIdが未定義の場合はデータ取得をスキップ
   const salonData = useQuery(
-    api.salon.core.getClerkId,
-    user?.id ? { clerkId: user.id } : "skip"
+    api.salon.core.query.findByClerkId,
+    user?.id ? { clerkId: user.id } : 'skip'
   );
 
   console.log("salonData", salonData);

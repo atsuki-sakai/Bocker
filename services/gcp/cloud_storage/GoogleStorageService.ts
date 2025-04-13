@@ -5,9 +5,29 @@ import { STORAGE_URL } from './constants';
 /**
  * GCSクライアントとバケット設定を管理するクラス
  */
-export class GoogleStorageService {
+class GoogleStorageService {
   private storage: Storage | null = null;
   private bucketName: string | null = null;
+
+  /**
+   * 必要な環境変数を取得し、存在しない場合はエラーを投げる
+   */
+  private getEnvConfig() {
+    const projectId = process.env.GCP_PROJECT;
+    const clientEmail = process.env.GCP_CLIENT_EMAIL;
+    const privateKey = process.env.GCP_PRIVATE_KEY;
+    const bucketName = process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME;
+    if (!projectId || !clientEmail || !privateKey || !bucketName) {
+      console.error('必要な環境変数が不足しています', {
+        projectId: Boolean(projectId),
+        clientEmail: Boolean(clientEmail),
+        privateKey: Boolean(privateKey),
+        bucketName: Boolean(bucketName),
+      });
+      throw new Error('必要な環境変数が設定されていません。');
+    }
+    return { projectId, clientEmail, privateKey, bucketName };
+  }
 
   /**
    * 必要なときにGCSクライアントを初期化する
@@ -18,39 +38,24 @@ export class GoogleStorageService {
     }
     console.log('GCSクライアントの初期化開始');
 
-    // 環境変数から値を取得
-    const projectId = process.env.GCP_PROJECT;
-    const clientEmail = process.env.GCP_CLIENT_EMAIL;
-    const privateKey = process.env.GCP_PRIVATE_KEY;
-    const bucketName = process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME;
-    console.log('環境変数取得完了', { projectId, clientEmail, privateKey, bucketName });
-
-    // 必要な環境変数が設定されているかチェック
-    if (!projectId || !clientEmail || !privateKey || !bucketName) {
-      console.error('必要な環境変数が不足しています', {
-        projectId: Boolean(projectId),
-        clientEmail: Boolean(clientEmail),
-        privateKey: Boolean(privateKey),
-        bucketName: Boolean(bucketName),
-      });
-      throw new Error('必要な環境変数が設定されていません。');
-    }
+    // 必要な環境変数をまとめて取得
+    const { projectId, clientEmail, privateKey, bucketName } = this.getEnvConfig();
+    console.log('環境変数取得完了', { projectId, clientEmail, bucketName });
 
     try {
-      // この時点で全ての環境変数が存在することは確認済み
       // 改行のエスケープ解除（もし \n で設定している場合）
-      const formattedPrivateKey = (privateKey as string).replace(/\\n/g, '\n');
+      const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
 
       // Storage クライアントの初期化
       this.storage = new Storage({
-        projectId: projectId as string,
+        projectId,
         credentials: {
-          client_email: clientEmail as string,
+          client_email: clientEmail,
           private_key: formattedPrivateKey,
         },
       });
 
-      this.bucketName = bucketName as string;
+      this.bucketName = bucketName;
       console.log('GCSクライアントの初期化完了');
     } catch (error) {
       console.error('GCPストレージクライアントの初期化に失敗しました:', error);
@@ -60,6 +65,32 @@ export class GoogleStorageService {
     }
   }
 
+  /**
+   * エラー詳細を抽出するユーティリティメソッド
+   */
+  private formatErrorDetails(error: unknown): Record<string, any> {
+    const errorDetails: Record<string, any> = { type: typeof error };
+    if (error instanceof Error) {
+      errorDetails.name = error.name;
+      errorDetails.message = error.message;
+      errorDetails.stack = error.stack;
+      Object.keys(error).forEach((key) => {
+        try {
+          const value = (error as any)[key];
+          if (typeof value !== 'function') {
+            errorDetails[key] = value;
+          }
+        } catch (e) {}
+      });
+    } else {
+      try {
+        errorDetails.stringified = JSON.stringify(error);
+      } catch (e) {
+        errorDetails.stringifyFailed = true;
+      }
+    }
+    return errorDetails;
+  }
 
   /**
    * バッファからファイルをアップロードする
@@ -123,50 +154,28 @@ export class GoogleStorageService {
         filePath,
       };
     } catch (error) {
-      // エラー情報をより詳細に出力
-      let errorDetails: Record<string, any> = {
-        type: typeof error,
-      };
-
-      if (error instanceof Error) {
-        errorDetails = {
-          ...errorDetails,
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-        };
-
-        // エラーオブジェクトの追加プロパティを取得
-        Object.keys(error).forEach((key) => {
-          try {
-            const value = (error as any)[key];
-            if (typeof value !== 'function') {
-              errorDetails[key] = value;
-            }
-          } catch (e) {
-            // プロパティアクセスに失敗した場合は無視
-          }
-        });
-      } else {
-        try {
-          // オブジェクトをJSON文字列に変換して詳細を取得
-          errorDetails.stringified = JSON.stringify(error);
-        } catch (e) {
-          errorDetails.stringifyFailed = true;
-        }
-      }
-
+      const errorDetails = this.formatErrorDetails(error);
       console.error('バッファからのアップロードに失敗しました:', errorDetails, {
         fileName,
         contentType,
         bufferSize: buffer.length,
         directory,
       });
-
       throw new Error(
         `バッファからのアップロードに失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
+  }
+
+  /**
+   * imgUrl から GCS 内のファイルパスを抽出する
+   */
+  private extractFilePath(imgUrl: string): string {
+    const storageUrl = `${STORAGE_URL}/${process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME}`;
+    if (imgUrl.startsWith(storageUrl)) {
+      return imgUrl.substring(storageUrl.length + 1);
+    }
+    return imgUrl;
   }
 
   /**
@@ -175,16 +184,11 @@ export class GoogleStorageService {
   async deleteImage(imgUrl: string): Promise<void> {
     this.initializeIfNeeded();
 
-    // URLからファイルパスを抽出
-    const storageUrl = STORAGE_URL + '/' + process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME!;
-
-    if (imgUrl.startsWith(storageUrl)) {
-      imgUrl = imgUrl.substring(storageUrl.length + 1);
-    }
+    const filePath = this.extractFilePath(imgUrl);
 
     try {
       const bucket = this.storage!.bucket(this.bucketName!);
-      const file = bucket.file(imgUrl);
+      const file = bucket.file(filePath);
       await file.delete();
     } catch (error) {
       console.error('Error deleting file:', error);
@@ -192,3 +196,5 @@ export class GoogleStorageService {
     }
   }
 }
+
+export const gcsService = new GoogleStorageService();

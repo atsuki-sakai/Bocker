@@ -85,7 +85,7 @@ export default function StripeConnectStatus() {
 
   // Stripe Connect アカウント情報を取得
   const connectAccount = useQuery(
-    api.salon.stripe.getConnectAccountDetails,
+    api.salon.core.query.getConnectAccountDetails,
     salonId ? { salonId } : 'skip'
   );
 

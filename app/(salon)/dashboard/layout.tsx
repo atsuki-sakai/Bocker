@@ -21,7 +21,7 @@ export default async function RootLayout({
   const { userId, token } = await serverConvexAuth();
 
   const preloadedSalon = await preloadQuery(
-    api.salon.core.getClerkId,
+    api.salon.core.query.findByClerkId,
     { clerkId: userId },
     { token: token }
   );

@@ -93,7 +93,7 @@ export async function POST(req: Request) {
 
       // クリティカルな操作は再試行付きで実行
       const existingSalon = await retryOperation(() =>
-        fetchQuery(api.salon.core.getClerkId, {
+        fetchQuery(api.salon.core.query.findByClerkId, {
           clerkId: id,
         }).catch((err) => {
           throw err;
@@ -129,7 +129,7 @@ export async function POST(req: Request) {
                     `Convexへのサロン登録を開始: clerkId=${id}, organizationId=${organization.id}, email=${email}, stripeCustomerId=${customer.id}`
                   );
                   await retryOperation(() =>
-                    fetchMutation(api.salon.core.add, {
+                    fetchMutation(api.salon.core.mutation.create, {
                       clerkId: id,
                       organizationId: organization.id ?? 'ERROR',
                       email,
@@ -189,7 +189,7 @@ export async function POST(req: Request) {
 
         // 既存の場合はメールアドレスのみ更新
         await retryOperation(() =>
-          fetchMutation(api.salon.core.update, {
+          fetchMutation(api.salon.core.mutation.update, {
             id: existingSalon._id,
             email,
             stripeCustomerId: existingSalon.stripeCustomerId,
@@ -223,7 +223,7 @@ export async function POST(req: Request) {
       let existingSalon;
       try {
         existingSalon = await retryOperation(() =>
-          fetchQuery(api.salon.core.getClerkId, {
+          fetchQuery(api.salon.core.query.findByClerkId, {
             clerkId: id,
           })
         );
@@ -255,7 +255,7 @@ export async function POST(req: Request) {
 
           // Convexのサロン情報を更新
           await retryOperation(() =>
-            fetchMutation(api.salon.core.update, {
+            fetchMutation(api.salon.core.mutation.update, {
               id: existingSalon._id,
               clerkId: id,
               email,
@@ -290,7 +290,7 @@ export async function POST(req: Request) {
           );
 
           await retryOperation(() =>
-            fetchMutation(api.salon.core.add, {
+            fetchMutation(api.salon.core.mutation.create, {
               clerkId: id,
               email,
               stripeCustomerId: customer.id,
@@ -313,7 +313,7 @@ export async function POST(req: Request) {
       let salonRecord;
       try {
         salonRecord = await retryOperation(() =>
-          fetchQuery(api.salon.core.getClerkId, {
+          fetchQuery(api.salon.core.query.findByClerkId, {
             clerkId: id,
           })
         );
@@ -352,7 +352,7 @@ export async function POST(req: Request) {
         try {
           // Convexサロンデータの削除
           await retryOperation(() =>
-            fetchMutation(api.salon.core.archive, {
+            fetchMutation(api.salon.core.mutation.archive, {
               id: salonRecord._id,
             })
           );
@@ -400,7 +400,7 @@ export async function POST(req: Request) {
       try {
         // サロン情報を取得
         const existingSalon = await retryOperation(() =>
-          fetchQuery(api.salon.core.getClerkId, {
+          fetchQuery(api.salon.core.query.findByClerkId, {
             clerkId: id,
           })
         );
@@ -421,7 +421,7 @@ export async function POST(req: Request) {
 
           // Convexのサロン情報を更新
           await retryOperation(() =>
-            fetchMutation(api.salon.core.update, {
+            fetchMutation(api.salon.core.mutation.update, {
               id: existingSalon._id,
               clerkId: id,
               email,

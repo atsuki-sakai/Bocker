@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { ImageDrop, Loading, Dialog } from '@/components/common';
 import { ExclusionMenu } from '@/components/common';
 import { z } from 'zod';
-import { Gender, Role, GENDER_VALUES, ROLE_VALUES } from '@/convex/shared/types/common';
+import { Gender, Role, GENDER_VALUES, ROLE_VALUES } from '@/services/convex/shared/types/common';
 import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH, MAX_PIN_CODE_LENGTH } from '@/convex/constants';
 import { Textarea } from '@/components/ui/textarea';
 import { ZodTextField } from '@/components/common';
@@ -114,8 +114,8 @@ export default function StaffEditForm() {
   const staffConfigUpsert = useMutation(api.staff.config.upsert);
   const staffAuthUpsert = useMutation(api.staff.auth.upsert);
   const staffKill = useMutation(api.staff.core.killRelatedTables);
-  const uploadImage = useAction(api.storage.core.uploadImage);
-  const deleteImage = useAction(api.storage.core.deleteImage);
+  const uploadImage = useAction(api.storage.action.upload);
+  const deleteImage = useAction(api.storage.action.kill);
   const removeImgPath = useMutation(api.staff.core.removeImgPath);
   const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.upsert);
   const exclusionMenuIds = useQuery(

@@ -1,3 +1,5 @@
+// app/(salon)/dashboard/staff/add/page.tsx
+// スタッフの追加ページ
 'use client';
 
 import { DashboardSection } from '@/components/common';
@@ -10,8 +12,12 @@ import { Label } from '@/components/ui/label';
 import { useEffect, useState } from 'react';
 import { ImageDrop } from '@/components/common';
 import { z } from 'zod';
-import { Gender, GENDER_VALUES, Role, ROLE_VALUES } from '@/convex/shared/types/common';
-import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH, MAX_PIN_CODE_LENGTH } from '@/convex/constants';
+import { Gender, GENDER_VALUES, Role, ROLE_VALUES } from '@/services/convex/shared/types/common';
+import {
+  MAX_NOTES_LENGTH,
+  MAX_TEXT_LENGTH,
+  MAX_PIN_CODE_LENGTH,
+} from '@/services/convex/constants';
 import { Textarea } from '@/components/ui/textarea';
 import { ZodTextField } from '@/components/common';
 import {
@@ -69,6 +75,7 @@ const staffAddSchema = z.object({
   description: z.string().min(1, { message: '説明は必須です' }).max(MAX_NOTES_LENGTH),
   imgPath: z.string().max(512).optional(),
   isActive: z.boolean(),
+  organizationId: z.string().max(MAX_TEXT_LENGTH).optional(),
   pinCode: z.string().min(1, { message: 'ピンコードは必須です' }).max(MAX_PIN_CODE_LENGTH),
   role: z.enum(ROLE_VALUES),
   extraCharge: z.preprocess(
@@ -110,8 +117,8 @@ export default function StaffAddPage() {
   const staffKill = useMutation(api.staff.core.killRelatedTables);
   const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.upsert);
 
-  const uploadImage = useAction(api.storage.core.uploadImage);
-  const deleteImage = useAction(api.storage.core.deleteImage);
+  const uploadImage = useAction(api.storage.action.upload);
+  const deleteImage = useAction(api.storage.action.kill);
 
   const {
     register,
@@ -178,6 +185,7 @@ export default function StaffAddPage() {
         // スタッフの認証情報を追加
         staffAuthId = await staffAuthAdd({
           staffId: staffId,
+          organizationId: salon.organizationId ?? undefined,
           pinCode: data.pinCode,
           hashPinCode: hashedPinCode,
           role: data.role,
@@ -255,6 +263,7 @@ export default function StaffAddPage() {
       description: '',
       imgPath: '',
       isActive: true,
+      organizationId: undefined,
       pinCode: '',
       role: 'staff',
       extraCharge: undefined,
@@ -262,6 +271,8 @@ export default function StaffAddPage() {
     });
   }, [reset]);
 
+  console.log(errors);
+  console.log(salon?.organizationId);
   return (
     <DashboardSection
       title="スタッフを追加"
@@ -473,8 +484,8 @@ export default function StaffAddPage() {
                                 desc: 'スタッフ管理と基本設定の変更が可能',
                               },
                               {
-                                role: 'admin',
-                                label: '管理者',
+                                role: 'owner',
+                                label: 'オーナー',
                                 desc: 'すべての機能にアクセス可能',
                               },
                             ].map((item) => (

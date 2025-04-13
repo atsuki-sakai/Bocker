@@ -67,10 +67,13 @@ export default function SalonConfigForm() {
   const [activeTab, setActiveTab] = useState('basic');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const salonConfig = useQuery(api.salon.config.get, salonId ? { salonId } : 'skip');
-  const updateSalonConfig = useMutation(api.salon.config.upsert);
-  const deleteImage = useAction(api.storage.core.deleteImage);
-  const uploadImage = useAction(api.storage.core.uploadImage);
+  const salonConfig = useQuery(
+    api.salon.config.query.findBySalonId,
+    salonId ? { salonId } : 'skip'
+  );
+  const updateSalonConfig = useMutation(api.salon.config.mutation.upsert);
+  const deleteImage = useAction(api.storage.action.kill);
+  const uploadImage = useAction(api.storage.action.upload);
 
   const {
     register,

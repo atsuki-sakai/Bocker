@@ -53,7 +53,7 @@ import {
   Target,
   Gender,
   MenuPaymentMethod,
-} from '@/convex/shared/types/common';
+} from '@/services/convex/shared/types/common';
 
 // バリデーションスキーマ
 const schemaMenu = z
@@ -181,8 +181,8 @@ export default function MenuEditForm() {
   const [tagInput, setTagInput] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const uploadImage = useAction(api.storage.core.uploadImage);
-  const deleteImage = useAction(api.storage.core.deleteImage);
+  const uploadImage = useAction(api.storage.action.upload);
+  const deleteImage = useAction(api.storage.action.kill);
   const updateMenu = useMutation(api.menu.core.update);
 
   const {

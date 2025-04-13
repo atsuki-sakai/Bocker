@@ -51,7 +51,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
-import { Gender, Target, MenuPaymentMethod } from '@/convex/shared/types/common';
+import { Gender, Target, MenuPaymentMethod } from '@/services/convex/shared/types/common';
 
 const GenderList = ['unselected', 'male', 'female'] as const;
 const TargetList = ['all', 'first', 'repeat'] as const;
@@ -159,8 +159,8 @@ export default function MenuAddForm() {
   const [currentTags, setCurrentTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState<string>('');
 
-  const uploadImage = useAction(api.storage.core.uploadImage);
-  const deleteImage = useAction(api.storage.core.deleteImage);
+  const uploadImage = useAction(api.storage.action.upload);
+  const deleteImage = useAction(api.storage.actionon.deleteImage);
   const createMenu = useMutation(api.menu.core.add);
 
   const {

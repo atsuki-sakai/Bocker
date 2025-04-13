@@ -300,7 +300,7 @@ export default function MenuList() {
 
   // APIリクエスト用フック
   const killMenu = useMutation(api.menu.core.kill);
-  const deleteMenuImage = useAction(api.storage.core.deleteImage);
+  const deleteMenuImage = useAction(api.storage.action.kill);
   const {
     results: menus,
     isLoading,

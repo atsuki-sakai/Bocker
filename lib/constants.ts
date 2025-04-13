@@ -1,6 +1,5 @@
 export const STRIPE_API_VERSION = '2025-02-24.acacia';
 
-export const SALON_SCHEDULE_INTERVAL_MINUTES = [0, 5, 10, 20, 30, 40, 50, 60];
 export const SALON_SCHEDULE_HOURS = [
   '00:00',
   '01:00',

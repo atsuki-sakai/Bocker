@@ -8,7 +8,7 @@ export default async function SubscriptionPage() {
   const { userId, token } = await serverConvexAuth();
 
   const salonPreloaded = await preloadQuery(
-    api.salon.core.getClerkId,
+    api.salon.core.query.findByClerkId,
     { clerkId: userId },
     { token: token }
   );
@@ -18,7 +18,7 @@ export default async function SubscriptionPage() {
     redirect('/dashboard/subscription');
   }
   const subscriptionPreloaded = await preloadQuery(
-    api.subscription.core.get,
+    api.subscription.query.findByStripeCustomerId,
     { stripeCustomerId: salon?.stripeCustomerId },
     { token: token }
   );
