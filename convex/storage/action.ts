@@ -2,18 +2,13 @@
 
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
-import { GoogleStorageService } from '@/services/gcp/cloud_storage/GoogleStorageService';
-import { checkAuth } from '../shared/utils/auth';
-import { imgDirectoryType } from '../shared/types/common';
-import { StorageError } from '../shared/utils/error';
-import { validateRequired } from '../shared/utils/validation';
-// GCSクライアントのシングルトンインスタンス
-const gcsClient = new GoogleStorageService();
+import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { imgDirectoryType } from '@/services/convex/shared/types/common';
+import { StorageError } from '@/services/convex/shared/utils/error';
+import { validateRequired } from '@/services/convex/shared/utils/validation';
 
-/**
- * 画像をGoogle Cloud Storageにアップロードするaction
- */
-export const uploadImage = action({
+export const upload = action({
   args: {
     // ファイルデータをBase64でエンコードした文字列
     base64Data: v.string(),
@@ -26,9 +21,6 @@ export const uploadImage = action({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
-    validateRequired(args.filePath, 'filePath');
-    validateRequired(args.contentType, 'contentType');
-    validateRequired(args.directory, 'directory');
     // ファイル名とMIMEタイプの検証
     if (!args.filePath) {
       throw new StorageError('low', 'ファイル名が指定されていません', 'INVALID_ARGUMENT', 400, {
@@ -51,7 +43,7 @@ export const uploadImage = action({
       });
     }
     // GCSにアップロード - Fileオブジェクトを使わずに直接バッファを渡す
-    return await gcsClient.uploadFileBuffer(
+    return await gcsService.uploadFileBuffer(
       binaryData,
       args.filePath,
       args.contentType,
@@ -60,10 +52,7 @@ export const uploadImage = action({
   },
 });
 
-/**
- * Google Cloud Storageからファイルを削除するaction
- */
-export const deleteImage = action({
+export const kill = action({
   args: {
     // 削除するファイルのURL
     imgUrl: v.string(),
@@ -72,7 +61,7 @@ export const deleteImage = action({
     checkAuth(ctx);
     validateRequired(args.imgUrl, 'imgUrl');
     try {
-      await gcsClient.deleteImage(args.imgUrl);
+      await gcsService.deleteImage(args.imgUrl);
       return { success: true };
     } catch (error) {
       throw new StorageError('low', 'ファイルの削除に失敗しました', 'INVALID_ARGUMENT', 400, {
