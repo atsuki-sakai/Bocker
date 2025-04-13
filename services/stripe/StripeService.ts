@@ -163,16 +163,6 @@ class StripeService {
   }
 
   /**
-   * サブスクリプションステータスの同期
-   */
-  async syncSubscription(
-    subscription: Stripe.Subscription,
-    priceId?: string
-  ): Promise<StripeResult<{ subscriptionId: string }>> {
-    return await this.subscriptionRepo.syncSubscription(subscription, priceId);
-  }
-
-  /**
    * サブスクリプション支払い失敗時の処理
    */
   async handlePaymentFailed(

@@ -44,7 +44,7 @@ export class StripeSubscriptionRepository {
       month: 'monthly',
       year: 'yearly',
     };
-    return intervalMapping[interval] || 'monthly'; // デフォルトはmonthly
+    return intervalMapping[interval] || 'monthly'; 
   }
 
   /**
@@ -62,7 +62,7 @@ export class StripeSubscriptionRepository {
 
       const status = normalizeSubscriptionStatus(subscription);
 
-      const actualPriceId = priceId || subscription.items.data[0]?.price?.id || '';
+      const actualPriceId = priceId || '';
       const planInfo = priceIdToPlanInfo(actualPriceId);
 
       let billingPeriod;

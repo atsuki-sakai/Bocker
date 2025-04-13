@@ -78,8 +78,8 @@ class SalonService {
   async findConfigBySalonId(ctx: QueryCtx, salonId: Id<'salon'>) {
     return await this.configRepo.findBySalonId(ctx, salonId);
   }
-  async upsertConfig(ctx: MutationCtx, data: SalonConfigInput) {
-    await checkSalonAccess(ctx, data.salonId);
+  async upsertConfig(ctx: MutationCtx, data: SalonConfigInput, skipCheck: boolean = false) {
+    await checkSalonAccess(ctx, data.salonId, true, skipCheck);
     return await this.configRepo.upsert(ctx, data);
   }
 

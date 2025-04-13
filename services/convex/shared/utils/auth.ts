@@ -43,14 +43,28 @@ export async function checkAuth(
  * @param ctx Convexコンテキスト
  * @param salonId サロンID
  * @param allowAdmin 管理者アクセスを許可するか
+ * @param skipCheck 認証チェックをスキップするかどうか
  * @returns 認証が成功したらtrue
  * @throws 認証/権限エラー
  */
 export async function checkSalonAccess(
   ctx: MutationCtx | QueryCtx,
   salonId: Id<'salon'>,
-  allowAdmin: boolean = true
+  allowAdmin: boolean = true,
+  skipCheck: boolean = false
 ): Promise<boolean> {
+  // skipCheckがtrueの場合は認証チェックをスキップ
+  if (skipCheck) {
+    // サロンの存在チェックのみ行う
+    const salon = await ctx.db.get(salonId);
+    if (!salon) {
+      throw new ConvexCustomError('low', 'サロンが見つかりません', 'AUTHORIZATION', 403, {
+        salonId,
+      });
+    }
+    return true;
+  }
+
   const identity = await checkAuth(ctx);
 
   // サロンとユーザーの関連をチェック
