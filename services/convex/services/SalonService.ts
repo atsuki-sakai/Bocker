@@ -67,7 +67,7 @@ class SalonService {
   }
   async upsertSalon(ctx: MutationCtx, id: Id<'salon'>, data: SalonCreateInput) {
     await checkSalonAccess(ctx, id);
-    return await this.salonRepo.upsertSalon(ctx, id, data);
+    return await this.salonRepo.upsert(ctx, id, data);
   }
 
   // Config
