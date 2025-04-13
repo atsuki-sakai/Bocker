@@ -138,9 +138,9 @@ export async function POST(req: Request) {
                   );
                   await retryOperation(() =>
                     fetchMutation(api.salon.config.mutation.create, {
+                      email,
                       salonId: salonId,
                       salonName: salonName,
-                      email,
                     })
                   );
                   console.log('Convexへのサロン登録成功');
@@ -383,10 +383,7 @@ export async function POST(req: Request) {
         console.error(
           `Clerk ID: ${id} のメールアドレス作成イベントを受信しましたが、メールアドレスが存在しません`
         );
-        return NextResponse.json(
-          { status: 'error', message: 'No email addresses found' },
-          { status: 400 }
-        );
+        return;
       }
 
       // プライマリーメールアドレスを取得
