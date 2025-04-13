@@ -55,35 +55,6 @@ export class StripeConnectRepository {
   }
 
   /**
-   * Webhook署名を検証してイベントを構築
-   */
-  async verifyWebhookSignature(
-    body: string,
-    signature: string | null,
-    webhookSecret: string | null
-  ): Promise<Stripe.Event> {
-    if (!signature || !webhookSecret) {
-      if (this.isDevelopment) {
-        console.warn('⚠️ 開発環境で署名検証をスキップします');
-        return JSON.parse(body) as Stripe.Event;
-      } else {
-        throw new StripeError(
-          'high',
-          'Webhook署名またはシークレットがありません',
-          'NOT_FOUND',
-          404,
-          {
-            signature,
-            webhookSecret,
-          }
-        );
-      }
-    }
-
-    return this.stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  }
-
-  /**
    * アカウント更新イベントを処理
    */
   async handleAccountUpdatedEvent(account: Stripe.Account): Promise<{ success: boolean }> {
