@@ -193,7 +193,7 @@ class SubscriptionService {
           : process.env.NEXT_PUBLIC_DEPLOY_URL || 'https://bcker-project.vercel.app';
 
       const successUrl = `${baseUrl}/dashboard/subscription/success`;
-      const cancelUrl = `${baseUrl}/dashboard/subscription`;
+      const cancelUrl = `${baseUrl}/dashboard/subscription/cancel`;
 
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',

@@ -26,5 +26,8 @@ export default async function RootLayout({
     { token: token }
   );
 
+
+  console.log('preloadedSalon', preloadedSalon);
+
   return <Sidebar preloadedSalon={preloadedSalon}>{children}</Sidebar>;
 }
