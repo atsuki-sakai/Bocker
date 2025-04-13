@@ -1,9 +1,13 @@
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
-import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
-import { checkAuth } from '../shared/utils/auth';
-import { ConvexCustomError } from '../shared/utils/error';
-import { validateStaffConfig, validateRequired } from '../shared/utils/validation';
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
+import {
+  removeEmptyFields,
+  archiveRecord,
+  killRecord,
+} from '@/services/convex/shared/utils/helper';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { validateStaffConfig, validateRequired } from '@/services/convex/shared/utils/validation';
 
 // スタッフ設定の追加
 export const add = mutation({
@@ -109,7 +113,7 @@ export const kill = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateRequired(args.staffConfigId, 'staffConfigId');
-    return await KillRecord(ctx, args.staffConfigId);
+    return await killRecord(ctx, args.staffConfigId);
   },
 });
 

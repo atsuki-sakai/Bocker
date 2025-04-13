@@ -13,11 +13,9 @@ import { handleError } from '@/lib/error';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FormField } from '@/components/common';
 import { Clock, Save, Calendar, Clock3, Check } from 'lucide-react';
-import {
-  SALON_SCHEDULE_INTERVAL_MINUTES,
-  SALON_RESERVATION_LIMIT_DAYS,
-  SALON_RESERVATION_CANCEL_LIMIT_DAYS,
-} from '@/lib/constants';
+import { SALON_RESERVATION_LIMIT_DAYS, SALON_RESERVATION_CANCEL_LIMIT_DAYS } from '@/lib/constants';
+import { RESERVATION_INTERVAL_MINUTES_VALUES } from '@/services/convex/shared/types/common';
+import type { ReservationIntervalMinutes } from '@/services/convex/shared/types/common';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -47,12 +45,12 @@ export default function SalonScheduleForm() {
   });
 
   const salonScheduleConfig = useQuery(
-    api.salon.schedule_config.getBySalonId,
+    api.salon.schedule.query.findBySalonId,
     salonId ? { salonId } : 'skip'
   );
 
-  const addSalonScheduleConfig = useMutation(api.salon.schedule_config.add);
-  const updateSalonScheduleConfig = useMutation(api.salon.schedule_config.update);
+  const addSalonScheduleConfig = useMutation(api.salon.schedule.mutation.create);
+  const updateSalonScheduleConfig = useMutation(api.salon.schedule.mutation.update);
 
   const {
     handleSubmit,
@@ -64,6 +62,11 @@ export default function SalonScheduleForm() {
   } = useZodForm(salonScheduleFormSchema);
 
   // フォーム値の変更を監視
+  const defaultSchedule = {
+    reservationLimitDays: '30',
+    availableCancelDays: '3',
+    reservationIntervalMinutes: '0',
+  };
   const reservationLimitDaysValue = watch('reservationLimitDays');
   const availableCancelDaysValue = watch('availableCancelDays');
   const reservationIntervalMinutesValue = watch('reservationIntervalMinutes');
@@ -89,17 +92,17 @@ export default function SalonScheduleForm() {
       const limitDays =
         scheduleLimitDays !== undefined && scheduleLimitDays !== null
           ? String(scheduleLimitDays)
-          : '30';
+          : defaultSchedule.reservationLimitDays;
 
       const cancelDays =
         scheduleCancelDays !== undefined && scheduleCancelDays !== null
           ? String(scheduleCancelDays)
-          : '3';
+          : defaultSchedule.availableCancelDays;
 
       const intervalMinutes =
         scheduleIntervalMinutes !== undefined && scheduleIntervalMinutes !== null
           ? String(scheduleIntervalMinutes)
-          : '30';
+          : defaultSchedule.reservationIntervalMinutes;
 
       // フォーム値をクリアしてから新しい値を設定
       reset({}, { keepValues: false });
@@ -122,9 +125,9 @@ export default function SalonScheduleForm() {
       setTimeout(() => {
         setValue('salonId', salonId);
         setValue('salonScheduleConfigId', undefined);
-        setValue('reservationLimitDays', '30');
-        setValue('availableCancelDays', '3');
-        setValue('reservationIntervalMinutes', '30');
+        setValue('reservationLimitDays', defaultSchedule.reservationLimitDays);
+        setValue('availableCancelDays', defaultSchedule.availableCancelDays);
+        setValue('reservationIntervalMinutes', defaultSchedule.reservationIntervalMinutes);
       }, 0);
     }
   }, [salonScheduleConfig, reset, setValue, salonId]);
@@ -136,19 +139,16 @@ export default function SalonScheduleForm() {
 
       try {
         // 送信データの整形
-        const limitDays = Number(data.reservationLimitDays || '30');
-        const cancelDays = Number(data.availableCancelDays || '3');
-        const intervalMinutes = Number(data.reservationIntervalMinutes || '30') as
-          | 5
-          | 10
-          | 15
-          | 20
-          | 30;
+        const limitDays = Number(data.reservationLimitDays || defaultSchedule.reservationLimitDays);
+        const cancelDays = Number(data.availableCancelDays || defaultSchedule.availableCancelDays);
+        const intervalMinutes = Number(
+          data.reservationIntervalMinutes || defaultSchedule.reservationIntervalMinutes
+        ) as ReservationIntervalMinutes;
 
         if (salonScheduleConfig?._id) {
           // 既存のデータを更新する場合
           await updateSalonScheduleConfig({
-            salonScheduleConfigId: salonScheduleConfig._id,
+            salonId,
             availableCancelDays: cancelDays,
             reservationIntervalMinutes: intervalMinutes,
             reservationLimitDays: limitDays,
@@ -156,11 +156,11 @@ export default function SalonScheduleForm() {
         } else {
           // 新規作成の場合
           await addSalonScheduleConfig({
-             salonId,
-             availableCancelDays: cancelDays,
-             reservationIntervalMinutes: intervalMinutes,
-             reservationLimitDays: limitDays,
-           });
+            salonId,
+            availableCancelDays: cancelDays,
+            reservationIntervalMinutes: intervalMinutes,
+            reservationLimitDays: limitDays,
+          });
         }
 
         toast.success('スケジュール設定を保存しました');
@@ -246,7 +246,7 @@ export default function SalonScheduleForm() {
                     tooltip="予約受付可能日数を設定します"
                   >
                     <Select
-                      value={reservationLimitDaysValue || '30'}
+                      value={reservationLimitDaysValue || defaultSchedule.reservationLimitDays}
                       onValueChange={(value) =>
                         setValue('reservationLimitDays', value, { shouldDirty: true })
                       }
@@ -272,7 +272,7 @@ export default function SalonScheduleForm() {
                     tooltip="予約日の何日前までキャンセル可能かを設定します"
                   >
                     <Select
-                      value={availableCancelDaysValue || '3'}
+                      value={availableCancelDaysValue || defaultSchedule.availableCancelDays}
                       onValueChange={(value) =>
                         setValue('availableCancelDays', value, { shouldDirty: true })
                       }
@@ -301,10 +301,13 @@ export default function SalonScheduleForm() {
                     tooltip="予約の最小時間間隔を設定します"
                   >
                     <Select
-                      value={reservationIntervalMinutesValue || '30'}
+                      value={
+                        reservationIntervalMinutesValue ||
+                        defaultSchedule.reservationIntervalMinutes
+                      }
                       onValueChange={(value) => {
                         // 空の値の場合はデフォルト値の'30'を設定
-                        const validValue = value || '30';
+                        const validValue = value || defaultSchedule.reservationIntervalMinutes;
                         setValue('reservationIntervalMinutes', validValue, { shouldDirty: true });
                       }}
                     >
@@ -312,7 +315,7 @@ export default function SalonScheduleForm() {
                         <SelectValue placeholder="予約間隔を選択" />
                       </SelectTrigger>
                       <SelectContent>
-                        {SALON_SCHEDULE_INTERVAL_MINUTES.map((value) => (
+                        {RESERVATION_INTERVAL_MINUTES_VALUES.map((value) => (
                           <SelectItem key={value} value={String(value)}>
                             {value}分
                           </SelectItem>

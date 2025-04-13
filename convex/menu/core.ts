@@ -1,11 +1,19 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { removeEmptyFields, KillRecord, archiveRecord } from '../shared/utils/helper';
+import {
+  removeEmptyFields,
+  killRecord,
+  archiveRecord,
+} from '../../services/convex/shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { validateMenu, validateRequired } from '../shared/utils/validation';
-import { checkAuth } from '../shared/utils/auth';
-import { ConvexCustomError } from '../shared/utils/error';
-import { genderType, targetType, menuPaymentMethodType } from '../shared/types/common';
+import { validateMenu, validateRequired } from '../../services/convex/shared/utils/validation';
+import { checkAuth } from '../../services/convex/shared/utils/auth';
+import { ConvexCustomError } from '../../services/convex/shared/utils/error';
+import {
+  genderType,
+  targetType,
+  menuPaymentMethodType,
+} from '../../services/convex/shared/types/common';
 
 // メニューの追加
 export const add = mutation({
@@ -133,7 +141,7 @@ export const kill = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateRequired(args.menuId, 'menuId');
-    await KillRecord(ctx, args.menuId);
+    await killRecord(ctx, args.menuId);
   },
 });
 

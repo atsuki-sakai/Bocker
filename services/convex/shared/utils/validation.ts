@@ -1,5 +1,5 @@
-import { Doc } from '../../_generated/dataModel';
-import { ConvexCustomError } from '../../shared/utils/error';
+import { Doc } from '../../../../convex/_generated/dataModel';
+import { ConvexCustomError } from './error';
 import {
   MAX_TEXT_LENGTH,
   LIMIT_USE_COUPON_COUNT,
@@ -23,6 +23,13 @@ import {
   MAX_NUM,
 } from '../../constants';
 
+import {
+  SubscriptionBillingPortalSessionInput,
+  SubscriptionConfirmSubscriptionUpdateInput,
+  SubscriptionUpdatePreviewInput,
+  SubscriptionPaymentFailedInput,
+} from '@/services/convex/types/subscription';
+
 //================================================
 // COMMON
 //================================================
@@ -39,9 +46,22 @@ export function validateRequired(
   fieldName: string = 'フィールド'
 ): boolean {
   if (value === undefined || value === null || value.trim() === '') {
-    throw new ConvexCustomError('low', `${fieldName}は必須項目です`, 'VALIDATION_ERROR', 400, {
+    throw new ConvexCustomError('low', `${fieldName}は必須項目です`, 'VALIDATION', 400, {
       field: fieldName,
     });
+  }
+  if (value.length > MAX_TEXT_LENGTH) {
+    throw new ConvexCustomError(
+      'low',
+      `${fieldName}は${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      'VALIDATION',
+      400,
+      {
+        field: fieldName,
+        value,
+        maxLength: MAX_TEXT_LENGTH,
+      }
+    );
   }
   return true;
 }
@@ -59,7 +79,7 @@ export function validateRequiredNumber(
   fieldName: string = 'フィールド'
 ): boolean {
   if (value === undefined || value === null) {
-    throw new ConvexCustomError('low', `${fieldName}は必須項目です`, 'VALIDATION_ERROR', 400, {
+    throw new ConvexCustomError('low', `${fieldName}は必須項目です`, 'VALIDATION', 400, {
       field: fieldName,
     });
   }
@@ -84,7 +104,7 @@ export function validateStringLength(
     throw new ConvexCustomError(
       'low',
       `${fieldName}は${maxLength}文字以内で入力してください`,
-      'VALIDATION_ERROR',
+      'VALIDATION',
       400,
       {
         field: fieldName,
@@ -117,7 +137,7 @@ export function validateNumberRange(
       throw new ConvexCustomError(
         'low',
         `${fieldName}は${min}以上で入力してください`,
-        'VALIDATION_ERROR',
+        'VALIDATION',
         400,
         {
           field: fieldName,
@@ -130,7 +150,7 @@ export function validateNumberRange(
       throw new ConvexCustomError(
         'low',
         `${fieldName}は${max}以下で入力してください`,
-        'VALIDATION_ERROR',
+        'VALIDATION',
         400,
         {
           field: fieldName,
@@ -161,7 +181,7 @@ export function validateEmail(
       throw new ConvexCustomError(
         'low',
         `${fieldName}の形式が正しくありません`,
-        'VALIDATION_ERROR',
+        'VALIDATION',
         400,
         {
           field: fieldName,
@@ -173,7 +193,7 @@ export function validateEmail(
       throw new ConvexCustomError(
         'low',
         `${fieldName}は${MAX_TEXT_LENGTH}文字以内で入力してください`,
-        'VALIDATION_ERROR',
+        'VALIDATION',
         400,
         {
           field: fieldName,
@@ -208,7 +228,7 @@ export function validatePhone(
       throw new ConvexCustomError(
         'low',
         `${fieldName}の形式が正しくありません`,
-        'VALIDATION_ERROR',
+        'VALIDATION',
         400,
         {
           field: fieldName,
@@ -238,7 +258,7 @@ export function validateDateStrFormat(
       throw new ConvexCustomError(
         'low',
         `${fieldName}はYYYY-MM-DD形式で入力してください`,
-        'VALIDATION_ERROR',
+        'VALIDATION',
         400,
         {
           field: fieldName,
@@ -253,7 +273,7 @@ export function validateDateStrFormat(
       throw new ConvexCustomError(
         'low',
         `${fieldName}が有効な日付ではありません`,
-        'VALIDATION_ERROR',
+        'VALIDATION',
         400,
         {
           field: fieldName,
@@ -283,7 +303,7 @@ export function validateHourMinuteFormat(
       throw new ConvexCustomError(
         'low',
         `${fieldName}はHH:MM形式で入力してください`,
-        'VALIDATION_ERROR',
+        'VALIDATION',
         400,
         {
           field: fieldName,
@@ -314,7 +334,7 @@ export function validatePostalCode(
       throw new ConvexCustomError(
         'low',
         `${fieldName}はXXX-XXXXまたはXXXXXXX形式で入力してください`,
-        'VALIDATION_ERROR',
+        'VALIDATION',
         400,
         {
           field: fieldName,
@@ -344,7 +364,7 @@ export function validateTags(
       throw new ConvexCustomError(
         'low',
         `${fieldName}は${LIMIT_TAG_COUNT}個以内で入力してください`,
-        'VALIDATION_ERROR',
+        'VALIDATION',
         400,
         {
           field: fieldName,
@@ -360,7 +380,7 @@ export function validateTags(
         throw new ConvexCustomError(
           'low',
           `${fieldName}は1つあたり${MAX_TAG_LENGTH}文字以内で入力してください`,
-          'VALIDATION_ERROR',
+          'VALIDATION',
           400,
           {
             field: fieldName,
@@ -553,7 +573,7 @@ export function validateCustomerDetail(args: Partial<Doc<'customer_detail'>>) {
     args.gender !== 'male' &&
     args.gender !== 'female'
   ) {
-    throw new ConvexCustomError('low', '性別の選択肢が不正です', 'VALIDATION_ERROR', 400, {});
+    throw new ConvexCustomError('low', '性別の選択肢が不正です', 'VALIDATION', 400, {});
   }
 
   if (
@@ -565,7 +585,7 @@ export function validateCustomerDetail(args: Partial<Doc<'customer_detail'>>) {
     throw new ConvexCustomError(
       'low',
       '性別はunselected、male、femaleのいずれかで入力してください',
-      'VALIDATION_ERROR',
+      'VALIDATION',
       400,
       {}
     );
@@ -574,7 +594,7 @@ export function validateCustomerDetail(args: Partial<Doc<'customer_detail'>>) {
     throw new ConvexCustomError(
       'low',
       `メモは${MAX_NOTES_LENGTH}文字以内で入力してください`,
-      'VALIDATION_ERROR',
+      'VALIDATION',
       400,
       {}
     );
@@ -683,7 +703,7 @@ export function validatePointConfig(args: Partial<Doc<'point_config'>>) {
     throw new ConvexCustomError(
       'low',
       '固定ポイント設定時は固定ポイント値を設定してください',
-      'VALIDATION_ERROR',
+      'VALIDATION',
       400,
       {}
     );
@@ -860,6 +880,9 @@ export function validateStaffAuth(args: Partial<Doc<'staff_auth'>>) {
   if (args.pinCode) {
     validateStringLength(args.pinCode, MAX_PIN_CODE_LENGTH, 'ピンコード');
   }
+  if (args.organizationId) {
+    validateStringLength(args.organizationId, MAX_TEXT_LENGTH, '組織ID');
+  }
   if (args.hashPinCode) {
     validateStringLength(
       args.hashPinCode,
@@ -905,7 +928,7 @@ export function validateTimeCard(args: Partial<Doc<'time_card'>>) {
       throw new ConvexCustomError(
         'low',
         '開始時間は終了時間よりも前にしてください',
-        'VALIDATION_ERROR',
+        'VALIDATION',
         400,
         {}
       );
@@ -933,13 +956,7 @@ export function validateSubscription(args: Partial<Doc<'subscription'>>) {
     validateStringLength(args.status, MAX_TEXT_LENGTH, 'ステータス');
   }
   if (args.stripeCustomerId && args.stripeCustomerId === '') {
-    throw new ConvexCustomError(
-      'low',
-      'Stripe顧客IDが指定されていません',
-      'VALIDATION_ERROR',
-      400,
-      {}
-    );
+    throw new ConvexCustomError('low', 'Stripe顧客IDが指定されていません', 'VALIDATION', 400, {});
   }
   if (args.priceId) {
     validateStringLength(args.priceId, MAX_TEXT_LENGTH, '価格ID');
@@ -949,11 +966,7 @@ export function validateSubscription(args: Partial<Doc<'subscription'>>) {
   }
 }
 
-export function validateSubscriptionUpdate(args: {
-  subscriptionId?: string;
-  newPriceId?: string;
-  customerId?: string;
-}) {
+export function validateSubscriptionUpdatePreview(args: SubscriptionUpdatePreviewInput) {
   if (args.subscriptionId) {
     validateStringLength(args.subscriptionId, MAX_TEXT_LENGTH, 'サブスクリプションID');
   }
@@ -962,5 +975,48 @@ export function validateSubscriptionUpdate(args: {
   }
   if (args.newPriceId) {
     validateStringLength(args.newPriceId, MAX_TEXT_LENGTH, '新しい価格ID');
+  }
+}
+
+export function validateSubscriptionBillingPortalSession(
+  args: SubscriptionBillingPortalSessionInput
+) {
+  if (args.stripeCustomerId) {
+    validateStringLength(args.stripeCustomerId, MAX_TEXT_LENGTH, 'Stripe顧客ID');
+  }
+  if (args.returnUrl) {
+    validateStringLength(args.returnUrl, MAX_TEXT_LENGTH, 'リターンURL');
+  }
+}
+
+export function validateConfirmSubscriptionUpdate(
+  args: SubscriptionConfirmSubscriptionUpdateInput
+) {
+  if (args.subscriptionId) {
+    validateStringLength(args.subscriptionId, MAX_TEXT_LENGTH, 'サブスクリプションID');
+  }
+  if (args.newPriceId) {
+    validateStringLength(args.newPriceId, MAX_TEXT_LENGTH, '新しい価格ID');
+  }
+  if (args.items) {
+    if (args.items.length === 0) {
+      throw new ConvexCustomError('low', 'アイテムが指定されていません', 'VALIDATION', 400, {});
+    }
+    for (const item of args.items) {
+      validateStringLength(item.id, MAX_TEXT_LENGTH, 'アイテムID');
+      validateStringLength(item.price, MAX_TEXT_LENGTH, '価格');
+    }
+  }
+}
+
+export function validatePaymentFailed(args: SubscriptionPaymentFailedInput) {
+  if (args.subscriptionId) {
+    validateStringLength(args.subscriptionId, MAX_TEXT_LENGTH, 'サブスクリプションID');
+  }
+  if (args.stripeCustomerId) {
+    validateStringLength(args.stripeCustomerId, MAX_TEXT_LENGTH, 'Stripe顧客ID');
+  }
+  if (args.transactionId) {
+    validateStringLength(args.transactionId, MAX_TEXT_LENGTH, 'トランザクションID');
   }
 }

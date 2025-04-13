@@ -148,7 +148,7 @@ export default function StaffDetails() {
   );
 
   const staffKill = useMutation(api.staff.core.killRelatedTables);
-  const deleteImage = useAction(api.storage.core.deleteImage);
+  const deleteImage = useAction(api.storage.action.kill);
 
   if (!staffAllData && !isDeleting) return <Loading />;
 

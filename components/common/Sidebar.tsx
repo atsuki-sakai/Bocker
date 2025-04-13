@@ -43,7 +43,7 @@ function classNames(...classes: string[]) {
 
 interface SidebarProps {
   children: React.ReactNode;
-  preloadedSalon: Preloaded<typeof api.salon.core.getClerkId>;
+  preloadedSalon: Preloaded<typeof api.salon.core.query.findByClerkId>;
 }
 
 export default function Sidebar({ children, preloadedSalon }: SidebarProps) {

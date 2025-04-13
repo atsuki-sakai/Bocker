@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { stripeConnect } from '@/services/stripe/StripeConnect';
+import { stripeService } from '@/services/stripe';
 
 export async function POST(request: Request) {
   try {
@@ -8,14 +8,10 @@ export async function POST(request: Request) {
     const { accountId, salonId } = await request.json();
 
     if (!accountId) {
-      console.error('Missing account ID in request');
       return NextResponse.json({ error: 'アカウントIDが必要です' }, { status: 400 });
     }
-
-    console.log(`Generating login link for account: ${accountId}, salon: ${salonId}`);
-
     // StripeConnectクラスを使用してログインリンクを生成
-    const result = await stripeConnect.createDashboardLoginLink(accountId);
+    const result = await stripeService.createDashboardLoginLink(accountId);
 
     if (result.success && result.data) {
       // 成功した場合はURLとisOnboardingフラグを返す

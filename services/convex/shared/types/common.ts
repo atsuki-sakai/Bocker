@@ -1,7 +1,7 @@
 import { v, Infer } from 'convex/values';
 
 // 共通の型定義
-export const commonFields = {
+export const CommonFields = {
   isArchive: v.optional(v.boolean()), // 論理削除フラグ
   deletedAt: v.optional(v.number()), // 論理削除日時 (UNIXタイム)
 };
@@ -55,7 +55,9 @@ export const reservationStatusType = v.union(
 export type ReservationStatus = Infer<typeof reservationStatusType>;
 
 // 予約間隔の型定義
-export const RESERVATION_INTERVAL_MINUTES_VALUES = [0, 5, 10, 15, 20, 30] as const;
+export const RESERVATION_INTERVAL_MINUTES_VALUES = [
+  0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,
+] as const;
 export const reservationIntervalMinutesType = v.union(
   ...RESERVATION_INTERVAL_MINUTES_VALUES.map((minutes) => v.literal(minutes))
 );

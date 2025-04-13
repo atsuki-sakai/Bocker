@@ -1,9 +1,16 @@
 import { mutation, query } from "./../_generated/server";
 import { v } from "convex/values";
-import { removeEmptyFields, archiveRecord, KillRecord } from './../shared/utils/helper';
-import { validateCustomerPoints, validateRequired } from './../shared/utils/validation';
-import { checkAuth } from './../shared/utils/auth';
-import { ConvexCustomError } from './../shared/utils/error';
+import {
+  removeEmptyFields,
+  archiveRecord,
+  killRecord,
+} from '../../services/convex/shared/utils/helper';
+import {
+  validateCustomerPoints,
+  validateRequired,
+} from '../../services/convex/shared/utils/validation';
+import { checkAuth } from '../../services/convex/shared/utils/auth';
+import { ConvexCustomError } from '../../services/convex/shared/utils/error';
 
 // 顧客ポイントの追加
 export const add = mutation({
@@ -119,7 +126,7 @@ export const kill = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateRequired(args.customerPointsId, 'customerPointsId');
-    await KillRecord(ctx, args.customerPointsId);
+    await killRecord(ctx, args.customerPointsId);
   },
 });
 

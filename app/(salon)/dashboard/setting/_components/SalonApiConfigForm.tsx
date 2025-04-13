@@ -58,11 +58,11 @@ const ApiSettingsCard = () => {
 
   // すべてのフックをここでトップレベルで宣言
   const salonApiConfig = useQuery(
-    api.salon.api_config.getBySalonId,
+    api.salon.api_config.query.findBySalonId,
     salonId ? { salonId } : 'skip'
   );
-  const updateSalonApiConfig = useMutation(api.salon.api_config.update);
-  const addSalonApiConfig = useMutation(api.salon.api_config.add);
+  const updateSalonApiConfig = useMutation(api.salon.api_config.mutation.update);
+  const createSalonApiConfig = useMutation(api.salon.api_config.mutation.create);
 
   // フォーム管理（useZodFormを使用）
   const {
@@ -91,10 +91,10 @@ const ApiSettingsCard = () => {
         if (salonApiConfig) {
           await updateSalonApiConfig({
             ...data,
-            salonApiConfigId: salonApiConfig._id,
+            salonId,
           });
         } else {
-          await addSalonApiConfig({
+          await createSalonApiConfig({
             ...data,
             salonId,
           });
@@ -111,7 +111,7 @@ const ApiSettingsCard = () => {
         setSubmitting(false);
       }
     },
-    [updateSalonApiConfig, addSalonApiConfig, salonApiConfig, salonId]
+    [updateSalonApiConfig, createSalonApiConfig, salonApiConfig, salonId]
   );
 
   const handleShowFields = (

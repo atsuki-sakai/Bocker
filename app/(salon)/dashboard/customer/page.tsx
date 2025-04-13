@@ -12,8 +12,8 @@ export default function CustomerPage() {
   const { salonId, isLoading: isSalonLoading } = useSalon();
   
   const isSubscribed = useQuery(
-    api.subscription.core.isSubscribed,
-    salonId ? { salonId } : "skip"
+    api.subscription.query.isSubscribed,
+    salonId ? { salonId } : 'skip'
   );
 
   useEffect(() => {

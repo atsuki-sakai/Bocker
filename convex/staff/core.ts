@@ -1,11 +1,15 @@
 import { mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
-import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
+import {
+  removeEmptyFields,
+  archiveRecord,
+  killRecord,
+} from '@/services/convex/shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { validateStaff, validateRequired } from '../shared/utils/validation';
-import { checkAuth } from '../shared/utils/auth';
-import { ConvexCustomError } from '../shared/utils/error';
-import { genderType } from '../shared/types/common';
+import { validateStaff, validateRequired } from '@/services/convex/shared/utils/validation';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { genderType } from '@/services/convex/shared/types/common';
 // スタッフの追加
 export const add = mutation({
   args: {
@@ -132,13 +136,13 @@ export const killRelatedTables = mutation({
     checkAuth(ctx);
 
     if (args.staffConfigId) {
-      await KillRecord(ctx, args.staffConfigId);
+      await killRecord(ctx, args.staffConfigId);
     }
     if (args.staffAuthId) {
-      await KillRecord(ctx, args.staffAuthId);
+      await killRecord(ctx, args.staffAuthId);
     }
     if (args.staffId) {
-      await KillRecord(ctx, args.staffId);
+      await killRecord(ctx, args.staffId);
     }
     return {
       deletedStaffConfigId: args.staffConfigId,

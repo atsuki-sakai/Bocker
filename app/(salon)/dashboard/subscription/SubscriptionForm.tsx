@@ -20,8 +20,8 @@ const baseUrl =
     : process.env.NEXT_PUBLIC_DEPLOY_URL;
 
 interface SubscriptionFormProps {
-  salonPreloaded: Preloaded<typeof api.salon.core.getClerkId>;
-  subscriptionPreloaded: Preloaded<typeof api.subscription.core.get>;
+  salonPreloaded: Preloaded<typeof api.salon.core.query.findByClerkId>;
+  subscriptionPreloaded: Preloaded<typeof api.subscription.query.findByStripeCustomerId>;
 }
 
 export default function SubscriptionForm({
@@ -41,12 +41,12 @@ export default function SubscriptionForm({
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
   const [updatePlanIdStr, setupdatePlanIdStr] = useState<string | null>(null);
 
-  const createSession = useAction(api.subscription.core.createSubscriptionSession);
-  const createBillingPortal = useAction(api.subscription.core.createBillingPortalSession);
+  const createSession = useAction(api.subscription.action.createSubscriptionSession);
+  const createBillingPortal = useAction(api.subscription.action.createBillingPortalSession);
   const getSubscriptionUpdatePreview = useAction(
-    api.subscription.stripe.getSubscriptionUpdatePreview
+    api.subscription.action.getSubscriptionUpdatePreview
   );
-  const confirmSubscriptionUpdate = useAction(api.subscription.stripe.confirmSubscriptionUpdate);
+  const confirmSubscriptionUpdate = useAction(api.subscription.action.confirmSubscriptionUpdate);
 
   // データの準備
   const currentPlanStr = subscription?.planName || null;

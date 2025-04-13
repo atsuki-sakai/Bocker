@@ -1,11 +1,18 @@
-import { mutation, query } from "./../_generated/server";
-import { v } from "convex/values";
-import { removeEmptyFields, archiveRecord, KillRecord } from './../shared/utils/helper';
-import { genderType } from './../shared/types/common';
-import { validateCustomerDetail, validateRequired } from './../shared/utils/validation';
-import { checkAuth } from './../shared/utils/auth';
-import { ConvexCustomError } from './../shared/utils/error';
-import { updateType } from './../shared/types/common';
+import { mutation, query } from './../_generated/server';
+import { v } from 'convex/values';
+import {
+  removeEmptyFields,
+  archiveRecord,
+  killRecord,
+} from '@/services/convex/shared/utils/helper';
+import { genderType } from '@/services/convex/shared/types/common';
+import {
+  validateCustomerDetail,
+  validateRequired,
+} from '@/services/convex/shared/utils/validation';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { updateType } from '@/services/convex/shared/types/common';
 // 顧客詳細情報の追加
 export const add = mutation({
   args: {
@@ -149,7 +156,7 @@ export const kill = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateRequired(args.detailId, 'detailId');
-    return await KillRecord(ctx, args.detailId);
+    return await killRecord(ctx, args.detailId);
   },
 });
 

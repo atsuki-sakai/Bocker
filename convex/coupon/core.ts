@@ -1,11 +1,15 @@
 import { mutation, query } from './../_generated/server';
 import { v } from 'convex/values';
-import { removeEmptyFields, archiveRecord, KillRecord } from './../shared/utils/helper';
+import {
+  removeEmptyFields,
+  archiveRecord,
+  killRecord,
+} from '../../services/convex/shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { validateCoupon, validateRequired } from './../shared/utils/validation';
-import { checkAuth } from './../shared/utils/auth';
-import { ConvexCustomError } from './../shared/utils/error';
-import { couponDiscountType } from './../shared/types/common';
+import { validateCoupon, validateRequired } from '../../services/convex/shared/utils/validation';
+import { checkAuth } from '../../services/convex/shared/utils/auth';
+import { ConvexCustomError } from '../../services/convex/shared/utils/error';
+import { couponDiscountType } from '../../services/convex/shared/types/common';
 // クーポンの追加
 export const add = mutation({
   args: {
@@ -139,8 +143,8 @@ export const killRelatedTables = mutation({
         ...args,
       });
     }
-    await KillRecord(ctx, args.couponId);
-    await KillRecord(ctx, couponConfig._id);
+    await killRecord(ctx, args.couponId);
+    await killRecord(ctx, couponConfig._id);
 
     return {
       deletedCouponId: args.couponId,

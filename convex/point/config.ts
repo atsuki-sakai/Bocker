@@ -1,9 +1,13 @@
-import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
-import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
-import { validatePointConfig, validateRequired } from '../shared/utils/validation';
-import { checkAuth } from '../shared/utils/auth';
-import { ConvexCustomError } from '../shared/utils/error';
+import { mutation, query } from '../_generated/server';
+import { v } from 'convex/values';
+import {
+  removeEmptyFields,
+  archiveRecord,
+  killRecord,
+} from '@/services/convex/shared/utils/helper';
+import { validatePointConfig, validateRequired } from '@/services/convex/shared/utils/validation';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 
 export const add = mutation({
   args: {
@@ -130,6 +134,6 @@ export const kill = mutation({
   handler: async (ctx, args) => {
     validateRequired(args.salonId, 'salonId');
     checkAuth(ctx);
-    return await KillRecord(ctx, args.salonId);
+    return await killRecord(ctx, args.salonId);
   },
 });

@@ -84,8 +84,8 @@ export default function StaffList() {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {staffs && staffs.length > 0 ? (
-                  staffs.map((staff: Doc<'staff'>) => (
-                    <tr key={staff.email}>
+                  staffs.map((staff: Doc<'staff'>, index: number) => (
+                    <tr key={index}>
                       <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6">
                         {staff.isActive ? (
                           <Badge variant="outline" className="bg-green-600 text-white">

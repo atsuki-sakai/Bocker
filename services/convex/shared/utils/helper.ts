@@ -1,7 +1,6 @@
-import { MutationCtx } from '../../_generated/server';
-import { DataModel } from '../../_generated/dataModel';
-import { Id } from '../../_generated/dataModel';
-import { PropertyValidators } from 'convex/values';
+import { MutationCtx } from '../../../../convex/_generated/server';
+import { DataModel } from '../../../../convex/_generated/dataModel';
+import { Id } from '../../../../convex/_generated/dataModel';
 import { v } from 'convex/values';
 import { ConvexCustomError } from './error';
 
@@ -48,6 +47,31 @@ export const removeEmptyFields = <T extends Record<string, unknown>>(
 };
 
 /**
+ * オブジェクトから指定したフィールドを除外する
+ *
+ * @param obj 元のオブジェクト
+ * @param keysToExclude 除外するフィールド名の配列
+ * @returns 指定したフィールドを除外した新しいオブジェクト
+ *
+ * @example
+ * const user = { id: 1, name: 'John', password: '123456', email: 'john@example.com' };
+ * const safeUser = excludeFields(user, ['password']);
+ * // => { id: 1, name: 'John', email: 'john@example.com' }
+ */
+export function excludeFields<T extends Record<string, any>, K extends keyof T>(
+  obj: T,
+  keysToExclude: K[]
+): Omit<T, K> {
+  const result = { ...obj };
+
+  keysToExclude.forEach((key) => {
+    delete result[key];
+  });
+
+  return result;
+}
+
+/**
  * レコードを論理削除
  * @param ctx Convexコンテキスト
  * @param id レコードID
@@ -76,7 +100,7 @@ export async function archiveRecord<T extends keyof DataModel>(ctx: MutationCtx,
  * @param ctx Convexコンテキスト
  * @param id レコードID
  */
-export async function KillRecord<T extends keyof DataModel>(ctx: MutationCtx, id: Id<T>) {
+export async function killRecord<T extends keyof DataModel>(ctx: MutationCtx, id: Id<T>) {
   const record = await ctx.db.get(id);
   if (!record || record.isArchive) {
     throw new ConvexCustomError(

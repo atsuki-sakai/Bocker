@@ -1,12 +1,18 @@
 import { mutation, query } from "../_generated/server";
 import { v } from 'convex/values';
-import { removeEmptyFields, KillRecord, archiveRecord } from '../shared/utils/helper';
+import {
+  removeEmptyFields,
+  killRecord,
+  archiveRecord,
+} from '../../services/convex/shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { validatePointTransaction, validateRequired } from '../shared/utils/validation';
-import { pointTransactionType } from '../shared/types/common';
-import { checkAuth } from '../shared/utils/auth';
-import { ConvexCustomError } from '../shared/utils/error';
-import { reservationStatusType } from '../shared/types/common';
+import {
+  validatePointTransaction,
+  validateRequired,
+} from '@/services/convex/shared/utils/validation';
+import { pointTransactionType } from '@/services/convex/shared/types/common';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 // ポイント取引の追加
 export const add = mutation({
   args: {
@@ -140,7 +146,7 @@ export const kill = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateRequired(args.pointTransactionId, 'pointTransactionId');
-    return await KillRecord(ctx, args.pointTransactionId);
+    return await killRecord(ctx, args.pointTransactionId);
   },
 });
 

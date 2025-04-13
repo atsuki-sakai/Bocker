@@ -1,15 +1,20 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { removeEmptyFields, archiveRecord, KillRecord } from '../shared/utils/helper';
-import { validateStaffAuth, validateRequired } from '../shared/utils/validation';
-import { roleType } from '../shared/types/common';
-import { checkAuth } from '../shared/utils/auth';
-import { ConvexCustomError } from '../shared/utils/error';
+import {
+  removeEmptyFields,
+  archiveRecord,
+  killRecord,
+} from '@/services/convex/shared/utils/helper';
+import { validateStaffAuth, validateRequired } from '@/services/convex/shared/utils/validation';
+import { roleType } from '@/services/convex/shared/types/common';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 
 // スタッフ認証の追加
 export const add = mutation({
   args: {
     staffId: v.id('staff'),
+    organizationId: v.optional(v.string()),
     pinCode: v.optional(v.string()),
     hashPinCode: v.optional(v.string()),
     role: v.optional(roleType),
@@ -35,6 +40,7 @@ export const add = mutation({
 export const update = mutation({
   args: {
     staffAuthId: v.id('staff_auth'),
+    organizationId: v.optional(v.string()),
     pinCode: v.optional(v.string()),
     hashPinCode: v.optional(v.string()),
     role: v.optional(roleType),
@@ -74,6 +80,7 @@ export const upsert = mutation({
   args: {
     staffAuthId: v.id('staff_auth'),
     staffId: v.id('staff'),
+    organizationId: v.optional(v.string()),
     pinCode: v.optional(v.string()),
     hashPinCode: v.optional(v.string()),
     role: v.optional(roleType),
@@ -104,7 +111,7 @@ export const kill = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateRequired(args.staffAuthId, 'staffAuthId');
-    return await KillRecord(ctx, args.staffAuthId);
+    return await killRecord(ctx, args.staffAuthId);
   },
 });
 

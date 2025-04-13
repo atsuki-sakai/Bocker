@@ -1,10 +1,14 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { removeEmptyFields, KillRecord, archiveRecord } from '../shared/utils/helper';
+import {
+  removeEmptyFields,
+  killRecord,
+  archiveRecord,
+} from '@/services/convex/shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
-import { validatePointQueue, validateRequired } from '../shared/utils/validation';
-import { checkAuth } from '../shared/utils/auth';
-import { ConvexCustomError } from '../shared/utils/error';
+import { validatePointQueue, validateRequired } from '@/services/convex/shared/utils/validation';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
+import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 // ポイントキューの追加
 export const add = mutation({
   args: {
@@ -122,7 +126,7 @@ export const kill = mutation({
     checkAuth(ctx);
     validateRequired(args.pointQueueId, 'pointQueueId');
 
-    return await KillRecord(ctx, args.pointQueueId);
+    return await killRecord(ctx, args.pointQueueId);
   },
 });
 

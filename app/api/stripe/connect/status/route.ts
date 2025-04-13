@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { stripeConnect } from '@/services/stripe/StripeConnect';
+import { stripeService } from '@/services/stripe';
 
 export async function POST(request: Request) {
   try {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     // StripeServiceを使用してステータスを更新
-    const result = await stripeConnect.checkAndUpdateAccountStatus(salonId, accountId);
+    const result = await stripeService.checkAndUpdateAccountStatus(salonId, accountId);
 
     // 結果を返す
     if (result.success && result.data) {
@@ -36,7 +36,6 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
-    console.error('Error updating Stripe Connect status:', error);
     return NextResponse.json(
       {
         success: false,

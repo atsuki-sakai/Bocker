@@ -5,8 +5,8 @@
  * ユーザー認証チェックや権限管理などの機能を一元化します。
  */
 
-import { MutationCtx, QueryCtx, ActionCtx } from '../../_generated/server';
-import { Id } from '../../_generated/dataModel';
+import { MutationCtx, QueryCtx, ActionCtx } from '../../../../convex/_generated/server';
+import { Id } from '../../../../convex/_generated/dataModel';
 import { ConvexCustomError } from './error';
 import type { UserIdentity } from 'convex/server';
 import type { Role } from '../types/common';
@@ -62,13 +62,6 @@ export async function checkSalonAccess(
   // 管理者の場合は常に許可（設定に応じて）
   if (allowAdmin && isAdmin(identity)) {
     return true;
-  }
-
-  // ユーザーIDとサロンのClerkIDを比較
-  if (identity && salon.clerkId !== identity.tokenIdentifier) {
-    throw new ConvexCustomError('low', 'サロンにアクセスできません', 'AUTHORIZATION', 403, {
-      salonId,
-    });
   }
 
   return true;
