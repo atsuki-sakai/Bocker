@@ -33,6 +33,13 @@ const salonScheduleFormSchema = z.object({
   reservationIntervalMinutes: z.string().optional(),
 });
 
+// フォーム値の変更を監視
+const defaultSchedule = {
+  reservationLimitDays: '30',
+  availableCancelDays: '3',
+  reservationIntervalMinutes: '0',
+};
+
 export default function SalonScheduleForm() {
   const { salonId } = useSalon();
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -61,12 +68,6 @@ export default function SalonScheduleForm() {
     formState: { errors, isSubmitting, isDirty },
   } = useZodForm(salonScheduleFormSchema);
 
-  // フォーム値の変更を監視
-  const defaultSchedule = {
-    reservationLimitDays: '30',
-    availableCancelDays: '3',
-    reservationIntervalMinutes: '0',
-  };
   const reservationLimitDaysValue = watch('reservationLimitDays');
   const availableCancelDaysValue = watch('availableCancelDays');
   const reservationIntervalMinutesValue = watch('reservationIntervalMinutes');
@@ -132,7 +133,7 @@ export default function SalonScheduleForm() {
     }
   }, [salonScheduleConfig, reset, setValue, salonId]);
 
-  // フォーム送信処理
+  // フォーム送信処理å
   const onSubmit = useCallback(
     async (data: z.infer<typeof salonScheduleFormSchema>) => {
       if (!salonId) return;
