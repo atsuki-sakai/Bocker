@@ -81,7 +81,7 @@ export class BaseRepository<T extends TableNames> {
    * @returns 作成されたデータのID
    */
   async create(ctx: MutationCtx, data: WithoutSystemFields<Doc<T>>): Promise<Id<T>> {
-    return await ctx.db.insert(this.tableName, data);
+    return await ctx.db.insert(this.tableName, { ...data });
   }
 
   /**
