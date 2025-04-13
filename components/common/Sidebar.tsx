@@ -52,6 +52,8 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   const { isSignedIn } = useAuth();
   const salon = usePreloadedQuery(preloadedSalon);
 
+  console.log('preloadedSalon', preloadedSalon);
+
   const {
     isAuthenticated: isStaffAuthenticated,
     logout: staffLogout,
@@ -78,7 +80,6 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
       staffLogout(salonId);
     }
   };
-  console.log('salon', salon);
   // navigation の current は削除し、表示時に pathname と比較する
   const navigation = [
     {
