@@ -39,7 +39,7 @@ export class SalonRepository extends BaseRepository<'salon'> {
   }
   async createSalon(ctx: MutationCtx, data: SalonCreateInput): Promise<Id<'salon'>> {
     // サロンデータ作成
-    return await this.create(ctx, data);
+    return await this.create(ctx, { ...data, isArchive: false });
   }
 
   async updateSalon(
