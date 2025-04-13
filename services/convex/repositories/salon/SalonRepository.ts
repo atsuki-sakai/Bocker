@@ -37,7 +37,7 @@ export class SalonRepository extends BaseRepository<'salon'> {
       )
       .first();
   }
-  async create(ctx: MutationCtx, data: SalonCreateInput): Promise<Id<'salon'>> {
+  async createSalon(ctx: MutationCtx, data: SalonCreateInput): Promise<Id<'salon'>> {
     // サロンデータ作成
     return await this.create(ctx, data);
   }
@@ -65,7 +65,24 @@ export class SalonRepository extends BaseRepository<'salon'> {
   }
 
   async upsert(ctx: MutationCtx, id: Id<'salon'>, data: SalonCreateInput): Promise<Id<'salon'>> {
-    return await this.upsert(ctx, id, data);
+    if (!id) {
+      throw new ConvexCustomError('low', 'サロンIDが必要です', 'INVALID_ARGUMENT', 400, {
+        ...data,
+      });
+    }
+
+    const existing = await this.find(ctx, id);
+
+    if (existing) {
+      await this.update(ctx, existing._id, data);
+      return existing._id;
+    } else {
+      // salonIdが存在することを保証したデータを作成
+      const createData = {
+        ...data,
+      };
+      return await this.create(ctx, createData);
+    }
   }
 
   async updateSubscription(
