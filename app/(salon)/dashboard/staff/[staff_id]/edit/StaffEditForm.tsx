@@ -12,7 +12,11 @@ import { ImageDrop, Loading, Dialog } from '@/components/common';
 import { ExclusionMenu } from '@/components/common';
 import { z } from 'zod';
 import { Gender, Role, GENDER_VALUES, ROLE_VALUES } from '@/services/convex/shared/types/common';
-import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH, MAX_PIN_CODE_LENGTH } from '@/convex/constants';
+import {
+  MAX_NOTES_LENGTH,
+  MAX_TEXT_LENGTH,
+  MAX_PIN_CODE_LENGTH,
+} from '@/services/convex/constants';
 import { Textarea } from '@/components/ui/textarea';
 import { ZodTextField } from '@/components/common';
 import {

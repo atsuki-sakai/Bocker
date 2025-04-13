@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { stripeConnect } from '@/services/stripe/StripeConnect';
+import { stripeService } from '@/services/stripe/StripeService';
 
 export async function POST(request: Request) {
   try {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     // StripeConnectクラスを使用してアカウント連携を行う
-    const result = await stripeConnect.createConnectAccountLink(salonId);
+    const result = await stripeService.createConnectAccountLink(salonId);
 
     if (!result.success || !result.data) {
       return NextResponse.json({ error: result.error }, { status: 400 });

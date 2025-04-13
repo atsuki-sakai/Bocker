@@ -150,8 +150,8 @@ export default function StaffLoginForm() {
       const salonInfoList: SalonInfo[] = [];
       for (const staff of staffListResult.page as StaffData[]) {
         try {
-          const salonConfig = await fetchQuery(api.salon.core.get, {
-            id: staff.salonId,
+          const salonConfig = await fetchQuery(api.salon.config.query.findBySalonId, {
+            salonId: staff.salonId,
           });
 
           if (salonConfig) {

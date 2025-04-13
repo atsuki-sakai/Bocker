@@ -3,7 +3,7 @@ import { useSalon } from '@/hooks/useSalon';
 import { z } from 'zod';
 import { Info } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { MAX_TEXT_LENGTH } from '@/convex/constants';
+import { MAX_TEXT_LENGTH } from '@/services/convex/constants';
 import { useZodForm } from '@/hooks/useZodForm';
 import { api } from '@/convex/_generated/api';
 import { useMutation } from 'convex/react';
@@ -15,7 +15,6 @@ import { TagBadge } from '@/components/common';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { DollarSign, ShoppingBag, Clock, Save } from 'lucide-react';
-import { SALON_SCHEDULE_INTERVAL_MINUTES } from '@/lib/constants';
 import { Switch } from '@/components/ui/switch';
 import {
   Select,
@@ -287,7 +286,7 @@ export default function OptionAddForm() {
                 <SelectValue placeholder="施術時間を選択" />
               </SelectTrigger>
               <SelectContent>
-                {getMinuteMultiples(SALON_SCHEDULE_INTERVAL_MINUTES[0], 360).map((time) => (
+                {getMinuteMultiples(5, 360).map((time) => (
                   <SelectItem key={time} value={time.toString()}>
                     {time}分
                   </SelectItem>

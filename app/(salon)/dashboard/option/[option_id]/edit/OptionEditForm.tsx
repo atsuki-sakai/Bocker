@@ -27,7 +27,6 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'; // Select関連を追加
-import { SALON_SCHEDULE_INTERVAL_MINUTES } from '@/lib/constants'; // 定数を追加
 import { Badge } from '@/components/ui/badge'; // Badgeを追加
 
 // バリデーションスキーマ
@@ -344,7 +343,7 @@ export default function OptionEditForm() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">選択しない</SelectItem>
-                  {getMinuteMultiples(SALON_SCHEDULE_INTERVAL_MINUTES[0], 360).map((time) => (
+                  {getMinuteMultiples(5, 360).map((time) => (
                     <SelectItem key={time} value={time.toString()}>
                       {time}分
                     </SelectItem>

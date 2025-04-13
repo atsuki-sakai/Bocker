@@ -160,7 +160,7 @@ export default function MenuAddForm() {
   const [tagInput, setTagInput] = useState<string>('');
 
   const uploadImage = useAction(api.storage.action.upload);
-  const deleteImage = useAction(api.storage.actionon.deleteImage);
+  const deleteImage = useAction(api.storage.action.kill);
   const createMenu = useMutation(api.menu.core.add);
 
   const {
