@@ -31,7 +31,6 @@ export const syncSubscription = mutation({
   },
   handler: async (ctx, args) => {
     try {
-      checkAuth(ctx);
       validateSubscription(args.subscription);
       return await subscriptionService.syncSubscription(ctx, args.subscription);
     } catch (error) {
@@ -49,7 +48,6 @@ export const paymentFailed = mutation({
   },
   handler: async (ctx, args) => {
     try {
-      checkAuth(ctx);
       validatePaymentFailed(args);
       return await subscriptionService.paymentFailed(ctx, args);
     } catch (error) {
@@ -63,7 +61,6 @@ export const archive = mutation({
     id: v.id('subscription'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
     validateRequired(args.id, 'id');
     return await archiveRecord(ctx, args.id);
   },
