@@ -33,7 +33,7 @@ export const findByClerkId = query({
   },
   handler: async (ctx, args) => {
     try {
-      checkAuth(ctx);
+      checkAuth(ctx, true);
       validateSalon(args);
       return await salonService.findSalonByClerkId(ctx, args.clerkId);
     } catch (error) {
