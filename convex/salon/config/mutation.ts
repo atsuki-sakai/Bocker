@@ -4,6 +4,20 @@ import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { validateSalonApiConfig } from '@/services/convex/shared/utils/validation';
 import { salonService } from '@/services/convex/services';
 
+
+export const create = mutation({
+  args: {
+    salonId: v.id('salon'),
+    salonName: v.string(),
+    email: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx, true);
+    validateSalonApiConfig(args);
+    return await salonService.upsertConfig(ctx, args);
+  },
+});
+
 export const upsert = mutation({
   args: {
     salonId: v.id('salon'),
