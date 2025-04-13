@@ -1,20 +1,20 @@
+import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
+import { api } from '@/convex/_generated/api';
+import { fetchMutation } from 'convex/nextjs';
+import { normalizeSubscriptionStatus, priceIdToPlanInfo } from '@/lib/utils';
+import { STRIPE_API_VERSION } from '@/lib/constants';
 import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
-import { stripeService } from '@/services/stripe';
 
-// Stripe Webhook
-const stripeWebhookSchema = z.object({
-  id: z.string().min(1, { message: 'IDが空です' }),
-  object: z.string().min(1, { message: 'オブジェクトが空です' }),
-  type: z.string().min(1, { message: 'イベントタイプが空です' }),
-  data: z.object({
-    object: z.any(),
-  }),
-});
+import { stripeService } from '@/services/stripe/StripeService';
 
 export async function POST(req: Request) {
-  const { event, error } = await stripeService.processStripeWebhookRequest(req, true);
+  const webhookSubscriptionSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const { event, error } = await stripeService.processStripeWebhookRequest(
+    req,
+    webhookSubscriptionSecret
+  );
   if (error || !event) {
     Sentry.captureException(new Error(error ?? 'Unknown error'), {
       level: 'error',
@@ -27,50 +27,22 @@ export async function POST(req: Request) {
     console.error('Stripe Connect webhook署名の検証に失敗しました:', error);
     return NextResponse.json({ error }, { status: 400 });
   }
-  // Zod による型チェック
-  const validationResult = stripeWebhookSchema.safeParse(event);
-  if (!validationResult.success) {
-    Sentry.captureException(validationResult.error, {
-      level: 'error',
-      tags: {
-        function: 'POST',
-        url: req.url,
-      },
-    });
-    console.error('Stripe webhookペイロードの検証エラー:', validationResult.error);
-    return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
-  }
-
-  // 型チェック済みのイベントを利用
-  const validatedEvent = validationResult.data;
-  const eventType = validatedEvent.type;
-
   try {
     // イベントタイプに基づいて適切なハンドラに振り分け
     if (
-      eventType === 'customer.subscription.created' ||
-      eventType === 'customer.subscription.updated' ||
-      eventType === 'customer.subscription.deleted' ||
-      eventType === 'invoice.payment_succeeded' ||
-      eventType === 'invoice.payment_failed'
+      event.type === 'customer.subscription.created' ||
+      event.type === 'customer.subscription.updated' ||
+      event.type === 'customer.subscription.deleted' ||
+      event.type === 'invoice.payment_succeeded' ||
+      event.type === 'invoice.payment_failed'
     ) {
       // サブスクリプション関連のイベント
       const result = await stripeService.handleSubscriptionWebhookEvent(event);
       if (!result.success) {
         throw new Error(result.message || 'Webhook処理に失敗しました');
       }
-    } else if (
-      eventType === 'account.updated' ||
-      eventType === 'account.application.authorized' ||
-      eventType === 'account.application.deauthorized'
-    ) {
-      // Connect関連のイベント
-      const result = await stripeService.handleConnectWebhookEvent(event);
-      if (!result.success) {
-        throw new Error(result.message || 'Webhook処理に失敗しました');
-      }
     } else {
-      console.log(`未対応のStripeイベントタイプ: ${eventType}`);
+      console.log(`未対応のStripeイベントタイプ: ${event.type}`);
     }
 
     return NextResponse.json({ received: true }, { status: 200 });
@@ -83,8 +55,8 @@ export async function POST(req: Request) {
         level: 'error',
         tags: {
           function: 'webhookHandler',
-          eventType,
-          eventId: validatedEvent.id,
+          eventType: event.type,
+          eventId: event.id,
         },
       }
     );
