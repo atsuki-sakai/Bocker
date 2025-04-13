@@ -128,12 +128,19 @@ export async function POST(req: Request) {
                   console.log(
                     `Convexへのサロン登録を開始: clerkId=${id}, organizationId=${organization.id}, email=${email}, stripeCustomerId=${customer.id}`
                   );
-                  await retryOperation(() =>
+                  const salonId = await retryOperation(() =>
                     fetchMutation(api.salon.core.mutation.create, {
                       clerkId: id,
                       organizationId: organization.id ?? 'ERROR',
                       email,
                       stripeCustomerId: customer.id,
+                    })
+                  );
+                  await retryOperation(() =>
+                    fetchMutation(api.salon.config.mutation.create, {
+                      salonId: salonId,
+                      salonName: salonName,
+                      email,
                     })
                   );
                   console.log('Convexへのサロン登録成功');
