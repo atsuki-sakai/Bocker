@@ -8,8 +8,6 @@ const MAX_REFERRAL_COUNT = 6;
 // 紹介数を指定して取得するためのAPI
 export const getEmailsByReferralCount = query({
   args: {
-    lessThanReferralCount: v.optional(v.number()), // 指定した紹介数より少ない紹介数のデータを取得する
-    orderReferralCount: v.optional(v.number()), // 後方互換性のために残す（非推奨）
     includeUpdated: v.boolean(), // 当月に更新されたデータを含むかどうか
     isApplyMaxUseReferral: v.boolean(), // 上限値を超えたデータを含むかどうか
   },
@@ -20,10 +18,6 @@ export const getEmailsByReferralCount = query({
     let cursor = null;
     let hasMore = true;
 
-    // 後方互換性のために、orderReferralCountがある場合はlessThanReferralCountとして使用
-    const effectiveLessThanValue =
-      args.lessThanReferralCount ?? (args.orderReferralCount ? args.orderReferralCount + 1 : 1);
-
     // 当月の開始日と終了日を計算
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -32,7 +26,7 @@ export const getEmailsByReferralCount = query({
     const endOfMonth = firstDayOfNextMonth.getTime() - 1;
 
     console.log(
-      `検索条件: lessThanReferralCount=${effectiveLessThanValue}, includeUpdated=${args.includeUpdated}, isApplyMaxUseReferral=${args.isApplyMaxUseReferral}`
+      `検索条件: includeUpdated=${args.includeUpdated}, isApplyMaxUseReferral=${args.isApplyMaxUseReferral}`
     );
 
     // まず、条件に合うすべてのreferralを取得
@@ -42,7 +36,7 @@ export const getEmailsByReferralCount = query({
         .withIndex('by_referral_and_total_count')
         .filter((q) =>
           q.and(
-            q.lt(q.field('referralCount'), effectiveLessThanValue),
+            q.gte(q.field('referralCount'), 1), // referralCountが1以上のデータを取得
             q.eq(q.field('isArchive'), false)
           )
         );
@@ -98,8 +92,6 @@ export const getEmailsByReferralCount = query({
 
     return [
       {
-        lessThanReferralCount: effectiveLessThanValue,
-        orderReferralCount: args.orderReferralCount, // 後方互換性のために元の値も返す
         includeUpdated: args.includeUpdated,
         isApplyMaxUseReferral: args.isApplyMaxUseReferral || false,
         maxReferralCount: MAX_REFERRAL_COUNT,
