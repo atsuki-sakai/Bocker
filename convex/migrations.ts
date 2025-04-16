@@ -1,4 +1,10 @@
 // convex/fixData.ts
+//**
+// マイグレーションの際はschema.tsのdefineSchemaのschemaValidationをfalseにする。
+// 以下のように記載する。
+// ,{
+//   schemaValidation: false
+// } */
 import { internalMutation } from './_generated/server';
 
 export const migrateGenderAllToUnselected = internalMutation({
