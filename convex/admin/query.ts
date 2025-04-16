@@ -40,7 +40,8 @@ export const getEmailsByReferralCount = query({
         .withIndex('by_referral_and_total_count')
         .filter((q) =>
           q.and(
-            q.gt(q.field('referralCount'), 0), // referralCountが厳密に0より大きい（1以上）のデータを取得
+            // referralCountが1以上のデータのみ取得（0や未定義は除外）
+            q.gt(q.field('referralCount'), 0),
             q.eq(q.field('isArchive'), false)
           )
         );
@@ -72,11 +73,11 @@ export const getEmailsByReferralCount = query({
       console.debug(`取得したreferralレコード数: ${batch.page.length}`);
 
       if (batch.page.length > 0) {
-        // referralCount が 0 でないことを再確認
+        // データの検証（安全策として）
         const validReferrals = batch.page.filter(
           (referral) => typeof referral.referralCount === 'number' && referral.referralCount > 0
         );
-        console.info(`有効なreferralレコード数: ${validReferrals.length}/${batch.page.length}`);
+        console.debug(`有効なreferralレコード数: ${validReferrals.length}/${batch.page.length}`);
 
         // 一度にすべてのsalonIdsを収集
         const salonIds = validReferrals.map((referral) => referral.salonId);
@@ -97,7 +98,7 @@ export const getEmailsByReferralCount = query({
       // Safety check to avoid hitting read limits
       if (allSalonEmails.length > 500) break;
     }
-
+    
     console.info(`最終取得メールアドレス数: ${allSalonEmails.length}`);
     
     return {

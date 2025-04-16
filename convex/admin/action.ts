@@ -17,7 +17,6 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export const applyDiscount = action({
   args: {
     emails: v.array(v.string()),
-    isApplyAll: v.boolean(),
     isApplyMaxUseReferral: v.boolean(),
     isAlreadyUpdated: v.boolean(),
   },
@@ -71,12 +70,21 @@ export const applyDiscount = action({
               stripeCustomerId: subscription.stripeCustomerId,
             }
           );
-
           if (!previousReferral) {
             results.push({
               email,
               success: false,
               error: 'Salon Referral not found',
+            });
+            continue;
+          }
+
+          // referralCountが0以下の場合は処理をスキップ
+          if (previousReferral.referralCount === undefined || previousReferral.referralCount <= 0) {
+            results.push({
+              email,
+              success: false,
+              error: 'Referral count is 0 or negative',
             });
             continue;
           }
@@ -96,7 +104,7 @@ export const applyDiscount = action({
           }
 
           // isApplyAllがfalseの場合、updatedAtが当月かどうかを確認
-          if (!args.isApplyAll && !args.isAlreadyUpdated && previousReferral.updatedAt) {
+          if (!args.isAlreadyUpdated && previousReferral.updatedAt) {
             const updatedDate = new Date(previousReferral.updatedAt);
             const isCurrentMonth =
               updatedDate.getFullYear() === currentYear && updatedDate.getMonth() === currentMonth;
