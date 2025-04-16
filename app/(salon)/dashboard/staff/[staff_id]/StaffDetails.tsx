@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Dialog } from '@/components/common';
 import Link from 'next/link';
+import { useUser } from '@clerk/nextjs';
 // Shadcn UI コンポーネント
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,7 +19,6 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { handleError } from '@/lib/error';
@@ -31,7 +31,6 @@ import {
   Trash,
   Star,
   Shield,
-  Key,
   Tag,
   Mail,
   Clipboard,
@@ -40,6 +39,7 @@ import {
   FileEdit,
   LucideIcon,
 } from 'lucide-react';
+import { MAX_PRIORITY } from '@/services/convex/constants';
 
 // アニメーション設定
 const containerVariants = {
@@ -77,7 +77,7 @@ const InfoField = ({
   tooltip?: string;
 }) => (
   <div className="flex items-center space-x-3 py-2 group transition-all duration-200 hover:bg-muted/20 rounded-md px-2">
-    <div className="bg-primary/10 p-2 rounded-full group-hover:bg-primary/20 transition-all duration-200">
+    <div className="">
       <Icon className="h-5 w-5 text-primary" />
     </div>
     <div className="flex-1">
@@ -123,6 +123,7 @@ const SectionHeader = ({
 export default function StaffDetails() {
   const { staff_id } = useParams();
   const { salon } = useSalon();
+  const { user } = useUser();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('basic');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -131,14 +132,14 @@ export default function StaffDetails() {
 
   // メモ化されたクエリを使用してパフォーマンス向上
   const staffAllData = useQuery(
-    api.staff.core.getRelatedTables,
+    api.staff.core.query.getRelatedTables,
     salon?._id && staff_id && !isDeleting
       ? { salonId: salon?._id, staffId: staff_id as Id<'staff'> }
       : 'skip'
   );
 
   const exclusionMenus = useQuery(
-    api.menu.menu_exclusion_staff.getExclusionMenus,
+    api.menu.menu_exclusion_staff.query.listBySalonAndStaffId,
     salon?._id
       ? {
           salonId: salon?._id,
@@ -147,8 +148,9 @@ export default function StaffDetails() {
       : 'skip'
   );
 
-  const staffKill = useMutation(api.staff.core.killRelatedTables);
+  const staffKill = useMutation(api.staff.core.mutation.killRelatedTables);
   const deleteImage = useAction(api.storage.action.kill);
+  // const deleteMember = useAction(api.staff.auth.action.deleteClerkMemberAndUser);
 
   if (!staffAllData && !isDeleting) return <Loading />;
 
@@ -165,12 +167,12 @@ export default function StaffDetails() {
   // roleをわかりやすい表示に変換
   const getRoleDisplay = (role: string) => {
     switch (role) {
-      case 'admin':
-        return '管理者';
-      case 'manager':
-        return 'マネージャー';
       case 'staff':
-        return 'スタッフ';
+        return 'スタッフ権限';
+      case 'manager':
+        return 'マネージャー権限';
+      case 'owner':
+        return 'オーナー権限';
       default:
         return role;
     }
@@ -196,6 +198,13 @@ export default function StaffDetails() {
           staffConfigId: staffAllData.staffConfigId,
           staffAuthId: staffAllData.staffAuthId,
         });
+
+        // if (user) {
+        //   await deleteMember({
+        //     organizationId: staffAllData.organizationId as string,
+        //     clerkId: user.id,
+        //   });
+        // }
       }
       toast.success('スタッフを削除しました');
       router.push('/dashboard/staff');
@@ -206,6 +215,8 @@ export default function StaffDetails() {
       toast.error(errorDetails.message);
     }
   };
+
+  console.log('user', user);
 
   if (!staffAllData) return <Loading />;
 
@@ -240,17 +251,26 @@ export default function StaffDetails() {
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <h2 className="text-2xl font-bold">{staffAllData.name}</h2>
-                  <p className="text-muted-foreground">
-                    {getGenderText(staffAllData.gender || '')} • {staffAllData.age}歳
-                  </p>
+                  <div className="flex items-center text-muted-foreground text-xs mt-4 gap-2">
+                    <div>
+                      <span className="text-sm">性別</span>
+                      <p className="text-sm">{getGenderText(staffAllData.gender || '未選択')}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm">年齢</span>
+                      <p className="text-sm">
+                        {staffAllData.age ? `${staffAllData.age}歳` : '未選択'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Badge
-                    variant={staffAllData.isActive ? 'default' : 'destructive'}
-                    className={`transition-all duration-300 ${
+                    variant={staffAllData.isActive ? 'outline' : 'destructive'}
+                    className={` transition-all duration-300 ${
                       staffAllData.isActive
-                        ? 'bg-green-500 hover:bg-green-600'
-                        : 'bg-red-500 hover:bg-red-600'
+                        ? 'border-green-500 text-green-600 hover:border-green-700'
+                        : 'border-red-500 text-red-600 hover:border-red-700'
                     }`}
                   >
                     {staffAllData.isActive ? 'アクティブ' : '非アクティブ'}
@@ -263,20 +283,33 @@ export default function StaffDetails() {
               <p className="mt-2 text-gray-600">{staffAllData.description || '説明がありません'}</p>
 
               <div className="grid grid-cols-3 gap-4 mt-4">
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-3 rounded-lg">
-                  <div className="flex items-center gap-2 text-purple-600 mb-1">
-                    <Tag className="h-4 w-4" />
-                    <p className="text-xs font-medium">指名料金</p>
+                <div className="flex flex-col justify-between bg-gradient-to-br from-purple-50 to-purple-100/50 p-3 rounded-lg">
+                  <div className="flex flex-col items-start gap-2 text-purple-600 mb-1">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      <p className="text-xs font-medium">指名料金</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      指名料金は予約時のサービス料金に影響します。
+                    </span>
                   </div>
                   <p className="font-bold text-lg">¥{staffAllData.extraCharge || 0}</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-3 rounded-lg">
-                  <div className="flex items-center gap-2 text-amber-600 mb-1">
-                    <Star className="h-4 w-4" />
-                    <p className="text-xs font-medium">優先度</p>
+                <div className="flex flex-col justify-between bg-gradient-to-br from-amber-50 to-amber-100/50 p-3 rounded-lg">
+                  <div className="flex flex-col items-start gap-2 text-amber-600 mb-1">
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4" />
+                      <p className="text-xs font-medium">優先度</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      数値が大きいほど予約画面などで上位に表示されます。
+                    </span>
                   </div>
-                  <p className="font-bold text-lg">{staffAllData.priority || 0}</p>
+                  <p className="font-bold text-lg">
+                    {staffAllData.priority || 0}
+                    <span className="text-xs text-muted-foreground">/{MAX_PRIORITY}</span>
+                  </p>
                 </div>
               </div>
               <div>
@@ -284,14 +317,16 @@ export default function StaffDetails() {
                   <div className="mt-4">
                     <h3 className="text-lg font-semibold mb-2">対応外メニュー</h3>
                     <ul className="flex flex-wrap gap-2">
-                      {exclusionMenus.map((menu, index) => (
-                        <li
-                          key={index}
-                          className="bg-orange-50 border border-orange-300 p-1 text-sm text-orange-700 rounded-md"
-                        >
-                          {menu.menuName}
-                        </li>
-                      ))}
+                      {exclusionMenus.map(
+                        (menu: { menuId: Id<'menu'>; name: string | undefined }) => (
+                          <li
+                            key={menu.menuId.slice(0, 12)}
+                            className="bg-orange-50 border border-orange-300 p-1 text-sm text-orange-700 rounded-md"
+                          >
+                            {menu.name}
+                          </li>
+                        )
+                      )}
                     </ul>
                   </div>
                 )}
@@ -354,13 +389,6 @@ export default function StaffDetails() {
                 />
               </CardHeader>
               <CardContent>
-                <Alert className="mb-4 bg-blue-50 border-blue-100">
-                  <Info className="h-4 w-4 text-blue-500" />
-                  <AlertDescription className="text-blue-700 text-sm">
-                    プロフィール情報は予約システムでも表示されます。お客様に公開される情報もあります。
-                  </AlertDescription>
-                </Alert>
-
                 <motion.div
                   className="space-y-1"
                   variants={containerVariants}
@@ -405,13 +433,6 @@ export default function StaffDetails() {
                 <SectionHeader icon={Clock} title="勤務情報" description="給与と勤務に関する設定" />
               </CardHeader>
               <CardContent>
-                <Alert className="mb-4 bg-amber-50 border-amber-100">
-                  <Info className="h-4 w-4 text-amber-500" />
-                  <AlertDescription className="text-amber-700 text-sm">
-                    これらの設定は予約時のサービス料金に影響します。正確に設定してください。
-                  </AlertDescription>
-                </Alert>
-
                 <motion.div
                   className="space-y-1"
                   variants={containerVariants}
@@ -461,13 +482,6 @@ export default function StaffDetails() {
                 />
               </CardHeader>
               <CardContent>
-                <Alert className="mb-4 bg-red-50 border-red-100">
-                  <Info className="h-4 w-4 text-red-500" />
-                  <AlertDescription className="text-red-700 text-sm">
-                    セキュリティに関わる重要な情報です。PINコードなどの情報は慎重に取り扱ってください。
-                  </AlertDescription>
-                </Alert>
-
                 <motion.div
                   className="space-y-1"
                   variants={containerVariants}
@@ -481,12 +495,6 @@ export default function StaffDetails() {
                     tooltip="通知や連絡に使用されます"
                   />
                   <Separator />
-                  <InfoField
-                    icon={Key}
-                    label="PINコード"
-                    value={staffAllData.pinCode || '●●●●●●'}
-                    tooltip="スタッフがログインに使用するPINコードです。"
-                  />
                 </motion.div>
               </CardContent>
             </Card>

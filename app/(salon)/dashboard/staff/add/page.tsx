@@ -13,11 +13,7 @@ import { useEffect, useState } from 'react';
 import { ImageDrop } from '@/components/common';
 import { z } from 'zod';
 import { Gender, GENDER_VALUES, Role, ROLE_VALUES } from '@/services/convex/shared/types/common';
-import {
-  MAX_NOTES_LENGTH,
-  MAX_TEXT_LENGTH,
-  MAX_PIN_CODE_LENGTH,
-} from '@/services/convex/constants';
+import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH } from '@/services/convex/constants';
 import { Textarea } from '@/components/ui/textarea';
 import { ZodTextField } from '@/components/common';
 import {
@@ -31,13 +27,14 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { handleError } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
-import { compressAndConvertToWebP, fileToBase64, encryptString } from '@/lib/utils';
+import { compressAndConvertToWebP, fileToBase64 } from '@/lib/utils';
 import { Id } from '@/convex/_generated/dataModel';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
+import { ClerkError, StorageError, ConvexCustomError } from '@/services/convex/shared/utils/error';
 import {
   Save,
   ArrowLeft,
@@ -45,7 +42,8 @@ import {
   Calendar,
   Shield,
   Tag,
-  Hash,
+  EyeOff,
+  Eye,
   Sparkles,
   User,
   Mail,
@@ -53,6 +51,7 @@ import {
   Check,
   X,
   Image as ImageIcon,
+  Lock,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -61,6 +60,13 @@ import { ExclusionMenu } from '@/components/common';
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
+  password: z
+    .string()
+    .min(7, { message: 'パスワードは7文字以上で入力してください' })
+    .max(MAX_TEXT_LENGTH)
+    .refine((val) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{7,}$/.test(val), {
+      message: 'パスワードは英大文字、英小文字、数字を含む7文字以上で入力してください',
+    }),
   gender: z.enum(GENDER_VALUES),
   age: z.preprocess(
     (val) => {
@@ -76,7 +82,6 @@ const staffAddSchema = z.object({
   imgPath: z.string().max(512).optional(),
   isActive: z.boolean(),
   organizationId: z.string().max(MAX_TEXT_LENGTH).optional(),
-  pinCode: z.string().min(1, { message: 'ピンコードは必須です' }).max(MAX_PIN_CODE_LENGTH),
   role: z.enum(ROLE_VALUES),
   extraCharge: z.preprocess(
     (val) => {
@@ -110,12 +115,13 @@ export default function StaffAddPage() {
   const [exclusionMenuIds, setExclusionMenuIds] = useState<Id<'menu'>[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  const staffAdd = useMutation(api.staff.core.add);
-  const staffConfigAdd = useMutation(api.staff.config.add);
-  const staffAuthAdd = useMutation(api.staff.auth.add);
-  const staffKill = useMutation(api.staff.core.killRelatedTables);
-  const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.upsert);
+  const [showPassword, setShowPassword] = useState(false);
+  const staffAdd = useMutation(api.staff.core.mutation.create);
+  const staffConfigAdd = useMutation(api.staff.config.mutation.create);
+  const staffAuthAdd = useMutation(api.staff.auth.mutation.create);
+  const staffKill = useMutation(api.staff.core.mutation.killRelatedTables);
+  const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert);
+  const inviteStaffToOrganization = useAction(api.staff.auth.action.inviteStaffToOrganization);
 
   const uploadImage = useAction(api.storage.action.upload);
   const deleteImage = useAction(api.storage.action.kill);
@@ -128,6 +134,11 @@ export default function StaffAddPage() {
     formState: { isSubmitting, errors, isDirty },
     watch,
   } = useZodForm(staffAddSchema);
+
+  const togglePassword = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setShowPassword(!showPassword);
+  };
 
   const onSubmit = async (data: z.infer<typeof staffAddSchema>) => {
     setIsLoading(true);
@@ -155,25 +166,46 @@ export default function StaffAddPage() {
         uploadImageUrl = uploadResult.publicUrl;
       }
 
-      // PINコードの暗号化
-      const hashedPinCode = await encryptString(
-        data.pinCode,
-        process.env.NEXT_PUBLIC_ENCRYPTION_SECRET_KEY!
-      );
+      let newClerkUserID = null;
+      // Clerkの組織メンバーとして追加、または更新
+      if (salon.organizationId && data.email) {
+        try {
+          const result = await inviteStaffToOrganization({
+            organizationId: salon.organizationId,
+            inviterUserId: salon.clerkId,
+            email: data.email,
+            role: data.role,
+            firstName: data.role,
+            lastName: data.name,
+            password: watch('password'),
+          });
 
-      // スタッフの基本情報を追加
-      staffId = await staffAdd({
-        salonId: salon._id,
-        name: data.name,
-        age: data.age ?? undefined,
-        email: data.email,
-        gender: data.gender,
-        description: data.description,
-        imgPath: uploadImageUrl ?? undefined,
-        isActive: data.isActive,
-      });
+          newClerkUserID = result.userId;
+        } catch (clerkError) {
+          const err = new ClerkError(
+            'medium',
+            'Clerk組織へのスタッフ追加に失敗しました',
+            'INTERNAL_ERROR',
+            500,
+            { Error: JSON.stringify(clerkError) }
+          );
+          throw err;
+        }
+      }
 
       try {
+        // スタッフの基本情報を追加
+        staffId = await staffAdd({
+          salonId: salon._id,
+          clerkId: newClerkUserID ?? undefined,
+          name: data.name,
+          age: data.age ?? undefined,
+          email: data.email,
+          gender: data.gender,
+          description: data.description,
+          imgPath: uploadImageUrl ?? undefined,
+          isActive: data.isActive,
+        });
         // スタッフの設定情報を追加
         staffConfigId = await staffConfigAdd({
           staffId: staffId,
@@ -181,13 +213,10 @@ export default function StaffAddPage() {
           extraCharge: data.extraCharge ?? undefined,
           priority: data.priority ?? undefined,
         });
-
         // スタッフの認証情報を追加
         staffAuthId = await staffAuthAdd({
           staffId: staffId,
           organizationId: salon.organizationId ?? undefined,
-          pinCode: data.pinCode,
-          hashPinCode: hashedPinCode,
           role: data.role,
         });
 
@@ -214,12 +243,36 @@ export default function StaffAddPage() {
               });
             }
           } catch (cleanupError) {
-            console.error('スタッフ削除中にエラーが発生しました:', cleanupError);
+            const err = new ConvexCustomError(
+              'high',
+              'スタッフ削除中にエラーが発生しました',
+              'INTERNAL_ERROR',
+              500,
+              { Error: JSON.stringify(cleanupError) }
+            );
+            throw err;
           }
         }
         throw configAuthError; // 元のエラーを再スロー
       }
     } catch (error: unknown) {
+      // エラー処理の改善
+      if (
+        error instanceof Error &&
+        error.message.includes('指定されたメールアドレスのスタッフがすでに存在します')
+      ) {
+        // 特定のエラーメッセージだけをシンプルに表示
+        toast.error('指定されたメールアドレスのスタッフがすでに存在します', {
+          icon: <X className="h-4 w-4 text-red-500" />,
+        });
+      } else {
+        // その他のエラーは従来通り処理
+        const errorDetails = handleError(error);
+        toast.error(errorDetails.message, {
+          icon: <X className="h-4 w-4 text-red-500" />,
+        });
+      }
+
       // エラー発生時のクリーンアップ
       if (uploadImageUrl) {
         try {
@@ -227,7 +280,14 @@ export default function StaffAddPage() {
             imgUrl: uploadImageUrl,
           });
         } catch (deleteError) {
-          console.error('画像削除中にエラーが発生しました:', deleteError);
+          const err = new StorageError(
+            'high',
+            '画像削除中にエラーが発生しました',
+            'INTERNAL_ERROR',
+            500,
+            { Error: JSON.stringify(deleteError) }
+          );
+          throw err;
         }
       }
 
@@ -242,14 +302,16 @@ export default function StaffAddPage() {
             });
           }
         } catch (killError) {
-          console.error('スタッフ削除中にエラーが発生しました:', killError);
+          const err = new ConvexCustomError(
+            'high',
+            'スタッフ削除中にエラーが発生しました',
+            'INTERNAL_ERROR',
+            500,
+            { Error: JSON.stringify(killError) }
+          );
+          throw err;
         }
       }
-
-      const errorDetails = handleError(error);
-      toast.error(errorDetails.message, {
-        icon: <X className="h-4 w-4 text-red-500" />,
-      });
     } finally {
       setIsLoading(false);
     }
@@ -259,20 +321,18 @@ export default function StaffAddPage() {
     reset({
       name: '',
       email: '',
+      password: '',
       gender: 'unselected',
       description: '',
       imgPath: '',
       isActive: true,
       organizationId: undefined,
-      pinCode: '',
       role: 'staff',
       extraCharge: undefined,
       priority: undefined,
     });
   }, [reset]);
 
-  console.log(errors);
-  console.log(salon?.organizationId);
   return (
     <DashboardSection
       title="スタッフを追加"
@@ -334,17 +394,6 @@ export default function StaffAddPage() {
                             errors={errors}
                             placeholder="名前を入力してください"
                             className="transition-all duration-200"
-                          />
-                        </div>
-
-                        <div>
-                          <ZodTextField
-                            name="email"
-                            icon={<Mail className="h-4 w-4 mr-2 text-gray-500" />}
-                            label="メールアドレス"
-                            register={register}
-                            errors={errors}
-                            placeholder="メールアドレスを入力してください"
                           />
                         </div>
 
@@ -432,37 +481,51 @@ export default function StaffAddPage() {
 
                   <Separator />
 
-                  {/* 認証情報セクション */}
+                  {/* 権限設定セクション */}
                   <div>
                     <div className="flex items-center mb-4">
-                      <Shield className="h-5 w-5 mr-2 text-blue-500" />
-                      <h3 className="font-semibold text-lg">認証情報</h3>
+                      <Shield className="h-5 w-5 mr-2 text-green-500" />
+                      <h3 className="font-semibold text-lg">権限設定</h3>
                     </div>
 
                     <Alert className="bg-blue-50 border-blue-100 mb-4">
                       <Info className="h-4 w-4 text-blue-500" />
                       <AlertDescription className="text-blue-700 text-sm">
-                        スタッフがログインする際に使用する認証情報です。安全なピンコードを設定してください。
+                        スタッフが管理画面にログインする際に必要な情報やアクセスできる機能の設定
                       </AlertDescription>
                     </Alert>
 
                     <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <div className="flex items-center mb-2">
-                          <Hash className="h-4 w-4 mr-2 text-gray-500" />
-                          <Label className="font-medium text-gray-700">ピンコード</Label>
+                      <div className="flex flex-col space-y-4 items-center gap-2 w-full">
+                        <div className="w-full flex items-end gap-2 justify-between">
+                          <div className="w-full">
+                            <ZodTextField
+                              name="password"
+                              label="パスワード"
+                              type={showPassword ? 'text' : 'password'}
+                              register={register}
+                              errors={errors}
+                              icon={<Lock className="h-4 w-4 mr-2 text-gray-500" />}
+                            />
+                          </div>
+                          <Button size="icon" onClick={togglePassword}>
+                            {showPassword ? (
+                              <Eye className="h-8 w-8" />
+                            ) : (
+                              <EyeOff className="h-8 w-8" />
+                            )}
+                          </Button>
                         </div>
-                        <ZodTextField
-                          name="pinCode"
-                          label="ピンコード"
-                          register={register}
-                          errors={errors}
-                          placeholder="ピンコードを入力してください"
-                          className="transition-all duration-200"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          ※スタッフがログインに使用するピンコードです。数字のみを推奨します。
-                        </p>
+                        <div className="w-full">
+                          <ZodTextField
+                            name="email"
+                            icon={<Mail className="h-4 w-4 mr-2 text-gray-500" />}
+                            label="メールアドレス"
+                            register={register}
+                            errors={errors}
+                            placeholder="メールアドレスを入力してください"
+                          />
+                        </div>
                       </div>
 
                       <div>

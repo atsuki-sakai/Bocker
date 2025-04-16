@@ -19,7 +19,7 @@ export default function StaffList() {
     status,
     loadMore,
   } = useStablePaginatedQuery(
-    api.staff.core.getStaffListBySalonId,
+    api.staff.core.query.getStaffListBySalonId,
     salon ? { salonId: salon._id } : 'skip',
     {
       initialNumItems: numberOfStaffs,

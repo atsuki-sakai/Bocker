@@ -12,11 +12,7 @@ import { ImageDrop, Loading, Dialog } from '@/components/common';
 import { ExclusionMenu } from '@/components/common';
 import { z } from 'zod';
 import { Gender, Role, GENDER_VALUES, ROLE_VALUES } from '@/services/convex/shared/types/common';
-import {
-  MAX_NOTES_LENGTH,
-  MAX_TEXT_LENGTH,
-  MAX_PIN_CODE_LENGTH,
-} from '@/services/convex/constants';
+import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH } from '@/services/convex/constants';
 import { Textarea } from '@/components/ui/textarea';
 import { ZodTextField } from '@/components/common';
 import {
@@ -30,7 +26,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { handleError } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
-import { compressAndConvertToWebP, fileToBase64, encryptString } from '@/lib/utils';
+import { compressAndConvertToWebP, fileToBase64 } from '@/lib/utils';
 import { Id } from '@/convex/_generated/dataModel';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -46,7 +42,6 @@ import {
   Calendar,
   Shield,
   Tag,
-  Hash,
   Sparkles,
   User,
   Mail,
@@ -58,10 +53,13 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useMemo } from 'react';
+import { useUser } from '@clerk/nextjs';
+
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
   gender: z.enum(GENDER_VALUES),
+
   age: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
@@ -75,7 +73,7 @@ const staffAddSchema = z.object({
   description: z.string().min(1, { message: '説明は必須です' }).max(MAX_NOTES_LENGTH),
   imgPath: z.string().max(512).optional(),
   isActive: z.boolean(),
-  pinCode: z.string().min(1, { message: 'ピンコードは必須です' }).max(MAX_PIN_CODE_LENGTH),
+
   role: z.enum(ROLE_VALUES),
   extraCharge: z.preprocess(
     (val) => {
@@ -108,31 +106,34 @@ export default function StaffEditForm() {
   const router = useRouter();
   const { staff_id } = useParams();
   const { salon } = useSalon();
-  const [selectedExclusionMenus, setSelectedExclusionMenus] = useState<Id<'menu'>[]>([]);
+  const { user } = useUser();
+  const [selectedExclusionMenuIds, setSelectedExclusionMenuIds] = useState<Id<'menu'>[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeletingImage, setIsDeletingImage] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const staffUpsert = useMutation(api.staff.core.upsert);
-  const staffConfigUpsert = useMutation(api.staff.config.upsert);
-  const staffAuthUpsert = useMutation(api.staff.auth.upsert);
-  const staffKill = useMutation(api.staff.core.killRelatedTables);
   const uploadImage = useAction(api.storage.action.upload);
   const deleteImage = useAction(api.storage.action.kill);
-  const removeImgPath = useMutation(api.staff.core.removeImgPath);
-  const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.upsert);
-  const exclusionMenuIds = useQuery(
-    api.menu.menu_exclusion_staff.getExclusionMenuIds,
+  const updateRole = useAction(api.staff.auth.action.updateRole);
+
+  // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
+  const staffUpsert = useMutation(api.staff.core.mutation.upsert);
+  const staffConfigUpsert = useMutation(api.staff.config.mutation.upsert);
+  const staffAuthUpsert = useMutation(api.staff.auth.mutation.upsert);
+  const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert);
+
+  // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
+  const staffKill = useMutation(api.staff.core.mutation.killRelatedTables);
+  const removeImgPath = useMutation(api.staff.core.mutation.removeImgPath);
+
+  // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
+  const exclusionMenus = useQuery(
+    api.menu.menu_exclusion_staff.query.listBySalonAndStaffId,
     salon?._id && staff_id ? { salonId: salon._id, staffId: staff_id as Id<'staff'> } : 'skip'
   );
-
-  const initialExclusionMenuIds = useMemo(() => {
-    return exclusionMenuIds ? [...exclusionMenuIds].sort() : [];
-  }, [exclusionMenuIds]);
-
   const staffAllData = useQuery(
-    api.staff.core.getRelatedTables,
+    api.staff.core.query.getRelatedTables,
     salon?._id
       ? {
           staffId: staff_id as Id<'staff'>,
@@ -140,6 +141,10 @@ export default function StaffEditForm() {
         }
       : 'skip'
   );
+
+  const initialExclusionMenus = useMemo(() => {
+    return exclusionMenus ? [...exclusionMenus].sort() : [];
+  }, [exclusionMenus]);
 
   const {
     register,
@@ -176,12 +181,6 @@ export default function StaffEditForm() {
         uploadImageUrl = uploadResult.publicUrl;
       }
 
-      // PINコードの暗号化
-      const hashedPinCode = await encryptString(
-        data.pinCode,
-        process.env.NEXT_PUBLIC_ENCRYPTION_SECRET_KEY!
-      );
-
       // スタッフの基本情報を追加
       staffId = await staffUpsert({
         staffId: staff_id as Id<'staff'>,
@@ -209,8 +208,6 @@ export default function StaffEditForm() {
         staffAuthId = await staffAuthUpsert({
           staffAuthId: staffAllData?.staffAuthId as Id<'staff_auth'>,
           staffId: staff_id as Id<'staff'>,
-          pinCode: data.pinCode,
-          hashPinCode: hashedPinCode,
           role: data.role,
         });
 
@@ -219,8 +216,16 @@ export default function StaffEditForm() {
         await menuExclusionStaffUpsert({
           salonId: salon._id,
           staffId: staff_id as Id<'staff'>,
-          selectedMenuIds: selectedExclusionMenus,
+          selectedMenuIds: selectedExclusionMenuIds,
         });
+
+        if (user && salon.organizationId && data.role !== staffAllData?.role) {
+          await updateRole({
+            organizationId: salon.organizationId,
+            userId: user.id,
+            role: data.role,
+          });
+        }
 
         toast.success('スタッフを更新しました', {
           icon: <Check className="h-4 w-4 text-green-500" />,
@@ -307,16 +312,18 @@ export default function StaffEditForm() {
 
   useEffect(() => {
     if (
-      exclusionMenuIds &&
-      selectedExclusionMenus.length === 0 &&
-      initialExclusionMenuIds.length > 0
+      exclusionMenus &&
+      selectedExclusionMenuIds.length === 0 &&
+      initialExclusionMenus.length > 0
     ) {
-      setSelectedExclusionMenus([...initialExclusionMenuIds]);
+      setSelectedExclusionMenuIds([...initialExclusionMenus.map((menu) => menu.menuId)]);
     }
-  }, [exclusionMenuIds, initialExclusionMenuIds, selectedExclusionMenus.length]);
+  }, [exclusionMenus, initialExclusionMenus, selectedExclusionMenuIds.length]);
 
   useEffect(() => {
     if (staffAllData) {
+      console.log('staffAllData: ', staffAllData);
+
       reset({
         name: staffAllData?.name,
         email: staffAllData?.email,
@@ -325,7 +332,6 @@ export default function StaffEditForm() {
         description: staffAllData?.description,
         imgPath: staffAllData?.imgPath,
         isActive: staffAllData?.isActive,
-        pinCode: staffAllData?.pinCode,
         role: staffAllData?.role,
         extraCharge: staffAllData?.extraCharge,
         priority: staffAllData?.priority,
@@ -334,11 +340,11 @@ export default function StaffEditForm() {
   }, [reset, staffAllData, watch]);
 
   const exclusionChanged = useMemo(() => {
-    if (exclusionMenuIds === undefined) return false; // データ未ロード時は false
-    const currentSorted = [...selectedExclusionMenus].sort();
+    if (exclusionMenus === undefined) return false; // データ未ロード時は false
+    const currentSorted = [...selectedExclusionMenuIds].sort();
     // initialExclusionMenuIds は既にソート済み
-    return JSON.stringify(currentSorted) !== JSON.stringify(initialExclusionMenuIds);
-  }, [selectedExclusionMenus, initialExclusionMenuIds, exclusionMenuIds]);
+    return JSON.stringify(currentSorted) !== JSON.stringify(initialExclusionMenus);
+  }, [selectedExclusionMenuIds, initialExclusionMenus, exclusionMenus]);
 
   if (!staffAllData) {
     return <Loading />;
@@ -578,24 +584,6 @@ export default function StaffEditForm() {
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
                       <div className="flex items-center mb-2">
-                        <Hash className="h-4 w-4 mr-2 text-gray-500" />
-                        <Label className="font-medium text-gray-700">ピンコード</Label>
-                      </div>
-                      <ZodTextField
-                        name="pinCode"
-                        label="ピンコード"
-                        register={register}
-                        errors={errors}
-                        placeholder="ピンコードを入力してください"
-                        className="transition-all duration-200"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        ※スタッフがログインに使用するピンコードです。数字のみを推奨します。
-                      </p>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center mb-2">
                         <Shield className="h-4 w-4 mr-2 text-gray-500" />
                         <Label className="font-medium text-gray-700">権限</Label>
                       </div>
@@ -713,8 +701,8 @@ export default function StaffEditForm() {
           <TabsContent value="exclusion">
             <ExclusionMenu
               title="対応外メニュー"
-              selectedMenuIds={selectedExclusionMenus}
-              setSelectedMenuIdsAction={setSelectedExclusionMenus}
+              selectedMenuIds={selectedExclusionMenuIds}
+              setSelectedMenuIdsAction={setSelectedExclusionMenuIds}
             />
             {Object.keys(errors).length > 0 && (
               <ul className="text-red-500 bg-red-50 p-2 rounded-md space-y-1 text-xs mt-2 list-disc pl-5">
