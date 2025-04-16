@@ -4,6 +4,11 @@ import { ConvexHttpClient } from 'convex/browser';
 import { StripeResult } from '@/services/stripe/types';
 import { normalizeSubscriptionStatus, priceIdToPlanInfo } from '@/lib/utils';
 import { StripeError } from '@/services/convex/shared/utils/error';
+import { fetchQuery } from 'convex/nextjs';
+import * as Sentry from '@sentry/nextjs';
+import { STRIPE_API_VERSION } from '@/lib/constants';
+import { fetchMutation } from 'convex/nextjs';
+
 /**
  * Stripe Subscription APIを扱うリポジトリクラス
  */
@@ -33,6 +38,12 @@ export class StripeSubscriptionRepository {
   private handleError(error: unknown, operation: string): string {
     const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
     console.error(`Error during ${operation}:`, error);
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        function: operation,
+      },
+    });
     return errorMessage;
   }
 
@@ -44,7 +55,7 @@ export class StripeSubscriptionRepository {
       month: 'monthly',
       year: 'yearly',
     };
-    return intervalMapping[interval] || 'monthly'; 
+    return intervalMapping[interval] || 'monthly';
   }
 
   /**
@@ -136,6 +147,19 @@ export class StripeSubscriptionRepository {
   }
 
   /**
+   * Stripe顧客を取得
+   */
+  async getStripeCustomer(customerId: string): Promise<Stripe.Customer | Stripe.DeletedCustomer> {
+    const customer = await this.stripe.customers.retrieve(customerId);
+    if (!customer) {
+      throw new StripeError('high', 'Stripe顧客が見つかりません', 'NOT_FOUND', 404, {
+        customerId,
+      });
+    }
+    return customer;
+  }
+
+  /**
    * Webhookイベントを処理
    */
   async handleWebhookEvent(event: Stripe.Event): Promise<{ success: boolean; message?: string }> {
@@ -144,6 +168,65 @@ export class StripeSubscriptionRepository {
     try {
       switch (event.type) {
         case 'customer.subscription.created':
+          const customerId = event?.data?.object.customer;
+          const inviteSubscriptionId = event?.data?.object.id;
+          if (customerId) {
+            try {
+              // 新規ユーザーのStripe顧客情報を取得して紹介コードを抽出
+              const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+                apiVersion: STRIPE_API_VERSION,
+              });
+              const customer = await stripe.customers.retrieve(customerId as string);
+
+              // 削除されていない顧客からreferralCodeを取得
+              const referralCode = !customer.deleted ? customer.metadata?.referralCode : undefined;
+
+              // 招待されたユーザーのサブスクリプション情報
+              console.log('新規ユーザーのサブスクリプションID:', inviteSubscriptionId);
+              console.log('紹介コード:', referralCode);
+
+              const referral = await fetchQuery(api.salon.referral.query.getByReferralCode, {
+                referralCode: referralCode as string,
+              });
+              const inviteSalon = await fetchQuery(api.salon.core.query.findByStripeCustomerId, {
+                stripeCustomerId: customerId as string,
+              });
+              if (!inviteSalon) {
+                console.log('招待されたユーザーのサロン情報が見つかりません');
+                return { success: true, message: '招待されたユーザーのサロン情報が見つかりません' };
+              }
+              const inviteReferral = await fetchQuery(api.salon.referral.query.findBySalonId, {
+                salonId: inviteSalon._id,
+              });
+
+              if (!inviteReferral) {
+                console.log('紹介コードがありません - 通常のサブスクリプション作成');
+                return { success: true, message: '紹介コードがありません' };
+              }
+
+              if (referral) {
+                await fetchMutation(api.salon.referral.mutation.incrementReferralCount, {
+                  referralId: inviteReferral._id,
+                });
+              } else {
+                console.log('紹介コードがありません - 通常のサブスクリプション作成');
+              }
+            } catch (error) {
+              console.error('紹介情報の取得に失敗しました:', error);
+              Sentry.captureException(error, {
+                level: 'error',
+                tags: {
+                  function: 'getReferralInfo',
+                },
+              });
+            }
+          }
+
+          const subscription = event.data.object as Stripe.Subscription;
+          const priceId = subscription.items.data[0].plan.id;
+          const result = await this.syncSubscription(subscription, priceId);
+          return { success: result.success, message: result.error };
+
         case 'customer.subscription.updated': {
           const subscription = event.data.object as Stripe.Subscription;
           const priceId = subscription.items.data[0].plan.id;
@@ -165,6 +248,12 @@ export class StripeSubscriptionRepository {
               return { success: result.success, message: result.error };
             } catch (error) {
               console.error(`請求書 ${invoice.id} のサブスクリプション取得に失敗しました:`, error);
+              Sentry.captureException(error, {
+                level: 'error',
+                tags: {
+                  function: 'handleWebhookEvent_invoice_payment_succeeded',
+                },
+              });
               throw error;
             }
           }
@@ -197,6 +286,12 @@ export class StripeSubscriptionRepository {
               return { success: result.success, message: result.error };
             } catch (error) {
               console.error(`サブスクリプション ${subId} の支払い失敗処理に失敗しました:`, error);
+              Sentry.captureException(error, {
+                level: 'error',
+                tags: {
+                  function: 'handleWebhookEvent_invoice_payment_failed',
+                },
+              });
               throw error;
             }
           }
@@ -216,6 +311,12 @@ export class StripeSubscriptionRepository {
           event,
         }
       );
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          function: 'handleWebhookEvent',
+        },
+      });
       throw err;
     }
   }
@@ -228,9 +329,18 @@ export class StripeSubscriptionRepository {
    */
   async applyDiscount(
     subscriptionId: string,
-    discountAmount: number,
-  ): Promise<StripeResult<{ success: boolean }>> {
+    discountAmount: number
+  ): Promise<
+    StripeResult<{
+      success: boolean;
+      verificationResult: { before: number; after: number; discountApplied: boolean };
+    }>
+  > {
     try {
+      // 割引額を円からStripeの最小単位（銭）に変換
+      const subscriptionBefore = await this.stripe.subscriptions.retrieve(subscriptionId);
+      const amountBefore = subscriptionBefore.items.data[0]?.plan.amount || 0;
+
       // 割引額を円からStripeの最小単位（銭）に変換
       const amountInSmallestUnit = discountAmount * 100;
 
@@ -251,20 +361,55 @@ export class StripeSubscriptionRepository {
         coupon: coupon.id,
       });
 
-      // 適応したクーポンを即時削除
-      await this.stripe.coupons.del(coupon.id);
+      // 3. 割引適用後のサブスクリプション情報を再取得
+      const subscriptionAfter = await this.stripe.subscriptions.retrieve(subscriptionId);
+      const amountAfter = subscriptionAfter.items.data[0]?.plan.amount || 0;
+      const discountInfoAfter = subscriptionAfter.discount;
 
-      console.log(`サブスクリプション ${subscriptionId} に ${discountAmount}円の割引を適用しました (クーポンID: ${coupon.id})`);
+      // 4. 割引が正しく適用されたか検証
+      const isDiscountApplied = !!discountInfoAfter && discountInfoAfter.coupon.id === couponId;
+
+      // 次回請求額の検証
+      const nextInvoice = await this.stripe.invoices.retrieveUpcoming({
+        customer:
+          typeof subscriptionAfter.customer === 'string'
+            ? subscriptionAfter.customer
+            : subscriptionAfter.customer.id,
+      });
+
+      // 検証結果をログに記録
+      console.log(`サブスクリプション ${subscriptionId} の割引検証:`, {
+        適用前金額: amountBefore / 100,
+        適用後金額: amountAfter / 100,
+        割引情報: discountInfoAfter,
+        次回請求額: nextInvoice.amount_due / 100,
+        割引適用成功: isDiscountApplied,
+      });
+
+      // クーポンを削除しない（重要）
 
       return {
         success: true,
-        data: { success: true }
+        data: {
+          success: true,
+          verificationResult: {
+            before: amountBefore / 100,
+            after: amountAfter / 100,
+            discountApplied: isDiscountApplied,
+          },
+        },
       };
     } catch (error) {
       console.error(`サブスクリプション ${subscriptionId} への割引適用に失敗しました:`, error);
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          function: 'applyDiscount',
+        },
+      });
       return {
         success: false,
-        error: this.handleError(error, 'applyDiscount')
+        error: this.handleError(error, 'applyDiscount'),
       };
     }
   }
