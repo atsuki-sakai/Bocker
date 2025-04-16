@@ -19,6 +19,7 @@ export const applyDiscount = action({
     emails: v.array(v.string()),
     isApplyAll: v.boolean(),
     isApplyMaxUseReferral: v.boolean(),
+    isAlreadyUpdated: v.boolean(),
   },
   handler: async (ctx, args) => {
     // 結果保存用の配列
@@ -95,12 +96,12 @@ export const applyDiscount = action({
           }
 
           // isApplyAllがfalseの場合、updatedAtが当月かどうかを確認
-          if (!args.isApplyAll && previousReferral.updatedAt) {
+          if (!args.isApplyAll && !args.isAlreadyUpdated && previousReferral.updatedAt) {
             const updatedDate = new Date(previousReferral.updatedAt);
             const isCurrentMonth =
               updatedDate.getFullYear() === currentYear && updatedDate.getMonth() === currentMonth;
 
-            // 当月の場合はスキップ
+            // 当月の場合はスキップ（ただし、強制的に再適用する場合はスキップしない）
             if (isCurrentMonth) {
               results.push({
                 email,
