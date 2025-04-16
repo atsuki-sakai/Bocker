@@ -31,8 +31,8 @@ import {
 } from "lucide-react";
 
 const signInSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+  email: z.string().email({ message: 'メールアドレスが無効です' }),
+  password: z.string().min(8, { message: 'パスワードは8文字以上で入力してください' }),
 });
 
 export default function SignInForm() {
