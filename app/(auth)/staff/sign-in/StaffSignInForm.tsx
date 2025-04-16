@@ -130,7 +130,7 @@ export default function StaffLoginForm() {
     setIsLoading(true);
     try {
       // メールアドレスからスタッフ情報を取得
-      const staffListResult = await fetchQuery(api.staff.core.getStaffListByEmail, {
+      const staffListResult = await fetchQuery(api.staff.core.query.getStaffListByEmail, {
         email: data.email,
         paginationOpts: {
           numItems: 100,
