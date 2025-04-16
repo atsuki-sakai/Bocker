@@ -5,11 +5,11 @@ import { redirect } from 'next/navigation';
  * @returns ユーザーIDとトークン
  */
 export async function serverConvexAuth() {
-  const { userId, getToken } = await auth();
+  const { userId, getToken, orgId } = await auth();
   const token = await getToken({ template: 'convex' });
 
   if (!userId || !token) {
     return redirect('/sign-in');
   }
-  return { userId, token };
+  return { userId, token, orgId };
 }
