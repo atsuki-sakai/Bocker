@@ -85,6 +85,7 @@ export async function POST(req: Request) {
       const client = await clerkClient();
       const { id, email_addresses = [] } = data;
       const salonName = payload.data.unsafe_metadata.salonName;
+      const referralCode = payload.data.unsafe_metadata.referralCode;
       const email = email_addresses[0]?.email_address || 'no-email';
 
       console.log('payload', payload);
@@ -109,7 +110,7 @@ export async function POST(req: Request) {
             const customer = await retryOperation(() =>
               stripe.customers.create({
                 email: email || undefined,
-                metadata: { clerkId: id },
+                metadata: { clerkId: id, referralCode },
               })
             );
             console.log(`Stripe顧客作成成功: customerId=${customer.id}`);
@@ -143,6 +144,41 @@ export async function POST(req: Request) {
                       salonName: salonName,
                     })
                   );
+
+                  try {
+                    await retryOperation(() =>
+                      fetchMutation(api.salon.referral.mutation.create, {
+                        salonId: salonId,
+                      })
+                    );
+
+                    if (referralCode) {
+                      const referralBySalon = await retryOperation(() =>
+                        fetchQuery(api.salon.referral.query.getByReferralCode, {
+                          referralCode: referralCode,
+                        })
+                      );
+                      if (referralBySalon) {
+                        await retryOperation(() =>
+                          fetchMutation(api.salon.referral.mutation.updateReferralBySalon, {
+                            inviteSalonId: salonId,
+                            referralCode: referralCode,
+                          })
+                        );
+                      }
+                    }
+                  } catch (referralError) {
+                    console.error(
+                      `salonId: ${salonId}のReferral作成に失敗しました:`,
+                      referralError
+                    );
+                    console.error('Referralエラーの詳細:', JSON.stringify(referralError, null, 2));
+                    Sentry.captureException(referralError, {
+                      level: 'error',
+                      tags: { operation: 'create_referral' },
+                    });
+                    // エラーをスローせず処理を続行
+                  }
                   console.log('Convexへのサロン登録成功');
                 } catch (error) {
                   console.error(`Clerk ID: ${id}のサロン登録に失敗しました:`, error);
@@ -380,7 +416,7 @@ export async function POST(req: Request) {
     } else if (eventType === 'email.created') {
       const { id, email_addresses, primary_email_address_id } = data;
       if (!email_addresses) {
-        console.error(
+        console.log(
           `Clerk ID: ${id} のメールアドレス作成イベントを受信しましたが、メールアドレスが存在しません`
         );
         return;
