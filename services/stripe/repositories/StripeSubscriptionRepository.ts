@@ -207,9 +207,65 @@ export class StripeSubscriptionRepository {
           return { success: true, message: `未対応のStripeイベントタイプ: ${event.type}` };
       }
     } catch (error) {
-      throw new StripeError('high', 'Webhookイベントの処理に失敗しました', 'INTERNAL_ERROR', 500, {
-        event,
+      const err = new StripeError(
+        'high',
+        'Webhookイベントの処理に失敗しました',
+        'INTERNAL_ERROR',
+        500,
+        {
+          event,
+        }
+      );
+      throw err;
+    }
+  }
+
+  /**
+   * サブスクリプションに割引を適用する
+   * @param subscriptionId 割引を適用するサブスクリプションID
+   * @param discountAmount 割引額（単位：円）
+   * @returns 割引適用結果
+   */
+  async applyDiscount(
+    subscriptionId: string,
+    discountAmount: number,
+  ): Promise<StripeResult<{ success: boolean }>> {
+    try {
+      // 割引額を円からStripeの最小単位（銭）に変換
+      const amountInSmallestUnit = discountAmount * 100;
+
+      // 一意のクーポンコードを生成
+      const couponId = `referral_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+      // クーポンを作成
+      const coupon = await this.stripe.coupons.create({
+        name: '紹介プログラム割引',
+        amount_off: amountInSmallestUnit,
+        currency: 'jpy',
+        duration: 'forever',
+        id: couponId,
       });
+
+      // サブスクリプションに作成したクーポンを適用
+      await this.stripe.subscriptions.update(subscriptionId, {
+        coupon: coupon.id,
+      });
+
+      // 適応したクーポンを即時削除
+      await this.stripe.coupons.del(coupon.id);
+
+      console.log(`サブスクリプション ${subscriptionId} に ${discountAmount}円の割引を適用しました (クーポンID: ${coupon.id})`);
+
+      return {
+        success: true,
+        data: { success: true }
+      };
+    } catch (error) {
+      console.error(`サブスクリプション ${subscriptionId} への割引適用に失敗しました:`, error);
+      return {
+        success: false,
+        error: this.handleError(error, 'applyDiscount')
+      };
     }
   }
 }

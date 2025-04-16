@@ -23,9 +23,10 @@ class StripeService {
 
   private constructor() {
     if (!process.env.STRIPE_SECRET_KEY) {
-      throw new StripeError('high', 'Stripeの秘密鍵が設定されていません', 'NOT_FOUND', 404, {
+      const err = new StripeError('high', 'Stripeの秘密鍵が設定されていません', 'NOT_FOUND', 404, {
         stripeSecretKey: process.env.STRIPE_SECRET_KEY,
       });
+      throw err;
     }
 
     // Stripeインスタンスの初期化
@@ -85,7 +86,7 @@ class StripeService {
         console.warn('⚠️ 開発環境で署名検証をスキップします');
         return JSON.parse(body) as Stripe.Event;
       } else {
-        throw new StripeError(
+        const err = new StripeError(
           'high',
           'Webhook署名またはシークレットがありません',
           'NOT_FOUND',
@@ -95,6 +96,7 @@ class StripeService {
             webhookSecret,
           }
         );
+        throw err;
       }
     }
 
@@ -170,6 +172,19 @@ class StripeService {
     stripeCustomerId: string
   ): Promise<StripeResult<{ success: boolean }>> {
     return await this.subscriptionRepo.handlePaymentFailed(subscriptionId, stripeCustomerId);
+  }
+
+  /**
+   * サブスクリプションに割引を適用する
+   * @param subscriptionId 割引を適用するサブスクリプションID
+   * @param discountAmount 割引額（単位：円）
+   * @returns 割引適用結果
+   */
+  async applyDiscount(
+    subscriptionId: string,
+    discountAmount: number
+  ): Promise<StripeResult<{ success: boolean }>> {
+    return await this.subscriptionRepo.applyDiscount(subscriptionId, discountAmount);
   }
 }
 

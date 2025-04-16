@@ -97,9 +97,16 @@ export class StripeConnectRepository {
           return { success: true, message: `未処理のイベントタイプ: ${event.type}` };
       }
     } catch (error) {
-      throw new StripeError('high', 'Webhookイベントの処理に失敗しました', 'INTERNAL_ERROR', 500, {
-        event,
-      });
+      const err = new StripeError(
+        'high',
+        'Webhookイベントの処理に失敗しました',
+        'INTERNAL_ERROR',
+        500,
+        {
+          event,
+        }
+      );
+      throw err;
     }
   }
 
@@ -181,10 +188,17 @@ export class StripeConnectRepository {
           // Stripeアカウントを削除
           await this.stripe.accounts.del(existingAccount.accountId);
         } catch (deleteError) {
-          // throw new StripeError('high', 'Stripeアカウントの削除に失敗しました', 'INTERNAL_ERROR', 500, {
-          //   deleteError,
-          // });
-          // 削除に失敗しても続行する（新しいアカウントの作成を試みる）
+          // const err = new StripeError(
+          //   'high',
+          //   'Stripeアカウントの削除に失敗しました',
+          //   'INTERNAL_ERROR',
+          //   500,
+          //   {
+          //     deleteError,
+          //   }
+          // );
+          // throw err;
+          // 削除に失敗しても続行する
         }
       }
 
