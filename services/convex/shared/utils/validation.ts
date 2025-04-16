@@ -46,12 +46,13 @@ export function validateRequired(
   fieldName: string = 'フィールド'
 ): boolean {
   if (value === undefined || value === null || value.trim() === '') {
-    throw new ConvexCustomError('low', `${fieldName}は必須項目です`, 'VALIDATION', 400, {
+    const err = new ConvexCustomError('low', `${fieldName}は必須項目です`, 'VALIDATION', 400, {
       field: fieldName,
     });
+    throw err;
   }
-  if (value.length > MAX_TEXT_LENGTH) {
-    throw new ConvexCustomError(
+  if (value !== undefined && value !== null && value.length > MAX_TEXT_LENGTH) {
+    const err = new ConvexCustomError(
       'low',
       `${fieldName}は${MAX_TEXT_LENGTH}文字以内で入力してください`,
       'VALIDATION',
@@ -62,6 +63,7 @@ export function validateRequired(
         maxLength: MAX_TEXT_LENGTH,
       }
     );
+    throw err;
   }
   return true;
 }
@@ -79,9 +81,10 @@ export function validateRequiredNumber(
   fieldName: string = 'フィールド'
 ): boolean {
   if (value === undefined || value === null) {
-    throw new ConvexCustomError('low', `${fieldName}は必須項目です`, 'VALIDATION', 400, {
+    const err = new ConvexCustomError('low', `${fieldName}は必須項目です`, 'VALIDATION', 400, {
       field: fieldName,
     });
+    throw err;
   }
   return true;
 }
@@ -101,7 +104,7 @@ export function validateStringLength(
   fieldName: string = '文字列'
 ): boolean {
   if (value !== undefined && value !== null && value.length > maxLength) {
-    throw new ConvexCustomError(
+    const err = new ConvexCustomError(
       'low',
       `${fieldName}は${maxLength}文字以内で入力してください`,
       'VALIDATION',
@@ -112,6 +115,7 @@ export function validateStringLength(
         maxLength,
       }
     );
+    throw err;
   }
   return true;
 }
@@ -134,7 +138,7 @@ export function validateNumberRange(
 ): boolean {
   if (value !== undefined && value !== null) {
     if (value < min) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         `${fieldName}は${min}以上で入力してください`,
         'VALIDATION',
@@ -145,9 +149,10 @@ export function validateNumberRange(
           min,
         }
       );
+      throw err;
     }
     if (value > max) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         `${fieldName}は${max}以下で入力してください`,
         'VALIDATION',
@@ -158,6 +163,7 @@ export function validateNumberRange(
           max,
         }
       );
+      throw err;
     }
   }
   return true;
@@ -178,7 +184,7 @@ export function validateEmail(
   if (email !== undefined && email !== null && email.trim() !== '') {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         `${fieldName}の形式が正しくありません`,
         'VALIDATION',
@@ -188,9 +194,10 @@ export function validateEmail(
           value: email,
         }
       );
+      throw err;
     }
     if (email.length > MAX_TEXT_LENGTH) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         `${fieldName}は${MAX_TEXT_LENGTH}文字以内で入力してください`,
         'VALIDATION',
@@ -200,6 +207,7 @@ export function validateEmail(
           value: email,
         }
       );
+      throw err;
     }
   }
 
@@ -225,7 +233,7 @@ export function validatePhone(
     // 数字、ハイフン、括弧のみ許可
     const phoneRegex = /^[\d\-\(\)\s]+$/;
     if (!phoneRegex.test(phone)) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         `${fieldName}の形式が正しくありません`,
         'VALIDATION',
@@ -235,6 +243,7 @@ export function validatePhone(
           value: phone,
         }
       );
+      throw err;
     }
   }
   return true;
@@ -255,7 +264,7 @@ export function validateDateStrFormat(
   if (dateStr !== undefined && dateStr !== null && dateStr.trim() !== '') {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(dateStr)) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         `${fieldName}はYYYY-MM-DD形式で入力してください`,
         'VALIDATION',
@@ -265,12 +274,13 @@ export function validateDateStrFormat(
           value: dateStr,
         }
       );
+      throw err;
     }
 
     // 日付としての妥当性チェック
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         `${fieldName}が有効な日付ではありません`,
         'VALIDATION',
@@ -280,6 +290,7 @@ export function validateDateStrFormat(
           value: dateStr,
         }
       );
+      throw err;
     }
   }
   return true;
@@ -300,7 +311,7 @@ export function validateHourMinuteFormat(
   if (timeStr !== undefined && timeStr !== null && timeStr.trim() !== '') {
     const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
     if (!timeRegex.test(timeStr)) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         `${fieldName}はHH:MM形式で入力してください`,
         'VALIDATION',
@@ -310,6 +321,7 @@ export function validateHourMinuteFormat(
           value: timeStr,
         }
       );
+      throw err;
     }
   }
   return true;
@@ -331,7 +343,7 @@ export function validatePostalCode(
     // 日本の郵便番号形式チェック（XXX-XXXX または XXXXXXX）
     const postalCodeRegex = /^\d{3}-?\d{4}$/;
     if (!postalCodeRegex.test(postalCode)) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         `${fieldName}はXXX-XXXXまたはXXXXXXX形式で入力してください`,
         'VALIDATION',
@@ -341,6 +353,7 @@ export function validatePostalCode(
           value: postalCode,
         }
       );
+      throw err;
     }
   }
   return true;
@@ -361,7 +374,7 @@ export function validateTags(
   if (tags !== undefined && tags !== null && tags.length > 0) {
     // タグの数をチェック
     if (tags.length > LIMIT_TAG_COUNT) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         `${fieldName}は${LIMIT_TAG_COUNT}個以内で入力してください`,
         'VALIDATION',
@@ -372,12 +385,13 @@ export function validateTags(
           limit: LIMIT_TAG_COUNT,
         }
       );
+      throw err;
     }
 
     // 各タグの長さをチェック
     for (const tag of tags) {
       if (tag.length > MAX_TAG_LENGTH) {
-        throw new ConvexCustomError(
+        const err = new ConvexCustomError(
           'low',
           `${fieldName}は1つあたり${MAX_TAG_LENGTH}文字以内で入力してください`,
           'VALIDATION',
@@ -388,6 +402,7 @@ export function validateTags(
             maxLength: MAX_TAG_LENGTH,
           }
         );
+        throw err;
       }
     }
   }
@@ -573,7 +588,8 @@ export function validateCustomerDetail(args: Partial<Doc<'customer_detail'>>) {
     args.gender !== 'male' &&
     args.gender !== 'female'
   ) {
-    throw new ConvexCustomError('low', '性別の選択肢が不正です', 'VALIDATION', 400, {});
+    const err = new ConvexCustomError('low', '性別の選択肢が不正です', 'VALIDATION', 400, {});
+    throw err;
   }
 
   if (
@@ -582,22 +598,24 @@ export function validateCustomerDetail(args: Partial<Doc<'customer_detail'>>) {
     args.gender !== 'male' &&
     args.gender !== 'female'
   ) {
-    throw new ConvexCustomError(
+    const err = new ConvexCustomError(
       'low',
       '性別はunselected、male、femaleのいずれかで入力してください',
       'VALIDATION',
       400,
       {}
     );
+    throw err;
   }
   if (args.notes && args.notes.length > MAX_NOTES_LENGTH) {
-    throw new ConvexCustomError(
+    const err = new ConvexCustomError(
       'low',
       `メモは${MAX_NOTES_LENGTH}文字以内で入力してください`,
       'VALIDATION',
       400,
       {}
     );
+    throw err;
   }
 }
 
@@ -700,13 +718,14 @@ export function validatePointConfig(args: Partial<Doc<'point_config'>>) {
 
   // 相関バリデーション
   if (args.isFixedPoint === true && args.fixedPoint === undefined) {
-    throw new ConvexCustomError(
+    const err = new ConvexCustomError(
       'low',
       '固定ポイント設定時は固定ポイント値を設定してください',
       'VALIDATION',
       400,
       {}
     );
+    throw err;
   }
 }
 
@@ -877,18 +896,11 @@ export function validateStaffWeekSchedule(args: Partial<Doc<'staff_week_schedule
 
 // STAFF
 export function validateStaffAuth(args: Partial<Doc<'staff_auth'>>) {
-  if (args.pinCode) {
-    validateStringLength(args.pinCode, MAX_PIN_CODE_LENGTH, 'ピンコード');
-  }
   if (args.organizationId) {
     validateStringLength(args.organizationId, MAX_TEXT_LENGTH, '組織ID');
   }
-  if (args.hashPinCode) {
-    validateStringLength(
-      args.hashPinCode,
-      MAX_HASH_PIN_CODE_LENGTH * 5,
-      'ハッシュ化されたピンコード'
-    );
+  if (args.role) {
+    validateStringLength(args.role, MAX_TEXT_LENGTH, '権限');
   }
 }
 
@@ -925,13 +937,14 @@ export function validateTimeCard(args: Partial<Doc<'time_card'>>) {
   }
   if (args.startDateTime_unix && args.endDateTime_unix) {
     if (args.startDateTime_unix > args.endDateTime_unix) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         '開始時間は終了時間よりも前にしてください',
         'VALIDATION',
         400,
         {}
       );
+      throw err;
     }
   }
   if (args.workedTime) {
@@ -956,7 +969,14 @@ export function validateSubscription(args: Partial<Doc<'subscription'>>) {
     validateStringLength(args.status, MAX_TEXT_LENGTH, 'ステータス');
   }
   if (args.stripeCustomerId && args.stripeCustomerId === '') {
-    throw new ConvexCustomError('low', 'Stripe顧客IDが指定されていません', 'VALIDATION', 400, {});
+    const err = new ConvexCustomError(
+      'low',
+      'Stripe顧客IDが指定されていません',
+      'VALIDATION',
+      400,
+      {}
+    );
+    throw err;
   }
   if (args.priceId) {
     validateStringLength(args.priceId, MAX_TEXT_LENGTH, '価格ID');
@@ -1000,7 +1020,14 @@ export function validateConfirmSubscriptionUpdate(
   }
   if (args.items) {
     if (args.items.length === 0) {
-      throw new ConvexCustomError('low', 'アイテムが指定されていません', 'VALIDATION', 400, {});
+      const err = new ConvexCustomError(
+        'low',
+        'アイテムが指定されていません',
+        'VALIDATION',
+        400,
+        {}
+      );
+      throw err;
     }
     for (const item of args.items) {
       validateStringLength(item.id, MAX_TEXT_LENGTH, 'アイテムID');

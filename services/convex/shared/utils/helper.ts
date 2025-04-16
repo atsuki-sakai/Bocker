@@ -41,7 +41,8 @@ export const removeEmptyFields = <T extends Record<string, unknown>>(
     }
   }
   if (Object.keys(result).length === 0) {
-    throw new ConvexCustomError('low', '更新するデータがありません', 'INVALID_ARGUMENT', 400);
+    const err = new ConvexCustomError('low', '更新するデータがありません', 'INVALID_ARGUMENT', 400);
+    throw err;
   }
   return result;
 };
@@ -79,7 +80,7 @@ export function excludeFields<T extends Record<string, any>, K extends keyof T>(
 export async function archiveRecord<T extends keyof DataModel>(ctx: MutationCtx, id: Id<T>) {
   const record = await ctx.db.get(id);
   if (!record || record.isArchive) {
-    throw new ConvexCustomError(
+    const err = new ConvexCustomError(
       'low',
       '指定されたレコードが存在しないか、アーカイブされています',
       'NOT_FOUND',
@@ -88,6 +89,7 @@ export async function archiveRecord<T extends keyof DataModel>(ctx: MutationCtx,
         record,
       }
     );
+    throw err;
   }
   await ctx.db.patch(id as Id<T> | any, {
     isArchive: true,
@@ -103,7 +105,7 @@ export async function archiveRecord<T extends keyof DataModel>(ctx: MutationCtx,
 export async function killRecord<T extends keyof DataModel>(ctx: MutationCtx, id: Id<T>) {
   const record = await ctx.db.get(id);
   if (!record || record.isArchive) {
-    throw new ConvexCustomError(
+    const err = new ConvexCustomError(
       'low',
       '指定されたレコードが存在しないか、アーカイブされています',
       'NOT_FOUND',
@@ -112,6 +114,7 @@ export async function killRecord<T extends keyof DataModel>(ctx: MutationCtx, id
         record,
       }
     );
+    throw err;
   }
   await ctx.db.delete(id as Id<T>);
 }

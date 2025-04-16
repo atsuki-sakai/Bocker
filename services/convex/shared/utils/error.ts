@@ -5,6 +5,7 @@
  * エラーの発生、ログ記録、フォーマットなどの処理を一元化し、エラーハンドリングの一貫性を高めます。
  */
 
+// Convexのエラークラスを正しくインポート
 import { ConvexError } from 'convex/values';
 
 /**
@@ -66,7 +67,7 @@ export interface ErrorOptions {
   context?: ErrorContext;
 }
 
-class BaseCustomError extends Error {
+class BaseConvexCustomError extends Error {
   public readonly title: string;
   public readonly code: ConvexErrorCode;
   public readonly severity: ConvexErrorSeverity;
@@ -105,22 +106,10 @@ class BaseCustomError extends Error {
     const errorMessage = this.formatErrorMessage();
     console.error(errorMessage);
   }
-
-  public throwError(): never {
-    const safeContext = JSON.parse(JSON.stringify(this.context));
-    throw new ConvexError({
-      title: this.title,
-      message: this.message,
-      code: this.code,
-      severity: this.severity,
-      status: this.status,
-      context: safeContext,
-    });
-  }
 }
 
 // Stripeエラー
-export class StripeError extends BaseCustomError {
+export class StripeError extends BaseConvexCustomError {
   constructor(
     severity: ConvexErrorSeverity = 'high',
     message: string,
@@ -140,7 +129,7 @@ export class StripeError extends BaseCustomError {
 }
 
 // Convexエラー
-export class ConvexCustomError extends BaseCustomError {
+export class ConvexCustomError extends BaseConvexCustomError {
   constructor(
     severity: ConvexErrorSeverity = 'low',
     message: string,
@@ -160,7 +149,7 @@ export class ConvexCustomError extends BaseCustomError {
 }
 
 // Storageエラー
-export class StorageError extends BaseCustomError {
+export class StorageError extends BaseConvexCustomError {
   constructor(
     severity: ConvexErrorSeverity = 'high',
     message: string,
@@ -179,24 +168,41 @@ export class StorageError extends BaseCustomError {
   }
 }
 
+// Clerkエラー
+export class ClerkError extends BaseConvexCustomError {
+  constructor(
+    severity: ConvexErrorSeverity = 'high',
+    message: string,
+    code: ConvexErrorCode = ErrorCode.INTERNAL_ERROR,
+    status: number = 500,
+    context: ErrorContext = { timestamp: Date.now() }
+  ) {
+    super({
+      title: 'Clerk Error',
+      severity,
+      message,
+      code,
+      status,
+      context,
+    });
+  }
+}
+
 // エラーハンドリング関数
 export function throwConvexApiError(error: unknown): never {
   if (error instanceof ConvexCustomError) {
     throw error;
   } else if (error instanceof Error) {
-    throw new ConvexCustomError(
+    const err = new ConvexCustomError(
       'medium',
       error.message || 'システムエラーが発生しました',
       'UNEXPECTED_ERROR',
       500,
-      { stack: error.stack }
-    ).throwError();
+      {}
+    );
+    throw err;
   } else {
-    throw new ConvexCustomError(
-      'high',
-      '予期しないエラーが発生しました',
-      'UNKNOWN',
-      500
-    ).throwError();
+    const err = new ConvexCustomError('high', '予期しないエラーが発生しました', 'UNKNOWN', 500, {});
+    throw err;
   }
 }

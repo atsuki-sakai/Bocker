@@ -29,9 +29,16 @@ export async function checkAuth(
 
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
-    throw new ConvexCustomError('low', '認証されていないユーザーです', 'AUTHENTICATION', 401, {
-      identity,
-    });
+    const err = new ConvexCustomError(
+      'low',
+      '認証されていないユーザーです',
+      'AUTHENTICATION',
+      401,
+      {
+        identity,
+      }
+    );
+    throw err;
   }
 
   return identity;
@@ -58,9 +65,10 @@ export async function checkSalonAccess(
     // サロンの存在チェックのみ行う
     const salon = await ctx.db.get(salonId);
     if (!salon) {
-      throw new ConvexCustomError('low', 'サロンが見つかりません', 'AUTHORIZATION', 403, {
+      const err = new ConvexCustomError('low', 'サロンが見つかりません', 'AUTHORIZATION', 403, {
         salonId,
       });
+      throw err;
     }
     return true;
   }
@@ -70,7 +78,10 @@ export async function checkSalonAccess(
   // サロンとユーザーの関連をチェック
   const salon = await ctx.db.get(salonId);
   if (!salon) {
-    throw new ConvexCustomError('low', 'サロンが見つかりません', 'AUTHORIZATION', 403, { salonId });
+    const err = new ConvexCustomError('low', 'サロンが見つかりません', 'AUTHORIZATION', 403, {
+      salonId,
+    });
+    throw err;
   }
 
   // 管理者の場合は常に許可（設定に応じて）
@@ -89,9 +100,16 @@ export async function checkSalonAccess(
  */
 export function isAdmin(identity: UserIdentity | null): boolean {
   if (!identity) {
-    throw new ConvexCustomError('low', '認証されていないユーザーです', 'AUTHENTICATION', 401, {
-      identity,
-    });
+    const err = new ConvexCustomError(
+      'low',
+      '認証されていないユーザーです',
+      'AUTHENTICATION',
+      401,
+      {
+        identity,
+      }
+    );
+    throw err;
   }
   const orgs = identity.org_role;
   return Boolean(orgs && Object.values(orgs).some((role) => ['owner', 'admin'].includes(role)));
@@ -119,9 +137,16 @@ export async function checkStaffAccess(
     .first();
 
   if (!staffAuth) {
-    throw new ConvexCustomError('low', 'スタッフ認証情報が見つかりません', 'AUTHENTICATION', 401, {
-      staffId,
-    });
+    const err = new ConvexCustomError(
+      'low',
+      'スタッフ認証情報が見つかりません',
+      'AUTHENTICATION',
+      401,
+      {
+        staffId,
+      }
+    );
+    throw err;
   }
 
   // 権限レベルのチェック
@@ -136,11 +161,18 @@ export async function checkStaffAccess(
   const requiredRoleLevel = roleLevel[requiredRole];
 
   if (staffRoleLevel < requiredRoleLevel) {
-    throw new ConvexCustomError('low', 'この操作を行う権限がありません', 'AUTHORIZATION', 403, {
-      staffId,
-      currentRole: staffAuth.role,
-      requiredRole,
-    });
+    const err = new ConvexCustomError(
+      'low',
+      'この操作を行う権限がありません',
+      'AUTHORIZATION',
+      403,
+      {
+        staffId,
+        currentRole: staffAuth.role,
+        requiredRole,
+      }
+    );
+    throw err;
   }
   return true;
 }

@@ -5,7 +5,7 @@
  * サブスクリプション作成、更新、同期などの型を管理します。
  */
 
-import { Id, Doc } from '@/convex/_generated/dataModel';
+import { Doc } from '@/convex/_generated/dataModel';
 import { CommonFields } from '@/services/convex/shared/types/common';
 
 /**
