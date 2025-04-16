@@ -2,11 +2,15 @@ import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 
+// 上限値を定数として定義
+const MAX_REFERRAL_COUNT = 6;
+
 // 紹介数を指定して取得するためのAPI
 export const getEmailsByReferralCount = query({
   args: {
     orderReferralCount: v.number(),
     includeUpdated: v.boolean(),
+    isApplyMaxUseReferral: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true);
@@ -27,6 +31,16 @@ export const getEmailsByReferralCount = query({
       let query = ctx.db
         .query('salon_referral')
         .filter((q) => q.gte(q.field('referralCount'), args.orderReferralCount));
+
+      // totalReferralCountによる絞り込み（isApplyMaxUseReferralがtrueの場合は適用しない）
+      if (!args.isApplyMaxUseReferral) {
+        query = query.filter((q) =>
+          q.or(
+            q.eq(q.field('totalReferralCount'), null),
+            q.lt(q.field('totalReferralCount'), MAX_REFERRAL_COUNT)
+          )
+        );
+      }
 
       // includeUpdatedフラグに基づいてフィルタリング
       if (!args.includeUpdated) {
@@ -69,6 +83,8 @@ export const getEmailsByReferralCount = query({
       {
         orderReferralCount: args.orderReferralCount,
         includeUpdated: args.includeUpdated,
+        isApplyMaxUseReferral: args.isApplyMaxUseReferral || false,
+        maxReferralCount: MAX_REFERRAL_COUNT,
         total: allSalonEmails.length,
       },
       allSalonEmails,
