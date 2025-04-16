@@ -1,19 +1,19 @@
 import { action } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
-import { StripeError } from '@/services/convex/shared/utils/error';
 import Stripe from 'stripe';
 import { STRIPE_API_VERSION } from '@/lib/constants';
 import { Doc } from '../_generated/dataModel';
 
-const BASE_DISCOUNT_AMOUNT = 3000;
-const SLEEP_DURATION_MS = 6 * 1000; // 6秒間のスリープ
+const BASE_DISCOUNT_AMOUNT = 5000;
+const SLEEP_DURATION_MS = 5 * 1000; // 5秒間のスリープ
+const MAX_REFERRAL_COUNT = 6;
 
 // 指定時間スリープする関数
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // 毎月一回実行する。
-// 紹介一回につき月額3000円の割引を適用する。割引適用時にreferralCountを一つ減らす。
+// 紹介一回につき月額5000円の割引を適用する。割引適用時にreferralCountを一つ減らす。
 export const applyDiscount = action({
   args: {
     emails: v.array(v.string()),
@@ -85,12 +85,12 @@ export const applyDiscount = action({
           if (
             !args.isApplyMaxUseReferral &&
             previousReferral.totalReferralCount &&
-            previousReferral.totalReferralCount >= 5
+            previousReferral.totalReferralCount >= MAX_REFERRAL_COUNT
           ) {
             results.push({
               email,
               success: false,
-              error: 'Total referral count exceeded maximum limit of 5',
+              error: `Total referral count exceeded maximum limit of ${MAX_REFERRAL_COUNT}`,
             });
             continue;
           }
