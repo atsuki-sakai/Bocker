@@ -81,19 +81,6 @@ export const applyDiscount = action({
             continue;
           }
 
-          // referralCountが5回以上の場合は処理をスキップ
-          if (
-            args.isApplyMaxUseReferral &&
-            previousReferral.referralCount &&
-            previousReferral.referralCount > 5
-          ) {
-            results.push({
-              email,
-              success: false,
-              error: 'Referral count is max 5',
-            });
-            continue;
-          }
 
           // totalReferralCountが5以上の場合は処理をスキップ（上限チェック）
           if (previousReferral.totalReferralCount && previousReferral.totalReferralCount >= 5) {
