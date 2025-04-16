@@ -70,19 +70,13 @@ export default function Home() {
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 Bcker
               </h1>
-              <p className="text-xs text-gray-500">
-                美容サロンの予約管理システム
-              </p>
+              <p className="text-xs text-gray-500">美容サロンの予約管理システム</p>
             </div>
           </motion.div>
 
           {/* モバイルメニューボタン */}
           <div className="md:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
+            <Button variant="ghost" size="icon" onClick={() => setMenuOpen(!menuOpen)}>
               {menuOpen ? <XIcon /> : <MenuIcon />}
             </Button>
           </div>
@@ -131,7 +125,7 @@ export default function Home() {
           {menuOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
+              animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               className="absolute top-16 left-0 right-0 bg-white shadow-lg p-4 md:hidden"
             >
@@ -223,14 +217,14 @@ export default function Home() {
                   size="lg"
                   className="text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg"
                 >
-                  14日間無料トライアル
+                  30日間無料トライアル
                 </Button>
               </Link>
               <Button
                 size="lg"
                 variant="outline"
                 onClick={() => {
-                  alert("相談する。：ここで公式ラインなどで質問を受け付ける");
+                  alert('相談する。：ここで公式ラインなどで質問を受け付ける');
                 }}
                 className="text-base px-8 py-6 border-2 border-blue-600 text-blue-600 hover:bg-blue-50"
               >
@@ -238,10 +232,7 @@ export default function Home() {
               </Button>
             </motion.div>
 
-            <motion.div
-              variants={fadeIn}
-              className="text-sm text-gray-500 mt-6"
-            >
+            <motion.div variants={fadeIn} className="text-sm text-gray-500 mt-6">
               ご契約はキャンセル料金不要でいつでもキャンセル可能
             </motion.div>
           </div>
@@ -268,7 +259,7 @@ export default function Home() {
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: '-100px' }}
             variants={fadeIn}
             className="flex flex-col items-center justify-center space-y-4 text-center mb-16"
           >
@@ -287,27 +278,27 @@ export default function Home() {
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: '-100px' }}
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
             {[
               {
-                title: "スマート予約管理",
+                title: 'スマート予約管理',
                 description:
-                  "24時間自動でお客様の予約を受け付け。来店前のメニュー選択も可能で、準備の効率化につながります。",
-                icon: "📅",
+                  '24時間自動でお客様の予約を受け付け。来店前のメニュー選択も可能で、準備の効率化につながります。',
+                icon: '📅',
               },
               {
-                title: "メニュー管理",
+                title: 'メニュー管理',
                 description:
-                  "季節のメニューや特別コースも簡単に追加・編集。リアルタイムでウェブサイトに反映されます。",
-                icon: "🍽️",
+                  '季節のメニューや特別コースも簡単に追加・編集。リアルタイムでウェブサイトに反映されます。',
+                icon: '🍽️',
               },
               {
-                title: "顧客データ分析",
+                title: '顧客データ分析',
                 description:
-                  "予約履歴や好みのメニューを分析し、パーソナライズされたサービスを提供できます。",
-                icon: "📊",
+                  '予約履歴や好みのメニューを分析し、パーソナライズされたサービスを提供できます。',
+                icon: '📊',
               },
             ].map((feature, index) => (
               <motion.div key={index} variants={fadeIn}>
@@ -333,10 +324,7 @@ export default function Home() {
             variants={fadeIn}
             className="mt-20 text-center"
           >
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-            >
+            <Button size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
               全ての機能を見る <ArrowRightIcon className="ml-2 h-4 w-4" />
             </Button>
           </motion.div>
@@ -371,21 +359,20 @@ export default function Home() {
             {[
               {
                 step: 1,
-                title: "アカウント登録",
-                description:
-                  "簡単な情報入力でアカウントを作成し、店舗情報を設定します。",
+                title: 'アカウント登録',
+                description: '簡単な情報入力でアカウントを作成し、店舗情報を設定します。',
               },
               {
                 step: 2,
-                title: "メニューの設定",
+                title: 'メニューの設定',
                 description:
-                  "あなたの美容院・サロンのスタッフとメニューを入力し、予約可能な時間帯を設定します。",
+                  'あなたの美容院・サロンのスタッフとメニューを入力し、予約可能な時間帯を設定します。',
               },
               {
                 step: 3,
-                title: "予約受付開始",
+                title: '予約受付開始',
                 description:
-                  "予約ページのリンクをお客様に共有し、すぐに予約を受け付け開始できます。",
+                  '予約ページのリンクをお客様に共有し、すぐに予約を受け付け開始できます。',
               },
             ].map((step, index) => (
               <motion.div
@@ -396,9 +383,7 @@ export default function Home() {
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-2xl font-bold mb-6 shadow-lg">
                   {step.step}
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                  {step.title}
-                </h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">{step.title}</h3>
                 <p className="text-gray-600 max-w-xs">{step.description}</p>
               </motion.div>
             ))}
@@ -438,7 +423,7 @@ export default function Home() {
             <Card className="overflow-hidden border-0 shadow-2xl hover:shadow-3xl transition-all duration-300">
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300 }}
+                transition={{ type: 'spring', stiffness: 300 }}
               >
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
                   <h3 className="text-xl font-bold text-white">プロプラン</h3>
@@ -448,20 +433,18 @@ export default function Home() {
                     <div className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
                       ¥15,000
                     </div>
-                    <CardDescription className="text-gray-500 text-lg">
-                      月額
-                    </CardDescription>
+                    <CardDescription className="text-gray-500 text-lg">月額</CardDescription>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">
                   <ul className="space-y-4">
                     {[
-                      "無制限の予約受付",
-                      "メニュー管理機能",
-                      "リマインド機能",
-                      "顧客データ分析",
-                      "メール・SMS通知",
-                      "24時間カスタマーサポート",
+                      '無制限の予約受付',
+                      'メニュー管理機能',
+                      'リマインド機能',
+                      '顧客データ分析',
+                      'メール・SMS通知',
+                      '24時間カスタマーサポート',
                     ].map((feature, index) => (
                       <motion.li
                         key={index}
@@ -487,7 +470,7 @@ export default function Home() {
               </motion.div>
             </Card>
             <p className="text-center text-gray-500 mt-4">
-              クレジットカード不要・14日間無料トライアル
+              クレジットカード不要・30日間無料トライアル
             </p>
           </motion.div>
         </motion.div>
@@ -524,33 +507,27 @@ export default function Home() {
           >
             {[
               {
-                name: "田中 健太",
-                role: "美容院オーナー",
+                name: '田中 健太',
+                role: '美容院オーナー',
                 content:
-                  "導入前は電話予約の管理に追われていましたが、今ではスタッフの負担が大幅に減り、お客様の満足度も向上しました。特にメニュー管理機能が便利です。",
-                initials: "TK",
+                  '導入前は電話予約の管理に追われていましたが、今ではスタッフの負担が大幅に減り、お客様の満足度も向上しました。特にメニュー管理機能が便利です。',
+                initials: 'TK',
               },
               {
-                name: "山田 美子",
-                role: "ネイルサロンオーナー",
+                name: '山田 美子',
+                role: 'ネイルサロンオーナー',
                 content:
-                  "顧客データ分析機能で常連のお客様の好みを把握できるようになり、よりパーソナライズされたサービスを提供できるようになりました。売上も20%アップしています。",
-                initials: "YM",
+                  '顧客データ分析機能で常連のお客様の好みを把握できるようになり、よりパーソナライズされたサービスを提供できるようになりました。売上も20%アップしています。',
+                initials: 'YM',
               },
             ].map((testimonial, index) => (
               <motion.div key={index} variants={fadeIn}>
-                <motion.div
-                  whileHover={{ y: -5 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
+                <motion.div whileHover={{ y: -5 }} transition={{ type: 'spring', stiffness: 300 }}>
                   <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white overflow-hidden">
                     <CardContent className="p-8">
                       <div className="flex items-start space-x-4">
                         <Avatar className="h-12 w-12 border-2 border-blue-100">
-                          <AvatarImage
-                            src="/api/placeholder/40/40"
-                            alt={testimonial.name}
-                          />
+                          <AvatarImage src="/api/placeholder/40/40" alt={testimonial.name} />
                           <AvatarFallback className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                             {testimonial.initials}
                           </AvatarFallback>
@@ -567,12 +544,8 @@ export default function Home() {
                               </svg>
                             ))}
                           </div>
-                          <p className="text-lg font-bold text-gray-900">
-                            {testimonial.name}
-                          </p>
-                          <p className="text-blue-600 text-sm">
-                            {testimonial.role}
-                          </p>
+                          <p className="text-lg font-bold text-gray-900">{testimonial.name}</p>
+                          <p className="text-blue-600 text-sm">{testimonial.role}</p>
                         </div>
                       </div>
                       <blockquote className="mt-6 text-gray-700 italic">
@@ -609,14 +582,14 @@ export default function Home() {
             <Accordion type="single" collapsible className="w-full">
               {[
                 {
-                  question: "無料トライアルはありますか？",
+                  question: '無料トライアルはありますか？',
                   answer:
-                    "はい、14日間の無料トライアルをご用意しています。クレジットカード情報なしで、すべての機能をお試しいただけます。",
+                    'はい、30日間の無料トライアルをご用意しています。クレジットカード情報なしで、すべての機能をお試しいただけます。',
                 },
                 {
-                  question: "導入にどれくらい時間がかかりますか？",
+                  question: '導入にどれくらい時間がかかりますか？',
                   answer:
-                    "基本的な設定は約15分で完了します。メニューの登録など、詳細な設定も含めても1時間程度で導入できます。専任のサポートスタッフがセットアップをお手伝いします。",
+                    '基本的な設定は約15分で完了します。メニューの登録など、詳細な設定も含めても1時間程度で導入できます。専任のサポートスタッフがセットアップをお手伝いします。',
                 },
                 // {
                 //   question: "既存の予約システムからデータを移行できますか？",
@@ -624,14 +597,14 @@ export default function Home() {
                 //     "はい、CSVファイルでのインポートに対応しています。また、専任のサポートスタッフがデータ移行のお手伝いをいたします。既存システムからの移行もスムーズに行えます。",
                 // },
                 {
-                  question: "解約はいつでもできますか？",
+                  question: '解約はいつでもできますか？',
                   answer:
-                    "はい、いつでも解約可能です。解約時の違約金や追加料金は一切ありません。解約はアカウント設定画面から簡単に行えます。",
+                    'はい、いつでも解約可能です。解約時の違約金や追加料金は一切ありません。解約はアカウント設定画面から簡単に行えます。',
                 },
                 {
-                  question: "カスタマーサポートはどのように受けられますか？",
+                  question: 'カスタマーサポートはどのように受けられますか？',
                   answer:
-                    "メール、チャット、電話でのサポートを平日9時から18時まで提供しています。緊急の場合は24時間対応のホットラインもご利用いただけます。導入後もしっかりとサポートいたします。",
+                    'メール、チャット、電話でのサポートを平日9時から18時まで提供しています。緊急の場合は24時間対応のホットラインもご利用いただけます。導入後もしっかりとサポートいたします。',
                 },
               ].map((item, index) => (
                 <motion.div
@@ -669,10 +642,7 @@ export default function Home() {
           className="container px-4 md:px-6 mx-auto relative z-10"
         >
           <div className="flex flex-col items-center justify-center space-y-8 text-center max-w-3xl mx-auto">
-            <motion.h2
-              variants={fadeIn}
-              className="text-3xl md:text-5xl font-bold text-white"
-            >
+            <motion.h2 variants={fadeIn} className="text-3xl md:text-5xl font-bold text-white">
               あなたのビジネスを、
               <br />
               今日から変えませんか？
@@ -683,13 +653,13 @@ export default function Home() {
             <motion.div
               variants={fadeIn}
               whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 10 }}
             >
               <Button
                 size="lg"
                 className="bg-white text-blue-600 hover:bg-blue-50 text-lg px-8 py-6 shadow-xl"
               >
-                14日間無料トライアル
+                30日間無料トライアル
               </Button>
             </motion.div>
             <motion.p variants={fadeIn} className="text-blue-100">
@@ -723,26 +693,17 @@ export default function Home() {
               <h3 className="text-lg font-bold text-white mb-4">製品</h3>
               <ul className="space-y-2">
                 <li>
-                  <a
-                    href="#features"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
+                  <a href="#features" className="text-gray-400 hover:text-white transition-colors">
                     機能
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="#pricing"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
+                  <a href="#pricing" className="text-gray-400 hover:text-white transition-colors">
                     料金
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="#"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
+                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
                     デモ
                   </a>
                 </li>
@@ -752,26 +713,17 @@ export default function Home() {
               <h3 className="text-lg font-bold text-white mb-4">サポート</h3>
               <ul className="space-y-2">
                 <li>
-                  <a
-                    href="#faq"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
+                  <a href="#faq" className="text-gray-400 hover:text-white transition-colors">
                     よくある質問
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="#"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
+                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
                     お問い合わせ
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="#"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
+                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
                     ヘルプセンター
                   </a>
                 </li>
@@ -781,26 +733,17 @@ export default function Home() {
               <h3 className="text-lg font-bold text-white mb-4">会社情報</h3>
               <ul className="space-y-2">
                 <li>
-                  <a
-                    href="#"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
+                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
                     会社概要
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="#"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
+                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
                     プライバシーポリシー
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="#"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
+                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
                     利用規約
                   </a>
                 </li>
@@ -809,20 +752,10 @@ export default function Home() {
           </div>
           <Separator className="my-8 bg-gray-800" />
           <div className="flex flex-col md:flex-row items-center justify-between">
-            <p className="text-gray-500">
-              © 2025 Bcker. All rights reserved.
-            </p>
+            <p className="text-gray-500">© 2025 Bcker. All rights reserved.</p>
             <div className="flex space-x-4 mt-4 md:mt-0">
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <svg
-                  className="h-6 w-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     fillRule="evenodd"
                     d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
@@ -830,29 +763,13 @@ export default function Home() {
                   />
                 </svg>
               </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <svg
-                  className="h-6 w-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                 </svg>
               </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <svg
-                  className="h-6 w-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     fillRule="evenodd"
                     d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z"

@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useOrganization } from '@clerk/nextjs';
 import { usePreloadedQuery } from 'convex/react';
 import { useStaffAuth } from '@/hooks/useStaffAuth';
 import { Loading } from '@/components/common';
@@ -43,16 +44,29 @@ function classNames(...classes: string[]) {
 
 interface SidebarProps {
   children: React.ReactNode;
-  preloadedSalon: Preloaded<typeof api.salon.core.query.findByClerkId>;
+  preloadedSalon:
+    | Preloaded<typeof api.salon.core.query.findByOrganizationId>
+    | Preloaded<typeof api.salon.core.query.findByClerkId>;
 }
 
 export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { signOut } = useClerk();
+  const { signOut, user } = useClerk();
+  const { organization, memberships } = useOrganization();
   const { isSignedIn } = useAuth();
-  const salon = usePreloadedQuery(preloadedSalon);
+  const salon = usePreloadedQuery(
+    preloadedSalon as Preloaded<
+      typeof api.salon.core.query.findByOrganizationId | typeof api.salon.core.query.findByClerkId
+    >
+  );
 
-  console.log('preloadedSalon', preloadedSalon);
+  const userEmail = user?.emailAddresses[0].emailAddress;
+  console.log('userEmail: ', userEmail);
+
+  console.log('preloadedSalon: FROM SIDEBAR', preloadedSalon);
+  console.log('organization: ', organization);
+  console.log('memberships: ', memberships);
+  console.log('user: ', user);
 
   const {
     isAuthenticated: isStaffAuthenticated,
@@ -202,7 +216,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
               <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
                 <div className="flex flex-col mt-2">
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-800 bg-clip-text text-transparent">
-                    Booker
+                    Bcker
                   </h1>
                   <p className="text-xs text-slate-500">サロンの予約・管理をもっと簡単に。</p>
                 </div>
@@ -345,7 +359,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
           <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
             <div className="flex flex-col mt-2">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-800 bg-clip-text text-transparent">
-                Bocker
+                Bcker
               </h1>
               <p className="text-xs text-slate-500">サロンの予約・管理をもっと簡単に。</p>
             </div>
@@ -519,7 +533,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                       <span className="sr-only">ユーザーメニューを開く</span>
                       <span className="hidden lg:flex lg:items-center">
                         <h5 className="text-sm text-gray-700">
-                          {isOwner ? (salon?.email ?? '') : (staffName ?? '')}
+                          {isOwner ? (userEmail ?? '') : (staffName ?? '')}
                         </h5>
                         <ChevronDownIcon aria-hidden="true" className="ml-2 size-5 text-gray-400" />
                       </span>

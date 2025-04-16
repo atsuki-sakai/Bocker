@@ -35,7 +35,7 @@ export default function ExclusionMenu({
     loadMore,
     status,
   } = useStablePaginatedQuery(
-    api.menu.core.getAllBySalonId,
+    api.menu.core.query.listBySalonId,
     salon ? { salonId: salon._id as Id<'salon'> } : 'skip',
     { initialNumItems: numberOfMenus }
   );
