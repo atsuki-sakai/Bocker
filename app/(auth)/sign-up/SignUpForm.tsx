@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useSignUp, useClerk } from "@clerk/nextjs";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { fetchQuery } from 'convex/nextjs';
+import { useSignUp, useClerk } from '@clerk/nextjs';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import * as Sentry from '@sentry/nextjs';
+import { handleError } from '@/lib/error';
 import {
   Card,
   CardContent,
@@ -23,10 +26,12 @@ import { toast } from 'sonner';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle, User, Loader2 } from 'lucide-react';
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
 import { z } from 'zod';
+import { api } from '@/convex/_generated/api';
 
 export const signUpSchema = z
   .object({
     salonName: z.string().min(1, { message: '店舗名を入力してください' }),
+    referralCode: z.string().optional(),
     email: z
       .string()
       .min(1, { message: 'メールアドレスを入力してください' })
@@ -169,6 +174,7 @@ export default function SignUpPage() {
   const [pendingVerification, setPendingVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [password, setPassword] = useState('');
+  const [showReferralCode, setShowReferralCode] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('empty');
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
@@ -182,6 +188,7 @@ export default function SignUpPage() {
   } = useZodForm(signUpSchema);
 
   const salonName = watch('salonName');
+  const referralCode = watch('referralCode');
 
   const email = watch('email');
 
@@ -367,12 +374,29 @@ export default function SignUpPage() {
         toast.info('既存のセッションからサインアウトしました');
       }
 
+      // 招待コードが存在する場合は、招待コードをチェック
+      if (referralCode) {
+        const referral = await fetchQuery(api.salon.referral.query.getByReferralCode, {
+          referralCode: referralCode,
+        });
+        if (!referral) {
+          toast.error('招待コードが見つかりません');
+          return;
+        }
+
+        if (referral.referralCount && referral.referralCount >= 5) {
+          toast.error('招待コードの利用回数が上限に達しています。');
+          return;
+        }
+      }
+
       // Clerkでユーザー作成
       await signUp?.create({
         emailAddress: data.email,
         password: data.password,
         unsafeMetadata: {
           salonName: salonName,
+          referralCode: referralCode,
         },
       });
 
@@ -382,6 +406,7 @@ export default function SignUpPage() {
 
       toast.success('アカウントが作成されました。メールを確認してください');
     } catch (err) {
+      const errorDetails = handleError(err);
       Sentry.captureException(err, {
         level: 'error',
         tags: {
@@ -389,7 +414,7 @@ export default function SignUpPage() {
           email: data.email,
         },
       });
-      toast.error('アカウントの作成に失敗しました');
+      toast.error(errorDetails.message);
     }
   };
 
@@ -536,6 +561,49 @@ export default function SignUpPage() {
                       </p>
                     )}
                   </motion.div>
+
+                  <motion.div variants={itemVariants} className="space-y-2 flex items-center">
+                    <Checkbox
+                      className="mr-2 mt-2"
+                      id="show-referral"
+                      checked={showReferralCode}
+                      onCheckedChange={(checked) => setShowReferralCode(!!checked)}
+                    />
+                    <Label htmlFor="show-referral" className="text-sm cursor-pointer">
+                      招待コードを使用する
+                    </Label>
+                  </motion.div>
+
+                  <AnimatePresence mode="sync">
+                    {showReferralCode && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="space-y-2 overflow-hidden"
+                      >
+                        <Label htmlFor="referralCode" className="text-sm font-medium">
+                          招待コード
+                        </Label>
+                        <div className="relative p-1">
+                          <Input
+                            id="referralCode"
+                            type="text"
+                            {...register('referralCode')}
+                            placeholder="招待コードを入力"
+                            className="pl-3"
+                            autoFocus
+                          />
+                        </div>
+                        {errors.referralCode && (
+                          <p id="referralCode-error" className="text-xs text-red-600" role="alert">
+                            {errors.referralCode.message}
+                          </p>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {/* メモ化されたコンポーネントを使用 */}
                   {PasswordStrengthIndicator}
