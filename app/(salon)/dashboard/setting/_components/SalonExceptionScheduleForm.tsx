@@ -5,6 +5,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useSalon } from '@/hooks/useSalon';
 import { Button } from '@/components/ui/button';
+import { Doc, Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loading } from '@/components/common';
@@ -21,7 +22,6 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Id } from '@/convex/_generated/dataModel';
 import { handleError } from '@/lib/error';
 
 // カスタムカレンダーコンポーネントをインポート
@@ -71,7 +71,7 @@ export default function SalonExceptionScheduleForm() {
 
   // 既存の休業日を取得
   const exceptionSchedules = useQuery(
-    api.schedule.salon_schedule_exception.getByScheduleList,
+    api.schedule.salon_exception.query.getByScheduleList,
     salonId ? { salonId } : 'skip'
   );
 
@@ -79,9 +79,9 @@ export default function SalonExceptionScheduleForm() {
   const isLoading = exceptionSchedules === undefined;
 
   // 休業日を登録するミューテーション
-  const addExceptionSchedule = useMutation(api.schedule.salon_schedule_exception.add);
+  const addExceptionSchedule = useMutation(api.schedule.salon_exception.mutation.create);
   // 休業日を削除するミューテーション
-  const killExceptionSchedule = useMutation(api.schedule.salon_schedule_exception.kill);
+  const killExceptionSchedule = useMutation(api.schedule.salon_exception.mutation.kill);
 
   // 初期表示時のみ既存の休業日をカレンダーに設定（今日以降の日付のみ）
   useEffect(() => {
@@ -95,8 +95,8 @@ export default function SalonExceptionScheduleForm() {
       if (exceptionSchedules && exceptionSchedules.length > 0) {
         // 文字列の日付をDateオブジェクトに変換し、今日以降の日付のみを選択
         const dates = exceptionSchedules
-          .map((schedule) => new Date(schedule.date))
-          .filter((date) => date >= today); // 今日以降の日付のみ
+          .map((schedule: Doc<'salon_schedule_exception'>) => new Date(schedule.date))
+          .filter((date: Date) => date >= today); // 今日以降の日付のみ
         setSelectedDates(dates);
       } else {
         // 休業日が0件の場合は空配列をセット

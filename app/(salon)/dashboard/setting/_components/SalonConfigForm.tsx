@@ -33,6 +33,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useOrganization, useOrganizationList } from '@clerk/nextjs';
 
 const salonConfigFormSchema = z.object({
   salonId: z.string(),
@@ -61,6 +62,8 @@ const salonConfigFormSchema = z.object({
 
 export default function SalonConfigForm() {
   const { salonId } = useSalon();
+  const { organization, isLoaded } = useOrganization();
+  const { userMemberships, setActive } = useOrganizationList();
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
@@ -106,14 +109,28 @@ export default function SalonConfigForm() {
           toast.error('住所が見つかりませんでした');
         }
       } catch (error) {
-        console.error('住所取得エラー:', error);
-        toast.error('住所の取得に失敗しました');
+        const errorDetails = handleError(error);
+        toast.error(errorDetails.message);
       } finally {
         setIsSearchingAddress(false);
       }
     },
     [setValue]
   );
+
+  // useEffectで組織をアクティブに設定
+  useEffect(() => {
+    if (!isLoaded) return;
+    // 組織のメンバーシップがある場合のみ処理を実行
+    if (userMemberships?.data?.length && setActive) {
+      const targetOrgId = userMemberships.data[0].organization.id;
+
+      // 現在のアクティブな組織と異なる場合のみsetActiveを実行
+      if (organization?.id !== targetOrgId) {
+        setActive({ organization: targetOrgId });
+      }
+    }
+  }, [userMemberships, organization, setActive, isLoaded]);
 
   // 郵便番号が7桁になったら自動的に住所を検索する
   useEffect(() => {
@@ -137,9 +154,6 @@ export default function SalonConfigForm() {
 
         // 画像を圧縮してWebP形式に変換
         const processedFile = await compressAndConvertToWebP(currentFile);
-        console.log(
-          `元のサイズ: ${currentFile.size / 1024} KB, 圧縮後: ${processedFile.size / 1024} KB`
-        );
 
         const base64Data = await fileToBase64(processedFile);
         const filePath = `${Date.now()}-${processedFile.name}`;
@@ -163,8 +177,8 @@ export default function SalonConfigForm() {
           toast.success('画像を保存しました');
         }
       } catch (error) {
-        console.error('Error saving image:', error);
-        toast.error('画像の保存に失敗しました');
+        const errorDetails = handleError(error);
+        toast.error(errorDetails.message);
       } finally {
         setIsUploading(false);
       }
@@ -177,23 +191,45 @@ export default function SalonConfigForm() {
     async (data: z.infer<typeof salonConfigFormSchema>) => {
       if (!salonId) return;
 
+      if (!organization) {
+        toast.error('組織が見つかりません');
+        return;
+      }
+
       try {
+        // 現在のサロン名とフォームで送信されたサロン名を比較
+        const isNameChanged = salonConfig?.salonName !== data.salonName;
+
+        // 並行して処理を実行（Convexの更新とClerkの更新）
         await updateSalonConfig({
-          ...data,
           salonId: salonId,
+          salonName: data.salonName,
+          email: data.email,
+          phone: data.phone,
+          postalCode: data.postalCode,
+          address: data.address,
+          reservationRules: data.reservationRules,
+          description: data.description,
         });
+
+        // サロン名が変更されていて、organizationが存在する場合はClerkの組織名も更新
+        if (isNameChanged && organization) {
+          await organization.update({
+            name: data.salonName,
+          });
+        }
         toast.success('サロン設定を保存しました');
+
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       } catch (error) {
-        console.error('ERROR:', error);
         const errorDetails = handleError(error);
+
         toast.error(errorDetails.message);
       }
     },
-    [updateSalonConfig, salonId, setSaveSuccess]
+    [updateSalonConfig, salonId, setSaveSuccess, organization, salonConfig?.salonName]
   );
-
   // salonConfigが変更されたらフォームをリセット
   useEffect(() => {
     if (salonConfig) {
@@ -220,7 +256,7 @@ export default function SalonConfigForm() {
       : 'https://placehold.co/600x400.png';
   }, [currentFile, salonConfig?.imgPath]);
 
-  if (!salonId) {
+  if (!salonId || !isLoaded) {
     return <Loading />;
   }
 

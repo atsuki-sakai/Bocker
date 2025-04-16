@@ -61,8 +61,7 @@ const ApiSettingsCard = () => {
     api.salon.api_config.query.findBySalonId,
     salonId ? { salonId } : 'skip'
   );
-  const updateSalonApiConfig = useMutation(api.salon.api_config.mutation.update);
-  const createSalonApiConfig = useMutation(api.salon.api_config.mutation.create);
+  const upsertSalonApiConfig = useMutation(api.salon.api_config.mutation.upsert);
 
   // フォーム管理（useZodFormを使用）
   const {
@@ -87,18 +86,10 @@ const ApiSettingsCard = () => {
       try {
         setSubmitting(true);
 
-        // API設定が存在しない場合は新規作成、存在する場合は更新
-        if (salonApiConfig) {
-          await updateSalonApiConfig({
-            ...data,
-            salonId,
-          });
-        } else {
-          await createSalonApiConfig({
-            ...data,
-            salonId,
-          });
-        }
+        await upsertSalonApiConfig({
+          salonId,
+          ...data,
+        });
 
         toast.success('API設定を保存しました');
         setSaveSuccess(true);
@@ -111,7 +102,7 @@ const ApiSettingsCard = () => {
         setSubmitting(false);
       }
     },
-    [updateSalonApiConfig, createSalonApiConfig, salonApiConfig, salonId]
+    [upsertSalonApiConfig, salonId]
   );
 
   const handleShowFields = (

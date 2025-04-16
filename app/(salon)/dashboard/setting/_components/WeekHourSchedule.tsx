@@ -137,6 +137,8 @@ const fadeInVariants = {
   visible: { opacity: 1, transition: { duration: 0.3 } },
 };
 
+const defaultScheduleHour = { startHour: '08:00', endHour: '19:00' };
+
 export default function WeekHourSchedule() {
   const { salonId } = useSalon();
   const [showToast, setShowToast] = useState(false);
@@ -146,26 +148,28 @@ export default function WeekHourSchedule() {
   // スケジュールデータの状態
   const [weekScheduleData, setWeekScheduleData] = useState<WeekScheduleData>({
     scheduleSettings: {
-      monday: { isOpen: false, startHour: '08:00', endHour: '19:00' },
-      tuesday: { isOpen: false, startHour: '08:00', endHour: '19:00' },
-      wednesday: { isOpen: false, startHour: '08:00', endHour: '19:00' },
-      thursday: { isOpen: false, startHour: '08:00', endHour: '19:00' },
-      friday: { isOpen: false, startHour: '08:00', endHour: '19:00' },
-      saturday: { isOpen: false, startHour: '08:00', endHour: '19:00' },
-      sunday: { isOpen: false, startHour: '08:00', endHour: '19:00' },
+      monday: { isOpen: false, ...defaultScheduleHour },
+      tuesday: { isOpen: false, ...defaultScheduleHour },
+      wednesday: { isOpen: false, ...defaultScheduleHour },
+      thursday: { isOpen: false, ...defaultScheduleHour },
+      friday: { isOpen: false, ...defaultScheduleHour },
+      saturday: { isOpen: false, ...defaultScheduleHour },
+      sunday: { isOpen: false, ...defaultScheduleHour },
     },
     useCommonHours: true,
-    commonStartHour: '08:00',
-    commonEndHour: '19:00',
+    commonStartHour: defaultScheduleHour.startHour,
+    commonEndHour: defaultScheduleHour.endHour,
   });
 
   // すでに登録されているデータを取得
   const salonWeekSchedules = useQuery(
-    api.schedule.salon_week_schedule.getAllBySalonId,
+    api.schedule.salon_week_schedule.query.getAllBySalonId,
     salonId ? { salonId } : 'skip'
   );
 
-  const updateWeekSchedule = useMutation(api.schedule.salon_week_schedule.updateWeekSchedule);
+  const updateWeekSchedule = useMutation(
+    api.schedule.salon_week_schedule.mutation.updateWeekSchedule
+  );
 
   const { handleSubmit } = useZodForm(salonScheduleConfigSchema);
 
@@ -207,20 +211,46 @@ export default function WeekHourSchedule() {
 
       if (shouldUpdateSchedule) {
         const newScheduleSettings = { ...weekScheduleData.scheduleSettings };
+        let earliestStartHour = '24:00'; // 最も早い開始時間を追跡
+        let latestEndHour = '00:00'; // 最も遅い終了時間を追跡
+        let hasOpenDay = false; // 営業日があるかどうかを追跡
+
         salonWeekSchedules.forEach((schedule) => {
           if (schedule.dayOfWeek && typeof schedule.dayOfWeek === 'string') {
             const dayOfWeek = schedule.dayOfWeek as DayOfWeek;
+            const isOpen = schedule.isOpen ?? false;
+            const startHour = schedule.startHour || defaultScheduleHour.startHour;
+            const endHour = schedule.endHour || defaultScheduleHour.endHour;
+
             newScheduleSettings[dayOfWeek] = {
-              isOpen: schedule.isOpen ?? false,
-              startHour: schedule.startHour || '09:00',
-              endHour: schedule.endHour || '18:00',
+              isOpen,
+              startHour,
+              endHour,
               scheduleId: schedule._id,
             };
+
+            // 営業日の場合、最も早い開始時間と最も遅い終了時間を更新
+            if (isOpen) {
+              hasOpenDay = true;
+              if (startHour < earliestStartHour) {
+                earliestStartHour = startHour;
+              }
+              if (endHour > latestEndHour) {
+                latestEndHour = endHour;
+              }
+            }
           }
         });
 
+        // 共通時間を更新（営業日がある場合のみ）
+        const updatedCommonHours = {
+          commonStartHour: hasOpenDay ? earliestStartHour : defaultScheduleHour.startHour,
+          commonEndHour: hasOpenDay ? latestEndHour : defaultScheduleHour.endHour,
+        };
+
         setWeekScheduleData((prev) => ({
           ...prev,
+          ...updatedCommonHours,
           scheduleSettings: newScheduleSettings,
         }));
       }
@@ -428,21 +458,13 @@ export default function WeekHourSchedule() {
     });
 
     try {
-      console.log('Sending scheduleSettings:', cleanedScheduleSettings);
-      const result = await updateWeekSchedule({
+      await updateWeekSchedule({
         salonId: salonId as Id<'salon'>,
         scheduleSettings: cleanedScheduleSettings,
       });
-      console.log('Update result:', result);
 
       // 成功メッセージ
-      toast.success('スケジュールを更新しました', {
-        description: '営業日と営業時間の設定が保存されました',
-        action: {
-          label: '閉じる',
-          onClick: () => {},
-        },
-      });
+      toast.success('営業時間を更新しました');
 
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
