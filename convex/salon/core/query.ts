@@ -42,6 +42,20 @@ export const findByClerkId = query({
   },
 });
 
+export const findByOrganizationId = query({
+  args: {
+    organizationId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx, true);
+    validateRequired(args.organizationId, 'organizationId');
+    if (!args.organizationId) {
+      return null;
+    }
+    return await salonService.findSalonByOrganizationId(ctx, args.organizationId);
+  },
+});
+
 export const getRelations = query({
   args: {
     id: v.id('salon'),

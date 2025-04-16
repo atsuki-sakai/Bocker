@@ -1,9 +1,8 @@
 import { mutation } from '../../_generated/server';
 import { v } from 'convex/values';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { validateSalonApiConfig } from '@/services/convex/shared/utils/validation';
+import { validateSalonConfig } from '@/services/convex/shared/utils/validation';
 import { salonService } from '@/services/convex/services';
-
 
 export const create = mutation({
   args: {
@@ -13,7 +12,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true);
-    validateSalonApiConfig(args);
+    validateSalonConfig(args);
     return await salonService.upsertConfig(ctx, args, true);
   },
 });
@@ -32,7 +31,7 @@ export const upsert = mutation({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
-    validateSalonApiConfig(args);
-    return await salonService.upsertConfig(ctx, args);
+    validateSalonConfig(args);
+    return await salonService.upsertConfig(ctx, args, true);
   },
 });

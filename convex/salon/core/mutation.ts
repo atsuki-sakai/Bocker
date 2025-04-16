@@ -122,7 +122,7 @@ export const updateSubscription = mutation({
       );
 
       if (!result) {
-        throw new ConvexCustomError(
+        const err = new ConvexCustomError(
           'medium',
           'サブスクリプション更新対象のサロンが見つかりません',
           'NOT_FOUND',
@@ -132,6 +132,7 @@ export const updateSubscription = mutation({
             subscriptionId: args.subscriptionId,
           }
         );
+        throw err;
       }
 
       return result;
