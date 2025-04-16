@@ -73,13 +73,14 @@ class SubscriptionService {
       if (error instanceof ConvexCustomError) {
         throw error;
       }
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'high',
         'サブスクリプションの同期中にエラーが発生しました',
         'INTERNAL_ERROR',
         500,
         { data, error: error instanceof Error ? error.message : '不明なエラー' }
       );
+      throw err;
     }
   }
 
@@ -120,13 +121,14 @@ class SubscriptionService {
       if (error instanceof ConvexCustomError) {
         throw error;
       }
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'high',
         '支払い失敗の処理中にエラーが発生しました',
         'INTERNAL_ERROR',
         500,
         { data, error: error instanceof Error ? error.message : '不明なエラー' }
       );
+      throw err;
     }
   }
 
@@ -144,13 +146,14 @@ class SubscriptionService {
       if (error instanceof ConvexCustomError) {
         throw error;
       }
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         'サブスクリプション状態の確認中にエラーが発生しました',
         'INTERNAL_ERROR',
         500,
         { salonId, error: error instanceof Error ? error.message : '不明なエラー' }
       );
+      throw err;
     }
   }
 
@@ -163,27 +166,29 @@ class SubscriptionService {
   ): Promise<{ checkoutUrl: string | null }> {
     try {
       if (!process.env.STRIPE_SECRET_KEY) {
-        throw new StripeError(
+        const err = new StripeError(
           'critical',
           'Stripeの秘密鍵が設定されていません',
           'INVALID_ARGUMENT',
           400,
           { ...data }
         );
+        throw err;
       }
 
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
         apiVersion: STRIPE_API_VERSION,
       });
 
-      if (data.trialDays && (data.trialDays < 0 || data.trialDays > 15)) {
-        throw new ConvexCustomError(
+      if (data.trialDays && (data.trialDays < 0 || data.trialDays > 31)) {
+        const err = new ConvexCustomError(
           'low',
           '試用期間は0以上15日以内で入力してください',
           'INVALID_ARGUMENT',
           400,
           { trialDays: data.trialDays }
         );
+        throw err;
       }
 
       // 環境変数が設定されていない場合のデフォルト値を追加
@@ -202,6 +207,7 @@ class SubscriptionService {
         line_items: [{ price: data.priceId, quantity: 1 }],
         success_url: successUrl,
         cancel_url: cancelUrl,
+        allow_promotion_codes: true,
         client_reference_id: data.clerkUserId,
         metadata: {
           clerkUserId: data.clerkUserId,
@@ -214,13 +220,14 @@ class SubscriptionService {
       if (error instanceof ConvexCustomError) {
         throw error;
       }
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'high',
         'サブスクリプションセッションの作成中にエラーが発生しました',
         'INTERNAL_ERROR',
         500,
         { data, error: error instanceof Error ? error.message : '不明なエラー' }
       );
+      throw err;
     }
   }
 
@@ -233,13 +240,14 @@ class SubscriptionService {
   ): Promise<{ portalUrl: string | null }> {
     try {
       if (!process.env.STRIPE_SECRET_KEY) {
-        throw new StripeError(
+        const err = new StripeError(
           'critical',
           'Stripeの秘密鍵が設定されていません',
           'INVALID_ARGUMENT',
           400,
           { ...data }
         );
+        throw err;
       }
 
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -254,13 +262,14 @@ class SubscriptionService {
       if (error instanceof ConvexCustomError) {
         throw error;
       }
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'high',
         'Billing Portalのセッションの作成中にエラーが発生しました',
         'INTERNAL_ERROR',
         500,
         { data, error: error instanceof Error ? error.message : '不明なエラー' }
       );
+      throw err;
     }
   }
 
@@ -270,13 +279,14 @@ class SubscriptionService {
   async getSubscriptionUpdatePreview(ctx: ActionCtx, data: SubscriptionUpdatePreviewInput) {
     try {
       if (!process.env.STRIPE_SECRET_KEY) {
-        throw new StripeError(
+        const err = new StripeError(
           'critical',
           'Stripeの秘密鍵が設定されていません',
           'INVALID_ARGUMENT',
           400,
           { ...data }
         );
+        throw err;
       }
 
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -294,13 +304,14 @@ class SubscriptionService {
       ];
 
       if (!subscription) {
-        throw new StripeError(
+        const err = new StripeError(
           'low',
           'サブスクリプションの取得に失敗しました',
           'INVALID_ARGUMENT',
           400,
           { ...data }
         );
+        throw err;
       }
 
       // 更新前に請求書プレビューのみを取得
@@ -312,13 +323,14 @@ class SubscriptionService {
       });
 
       if (!upcomingInvoice) {
-        throw new StripeError(
+        const err = new StripeError(
           'low',
           '請求書プレビューの取得に失敗しました',
           'INVALID_ARGUMENT',
           400,
           { ...data }
         );
+        throw err;
       }
 
       return {
@@ -332,13 +344,14 @@ class SubscriptionService {
       if (error instanceof ConvexCustomError) {
         throw error;
       }
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'high',
         'サブスクリプション更新プレビューの取得中にエラーが発生しました',
         'INTERNAL_ERROR',
         500,
         { data, error: error instanceof Error ? error.message : '不明なエラー' }
       );
+      throw err;
     }
   }
 
@@ -351,13 +364,14 @@ class SubscriptionService {
   ) {
     try {
       if (!process.env.STRIPE_SECRET_KEY) {
-        throw new StripeError(
+        const err = new StripeError(
           'critical',
           'Stripeの秘密鍵が設定されていません',
           'INVALID_ARGUMENT',
           400,
           { ...data }
         );
+        throw err;
       }
 
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -396,13 +410,14 @@ class SubscriptionService {
       if (error instanceof ConvexCustomError) {
         throw error;
       }
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'high',
         'サブスクリプション更新の確定中にエラーが発生しました',
         'INTERNAL_ERROR',
         500,
         { data, error: error instanceof Error ? error.message : '不明なエラー' }
       );
+      throw err;
     }
   }
 }

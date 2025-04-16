@@ -1,4 +1,3 @@
-import { upsert } from './../../../convex/customer/core';
 /**
  * サロンサービス
  *
@@ -62,6 +61,9 @@ class SalonService {
   async findSalonByClerkId(ctx: QueryCtx, clerkId: string) {
     return await this.salonRepo.findByClerkId(ctx, clerkId);
   }
+  async findSalonByOrganizationId(ctx: QueryCtx, organizationId: string) {
+    return await this.salonRepo.findByOrganizationId(ctx, organizationId);
+  }
   async updateSalon(ctx: MutationCtx, salonId: Id<'salon'>, data: SalonUpdateInput) {
     return await this.salonRepo.updateSalon(ctx, salonId, data);
   }
@@ -98,15 +100,18 @@ class SalonService {
       .withIndex('by_salon_id', (q) => q.eq('salonId', data.salonId))
       .first();
     if (!apiConfig) {
-      throw new ConvexCustomError('low', 'API設定が見つかりません', 'NOT_FOUND', 404, {
+      const err = new ConvexCustomError('low', 'API設定が見つかりません', 'NOT_FOUND', 404, {
         salonId: data.salonId,
       });
+      throw err;
     }
     return await this.apiConfigRepo.update(ctx, apiConfig._id, data);
   }
   async upsertApiConfig(ctx: MutationCtx, data: SalonApiConfigInput) {
     await checkSalonAccess(ctx, data.salonId);
-    return await this.apiConfigRepo.upsert(ctx, data);
+    return await this.apiConfigRepo.upsert(ctx, {
+      ...data,
+    });
   }
 
   // Schedule Config
@@ -117,6 +122,7 @@ class SalonService {
   async findScheduleConfigBySalonId(ctx: QueryCtx, salonId: Id<'salon'>) {
     return await this.scheduleConfigRepo.findBySalonId(ctx, salonId);
   }
+
   async updateScheduleConfig(ctx: MutationCtx, data: SalonScheduleConfigInput) {
     await checkSalonAccess(ctx, data.salonId);
     const scheduleConfig = await ctx.db
@@ -124,9 +130,16 @@ class SalonService {
       .withIndex('by_salon_id', (q) => q.eq('salonId', data.salonId))
       .first();
     if (!scheduleConfig) {
-      throw new ConvexCustomError('low', 'スケジュール設定が見つかりません', 'NOT_FOUND', 404, {
-        salonId: data.salonId,
-      });
+      const err = new ConvexCustomError(
+        'low',
+        'スケジュール設定が見つかりません',
+        'NOT_FOUND',
+        404,
+        {
+          salonId: data.salonId,
+        }
+      );
+      throw err;
     }
     return await this.scheduleConfigRepo.update(ctx, scheduleConfig._id, data);
   }
@@ -155,9 +168,10 @@ class SalonService {
       ]);
 
       if (!salon) {
-        throw new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
+        const err = new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
           salonId,
         });
+        throw err;
       }
 
       return {
@@ -174,13 +188,14 @@ class SalonService {
       if (error instanceof ConvexCustomError) {
         throw error; // すでにフォーマット済みなのでそのままスロー
       }
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'medium',
         'サロン情報の取得中にエラーが発生しました',
         'INTERNAL_ERROR',
         500,
         { salonId, error: error instanceof Error ? error.message : '不明なエラー' }
       );
+      throw err;
     }
   }
   async upsertSalonRelations(
@@ -214,7 +229,10 @@ class SalonService {
       // サロンの存在確認
       const existingSalon = await this.salonRepo.get(ctx, salonId);
       if (!existingSalon) {
-        throw new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, { salonId });
+        const err = new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
+          salonId,
+        });
+        throw err;
       }
 
       // 各リポジトリを順番に更新
@@ -242,13 +260,14 @@ class SalonService {
       if (error instanceof ConvexCustomError) {
         throw error; // すでにフォーマット済みのエラーはそのままスロー
       }
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'medium',
         'サロン情報の更新中にエラーが発生しました',
         'INTERNAL_ERROR',
         500,
         { salonId, error: error instanceof Error ? error.message : '不明なエラー' }
       );
+      throw err;
     }
   }
 
