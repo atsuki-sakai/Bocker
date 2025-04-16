@@ -106,32 +106,34 @@ interface PlanCardProps {
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, delay }}
-        className={cn("relative", isPopular ? 'md:-mt-4 md:mb-4' : '')}
+        className={cn('relative', isPopular ? 'md:-mt-4 md:mb-4' : '')}
       >
         {isPopular && (
           <div className="absolute -top-4 left-0 right-0 z-10 flex justify-center">
-            <Badge
-              className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-md"
-            >
+            <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-md">
               <Star className="w-4 h-4 mr-1" />
               人気プラン
             </Badge>
           </div>
         )}
-        
+
         <Card className={cardStyle}>
-          <div className={`absolute h-1.5 bg-gradient-to-r ${highlightColor} top-0 left-0 right-0`} />
-          
+          <div
+            className={`absolute h-1.5 bg-gradient-to-r ${highlightColor} top-0 left-0 right-0`}
+          />
+
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
-              <CardTitle className={`text-xl font-bold bg-gradient-to-r ${highlightColor} bg-clip-text text-transparent`}>
+              <CardTitle
+                className={`text-xl font-bold bg-gradient-to-r ${highlightColor} bg-clip-text text-transparent`}
+              >
                 {title}
               </CardTitle>
               {isCurrentPlan && isActive && (
                 <motion.div
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.3, type: "spring", stiffness: 300 }}
+                  transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
                 >
                   <Badge
                     variant="default"
@@ -142,31 +144,29 @@ interface PlanCardProps {
                 </motion.div>
               )}
             </div>
-            <CardDescription>
-              {description}
-            </CardDescription>
+            <CardDescription>{description}</CardDescription>
           </CardHeader>
-          
+
           <CardContent className="pt-4">
             <div className="mb-4">
               <div className="flex items-baseline">
                 <span className="text-3xl font-bold">¥{price.toLocaleString()}</span>
-                <span className="text-sm text-slate-500 ml-1">/{billingPeriod === "monthly" ? "月" : "年"}</span>
+                <span className="text-sm text-slate-500 ml-1">
+                  /{billingPeriod === 'monthly' ? '月' : '年'}
+                </span>
               </div>
-              {billingPeriod === "yearly" && savingPercent && (
+              {billingPeriod === 'yearly' && savingPercent && (
                 <div className="text-xs text-green-500 font-medium mt-1">
                   年間契約で{savingPercent}%お得
                 </div>
               )}
-              {billingPeriod === "yearly" && (
-                <div className="text-xs text-slate-500 mt-1">
-                  (月あたり ¥{monthlyEquivalent})
-                </div>
+              {billingPeriod === 'yearly' && (
+                <div className="text-xs text-slate-500 mt-1">(月あたり ¥{monthlyEquivalent})</div>
               )}
             </div>
-            
+
             <Separator className="my-4" />
-            
+
             <motion.ul
               className="space-y-3 my-6"
               variants={containerVariants}
@@ -186,7 +186,7 @@ interface PlanCardProps {
                 </motion.li>
               ))}
             </motion.ul>
-            
+
             <PlanActionButton
               isActive={isActive}
               isCurrentPlan={isCurrentPlan}
@@ -201,11 +201,10 @@ interface PlanCardProps {
               highlightColor={highlightColor}
             />
           </CardContent>
-          
-              <CardFooter className="pt-2 pb-4 px-6 text-xs text-slate-500 text-center">
-                <p>※14日間の無料トライアル付き</p>
-              </CardFooter>
-  
+
+          <CardFooter className="pt-2 pb-4 px-6 text-xs text-slate-500 text-center">
+            <p>※30日間の無料トライアル付き</p>
+          </CardFooter>
         </Card>
       </motion.div>
     );

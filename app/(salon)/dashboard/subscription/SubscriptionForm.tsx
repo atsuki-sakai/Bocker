@@ -138,7 +138,7 @@ export default function SubscriptionForm({
             stripeCustomerId: salon?.stripeCustomerId ?? '',
             clerkUserId: salon?.clerkId ?? '',
             priceId: priceId,
-            trialDays: isTrial ? 14 : undefined,
+            trialDays: isTrial ? 30 : undefined,
           });
 
           if (result?.checkoutUrl) {
@@ -400,7 +400,7 @@ export default function SubscriptionForm({
         className="mt-12 text-center text-sm text-slate-500 max-w-md"
       >
         <p>
-          すべてのプランには14日間の無料トライアル期間が含まれています。
+          すべてのプランには30日間の無料トライアル期間が含まれています。
           <br />
           いつでもキャンセルまたはプラン変更が可能です。
         </p>
