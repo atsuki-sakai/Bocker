@@ -8,7 +8,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-
 // 指数バックオフで再試行を行う関数
 export async function retryOperation<T>(
   operation: () => Promise<T>,
@@ -261,40 +260,36 @@ export async function encryptString(text: string, password: string): Promise<str
     false,
     ['deriveKey']
   );
-  
+
   // ランダムなソルトとIVを生成
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  
+
   // 派生キーを生成
   const key = await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
       salt,
       iterations: 100000,
-      hash: 'SHA-256'
+      hash: 'SHA-256',
     },
     keyMaterial,
     { name: 'AES-GCM', length: 256 },
     false,
     ['encrypt', 'decrypt']
   );
-  
+
   // テキストを暗号化
   const encodedText = new TextEncoder().encode(text);
-  const encryptedBuffer = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    encodedText
-  );
-  
+  const encryptedBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encodedText);
+
   // 暗号化されたデータとIV、ソルトを結合して保存
   const encryptedArray = new Uint8Array(encryptedBuffer);
   const result = new Uint8Array(salt.length + iv.length + encryptedArray.length);
   result.set(salt, 0);
   result.set(iv, salt.length);
   result.set(encryptedArray, salt.length + iv.length);
-  
+
   // Base64に変換して返す
   return btoa(String.fromCharCode(...result));
 }
@@ -303,14 +298,16 @@ export async function encryptString(text: string, password: string): Promise<str
 export async function decryptString(encryptedText: string, password: string): Promise<string> {
   // Base64から復元
   const data = new Uint8Array(
-    atob(encryptedText).split('').map(char => char.charCodeAt(0))
+    atob(encryptedText)
+      .split('')
+      .map((char) => char.charCodeAt(0))
   );
-  
+
   // ソルト、IV、暗号文を分離
   const salt = data.slice(0, 16);
   const iv = data.slice(16, 16 + 12);
   const ciphertext = data.slice(16 + 12);
-  
+
   // パスワードからキーを再生成
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
@@ -319,28 +316,29 @@ export async function decryptString(encryptedText: string, password: string): Pr
     false,
     ['deriveKey']
   );
-  
+
   // 派生キーを再生成
   const key = await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
       salt,
       iterations: 100000,
-      hash: 'SHA-256'
+      hash: 'SHA-256',
     },
     keyMaterial,
     { name: 'AES-GCM', length: 256 },
     false,
     ['encrypt', 'decrypt']
   );
-  
+
   // 復号
-  const decryptedBuffer = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    ciphertext
-  );
-  
+  const decryptedBuffer = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+
   // 復号されたテキストを返す
   return new TextDecoder().decode(decryptedBuffer);
+}
+
+export function generateReferralCode() {
+  // JavaScriptのMath.random()を使用して8文字の16進コードを生成
+  return Math.random().toString(36).substring(2, 15).toLowerCase();
 }

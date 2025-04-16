@@ -23,24 +23,39 @@ export const upload = action({
     checkAuth(ctx);
     // ファイル名とMIMEタイプの検証
     if (!args.filePath) {
-      throw new StorageError('low', 'ファイル名が指定されていません', 'INVALID_ARGUMENT', 400, {
-        ...args,
-      });
+      const err = new StorageError(
+        'low',
+        'ファイル名が指定されていません',
+        'INVALID_ARGUMENT',
+        400,
+        {
+          ...args,
+        }
+      );
+      throw err;
     }
 
     if (!args.contentType) {
-      throw new StorageError('low', 'ファイルタイプが指定されていません', 'INVALID_ARGUMENT', 400, {
-        ...args,
-      });
+      const err = new StorageError(
+        'low',
+        'ファイルタイプが指定されていません',
+        'INVALID_ARGUMENT',
+        400,
+        {
+          ...args,
+        }
+      );
+      throw err;
     }
 
     // Base64データをデコードしてバッファに変換
     const binaryData = Buffer.from(args.base64Data, 'base64');
 
     if (binaryData.length === 0) {
-      throw new StorageError('low', 'ファイルデータが空です', 'INVALID_ARGUMENT', 400, {
+      const err = new StorageError('low', 'ファイルデータが空です', 'INVALID_ARGUMENT', 400, {
         ...args,
       });
+      throw err;
     }
     // GCSにアップロード - Fileオブジェクトを使わずに直接バッファを渡す
     return await gcsService.uploadFileBuffer(
@@ -64,9 +79,10 @@ export const kill = action({
       await gcsService.deleteImage(args.imgUrl);
       return { success: true };
     } catch (error) {
-      throw new StorageError('low', 'ファイルの削除に失敗しました', 'INVALID_ARGUMENT', 400, {
+      const err = new StorageError('low', 'ファイルの削除に失敗しました', 'INVALID_ARGUMENT', 400, {
         ...args,
       });
+      throw err;
     }
   },
 });
