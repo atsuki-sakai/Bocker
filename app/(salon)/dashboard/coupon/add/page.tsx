@@ -258,9 +258,9 @@ function CouponForm() {
   const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { salon } = useSalon();
-  const addCoupon = useMutation(api.coupon.core.add);
-  const addCouponConfig = useMutation(api.coupon.config.add);
-  const upsertExclusionMenu = useMutation(api.coupon.coupon_exclusion_menu.upsert);
+
+  const createCouponRelatedTables = useMutation(api.coupon.core.mutation.createCouponRelatedTables);
+
   // フォーム管理
   const {
     register,
@@ -295,31 +295,18 @@ function CouponForm() {
       const startDate_unix = data.startDate.getTime();
       const endDate_unix = data.endDate.getTime();
 
-      // 1. クーポンを作成
-      const couponId = await addCoupon({
+      await createCouponRelatedTables({
         salonId: salon!._id,
         couponUid: data.couponUid,
         name: data.name,
         discountType: data.discountType,
-        percentageDiscountValue: data.percentageDiscountValue ?? undefined,
-        fixedDiscountValue: data.fixedDiscountValue ?? undefined,
+        percentageDiscountValue: data.percentageDiscountValue ?? 0,
+        fixedDiscountValue: data.fixedDiscountValue ?? 0,
         isActive: data.isActive,
-      });
-
-      // 2. クーポン設定を作成
-      await addCouponConfig({
-        salonId: salon!._id,
-        couponId,
         startDate_unix,
         endDate_unix,
-        maxUseCount: data.maxUseCount ?? undefined,
+        maxUseCount: data.maxUseCount ?? 0,
         numberOfUse: 0,
-      });
-
-      upsertExclusionMenu({
-        salonId: salon._id,
-        couponId,
-        selectedMenuIds: selectedMenuIds,
       });
 
       toast.success('クーポンを作成しました');

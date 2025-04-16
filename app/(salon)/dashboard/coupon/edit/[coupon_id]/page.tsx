@@ -50,6 +50,11 @@ import { ZodTextField } from '@/components/common';
 
 const couponSchema = z.object({
   name: z.string().min(1, 'クーポン名を入力してください'),
+  couponUid: z
+    .string()
+    .min(1, 'クーポンUIDを入力してください')
+    .max(12, 'クーポンUIDは12文字以内で入力してください')
+    .optional(),
   discountType: z.enum(['percentage', 'fixed']),
   percentageDiscountValue: z.preprocess(
     (val) => {
@@ -202,20 +207,20 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
   const { salon } = useSalon();
   // 状態管理
   const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([]);
+  const [initialSelectedMenuIds, setInitialSelectedMenuIds] = useState<Id<'menu'>[]>([]);
   // Convex
-  const coupon = useQuery(api.coupon.core.get, {
-    couponId: couponId as Id<'coupon'>,
-  });
-  const couponConfig = useQuery(api.coupon.config.get, {
-    couponId: couponId as Id<'coupon'>,
-  });
-  const updateCoupon = useMutation(api.coupon.core.update);
-  const updateCouponConfig = useMutation(api.coupon.config.update);
-  const upsertExclusionMenu = useMutation(api.coupon.coupon_exclusion_menu.upsert);
-  const exclusionMenus = useQuery(api.coupon.coupon_exclusion_menu.getExclusionMenus, {
-    salonId: salon?._id as Id<'salon'>,
-    couponId: couponId as Id<'coupon'>,
-  });
+  const updateCouponComplete = useMutation(api.coupon.core.mutation.updateCouponRelatedTables);
+  const couponCompleteData = useQuery(
+    api.coupon.core.query.findCouponComplete,
+    salon?._id
+      ? {
+          couponId: couponId as Id<'coupon'>,
+          salonId: salon?._id as Id<'salon'>,
+        }
+      : 'skip'
+  );
+
+  const { coupon, couponConfig, couponExclusionMenus } = couponCompleteData ?? {};
   // フォーム管理
   const {
     register,
@@ -242,9 +247,14 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         toast.error('サロンが存在しません');
         return;
       }
-      await updateCoupon({
+      if (!couponConfig) {
+        throw new Error('クーポン設定が存在しません');
+      }
+      await updateCouponComplete({
+        salonId: salon._id as Id<'salon'>,
         couponId: couponId,
-        couponUid: coupon?.couponUid,
+        couponConfigId: couponConfig._id,
+        couponUid: submitData.couponUid,
         name: submitData.name,
         discountType: submitData.discountType,
         percentageDiscountValue:
@@ -252,21 +262,10 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         fixedDiscountValue:
           submitData.fixedDiscountValue !== undefined ? submitData.fixedDiscountValue : 0,
         isActive: submitData.isActive,
-      });
-      if (!couponConfig) {
-        throw new Error('クーポン設定が存在しません');
-      }
-      await updateCouponConfig({
-        couponConfigId: couponConfig._id,
         startDate_unix: submitData.startDate.getTime(),
         endDate_unix: submitData.endDate.getTime(),
         maxUseCount: submitData.maxUseCount,
         numberOfUse: submitData.numberOfUse,
-      });
-
-      upsertExclusionMenu({
-        salonId: salon._id as Id<'salon'>,
-        couponId: couponId,
         selectedMenuIds: selectedMenuIds,
       });
       toast.success('クーポンを更新しました');
@@ -282,18 +281,21 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     if (coupon && couponConfig) {
       reset({
         name: coupon.name,
-        discountType: coupon.discountType as 'percentage' | 'fixed',
-        percentageDiscountValue: coupon.percentageDiscountValue,
-        fixedDiscountValue: coupon.fixedDiscountValue,
+        couponUid: coupon.couponUid,
+        discountType: (coupon.discountType as 'percentage' | 'fixed') ?? 'percentage',
+        percentageDiscountValue: coupon.percentageDiscountValue ?? 0,
+        fixedDiscountValue: coupon.fixedDiscountValue ?? 0,
         isActive: coupon.isActive,
         startDate: new Date(couponConfig.startDate_unix ?? Date.now()),
         endDate: new Date(couponConfig.endDate_unix ?? Date.now()),
-        maxUseCount: couponConfig.maxUseCount,
-        numberOfUse: couponConfig.numberOfUse,
+        maxUseCount: couponConfig.maxUseCount ?? 0,
+        numberOfUse: couponConfig.numberOfUse ?? 0,
       });
     }
-    setSelectedMenuIds(exclusionMenus?.map((menu) => menu.menuId) ?? []);
-  }, [reset, coupon, couponConfig, exclusionMenus]);
+    const initialIds = couponExclusionMenus?.map((menu) => menu.menuId) ?? [];
+    setSelectedMenuIds(initialIds);
+    setInitialSelectedMenuIds(initialIds);
+  }, [reset, coupon, couponConfig, couponExclusionMenus]);
 
   // 表示用のプレビューデータ
   const previewData = {
@@ -301,6 +303,13 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     selectedMenus: selectedMenuIds,
   };
 
+  // 配列の内容が変更されたか比較
+  const menuIdsChanged =
+    JSON.stringify(selectedMenuIds.sort()) !== JSON.stringify(initialSelectedMenuIds.sort());
+
+  console.log('Form Errors:', errors);
+  console.log('Is Submitting:', isSubmitting);
+  console.log('Is Dirty:', isDirty);
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
@@ -334,6 +343,14 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                     label="クーポン名"
                     icon={<Tag size={16} />}
                     placeholder="例: 初回限定20%OFF"
+                  />
+                  <ZodTextField
+                    register={register}
+                    errors={errors}
+                    name="couponUid"
+                    label="クーポンコード"
+                    icon={<Hash size={16} />}
+                    placeholder="例: COUPON-00123"
                   />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -599,7 +616,12 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
             <CouponPreview data={previewData} />
 
             <motion.div initial="hidden" animate="visible" variants={fadeIn} className="mt-6">
-              <Button type="submit" disabled={isSubmitting} className="w-full" size="lg">
+              <Button
+                type="submit"
+                disabled={isSubmitting || !(isDirty || menuIdsChanged)}
+                className="w-full"
+                size="lg"
+              >
                 {isSubmitting ? (
                   <>
                     <motion.div

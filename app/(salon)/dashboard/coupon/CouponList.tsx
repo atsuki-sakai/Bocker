@@ -16,10 +16,10 @@ export default function CouponList() {
   const { salon } = useSalon();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCouponId, setSelectedCouponId] = useState<Id<'coupon'> | null>(null);
-  const deleteCoupon = useMutation(api.coupon.core.killRelatedTables);
+  const deleteCoupon = useMutation(api.coupon.core.mutation.killRelatedTables);
 
   const { results, loadMore, status } = usePaginatedQuery(
-    api.coupon.core.getAllBySalonId,
+    api.coupon.core.query.list,
     salon ? { salonId: salon._id as Id<'salon'> } : 'skip',
     { initialNumItems: 10 }
   );
