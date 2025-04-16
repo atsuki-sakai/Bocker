@@ -117,7 +117,8 @@ export default function OptionAddForm() {
   const [currentTags, setCurrentTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState<string>('');
 
-  const addOption = useMutation(api.option.core.add);
+  const addOption = useMutation(api.option.mutation.create);
+
   const {
     register,
     handleSubmit,

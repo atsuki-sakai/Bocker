@@ -23,7 +23,7 @@ export default function OptionList() {
     isLoading,
     status,
   } = useStablePaginatedQuery(
-    api.option.core.getAllBySalonId,
+    api.option.query.list,
     salon?._id
       ? {
           salonId: salon._id,
@@ -35,17 +35,17 @@ export default function OptionList() {
     }
   );
 
-  const killOption = useMutation(api.option.core.kill);
+  const killOption = useMutation(api.option.mutation.kill);
 
-  const showDeleteDialog = (salonOptionId: Id<'salon_option'>) => {
+  const showDeleteDialog = (optionId: Id<'salon_option'>) => {
     setIsDialogOpen(true);
-    setDeleteOptionId(salonOptionId);
+    setDeleteOptionId(optionId);
   };
 
-  const handleDelete = (salonOptionId: Id<'salon_option'>) => {
+  const handleDelete = (optionId: Id<'salon_option'>) => {
     try {
       killOption({
-        salonOptionId,
+        optionId,
       });
       toast.success('オプションを削除しました');
       setIsDialogOpen(false);

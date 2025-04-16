@@ -148,8 +148,8 @@ export default function OptionEditForm() {
   const params = useParams();
   const optionId = params.option_id as Id<'salon_option'>;
   const { salon } = useSalon();
-  const optionData = useQuery(api.option.core.get, { salonOptionId: optionId });
-  const updateOption = useMutation(api.option.core.update);
+  const optionData = useQuery(api.option.query.get, { optionId });
+  const updateOption = useMutation(api.option.mutation.update);
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentTags, setCurrentTags] = useState<string[]>([]);
@@ -229,7 +229,7 @@ export default function OptionEditForm() {
 
       // APIに送信するデータを作成
       // zod schemaで型変換後のデータを使用
-      const updateData: Partial<Doc<'salon_option'>> & { salonOptionId: Id<'salon_option'> } = {
+      const updateData: Partial<Doc<'salon_option'>> & { optionId: Id<'salon_option'> } = {
         name: data.name,
         unitPrice: data.unitPrice,
         orderLimit: data.orderLimit,
@@ -237,7 +237,7 @@ export default function OptionEditForm() {
         tags: data.tags, // zodで変換された配列 or undefined
         description: data.description,
         isActive: data.isActive,
-        salonOptionId: optionId, // idは必須
+        optionId, // idは必須
       };
 
       // salePriceの処理
@@ -254,7 +254,7 @@ export default function OptionEditForm() {
       // updateOptionの型定義に合わせて不要な undefined プロパティを除外
       const finalUpdateData = Object.fromEntries(
         Object.entries(updateData).filter(([, value]) => value !== undefined)
-      ) as Partial<Doc<'salon_option'>> & { salonOptionId: Id<'salon_option'> };
+      ) as Partial<Doc<'salon_option'>> & { optionId: Id<'salon_option'> };
 
       await updateOption(finalUpdateData);
 
