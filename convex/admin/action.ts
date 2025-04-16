@@ -100,7 +100,7 @@ export const applyDiscount = action({
             results.push({
               email,
               success: false,
-              error: 'Total referral count exceeded maximum limit of 12',
+              error: 'Total referral count exceeded maximum limit of 5',
             });
             continue;
           }
