@@ -18,6 +18,7 @@ export const applyDiscount = action({
   args: {
     emails: v.array(v.string()),
     isApplyAll: v.boolean(),
+    isApplyMaxUseReferral: v.boolean(),
   },
   handler: async (ctx, args) => {
     // 結果保存用の配列
@@ -79,12 +80,16 @@ export const applyDiscount = action({
             continue;
           }
 
-          // referralCountが0以下の場合は処理をスキップ
-          if (!previousReferral.referralCount || previousReferral.referralCount <= 0) {
+          // referralCountが5回以上の場合は処理をスキップ
+          if (
+            args.isApplyMaxUseReferral &&
+            previousReferral.referralCount &&
+            previousReferral.referralCount > 5
+          ) {
             results.push({
               email,
               success: false,
-              error: 'No referral count available',
+              error: 'Referral count is max 5',
             });
             continue;
           }
@@ -114,7 +119,7 @@ export const applyDiscount = action({
           let coupon;
           try {
             coupon = await stripe.coupons.create({
-              name: `紹介割引 - ¥${BASE_DISCOUNT_AMOUNT.toLocaleString()} - 残りの継続月: ${previousReferral.referralCount - 1}回`,
+              name: `紹介割引 - ¥${BASE_DISCOUNT_AMOUNT.toLocaleString()} - 残りの継続月: ${(previousReferral.referralCount ?? 1) - 1}回`,
               amount_off: BASE_DISCOUNT_AMOUNT,
               currency: 'jpy',
               duration: 'once',
