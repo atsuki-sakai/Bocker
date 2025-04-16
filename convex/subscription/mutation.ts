@@ -68,11 +68,22 @@ export const archive = mutation({
 
 export const kill = mutation({
   args: {
-    id: v.id('subscription'),
+    stripeSubscriptionId: v.string(),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
-    validateRequired(args.id, 'id');
-    return await killRecord(ctx, args.id);
+    validateRequired(args.stripeSubscriptionId, 'stripeSubscriptionId');
+
+    const subscription = await ctx.db
+      .query('subscription')
+      .withIndex('by_subscription_id')
+      .filter((q) => q.eq(q.field('_id'), args.stripeSubscriptionId))
+      .first();
+
+    if (!subscription) {
+      throw new Error('Subscription not found');
+    }
+
+    await ctx.db.delete(subscription._id);
   },
 });
