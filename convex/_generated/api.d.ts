@@ -8,6 +8,9 @@
  * @module
  */
 
+import type * as admin_action from "../admin/action.js";
+import type * as admin_mutation from "../admin/mutation.js";
+import type * as admin_query from "../admin/query.js";
 import type * as carte_core_mutation from "../carte/core/mutation.js";
 import type * as carte_core_query from "../carte/core/query.js";
 import type * as carte_detail_mutation from "../carte/detail/mutation.js";
@@ -89,6 +92,9 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  "admin/action": typeof admin_action;
+  "admin/mutation": typeof admin_mutation;
+  "admin/query": typeof admin_query;
   "carte/core/mutation": typeof carte_core_mutation;
   "carte/core/query": typeof carte_core_query;
   "carte/detail/mutation": typeof carte_detail_mutation;

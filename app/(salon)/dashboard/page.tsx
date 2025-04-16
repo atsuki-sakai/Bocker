@@ -19,6 +19,13 @@ export default function DashboardPage() {
       <h1>Dashboard</h1>
       <br />
       <p>招待コード: {referral?.referralCode}</p>
+      {referral?.referralCount && (
+        <p>
+          招待回数: {referral.referralCount}回
+          <br />
+          総招待回数: {referral.totalReferralCount}回
+        </p>
+      )}
     </div>
   );
 }

@@ -90,176 +90,166 @@ salon,
 isSubmitting,
 onConfirmAction, 
 }: PreviewDialogProps) {
-// Dialogのcloseハンドラをメモ化
-const handleDialogClose = useCallback((open: boolean) => {
-  setOpenAction(open);
-}, [setOpenAction]);
-
-// 確認ボタンのクリックハンドラをメモ化
-const handleConfirm = useCallback(() => {
-  if (!salon?.subscriptionId || !updatePlanIdStr) return;
-  
-  onConfirmAction(
-    salon.subscriptionId, 
-    getPriceStrFromPlanAndPeriod(
-      updatePlanIdStr,
-      billingPeriod
-    )
+  // Dialogのcloseハンドラをメモ化
+  const handleDialogClose = useCallback(
+    (open: boolean) => {
+      setOpenAction(open);
+    },
+    [setOpenAction]
   );
-  setOpenAction(false);
-}, [salon, updatePlanIdStr, billingPeriod, onConfirmAction, setOpenAction]);
 
-// キャンセルボタンのクリックハンドラをメモ化
-const handleCancel = useCallback(() => {
-  setOpenAction(false);
-}, [setOpenAction]);
+  // 確認ボタンのクリックハンドラをメモ化
+  const handleConfirm = useCallback(() => {
+    if (!salon?.subscriptionId || !updatePlanIdStr) return;
 
-// 請求書の品目をメモ化
-const invoiceLines = useMemo(() => {
-  if (!previewData) return [];
-  
-  return previewData.previewInvoice.lines.data.map((item, index) => (
-    <div key={index} className="flex justify-between text-sm">
-      <span className="flex-1">{translateDescription(item.description)}</span>
-      <span className={cn("text-right ml-2", 
-        item.amount < 0 ? "text-green-600" : 
-        item.amount === 0 ? "text-slate-500" : ""
-      )}>
-        {item.amount < 0 ? "-" : ""}
-        {item.amount === 0 ? "¥0" : `¥${Math.abs(item.amount).toLocaleString()}`}
-      </span>
-    </div>
-  ));
-}, [previewData]);
-
-// 合計金額をメモ化
-const totalAmount = useMemo(() => {
-  if (!previewData) return "0";
-  
-  return previewData.status && previewData.status === "trialing" 
-    ? 0 
-    : previewData.previewInvoice.total.toLocaleString();
-}, [previewData]);
-
-// 次回の支払い情報をメモ化
-const nextPaymentInfo = useMemo(() => {
-  if (!previewData) return null;
-  
-  if (!previewData.previewInvoice.lines.data.some(item => item.type === "subscription")) {
-    return null;
-  }
-  
-  // 次回のサブスクリプション料金を取得
-  const subItem = previewData.previewInvoice.lines.data.find(
-    item => !item.proration && item.type === "subscription"
-  );
-  
-  // ユーザーのJSONデータ構造に合わせて、金額を取得する方法
-  let amount = 0;
-  if (subItem?.plan) {
-    // @ts-expect-error 年の払いの場合planのamountに価格が入っているので
-    amount = subItem?.plan?.amount || 0;
-  }
-  
-  return `次回の定期支払い: ¥${amount.toLocaleString()}/${billingPeriod === "monthly" ? "月" : "年"}`;
-}, [previewData, billingPeriod]);
-
-// ボタンのコンテンツをメモ化
-const confirmButtonContent = useMemo(() => {
-  if (isSubmitting) {
-    return (
-      <>
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        処理中...
-      </>
+    onConfirmAction(
+      salon.subscriptionId,
+      getPriceStrFromPlanAndPeriod(updatePlanIdStr, billingPeriod)
     );
-  }
-  return "変更を確定する";
-}, [isSubmitting]);
+    setOpenAction(false);
+  }, [salon, updatePlanIdStr, billingPeriod, onConfirmAction, setOpenAction]);
 
-if (!previewData || !salon) return null;
+  // キャンセルボタンのクリックハンドラをメモ化
+  const handleCancel = useCallback(() => {
+    setOpenAction(false);
+  }, [setOpenAction]);
 
-console.log(JSON.stringify(previewData));
+  // 請求書の品目をメモ化
+  const invoiceLines = useMemo(() => {
+    if (!previewData) return [];
 
-return (
+    return previewData.previewInvoice.lines.data.map((item, index) => (
+      <div key={index} className="flex justify-between text-sm">
+        <span className="flex-1">{translateDescription(item.description)}</span>
+        <span
+          className={cn(
+            'text-right ml-2',
+            item.amount < 0 ? 'text-green-600' : item.amount === 0 ? 'text-slate-500' : ''
+          )}
+        >
+          {item.amount < 0 ? '-' : ''}
+          {item.amount === 0 ? '¥0' : `¥${Math.abs(item.amount).toLocaleString()}`}
+        </span>
+      </div>
+    ));
+  }, [previewData]);
+
+  // 合計金額をメモ化
+  const totalAmount = useMemo(() => {
+    if (!previewData) return '0';
+
+    return previewData.status && previewData.status === 'trialing'
+      ? 0
+      : previewData.previewInvoice.total.toLocaleString();
+  }, [previewData]);
+
+  // 次回の支払い情報をメモ化
+  const nextPaymentInfo = useMemo(() => {
+    if (!previewData) return null;
+
+    if (!previewData.previewInvoice.lines.data.some((item) => item.type === 'subscription')) {
+      return null;
+    }
+
+    // 次回のサブスクリプション料金を取得
+    const subItem = previewData.previewInvoice.lines.data.find(
+      (item) => !item.proration && item.type === 'subscription'
+    );
+
+    // ユーザーのJSONデータ構造に合わせて、金額を取得する方法
+    let amount = 0;
+    if (subItem?.plan) {
+      // @ts-expect-error 年の払いの場合planのamountに価格が入っているので
+      amount = subItem?.plan?.amount || 0;
+    }
+
+    return `次回の定期支払い: ¥${amount.toLocaleString()}/${billingPeriod === 'monthly' ? '月' : '年'}`;
+  }, [previewData, billingPeriod]);
+
+  // ボタンのコンテンツをメモ化
+  const confirmButtonContent = useMemo(() => {
+    if (isSubmitting) {
+      return (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          処理中...
+        </>
+      );
+    }
+    return '変更を確定する';
+  }, [isSubmitting]);
+
+  if (!previewData || !salon) return null;
+
+  console.log(JSON.stringify(previewData));
+
+  return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
-    <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-        <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
             プラン変更の確認
-        </DialogTitle>
+          </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4 my-4">
-        {/* プラン変更の概要 */}
-        <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
+          {/* プラン変更の概要 */}
+          <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
             <h3 className="font-medium mb-2">サブスクリプション変更内容</h3>
             <div className="flex justify-between items-center">
-            <div>
+              <div>
                 <div className="text-sm text-slate-500">現在のプラン</div>
-                <div className="font-medium">
-                {currentPlanStr}
-                </div>
-            </div>
-            <div className="text-slate-400">→</div>
-            <div>
+                <div className="font-medium">{currentPlanStr}</div>
+              </div>
+              <div className="text-slate-400">→</div>
+              <div>
                 <div className="text-sm text-slate-500">新しいプラン</div>
-                <div className="font-medium">
-                { updatePlanIdStr }
-                </div>
+                <div className="font-medium">{updatePlanIdStr}</div>
+              </div>
             </div>
-            </div>
-        </div>
-        
-        {/* 料金変更の詳細 */}
-        <div className="border rounded-lg overflow-hidden">
-            <div className="bg-slate-100 dark:bg-slate-700 p-3 font-medium">
-            料金の詳細
-            </div>
+          </div>
+
+          {/* 料金変更の詳細 */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-slate-100 dark:bg-slate-700 p-3 font-medium">料金の詳細</div>
             <div className="p-4 space-y-3">
-            {invoiceLines}
-            <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+              {invoiceLines}
+
+              <div className="border-t pt-2 mt-2 flex justify-between font-bold">
                 <span>今回のお支払い金額</span>
                 <span>¥{totalAmount}</span>
-            </div>
-            
-            {/* 次回のお支払い情報 */}
-            {nextPaymentInfo && (
-              <div className="text-xs text-slate-500">
-                {nextPaymentInfo}
               </div>
-            )}
+
+              {/* 次回のお支払い情報 */}
+              {nextPaymentInfo && <div className="text-xs text-slate-500">{nextPaymentInfo}</div>}
             </div>
-        </div>
-        
-        {/* 注意事項 */}
-        <div className="text-sm text-slate-600 dark:text-slate-400">
+          </div>
+
+          {/* 注意事項 */}
+          <div className="text-sm text-slate-600 dark:text-slate-400">
             <p>※ 日割り計算により、既に支払い済みの金額から調整されます。</p>
             <p>※ プラン変更は即時に適用されます。</p>
-            {(previewData.status === "trialing") && (
-            <p className="text-green-600 font-semibold mt-1">※ 現在トライアル期間中のため、プラン変更による追加料金は発生しません。</p>
+            {previewData.status === 'trialing' && (
+              <p className="text-green-600 font-semibold mt-1">
+                ※ 現在トライアル期間中のため、プラン変更による追加料金は発生しません。
+              </p>
             )}
-            
+          </div>
         </div>
-        </div>
-        
+
         <DialogFooter className="flex gap-3">
-        <Button 
-            variant="outline" 
-            className="flex-1"
-            onClick={handleCancel}
-        >
+          <Button variant="outline" className="flex-1" onClick={handleCancel}>
             キャンセル
-        </Button>
-        <Button 
+          </Button>
+          <Button
             className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             onClick={handleConfirm}
             disabled={isSubmitting}
-        >
+          >
             {confirmButtonContent}
-        </Button>
+          </Button>
         </DialogFooter>
-    </DialogContent>
+      </DialogContent>
     </Dialog>
-);
+  );
 }

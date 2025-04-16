@@ -183,7 +183,7 @@ class SubscriptionService {
       if (data.trialDays && (data.trialDays < 0 || data.trialDays > 31)) {
         const err = new ConvexCustomError(
           'low',
-          '試用期間は0以上15日以内で入力してください',
+          '試用期間は0以上31日以内で入力してください',
           'INVALID_ARGUMENT',
           400,
           { trialDays: data.trialDays }
@@ -207,7 +207,7 @@ class SubscriptionService {
         line_items: [{ price: data.priceId, quantity: 1 }],
         success_url: successUrl,
         cancel_url: cancelUrl,
-        allow_promotion_codes: true,
+        allow_promotion_codes: false,
         client_reference_id: data.clerkUserId,
         metadata: {
           clerkUserId: data.clerkUserId,
@@ -416,6 +416,39 @@ class SubscriptionService {
         'INTERNAL_ERROR',
         500,
         { data, error: error instanceof Error ? error.message : '不明なエラー' }
+      );
+      throw err;
+    }
+  }
+
+  async getStripeCustomer(ctx: ActionCtx, stripeCustomerId: string) {
+    try {
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: STRIPE_API_VERSION,
+      });
+      const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId);
+      if (!stripeCustomer) {
+        const err = new StripeError(
+          'low',
+          'Stripe顧客の取得に失敗しました',
+          'INVALID_ARGUMENT',
+          400,
+          { stripeCustomerId }
+        );
+        throw err;
+      }
+
+      return stripeCustomer;
+    } catch (error) {
+      if (error instanceof ConvexCustomError) {
+        throw error;
+      }
+      const err = new ConvexCustomError(
+        'high',
+        'Stripe顧客の取得中にエラーが発生しました',
+        'INTERNAL_ERROR',
+        500,
+        { stripeCustomerId, error: error instanceof Error ? error.message : '不明なエラー' }
       );
       throw err;
     }

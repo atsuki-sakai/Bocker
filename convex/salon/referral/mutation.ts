@@ -1,8 +1,9 @@
 import { v } from 'convex/values';
-import { mutation, query } from '@/convex/_generated/server';
+import { mutation } from '@/convex/_generated/server';
 import { throwConvexApiError } from '@/services/convex/shared/utils/error';
 import { generateReferralCode } from '@/lib/utils';
 import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+
 export const create = mutation({
   args: {
     salonId: v.id('salon'),
@@ -21,56 +22,6 @@ export const create = mutation({
       return salonReferralId;
     } catch (error) {
       console.error('Referral作成エラー:', error);
-      throwConvexApiError(error);
-    }
-  },
-});
-
-export const updateReferralBySalon = mutation({
-  args: {
-    inviteSalonId: v.id('salon'),
-    referralCode: v.string(),
-  },
-  handler: async (ctx, args) => {
-    try {
-      // 招待コードにマッチするサロンのリファラルを取得
-      const referralSalon = await ctx.db
-        .query('salon_referral')
-        .withIndex('by_referral_code', (q) => q.eq('referralCode', args.referralCode))
-        .first();
-
-      if (!referralSalon) {
-        const reffrralError = new ConvexCustomError(
-          'low',
-          '指定された招待コードに対応するサロンが存在しません',
-          'NOT_FOUND',
-          404,
-          { ...args }
-        );
-        throw reffrralError;
-      }
-      await ctx.db.patch(referralSalon._id, {
-        referralCount: referralSalon.referralCount ? referralSalon.referralCount + 1 : 1,
-      });
-      const inviteSalon = await ctx.db
-        .query('salon_referral')
-        .withIndex('by_salon_id', (q) => q.eq('salonId', args.inviteSalonId))
-        .first();
-      if (!inviteSalon) {
-        const reffrralError = new ConvexCustomError(
-          'low',
-          '指定された招待コードに対応するサロンが存在しません',
-          'NOT_FOUND',
-          404,
-          { ...args }
-        );
-        throw reffrralError;
-      }
-      await ctx.db.patch(inviteSalon._id, {
-        referralBySalon: referralSalon.salonId,
-      });
-    } catch (error) {
-      console.error('Referral更新エラー:', error);
       throwConvexApiError(error);
     }
   },
@@ -95,6 +46,7 @@ export const incrementReferralCount = mutation({
 
     await ctx.db.patch(args.referralId, {
       referralCount: referral.referralCount ? referral.referralCount + 1 : 1,
+      totalReferralCount: referral.totalReferralCount ? referral.totalReferralCount + 1 : 1,
     });
   },
 });

@@ -38,6 +38,7 @@ class CouponService {
     return CouponService.instance;
   }
 
+
   async findCouponComplete(ctx: QueryCtx, data: Id<'coupon'>, salonId: Id<'salon'>) {
     const [coupon, couponConfig, couponExclusionMenus] = await Promise.all([
       this.couponRepository.find(ctx, data),

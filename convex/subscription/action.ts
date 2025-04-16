@@ -12,6 +12,7 @@ import {
   validateSubscriptionUpdatePreview,
   validateSubscriptionBillingPortalSession,
   validateConfirmSubscriptionUpdate,
+  validateRequired,
 } from '@/services/convex/shared/utils/validation';
 import { subscriptionService } from '@/services/convex/services';
 import { throwConvexApiError } from '@/services/convex/shared/utils/error';
@@ -33,6 +34,19 @@ export const createSubscriptionSession = action({
   },
 });
 
+export const getStripeCustomer = action({
+  args: {
+    stripeCustomerId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      validateRequired(args.stripeCustomerId, 'stripeCustomerId');
+      return await subscriptionService.getStripeCustomer(ctx, args.stripeCustomerId);
+    } catch (error) {
+      throwConvexApiError(error);
+    }
+  },
+});
 export const getSubscriptionUpdatePreview = action({
   args: {
     subscriptionId: v.string(),

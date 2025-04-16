@@ -104,7 +104,8 @@ export default defineSchema({
     .index('by_clerk_id', ['clerkId', 'isArchive'])
     .index('by_stripe_connect_id', ['stripeConnectId', 'isArchive'])
     .index('by_stripe_customer_id', ['stripeCustomerId', 'isArchive'])
-    .index('by_organization_id', ['organizationId', 'isArchive']),
+    .index('by_organization_id', ['organizationId', 'isArchive'])
+    .index('by_email', ['email', 'isArchive']),
 
   // サロンのAPI設定テーブル
   salon_api_config: defineTable({
@@ -142,14 +143,18 @@ export default defineSchema({
   // サロンの紹介コードテーブル
   salon_referral: defineTable({
     salonId: v.id('salon'),
-    usedReferralCode: v.optional(v.string()), // 使用した紹介コード
     referralCode: v.optional(v.string()), // 紹介コード
-    referralCount: v.optional(v.number()), // 紹介コード利用回数
+    referralCount: v.optional(v.number()), // 紹介回数
     referralBySalon: v.optional(v.id('salon')), // 紹介者
+    updatedAt: v.optional(v.number()), // 加算した日時
+    totalReferralCount: v.optional(v.number()), // 総紹介回数
     ...CommonFields,
   })
+    .index('by_referral_count', ['referralCount', 'isArchive'])
     .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_referral_code', ['referralCode', 'isArchive']),
+    .index('by_referral_code', ['referralCode', 'isArchive'])
+    .index('by_total_referral_count', ['totalReferralCount', 'isArchive'])
+    .index('by_updated_at', ['updatedAt', 'isArchive']),
 
   // =====================
   // SCHEDULE

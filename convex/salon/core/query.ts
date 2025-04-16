@@ -42,6 +42,14 @@ export const findByClerkId = query({
   },
 });
 
+export const findByStripeCustomerId = query({
+  args: {
+    stripeCustomerId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await salonService.findByStripeCustomerId(ctx, args.stripeCustomerId);
+  },
+});
 export const findByOrganizationId = query({
   args: {
     organizationId: v.optional(v.string()),

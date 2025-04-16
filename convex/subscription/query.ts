@@ -53,3 +53,27 @@ export const findByStripeCustomerId = query({
     }
   },
 });
+
+export const getByEmail = query({
+  args: {
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const salon = await ctx.db
+      .query('salon')
+      .withIndex('by_email', (q) => q.eq('email', args.email))
+      .first();
+    if (!salon) {
+      throw new Error('Salon not found');
+    }
+
+    if (!salon.stripeCustomerId) {
+      throw new Error('Stripe customer ID not found');
+    }
+    const subscription = await ctx.db
+      .query('subscription')
+      .withIndex('by_stripe_customer_id', (q) => q.eq('stripeCustomerId', salon.stripeCustomerId!))
+      .first();
+    return subscription;
+  },
+});

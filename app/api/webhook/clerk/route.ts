@@ -160,9 +160,8 @@ export async function POST(req: Request) {
                       );
                       if (referralBySalon) {
                         await retryOperation(() =>
-                          fetchMutation(api.salon.referral.mutation.updateReferralBySalon, {
-                            inviteSalonId: salonId,
-                            referralCode: referralCode,
+                          fetchMutation(api.salon.referral.mutation.incrementReferralCount, {
+                            referralId: referralBySalon._id,
                           })
                         );
                       }

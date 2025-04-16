@@ -64,6 +64,16 @@ class SalonService {
   async findSalonByOrganizationId(ctx: QueryCtx, organizationId: string) {
     return await this.salonRepo.findByOrganizationId(ctx, organizationId);
   }
+  async findByStripeCustomerId(ctx: QueryCtx, stripeCustomerId: string) {
+    const salon = await ctx.db
+      .query('salon')
+      .withIndex('by_stripe_customer_id', (q) =>
+        q.eq('stripeCustomerId', stripeCustomerId).eq('isArchive', false)
+      )
+      .first();
+
+    return salon;
+  }
   async updateSalon(ctx: MutationCtx, salonId: Id<'salon'>, data: SalonUpdateInput) {
     return await this.salonRepo.updateSalon(ctx, salonId, data);
   }
