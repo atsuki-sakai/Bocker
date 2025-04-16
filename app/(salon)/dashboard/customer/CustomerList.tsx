@@ -89,7 +89,7 @@ export default function CustomerList({ id, searchParams }: CustomerListProps) {
     loadMore,
     status,
   } = useStablePaginatedQuery(
-    api.customer.core.customersBySalonId,
+    api.customer.core.query.findBySalonId,
     {
       salonId: id as Id<'salon'>,
       sort: sortDirection as 'asc' | 'desc',

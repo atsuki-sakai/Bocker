@@ -4,7 +4,6 @@ import { api } from '@/convex/_generated/api';
 import { Sidebar } from '@/components/common';
 import { serverConvexAuth } from '@/lib/auth/auth-server';
 import '../../globals.css';
-
 export const metadata: Metadata = {
   title: 'Bcker/ブッカー - Dashboard',
   description: 'Bcker/ブッカーはサロンの予約管理を便利にするサービスです。',
@@ -18,16 +17,23 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { userId, token } = await serverConvexAuth();
+  const { userId, token, orgId } = await serverConvexAuth();
+  let preloadedSalon;
+  if (!orgId) {
+    preloadedSalon = await preloadQuery(
+      api.salon.core.query.findByClerkId,
+      { clerkId: userId },
+      { token: token }
+    );
+  } else {
+    preloadedSalon = await preloadQuery(
+      api.salon.core.query.findByOrganizationId,
+      { organizationId: orgId },
+      { token: token }
+    );
+  }
 
-  const preloadedSalon = await preloadQuery(
-    api.salon.core.query.findByClerkId,
-    { clerkId: userId },
-    { token: token }
-  );
-
-
-  console.log('preloadedSalon', preloadedSalon);
+  console.log('preloadedSalon: ', preloadedSalon);
 
   return <Sidebar preloadedSalon={preloadedSalon}>{children}</Sidebar>;
 }
