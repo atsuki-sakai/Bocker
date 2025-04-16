@@ -12,6 +12,14 @@ export const getEmailsByReferralCount = query({
     isApplyMaxUseReferral: v.boolean(), // 上限値を超えたデータを含むかどうか
   },
   handler: async (ctx, args) => {
+    console.info(
+      'includeUpdated: 当月にクーポンを適用済みのデータを含むかどうか - true: 含む, false: 含めない',
+      args.includeUpdated
+    );
+    console.info(
+      'isApplyMaxUseReferral: 紹介上限値を超えたデータを含むかどうか - true: 含む, false: 含めない',
+      args.isApplyMaxUseReferral
+    );
     checkAuth(ctx, true);
     const batchSize = 100; // Process in smaller batches
     let allSalonEmails: string[] = [];
@@ -25,10 +33,6 @@ export const getEmailsByReferralCount = query({
     const startOfMonth = firstDayOfMonth.getTime();
     const endOfMonth = firstDayOfNextMonth.getTime() - 1;
 
-    console.log(
-      `検索条件: includeUpdated=${args.includeUpdated}, isApplyMaxUseReferral=${args.isApplyMaxUseReferral}`
-    );
-
     // まず、条件に合うすべてのreferralを取得
     while (hasMore) {
       let query = ctx.db
@@ -36,7 +40,7 @@ export const getEmailsByReferralCount = query({
         .withIndex('by_referral_and_total_count')
         .filter((q) =>
           q.and(
-            q.gte(q.field('referralCount'), 1), // referralCountが1以上のデータを取得
+            q.gt(q.field('referralCount'), 0), // referralCountが厳密に0より大きい（1以上）のデータを取得
             q.eq(q.field('isArchive'), false)
           )
         );
@@ -65,11 +69,17 @@ export const getEmailsByReferralCount = query({
       // includeUpdatedがtrueの場合は、全てのレコードを取得（フィルタは不要）
 
       const batch = await query.paginate({ cursor, numItems: batchSize });
-      console.log(`取得したreferralレコード数: ${batch.page.length}`);
+      console.debug(`取得したreferralレコード数: ${batch.page.length}`);
 
       if (batch.page.length > 0) {
+        // referralCount が 0 でないことを再確認
+        const validReferrals = batch.page.filter(
+          (referral) => typeof referral.referralCount === 'number' && referral.referralCount > 0
+        );
+        console.info(`有効なreferralレコード数: ${validReferrals.length}/${batch.page.length}`);
+
         // 一度にすべてのsalonIdsを収集
-        const salonIds = batch.page.map((referral) => referral.salonId);
+        const salonIds = validReferrals.map((referral) => referral.salonId);
 
         // salonIdsを使って対応するサロンを一括で取得
         for (const salonId of salonIds) {
@@ -88,16 +98,14 @@ export const getEmailsByReferralCount = query({
       if (allSalonEmails.length > 500) break;
     }
 
-    console.log(`最終取得メールアドレス数: ${allSalonEmails.length}`);
-
-    return [
-      {
-        includeUpdated: args.includeUpdated,
-        isApplyMaxUseReferral: args.isApplyMaxUseReferral || false,
-        maxReferralCount: MAX_REFERRAL_COUNT,
-        total: allSalonEmails.length,
-      },
-      allSalonEmails,
-    ];
+    console.info(`最終取得メールアドレス数: ${allSalonEmails.length}`);
+    
+    return {
+      includeUpdated: args.includeUpdated,
+      isApplyMaxUseReferral: args.isApplyMaxUseReferral || false,
+      maxReferralCount: MAX_REFERRAL_COUNT,
+      total: allSalonEmails.length,
+      allSalonEmails: allSalonEmails,
+    };
   },
 });
