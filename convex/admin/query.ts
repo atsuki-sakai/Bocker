@@ -44,18 +44,16 @@ export const getEmailsByReferralCount = query({
 
       // includeUpdatedフラグに基づいてフィルタリング
       if (!args.includeUpdated) {
-        // updatedAtが存在し（nullでない）、かつ当月でないレコードのみを取得
+        // 当月に更新されたデータを除外（当月のupdatedAtを持つレコードを除外）
         query = query.filter((q) =>
-          q.and(
-            q.neq(q.field('updatedAt'), null), // updatedAtが存在する（nullでない）
-            q.or(
-              q.lt(q.field('updatedAt'), startOfMonth), // 当月より前の更新
-              q.gt(q.field('updatedAt'), endOfMonth) // 当月より後の更新（将来の予約など）
-            )
+          q.or(
+            q.eq(q.field('updatedAt'), null), // updatedAtがnullの場合は含める
+            q.lt(q.field('updatedAt'), startOfMonth), // 当月より前の更新
+            q.gt(q.field('updatedAt'), endOfMonth) // 当月より後の更新（将来の予約など）
           )
         );
       }
-      // includeUpdatedがtrueの場合は、updatedAtに関係なく全てのレコードを取得（追加のフィルタは不要）
+      // includeUpdatedがtrueの場合は、全てのレコードを取得（フィルタは不要）
 
       const batch = await query.paginate({ cursor, numItems: batchSize });
 
