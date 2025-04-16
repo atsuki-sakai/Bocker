@@ -8,7 +8,8 @@ const MAX_REFERRAL_COUNT = 6;
 // 紹介数を指定して取得するためのAPI
 export const getEmailsByReferralCount = query({
   args: {
-    lessThanReferralCount: v.number(), // 指定した紹介数より少ない紹介数のデータを取得する
+    lessThanReferralCount: v.optional(v.number()), // 指定した紹介数より少ない紹介数のデータを取得する
+    orderReferralCount: v.optional(v.number()), // 後方互換性のために残す（非推奨）
     includeUpdated: v.boolean(), // 当月に更新されたデータを含むかどうか
     isApplyMaxUseReferral: v.boolean(), // 上限値を超えたデータを含むかどうか
   },
@@ -18,6 +19,10 @@ export const getEmailsByReferralCount = query({
     let allSalonEmails: string[] = [];
     let cursor = null;
     let hasMore = true;
+
+    // 後方互換性のために、orderReferralCountがある場合はlessThanReferralCountとして使用
+    const effectiveLessThanValue =
+      args.lessThanReferralCount ?? (args.orderReferralCount ? args.orderReferralCount + 1 : 1);
 
     // 当月の開始日と終了日を計算
     const now = new Date();
@@ -31,7 +36,7 @@ export const getEmailsByReferralCount = query({
       let query = ctx.db
         .query('salon_referral')
         .withIndex('by_referral_and_total_count')
-        .filter((q) => q.lt(q.field('referralCount'), args.lessThanReferralCount));
+        .filter((q) => q.lt(q.field('referralCount'), effectiveLessThanValue));
 
       // totalReferralCountによる絞り込み（isApplyMaxUseReferralがtrueの場合は適用しない）
       if (!args.isApplyMaxUseReferral) {
@@ -80,7 +85,8 @@ export const getEmailsByReferralCount = query({
 
     return [
       {
-        lessThanReferralCount: args.lessThanReferralCount,
+        lessThanReferralCount: effectiveLessThanValue,
+        orderReferralCount: args.orderReferralCount, // 後方互換性のために元の値も返す
         includeUpdated: args.includeUpdated,
         isApplyMaxUseReferral: args.isApplyMaxUseReferral || false,
         maxReferralCount: MAX_REFERRAL_COUNT,
