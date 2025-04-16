@@ -95,6 +95,16 @@ export const applyDiscount = action({
             continue;
           }
 
+          // totalReferralCountが12以上の場合は処理をスキップ（上限チェック）
+          if (previousReferral.totalReferralCount && previousReferral.totalReferralCount >= 12) {
+            results.push({
+              email,
+              success: false,
+              error: 'Total referral count exceeded maximum limit of 12',
+            });
+            continue;
+          }
+
           // isApplyAllがfalseの場合、updatedAtが当月かどうかを確認
           if (!args.isApplyAll && !args.isAlreadyUpdated && previousReferral.updatedAt) {
             const updatedDate = new Date(previousReferral.updatedAt);
