@@ -2,7 +2,7 @@ import { BaseRepository } from '@/services/convex/repositories/BaseRepository';
 import { Doc, Id } from '@/convex/_generated/dataModel';
 import { QueryCtx, MutationCtx } from '@/convex/_generated/server';
 import { SalonConfigInput } from '@/services/convex/types/salon';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+
 /**
  * サロン基本設定リポジトリクラス
  * サロンの基本設定データの操作を提供します
@@ -38,7 +38,6 @@ export class SalonConfigRepository extends BaseRepository<'salon_config'> {
       return await this.create(ctx, {
         ...data,
         salonId: data.salonId,
-        isArchive: false,
       });
     }
   }

@@ -57,18 +57,20 @@ export class BaseRepository<T extends TableNames> {
     const record = await this.find(ctx, id, includeArchived);
 
     if (!record) {
-      throw new ConvexCustomError('low', 'データが見つかりません', 'NOT_FOUND', 404, {
+      const err = new ConvexCustomError('low', 'データが見つかりません', 'NOT_FOUND', 404, {
         tableName: this.tableName,
         id,
       });
+      throw err;
     }
 
     // アーカイブフラグがある場合はチェック
     if (!includeArchived && 'isArchive' in record && record.isArchive === true) {
-      throw new ConvexCustomError('low', 'データが見つかりません', 'NOT_FOUND', 404, {
+      const err = new ConvexCustomError('low', 'データが見つかりません', 'NOT_FOUND', 404, {
         tableName: this.tableName,
         id,
       });
+      throw err;
     }
     return record;
   }
@@ -81,7 +83,7 @@ export class BaseRepository<T extends TableNames> {
    * @returns 作成されたデータのID
    */
   async create(ctx: MutationCtx, data: WithoutSystemFields<Doc<T>>): Promise<Id<T>> {
-    return await ctx.db.insert(this.tableName, { ...data });
+    return await ctx.db.insert(this.tableName, { ...data, isArchive: false });
   }
 
   /**
@@ -101,11 +103,12 @@ export class BaseRepository<T extends TableNames> {
     // 存在確認
     const exists = await this.find(ctx, id);
     if (!exists) {
-      throw new ConvexCustomError('low', 'データが見つかりません', 'NOT_FOUND', 404, {
+      const err = new ConvexCustomError('low', 'データが見つかりません', 'NOT_FOUND', 404, {
         call: 'update',
         tableName: this.tableName,
         id,
       });
+      throw err;
     }
 
     await ctx.db.patch(id, data);

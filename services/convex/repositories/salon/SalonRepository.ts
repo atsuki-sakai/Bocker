@@ -20,10 +20,19 @@ export class SalonRepository extends BaseRepository<'salon'> {
     }
     return SalonRepository.instance;
   }
+
   async findByClerkId(ctx: QueryCtx, clerkId: string): Promise<Doc<'salon'> | null> {
     return await ctx.db
       .query('salon')
       .withIndex('by_clerk_id', (q) => q.eq('clerkId', clerkId).eq('isArchive', false))
+      .first();
+  }
+  async findByOrganizationId(ctx: QueryCtx, organizationId: string): Promise<Doc<'salon'> | null> {
+    return await ctx.db
+      .query('salon')
+      .withIndex('by_organization_id', (q) =>
+        q.eq('organizationId', organizationId).eq('isArchive', false)
+      )
       .first();
   }
   async findByStripeCustomerId(
@@ -39,7 +48,7 @@ export class SalonRepository extends BaseRepository<'salon'> {
   }
   async createSalon(ctx: MutationCtx, data: SalonCreateInput): Promise<Id<'salon'>> {
     // サロンデータ作成
-    return await this.create(ctx, { ...data, isArchive: false });
+    return await this.create(ctx, { ...data });
   }
 
   async updateSalon(
@@ -51,24 +60,39 @@ export class SalonRepository extends BaseRepository<'salon'> {
       if (data.stripeCustomerId) {
         const existingSalon = await this.findByStripeCustomerId(ctx, data.stripeCustomerId);
         if (existingSalon) {
-          throw new ConvexCustomError('low', 'サロンが既に存在します', 'DUPLICATE_RECORD', 400, {
-            stripeCustomerId: data.stripeCustomerId,
-          });
+          const err = new ConvexCustomError(
+            'low',
+            'サロンが既に存在します',
+            'DUPLICATE_RECORD',
+            400,
+            {
+              stripeCustomerId: data.stripeCustomerId,
+            }
+          );
+          throw err;
         }
       }
       return await this.update(ctx, id, data);
     } catch (error) {
-      throw new ConvexCustomError('high', 'サロンの更新に失敗しました', 'INTERNAL_ERROR', 500, {
-        data,
-      });
+      const err = new ConvexCustomError(
+        'high',
+        'サロンの更新に失敗しました',
+        'INTERNAL_ERROR',
+        500,
+        {
+          data,
+        }
+      );
+      throw err;
     }
   }
 
   async upsert(ctx: MutationCtx, id: Id<'salon'>, data: SalonCreateInput): Promise<Id<'salon'>> {
     if (!id) {
-      throw new ConvexCustomError('low', 'サロンIDが必要です', 'INVALID_ARGUMENT', 400, {
+      const err = new ConvexCustomError('low', 'サロンIDが必要です', 'INVALID_ARGUMENT', 400, {
         ...data,
       });
+      throw err;
     }
 
     const existing = await this.find(ctx, id);
@@ -99,12 +123,13 @@ export class SalonRepository extends BaseRepository<'salon'> {
 
     // 2. 顧客IDでサロンが見つからない場合
     if (!salon) {
-      throw new ConvexCustomError('high', 'サロンが見つかりません', 'NOT_FOUND', 404, {
+      const err = new ConvexCustomError('high', 'サロンが見つかりません', 'NOT_FOUND', 404, {
         call: 'salonRepository.updateSubscription',
         stripeCustomerId,
         subscriptionId,
         subscriptionStatus,
       });
+      throw err;
     }
 
     // サブスクリプションの情報を更新して返す
@@ -119,9 +144,10 @@ export class SalonRepository extends BaseRepository<'salon'> {
     const salon = await ctx.db.get(salonId);
 
     if (!salon) {
-      throw new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
+      const err = new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
         salonId,
       });
+      throw err;
     }
     // Stripe Connect情報を返す
     return {
@@ -136,25 +162,33 @@ export class SalonRepository extends BaseRepository<'salon'> {
     data: SalonStripeConnectInput
   ) {
     if (!salonId) {
-      throw new ConvexCustomError('low', 'サロンIDが指定されていません', 'INVALID_ARGUMENT', 400, {
-        salonId,
-      });
+      const err = new ConvexCustomError(
+        'low',
+        'サロンIDが指定されていません',
+        'INVALID_ARGUMENT',
+        400,
+        {
+          salonId,
+        }
+      );
+      throw err;
     }
 
     // サロン取得
     const salon = await ctx.db.get(salonId);
 
     if (!salon) {
-      throw new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
+      const err = new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
         salonId,
       });
+      throw err;
     }
 
     // StripeConnect情報をサロンに保存
     return await ctx.db.patch(salon._id, {
       stripeConnectId: data.accountId,
       stripeConnectStatus: data.status,
-      stripeConnectCreatedAt: new Date().getTime(),
+      stripeConnectCreatedAt: Date.now(),
     });
   }
 
@@ -180,16 +214,23 @@ export class SalonRepository extends BaseRepository<'salon'> {
         stripeConnectId: accountId,
       });
     } catch (error) {
-      throw new ConvexCustomError('high', 'Stripe連携の更新に失敗しました', 'INTERNAL_ERROR', 500, {
-        status,
-        accountId,
-      });
+      const err = new ConvexCustomError(
+        'high',
+        'Stripe連携の更新に失敗しました',
+        'INTERNAL_ERROR',
+        500,
+        {
+          status,
+          accountId,
+        }
+      );
+      throw err;
     }
   }
 
   async findSalonByConnectId(ctx: QueryCtx, accountId: string): Promise<Doc<'salon'>[]> {
     if (!accountId) {
-      throw new ConvexCustomError(
+      const err = new ConvexCustomError(
         'low',
         'StripeConnectアカウントIDが指定されていません',
         'INVALID_ARGUMENT',
@@ -198,6 +239,7 @@ export class SalonRepository extends BaseRepository<'salon'> {
           accountId,
         }
       );
+      throw err;
     }
 
     // Stripe ConnectIDに紐づくサロンを検索
@@ -219,9 +261,10 @@ export class SalonRepository extends BaseRepository<'salon'> {
   }> {
     const salon = await ctx.db.get(salonId);
     if (!salon) {
-      throw new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
+      const err = new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
         salonId,
       });
+      throw err;
     }
     return {
       accountId: salon.stripeConnectId || null,

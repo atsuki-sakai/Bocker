@@ -31,9 +31,10 @@ export class SalonApiConfigRepository extends BaseRepository<'salon_api_config'>
 
   async upsert(ctx: MutationCtx, data: SalonApiConfigInput): Promise<Id<'salon_api_config'>> {
     if (!data.salonId) {
-      throw new ConvexCustomError('low', 'サロンIDが必要です', 'INVALID_ARGUMENT', 400, {
+      const err = new ConvexCustomError('low', 'サロンIDが必要です', 'INVALID_ARGUMENT', 400, {
         ...data,
       });
+      throw err;
     }
 
     const existing = await this.findBySalonId(ctx, data.salonId);
