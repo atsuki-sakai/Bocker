@@ -168,7 +168,7 @@ export default function MenuEditForm() {
   const params = useParams();
   const menuId = params.menu_id as Id<'menu'>;
   const { salon } = useSalon();
-  const menuData = useQuery(api.menu.core.get, { menuId });
+  const menuData = useQuery(api.menu.core.query.get, { menuId });
 
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | undefined>(undefined);
@@ -183,7 +183,7 @@ export default function MenuEditForm() {
 
   const uploadImage = useAction(api.storage.action.upload);
   const deleteImage = useAction(api.storage.action.kill);
-  const updateMenu = useMutation(api.menu.core.update);
+  const updateMenu = useMutation(api.menu.core.mutation.update);
 
   const {
     register,

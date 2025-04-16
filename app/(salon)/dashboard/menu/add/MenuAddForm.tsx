@@ -63,7 +63,7 @@ const schemaMenu = z
       .string()
       .min(1, { message: 'メニュー名は必須です' })
       .max(100, { message: 'メニュー名は100文字以内で入力してください' }),
-    price: z
+    unitPrice: z
       .number()
       .min(1, { message: '価格は必須です' })
       .max(99999, { message: '価格は99999円以下で入力してください' })
@@ -118,8 +118,8 @@ const schemaMenu = z
   })
   .refine(
     (data) => {
-      // salePriceが存在する場合のみ、priceとの比較を行う
-      if (data.salePrice && data.price && data.salePrice >= data.price) {
+      // salePriceが存在する場合のみ、unitPriceとの比較を行う
+      if (data.salePrice && data.unitPrice && data.salePrice >= data.unitPrice) {
         return false;
       }
       return true;
@@ -161,7 +161,7 @@ export default function MenuAddForm() {
 
   const uploadImage = useAction(api.storage.action.upload);
   const deleteImage = useAction(api.storage.action.kill);
-  const createMenu = useMutation(api.menu.core.add);
+  const createMenu = useMutation(api.menu.core.mutation.create);
 
   const {
     register,
@@ -247,7 +247,7 @@ export default function MenuAddForm() {
       // APIに送信するデータを作成
       const createData = {
         name: data.name,
-        price: data.price,
+        unitPrice: data.unitPrice,
         timeToMin: data.timeToMin,
         description: data.description,
         targetGender: data.targetGender,
@@ -285,7 +285,7 @@ export default function MenuAddForm() {
     if (salon?._id) {
       reset({
         name: '',
-        price: null as unknown as number,
+        unitPrice: null as unknown as number,
         salePrice: null as unknown as number,
         timeToMin: 0,
         imgFilePath: '',
@@ -366,7 +366,7 @@ export default function MenuAddForm() {
                 {/* 価格関連 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ZodTextField
-                    name="price"
+                    name="unitPrice"
                     label="通常価格"
                     icon={<DollarSign className="text-gray-500" />}
                     type="number"

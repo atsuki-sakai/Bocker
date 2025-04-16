@@ -299,7 +299,7 @@ export default function MenuList() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
 
   // APIリクエスト用フック
-  const killMenu = useMutation(api.menu.core.kill);
+  const killMenu = useMutation(api.menu.core.mutation.kill);
   const deleteMenuImage = useAction(api.storage.action.kill);
   const {
     results: menus,
@@ -307,7 +307,7 @@ export default function MenuList() {
     loadMore,
     status,
   } = useStablePaginatedQuery(
-    api.menu.core.getAllBySalonId,
+    api.menu.core.query.listBySalonId,
     salon?._id ? { salonId: salon._id } : 'skip',
     {
       initialNumItems: numberOfMenus,

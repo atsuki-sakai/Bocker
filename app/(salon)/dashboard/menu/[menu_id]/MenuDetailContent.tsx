@@ -42,7 +42,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   const router = useRouter();
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const deleteMenu = useMutation(api.menu.core.kill);
+  const deleteMenu = useMutation(api.menu.core.mutation.kill);
 
   // 金額をフォーマットするヘルパー関数
   const formatPrice = (price: number) => {
