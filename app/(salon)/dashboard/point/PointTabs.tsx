@@ -86,13 +86,16 @@ export default function PointTabs() {
   const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([]);
   const [initialExclusionMenuIds, setInitialExclusionMenuIds] = useState<Id<'menu'>[]>([]);
 
-  const pointConfig = useQuery(api.point.config.get, salon ? { salonId: salon._id } : 'skip');
-  const initialExclusionData = useQuery(
-    api.point.exclusion_menu.list,
+  const pointConfig = useQuery(
+    api.point.config.query.findBySalonId,
+    salon ? { salonId: salon._id } : 'skip'
+  );
+  const initialExclusionIds = useQuery(
+    api.point.exclusion_menu.query.list,
     pointConfig?._id ? { salonId: salon!._id, pointConfigId: pointConfig._id } : 'skip'
   );
-  const upsertPointConfig = useMutation(api.point.config.upsert);
-  const upsertExclusionMenu = useMutation(api.point.exclusion_menu.upsert);
+  const upsertExclusionMenu = useMutation(api.point.exclusion_menu.mutation.upsert);
+  const upsertPointConfig = useMutation(api.point.config.mutation.upsert);
   const {
     register,
     handleSubmit,
@@ -117,12 +120,12 @@ export default function PointTabs() {
         pointExpirationDays: pointConfig.pointExpirationDays ?? POINT_EXPIRATION_DAYS[0].value,
         isFixedPoint: pointConfig.isFixedPoint,
       });
-      if (initialExclusionData) {
-        setInitialExclusionMenuIds(initialExclusionData);
-        setSelectedMenuIds(initialExclusionData);
+      if (initialExclusionIds) {
+        setInitialExclusionMenuIds(initialExclusionIds);
+        setSelectedMenuIds(initialExclusionIds);
       }
     }
-  }, [pointConfig, initialExclusionData, reset]);
+  }, [pointConfig, initialExclusionIds, reset]);
 
   const isExclusionDirty = useMemo(() => {
     return xor(initialExclusionMenuIds, selectedMenuIds).length > 0;
