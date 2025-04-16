@@ -94,7 +94,7 @@ export class StripeSubscriptionRepository {
         subscription: {
           subscriptionId: subscription.id,
           stripeCustomerId: customerId,
-          status: status,
+          status: status === 'ERROR' ? '契約切れ' : status,
           priceId: actualPriceId,
           currentPeriodEnd: subscription.current_period_end,
           planName: planInfo.name,
@@ -262,8 +262,10 @@ export class StripeSubscriptionRepository {
 
         case 'customer.subscription.deleted': {
           const canceledSub = event.data.object as Stripe.Subscription;
-          const result = await this.syncSubscription(canceledSub);
-          return { success: result.success, message: result.error };
+          await this.convex.mutation(api.subscription.mutation.kill, {
+            stripeSubscriptionId: canceledSub.id,
+          });
+          return { success: true, message: 'サブスクリプションIDなし' };
         }
 
         case 'invoice.payment_failed': {
