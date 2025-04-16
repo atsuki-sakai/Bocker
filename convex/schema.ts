@@ -154,7 +154,8 @@ export default defineSchema({
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_referral_code', ['referralCode', 'isArchive'])
     .index('by_total_referral_count', ['totalReferralCount', 'isArchive'])
-    .index('by_updated_at', ['updatedAt', 'isArchive']),
+    .index('by_updated_at', ['updatedAt', 'isArchive'])
+    .index('by_referral_and_total_count', ['referralCount', 'totalReferralCount', 'isArchive']),
 
   // =====================
   // SCHEDULE

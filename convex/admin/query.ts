@@ -9,8 +9,8 @@ const MAX_REFERRAL_COUNT = 6;
 export const getEmailsByReferralCount = query({
   args: {
     orderReferralCount: v.number(),
-    includeUpdated: v.boolean(),
-    isApplyMaxUseReferral: v.optional(v.boolean()),
+    includeUpdated: v.boolean(), // 当月に更新されたデータを含むかどうか
+    isApplyMaxUseReferral: v.boolean(), // 上限値を超えたデータを含むかどうか
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true);
@@ -30,6 +30,7 @@ export const getEmailsByReferralCount = query({
     while (hasMore) {
       let query = ctx.db
         .query('salon_referral')
+        .withIndex('by_referral_and_total_count')
         .filter((q) => q.gte(q.field('referralCount'), args.orderReferralCount));
 
       // totalReferralCountによる絞り込み（isApplyMaxUseReferralがtrueの場合は適用しない）
