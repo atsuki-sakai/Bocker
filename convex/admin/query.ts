@@ -31,12 +31,21 @@ export const getEmailsByReferralCount = query({
     const startOfMonth = firstDayOfMonth.getTime();
     const endOfMonth = firstDayOfNextMonth.getTime() - 1;
 
-    // Process in batches using pagination
+    console.log(
+      `検索条件: lessThanReferralCount=${effectiveLessThanValue}, includeUpdated=${args.includeUpdated}, isApplyMaxUseReferral=${args.isApplyMaxUseReferral}`
+    );
+
+    // まず、条件に合うすべてのreferralを取得
     while (hasMore) {
       let query = ctx.db
         .query('salon_referral')
         .withIndex('by_referral_and_total_count')
-        .filter((q) => q.lt(q.field('referralCount'), effectiveLessThanValue));
+        .filter((q) =>
+          q.and(
+            q.lt(q.field('referralCount'), effectiveLessThanValue),
+            q.eq(q.field('isArchive'), false)
+          )
+        );
 
       // totalReferralCountによる絞り込み（isApplyMaxUseReferralがtrueの場合は適用しない）
       if (!args.isApplyMaxUseReferral) {
@@ -62,18 +71,20 @@ export const getEmailsByReferralCount = query({
       // includeUpdatedがtrueの場合は、全てのレコードを取得（フィルタは不要）
 
       const batch = await query.paginate({ cursor, numItems: batchSize });
+      console.log(`取得したreferralレコード数: ${batch.page.length}`);
 
-      // Fetch all salons in one batch
-      const salons = await Promise.all(batch.page.map((referral) => ctx.db.get(referral.salonId)));
+      if (batch.page.length > 0) {
+        // 一度にすべてのsalonIdsを収集
+        const salonIds = batch.page.map((referral) => referral.salonId);
 
-      // Extract emails, ensuring they are all strings (no undefined values)
-      const emails = salons
-        .filter((salon) => salon !== null && salon !== undefined)
-        .map((salon) => salon.email)
-        .filter((email): email is string => email !== undefined && email !== null);
-
-      // Add emails to the result array
-      allSalonEmails = [...allSalonEmails, ...emails];
+        // salonIdsを使って対応するサロンを一括で取得
+        for (const salonId of salonIds) {
+          const salon = await ctx.db.get(salonId);
+          if (salon && salon.email && !salon.isArchive) {
+            allSalonEmails.push(salon.email);
+          }
+        }
+      }
 
       // Check if we need to continue
       hasMore = !batch.isDone;
@@ -82,6 +93,8 @@ export const getEmailsByReferralCount = query({
       // Safety check to avoid hitting read limits
       if (allSalonEmails.length > 500) break;
     }
+
+    console.log(`最終取得メールアドレス数: ${allSalonEmails.length}`);
 
     return [
       {
