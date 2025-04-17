@@ -63,11 +63,31 @@ export default function SubscriptionForm({
     async (planStr: string, billingPeriod: BillingPeriod) => {
       try {
         setIsSubmitting(true);
+
+        // より厳密なバリデーション
+        const subscriptionId = salon?.subscriptionId;
+        const customerId = salon?.stripeCustomerId;
+
+        // デバッグ情報をログに出力
+        console.log('Preview request params:', {
+          subscriptionId,
+          customerId,
+          newPriceId: getPriceStrFromPlanAndPeriod(planStr, billingPeriod),
+        });
+
+        if (!subscriptionId || subscriptionId === '') {
+          throw new Error('サブスクリプションIDが見つかりません');
+        }
+
+        if (!customerId || customerId === '') {
+          throw new Error('Stripe顧客IDが見つかりません');
+        }
+
         // previewデータを取得し状態を更新
         const result = await getSubscriptionUpdatePreview({
-          subscriptionId: salon?.subscriptionId ?? '',
+          subscriptionId,
           newPriceId: getPriceStrFromPlanAndPeriod(planStr, billingPeriod),
-          customerId: salon?.stripeCustomerId ?? '',
+          customerId,
         });
 
         // プレビューデータを設定
@@ -75,7 +95,7 @@ export default function SubscriptionForm({
         // ダイアログを表示
         setShowConfirmDialog(true);
       } catch (err) {
-        console.error('Preview error:', err);
+        console.error('Preview error details:', err);
         const errorMessage =
           err instanceof Error
             ? `プレビュー取得エラー: ${err.message}`
@@ -132,7 +152,7 @@ export default function SubscriptionForm({
         } else {
           // 新規サブスクリプション作成処理
           const priceId = getPriceStrFromPlanAndPeriod(planStr, billingPeriod);
-          const isTrial = !salon?.subscriptionId;
+          const isTrial = !salon?.subscriptionStatus;
 
           const result = await createSession({
             stripeCustomerId: salon?.stripeCustomerId ?? '',
@@ -255,7 +275,7 @@ export default function SubscriptionForm({
         className="mb-8 text-center"
       >
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 bg-clip-text text-transparent mb-2">
-          Booker Pro サブスクリプション
+          Bcker サブスクリプション プラン
         </h1>
         <p className="text-slate-600 dark:text-slate-300 max-w-md mx-auto text-sm mb-6">
           あなたのサロンに最適なプランをお選びください
