@@ -1,3 +1,4 @@
+// この行を追加: React Hooks の依存関係を修正したファイル
 // /components/menu/MenuDetailContent.tsx
 'use client';
 
