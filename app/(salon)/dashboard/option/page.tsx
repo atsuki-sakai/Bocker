@@ -9,6 +9,11 @@ export default function OptionPage() {
       backLinkTitle="ダッシュボード"
       infoBtn={{ text: 'オプションを作成', link: '/dashboard/option/add' }}
     >
+      <div className="flex flex-col gap-2">
+        <p className="text-sm text-gray-500">
+          オプションは顔剃り、トリートメントなどメニューのアップセルにご利用いただけます。
+        </p>
+      </div>
       <OptionList />
     </DashboardSection>
   );

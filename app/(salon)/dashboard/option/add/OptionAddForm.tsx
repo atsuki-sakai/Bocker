@@ -353,8 +353,8 @@ export default function OptionAddForm() {
 
         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md mb-6 mt-4">
           <div>
-            <p className="text-base font-medium">オプションメニューを公開する</p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm font-bold">オプションメニューを公開する</p>
+            <p className="text-xs text-gray-500">
               オフにすると、このオプションメニューはお客様に表示されません
             </p>
           </div>
