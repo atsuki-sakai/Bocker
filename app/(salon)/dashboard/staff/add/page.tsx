@@ -289,7 +289,6 @@ export default function StaffAddPage() {
       description: '',
       imgPath: '',
       isActive: true,
-      organizationId: undefined,
       role: 'staff',
       extraCharge: undefined,
       priority: undefined,
