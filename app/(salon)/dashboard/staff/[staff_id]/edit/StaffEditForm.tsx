@@ -53,8 +53,6 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useMemo } from 'react';
-import { useUser } from '@clerk/nextjs';
-
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
