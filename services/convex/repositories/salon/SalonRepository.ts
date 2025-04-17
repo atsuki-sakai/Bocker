@@ -27,14 +27,7 @@ export class SalonRepository extends BaseRepository<'salon'> {
       .withIndex('by_clerk_id', (q) => q.eq('clerkId', clerkId).eq('isArchive', false))
       .first();
   }
-  async findByOrganizationId(ctx: QueryCtx, organizationId: string): Promise<Doc<'salon'> | null> {
-    return await ctx.db
-      .query('salon')
-      .withIndex('by_organization_id', (q) =>
-        q.eq('organizationId', organizationId).eq('isArchive', false)
-      )
-      .first();
-  }
+
   async findByStripeCustomerId(
     ctx: QueryCtx,
     stripeCustomerId: string

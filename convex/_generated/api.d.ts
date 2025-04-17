@@ -65,7 +65,6 @@ import type * as schedule_staff_exception_mutation from "../schedule/staff_excep
 import type * as schedule_staff_exception_query from "../schedule/staff_exception/query.js";
 import type * as schedule_staff_week_schedule_mutation from "../schedule/staff_week_schedule/mutation.js";
 import type * as schedule_staff_week_schedule_query from "../schedule/staff_week_schedule/query.js";
-import type * as staff_auth_action from "../staff/auth/action.js";
 import type * as staff_auth_mutation from "../staff/auth/mutation.js";
 import type * as staff_auth_query from "../staff/auth/query.js";
 import type * as staff_config_mutation from "../staff/config/mutation.js";
@@ -149,7 +148,6 @@ declare const fullApi: ApiFromModules<{
   "schedule/staff_exception/query": typeof schedule_staff_exception_query;
   "schedule/staff_week_schedule/mutation": typeof schedule_staff_week_schedule_mutation;
   "schedule/staff_week_schedule/query": typeof schedule_staff_week_schedule_query;
-  "staff/auth/action": typeof staff_auth_action;
   "staff/auth/mutation": typeof staff_auth_mutation;
   "staff/auth/query": typeof staff_auth_query;
   "staff/config/mutation": typeof staff_config_mutation;

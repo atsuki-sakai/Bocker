@@ -828,9 +828,6 @@ export function validateSalonConfig(args: Partial<Doc<'salon_config'>>) {
 }
 
 export function validateSalon(args: Partial<Doc<'salon'>>) {
-  if (args.organizationId) {
-    validateStringLength(args.organizationId, MAX_TEXT_LENGTH, '組織ID');
-  }
   if (args.clerkId) {
     validateStringLength(args.clerkId, MAX_TEXT_LENGTH, 'Clerk ID');
   }
@@ -896,11 +893,11 @@ export function validateStaffWeekSchedule(args: Partial<Doc<'staff_week_schedule
 
 // STAFF
 export function validateStaffAuth(args: Partial<Doc<'staff_auth'>>) {
-  if (args.organizationId) {
-    validateStringLength(args.organizationId, MAX_TEXT_LENGTH, '組織ID');
+  if (args.pinCode) {
+    validateStringLength(args.pinCode, MAX_TEXT_LENGTH, 'ピンコード');
   }
   if (args.role) {
-    validateStringLength(args.role, MAX_TEXT_LENGTH, '権限');
+    validateStringLength(args.role, MAX_TEXT_LENGTH, 'ロール');
   }
 }
 

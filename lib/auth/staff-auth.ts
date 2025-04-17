@@ -51,7 +51,8 @@ export async function verifyStaffToken(token: string): Promise<StaffTokenPayload
  */
 export function hasPermission(userRole: string, requiredRole: string): boolean {
   const roleHierarchy = {
-    admin: 3,
+    admin: 4,
+    owner: 3,
     manager: 2,
     staff: 1,
   };
