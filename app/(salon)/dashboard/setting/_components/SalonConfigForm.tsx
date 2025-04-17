@@ -33,8 +33,6 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useOrganization, useOrganizationList } from '@clerk/nextjs';
-
 const salonConfigFormSchema = z.object({
   salonId: z.string(),
   salonName: z
@@ -62,8 +60,6 @@ const salonConfigFormSchema = z.object({
 
 export default function SalonConfigForm() {
   const { salonId } = useSalon();
-  const { organization, isLoaded } = useOrganization();
-  const { userMemberships, setActive } = useOrganizationList();
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
@@ -117,20 +113,6 @@ export default function SalonConfigForm() {
     },
     [setValue]
   );
-
-  // useEffectで組織をアクティブに設定
-  useEffect(() => {
-    if (!isLoaded) return;
-    // 組織のメンバーシップがある場合のみ処理を実行
-    if (userMemberships?.data?.length && setActive) {
-      const targetOrgId = userMemberships.data[0].organization.id;
-
-      // 現在のアクティブな組織と異なる場合のみsetActiveを実行
-      if (organization?.id !== targetOrgId) {
-        setActive({ organization: targetOrgId });
-      }
-    }
-  }, [userMemberships, organization, setActive, isLoaded]);
 
   // 郵便番号が7桁になったら自動的に住所を検索する
   useEffect(() => {
@@ -191,11 +173,6 @@ export default function SalonConfigForm() {
     async (data: z.infer<typeof salonConfigFormSchema>) => {
       if (!salonId) return;
 
-      if (!organization) {
-        toast.error('組織が見つかりません');
-        return;
-      }
-
       try {
         // 現在のサロン名とフォームで送信されたサロン名を比較
         const isNameChanged = salonConfig?.salonName !== data.salonName;
@@ -203,7 +180,7 @@ export default function SalonConfigForm() {
         // 並行して処理を実行（Convexの更新とClerkの更新）
         await updateSalonConfig({
           salonId: salonId,
-          salonName: data.salonName,
+          salonName: data.salonName ?? '',
           email: data.email,
           phone: data.phone,
           postalCode: data.postalCode,
@@ -212,12 +189,6 @@ export default function SalonConfigForm() {
           description: data.description,
         });
 
-        // サロン名が変更されていて、organizationが存在する場合はClerkの組織名も更新
-        if (isNameChanged && organization) {
-          await organization.update({
-            name: data.salonName,
-          });
-        }
         toast.success('サロン設定を保存しました');
 
         setSaveSuccess(true);
@@ -228,7 +199,7 @@ export default function SalonConfigForm() {
         toast.error(errorDetails.message);
       }
     },
-    [updateSalonConfig, salonId, setSaveSuccess, organization, salonConfig?.salonName]
+    [updateSalonConfig, salonId, setSaveSuccess, salonConfig?.salonName]
   );
   // salonConfigが変更されたらフォームをリセット
   useEffect(() => {
@@ -256,7 +227,7 @@ export default function SalonConfigForm() {
       : 'https://placehold.co/600x400.png';
   }, [currentFile, salonConfig?.imgPath]);
 
-  if (!salonId || !isLoaded) {
+  if (!salonId) {
     return <Loading />;
   }
 

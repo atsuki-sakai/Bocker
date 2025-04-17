@@ -24,13 +24,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
+import { MAX_TEXT_LENGTH } from '@/services/convex/constants';
 const salonScheduleFormSchema = z.object({
   salonId: z.string(),
-  salonScheduleConfigId: z.string().optional(),
-  reservationLimitDays: z.string().optional(),
-  availableCancelDays: z.string().optional(),
-  reservationIntervalMinutes: z.string().optional(),
+  salonScheduleConfigId: z
+    .string()
+    .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
+    .optional(),
+  reservationLimitDays: z
+    .string()
+    .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
+    .optional(),
+  availableCancelDays: z
+    .string()
+    .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
+    .optional(),
+  reservationIntervalMinutes: z
+    .string()
+    .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
+    .optional(),
+  availableSheet: z
+    .string()
+    .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
+    .optional(),
 });
 
 // フォーム値の変更を監視
@@ -38,6 +54,7 @@ const defaultSchedule = {
   reservationLimitDays: '30',
   availableCancelDays: '3',
   reservationIntervalMinutes: '0',
+  availableSheet: '1',
 };
 
 export default function SalonScheduleForm() {
@@ -49,6 +66,7 @@ export default function SalonScheduleForm() {
     reservationLimitDays: '',
     availableCancelDays: '',
     reservationIntervalMinutes: '',
+    availableSheet: '',
   });
 
   const salonScheduleConfig = useQuery(
@@ -71,15 +89,21 @@ export default function SalonScheduleForm() {
   const reservationLimitDaysValue = watch('reservationLimitDays');
   const availableCancelDaysValue = watch('availableCancelDays');
   const reservationIntervalMinutesValue = watch('reservationIntervalMinutes');
-
+  const availableSheetValue = watch('availableSheet');
   // フォーム値の変更をデバッグステートに反映
   useEffect(() => {
     setFormValues({
       reservationLimitDays: reservationLimitDaysValue || '',
       availableCancelDays: availableCancelDaysValue || '',
       reservationIntervalMinutes: reservationIntervalMinutesValue || '',
+      availableSheet: availableSheetValue || '',
     });
-  }, [reservationLimitDaysValue, availableCancelDaysValue, reservationIntervalMinutesValue]);
+  }, [
+    reservationLimitDaysValue,
+    availableCancelDaysValue,
+    reservationIntervalMinutesValue,
+    availableSheetValue,
+  ]);
 
   // スケジュール設定が変更されたらフォームをリセット
   useEffect(() => {
@@ -88,7 +112,7 @@ export default function SalonScheduleForm() {
       const scheduleLimitDays = salonScheduleConfig.reservationLimitDays;
       const scheduleCancelDays = salonScheduleConfig.availableCancelDays;
       const scheduleIntervalMinutes = salonScheduleConfig.reservationIntervalMinutes;
-
+      const scheduleAvailableSheet = salonScheduleConfig.availableSheet;
       // データ型の整合性を確保するために明示的に文字列型に変換
       const limitDays =
         scheduleLimitDays !== undefined && scheduleLimitDays !== null
@@ -105,6 +129,11 @@ export default function SalonScheduleForm() {
           ? String(scheduleIntervalMinutes)
           : defaultSchedule.reservationIntervalMinutes;
 
+      const availableSheet =
+        scheduleAvailableSheet !== undefined && scheduleAvailableSheet !== null
+          ? String(scheduleAvailableSheet)
+          : defaultSchedule.availableSheet;
+
       // フォーム値をクリアしてから新しい値を設定
       reset({}, { keepValues: false });
 
@@ -117,6 +146,7 @@ export default function SalonScheduleForm() {
         setValue('reservationLimitDays', limitDays);
         setValue('availableCancelDays', cancelDays);
         setValue('reservationIntervalMinutes', intervalMinutes);
+        setValue('availableSheet', availableSheet);
       }, 0);
     } else if (salonId) {
       // 初期値設定
@@ -129,6 +159,7 @@ export default function SalonScheduleForm() {
         setValue('reservationLimitDays', defaultSchedule.reservationLimitDays);
         setValue('availableCancelDays', defaultSchedule.availableCancelDays);
         setValue('reservationIntervalMinutes', defaultSchedule.reservationIntervalMinutes);
+        setValue('availableSheet', defaultSchedule.availableSheet);
       }, 0);
     }
   }, [salonScheduleConfig, reset, setValue, salonId]);
@@ -145,7 +176,7 @@ export default function SalonScheduleForm() {
         const intervalMinutes = Number(
           data.reservationIntervalMinutes || defaultSchedule.reservationIntervalMinutes
         ) as ReservationIntervalMinutes;
-
+        const availableSheet = Number(data.availableSheet || defaultSchedule.availableSheet);
         if (salonScheduleConfig?._id) {
           // 既存のデータを更新する場合
           await updateSalonScheduleConfig({
@@ -153,6 +184,7 @@ export default function SalonScheduleForm() {
             availableCancelDays: cancelDays,
             reservationIntervalMinutes: intervalMinutes,
             reservationLimitDays: limitDays,
+            availableSheet: availableSheet,
           });
         } else {
           // 新規作成の場合
@@ -161,6 +193,7 @@ export default function SalonScheduleForm() {
             availableCancelDays: cancelDays,
             reservationIntervalMinutes: intervalMinutes,
             reservationLimitDays: limitDays,
+            availableSheet: availableSheet,
           });
         }
 
@@ -175,6 +208,7 @@ export default function SalonScheduleForm() {
             reservationLimitDays: data.reservationLimitDays,
             availableCancelDays: data.availableCancelDays,
             reservationIntervalMinutes: data.reservationIntervalMinutes,
+            availableSheet: data.availableSheet,
           },
           { keepDirty: false }
         );
