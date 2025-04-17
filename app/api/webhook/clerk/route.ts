@@ -130,21 +130,6 @@ export async function POST(req: Request) {
                   salonId: salonId,
                 })
               );
-
-              if (referralCode) {
-                const referralBySalon = await retryOperation(() =>
-                  fetchQuery(api.salon.referral.query.getByReferralCode, {
-                    referralCode: referralCode,
-                  })
-                );
-                if (referralBySalon) {
-                  await retryOperation(() =>
-                    fetchMutation(api.salon.referral.mutation.incrementReferralCount, {
-                      referralId: referralBySalon._id,
-                    })
-                  );
-                }
-              }
             } catch (referralError) {
               console.error(`salonId: ${salonId}のReferral作成に失敗しました:`, referralError);
               console.error('Referralエラーの詳細:', JSON.stringify(referralError, null, 2));

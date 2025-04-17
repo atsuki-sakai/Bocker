@@ -177,6 +177,7 @@ export default function SignUpPage() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const [pendingVerification, setPendingVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
   const [password, setPassword] = useState('');
   const [showReferralCode, setShowReferralCode] = useState(paramsReferralCode ? true : false);
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('empty');
@@ -426,6 +427,7 @@ export default function SignUpPage() {
   // 認証コード確認ハンドラ
   const onVerifySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsVerifying(true);
     if (!isLoaded || !verificationCode) return;
 
     try {
@@ -449,6 +451,8 @@ export default function SignUpPage() {
         },
       });
       toast.error('認証コードの検証に失敗しました');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -685,8 +689,30 @@ export default function SignUpPage() {
                     className="w-full"
                     disabled={!verificationCode || verificationCode.length < 6}
                   >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    認証する
+                    {isVerifying ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        >
+                          <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                            <path className="opacity-75" fill="currentColor" />
+                          </svg>
+                        </motion.div>
+                        認証中...
+                      </>
+                    ) : (
+                      '認証する'
+                    )}
                   </Button>
 
                   <div className="text-center text-sm text-gray-500">
