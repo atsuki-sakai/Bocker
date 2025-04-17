@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as Sentry from '@sentry/nextjs';
 import { handleError } from '@/lib/error';
+import { useSearchParams } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -170,11 +171,14 @@ const itemVariants = {
 };
 
 export default function SignUpPage() {
+  const searchParams = useSearchParams();
+  const paramsReferralCode = searchParams.get('referral_code');
+
   const { isLoaded, signUp, setActive } = useSignUp();
   const [pendingVerification, setPendingVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [password, setPassword] = useState('');
-  const [showReferralCode, setShowReferralCode] = useState(false);
+  const [showReferralCode, setShowReferralCode] = useState(paramsReferralCode ? true : false);
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('empty');
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
@@ -185,6 +189,7 @@ export default function SignUpPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
     watch,
+    setValue,
   } = useZodForm(signUpSchema);
 
   const salonName = watch('salonName');
@@ -446,6 +451,13 @@ export default function SignUpPage() {
       toast.error('認証コードの検証に失敗しました');
     }
   };
+
+  useEffect(() => {
+    if (paramsReferralCode) {
+      setValue('referralCode', paramsReferralCode);
+    }
+  }, [paramsReferralCode, setValue]);
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <motion.div
