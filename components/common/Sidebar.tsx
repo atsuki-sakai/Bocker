@@ -29,7 +29,6 @@ import {
   XIcon,
   CreditCardIcon,
   ChevronDownIcon,
-  LogOutIcon,
   TicketIcon,
   GiftIcon,
 } from 'lucide-react';
@@ -61,6 +60,8 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
     salonId,
   } = useStaffAuth();
   const pathname = usePathname(); // 現在のパスを取得
+
+  console.log('staffRole', staffRole);
 
   // オーナーかスタッフかを判定
   // スタッフ認証が存在する場合は、Clerkセッションがあってもスタッフとして扱う
@@ -201,10 +202,12 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
               {/* Sidebar for mobile */}
               <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
                 <div className="flex flex-col mt-2">
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-800 bg-clip-text text-transparent">
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-700 to-purple-500 bg-clip-text text-transparent">
                     Bcker
                   </h1>
-                  <p className="text-xs text-slate-500">サロンの予約・管理をもっと簡単に。</p>
+                  <div className="flex items-center gap-x-2">
+                    <p className="text-xs text-slate-500">サロンの運営をもっと便利に。</p>
+                  </div>
                 </div>
 
                 <nav className="flex flex-1 flex-col">
@@ -312,44 +315,34 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                       </ul>
                     </li>
 
-                    <li className="mt-auto">
+                    {isOwner && salon?.subscriptionStatus === 'active' && (
                       <a
-                        onClick={isOwner ? handleOwnerSignOut : handleStaffSignOut}
-                        className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 text-slate-600 hover:bg-gray-50 hover:text-slate-800 cursor-pointer"
+                        href={`/dashboard/setting`}
+                        className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 text-slate-600 hover:bg-gray-50 hover:text-slate-800"
                       >
-                        <LogOutIcon
+                        <SettingsIcon
                           aria-hidden="true"
                           className="size-6 shrink-0 text-slate-600 group-hover:text-slate-800"
                         />
-                        ログアウト
+                        設定
                       </a>
-                      {isOwner && salon?.subscriptionStatus === 'active' && (
-                        <a
-                          href={`/dashboard/setting`}
-                          className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 text-slate-600 hover:bg-gray-50 hover:text-slate-800"
-                        >
-                          <SettingsIcon
-                            aria-hidden="true"
-                            className="size-6 shrink-0 text-slate-600 group-hover:text-slate-800"
-                          />
-                          設定
-                        </a>
-                      )}
-                    </li>
+                    )}
                   </ul>
                 </nav>
               </div>
             </DialogPanel>
           </div>
         </Dialog>
-        ;{/* Static sidebar for desktop */}
+        {/* Static sidebar for desktop */}
         <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
           <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
             <div className="flex flex-col mt-2">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-800 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-700 to-purple-500 bg-clip-text text-transparent">
                 Bcker
               </h1>
-              <p className="text-xs text-slate-500">サロンの予約・管理をもっと簡単に。</p>
+              <div className="flex items-center gap-x-2">
+                <p className="text-xs text-slate-500">サロンの運営をもっと便利に。</p>
+              </div>
             </div>
             <nav className="flex flex-1 flex-col">
               {isOwner && salon?.subscriptionStatus !== 'active' && (
@@ -475,7 +468,6 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
             </nav>
           </div>
         </div>
-        ;;
         <div className="lg:pl-72">
           <div className="sticky top-0 z-40 lg:mx-auto lg:px-8">
             <div className="flex h-16 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-xs sm:gap-x-6 sm:px-6 lg:px-0 lg:shadow-none">
@@ -496,24 +488,13 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                   {/* プロプランバッジは管理者のみ表示 */}
                   {salon?.planName && (
                     <div className="flex items-center gap-x-4 lg:gap-x-6">
-                      <p className="text-sm tracking-wider w-32 text-center font-bold border border-blue-700 rounded-full px-2 py-1 bg-blue-100 text-blue-700">
+                      <p className="text-xs tracking-widest w-fit text-center font-bold border border-blue-700 rounded-full px-4 py-1 bg-blue-100 text-blue-700">
                         {salon?.planName}
                       </p>
                     </div>
                   )}
 
-                  {/* スタッフバッジを表示 */}
-                  {!isOwner && staffRole ? (
-                    <div className="flex items-center gap-x-4 lg:gap-x-6">
-                      <p className="text-xs w-32 text-center font-bold border border-blue-700 rounded-full px-2 py-1 bg-blue-100 text-blue-700">
-                        {staffRole === 'admin'
-                          ? '管理者'
-                          : staffRole === 'manager'
-                            ? 'マネージャー'
-                            : 'スタッフ'}
-                      </p>
-                    </div>
-                  ) : null}
+                  <span className="text-xs tracking-wider text-slate-500">{salon.email}</span>
 
                   <div
                     aria-hidden="true"
@@ -522,7 +503,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                   <Menu as="div" className="relative">
                     <MenuButton className="-m-1.5 flex items-center p-1.5">
                       <span className="sr-only">ユーザーメニューを開く</span>
-                      <span className="hidden lg:flex lg:items-center">
+                      <span className="flex lg:items-center">
                         <h5 className="text-sm text-gray-700">
                           {isOwner ? (staffName ?? '') : (staffName ?? '')}
                         </h5>
@@ -577,7 +558,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
               </div>
             </div>
           </div>
-          <main className="py-10">
+          <main className="py-4 lg:py-8">
             <div className="mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
           </main>
         </div>

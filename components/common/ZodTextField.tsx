@@ -21,6 +21,7 @@ type ZodTextFieldProps<TSchema extends z.ZodTypeAny> = {
   placeholder?: string;
   className?: string;
   required?: boolean;
+  readOnly?: boolean;
 };
 
 // ZodTextField コンポーネント - 再利用可能なフォームフィールド
@@ -34,11 +35,12 @@ export default function ZodTextField({
   placeholder,
   className,
   required = false,
+  readOnly = false,
 }: ZodTextFieldProps<z.ZodType>) {
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       <Label htmlFor={name} className="flex items-center gap-2 text-gray-700">
-        {icon}
+        <div className="scale-75">{icon}</div>
         {label}
         {required && <span className="text-red-500">*</span>}
       </Label>
@@ -46,6 +48,7 @@ export default function ZodTextField({
         <Input
           id={name}
           type={type}
+          readOnly={readOnly}
           {...register(name, {
             valueAsNumber: type === 'number',
             setValueAs:
@@ -64,8 +67,13 @@ export default function ZodTextField({
                 : undefined,
           })}
           placeholder={placeholder}
-          className={`${errors[name] ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+          className={`${errors[name] ? ` border-red-500 focus-visible:ring-red-500 ` : ''} ${
+            readOnly ? 'focus-visible:ring-0 bg-gray-100 text-gray-500' : ''
+          }`}
         />
+        {readOnly && (
+          <span className="text-xs text-red-500 text-nowrap tracking-wider ">※直接編集不可</span>
+        )}
       </div>
       <AnimatePresence>
         {errors[name] && (

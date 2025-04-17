@@ -5,7 +5,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Copy, Gift, Check, Share2 } from 'lucide-react';
+import { Copy, Check, Share2 } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Skeleton } from '../ui/skeleton';
@@ -59,8 +59,8 @@ export default function ReferralCard() {
       if (navigator.share) {
         navigator
           .share({
-            title: 'お友達を紹介して最大30,000円お得に！',
-            text: '今なら紹介コードの登録で、あなたとお友達にお得な特典がもらえます。ぜひご利用ください！',
+            title: 'Bckerをお友達を紹介して最大30,000円お得に！',
+            text: '今なら紹介コードを入力して登録すると、あなたとお友達に１ヶ月¥5,000円の割引が適用されます。ぜひご利用ください！紹介はおひとり様で最大6回まで受けられます。',
             url: signupUrl,
           })
           .catch((error) => {
@@ -99,15 +99,9 @@ export default function ReferralCard() {
 
   return (
     <AnimatePresence>
-      {referral?.totalReferralCount ? (
-        referral.totalReferralCount < 6 ? (
+      {referral ? (
+        referral.totalReferralCount! < 6 ? (
           <Card className="overflow-hidden border-indigo-200 shadow-none">
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-1">
-              <div className="flex items-center gap-2 px-4 py-2 text-white">
-                <Gift size={18} />
-                <h3 className="font-medium">紹介プログラム</h3>
-              </div>
-            </div>
             <CardContent className="p-5">
               <div className="flex flex-col gap-4">
                 <div className="flex justify-between items-center">
@@ -154,8 +148,9 @@ export default function ReferralCard() {
                 <div className="flex flex-col gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
                   <div className="flex justify-between items-center">
                     <p className="text-sm font-semibold text-gray-800">紹介特典 🎁</p>
-                    <p className="text-sm font-bold text-green-600">
-                      最大30,000円分の割引を受け取れます！
+                    <p className="text-sm font-bold text-slate-600">
+                      最大<span className="text-green-600 text-xl px-1">30,000</span>
+                      円分の割引を受け取れます！
                     </p>
                   </div>
                   <p className="text-xs tracking-wide leading-4 text-gray-700">
@@ -179,7 +174,14 @@ export default function ReferralCard() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-end items-center">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-bold text-slate-600">
+                      獲得したキャッシュバックは
+                      <span className="text-green-600 text-2xl px-1">
+                        {referral.totalReferralCount! * 5000}
+                      </span>
+                      円です。
+                    </p>
                     <p className="text-sm text-gray-600">
                       {referral.totalReferralCount && referral.totalReferralCount > 6
                         ? '6/6'
@@ -197,7 +199,7 @@ export default function ReferralCard() {
           </Card>
         ) : null
       ) : (
-        <Skeleton className="h-40 w-full rounded-lg" />
+        <Skeleton className="h-52 w-full rounded-lg" />
       )}
     </AnimatePresence>
   );

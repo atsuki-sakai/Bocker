@@ -5,7 +5,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { AnimatePresence, motion } from 'framer-motion';
 import { format, isSameDay, isToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { CalendarIcon, X, CalendarCheck, CalendarRange } from 'lucide-react';
+import { CalendarIcon, X, CalendarCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -125,7 +125,7 @@ function CalendarMultiSelect({
   }, [sortedDates]);
 
   return (
-    <div className="flex gap-5">
+    <div className="flex flex-col sm:flex-row gap-5">
       {/* カレンダーコンポーネント */}
       <div className="bg-white dark:bg-slate-800 rounded-lg p-1 border dark:border-slate-700">
         {/* Shadcn標準のカレンダーコンポーネントを使用 - カスタムDayコンポーネントは不要 */}
@@ -142,12 +142,11 @@ function CalendarMultiSelect({
       {/* 選択された日付一覧 */}
       <div className="border rounded-md p-4 w-full bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800/50">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-medium text-sm text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
-            <CalendarRange className="h-4 w-4" />
-            選択された日付
-            <Badge className="ml-1 bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700">
+          <h3 className="font-medium text-xs sm:text-sm text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
+            <Badge className="ml-1 text-nowrap bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700">
               {selectedDates.length}件
-            </Badge>
+            </Badge>{' '}
+            選択済みの日
           </h3>
 
           {hasSelectedDates && (
@@ -160,7 +159,6 @@ function CalendarMultiSelect({
                     className="h-7 text-xs text-indigo-600 dark:text-indigo-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20"
                     onClick={clearAllDates}
                   >
-                    <X className="h-3.5 w-3.5 mr-1" />
                     全て削除
                   </Button>
                 </TooltipTrigger>
