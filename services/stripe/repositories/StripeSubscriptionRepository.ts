@@ -8,6 +8,7 @@ import { fetchQuery } from 'convex/nextjs';
 import * as Sentry from '@sentry/nextjs';
 import { STRIPE_API_VERSION } from '@/lib/constants';
 import { fetchMutation } from 'convex/nextjs';
+import { retryOperation } from '@/lib/utils';
 
 /**
  * Stripe Subscription APIを扱うリポジトリクラス
@@ -208,6 +209,21 @@ export class StripeSubscriptionRepository {
                 await fetchMutation(api.salon.referral.mutation.incrementReferralCount, {
                   referralId: inviteReferral._id,
                 });
+
+                if (referralCode) {
+                  const referralBySalon = await retryOperation(() =>
+                    fetchQuery(api.salon.referral.query.getByReferralCode, {
+                      referralCode: referralCode,
+                    })
+                  );
+                  if (referralBySalon) {
+                    await retryOperation(() =>
+                      fetchMutation(api.salon.referral.mutation.incrementReferralCount, {
+                        referralId: referralBySalon._id,
+                      })
+                    );
+                  }
+                }
               } else {
                 console.log('紹介コードがありません - 通常のサブスクリプション作成');
               }

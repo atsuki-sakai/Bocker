@@ -92,6 +92,40 @@ export function normalizeSubscriptionStatus(subscription: Stripe.Subscription): 
   }
 }
 
+export const generatePinCode = () => {
+  // ピンコードの最小長を定義（6文字以上）
+  const PIN_LENGTH = 6;
+
+  const upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowerChars = 'abcdefghijklmnopqrstuvwxyz';
+  const numberChars = '0123456789';
+  const allChars = upperChars + lowerChars + numberChars;
+
+  // 必ず含めたい文字をそれぞれ１文字ずつ取得
+  const requiredChars = [
+    upperChars[Math.floor(Math.random() * upperChars.length)],
+    lowerChars[Math.floor(Math.random() * lowerChars.length)],
+    numberChars[Math.floor(Math.random() * numberChars.length)],
+  ];
+
+  // 残りの文字数分だけランダムに取得
+  const remainingCount = PIN_LENGTH - requiredChars.length;
+  const remainingChars: string[] = [];
+  for (let i = 0; i < remainingCount; i++) {
+    remainingChars.push(allChars[Math.floor(Math.random() * allChars.length)]);
+  }
+
+  // 必須文字＋残り文字をまとめてシャッフル（Fisher–Yates アルゴリズム）
+  const pinArray = [...requiredChars, ...remainingChars];
+  for (let i = pinArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pinArray[i], pinArray[j]] = [pinArray[j], pinArray[i]];
+  }
+
+  const pinCode = pinArray.join('');
+  return pinCode;
+};
+
 // Stripeの課金期間をConvexの課金期間に変換
 export function priceIdToPlanInfo(priceId: string) {
   switch (priceId) {
@@ -251,11 +285,11 @@ export async function compressAndConvertToWebP(
 }
 
 // 文字列を暗号化する関数
-export async function encryptString(text: string, password: string): Promise<string> {
+export async function encryptString(text: string, secret: string): Promise<string> {
   // パスワードからキーを生成
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(password),
+    new TextEncoder().encode(secret),
     { name: 'PBKDF2' },
     false,
     ['deriveKey']
@@ -295,7 +329,7 @@ export async function encryptString(text: string, password: string): Promise<str
 }
 
 // 暗号化された文字列を復号する関数
-export async function decryptString(encryptedText: string, password: string): Promise<string> {
+export async function decryptString(encryptedText: string, secret: string): Promise<string> {
   // Base64から復元
   const data = new Uint8Array(
     atob(encryptedText)
@@ -311,7 +345,7 @@ export async function decryptString(encryptedText: string, password: string): Pr
   // パスワードからキーを再生成
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(password),
+    new TextEncoder().encode(secret),
     { name: 'PBKDF2' },
     false,
     ['deriveKey']

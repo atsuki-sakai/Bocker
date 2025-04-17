@@ -851,6 +851,12 @@ export function validateSalonScheduleConfig(args: Partial<Doc<'salon_schedule_co
       'キャンセル可能日数'
     );
   }
+  if (args.availableSheet) {
+    validateNumberRange(args.availableSheet, 0, 60, '予約可能席数');
+  }
+  if (args.reservationIntervalMinutes) {
+    validateNumberRange(args.reservationIntervalMinutes, 0, 60, '予約間隔');
+  }
 }
 
 // SCHEDULE

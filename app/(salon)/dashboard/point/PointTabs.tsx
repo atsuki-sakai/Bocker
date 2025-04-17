@@ -202,7 +202,7 @@ export default function PointTabs() {
                     <ScrollArea className="h-[350px] w-full p-6">
                       <div className="space-y-6">
                         <div className="flex flex-col space-y-2">
-                          <Label htmlFor="point-type" className="text-sm font-medium">
+                          <Label htmlFor="point-type" className="text-xs">
                             ポイント付与タイプ
                           </Label>
                           <div
@@ -212,7 +212,7 @@ export default function PointTabs() {
                                 : 'bg-green-50 text-green-700'
                             }`}
                           >
-                            <span className="text-sm">
+                            <span className="text-sm font-bold">
                               {watchedIsFixedPoint ? '固定ポイント' : 'ポイント付与率'}
                             </span>
 
@@ -296,7 +296,7 @@ export default function PointTabs() {
                         </AnimatePresence>
 
                         <div className="space-y-2">
-                          <Label htmlFor="expiration" className="text-sm font-medium">
+                          <Label htmlFor="expiration" className=" font-medium">
                             ポイント有効期限
                           </Label>
                           <Select
@@ -334,79 +334,70 @@ export default function PointTabs() {
                         ポイント設定概要
                       </CardTitle>
                       <CardDescription>
-                        現在の設定内容が適用されるとどのように動作するか
+                        現在の設定内容が適用されるとどのように適応されるのかを確認できます。
+                        <br />
+                        <p className="text-xs font-bold mt-2">1ポイント = 1円</p>
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-6">
-                      <div className="space-y-6">
-                        <div className="rounded-lg bg-slate-50 dark:bg-slate-800 p-4">
-                          <h3 className="text-lg font-medium mb-2">設定サマリー</h3>
-                          <div className="space-y-2 text-sm">
-                            <p className="flex justify-between">
-                              <span className="text-slate-500 dark:text-slate-400">
-                                ポイント付与タイプ:
-                              </span>
+                    <CardContent className="py-2">
+                      <div className="space-y-3">
+                        <div className="space-y-2 text-sm">
+                          <p className="flex justify-between pt-2">
+                            <span className="text-xs dark:text-slate-400">ポイント付与タイプ:</span>
+                            <span className="font-medium text-xs">
+                              {watchedIsFixedPoint ? '固定ポイント' : 'ポイント付与率'}
+                            </span>
+                          </p>
+                          {watchedIsFixedPoint ? (
+                            <p className="flex justify-between items-end text-xs font-bold">
+                              <span className="text-xs dark:text-slate-400">固定ポイント:</span>
                               <span className="font-medium">
-                                {watchedIsFixedPoint ? '固定ポイント' : 'ポイント付与率'}
+                                {watch('fixedPoint') || 0} ポイント
                               </span>
                             </p>
-                            {watchedIsFixedPoint ? (
-                              <p className="flex justify-between">
-                                <span className="text-slate-500 dark:text-slate-400">
-                                  固定ポイント:
-                                </span>
-                                <span className="font-medium">
-                                  {watch('fixedPoint') || 0} ポイント
-                                </span>
-                              </p>
-                            ) : (
-                              <p className="flex justify-between">
-                                <span className="text-slate-500 dark:text-slate-400">
-                                  ポイント付与率:
-                                </span>
-                                <span className="font-medium">{watch('pointRate') || 0}%</span>
-                              </p>
-                            )}
-                            <p className="flex justify-between">
+                          ) : (
+                            <p className="flex justify-between items-end text-xs font-bold">
                               <span className="text-slate-500 dark:text-slate-400">
-                                ポイント有効期限:
+                                ポイント付与率:
                               </span>
-                              <span className="font-medium">
-                                {POINT_EXPIRATION_DAYS.find(
-                                  (d) => d.value === watchedExpirationDays
-                                )?.label || POINT_EXPIRATION_DAYS[0].label}
+                              <span className="text-base font-bold tracking-wide">
+                                {watch('pointRate') || 0}%
                               </span>
                             </p>
-                          </div>
+                          )}
+                          <p className="flex justify-between items-end text-xs font-bold">
+                            <span className="text-slate-500 dark:text-slate-400">
+                              ポイント有効期限:
+                            </span>
+                            <span className="text-base font-bold tracking-wide">
+                              {POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)
+                                ?.label || POINT_EXPIRATION_DAYS[0].label}
+                            </span>
+                          </p>
                         </div>
 
-                        <div className="rounded-lg bg-slate-50 dark:bg-slate-800 p-4">
-                          <h3 className="text-lg font-medium mb-2">ポイント計算例</h3>
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="p-3 bg-white dark:bg-slate-700 rounded shadow-sm">
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                  1,000円のサービス
-                                </p>
-                                <p className="text-lg font-bold">
-                                  {watchedIsFixedPoint
-                                    ? watch('fixedPoint') || 0
-                                    : Math.floor((watch('pointRate') || 0) * 10)}{' '}
-                                  ポイント
-                                </p>
-                              </div>
-                              <div className="p-3 bg-white dark:bg-slate-700 rounded shadow-sm">
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                  5,000円のサービス
-                                </p>
-                                <p className="text-lg font-bold">
-                                  {watchedIsFixedPoint
-                                    ? watch('fixedPoint') || 0
-                                    : Math.floor((watch('pointRate') || 0) * 50)}{' '}
-                                  ポイント
-                                </p>
-                              </div>
-                            </div>
+                        <div className="space-y-2 py-3">
+                          <div className=" bg-white dark:bg-slate-700 rounded shadow-sm">
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              1,000円の決済に対して
+                            </p>
+                            <p className="text-lg font-bold">
+                              {watchedIsFixedPoint
+                                ? watch('fixedPoint') || 0
+                                : Math.floor((watch('pointRate') || 0) * 10)}{' '}
+                              <span className="text-xs">ポイント付与</span>
+                            </p>
+                          </div>
+                          <div className=" bg-white dark:bg-slate-700 rounded shadow-sm">
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              5,000円の決済に対して
+                            </p>
+                            <p className="text-lg font-bold">
+                              {watchedIsFixedPoint
+                                ? watch('fixedPoint') || 0
+                                : Math.floor((watch('pointRate') || 0) * 50)}{' '}
+                              <span className="text-xs">ポイント付与</span>
+                            </p>
                           </div>
                         </div>
                       </div>
