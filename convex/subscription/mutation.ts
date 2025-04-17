@@ -71,19 +71,36 @@ export const kill = mutation({
     stripeSubscriptionId: v.string(),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true);
     validateRequired(args.stripeSubscriptionId, 'stripeSubscriptionId');
 
     const subscription = await ctx.db
       .query('subscription')
       .withIndex('by_subscription_id')
-      .filter((q) => q.eq(q.field('_id'), args.stripeSubscriptionId))
+      .filter((q) => q.eq(q.field('subscriptionId'), args.stripeSubscriptionId))
       .first();
 
     if (!subscription) {
       throw new Error('Subscription not found');
     }
 
-    await ctx.db.delete(subscription._id);
+    const salon = await ctx.db
+      .query('salon')
+      .withIndex('by_stripe_customer_id')
+      .filter((q) => q.eq(q.field('stripeCustomerId'), subscription.stripeCustomerId))
+      .first();
+    if (!salon) {
+      throw new Error('Salon not found');
+    }
+
+    await ctx.db.patch(salon._id, {
+      subscriptionStatus: 'canceled',
+      billingPeriod: undefined,
+      priceId: undefined,
+      planName: undefined,
+      subscriptionId: undefined,
+    });
+
+    await killRecord(ctx, subscription._id);
   },
 });
