@@ -4,7 +4,6 @@ import { usePathname } from 'next/navigation';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { useOrganization } from '@clerk/nextjs';
 import { usePreloadedQuery } from 'convex/react';
 import { useStaffAuth } from '@/hooks/useStaffAuth';
 import { Loading } from '@/components/common';
@@ -44,30 +43,16 @@ function classNames(...classes: string[]) {
 
 interface SidebarProps {
   children: React.ReactNode;
-  preloadedSalon:
-    | Preloaded<typeof api.salon.core.query.findByOrganizationId>
-    | Preloaded<typeof api.salon.core.query.findByClerkId>;
+  preloadedSalon: Preloaded<typeof api.salon.core.query.findByClerkId>;
 }
 
 export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { signOut, user } = useClerk();
-  const { organization, memberships } = useOrganization();
+  const { signOut } = useClerk();
   const { isSignedIn } = useAuth();
   const salon = usePreloadedQuery(
-    preloadedSalon as Preloaded<
-      typeof api.salon.core.query.findByOrganizationId | typeof api.salon.core.query.findByClerkId
-    >
+    preloadedSalon as Preloaded<typeof api.salon.core.query.findByClerkId>
   );
-
-  const userEmail = user?.emailAddresses[0].emailAddress;
-  console.log('userEmail: ', userEmail);
-
-  console.log('preloadedSalon: FROM SIDEBAR', preloadedSalon);
-  console.log('organization: ', organization);
-  console.log('memberships: ', memberships);
-  console.log('user: ', user);
-
   const {
     isAuthenticated: isStaffAuthenticated,
     logout: staffLogout,
@@ -121,7 +106,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
       name: 'スタッフ一覧',
       href: `/dashboard/staff`,
       icon: FolderIcon,
-      requiredRole: 'admin', // 管理者のみ
+      requiredRole: 'owner', // オーナーのみ
       requiredPlan: 'Lite',
     },
     {
@@ -174,6 +159,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
       name: 'サブスクリプション',
       href: `/dashboard/subscription`,
       icon: CreditCardIcon,
+      requiredRole: 'admin', // オーナーのみ
     },
   ];
 
@@ -279,7 +265,9 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                             return (
                               <li key={item.name}>
                                 <RoleBasedView
-                                  requiredRole={item.requiredRole as 'staff' | 'admin' | 'manager'}
+                                  requiredRole={
+                                    item.requiredRole as 'staff' | 'admin' | 'manager' | 'owner'
+                                  }
                                   requiredPlan={item.requiredPlan as 'Lite' | 'Pro' | undefined}
                                   currentPlan={salon?.planName}
                                 >
@@ -354,7 +342,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
             </DialogPanel>
           </div>
         </Dialog>
-        {/* Static sidebar for desktop */}
+        ;{/* Static sidebar for desktop */}
         <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
           <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
             <div className="flex flex-col mt-2">
@@ -422,7 +410,9 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                         return (
                           <li key={item.name}>
                             <RoleBasedView
-                              requiredRole={item.requiredRole as 'staff' | 'admin' | 'manager'}
+                              requiredRole={
+                                item.requiredRole as 'staff' | 'admin' | 'manager' | 'owner'
+                              }
                               requiredPlan={item.requiredPlan as 'Lite' | 'Pro' | undefined}
                               currentPlan={salon?.planName}
                             >
@@ -485,6 +475,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
             </nav>
           </div>
         </div>
+        ;;
         <div className="lg:pl-72">
           <div className="sticky top-0 z-40 lg:mx-auto lg:px-8">
             <div className="flex h-16 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-xs sm:gap-x-6 sm:px-6 lg:px-0 lg:shadow-none">
@@ -533,7 +524,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                       <span className="sr-only">ユーザーメニューを開く</span>
                       <span className="hidden lg:flex lg:items-center">
                         <h5 className="text-sm text-gray-700">
-                          {isOwner ? (userEmail ?? '') : (staffName ?? '')}
+                          {isOwner ? (staffName ?? '') : (staffName ?? '')}
                         </h5>
                         <ChevronDownIcon aria-hidden="true" className="ml-2 size-5 text-gray-400" />
                       </span>

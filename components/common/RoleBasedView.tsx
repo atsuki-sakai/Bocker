@@ -6,8 +6,8 @@ import { useAuth } from '@clerk/nextjs';
 
 interface RoleBasedViewProps {
   children: ReactNode;
-  requiredRole: 'admin' | 'manager' | 'staff';
-  requiredPlan?: 'Lite' | 'Pro' | "Enterprise";
+  requiredRole: 'admin' | 'manager' | 'staff' | 'owner';
+  requiredPlan?: 'Lite' | 'Pro' | 'Enterprise';
   currentPlan?: string | null;
   fallback?: ReactNode;
 }
