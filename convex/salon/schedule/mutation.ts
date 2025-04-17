@@ -11,6 +11,7 @@ export const create = mutation({
     reservationLimitDays: v.optional(v.number()), // 予約可能日数
     availableCancelDays: v.optional(v.number()), // 予約キャンセル可能日数
     reservationIntervalMinutes: v.optional(reservationIntervalMinutesType) || 0, // 予約時間間隔(分)
+    availableSheet: v.optional(v.number()), // 予約可能席数
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -25,6 +26,7 @@ export const update = mutation({
     reservationLimitDays: v.optional(v.number()), // 予約可能日数
     availableCancelDays: v.optional(v.number()), // 予約キャンセル可能日数
     reservationIntervalMinutes: v.optional(reservationIntervalMinutesType) || 0, // 予約時間間隔(分)
+    availableSheet: v.optional(v.number()), // 予約可能席数
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);

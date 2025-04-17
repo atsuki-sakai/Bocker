@@ -1,6 +1,7 @@
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { validateRequired } from '@/services/convex/shared/utils/validation';
 
 export const findReferralCodeByCustomerId = query({
   args: {
@@ -47,9 +48,12 @@ export const findReferralCodeByCustomerId = query({
 
 export const getByReferralCode = query({
   args: {
-    referralCode: v.string(),
+    referralCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    if (!args.referralCode) {
+      return null; // referralCodeが提供されていない場合はnullを返す
+    }
     return await ctx.db
       .query('salon_referral')
       .withIndex('by_referral_code', (q) =>

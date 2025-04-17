@@ -15,7 +15,6 @@ import { ConvexCustomError, throwConvexApiError } from '@/services/convex/shared
 export const create = mutation({
   args: {
     clerkId: v.string(),
-    organizationId: v.optional(v.string()),
     email: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
   },
@@ -59,8 +58,7 @@ export const update = mutation({
 export const upsert = mutation({
   args: {
     id: v.id('salon'),
-    clerkId: v.string(),
-    organizationId: v.optional(v.string()),
+    clerkId: v.optional(v.string()),
     email: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
   },
@@ -73,7 +71,10 @@ export const upsert = mutation({
 
       if (!salon || salon.isArchive) {
         // 新規作成
-        return await salonService.createSalon(ctx, args);
+        return await salonService.createSalon(ctx, {
+          ...args,
+          clerkId: args.clerkId ?? '',
+        });
       } else {
         // 更新
         return await salonService.updateSalon(ctx, args.id, {

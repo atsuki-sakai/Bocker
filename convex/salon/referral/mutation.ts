@@ -16,7 +16,7 @@ export const create = mutation({
         salonId: args.salonId,
         referralCode: referralCode,
         referralCount: 0,
-        referralBySalon: args.referralBySalon,
+        totalReferralCount: 0,
         isArchive: false,
       });
       return salonReferralId;
