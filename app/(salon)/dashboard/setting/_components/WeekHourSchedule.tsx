@@ -83,9 +83,14 @@ const DAYS_OF_WEEK = [
     id: 'saturday',
     week: '土曜日',
     shortWeek: '土',
-    color: 'bg-red-50 border-red-200 text-red-700',
+    color: 'bg-orange-50 border-orange-200 text-orange-700',
   },
-  { id: 'sunday', week: '日曜日', shortWeek: '日', color: 'bg-red-50 border-red-200 text-red-700' },
+  {
+    id: 'sunday',
+    week: '日曜日',
+    shortWeek: '日',
+    color: 'bg-orange-50 border-orange-200 text-orange-700',
+  },
 ];
 
 // サロン曜日スケジュールの型定義
@@ -535,7 +540,7 @@ export default function WeekHourSchedule() {
                           }
                         `}
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col items-start justify-between">
                         <span className="font-semibold">{day.week}</span>
                         {isOpen ? (
                           <div className="flex items-center gap-1 text-xs">
@@ -566,8 +571,6 @@ export default function WeekHourSchedule() {
                 })}
               </div>
             </motion.div>
-
-            {/* 営業時間設定 */}
             <motion.div variants={itemVariants}>
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="h-5 w-5 text-blue-600" />
@@ -575,122 +578,100 @@ export default function WeekHourSchedule() {
               </div>
 
               <Tabs value={scheduleTab} onValueChange={setScheduleTab} className="w-full">
-                <TabsList className="mb-4 bg-blue-50 p-1 rounded-lg">
-                  <TabsTrigger
-                    value="common"
-                    className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm"
-                  >
+                <TabsList className="mb-4 p-1 rounded-lg">
+                  <TabsTrigger value="common">
                     <Settings2 className="h-4 w-4 mr-2" />
                     共通設定
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="individual"
-                    className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm"
-                  >
+                  <TabsTrigger value="individual">
                     <Calendar className="h-4 w-4 mr-2" />
                     曜日ごとの設定
                   </TabsTrigger>
                 </TabsList>
 
-                {/* 共通営業時間設定 */}
                 <TabsContent value="common">
-                  <motion.div
-                    className="p-5 border rounded-xl bg-white shadow-sm"
-                    variants={fadeInVariants}
-                    initial="hidden"
-                    animate="visible"
-                  >
-                    <div className="flex items-center gap-2 mb-6">
-                      <Switch
-                        checked={weekScheduleData.useCommonHours}
-                        onCheckedChange={handleUseCommonHoursChange}
-                        className="data-[state=checked]:bg-blue-600"
-                      />
-                      <Label className="font-medium cursor-pointer">
-                        すべての営業日に共通の営業時間を設定する
-                      </Label>
+                  <div className="flex items-center gap-2 mb-6">
+                    <Switch
+                      checked={weekScheduleData.useCommonHours}
+                      onCheckedChange={handleUseCommonHoursChange}
+                      className="data-[state=checked]:bg-blue-600"
+                    />
+                    <Label className="font-medium cursor-pointer">
+                      すべての営業日に共通の営業時間を設定する
+                    </Label>
+                  </div>
+
+                  {weekScheduleData.useCommonHours && (
+                    <div>
+                      <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center">
+                          <Clock3 className="mr-2 h-5 w-5 text-blue-600" />
+                          <span className="font-medium">営業時間</span>
+                        </div>
+
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <Select
+                            value={weekScheduleData.commonStartHour}
+                            onValueChange={handleCommonStartHourChange}
+                          >
+                            <SelectTrigger className="w-28">
+                              <SelectValue placeholder="開始時間" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <ScrollArea className="h-60">
+                                {timeOptions.map((time) => (
+                                  <SelectItem key={`common-open-${time}`} value={time}>
+                                    {time}
+                                  </SelectItem>
+                                ))}
+                              </ScrollArea>
+                            </SelectContent>
+                          </Select>
+
+                          <span className="text-lg font-semibold">〜</span>
+
+                          <Select
+                            value={weekScheduleData.commonEndHour}
+                            onValueChange={handleCommonEndHourChange}
+                          >
+                            <SelectTrigger className="w-28">
+                              <SelectValue placeholder="終了時間" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <ScrollArea className="h-60">
+                                {commonEndHourOptions.length > 0 ? (
+                                  commonEndHourOptions.map((time) => (
+                                    <SelectItem key={`common-close-${time}`} value={time}>
+                                      {time}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                    開始時間より後の時間を選択できます
+                                  </div>
+                                )}
+                              </ScrollArea>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 p-3 bg-white rounded border border-blue-200 text-sm text-blue-700">
+                        <div className="flex items-start gap-2">
+                          <InfoIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                          <div>
+                            すべての営業日に同じ営業時間が適用されます。曜日ごとに個別の時間を設定する場合は、共通設定をオフにしてください。
+                          </div>
+                        </div>
+                      </div>
                     </div>
-
-                    <AnimatePresence>
-                      {weekScheduleData.useCommonHours && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="p-4 bg-blue-50 rounded-lg"
-                        >
-                          <div className="flex flex-wrap items-center gap-4">
-                            <div className="flex items-center">
-                              <Clock3 className="mr-2 h-5 w-5 text-blue-600" />
-                              <span className="font-medium">営業時間</span>
-                            </div>
-
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <Select
-                                value={weekScheduleData.commonStartHour}
-                                onValueChange={handleCommonStartHourChange}
-                              >
-                                <SelectTrigger className="w-28">
-                                  <SelectValue placeholder="開始時間" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <ScrollArea className="h-60">
-                                    {timeOptions.map((time) => (
-                                      <SelectItem key={`common-open-${time}`} value={time}>
-                                        {time}
-                                      </SelectItem>
-                                    ))}
-                                  </ScrollArea>
-                                </SelectContent>
-                              </Select>
-
-                              <span className="text-lg font-semibold">〜</span>
-
-                              <Select
-                                value={weekScheduleData.commonEndHour}
-                                onValueChange={handleCommonEndHourChange}
-                              >
-                                <SelectTrigger className="w-28">
-                                  <SelectValue placeholder="終了時間" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <ScrollArea className="h-60">
-                                    {commonEndHourOptions.length > 0 ? (
-                                      commonEndHourOptions.map((time) => (
-                                        <SelectItem key={`common-close-${time}`} value={time}>
-                                          {time}
-                                        </SelectItem>
-                                      ))
-                                    ) : (
-                                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                        開始時間より後の時間を選択できます
-                                      </div>
-                                    )}
-                                  </ScrollArea>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 p-3 bg-white rounded border border-blue-200 text-sm text-blue-700">
-                            <div className="flex items-start gap-2">
-                              <InfoIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                              <div>
-                                すべての営業日に同じ営業時間が適用されます。曜日ごとに個別の時間を設定する場合は、共通設定をオフにしてください。
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
+                  )}
                 </TabsContent>
 
-                {/* 曜日ごとの営業時間設定 */}
                 <TabsContent value="individual">
                   <motion.div variants={fadeInVariants} initial="hidden" animate="visible">
                     {activeDays.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {DAYS_OF_WEEK.filter(
                           (day) => weekScheduleData.scheduleSettings[day.id as DayOfWeek].isOpen
                         ).map((day) => {
@@ -700,64 +681,64 @@ export default function WeekHourSchedule() {
                           const endHourOptions = getEndHourOptions(daySetting.startHour);
 
                           return (
-                            <motion.div
+                            <div
                               key={dayId}
                               className={`flex flex-col sm:flex-row sm:items-center gap-3 p-4 border rounded-lg ${day.color}`}
-                              whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-                              transition={{ duration: 0.2 }}
                             >
-                              <div className="font-semibold min-w-24">{day.week}</div>
+                              <div className="flex flex-col justify-between w-full">
+                                <div className="font-semibold min-w-24 mb-1">{day.week}</div>
 
-                              <div className="flex flex-wrap items-center gap-3">
-                                <Select
-                                  value={daySetting.startHour}
-                                  onValueChange={(value) =>
-                                    updateDaySchedule(dayId, 'startHour', value)
-                                  }
-                                >
-                                  <SelectTrigger className="w-28">
-                                    <SelectValue placeholder="開始時間" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <ScrollArea className="h-60">
-                                      {timeOptions.map((time) => (
-                                        <SelectItem key={`open-${dayId}-${time}`} value={time}>
-                                          {time}
-                                        </SelectItem>
-                                      ))}
-                                    </ScrollArea>
-                                  </SelectContent>
-                                </Select>
-
-                                <span className="text-lg font-semibold">〜</span>
-
-                                <Select
-                                  value={daySetting.endHour}
-                                  onValueChange={(value) =>
-                                    updateDaySchedule(dayId, 'endHour', value)
-                                  }
-                                >
-                                  <SelectTrigger className="w-28">
-                                    <SelectValue placeholder="終了時間" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <ScrollArea className="h-60">
-                                      {endHourOptions.length > 0 ? (
-                                        endHourOptions.map((time) => (
-                                          <SelectItem key={`close-${dayId}-${time}`} value={time}>
+                                <div className="flex items-center gap-2">
+                                  <Select
+                                    value={daySetting.startHour}
+                                    onValueChange={(value) =>
+                                      updateDaySchedule(dayId, 'startHour', value)
+                                    }
+                                  >
+                                    <SelectTrigger className="w-28">
+                                      <SelectValue placeholder="開始時間" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <ScrollArea className="h-60">
+                                        {timeOptions.map((time) => (
+                                          <SelectItem key={`open-${dayId}-${time}`} value={time}>
                                             {time}
                                           </SelectItem>
-                                        ))
-                                      ) : (
-                                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                          開始時間より後の時間を選択できます
-                                        </div>
-                                      )}
-                                    </ScrollArea>
-                                  </SelectContent>
-                                </Select>
+                                        ))}
+                                      </ScrollArea>
+                                    </SelectContent>
+                                  </Select>
+
+                                  <span className="text-lg ">〜</span>
+
+                                  <Select
+                                    value={daySetting.endHour}
+                                    onValueChange={(value) =>
+                                      updateDaySchedule(dayId, 'endHour', value)
+                                    }
+                                  >
+                                    <SelectTrigger className="w-28">
+                                      <SelectValue placeholder="終了時間" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <ScrollArea className="h-60">
+                                        {endHourOptions.length > 0 ? (
+                                          endHourOptions.map((time) => (
+                                            <SelectItem key={`close-${dayId}-${time}`} value={time}>
+                                              {time}
+                                            </SelectItem>
+                                          ))
+                                        ) : (
+                                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                            開始時間より後の時間を選択できます
+                                          </div>
+                                        )}
+                                      </ScrollArea>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               </div>
-                            </motion.div>
+                            </div>
                           );
                         })}
                       </div>
@@ -766,7 +747,7 @@ export default function WeekHourSchedule() {
                         <Coffee className="h-12 w-12 text-gray-400 mb-3" />
                         <p className="text-gray-500 mb-2">営業日が設定されていません</p>
                         <p className="text-sm text-gray-400">
-                          営業日を選択すると、時間設定が表示されます
+                          営業日を選択すると、時間設定が表示されます;
                         </p>
                       </div>
                     )}
@@ -776,7 +757,6 @@ export default function WeekHourSchedule() {
             </motion.div>
           </motion.div>
 
-          {/* 保存ボタン */}
           <motion.div className="mt-8 flex justify-end items-center gap-3" variants={itemVariants}>
             <AnimatePresence>
               {showToast && (

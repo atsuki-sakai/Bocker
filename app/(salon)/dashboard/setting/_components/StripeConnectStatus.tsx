@@ -13,30 +13,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-  ArrowRight,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
-  RefreshCw,
-  ExternalLink,
-} from 'lucide-react';
+import { ArrowRight, RefreshCw, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { handleError } from '@/lib/error';
-
-// スタイル定義
-const statusColorMap: Record<string, string> = {
-  not_connected: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-  pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  incomplete: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-  restricted: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  deauthorized: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-};
 
 // ステータスの日本語表記
 const statusNameMap: Record<string, string> = {
@@ -60,23 +42,6 @@ const statusDescriptionMap: Record<string, string> = {
   active: 'Stripeアカウントが完全に連携され、すべての機能が使用可能です。',
   deauthorized:
     'アカウントの連携が解除されました。再度連携するには「連携する」ボタンをクリックしてください。',
-};
-
-// ステータスのアイコン
-const StatusIcon = ({ status }: { status: string }) => {
-  switch (status) {
-    case 'active':
-      return <CheckCircle className="h-5 w-5 text-green-500" />;
-    case 'pending':
-    case 'incomplete':
-      return <RefreshCw className="h-5 w-5 text-yellow-500" />;
-    case 'restricted':
-      return <AlertCircle className="h-5 w-5 text-blue-500" />;
-    case 'deauthorized':
-      return <XCircle className="h-5 w-5 text-red-500" />;
-    default:
-      return <AlertCircle className="h-5 w-5 text-gray-500" />;
-  }
 };
 
 export default function StripeConnectStatus() {
@@ -217,13 +182,9 @@ export default function StripeConnectStatus() {
             Stripeアカウントを連携して、お客様からのクレジットカード決済を受け付けることができます
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
             <div className="flex items-center gap-2">
-              <Badge className={statusColorMap[status]}>
-                <StatusIcon status={status} />
-                <span className="ml-1">{statusNameMap[status]}</span>
-              </Badge>
               {connectAccount?.accountId && (
                 <span className="text-xs text-gray-500">
                   ID: {connectAccount.accountId.slice(0, 8)}...
@@ -248,12 +209,14 @@ export default function StripeConnectStatus() {
             )}
           </div>
 
-          <Alert className="my-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle className="ml-2 text-sm font-medium">
-              ステータス: {statusNameMap[status]}
+          <Alert className="my-2">
+            <AlertTitle className=" text-sm font-medium">
+              ステータス -{' '}
+              <span className="text-sm bg-indigo-500 text-white tracking-wide font-bold px-3 py-1 rounded-md">
+                {statusNameMap[status]}
+              </span>
             </AlertTitle>
-            <AlertDescription className="ml-2 mt-1 text-sm">
+            <AlertDescription className=" mt-1 text-sm">
               {statusDescriptionMap[status]}
             </AlertDescription>
           </Alert>

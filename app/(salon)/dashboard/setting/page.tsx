@@ -21,7 +21,7 @@ export default function SettingPage() {
   return (
     <DashboardSection title="設定" backLink="/dashboard" backLinkTitle="ダッシュボードに戻る">
       <Tabs value={currentTab} onValueChange={setCurrentTab}>
-        <TabsList className="mb-6 space-x-2">
+        <TabsList className="flex flex-wrap justify-start h-auto w-fit gap-2 p-2 mb-2">
           <TabsTrigger
             value="basic"
             className="data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300"

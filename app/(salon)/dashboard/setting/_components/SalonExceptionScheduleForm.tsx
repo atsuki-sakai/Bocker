@@ -60,11 +60,11 @@ const formatDate = (date: Date): string => {
 export default function SalonExceptionScheduleForm() {
   const { salonId } = useSalon();
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [showSuccess, setShowSuccess] = useState<boolean>(false);
 
   // 初期データロード完了フラグ
-  const initialDataLoaded = useRef(false);
+  const initialDataLoaded = useRef<boolean>(false);
 
   // 今日の日付を取得（時刻は00:00:00に設定）- メモ化
   const today = useMemo(() => startOfToday(), []);
@@ -203,33 +203,38 @@ export default function SalonExceptionScheduleForm() {
   // ローディング中の表示
   if (!salonId) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 h-64">
+      <div className="flex flex-col items-center justify-center p-4 sm:p-8 h-48 sm:h-64">
         <Loading />
       </div>
     );
   }
 
   return (
-    <motion.div className="" initial="hidden" animate="visible" variants={containerVariants}>
-      <Card className="shadow-xl border-0 overflow-hidden bg-white dark:bg-slate-800">
-        <CardHeader className="bg-indigo-50  border-b pb-6">
+    <motion.div
+      className="w-full px-2 sm:px-4 md:px-0"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <Card className="shadow-xl border-0 overflow-hidden bg-white dark:bg-slate-800 w-full">
+        <CardHeader className="bg-indigo-50 border-b pb-4 sm:pb-6 px-4 sm:px-6">
           <motion.div className="flex items-center gap-2" variants={itemVariants}>
-            <CalendarX2 className="h-6 w-6 text-blue-500" />
-            <CardTitle>休業日設定</CardTitle>
+            <CalendarX2 className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
+            <CardTitle className="text-lg sm:text-xl">休業日設定</CardTitle>
           </motion.div>
           <motion.div variants={itemVariants}>
-            <CardDescription className="text-sm mt-1">
+            <CardDescription className="text-xs sm:text-sm mt-1">
               カレンダーから予約を受け付けない日を選択してください。選択された日は休業日として設定されます。
             </CardDescription>
           </motion.div>
         </CardHeader>
 
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* インフォメーションアラート */}
           <motion.div variants={itemVariants}>
-            <Alert className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
+            <Alert className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 sm:p-4">
+              <Info className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <AlertDescription className="text-blue-700 dark:text-blue-300 text-xs sm:text-sm ml-2">
                 <span className="font-medium block mb-1">休業日の設定について</span>
                 休業日に設定した日は、カレンダーに表示されず予約を受け付けなくなります。
                 定休日とは別に、臨時休業やイベント日、長期休暇などを設定できます。 今日(
@@ -239,29 +244,31 @@ export default function SalonExceptionScheduleForm() {
           </motion.div>
           {/* カレンダーとリスト表示のグリッドレイアウト */}
           <motion.div className="w-full" variants={itemVariants}>
-            <div className="lg:col-span-3 bg-white dark:bg-slate-800 rounded-lg border shadow-sm p-4">
-              <h3 className="text-base font-semibold flex items-center gap-2 mb-4 text-slate-800 dark:text-slate-200">
-                <Calendar className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+            <div className="bg-white dark:bg-slate-800 rounded-lg border shadow-sm p-3 sm:p-4">
+              <h3 className="text-sm sm:text-base font-semibold flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4 text-slate-800 dark:text-slate-200">
+                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-600 dark:text-rose-400" />
                 休業日を選択
               </h3>
 
               {isLoading ? (
                 <div className="space-y-4">
-                  <Skeleton className="h-72 w-full bg-slate-200 dark:bg-slate-700" />
+                  <Skeleton className="h-64 sm:h-72 w-full bg-slate-200 dark:bg-slate-700" />
                 </div>
               ) : (
-                <CalendarMultiSelect
-                  selectedDates={selectedDates}
-                  onDatesChangeAction={handleDatesChange}
-                  fromDate={today} // 今日以降の日付のみ選択可能に
-                />
+                <div className="max-w-full overflow-x-auto">
+                  <CalendarMultiSelect
+                    selectedDates={selectedDates}
+                    onDatesChangeAction={handleDatesChange}
+                    fromDate={today} // 今日以降の日付のみ選択可能に
+                  />
+                </div>
               )}
             </div>
           </motion.div>
         </CardContent>
 
-        <CardFooter className="bg-gray-50 dark:bg-slate-900/50 border-t p-4 flex justify-between items-center">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+        <CardFooter className="bg-gray-50 dark:bg-slate-900/50 border-t p-3 sm:p-4 flex justify-between items-center flex-wrap gap-2">
+          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             <AnimatePresence>
               {showSuccess && (
                 <motion.div
@@ -271,7 +278,7 @@ export default function SalonExceptionScheduleForm() {
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   className="flex items-center text-green-600 dark:text-green-400"
                 >
-                  <CheckCircle className="mr-1.5 h-4 w-4" />
+                  <CheckCircle className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   保存しました
                 </motion.div>
               )}
@@ -283,14 +290,25 @@ export default function SalonExceptionScheduleForm() {
             whileTap={{ scale: 0.98 }}
             variants={itemVariants}
           >
-            <Button onClick={handleSave} disabled={isSaving} className="shadow-md " size="lg">
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="shadow-md text-xs sm:text-sm"
+              size="default"
+              // モバイル向けにサイズを調整
+              style={{
+                minWidth: 'max-content',
+                padding: window.innerWidth < 640 ? '0.5rem 0.75rem' : undefined,
+              }}
+            >
               {isSaving ? (
                 <>
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="mr-1.5"
                   >
-                    <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
+                    <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" viewBox="0 0 24 24">
                       <circle
                         className="opacity-25"
                         cx="12"
@@ -311,7 +329,7 @@ export default function SalonExceptionScheduleForm() {
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4" />
+                  <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
                   休業日を保存
                 </>
               )}

@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { handleError } from '@/lib/error';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FormField } from '@/components/common';
-import { Clock, Save, Calendar, Clock3, Check } from 'lucide-react';
+import { Clock, Save, Calendar, Clock3, Check, PersonStanding } from 'lucide-react';
 import { SALON_RESERVATION_LIMIT_DAYS, SALON_RESERVATION_CANCEL_LIMIT_DAYS } from '@/lib/constants';
 import { RESERVATION_INTERVAL_MINUTES_VALUES } from '@/services/convex/shared/types/common';
 import type { ReservationIntervalMinutes } from '@/services/convex/shared/types/common';
@@ -297,6 +297,9 @@ export default function SalonScheduleForm() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      何日先まで予約を受付可能にするかの設定
+                    </p>
                   </FormField>
                 </div>
                 <div className="w-full md:w-1/2">
@@ -323,6 +326,9 @@ export default function SalonScheduleForm() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      予約日の何日前までキャンセル可能かの設定
+                    </p>
                   </FormField>
                 </div>
               </div>
@@ -357,6 +363,39 @@ export default function SalonScheduleForm() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">予約と予約のインターバルを設定</p>
+                  </FormField>
+                </div>
+
+                <div className="w-full md:w-1/2">
+                  <FormField
+                    label="予約可能席数"
+                    icon={<PersonStanding className="h-4 w-4 text-muted-foreground" />}
+                    error={errors.availableSheet?.message ?? ''}
+                    tooltip="予約可能席数を設定します"
+                  >
+                    <Select
+                      value={availableSheetValue || defaultSchedule.availableSheet}
+                      onValueChange={(value) => {
+                        // 空の値の場合はデフォルト値の'30'を設定
+                        const validValue = value || defaultSchedule.availableSheet;
+                        setValue('availableSheet', validValue, { shouldDirty: true });
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="予約可能席数を選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 60 }, (_, i) => (
+                          <SelectItem key={i + 1} value={String(i + 1)}>
+                            {i + 1}席
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      同一時間帯に予約可能な席数を設定します
+                    </p>
                   </FormField>
                 </div>
               </div>
