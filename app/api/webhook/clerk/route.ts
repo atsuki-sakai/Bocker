@@ -9,8 +9,6 @@ import * as Sentry from '@sentry/nextjs';
 import { STRIPE_API_VERSION } from '@/lib/constants';
 import { retryOperation } from '@/lib/utils';
 import { z } from 'zod';
-import { clerkClient } from '@clerk/nextjs/server';
-
 const clerkWebhookSchema = z.object({
   type: z.string().min(1, { message: 'イベントタイプが空です' }),
   data: z.object({
