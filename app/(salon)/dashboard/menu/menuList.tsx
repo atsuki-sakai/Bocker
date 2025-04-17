@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog } from '@/components/common';
 import { Doc } from '@/convex/_generated/dataModel';
 import {
@@ -57,7 +57,7 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
       className="col-span-1"
     >
       <Card className="h-full overflow-hidden hover:shadow-md transition-all">
-        <div className="relative h-48 w-full">
+        <div className="relative h-32 md:h-48 w-full">
           {menu.imgPath ? (
             <Image src={menu.imgPath} alt={menu.name || ''} fill className="object-cover" />
           ) : (
@@ -69,7 +69,7 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
           )}
           <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
             {menu.tags?.map((tag: string, idx: number) => (
-              <Badge key={idx} variant="secondary" className="bg-blue-600 text-white">
+              <Badge key={idx} variant="secondary" className="bg-slate-700 text-white text-xs">
                 {tag}
               </Badge>
             ))}
@@ -106,8 +106,8 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-lg line-clamp-1">{menu.name}</h3>
+        <CardContent className="p-2 md:p-4">
+          <h3 className="font-semibold text-base md:text-lg line-clamp-1">{menu.name}</h3>
 
           <div className="mt-2 flex items-center justify-between">
             <div className="flex flex-col">
@@ -183,18 +183,18 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
               exit="exit"
               layoutId={`menu-${menu._id}`}
             >
-              <Card className="overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  {menu.isActive ? (
-                    <Badge variant="default" className="mb-2">
-                      公開中
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="mb-2">
-                      非公開
-                    </Badge>
-                  )}
-                  <div className="relative h-16 w-24 rounded-md overflow-hidden flex-shrink-0">
+              <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4 border-b border-gray-200 pb-4 mb-4">
+                {menu.isActive ? (
+                  <Badge variant="default" className=" bg-green-600 text-white">
+                    公開中
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className=" bg-gray-400 text-white">
+                    非公開
+                  </Badge>
+                )}
+                <div className="flex items-center gap-2">
+                  <div className="relative h-24 w-24 md:h-30 md:w-30 rounded-md overflow-hidden flex-shrink-0">
                     {menu.imgPath ? (
                       <Image
                         src={menu.imgPath}
@@ -210,9 +210,8 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                       </div>
                     )}
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-lg truncate">{menu.name}</h3>
+                  <div className="flex-1 min-w-0 md:pl-2">
+                    <h3 className="font-medium text-base md:text-lg truncate">{menu.name}</h3>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
                       <div className="flex items-center">
@@ -248,40 +247,40 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                         <Badge
                           key={idx}
                           variant="outline"
-                          className="text-xs bg-blue-600 text-white"
+                          className="text-xs bg-slate-500 text-white"
                         >
                           {tag}
                         </Badge>
                       ))}
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 self-end sm:self-center mt-2 sm:mt-0">
-                    <Link href={`/dashboard/menu/${menu._id}`}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Eye className="h-4 w-4" />
-                        <span className="sr-only">詳細</span>
-                      </Button>
-                    </Link>
-                    <Link href={`/dashboard/menu/${menu._id}/edit`}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Pencil className="h-4 w-4" />
-                        <span className="sr-only">編集</span>
-                      </Button>
-                    </Link>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                      onClick={() => onDelete(menu._id, menu.imgPath || '')}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">削除</span>
-                    </Button>
-                  </div>
                 </div>
-              </Card>
+
+                <div className="flex items-center gap-2 self-end sm:self-centersm:mt-0 absolute right-0 top-0 md:top-1/4">
+                  <Link href={`/dashboard/menu/${menu._id}`}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Eye className="h-4 w-4" />
+                      <span className="sr-only">詳細</span>
+                    </Button>
+                  </Link>
+                  <Link href={`/dashboard/menu/${menu._id}/edit`}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">編集</span>
+                    </Button>
+                  </Link>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                    onClick={() => onDelete(menu._id, menu.imgPath || '')}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">削除</span>
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           );
         })}
@@ -392,7 +391,7 @@ export default function MenuList() {
 
     if (viewMode === 'grid') {
       return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           <AnimatePresence>
             {menus.map((menu: Doc<'menu'>) => (
               <MenuItem
@@ -418,72 +417,63 @@ export default function MenuList() {
       transition={{ duration: 0.5 }}
       className="w-full flex flex-col gap-6"
     >
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-2xl font-bold">メニュー管理</CardTitle>
-              <CardDescription>サロンのメニューを管理・編集できます</CardDescription>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="bg-muted rounded-md p-1 flex items-center">
-                <Button
-                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => setViewMode('grid')}
-                >
-                  <Grid className="h-4 w-4" />
-                  <span className="sr-only">グリッド表示</span>
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => setViewMode('list')}
-                >
-                  <List className="h-4 w-4" />
-                  <span className="sr-only">リスト表示</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          {isLoading ? (
-            viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {renderSkeletons()}
-              </div>
-            ) : (
-              <div className="space-y-2">{renderSkeletons()}</div>
-            )
-          ) : (
-            renderMenus()
-          )}
-
-          {menus && menus.length >= numberOfMenus && status === 'CanLoadMore' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mt-6 flex justify-center"
+      <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center gap-2">
+          <div className="bg-muted rounded-md p-1 flex items-center">
+            <Button
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setViewMode('grid')}
             >
-              <Button
-                onClick={() => loadMore(numberOfMenus)}
-                variant="outline"
-                className="gap-2"
-                disabled={isLoading}
-              >
-                もっと見る
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </motion.div>
-          )}
-        </CardContent>
-      </Card>
+              <Grid className="h-4 w-4" />
+              <span className="sr-only">グリッド表示</span>
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+              <span className="sr-only">リスト表示</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        {' '}
+        {isLoading ? (
+          viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {renderSkeletons()}
+            </div>
+          ) : (
+            <div className="space-y-2">{renderSkeletons()}</div>
+          )
+        ) : (
+          renderMenus()
+        )}
+        {menus && menus.length >= numberOfMenus && status === 'CanLoadMore' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6 flex justify-center"
+          >
+            <Button
+              onClick={() => loadMore(numberOfMenus)}
+              variant="outline"
+              className="gap-2"
+              disabled={isLoading}
+            >
+              もっと見る
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </motion.div>
+        )}
+      </div>
 
       <Dialog
         title="メニューの削除"

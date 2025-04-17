@@ -723,8 +723,8 @@ export default function MenuEditForm() {
         {/* 公開/非公開スイッチ */}
         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md mb-6 mt-4">
           <div>
-            <p className="text-base font-medium">メニューを公開する</p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm font-bold">メニューを公開する</p>
+            <p className="mt-1 text-xs text-gray-500">
               オフにすると、このメニューはお客様に表示されません
             </p>
           </div>
