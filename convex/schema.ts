@@ -88,7 +88,6 @@ export default defineSchema({
   // サロンテーブル
   salon: defineTable({
     clerkId: v.string(), // ClerkのユーザーID
-    organizationId: v.optional(v.string()), // Clerkの組織ID
     stripeConnectId: v.optional(v.string()), // StripeConnect連携アカウントID
     stripeConnectStatus: v.optional(v.string()), // StripeConnect連携状態
     stripeConnectCreatedAt: v.optional(v.number()), // StripeConnect作成日時
@@ -104,7 +103,6 @@ export default defineSchema({
     .index('by_clerk_id', ['clerkId', 'isArchive'])
     .index('by_stripe_connect_id', ['stripeConnectId', 'isArchive'])
     .index('by_stripe_customer_id', ['stripeCustomerId', 'isArchive'])
-    .index('by_organization_id', ['organizationId', 'isArchive'])
     .index('by_email', ['email', 'isArchive']),
 
   // サロンのAPI設定テーブル
@@ -134,6 +132,7 @@ export default defineSchema({
   // サロンの営業スケジュール設定テーブル
   salon_schedule_config: defineTable({
     salonId: v.id('salon'),
+    availableSheet: v.optional(v.number()), // 予約可能席数
     reservationLimitDays: v.optional(v.number()), // 予約可能日数
     availableCancelDays: v.optional(v.number()), // 予約キャンセル可能日数
     reservationIntervalMinutes: v.optional(reservationIntervalMinutesType) || 0, // 予約時間間隔(分)
@@ -145,7 +144,6 @@ export default defineSchema({
     salonId: v.id('salon'),
     referralCode: v.optional(v.string()), // 紹介コード
     referralCount: v.optional(v.number()), // 紹介回数
-    referralBySalon: v.optional(v.id('salon')), // 紹介者
     updatedAt: v.optional(v.number()), // 加算した日時
     totalReferralCount: v.optional(v.number()), // 総紹介回数
     ...CommonFields,
@@ -292,7 +290,6 @@ export default defineSchema({
   staff: defineTable({
     salonId: v.id('salon'),
     name: v.optional(v.string()), // スタッフ名
-    clerkId: v.optional(v.string()), // Clerk ID
     age: v.optional(v.number()), // 年齢
     email: v.optional(v.string()), // メールアドレス
     gender: v.optional(genderType), // 性別
@@ -302,7 +299,6 @@ export default defineSchema({
     ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isActive', 'isArchive'])
-    .index('by_clerk_id', ['clerkId', 'isActive', 'isArchive'])
     .index('by_name', ['name', 'isActive', 'isArchive'])
     .index('by_email', ['email', 'isActive', 'isArchive'])
     .index('by_salon_id_name', ['salonId', 'name', 'isActive', 'isArchive'])
@@ -311,12 +307,12 @@ export default defineSchema({
   // スタッフの認証テーブル
   staff_auth: defineTable({
     staffId: v.id('staff'),
-    organizationId: v.optional(v.string()), // 組織ID
-    role: v.optional(roleType), // スタッフ権限
+    pinCode: v.optional(v.string()), //　ピンコード
+    role: v.optional(roleType), // ロール
     ...CommonFields,
   })
     .index('by_staff_id', ['staffId', 'isArchive'])
-    .index('by_organization_id', ['organizationId', 'isArchive']),
+    .index('by_pin_code', ['pinCode', 'isArchive']),
 
   // スタッフのタイムカードテーブル
   time_card: defineTable({
