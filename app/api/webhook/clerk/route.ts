@@ -82,16 +82,10 @@ export async function POST(req: Request) {
   // 各イベントタイプの処理
   try {
     if (eventType === 'user.created') {
-      const client = await clerkClient();
       const { id, email_addresses = [] } = data;
       const salonName = payload.data.unsafe_metadata.salonName;
       const referralCode = payload.data.unsafe_metadata.referralCode;
       const email = email_addresses[0]?.email_address || 'no-email';
-
-      console.log('payload', payload);
-
-      console.log(`Clerk ID: ${id} の user.created イベントを処理中です (メール: ${email})`);
-
       // クリティカルな操作は再試行付きで実行
       const existingSalon = await retryOperation(() =>
         fetchQuery(api.salon.core.query.findByClerkId, {
@@ -101,130 +95,78 @@ export async function POST(req: Request) {
         })
       ).catch(() => null); // 失敗時はnullを返して進行
       if (!existingSalon) {
-        console.log(`Clerk ID: ${id} のために新しいサロンを作成します`);
-
         try {
+          // 1. Stripe顧客作成 (エラーは再試行)
+          console.log(`Stripe顧客作成を開始: email=${email}, clerkId=${id}`);
+          const customer = await retryOperation(() =>
+            stripe.customers.create({
+              email: email || undefined,
+              metadata: { clerkId: id, referralCode },
+            })
+          );
+          console.log(`Stripe顧客作成成功: customerId=${customer.id}`);
+
           try {
-            // 1. Stripe顧客作成 (エラーは再試行)
-            console.log(`Stripe顧客作成を開始: email=${email}, clerkId=${id}`);
-            const customer = await retryOperation(() =>
-              stripe.customers.create({
-                email: email || undefined,
-                metadata: { clerkId: id, referralCode },
+            // 2. Convexへのユーザー登録 (エラーは再試行)
+            console.log(
+              `Convexへのサロン登録を開始: clerkId=${id}, email=${email}, stripeCustomerId=${customer.id}`
+            );
+            const salonId = await retryOperation(() =>
+              fetchMutation(api.salon.core.mutation.create, {
+                clerkId: id,
+                email,
+                stripeCustomerId: customer.id,
               })
             );
-            console.log(`Stripe顧客作成成功: customerId=${customer.id}`);
+            await retryOperation(() =>
+              fetchMutation(api.salon.config.mutation.create, {
+                email,
+                salonId: salonId,
+                salonName: salonName,
+              })
+            );
 
             try {
-              try {
-                // 組織を作成
-                console.log(`組織作成を開始: salonName=${salonName}, clerkId=${id}`);
-                const organization = await client.organizations.createOrganization({
-                  name: salonName,
-                  createdBy: id,
-                });
-
-                try {
-                  // 2. Convexへのユーザー登録 (エラーは再試行)
-                  console.log(
-                    `Convexへのサロン登録を開始: clerkId=${id}, organizationId=${organization.id}, email=${email}, stripeCustomerId=${customer.id}`
-                  );
-                  const salonId = await retryOperation(() =>
-                    fetchMutation(api.salon.core.mutation.create, {
-                      clerkId: id,
-                      organizationId: organization.id ?? 'ERROR',
-                      email,
-                      stripeCustomerId: customer.id,
-                    })
-                  );
-                  await retryOperation(() =>
-                    fetchMutation(api.salon.config.mutation.create, {
-                      email,
-                      salonId: salonId,
-                      salonName: salonName,
-                    })
-                  );
-
-                  try {
-                    await retryOperation(() =>
-                      fetchMutation(api.salon.referral.mutation.create, {
-                        salonId: salonId,
-                      })
-                    );
-
-                    if (referralCode) {
-                      const referralBySalon = await retryOperation(() =>
-                        fetchQuery(api.salon.referral.query.getByReferralCode, {
-                          referralCode: referralCode,
-                        })
-                      );
-                      if (referralBySalon) {
-                        await retryOperation(() =>
-                          fetchMutation(api.salon.referral.mutation.incrementReferralCount, {
-                            referralId: referralBySalon._id,
-                          })
-                        );
-                      }
-                    }
-                  } catch (referralError) {
-                    console.error(
-                      `salonId: ${salonId}のReferral作成に失敗しました:`,
-                      referralError
-                    );
-                    console.error('Referralエラーの詳細:', JSON.stringify(referralError, null, 2));
-                    Sentry.captureException(referralError, {
-                      level: 'error',
-                      tags: { operation: 'create_referral' },
-                    });
-                    // エラーをスローせず処理を続行
-                  }
-                  console.log('Convexへのサロン登録成功');
-                } catch (error) {
-                  console.error(`Clerk ID: ${id}のサロン登録に失敗しました:`, error);
-                  console.error('エラーの詳細:', JSON.stringify(error, null, 2));
-                  Sentry.captureException(error);
-                }
-              } catch (error) {
-                console.error(`Clerk ID: ${id}の組織更新に失敗しました:`, error);
-                Sentry.captureException(error);
-              }
-
-              // 取得したサロンIDをログに出力 (任意)
-              console.log(`新しいサロンが作成されました。`); // newSalon を直接使用
-            } catch (convexError) {
-              // Convex登録失敗時にはStripe顧客を削除して整合性を保つ
-              console.error(
-                `Convexへのユーザー登録に失敗したため、Stripe顧客を削除します: ${customer.id}`
+              await retryOperation(() =>
+                fetchMutation(api.salon.referral.mutation.create, {
+                  salonId: salonId,
+                })
               );
-              try {
-                await stripe.customers.del(customer.id);
-              } catch (stripeDeleteError) {
-                // 削除失敗時はログのみ記録
-                console.error(
-                  `失敗したユーザー登録のStripe顧客削除に失敗: ${customer.id}`,
-                  stripeDeleteError
+
+              if (referralCode) {
+                const referralBySalon = await retryOperation(() =>
+                  fetchQuery(api.salon.referral.query.getByReferralCode, {
+                    referralCode: referralCode,
+                  })
                 );
-                Sentry.captureException(stripeDeleteError);
+                if (referralBySalon) {
+                  await retryOperation(() =>
+                    fetchMutation(api.salon.referral.mutation.incrementReferralCount, {
+                      referralId: referralBySalon._id,
+                    })
+                  );
+                }
               }
-              throw convexError; // 元のエラーを再スロー
+            } catch (referralError) {
+              console.error(`salonId: ${salonId}のReferral作成に失敗しました:`, referralError);
+              console.error('Referralエラーの詳細:', JSON.stringify(referralError, null, 2));
+              Sentry.captureException(referralError, {
+                level: 'error',
+                tags: { operation: 'create_referral' },
+              });
+              // エラーをスローせず処理を続行
             }
+            console.log('Convexへのサロン登録成功');
           } catch (error) {
-            // すべてのエラーを適切に処理
-            console.error(`Clerk ID: ${id} のサロン作成プロセスに失敗しました`, error);
+            console.error(`Clerk ID: ${id}のサロン登録に失敗しました:`, error);
+            console.error('エラーの詳細:', JSON.stringify(error, null, 2));
             Sentry.captureException(error);
-            throw error;
           }
         } catch (error) {
-          console.error(`Clerk ID: ${id} のサロンの作成に失敗しました:`, error);
-          // 重大なエラーが発生した場合は包括的にログを残す
-          Sentry.captureException(error, {
-            level: 'error',
-            tags: {
-              clerkId: id,
-              eventType: 'user.created',
-            },
-          });
-          throw error; // エラーを上位に伝播
+          // すべてのエラーを適切に処理
+          console.error(`Clerk ID: ${id} のサロン作成プロセスに失敗しました`, error);
+          Sentry.captureException(error);
+          throw error;
         }
       } else {
         console.log(`Clerk ID: ${id} のサロンは既に存在します。メールを更新します`);
@@ -234,7 +176,6 @@ export async function POST(req: Request) {
           fetchMutation(api.salon.core.mutation.update, {
             id: existingSalon._id,
             email,
-            stripeCustomerId: existingSalon.stripeCustomerId,
           })
         );
       }
