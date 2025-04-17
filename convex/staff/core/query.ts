@@ -211,6 +211,7 @@ export const getRelatedTables = query({
       staffConfigId: staffConfig._id,
       extraCharge: staffConfig.extraCharge,
       priority: staffConfig.priority,
+      pinCode: staffAuth.pinCode,
       _creationTime: staff._creationTime,
     };
   },

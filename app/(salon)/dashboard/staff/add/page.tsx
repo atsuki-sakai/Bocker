@@ -16,6 +16,7 @@ import { Gender, GENDER_VALUES, Role, ROLE_VALUES } from '@/services/convex/shar
 import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH } from '@/services/convex/constants';
 import { Textarea } from '@/components/ui/textarea';
 import { ZodTextField } from '@/components/common';
+import { generatePinCode } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -27,7 +28,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { handleError } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
-import { compressAndConvertToWebP, fileToBase64 } from '@/lib/utils';
+import { compressAndConvertToWebP, fileToBase64, encryptString } from '@/lib/utils';
 import { Id } from '@/convex/_generated/dataModel';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,8 +43,6 @@ import {
   Calendar,
   Shield,
   Tag,
-  EyeOff,
-  Eye,
   Sparkles,
   User,
   Mail,
@@ -53,6 +52,7 @@ import {
   Image as ImageIcon,
   Lock,
   Shuffle,
+  Copy,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -115,7 +115,7 @@ export default function StaffAddPage() {
   const [exclusionMenuIds, setExclusionMenuIds] = useState<Id<'menu'>[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPinCode, setShowPinCode] = useState(true);
+
   const staffAdd = useMutation(api.staff.core.mutation.create);
   const staffConfigAdd = useMutation(api.staff.config.mutation.create);
   const staffAuthAdd = useMutation(api.staff.auth.mutation.create);
@@ -133,15 +133,18 @@ export default function StaffAddPage() {
     watch,
   } = useZodForm(staffAddSchema);
 
-  const togglePinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setShowPinCode(!showPinCode);
-  };
-
   const handleGeneratePinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    const pinCode = Math.random().toString(36).substring(2, 8);
+    const pinCode = generatePinCode();
     setValue('pinCode', pinCode);
+  };
+
+  const handleCopyPinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const pinCode = watch('pinCode');
+    if (pinCode) {
+      navigator.clipboard.writeText(pinCode);
+    }
   };
 
   const onSubmit = async (data: z.infer<typeof staffAddSchema>) => {
@@ -190,9 +193,13 @@ export default function StaffAddPage() {
           priority: data.priority ?? undefined,
         });
         // スタッフの認証情報を追加
+        const encryptedPinCode = await encryptString(
+          watch('pinCode'),
+          process.env.NEXT_PUBLIC_ENCRYPTION_SECRET_KEY!
+        );
         staffAuthId = await staffAuthAdd({
           staffId: staffId,
-          pinCode: watch('pinCode'),
+          pinCode: encryptedPinCode,
           role: data.role,
         });
 
@@ -474,29 +481,40 @@ export default function StaffAddPage() {
                         </div>
                         <div className="w-full flex items-center gap-2 justify-between">
                           <div className="w-full">
-                            <ZodTextField
-                              name="pinCode"
-                              label="ピンコード"
-                              type={showPinCode ? 'text' : 'password'}
-                              register={register}
-                              errors={errors}
-                              placeholder="EFG5HD"
-                              icon={<Lock className="h-4 w-4 mr-2 text-gray-500" />}
-                            />
-                            <span className="text-xs text-gray-500">
-                              ピンコードは6文字の英数字で入力してください
-                            </span>
+                            <div className="flex items-start justify-start gap-2">
+                              <div className="w-full">
+                                <ZodTextField
+                                  readOnly={true}
+                                  name="pinCode"
+                                  icon={<Lock className="h-4 w-4 mr-2 text-gray-500" />}
+                                  label="ピンコード"
+                                  register={register}
+                                  errors={errors}
+                                  placeholder="ピンコードを生成してください。"
+                                />
+                              </div>
+                              <div className="flex flex-col items-center justify-center gap-1 ml-4">
+                                <div className="w-fit flex items-center justify-center">
+                                  <div>
+                                    <span className="text-xs text-nowrap text-gray-500">
+                                      再生成
+                                    </span>
+                                    <Button size={'icon'} onClick={handleGeneratePinCode}>
+                                      <Shuffle className="h-8 w-8 block" />
+                                    </Button>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-nowrap text-gray-500">
+                                      コピー
+                                    </span>
+                                    <Button size={'icon'} onClick={handleCopyPinCode}>
+                                      <Copy className="h-8 w-8 block" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <Button size={'icon'} onClick={handleGeneratePinCode}>
-                            <Shuffle className="h-8 w-8" />
-                          </Button>
-                          <Button size="icon" onClick={togglePinCode}>
-                            {showPinCode ? (
-                              <Eye className="h-8 w-8" />
-                            ) : (
-                              <EyeOff className="h-8 w-8" />
-                            )}
-                          </Button>
                         </div>
                       </div>
 

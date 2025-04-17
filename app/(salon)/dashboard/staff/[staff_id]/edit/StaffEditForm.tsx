@@ -26,7 +26,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { handleError } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
-import { compressAndConvertToWebP, fileToBase64 } from '@/lib/utils';
+import { compressAndConvertToWebP, fileToBase64, decryptString, encryptString } from '@/lib/utils';
 import { Id } from '@/convex/_generated/dataModel';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -35,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { useParams } from 'next/navigation';
+import { generatePinCode } from '@/lib/utils';
 import {
   Save,
   ArrowLeft,
@@ -50,12 +51,29 @@ import {
   X,
   Image as ImageIcon,
   Trash,
+  Lock,
+  Shuffle,
+  Copy,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useMemo } from 'react';
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
+  pinCode: z
+    .string()
+    .min(6, { message: 'ピンコードは6文字で入力してください' })
+    .max(6, { message: 'ピンコードは6文字で入力してください' })
+    .optional()
+    .refine(
+      (val) => {
+        if (val === null || val === undefined) return true;
+        return /^[A-Za-z0-9]+$/.test(val);
+      },
+      {
+        message: 'ピンコードは英大文字、英小文字、数字を含む6文字で入力してください',
+      }
+    ),
   gender: z.enum(GENDER_VALUES),
 
   age: z.preprocess(
@@ -139,6 +157,8 @@ export default function StaffEditForm() {
       : 'skip'
   );
 
+  console.log('staffAllData', staffAllData);
+
   const initialExclusionMenus = useMemo(() => {
     return exclusionMenus ? [...exclusionMenus].sort() : [];
   }, [exclusionMenus]);
@@ -151,6 +171,20 @@ export default function StaffEditForm() {
     formState: { isSubmitting, errors, isDirty },
     watch,
   } = useZodForm(staffAddSchema);
+
+  const handleGeneratePinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const pinCode = generatePinCode();
+    setValue('pinCode', pinCode, { shouldDirty: true });
+  };
+
+  const handleCopyPinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const pinCode = watch('pinCode');
+    if (pinCode) {
+      navigator.clipboard.writeText(pinCode);
+    }
+  };
 
   const onSubmit = async (data: z.infer<typeof staffAddSchema>) => {
     setIsLoading(true);
@@ -202,10 +236,15 @@ export default function StaffEditForm() {
         });
 
         // スタッフの認証情報を追加
+        const encryptedPinCode = await encryptString(
+          data.pinCode ?? '',
+          process.env.NEXT_PUBLIC_ENCRYPTION_SECRET_KEY!
+        );
         staffAuthId = await staffAuthUpsert({
           staffAuthId: staffAllData?.staffAuthId as Id<'staff_auth'>,
           staffId: staff_id as Id<'staff'>,
           role: data.role,
+          pinCode: encryptedPinCode,
         });
 
         // 除外メニューを更新
@@ -317,22 +356,47 @@ export default function StaffEditForm() {
   }, [exclusionMenus, initialExclusionMenus, selectedExclusionMenuIds.length]);
 
   useEffect(() => {
-    if (staffAllData) {
-      console.log('staffAllData: ', staffAllData);
+    if (!staffAllData) return;
 
-      reset({
-        name: staffAllData?.name,
-        email: staffAllData?.email,
-        gender: staffAllData?.gender,
-        age: staffAllData?.age,
-        description: staffAllData?.description,
-        imgPath: staffAllData?.imgPath,
-        isActive: staffAllData?.isActive,
-        role: staffAllData?.role,
-        extraCharge: staffAllData?.extraCharge,
-        priority: staffAllData?.priority,
-      });
-    }
+    const initializeForm = async () => {
+      try {
+        // PINコードを復号
+        let decryptedPinCode: string | null = null;
+        if (staffAllData.pinCode) {
+          decryptedPinCode = await decryptString(
+            staffAllData.pinCode ?? '',
+            process.env.NEXT_PUBLIC_ENCRYPTION_SECRET_KEY!
+          );
+        }
+        console.log('staffAllData.pinCode', staffAllData.pinCode);
+
+        console.log('decryptedPinCode', decryptedPinCode);
+
+        // フォームの初期値をリセット
+        reset({
+          name: staffAllData.name,
+          email: staffAllData.email,
+          gender: staffAllData.gender,
+          age: staffAllData.age,
+          description: staffAllData.description,
+          imgPath: staffAllData.imgPath,
+          isActive: staffAllData.isActive,
+          role: staffAllData.role,
+          extraCharge: staffAllData.extraCharge,
+          priority: staffAllData.priority,
+          // 復号した PIN コードをセット
+          pinCode: decryptedPinCode ?? undefined,
+        });
+      } catch (error) {
+        console.error('ピンコードの復号に失敗しました:', error);
+        toast.error('ピンコードの復号に失敗しました', {
+          icon: <X className="h-4 w-4 text-red-500" />,
+        });
+        // 必要ならエラーハンドリング（トースト表示など）を追加
+      }
+    };
+
+    initializeForm();
   }, [reset, staffAllData, watch]);
 
   const exclusionChanged = useMemo(() => {
@@ -464,17 +528,6 @@ export default function StaffEditForm() {
                         />
                       </div>
 
-                      <div>
-                        <ZodTextField
-                          name="email"
-                          icon={<Mail className="h-4 w-4 mr-2 text-gray-500" />}
-                          label="メールアドレス"
-                          register={register}
-                          errors={errors}
-                          placeholder="メールアドレスを入力してください"
-                        />
-                      </div>
-
                       <div className="flex items-center gap-2">
                         <div className="w-1/2">
                           <Label className="flex items-center mb-2 font-medium text-gray-700">
@@ -578,6 +631,47 @@ export default function StaffEditForm() {
                   </Alert>
 
                   <div className="grid md:grid-cols-2 gap-6">
+                    <div className="flex flex-col space-y-4">
+                      <div>
+                        <ZodTextField
+                          name="email"
+                          icon={<Mail className="h-4 w-4 mr-2 text-gray-500" />}
+                          label="メールアドレス"
+                          register={register}
+                          errors={errors}
+                          placeholder="メールアドレスを入力してください"
+                        />
+                      </div>
+                      <div className="flex items-start justify-start gap-2">
+                        <div className="w-full">
+                          <ZodTextField
+                            readOnly={true}
+                            name="pinCode"
+                            icon={<Lock className="h-4 w-4 mr-2 text-gray-500" />}
+                            label="ピンコード"
+                            register={register}
+                            errors={errors}
+                            placeholder="ピンコードを入力してください"
+                          />
+                        </div>
+                        <div className="flex flex-col items-center justify-center gap-1 ml-4">
+                          <div className="w-fit flex items-center justify-center">
+                            <div>
+                              <span className="text-xs text-nowrap text-gray-500">再生成</span>
+                              <Button size={'icon'} onClick={handleGeneratePinCode}>
+                                <Shuffle className="h-8 w-8 block" />
+                              </Button>
+                            </div>
+                            <div>
+                              <span className="text-xs text-nowrap text-gray-500">コピー</span>
+                              <Button size={'icon'} onClick={handleCopyPinCode}>
+                                <Copy className="h-8 w-8 block" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     <div>
                       <div className="flex items-center mb-2">
                         <Shield className="h-4 w-4 mr-2 text-gray-500" />
