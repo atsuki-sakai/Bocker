@@ -106,7 +106,6 @@ export default function StaffEditForm() {
   const router = useRouter();
   const { staff_id } = useParams();
   const { salon } = useSalon();
-  const { user } = useUser();
   const [selectedExclusionMenuIds, setSelectedExclusionMenuIds] = useState<Id<'menu'>[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -115,7 +114,7 @@ export default function StaffEditForm() {
 
   const uploadImage = useAction(api.storage.action.upload);
   const deleteImage = useAction(api.storage.action.kill);
-  const updateRole = useAction(api.staff.auth.action.updateRole);
+  const updateRole = useMutation(api.staff.auth.mutation.update);
 
   // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
   const staffUpsert = useMutation(api.staff.core.mutation.upsert);
@@ -219,10 +218,9 @@ export default function StaffEditForm() {
           selectedMenuIds: selectedExclusionMenuIds,
         });
 
-        if (user && salon.organizationId && data.role !== staffAllData?.role) {
+        if (staffAllData && data.role !== staffAllData?.role) {
           await updateRole({
-            organizationId: salon.organizationId,
-            userId: user.id,
+            staffAuthId: staffAllData.staffAuthId as Id<'staff_auth'>,
             role: data.role,
           });
         }

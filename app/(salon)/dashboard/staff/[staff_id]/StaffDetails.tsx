@@ -150,7 +150,6 @@ export default function StaffDetails() {
 
   const staffKill = useMutation(api.staff.core.mutation.killRelatedTables);
   const deleteImage = useAction(api.storage.action.kill);
-  // const deleteMember = useAction(api.staff.auth.action.deleteClerkMemberAndUser);
 
   if (!staffAllData && !isDeleting) return <Loading />;
 
@@ -198,13 +197,6 @@ export default function StaffDetails() {
           staffConfigId: staffAllData.staffConfigId,
           staffAuthId: staffAllData.staffAuthId,
         });
-
-        // if (user) {
-        //   await deleteMember({
-        //     organizationId: staffAllData.organizationId as string,
-        //     clerkId: user.id,
-        //   });
-        // }
       }
       toast.success('スタッフを削除しました');
       router.push('/dashboard/staff');

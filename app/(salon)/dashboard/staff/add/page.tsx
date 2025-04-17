@@ -34,7 +34,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
-import { ClerkError, StorageError, ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { StorageError, ConvexCustomError } from '@/services/convex/shared/utils/error';
 import {
   Save,
   ArrowLeft,
@@ -52,6 +52,7 @@ import {
   X,
   Image as ImageIcon,
   Lock,
+  Shuffle,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -60,12 +61,12 @@ import { ExclusionMenu } from '@/components/common';
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
-  password: z
+  pinCode: z
     .string()
-    .min(7, { message: 'パスワードは7文字以上で入力してください' })
+    .min(6, { message: 'ピンコードは6文字以上で入力してください' })
     .max(MAX_TEXT_LENGTH)
-    .refine((val) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{7,}$/.test(val), {
-      message: 'パスワードは英大文字、英小文字、数字を含む7文字以上で入力してください',
+    .refine((val) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{6,}$/.test(val), {
+      message: 'ピンコードは英大文字、英小文字、数字を含む6文字以上で入力してください',
     }),
   gender: z.enum(GENDER_VALUES),
   age: z.preprocess(
@@ -81,7 +82,6 @@ const staffAddSchema = z.object({
   description: z.string().min(1, { message: '説明は必須です' }).max(MAX_NOTES_LENGTH),
   imgPath: z.string().max(512).optional(),
   isActive: z.boolean(),
-  organizationId: z.string().max(MAX_TEXT_LENGTH).optional(),
   role: z.enum(ROLE_VALUES),
   extraCharge: z.preprocess(
     (val) => {
@@ -115,14 +115,12 @@ export default function StaffAddPage() {
   const [exclusionMenuIds, setExclusionMenuIds] = useState<Id<'menu'>[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPinCode, setShowPinCode] = useState(true);
   const staffAdd = useMutation(api.staff.core.mutation.create);
   const staffConfigAdd = useMutation(api.staff.config.mutation.create);
   const staffAuthAdd = useMutation(api.staff.auth.mutation.create);
   const staffKill = useMutation(api.staff.core.mutation.killRelatedTables);
   const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert);
-  const inviteStaffToOrganization = useAction(api.staff.auth.action.inviteStaffToOrganization);
-
   const uploadImage = useAction(api.storage.action.upload);
   const deleteImage = useAction(api.storage.action.kill);
 
@@ -135,9 +133,15 @@ export default function StaffAddPage() {
     watch,
   } = useZodForm(staffAddSchema);
 
-  const togglePassword = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const togglePinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    setShowPassword(!showPassword);
+    setShowPinCode(!showPinCode);
+  };
+
+  const handleGeneratePinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const pinCode = Math.random().toString(36).substring(2, 8);
+    setValue('pinCode', pinCode);
   };
 
   const onSubmit = async (data: z.infer<typeof staffAddSchema>) => {
@@ -166,38 +170,10 @@ export default function StaffAddPage() {
         uploadImageUrl = uploadResult.publicUrl;
       }
 
-      let newClerkUserID = null;
-      // Clerkの組織メンバーとして追加、または更新
-      if (salon.organizationId && data.email) {
-        try {
-          const result = await inviteStaffToOrganization({
-            organizationId: salon.organizationId,
-            inviterUserId: salon.clerkId,
-            email: data.email,
-            role: data.role,
-            firstName: data.role,
-            lastName: data.name,
-            password: watch('password'),
-          });
-
-          newClerkUserID = result.userId;
-        } catch (clerkError) {
-          const err = new ClerkError(
-            'medium',
-            'Clerk組織へのスタッフ追加に失敗しました',
-            'INTERNAL_ERROR',
-            500,
-            { Error: JSON.stringify(clerkError) }
-          );
-          throw err;
-        }
-      }
-
       try {
         // スタッフの基本情報を追加
         staffId = await staffAdd({
           salonId: salon._id,
-          clerkId: newClerkUserID ?? undefined,
           name: data.name,
           age: data.age ?? undefined,
           email: data.email,
@@ -216,7 +192,7 @@ export default function StaffAddPage() {
         // スタッフの認証情報を追加
         staffAuthId = await staffAuthAdd({
           staffId: staffId,
-          organizationId: salon.organizationId ?? undefined,
+          pinCode: watch('pinCode'),
           role: data.role,
         });
 
@@ -256,23 +232,6 @@ export default function StaffAddPage() {
         throw configAuthError; // 元のエラーを再スロー
       }
     } catch (error: unknown) {
-      // エラー処理の改善
-      if (
-        error instanceof Error &&
-        error.message.includes('指定されたメールアドレスのスタッフがすでに存在します')
-      ) {
-        // 特定のエラーメッセージだけをシンプルに表示
-        toast.error('指定されたメールアドレスのスタッフがすでに存在します', {
-          icon: <X className="h-4 w-4 text-red-500" />,
-        });
-      } else {
-        // その他のエラーは従来通り処理
-        const errorDetails = handleError(error);
-        toast.error(errorDetails.message, {
-          icon: <X className="h-4 w-4 text-red-500" />,
-        });
-      }
-
       // エラー発生時のクリーンアップ
       if (uploadImageUrl) {
         try {
@@ -289,29 +248,33 @@ export default function StaffAddPage() {
           );
           throw err;
         }
-      }
 
-      // staffIdが存在し、configAuthErrorでないケースでスタッフを削除（重複防止）
-      if (staffId && !(error instanceof Error && error.name === 'configAuthError')) {
-        try {
-          if (staffConfigId && staffAuthId && staffId) {
-            await staffKill({
-              staffId: staffId,
-              staffConfigId: staffConfigId,
-              staffAuthId: staffAuthId,
-            });
+        if (staffId) {
+          try {
+            if (staffConfigId && staffAuthId && staffId) {
+              await staffKill({
+                staffId: staffId,
+                staffConfigId: staffConfigId,
+                staffAuthId: staffAuthId,
+              });
+            }
+          } catch (cleanupError) {
+            const err = new ConvexCustomError(
+              'high',
+              'スタッフ削除中にエラーが発生しました',
+              'INTERNAL_ERROR',
+              500,
+              { Error: JSON.stringify(cleanupError) }
+            );
+            throw err;
           }
-        } catch (killError) {
-          const err = new ConvexCustomError(
-            'high',
-            'スタッフ削除中にエラーが発生しました',
-            'INTERNAL_ERROR',
-            500,
-            { Error: JSON.stringify(killError) }
-          );
-          throw err;
         }
+        throw error; // 元のエラーを再スロー
       }
+      const errorDetails = handleError(error);
+      toast.error(errorDetails.message, {
+        icon: <X className="h-4 w-4 text-red-500" />,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -321,7 +284,7 @@ export default function StaffAddPage() {
     reset({
       name: '',
       email: '',
-      password: '',
+      pinCode: '',
       gender: 'unselected',
       description: '',
       imgPath: '',
@@ -440,11 +403,11 @@ export default function StaffAddPage() {
                         <div className="flex items-center space-x-2 pt-1">
                           <Switch
                             id="isActive"
-                            className="data-[state=checked]:bg-green-500"
+                            className="data-[state=checked]:bg-green-600"
                             checked={watch('isActive')}
                             onCheckedChange={(checked) => setValue('isActive', checked)}
                           />
-                          <Label htmlFor="isActive" className="text-sm cursor-pointer">
+                          <Label htmlFor="isActive" className="text-xs cursor-pointer">
                             {watch('isActive') ? (
                               <span className="text-green-600 font-medium">有効</span>
                             ) : (
@@ -452,6 +415,9 @@ export default function StaffAddPage() {
                             )}
                           </Label>
                         </div>
+                        <span className="text-xs text-gray-500">
+                          予約受け付けは有効の場合のみ可能になります。
+                        </span>
                       </div>
                     </div>
 
@@ -497,25 +463,6 @@ export default function StaffAddPage() {
 
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="flex flex-col space-y-4 items-center gap-2 w-full">
-                        <div className="w-full flex items-end gap-2 justify-between">
-                          <div className="w-full">
-                            <ZodTextField
-                              name="password"
-                              label="パスワード"
-                              type={showPassword ? 'text' : 'password'}
-                              register={register}
-                              errors={errors}
-                              icon={<Lock className="h-4 w-4 mr-2 text-gray-500" />}
-                            />
-                          </div>
-                          <Button size="icon" onClick={togglePassword}>
-                            {showPassword ? (
-                              <Eye className="h-8 w-8" />
-                            ) : (
-                              <EyeOff className="h-8 w-8" />
-                            )}
-                          </Button>
-                        </div>
                         <div className="w-full">
                           <ZodTextField
                             name="email"
@@ -525,6 +472,32 @@ export default function StaffAddPage() {
                             errors={errors}
                             placeholder="メールアドレスを入力してください"
                           />
+                        </div>
+                        <div className="w-full flex items-center gap-2 justify-between">
+                          <div className="w-full">
+                            <ZodTextField
+                              name="pinCode"
+                              label="ピンコード"
+                              type={showPinCode ? 'text' : 'password'}
+                              register={register}
+                              errors={errors}
+                              placeholder="EFG5HD"
+                              icon={<Lock className="h-4 w-4 mr-2 text-gray-500" />}
+                            />
+                            <span className="text-xs text-gray-500">
+                              ピンコードは6文字の英数字で入力してください
+                            </span>
+                          </div>
+                          <Button size={'icon'} onClick={handleGeneratePinCode}>
+                            <Shuffle className="h-8 w-8" />
+                          </Button>
+                          <Button size="icon" onClick={togglePinCode}>
+                            {showPinCode ? (
+                              <Eye className="h-8 w-8" />
+                            ) : (
+                              <EyeOff className="h-8 w-8" />
+                            )}
+                          </Button>
                         </div>
                       </div>
 
