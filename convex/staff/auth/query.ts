@@ -20,30 +20,3 @@ export const findByClerkIdByStaffId = query({
       .first();
   },
 });
-
-// 組織IDからスタッフ認証を取得
-export const findByClerkId = query({
-  args: {
-    clerkId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    checkAuth(ctx);
-    const staff = await ctx.db
-      .query('staff')
-      .withIndex('by_clerk_id', (q) =>
-        q.eq('clerkId', args.clerkId).eq('isActive', true).eq('isArchive', false)
-      )
-      .first();
-
-    if (!staff) {
-      return null;
-    }
-
-    const staffAuth = await ctx.db
-      .query('staff_auth')
-      .withIndex('by_staff_id', (q) => q.eq('staffId', staff._id))
-      .first();
-
-    return staffAuth;
-  },
-});

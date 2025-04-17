@@ -14,8 +14,8 @@ import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 export const create = mutation({
   args: {
     staffId: v.id('staff'),
-    organizationId: v.optional(v.string()),
     role: v.optional(roleType),
+    pinCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -49,8 +49,9 @@ export const create = mutation({
 export const update = mutation({
   args: {
     staffAuthId: v.id('staff_auth'),
-    organizationId: v.optional(v.string()),
+
     role: v.optional(roleType),
+    pinCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -77,30 +78,6 @@ export const update = mutation({
     return await ctx.db.patch(args.staffAuthId, updateData);
   },
 });
-export const updateRole = mutation({
-  args: {
-    staffAuthId: v.id('staff_auth'),
-    role: v.optional(roleType),
-  },
-  handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateStaffAuth(args);
-    const staffAuth = await ctx.db.get(args.staffAuthId);
-    if (!staffAuth || staffAuth.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフ認証が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
-    }
-    return await ctx.db.patch(args.staffAuthId, { role: args.role });
-  },
-});
 
 // スタッフ認証の削除
 export const archive = mutation({
@@ -118,8 +95,9 @@ export const upsert = mutation({
   args: {
     staffAuthId: v.id('staff_auth'),
     staffId: v.id('staff'),
-    organizationId: v.optional(v.string()),
+
     role: v.optional(roleType),
+    pinCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);

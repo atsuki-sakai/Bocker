@@ -207,7 +207,6 @@ export const getRelatedTables = query({
       imgPath: staff.imgPath,
       isActive: staff.isActive,
       staffAuthId: staffAuth._id,
-      organizationId: staffAuth.organizationId,
       role: staffAuth.role,
       staffConfigId: staffConfig._id,
       extraCharge: staffConfig.extraCharge,
