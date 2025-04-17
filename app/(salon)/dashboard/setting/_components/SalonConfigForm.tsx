@@ -174,10 +174,6 @@ export default function SalonConfigForm() {
       if (!salonId) return;
 
       try {
-        // 現在のサロン名とフォームで送信されたサロン名を比較
-        const isNameChanged = salonConfig?.salonName !== data.salonName;
-
-        // 並行して処理を実行（Convexの更新とClerkの更新）
         await updateSalonConfig({
           salonId: salonId,
           salonName: data.salonName ?? '',
@@ -199,7 +195,7 @@ export default function SalonConfigForm() {
         toast.error(errorDetails.message);
       }
     },
-    [updateSalonConfig, salonId, setSaveSuccess, salonConfig?.salonName]
+    [updateSalonConfig, salonId, setSaveSuccess]
   );
   // salonConfigが変更されたらフォームをリセット
   useEffect(() => {
