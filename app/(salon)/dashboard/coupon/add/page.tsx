@@ -242,7 +242,10 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
           <div className="text-xs text-gray-500">
             対象メニュー: {data.selectedMenus?.length || 0}件
           </div>
-          <Badge variant={data.isActive ? 'default' : 'destructive'} className="h-6">
+          <Badge
+            variant={data.isActive ? 'default' : 'destructive'}
+            className={`h-6 ${data.isActive ? 'bg-green-500' : 'bg-red-500'}`}
+          >
             {data.isActive ? '有効' : '無効'}
           </Badge>
         </CardFooter>
@@ -652,7 +655,7 @@ function CouponForm() {
                           <div className="flex items-center gap-2">
                             <Badge
                               variant={field.value ? 'default' : 'destructive'}
-                              className="px-2 py-0.5"
+                              className={`px-2 py-0.5 ${field.value ? 'bg-green-500' : 'bg-red-500'}`}
                             >
                               {field.value ? '有効' : '無効'}
                             </Badge>
@@ -660,7 +663,7 @@ function CouponForm() {
                               id="isActive"
                               checked={field.value}
                               onCheckedChange={field.onChange}
-                              className="data-[state=checked]:bg-green-500"
+                              className="data-[state=checked]:bg-green-600"
                             />
                           </div>
                         </div>

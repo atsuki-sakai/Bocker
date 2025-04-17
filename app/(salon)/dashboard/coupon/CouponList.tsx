@@ -42,37 +42,39 @@ export default function CouponList() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <p className="text-sm text-gray-500">クーポンを作成、編集、削除できます。</p>
+        <p className="text-sm text-gray-500">
+          クーポンは、クーポンコードを入力することでメニューの割引を適用できるようになります。
+        </p>
       </div>
-      <div className="mt-8 flow-root">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div className="pt-2 flow-root">
+        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8 px-4">
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden ring-1 shadow-sm ring-black/5 sm:rounded-lg">
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
               <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 text-nowrap px-2">
                   <tr>
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left  text-xs  font-semibold text-gray-900 sm:pl-6"
                     >
                       ステータス
                     </th>
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left  text-xs  font-semibold text-gray-900 sm:pl-6"
                     >
                       クーポン名
                     </th>
 
                     <th
                       scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      className="px-3 py-3.5 text-left  text-xs  font-semibold text-gray-900"
                     >
                       割引タイプ
                     </th>
                     <th
                       scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      className="px-3 py-3.5 text-left  text-xs  font-semibold text-gray-900"
                     >
                       割引額
                     </th>
@@ -85,12 +87,12 @@ export default function CouponList() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
+                <tbody className="divide-y divide-gray-200 bg-white text-nowrap">
                   {results.length > 0 ? (
                     results?.map((coupon: Doc<'coupon'>, index: number) => (
                       <tr key={`${coupon._id.slice(0, 4)}-${index}`}>
                         <td
-                          className={`py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6 `}
+                          className={`py-4 pr-3 pl-4  text-sm  font-medium whitespace-nowrap text-gray-900 sm:pl-6 `}
                         >
                           <span
                             className={`font-bold text-xs ${coupon.isActive ? 'bg-green-600' : 'bg-gray-400'} text-white px-2 py-1 rounded-md`}
@@ -99,7 +101,7 @@ export default function CouponList() {
                           </span>
                         </td>
                         <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6">
-                          {coupon.name}
+                          {coupon.name?.slice(0, 20)}
                           <br />
                           <span className="text-xs text-gray-500">{coupon.couponUid}</span>
                         </td>
