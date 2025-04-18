@@ -200,7 +200,9 @@ export default defineSchema({
       'isOpen',
       'isArchive',
     ])
-    .index('by_salon_id', ['salonId', 'isArchive']),
+    .index('by_staff_id', ['staffId', 'isArchive'])
+    .index('by_salon_id_staff_id_day_of_week', ['salonId', 'staffId', 'dayOfWeek', 'isArchive'])
+    .index('by_salon_id_staff_id', ['salonId', 'staffId', 'isArchive']),
 
   // スタッフのスケジュールテーブル 事前に登録する
   staff_schedule: defineTable({
@@ -213,6 +215,8 @@ export default defineSchema({
     type: v.optional(staffScheduleType), // タイプ
     ...CommonFields,
   })
+    .index('by_staff_id', ['staffId', 'isArchive'])
+    .index('by_salon_staff_id', ['salonId', 'staffId', 'isArchive'])
     .index('by_salon_staff_date', ['salonId', 'staffId', 'date', 'isArchive'])
     .index('by_salon_staff_date_type', ['salonId', 'staffId', 'date', 'type', 'isArchive']),
 
@@ -337,7 +341,9 @@ export default defineSchema({
     extraCharge: v.optional(v.number()), // 指名料金
     priority: v.optional(v.number()), // 予約時の優先度
     ...CommonFields,
-  }).index('by_staff_id', ['staffId', 'isArchive']),
+  })
+    .index('by_staff_id', ['staffId', 'isArchive'])
+    .index('by_salon_id', ['salonId', 'isArchive']),
 
   // =====================
   // MENU
