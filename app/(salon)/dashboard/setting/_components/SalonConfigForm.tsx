@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -350,6 +351,13 @@ export default function SalonConfigForm() {
                     errors={errors}
                     readOnly={true}
                   />
+                  <p className="text-xs text-muted-foreground -mt-3">
+                    メールアドレス変更は
+                    <Link className="text-blue-500" href="/dashboard/setting/change-email">
+                      こちら
+                    </Link>
+                    からお願いいたします。
+                  </p>
 
                   <ZodTextField
                     name="phone"
