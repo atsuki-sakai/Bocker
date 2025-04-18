@@ -62,6 +62,9 @@ export default function SalonExceptionScheduleForm() {
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
+  // 変更検知用の初期日付配列とダーティフラグ
+  const [initialDates, setInitialDates] = useState<string[] | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
 
   // 初期データロード完了フラグ
   const initialDataLoaded = useRef<boolean>(false);
@@ -103,10 +106,25 @@ export default function SalonExceptionScheduleForm() {
         setSelectedDates([]);
       }
 
+      // 初期日付リストを文字列化してソートして保存
+      const formatted = (exceptionSchedules || [])
+        .map((s) => format(new Date(s.date), 'yyyy-MM-dd'))
+        .filter((d) => d >= format(today, 'yyyy-MM-dd'))
+        .sort();
+      setInitialDates(formatted);
+
       // 初期データロード完了をマーク
       initialDataLoaded.current = true;
     }
   }, [exceptionSchedules, today, isSaving]);
+
+  // 選択日付の変更検知
+  useEffect(() => {
+    if (initialDates) {
+      const current = selectedDates.map((date) => format(date, 'yyyy-MM-dd')).sort();
+      setIsDirty(JSON.stringify(initialDates) !== JSON.stringify(current));
+    }
+  }, [selectedDates, initialDates]);
 
   // 日付選択時の処理 - コールバック関数化
   const handleDatesChange = useCallback((dates: Date[]) => {
@@ -292,7 +310,7 @@ export default function SalonExceptionScheduleForm() {
           >
             <Button
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={!isDirty || isSaving}
               className="shadow-md text-xs sm:text-sm"
               size="default"
               // モバイル向けにサイズを調整
