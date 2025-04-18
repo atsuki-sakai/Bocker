@@ -803,7 +803,6 @@ export function validateSalonApiConfig(args: Partial<Doc<'salon_api_config'>>) {
 }
 
 export function validateSalonConfig(args: Partial<Doc<'salon_config'>>) {
-  validateRequired(args.salonName, 'サロン名');
   if (args.salonName) {
     validateStringLength(args.salonName, MAX_TEXT_LENGTH, 'サロン名');
   }
