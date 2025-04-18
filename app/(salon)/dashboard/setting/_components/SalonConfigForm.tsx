@@ -27,18 +27,15 @@ import {
   Image as ImageIcon,
   Upload,
   Building,
-  Search,
   Check,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ZodTextField } from '@/components/common';
+
 const salonConfigFormSchema = z.object({
   salonId: z.string(),
-  salonName: z
-    .string()
-    .min(1, 'サロン名は必須です')
-    .max(120, 'サロン名は120文字以内で入力してください'), // サロン名
+  salonName: z.string().max(120, 'サロン名は120文字以内で入力してください'), // サロン名
   email: z.string().email('メールアドレスの形式が正しくありません').optional(), // メールアドレス（入力された場合はメール形式をチェック）
   phone: z
     .string()
@@ -204,15 +201,6 @@ export default function SalonConfigForm() {
     }
   }, [salonConfig, reset]);
 
-  // 手動で住所検索を行う
-  const handleSearchAddress = useCallback(() => {
-    if (postalCode && postalCode.length === 7) {
-      fetchAddressByPostalCode(postalCode);
-    } else {
-      toast.error('郵便番号は7桁の数字で入力してください');
-    }
-  }, [postalCode, fetchAddressByPostalCode]);
-
   // 画像プレビューURL（useMemoでメモ化）
   const previewUrl = useMemo(() => {
     if (currentFile) {
@@ -345,109 +333,40 @@ export default function SalonConfigForm() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
+                  className="flex flex-col gap-3"
                 >
-                  <FormField
+                  <ZodTextField
+                    name="salonName"
+                    register={register}
                     label="サロン名"
                     icon={<Building className="h-4 w-4 text-muted-foreground" />}
-                    error={errors.salonName?.message ?? ''}
-                    tooltip="お客様に表示されるサロン名です"
-                  >
-                    <Input
-                      {...register('salonName')}
-                      placeholder="サロン名"
-                      type="text"
-                      className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
-                    />
-                  </FormField>
-
-                  <FormField
+                    errors={errors}
+                  />
+                  <ZodTextField
+                    name="email"
+                    register={register}
                     label="メールアドレス"
                     icon={<Mail className="h-4 w-4 text-muted-foreground" />}
-                    error={errors.email?.message ?? ''}
-                    tooltip="お客様に表示されるメールアドレスです"
-                  >
-                    <Input
-                      {...register('email')}
-                      placeholder="example@salon.com"
-                      type="email"
-                      className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
-                    />
-                  </FormField>
+                    errors={errors}
+                    readOnly={true}
+                  />
 
-                  <FormField
+                  <ZodTextField
+                    name="phone"
+                    register={register}
                     label="電話番号"
                     icon={<Phone className="h-4 w-4 text-muted-foreground" />}
-                    error={errors.phone?.message ?? ''}
-                    tooltip="ハイフンなしで入力してください"
-                  >
-                    <Input
-                      {...register('phone')}
-                      placeholder="08012345678"
-                      type="tel"
-                      className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
-                    />
-                  </FormField>
-
+                    errors={errors}
+                  />
                   <div className="flex flex-col md:flex-row gap-4">
                     <div className="w-full md:w-1/3">
-                      <FormField
+                      <ZodTextField
+                        name="postalCode"
+                        register={register}
                         label="郵便番号"
                         icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
-                        error={errors.postalCode?.message ?? ''}
-                        tooltip="7桁の数字で入力してください"
-                      >
-                        <div className="flex gap-2">
-                          <Input
-                            {...register('postalCode')}
-                            placeholder="1234567"
-                            type="text"
-                            maxLength={7}
-                            className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
-                          />
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={handleSearchAddress}
-                                  disabled={isSearchingAddress}
-                                  className="flex-shrink-0"
-                                >
-                                  {isSearchingAddress ? (
-                                    <svg
-                                      className="animate-spin h-4 w-4"
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                      ></circle>
-                                      <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                      ></path>
-                                    </svg>
-                                  ) : (
-                                    <Search className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>住所を検索</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </FormField>
+                        errors={errors}
+                      />
                     </div>
                     <div className="w-full md:w-2/3">
                       <FormField
