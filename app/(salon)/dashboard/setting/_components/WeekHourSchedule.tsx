@@ -17,16 +17,16 @@ const scheduleDataSchema = z.object({
 });
 
 // オブジェクトのキーをソートして文字列化し、安定した比較を行う
-function stableStringify(obj: any): string {
+function stableStringify(obj: unknown): string {
   return JSON.stringify(
     obj,
-    (_key, value) => {
+    (_key: string, value: unknown) => {
       if (value && typeof value === 'object' && !Array.isArray(value)) {
-        const sorted: any = {};
+        const sorted: Record<string, unknown> = {};
         Object.keys(value)
           .sort()
           .forEach((k) => {
-            sorted[k] = (value as any)[k];
+            sorted[k] = (value as Record<string, unknown>)[k];
           });
         return sorted;
       }
@@ -74,8 +74,6 @@ import { z } from 'zod';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { dayOfWeekType } from '@/services/convex/shared/types/common';
-
 // dayOfWeekTypeの値を定義（エラー修正用）
 const DAY_OF_WEEK_VALUES = [
   'monday',
