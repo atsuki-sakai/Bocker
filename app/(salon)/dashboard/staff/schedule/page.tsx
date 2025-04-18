@@ -147,7 +147,7 @@ export default function StaffSchedulePage() {
     const sortedSettings = [...newDateTimeSettings].sort((a, b) => compareAsc(a.date, b.date));
 
     setDateTimeSettings(sortedSettings);
-  }, [selectedDates, dateTimeSettings]);
+  }, [selectedDates]);
 
   // スタッフ選択時の既存スケジュール取得処理
   useEffect(() => {
