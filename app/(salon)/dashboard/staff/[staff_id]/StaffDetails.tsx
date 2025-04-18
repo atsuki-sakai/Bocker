@@ -346,8 +346,8 @@ export default function StaffDetails() {
           </CardContent>
 
           <CardFooter className="bg-slate-50 px-6 py-3 flex justify-between">
-            <div className="text-sm text-slate-500 tracking-wider">
-              <span>登録日 - </span>
+            <div className="text-xs text-slate-500 tracking-wider">
+              <span>作成日: </span>
               {new Date(staffAllData._creationTime).toLocaleDateString()}
             </div>
             <div className="flex gap-2">
