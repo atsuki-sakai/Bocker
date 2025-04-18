@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useSalon } from '@/hooks/useSalon';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -30,6 +31,14 @@ const statusNameMap: Record<string, string> = {
   deauthorized: '連携解除済み',
 };
 
+const statusColorMap: Record<string, string> = {
+  not_connected: 'border border-gray-500 text-gray-500 bg-gray-50',
+  pending: 'border border-yellow-500 text-yellow-500 bg-yellow-50',
+  incomplete: 'border border-red-500 text-red-500 bg-red-50',
+  restricted: 'border border-orange-500 text-orange-500 bg-orange-50',
+  active: 'border border-green-500 text-green-500 bg-green-50',
+};
+
 // ステータスの説明
 const statusDescriptionMap: Record<string, string> = {
   not_connected:
@@ -47,7 +56,7 @@ const statusDescriptionMap: Record<string, string> = {
 export default function StripeConnectStatus() {
   const { salonId } = useSalon();
   const [isLoading, setIsLoading] = useState(false);
-
+  const router = useRouter();
   // Stripe Connect アカウント情報を取得
   const connectAccount = useQuery(
     api.salon.core.query.getConnectAccountDetails,
@@ -137,7 +146,7 @@ export default function StripeConnectStatus() {
         if (data.isOnboarding) {
           toast.info('Stripeアカウントの設定を完了してください');
         }
-        window.open(data.url, '_blank');
+        router.push(data.url);
       }
     } catch (error) {
       const errorDetails = handleError(error);
@@ -211,8 +220,9 @@ export default function StripeConnectStatus() {
 
           <Alert className="my-2">
             <AlertTitle className=" text-sm font-medium">
-              ステータス -{' '}
-              <span className="text-sm bg-indigo-500 text-white tracking-wide font-bold px-3 py-1 rounded-md">
+              <span
+                className={`text-xs tracking-widest font-bold px-3 py-1 rounded-md ${statusColorMap[status]}`}
+              >
                 {statusNameMap[status]}
               </span>
             </AlertTitle>
