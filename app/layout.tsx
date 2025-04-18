@@ -16,10 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bcker/ブッカー - 予約管理サービス",
-  description: "Bcker/ブッカーはサロンの予約管理を便利にするサービスです。",
+  title: 'Bcker - 予約管理サービス',
+  description: 'Bckerはサロンの予約管理を便利にするサービスです。',
   icons: {
-    icon: "/convex.svg",
+    icon: '/convex.svg',
   },
 };
 
