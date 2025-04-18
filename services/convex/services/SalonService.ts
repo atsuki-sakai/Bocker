@@ -61,7 +61,6 @@ class SalonService {
   async findSalonByClerkId(ctx: QueryCtx, clerkId: string) {
     return await this.salonRepo.findByClerkId(ctx, clerkId);
   }
-
   async findByStripeCustomerId(ctx: QueryCtx, stripeCustomerId: string) {
     const salon = await ctx.db
       .query('salon')
