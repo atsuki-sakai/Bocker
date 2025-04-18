@@ -1,3 +1,5 @@
+'use client';
+
 // Zod schema for schedule data change detection
 const scheduleDataSchema = z.object({
   useCommonHours: z.boolean(),
@@ -13,7 +15,26 @@ const scheduleDataSchema = z.object({
     sunday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
   }),
 });
-('use client');
+
+// オブジェクトのキーをソートして文字列化し、安定した比較を行う
+function stableStringify(obj: any): string {
+  return JSON.stringify(
+    obj,
+    (_key, value) => {
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const sorted: any = {};
+        Object.keys(value)
+          .sort()
+          .forEach((k) => {
+            sorted[k] = (value as any)[k];
+          });
+        return sorted;
+      }
+      return value;
+    },
+    2
+  );
+}
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -295,22 +316,25 @@ export default function WeekHourSchedule() {
           commonStartHour: hasOpenDay ? earliestStartHour : defaultScheduleHour.startHour,
           commonEndHour: hasOpenDay ? latestEndHour : defaultScheduleHour.endHour,
         });
-        // 変更検知
-        useEffect(() => {
-          if (initialScheduleData) {
-            const parsedInitial = scheduleDataSchema.parse(initialScheduleData);
-            const parsedCurrent = scheduleDataSchema.parse({
-              scheduleSettings: weekScheduleData.scheduleSettings,
-              useCommonHours: weekScheduleData.useCommonHours,
-              commonStartHour: weekScheduleData.commonStartHour,
-              commonEndHour: weekScheduleData.commonEndHour,
-            });
-            setIsDirty(JSON.stringify(parsedInitial) !== JSON.stringify(parsedCurrent));
-          }
-        }, [weekScheduleData, initialScheduleData]);
       }
     }
   }, [salonWeekSchedules]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 変更検知
+  useEffect(() => {
+    if (initialScheduleData) {
+      const parsedInitial = scheduleDataSchema.parse(initialScheduleData);
+      const parsedCurrent = scheduleDataSchema.parse({
+        scheduleSettings: weekScheduleData.scheduleSettings,
+        useCommonHours: weekScheduleData.useCommonHours,
+        commonStartHour: weekScheduleData.commonStartHour,
+        commonEndHour: weekScheduleData.commonEndHour,
+      });
+      const initialJson = stableStringify(parsedInitial);
+      const currentJson = stableStringify(parsedCurrent);
+      setIsDirty(initialJson !== currentJson);
+    }
+  }, [weekScheduleData, initialScheduleData]);
 
   // 営業日変更時の処理
   const handleDayToggle = useCallback((day: DayOfWeek) => {
