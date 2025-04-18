@@ -26,3 +26,25 @@ export const getBySalonStaffAndWeek = query({
       );
   },
 });
+
+// サロンIDとスタッフIDからスタッフスケジュールを取得
+export const getBySalonAndStaffId = query({
+  args: {
+    salonId: v.id('salon'),
+    staffId: v.id('staff'),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+    validateStaffWeekSchedule(args);
+    try {
+      return await ctx.db
+        .query('staff_week_schedule')
+        .withIndex('by_salon_id_staff_id', (q) =>
+          q.eq('salonId', args.salonId).eq('staffId', args.staffId)
+        )
+        .collect();
+    } catch (error) {
+      throw new Error('スタッフのスケジュール取得に失敗しました');
+    }
+  },
+});
