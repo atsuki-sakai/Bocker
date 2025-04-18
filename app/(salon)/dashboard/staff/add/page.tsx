@@ -175,16 +175,29 @@ export default function StaffAddPage() {
 
       try {
         // スタッフの基本情報を追加
-        staffId = await staffAdd({
-          salonId: salon._id,
-          name: data.name,
-          age: data.age ?? undefined,
-          email: data.email,
-          gender: data.gender,
-          description: data.description,
-          imgPath: uploadImageUrl ?? undefined,
-          isActive: data.isActive,
-        });
+        try {
+          staffId = await staffAdd({
+            salonId: salon._id,
+            name: data.name,
+            age: data.age ?? undefined,
+            email: data.email,
+            gender: data.gender,
+            description: data.description,
+            imgPath: uploadImageUrl ?? undefined,
+            isActive: data.isActive,
+          });
+        } catch (creationError) {
+          console.log('creationError type: ', typeof creationError);
+          console.log('creationError: ', creationError);
+
+          const errorDetails = handleError(creationError);
+          console.log('errorDetails: ', errorDetails);
+          toast.error(errorDetails.message, {
+            icon: <X className="h-4 w-4 text-red-500" />,
+          });
+          setIsLoading(false);
+          return;
+        }
         // スタッフの設定情報を追加
         staffConfigId = await staffConfigAdd({
           staffId: staffId,
@@ -276,7 +289,11 @@ export default function StaffAddPage() {
             throw err;
           }
         }
-        throw error; // 元のエラーを再スロー
+        const errorDetails = handleError(error);
+        toast.error(errorDetails.message, {
+          icon: <X className="h-4 w-4 text-red-500" />,
+        });
+        return;
       }
       const errorDetails = handleError(error);
       toast.error(errorDetails.message, {
@@ -291,7 +308,7 @@ export default function StaffAddPage() {
     reset({
       name: '',
       email: '',
-      pinCode: '',
+      pinCode: generatePinCode(),
       gender: 'unselected',
       description: '',
       imgPath: '',
