@@ -31,6 +31,7 @@ interface CalendarMultiSelectProps {
    * 指定した日付より前は選択できなくなります
    */
   fromDate?: Date;
+  disabled?: boolean;
 }
 
 // アニメーション用のバリアント定義
@@ -84,6 +85,7 @@ function CalendarMultiSelect({
   selectedDates,
   onDatesChangeAction,
   fromDate,
+  disabled,
 }: CalendarMultiSelectProps) {
   // 日付選択ハンドラ
   const handleDatesSelect = (dates: Date[] | undefined) => {
@@ -130,6 +132,7 @@ function CalendarMultiSelect({
       <div className="bg-white dark:bg-slate-800 rounded-lg p-1 border dark:border-slate-700">
         {/* Shadcn標準のカレンダーコンポーネントを使用 - カスタムDayコンポーネントは不要 */}
         <Calendar
+          disabled={disabled}
           mode="multiple"
           selected={selectedDates}
           onSelect={handleDatesSelect}
