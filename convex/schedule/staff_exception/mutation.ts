@@ -147,3 +147,98 @@ export const kill = mutation({
     return await killRecord(ctx, args.staffScheduleId);
   },
 });
+
+
+export const upsertSchedules = mutation({
+  args: {
+    staffId: v.id('staff'),
+    salonId: v.id('salon'),
+    dates: v.array(
+      v.object({
+        date: v.string(),
+        startTime_unix: v.number(),
+        endTime_unix: v.number(),
+        notes: v.optional(v.string()),
+      })
+    ),
+    type: v.optional(staffScheduleType),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+    validateStaffScheduleException(args);
+    const staff = await ctx.db.get(args.staffId);
+    if (!staff) {
+      const err = new ConvexCustomError(
+        'low',
+        '指定されたスタッフが存在しません',
+        'NOT_FOUND',
+        404,
+        {
+          ...args,
+        }
+      );
+      throw err;
+    }
+    const salon = await ctx.db.get(args.salonId);
+    if (!salon) {
+      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
+        ...args,
+      });
+      throw err;
+    }
+
+    // 引数に渡された日付のセットを作成
+    const providedDates = new Set(args.dates.map((date) => date.date));
+
+    // 既存のスケジュールを取得（isArchiveフラグに関わらず全て取得）
+    const existingSchedules = await ctx.db
+      .query('staff_schedule')
+      .withIndex('by_salon_staff_id', (q) =>
+        q.eq('salonId', args.salonId).eq('staffId', args.staffId)
+      )
+      .collect();
+
+    // 引数に含まれていない日付のスケジュールを完全に削除
+    await Promise.all(
+      existingSchedules
+        .filter((schedule) => !providedDates.has(schedule.date ?? ''))
+        .map((schedule) => ctx.db.delete(schedule._id))
+    );
+
+    // 引数の日付に対してupsert処理
+    await Promise.all(
+      args.dates.map(async (date) => {
+        // 既存のスケジュールを確認（isArchiveフラグに関わらず）
+        const existingSchedule = await ctx.db
+          .query('staff_schedule')
+          .withIndex('by_salon_staff_date', (q) =>
+            q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('date', date.date)
+          )
+          .first();
+
+        if (existingSchedule) {
+          // 既存のレコードを更新
+          await ctx.db.patch(existingSchedule._id, {
+            startTime_unix: date.startTime_unix,
+            endTime_unix: date.endTime_unix,
+            type: args.type,
+            notes: date.notes,
+            isArchive: false, // 念のためisArchiveをfalseに設定
+          });
+        } else {
+          // 新しいレコードを挿入
+          await ctx.db.insert('staff_schedule', {
+            staffId: args.staffId,
+            salonId: args.salonId,
+            date: date.date,
+            startTime_unix: date.startTime_unix,
+            endTime_unix: date.endTime_unix,
+            type: args.type,
+            notes: date.notes,
+            isArchive: false,
+          });
+        }
+      })
+    );
+  },
+});
