@@ -1,4 +1,19 @@
-'use client';
+// Zod schema for schedule data change detection
+const scheduleDataSchema = z.object({
+  useCommonHours: z.boolean(),
+  commonStartHour: z.string(),
+  commonEndHour: z.string(),
+  scheduleSettings: z.object({
+    monday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
+    tuesday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
+    wednesday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
+    thursday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
+    friday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
+    saturday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
+    sunday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
+  }),
+});
+('use client');
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,10 +53,22 @@ import { z } from 'zod';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { dayOfWeekType } from '@/services/convex/shared/types/common';
+
+// dayOfWeekTypeの値を定義（エラー修正用）
+const DAY_OF_WEEK_VALUES = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+] as const;
 
 const salonScheduleConfigSchema = z.object({
   salonId: z.string().optional(),
-  dayOfWeek: z.string().optional(),
+  dayOfWeek: z.enum(DAY_OF_WEEK_VALUES).optional(),
   isOpen: z.boolean().optional(),
   startHour: z.string().optional(),
   endHour: z.string().optional(),
@@ -165,6 +192,9 @@ export default function WeekHourSchedule() {
     commonStartHour: defaultScheduleHour.startHour,
     commonEndHour: defaultScheduleHour.endHour,
   });
+  // 初期データ保存と変更検知用
+  const [initialScheduleData, setInitialScheduleData] = useState<WeekScheduleData | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
 
   // すでに登録されているデータを取得
   const salonWeekSchedules = useQuery(
@@ -258,6 +288,26 @@ export default function WeekHourSchedule() {
           ...updatedCommonHours,
           scheduleSettings: newScheduleSettings,
         }));
+        // 初期状態として保存
+        setInitialScheduleData({
+          scheduleSettings: newScheduleSettings,
+          useCommonHours: hasOpenDay,
+          commonStartHour: hasOpenDay ? earliestStartHour : defaultScheduleHour.startHour,
+          commonEndHour: hasOpenDay ? latestEndHour : defaultScheduleHour.endHour,
+        });
+        // 変更検知
+        useEffect(() => {
+          if (initialScheduleData) {
+            const parsedInitial = scheduleDataSchema.parse(initialScheduleData);
+            const parsedCurrent = scheduleDataSchema.parse({
+              scheduleSettings: weekScheduleData.scheduleSettings,
+              useCommonHours: weekScheduleData.useCommonHours,
+              commonStartHour: weekScheduleData.commonStartHour,
+              commonEndHour: weekScheduleData.commonEndHour,
+            });
+            setIsDirty(JSON.stringify(parsedInitial) !== JSON.stringify(parsedCurrent));
+          }
+        }, [weekScheduleData, initialScheduleData]);
       }
     }
   }, [salonWeekSchedules]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -780,7 +830,7 @@ export default function WeekHourSchedule() {
                     size="lg"
                     className="min-w-[120px]"
                     onClick={handleSubmit(onSubmit)}
-                    disabled={isSaving}
+                    disabled={!isDirty || isSaving}
                   >
                     {isSaving ? (
                       <>
