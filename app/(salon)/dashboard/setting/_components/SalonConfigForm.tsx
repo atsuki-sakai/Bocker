@@ -60,7 +60,6 @@ export default function SalonConfigForm() {
   const { salonId } = useSalon();
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -89,7 +88,6 @@ export default function SalonConfigForm() {
       if (!code || code.length !== 7) return;
 
       try {
-        setIsSearchingAddress(true);
         const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${code}`);
         const data = await response.json();
 
@@ -105,8 +103,6 @@ export default function SalonConfigForm() {
       } catch (error) {
         const errorDetails = handleError(error);
         toast.error(errorDetails.message);
-      } finally {
-        setIsSearchingAddress(false);
       }
     },
     [setValue]
