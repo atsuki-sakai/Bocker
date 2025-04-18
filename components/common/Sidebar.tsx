@@ -47,7 +47,7 @@ interface SidebarProps {
 
 export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { signOut, user } = useClerk();
+  const { signOut } = useClerk();
   const { isSignedIn } = useAuth();
   const salon = usePreloadedQuery(
     preloadedSalon as Preloaded<typeof api.salon.core.query.findByClerkId>
@@ -56,7 +56,6 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
     isAuthenticated: isStaffAuthenticated,
     logout: staffLogout,
     name: staffName,
-    role: staffRole,
     salonId,
   } = useStaffAuth();
   const pathname = usePathname(); // 現在のパスを取得
@@ -175,7 +174,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
         window.location.href = '/sign-in';
       });
     }
-  }, [salon, timeOut]);
+  }, [salon, timeOut, signOut]);
 
   if (!salon) {
     return <Loading />;
