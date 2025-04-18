@@ -25,45 +25,30 @@ export const create = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateStaff(args);
-    try {
-      // スタッフの存在確認
-      const existingStaff = await ctx.db
-        .query('staff')
-        .withIndex('by_salon_id_email', (q) =>
-          q
-            .eq('salonId', args.salonId)
-            .eq('email', args.email)
-            .eq('isActive', true)
-            .eq('isArchive', false)
-        )
-        .first();
-      if (existingStaff) {
-        const err = new ConvexCustomError(
-          'low',
-          '指定されたメールアドレスのスタッフがすでに存在します',
-          'NOT_FOUND',
-          404,
-          {
-            ...existingStaff,
-          }
-        );
-        throw err;
-      }
-    } catch (error) {
-      if (error instanceof ConvexCustomError) {
-        throw error;
-      }
-      const err = new ConvexCustomError(
-        'high',
-        'スタッフ追加/更新中にエラーが発生しました',
-        'INTERNAL_ERROR',
-        500,
+
+    // スタッフの存在確認
+    const existingStaff = await ctx.db
+      .query('staff')
+      .withIndex('by_salon_id_email', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('email', args.email)
+          .eq('isActive', true)
+          .eq('isArchive', false)
+      )
+      .first();
+    if (existingStaff) {
+      throw new ConvexCustomError(
+        'low',
+        '指定されたメールアドレスのスタッフがすでに存在します',
+        'NOT_FOUND',
+        404,
         {
-          error: JSON.stringify(error),
+          ...existingStaff,
         }
       );
-      throw err;
     }
+
     return await ctx.db.insert('staff', {
       ...args,
       isActive: true,
@@ -171,6 +156,18 @@ export const killRelatedTables = mutation({
     if (args.staffId) {
       await killRecord(ctx, args.staffId);
     }
+    const staffWeekSchedules = await ctx.db
+      .query('staff_week_schedule')
+      .withIndex('by_staff_id', (q) => q.eq('staffId', args.staffId))
+      .collect();
+
+    await Promise.all(staffWeekSchedules.map((schedule) => killRecord(ctx, schedule._id)));
+
+    const staffSchedules = await ctx.db
+      .query('staff_schedule')
+      .withIndex('by_staff_id', (q) => q.eq('staffId', args.staffId))
+      .collect();
+    await Promise.all(staffSchedules.map((schedule) => killRecord(ctx, schedule._id)));
     return {
       deletedStaffConfigId: args.staffConfigId,
       deletedStaffAuthId: args.staffAuthId,

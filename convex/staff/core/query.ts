@@ -224,7 +224,7 @@ export const findAvailableStaffByMenu = query({
   },
   returns: v.array(
     v.object({
-      staffId: v.id('staff'),
+      _id: v.id('staff'),
       name: v.optional(v.string()),
       age: v.optional(v.number()),
       email: v.optional(v.string()),
@@ -264,7 +264,7 @@ export const findAvailableStaffByMenu = query({
     const result = availableStaff.map((staff) => {
       const config = configMap.get(staff._id);
       return {
-        staffId: staff._id,
+        _id: staff._id,
         name: staff.name,
         age: staff.age,
         email: staff.email,
