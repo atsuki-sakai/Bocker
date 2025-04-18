@@ -31,6 +31,7 @@ export function getMinuteMultiples(interval: number, maxMinute?: number): number
 /**
  * 現在の日付の指定時刻のUNIXタイムスタンプ（ミリ秒単位）を返す関数
  * @param hour - 時間の文字列（例: "09:00"）
+ * @param date - 日付の文字列（例: "2024-01-01"）
  * @returns タイムスタンプ。引数が指定されない場合は null を返す
  *
  * 使用例:
@@ -38,9 +39,9 @@ export function getMinuteMultiples(interval: number, maxMinute?: number): number
  * console.log(timestamp); // 例: 1680000000000
  */
 
-export function convertHourToUnixTimestamp(hour: string): number | null {
+export function convertHourToUnixTimestamp(hour: string, targetDate?: string): number | null {
   // 今日の日付情報を取得
-  const today = new Date();
+  const today = targetDate ? new Date(targetDate) : new Date();
   const year = today.getFullYear();
   const month = today.getMonth(); // 月は0〜11で管理
   const date = today.getDate();

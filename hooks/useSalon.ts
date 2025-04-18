@@ -2,7 +2,7 @@
 
 import { api } from "@/convex/_generated/api";
 import { useQuery } from 'convex/react';
-import { Id } from '@/convex/_generated/dataModel';
+import { Id, Doc } from '@/convex/_generated/dataModel';
 import { useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 /**
@@ -12,17 +12,12 @@ export const useSalon = () => {
   const [error, setError] = useState<Error | null>(null);
   const { user } = useUser();
 
-  let salonData: any;
+  let salonData: Doc<'salon'> | undefined | null;
 
   salonData = useQuery(
     api.salon.core.query.findByClerkId,
     user?.id ? { clerkId: user.id } : 'skip'
   );
-
-  console.log('##########################');
-  console.log('user', user?.id);
-  console.log('salonData', salonData);
-  console.log('##########################');
   // エラーハンドリング
   useEffect(() => {
     if (salonData === undefined && user?.id) {
