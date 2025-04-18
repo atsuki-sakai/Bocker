@@ -146,17 +146,16 @@ export default function ReferralCard() {
                 </div>
 
                 <div className="flex flex-col gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col gap-2 md:flex-row justify-between items-start mb-1">
                     <p className="text-sm font-semibold text-gray-800">紹介特典 🎁</p>
                     <p className="text-sm font-bold text-slate-600">
                       最大<span className="text-green-600 text-xl px-1">30,000</span>
-                      円分の割引を受け取れます！
+                      円分の割引を受け取る
                     </p>
                   </div>
                   <p className="text-xs tracking-wide leading-4 text-gray-700">
-                    1人紹介するごとに、翌月(25日)のサブスクリプション料金から
-                    <b className="text-green-600">5,000円</b>割引されます（最大6回まで）。
-                    特典の適用状況は、
+                    1人紹介するごとに、翌月(25日)のサブスクリプション料金から 5,000円
+                    割引されます（最大6回まで）。 特典の適用状況は、
                     <Link
                       className="text-indigo-600 font-medium underline"
                       href="/dashboard/subscription"
@@ -166,7 +165,7 @@ export default function ReferralCard() {
                     でいつでもご確認いただけます。
                   </p>
                   <p className="text-xs tracking-wide leading-4 text-gray-700">
-                    紹介を受けた方お客様と紹介者のお客様の両方に月5000円の割引を一回受けられます。毎月一回分の紹介料を割引き、余剰分は最大６回まで翌月に繰り越します。
+                    紹介を受けた方お客様と紹介者のお客様の両方に月5,000円の割引を一回受けられます。毎月一回分の紹介料を割引き、余剰分は最大６回まで翌月に繰り越します。
                   </p>
                   <p className="text-xs tracking-wide leading-4 text-gray-700 mt-2">
                     割引は、毎月(25日)に契約中のサブスクリプションに適用されます。
@@ -175,10 +174,10 @@ export default function ReferralCard() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <p className="text-sm font-bold text-slate-600">
-                      獲得したキャッシュバックは
+                    <p className="text-xs font-bold tracking-tighter text-slate-600">
+                      獲得した割引は
                       <span className="text-green-600 text-2xl px-1">
-                        {referral.totalReferralCount! * 5000}
+                        {(referral.totalReferralCount! * 5000).toLocaleString()}
                       </span>
                       円です。
                     </p>
