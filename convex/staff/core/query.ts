@@ -4,7 +4,7 @@ import { paginationOptsValidator } from 'convex/server';
 import { validateStaff } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { ConvexCustomError } from '@/services/convex/shared/utils/error';
-
+import { genderType } from '@/services/convex/shared/types/common';
 // サロンIDからスタッフ一覧を取得
 export const getStaffListBySalonId = query({
   args: {
@@ -216,3 +216,66 @@ export const getRelatedTables = query({
     };
   },
 });
+
+export const findAvailableStaffByMenu = query({
+  args: {
+    salonId: v.id('salon'),
+    menuId: v.id('menu'),
+  },
+  returns: v.array(
+    v.object({
+      staffId: v.id('staff'),
+      name: v.optional(v.string()),
+      age: v.optional(v.number()),
+      email: v.optional(v.string()),
+      gender: v.optional(genderType),
+      description: v.optional(v.string()),
+      imgPath: v.optional(v.string()),
+      extraCharge: v.optional(v.number()),
+      priority: v.optional(v.number()),
+    })
+  ),
+  handler: async (ctx, args) => {
+    // 1. 全スタッフ取得
+    const allStaff = await ctx.db
+      .query('staff')
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
+      )
+      .collect();
+    // 2. 除外スタッフ取得
+    const exclusions = await ctx.db
+      .query('menu_exclusion_staff')
+      .withIndex('by_salon_menu_id', (q) =>
+        q.eq('salonId', args.salonId).eq('menuId', args.menuId).eq('isArchive', false)
+      )
+      .collect();
+    const excludedIds = new Set(exclusions.map((r) => r.staffId));
+    // 3. 有効スタッフフィルタ
+    const availableStaff = allStaff.filter((staff) => !excludedIds.has(staff._id));
+    // 4. 一度に staff_config を取得し、マッピング
+    const configs = await ctx.db
+      .query('staff_config')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .collect();
+    const configMap = new Map(configs.map((config) => [config.staffId, config]));
+
+    // 5. 結果作成
+    const result = availableStaff.map((staff) => {
+      const config = configMap.get(staff._id);
+      return {
+        staffId: staff._id,
+        name: staff.name,
+        age: staff.age,
+        email: staff.email,
+        gender: staff.gender,
+        description: staff.description,
+        imgPath: staff.imgPath,
+        extraCharge: config?.extraCharge,
+        priority: config?.priority,
+      };
+    });
+    return result;
+  },
+});
+
