@@ -19,8 +19,10 @@ export const useSalon = () => {
     user?.id ? { clerkId: user.id } : 'skip'
   );
 
+  console.log('##########################');
+  console.log('user', user?.id);
   console.log('salonData', salonData);
-
+  console.log('##########################');
   // エラーハンドリング
   useEffect(() => {
     if (salonData === undefined && user?.id) {
