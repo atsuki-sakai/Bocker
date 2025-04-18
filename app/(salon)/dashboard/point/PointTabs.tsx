@@ -154,6 +154,7 @@ export default function PointTabs() {
       router.refresh();
     } catch (error) {
       const errorDetails = handleError(error);
+      console.error(errorDetails);
       toast.error(errorDetails.message);
     }
   };
@@ -227,73 +228,55 @@ export default function PointTabs() {
                           </div>
                         </div>
 
-                        <AnimatePresence mode="wait">
-                          {watchedIsFixedPoint ? (
-                            <motion.div
-                              key="fixed-point"
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <ZodTextField
-                                register={register}
-                                errors={errors}
-                                name="fixedPoint"
-                                label="固定ポイント"
-                                type="number"
-                                icon={<DollarSign size={16} />}
-                                placeholder="例: 100"
-                              />
-                            </motion.div>
-                          ) : (
-                            <motion.div
-                              key="point-rate"
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <div className="space-y-2">
-                                <Label htmlFor="pointRate" className="flex items-center gap-2">
-                                  <Percent size={16} />
-                                  ポイント付与率 (%)
-                                </Label>
-                                <Input
-                                  id="pointRate"
-                                  type="number"
-                                  placeholder="例: 5 (5%)"
-                                  step="1"
-                                  min="0"
-                                  max="100"
-                                  value={
-                                    watch('pointRate') !== undefined ? watch('pointRate') || 0 : ''
-                                  }
-                                  onChange={(e) => {
-                                    const percentValue = parseFloat(e.target.value);
-                                    if (!isNaN(percentValue)) {
-                                      setValue('pointRate', percentValue, {
-                                        shouldValidate: true,
-                                        shouldDirty: true,
-                                      });
-                                    } else {
-                                      setValue('pointRate', undefined, {
-                                        shouldValidate: true,
-                                        shouldDirty: true,
-                                      });
-                                    }
-                                  }}
-                                />
-                                {errors.pointRate && (
-                                  <p className="text-sm text-red-500 flex items-center gap-1">
-                                    <AlertCircle size={14} />
-                                    {errors.pointRate.message as string}
-                                  </p>
-                                )}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                        {watchedIsFixedPoint ? (
+                          <ZodTextField
+                            register={register}
+                            errors={errors}
+                            name="fixedPoint"
+                            label="固定ポイント"
+                            type="number"
+                            icon={<DollarSign size={16} />}
+                            placeholder="例: 100"
+                          />
+                        ) : (
+                          <div className="space-y-2">
+                            <Label htmlFor="pointRate" className="flex items-center gap-2">
+                              <Percent size={16} />
+                              ポイント付与率 (%)
+                            </Label>
+                            <Input
+                              id="pointRate"
+                              type="number"
+                              placeholder="例: 5 (5%)"
+                              step="1"
+                              min="0"
+                              max="100"
+                              value={
+                                watch('pointRate') !== undefined ? watch('pointRate') || 0 : ''
+                              }
+                              onChange={(e) => {
+                                const percentValue = parseFloat(e.target.value);
+                                if (!isNaN(percentValue)) {
+                                  setValue('pointRate', percentValue, {
+                                    shouldValidate: true,
+                                    shouldDirty: true,
+                                  });
+                                } else {
+                                  setValue('pointRate', undefined, {
+                                    shouldValidate: true,
+                                    shouldDirty: true,
+                                  });
+                                }
+                              }}
+                            />
+                            {errors.pointRate && (
+                              <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle size={14} />
+                                {errors.pointRate.message as string}
+                              </p>
+                            )}
+                          </div>
+                        )}
 
                         <div className="space-y-2">
                           <Label htmlFor="expiration" className=" font-medium">
@@ -373,6 +356,17 @@ export default function PointTabs() {
                               {POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)
                                 ?.label || POINT_EXPIRATION_DAYS[0].label}
                             </span>
+                          </p>
+                          <p className="text-sm pt-4 w-full text-end text-slate-700 ">
+                            本日付与された場合、有効期限{' '}
+                            {new Date(
+                              Date.now() + watchedExpirationDays * 24 * 60 * 60 * 1000
+                            ).toLocaleDateString('ja-JP', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                            })}
+                            です。
                           </p>
                         </div>
 
