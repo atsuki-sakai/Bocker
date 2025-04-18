@@ -10,6 +10,10 @@ interface SectionContainerProps {
     text: string;
     link: string;
   };
+  subBtn?: {
+    text: string;
+    link: string;
+  };
 }
 
 export default function DashboardSection({
@@ -18,6 +22,7 @@ export default function DashboardSection({
   backLink,
   backLinkTitle,
   infoBtn,
+  subBtn,
 }: SectionContainerProps) {
   return (
     <div className="container mx-auto">
@@ -33,13 +38,19 @@ export default function DashboardSection({
           </div>
           <h1 className="text-xl md:text-3xl font-bold">{title}</h1>
         </div>
-        {infoBtn && (
-          <Button asChild className="text-xs md:text-base">
-            <Link href={infoBtn.link}>{infoBtn.text}</Link>
-          </Button>
-        )}
+        <div className="flex flex-col md:flex-row gap-2">
+          {infoBtn && (
+            <Button asChild className="text-xs md:text-base">
+              <Link href={infoBtn.link}>{infoBtn.text}</Link>
+            </Button>
+          )}
+          {subBtn && (
+            <Button asChild className="text-xs md:text-base">
+              <Link href={subBtn.link}>{subBtn.text}</Link>
+            </Button>
+          )}
+        </div>
       </div>
-
       {children}
     </div>
   );
