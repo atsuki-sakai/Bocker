@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
 import { usePathname } from 'next/navigation';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePreloadedQuery } from 'convex/react';
 import { useStaffAuth } from '@/hooks/useStaffAuth';
 import { Loading } from '@/components/common';
@@ -47,7 +47,7 @@ interface SidebarProps {
 
 export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { signOut } = useClerk();
+  const { signOut, user } = useClerk();
   const { isSignedIn } = useAuth();
   const salon = usePreloadedQuery(
     preloadedSalon as Preloaded<typeof api.salon.core.query.findByClerkId>
@@ -60,8 +60,6 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
     salonId,
   } = useStaffAuth();
   const pathname = usePathname(); // 現在のパスを取得
-
-  console.log('staffRole', staffRole);
 
   // オーナーかスタッフかを判定
   // スタッフ認証が存在する場合は、Clerkセッションがあってもスタッフとして扱う
@@ -163,6 +161,21 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
       requiredRole: 'admin', // オーナーのみ
     },
   ];
+
+  const [timeOut, setTimeOut] = useState(false);
+  useEffect(() => {
+    if (!timeOut && !salon) {
+      setTimeout(() => {
+        setTimeOut(true);
+      }, 5000);
+    }
+
+    if (timeOut) {
+      signOut(() => {
+        window.location.href = '/sign-in';
+      });
+    }
+  }, [salon, timeOut]);
 
   if (!salon) {
     return <Loading />;
