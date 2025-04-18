@@ -10,6 +10,10 @@ export default function StaffPage() {
         text: 'スタッフを追加',
         link: '/dashboard/staff/add',
       }}
+      subBtn={{
+        text: 'スタッフの勤務管理',
+        link: '/dashboard/staff/schedule',
+      }}
     >
       <StaffList />
     </DashboardSection>
