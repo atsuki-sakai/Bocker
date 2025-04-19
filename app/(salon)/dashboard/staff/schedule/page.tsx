@@ -32,8 +32,8 @@ import { Trash2 } from 'lucide-react';
 // 開始時間と終了時間を含む日付の型定義
 type DateWithTimes = {
   date: Date;
-  startTime: string;
-  endTime: string;
+  startTime?: string;
+  endTime?: string;
   notes?: string;
 };
 
@@ -78,11 +78,7 @@ export default function StaffSchedulePage() {
         staffId: selectedStaffId as Id<'staff'>,
         salonId: salonId as Id<'salon'>,
         dates: dateTimeSettings.map((item) => ({
-          date: item.date.toLocaleDateString('ja-JP', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-          }),
+          date: format(item.date, 'yyyy-MM-dd'),
           startTime_unix: isAllDay[item.date.toISOString()]
             ? convertHourToUnixTimestamp('00:00', item.date.toISOString())!
             : item.startTime
@@ -94,6 +90,7 @@ export default function StaffSchedulePage() {
               ? convertHourToUnixTimestamp(item.endTime, item.date.toISOString())!
               : 0,
           notes: item.notes,
+          isAllDay: isAllDay[item.date.toISOString()] ? true : false,
         })),
         type: 'holiday',
       });
@@ -138,13 +135,19 @@ export default function StaffSchedulePage() {
       // 新規設定の場合はデフォルト値（9:00-18:00）を設定
       return {
         date: date,
-        startTime: '00:00',
-        endTime: '00:00',
+        startTime: undefined,
+        endTime: undefined,
       };
     });
 
     // 日付で昇順にソート
     const sortedSettings = [...newDateTimeSettings].sort((a, b) => compareAsc(a.date, b.date));
+    // ここから追加：終日フラグをデフォルトで true に設定
+    const newAllDayMap: { [key: string]: boolean } = {};
+    sortedSettings.forEach((setting) => {
+      newAllDayMap[setting.date.toISOString()] = true;
+    });
+    setIsAllDay(newAllDayMap);
 
     setDateTimeSettings(sortedSettings);
   }, [selectedDates]);
@@ -178,6 +181,13 @@ export default function StaffSchedulePage() {
           }
         });
         const uniqueSettings = Array.from(map.values()).sort((a, b) => compareAsc(a.date, b.date));
+        // fetched schedules include isAllDay, so initialize the all-day map
+        const allDayMap: { [key: string]: boolean } = {};
+        staffSchedule.forEach((schedule) => {
+          const iso = new Date(schedule.startTime_unix!).toISOString();
+          allDayMap[iso] = !!schedule.isAllDay;
+        });
+        setIsAllDay(allDayMap);
         setSelectedDates(uniqueSettings.map((s) => s.date));
         setDateTimeSettings(uniqueSettings);
       };
@@ -318,7 +328,7 @@ export default function StaffSchedulePage() {
                                     </Label>
 
                                     <Select
-                                      value={setting.startTime}
+                                      value={setting.startTime ?? undefined}
                                       onValueChange={(value) =>
                                         handleTimeChange(index, 'startTime', value)
                                       }
@@ -356,7 +366,8 @@ export default function StaffSchedulePage() {
                                         {timeOptions
                                           .filter(
                                             (t) =>
-                                              timeToMinutes(t) > timeToMinutes(setting.startTime)
+                                              timeToMinutes(t) >
+                                              timeToMinutes(setting.startTime ?? '')
                                           )
                                           .map((time) => (
                                             <SelectItem key={time} value={time}>
