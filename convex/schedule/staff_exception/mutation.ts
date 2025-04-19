@@ -24,6 +24,7 @@ export const add = mutation({
     endTime_unix: v.optional(v.number()),
     notes: v.optional(v.string()),
     type: v.optional(staffScheduleType),
+    isAllDay: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -68,6 +69,7 @@ export const update = mutation({
     endTime_unix: v.optional(v.number()),
     notes: v.optional(v.string()),
     type: v.optional(staffScheduleType),
+    isAllDay: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -116,6 +118,7 @@ export const upsert = mutation({
     endTime_unix: v.optional(v.number()),
     notes: v.optional(v.string()),
     type: v.optional(staffScheduleType),
+    isAllDay: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -148,7 +151,6 @@ export const kill = mutation({
   },
 });
 
-
 export const upsertSchedules = mutation({
   args: {
     staffId: v.id('staff'),
@@ -159,6 +161,7 @@ export const upsertSchedules = mutation({
         startTime_unix: v.number(),
         endTime_unix: v.number(),
         notes: v.optional(v.string()),
+        isAllDay: v.optional(v.boolean()),
       })
     ),
     type: v.optional(staffScheduleType),
@@ -223,6 +226,7 @@ export const upsertSchedules = mutation({
             endTime_unix: date.endTime_unix,
             type: args.type,
             notes: date.notes,
+            isAllDay: date.isAllDay,
             isArchive: false, // 念のためisArchiveをfalseに設定
           });
         } else {
@@ -235,6 +239,7 @@ export const upsertSchedules = mutation({
             endTime_unix: date.endTime_unix,
             type: args.type,
             notes: date.notes,
+            isAllDay: date.isAllDay,
             isArchive: false,
           });
         }
