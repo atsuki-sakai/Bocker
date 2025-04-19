@@ -5,7 +5,8 @@ import { reservationStatusType } from '@/services/convex/shared/types/common';
 import { validateReservation, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { ConvexCustomError } from '@/services/convex/shared/utils/error';
-
+import { stream, mergedStream } from 'convex-helpers/server/stream';
+import { canScheduling } from '@/lib/schedule';
 // 顧客IDから予約一覧を取得
 export const findByCustomerId = query({
   args: {
@@ -26,11 +27,21 @@ export const findByCustomerId = query({
           .eq('customerId', args.customerId)
           .eq('isArchive', args.includeArchive || false)
       )
-      .order(args.sort || 'desc')
+      .order(args.sort || 'asc')
       .paginate(args.paginationOpts);
   },
 });
 
+export const getById = query({
+  args: {
+    reservationId: v.id('reservation'),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+
+    return await ctx.db.get(args.reservationId);
+  },
+});
 // スタッフIDから予約一覧を取得
 export const findByStaffId = query({
   args: {
@@ -67,13 +78,36 @@ export const findBySalonId = query({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateReservation(args);
-    return await ctx.db
+
+    const reservations = await ctx.db
       .query('reservation')
       .withIndex('by_salon_id', (q) =>
         q.eq('salonId', args.salonId).eq('isArchive', args.includeArchive || false)
       )
       .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
+
+    return reservations;
+  },
+});
+
+export const findBySalonIdAndStaffId = query({
+  args: {
+    salonId: v.id('salon'),
+    staffId: v.id('staff'),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const reservations = await ctx.db
+      .query('reservation')
+      .withIndex('by_staff_id', (q) =>
+        q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+      )
+      .filter((q) => q.gt(q.field('startTime_unix'), Date.now() / 1000))
+      .order('desc')
+      .paginate(args.paginationOpts);
+
+    return reservations;
   },
 });
 
@@ -651,6 +685,211 @@ export const getAvailableTimeSlots = query({
       );
     }
     return { timeSlots: availableTimeSlots };
+  },
+});
+
+// FIXME: 予約可能かの判定
+export const checkAvailableTimeSlot = query({
+  args: {
+    salonId: v.id('salon'),
+    staffId: v.id('staff'),
+    date: v.string(),
+    startTime: v.number(),
+    endTime: v.number(),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+    validateRequired(args.date, '予約日');
+
+    // 日付オブジェクトの作成と曜日の取得
+    const targetDate = new Date(args.date);
+    if (isNaN(targetDate.getTime())) {
+      throw new ConvexCustomError('low', '無効な日付形式です', 'INVALID_ARGUMENT', 400);
+    }
+    const dayOfWeek = getDayOfWeek(targetDate);
+
+    // 1. サロンの営業時間チェック
+    const salonSchedule = await ctx.db
+      .query('salon_week_schedule')
+      .withIndex('by_salon_week_is_open_day_of_week', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('dayOfWeek', dayOfWeek)
+          .eq('isOpen', true)
+          .eq('isArchive', false)
+      )
+      .first();
+
+    if (!salonSchedule) {
+      console.log(`サロンは${dayOfWeek}曜日は営業していません`);
+      return false;
+    }
+
+    if (!salonSchedule.startHour || !salonSchedule.endHour) {
+      console.log(`サロンの${dayOfWeek}曜日の営業時間が設定されていません`);
+      return false;
+    }
+
+    // サロン営業時間をUNIXタイムスタンプに変換
+    const [startH, startM] = salonSchedule.startHour.split(':').map(Number);
+    const [endH, endM] = salonSchedule.endHour.split(':').map(Number);
+
+    const year = targetDate.getFullYear();
+    const month = targetDate.getMonth();
+    const day = targetDate.getDate();
+
+    const salonOpenTime = new Date(year, month, day, startH, startM, 0).getTime() / 1000;
+    const salonCloseTime = new Date(year, month, day, endH, endM, 0).getTime() / 1000;
+
+    // 予約時間がサロンの営業時間外かチェック
+    if (args.startTime < salonOpenTime || args.endTime > salonCloseTime) {
+      console.log('予約時間がサロンの営業時間外です');
+      return false;
+    }
+
+    // 2. サロンの臨時休業日をチェック
+    const salonException = await ctx.db
+      .query('salon_schedule_exception')
+      .withIndex('by_salon_date_type', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('date', args.date)
+          .eq('type', 'holiday')
+          .eq('isArchive', false)
+      )
+      .first();
+
+    if (salonException) {
+      console.log('サロンの臨時休業日です');
+      return false;
+    }
+
+    // 3. スタッフの営業時間をチェック
+    const staffSchedule = await ctx.db
+      .query('staff_week_schedule')
+      .withIndex('by_salon_staff_week_is_open', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('staffId', args.staffId)
+          .eq('dayOfWeek', dayOfWeek)
+          .eq('isOpen', true)
+          .eq('isArchive', false)
+      )
+      .first();
+
+    // スタッフが当日営業しているかチェック
+    if (staffSchedule) {
+      if (staffSchedule.startHour && staffSchedule.endHour) {
+        // スタッフの営業時間をUNIXタイムスタンプに変換
+        const [staffStartH, staffStartM] = staffSchedule.startHour.split(':').map(Number);
+        const [staffEndH, staffEndM] = staffSchedule.endHour.split(':').map(Number);
+
+        const staffOpenTime =
+          new Date(year, month, day, staffStartH, staffStartM, 0).getTime() / 1000;
+        const staffCloseTime = new Date(year, month, day, staffEndH, staffEndM, 0).getTime() / 1000;
+
+        // 予約時間がスタッフの営業時間外かチェック
+        if (args.startTime < staffOpenTime || args.endTime > staffCloseTime) {
+          console.log('予約時間がスタッフの営業時間外です');
+          return false;
+        }
+      }
+    } else {
+      // スタッフが営業日でない場合、サロンのデフォルト営業時間を使用するか確認
+      const staffDefault = await ctx.db
+        .query('staff_week_schedule')
+        .withIndex('by_salon_id_staff_id_day_of_week', (q) =>
+          q
+            .eq('salonId', args.salonId)
+            .eq('staffId', args.staffId)
+            .eq('dayOfWeek', dayOfWeek)
+            .eq('isArchive', false)
+        )
+        .first();
+
+      // スタッフのその曜日のスケジュールが存在して、isOpenがfalseの場合は予約不可
+      if (staffDefault && staffDefault.isOpen === false) {
+        console.log(`スタッフは${dayOfWeek}曜日は勤務していません`);
+        return false;
+      }
+    }
+
+    // 4. スタッフの休日や予定をチェック
+    // 休日チェック
+    const staffHoliday = await ctx.db
+      .query('staff_schedule')
+      .withIndex('by_salon_staff_date_type', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('staffId', args.staffId)
+          .eq('date', args.date)
+          .eq('type', 'holiday')
+          .eq('isArchive', false)
+      )
+      .first();
+
+    if (staffHoliday && staffHoliday.isAllDay) {
+      console.log('スタッフは当日休日です');
+      return false;
+    }
+
+    // 5. スタッフの既存の予約や予定をチェック
+    // 予約チェック
+    const existingReservations = await ctx.db
+      .query('reservation')
+      .withIndex('by_staff_id', (q) =>
+        q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+      )
+      .filter((q) =>
+        q.and(
+          q.or(q.eq(q.field('status'), 'confirmed'), q.eq(q.field('status'), 'pending')),
+          // 予約時間と重複するかどうかをチェック
+          q.lt(q.field('startTime_unix'), args.endTime),
+          q.gt(q.field('endTime_unix'), args.startTime)
+        )
+      )
+      .collect();
+
+    if (existingReservations.length > 0) {
+      console.log(
+        '既存の予約と重複しています',
+        existingReservations.map((r) => r._id)
+      );
+      return false;
+    }
+
+    // スタッフのその他の予定（休日以外）をチェック
+    const staffSchedules = await ctx.db
+      .query('staff_schedule')
+      .withIndex('by_salon_staff_date', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('staffId', args.staffId)
+          .eq('date', args.date)
+          .eq('isArchive', false)
+      )
+      .filter((q) => q.and(q.neq(q.field('type'), 'holiday'), q.neq(q.field('isAllDay'), true)))
+      .collect();
+
+    // スタッフのスケジュールを配列に変換
+    const staffSchedulesArray = staffSchedules.map((schedule) => ({
+      start: schedule.startTime_unix!,
+      end: schedule.endTime_unix!,
+    }));
+
+    // canScheduling関数で時間の重複をチェック
+    const canSchedule = canScheduling(staffSchedulesArray, {
+      start: args.startTime,
+      end: args.endTime,
+    });
+
+    if (!canSchedule) {
+      console.log('スタッフの予定と重複しています');
+      return false;
+    }
+
+    // すべての条件を満たした場合、予約可能
+    return true;
   },
 });
 
