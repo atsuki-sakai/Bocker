@@ -201,6 +201,10 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
     staffId: staffId as Id<'staff'>,
   });
 
+  const salonWeekSchedules = useQuery(api.schedule.salon_week_schedule.query.getAllBySalonId, {
+    salonId: salonId as Id<'salon'>,
+  });
+
   const updateWeekSchedule = useMutation(
     api.schedule.staff_week_schedule.mutation.updateWeekSchedule
   );
@@ -559,7 +563,11 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                {DAYS_OF_WEEK.map((day) => {
+                {DAYS_OF_WEEK.filter((day) =>
+                  salonWeekSchedules?.some(
+                    (schedule) => schedule.dayOfWeek === day.id && schedule.isOpen === true
+                  )
+                ).map((day) => {
                   const dayId = day.id as DayOfWeek;
                   const isOpen = weekScheduleData.scheduleSettings[dayId].isOpen;
 
