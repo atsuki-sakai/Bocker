@@ -4,6 +4,7 @@ import { validateMenu, validateRequired } from '@/services/convex/shared/utils/v
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { genderType, targetType } from '@/services/convex/shared/types/common';
 import { paginationOptsValidator } from 'convex/server';
+import { Doc } from '@/convex/_generated/dataModel';
 // メニューIDからメニューを取得
 export const get = query({
   args: {
@@ -16,6 +17,49 @@ export const get = query({
   },
 });
 
+export const getDisplayByIds = query({
+  args: {
+    menuIds: v.array(v.id('menu')),
+    options: v.array(v.id('salon_option')),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+
+    // Promise.allを使用して並列に取得
+    const menus = await Promise.all(
+      args.menuIds.map(async (menuId) => {
+        return await ctx.db.get(menuId);
+      })
+    );
+
+    const options = await Promise.all(
+      args.options.map(async (optionId) => {
+        return await ctx.db.get(optionId);
+      })
+    );
+
+    return {
+      menus: menus
+        .filter((menu) => menu !== null) // nullを除外
+        .map((menu) => ({
+          _id: menu._id,
+          name: menu.name,
+          unitPrice: menu.unitPrice,
+          salePrice: menu.salePrice,
+          timeToMin: menu.timeToMin,
+        })),
+      options: options
+        .filter((option) => option !== null) // nullを除外
+        .map((option) => ({
+          _id: option._id,
+          name: option.name,
+          unitPrice: option.unitPrice,
+          salePrice: option.salePrice,
+          timeToMin: option.timeToMin,
+        })),
+    };
+  },
+});
 // サロンIDからメニュー一覧を取得
 export const listBySalonId = query({
   args: {
