@@ -1,3 +1,6 @@
+// スケジュール関連の関数
+// /app/lib/schedule.ts
+
 /**
  * 現在のUnixタイムスタンプを取得
  * @param addHours 加算する時間
@@ -5,6 +8,66 @@
  */
 export function getCurrentUnixTime(addHours?: number) {
   return addHours ? Math.floor(Date.now() / 1000) + addHours * 3600 : Math.floor(Date.now() / 1000);
+}
+
+export function getDayOfWeek(date: Date, ja: boolean = false): string {
+  switch (date.getDay()) {
+    case 0:
+      return ja ? '日曜日' : 'sunday';
+    case 1:
+      return ja ? '月曜日' : 'monday';
+    case 2:
+      return ja ? '火曜日' : 'tuesday';
+    case 3:
+      return ja ? '水曜日' : 'wednesday';
+    case 4:
+      return ja ? '木曜日' : 'thursday';
+    case 5:
+      return ja ? '金曜日' : 'friday';
+    case 6:
+      return ja ? '土曜日' : 'saturday';
+    default:
+      return ja ? '日曜日' : 'sunday';
+  }
+}
+
+export function convertDayOfWeekToJa(dayOfWeek: string): string {
+  let week: string;
+  switch (dayOfWeek) {
+    case 'monday':
+      week = '月曜日';
+      break;
+    case 'tuesday':
+      week = '火曜日';
+      break;
+    case 'wednesday':
+      week = '水曜日';
+      break;
+    case 'thursday':
+      week = '木曜日';
+      break;
+    case 'friday':
+      week = '金曜日';
+      break;
+    case 'saturday':
+      week = '土曜日';
+      break;
+    case 'sunday':
+      week = '日曜日';
+      break;
+    default:
+      week = '日曜日';
+      break;
+  }
+  return week;
+}
+
+// utils/time.ts
+export function formatJpTime(unixSec: number) {
+  return new Date(unixSec * 1000 - 9 * 3600 * 1000).toLocaleTimeString('ja-JP', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 /**
