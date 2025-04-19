@@ -57,6 +57,7 @@ import {
 const schemaReservation = z.object({
   customerId: z.string().optional(), // 顧客ID
   staffId: z.string().optional(), // スタッフID
+  staffName: z.string().optional(), // スタッフ名
   menuIds: z.preprocess(preprocessStringArray, z.array(z.string())).optional(), // メニューID（複数選択可能に変更）
   salonId: z.string().optional(), // サロンID
   optionIds: z.preprocess(preprocessStringArray, z.array(z.string())).optional(), // オプションID（カンマ区切り → 配列）
@@ -89,6 +90,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 type AvailableStaff = {
   _id: Id<'staff'>;
   name: string;
+  staffName: string;
   age: number;
   email: string;
   gender: Gender;
@@ -185,6 +187,7 @@ export default function ReservationForm() {
     reset({
       customerId: undefined, // 顧客ID
       staffId: undefined, // スタッフID
+      staffName: undefined, // スタッフ名
       menuIds: [], // メニューID（複数）
       salonId: salonId, // サロンID
       status: 'pending', // 予約ステータス
@@ -423,6 +426,7 @@ export default function ReservationForm() {
         status: 'confirmed',
         unitPrice: data.unitPrice as number,
         staffId: data.staffId as Id<'staff'>,
+        staffName: selectStaff?.name ?? undefined,
         couponId: data.couponId as Id<'coupon'>,
         usePoints: data.usePoints as number,
         notes: data.notes as string,
@@ -430,7 +434,7 @@ export default function ReservationForm() {
         totalPrice: data.totalPrice as number,
         optionIds: data.optionIds?.map((id) => id as Id<'salon_option'>),
       });
-      toast.success('予約が完了しました' + JSON.stringify(data));
+      toast.success('予約が完了しました');
       router.push('/dashboard/reservation');
     } catch (error) {
       console.error('予約作成エラー:', error);
@@ -712,14 +716,14 @@ export default function ReservationForm() {
             <div className="mt-4">
               <Label>予約可能時間</Label>
               {availableTimeSlots.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-2">
+                <div className="grid grid-cols-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1 mt-2">
                   {availableTimeSlots.map((slot, index) => (
                     <button
                       key={index}
                       type="button"
-                      className={`py-2 px-4 text-sm font-medium rounded-md border hover:bg-opacity-50 ${
+                      className={`flex items-center justify-center py-2 px-4 text-sm font-medium rounded-md border  ${
                         watch('startTime_unix') === slot.startTime
-                          ? 'bg-green-100 text-green-600 hover:bg-green-600'
+                          ? 'bg-slate-600 text-white'
                           : 'border-slate-300 '
                       }`}
                       onClick={() => {
@@ -728,8 +732,10 @@ export default function ReservationForm() {
                         setValue('endTime_unix', slot.endTime);
                       }}
                     >
-                      {slot.startTimeFormatted}
-                      {slot.endTimeFormatted && <span>〜 {slot.endTimeFormatted}</span>}
+                      <p className="text-xs text-balance">
+                        {slot.startTimeFormatted && <span>{slot.startTimeFormatted}</span>}
+                        {slot.endTimeFormatted && <span> 〜 {slot.endTimeFormatted}</span>}
+                      </p>
                     </button>
                   ))}
                 </div>
@@ -834,11 +840,11 @@ export default function ReservationForm() {
         <div className="relative flex justify-between items-center gap-4 pt-3">
           {selectdate ? (
             <p className="absolute -top-2 left-0 text-sm text-slate-500">
-              <span className="text-slate-700 text-xs">予約日</span>{' '}
-              <span className="text-slate-500 text-sm tracking-wide">
-                {format(selectdate, 'yyyy/MM/dd')}
+              <span className="text-slate-500 text-xs font-bold tracking-wide">
+                {format(selectdate, 'yyyy年MM月dd日')}
               </span>
-              <span className="text-slate-500 text-sm tracking-wide ml-4">
+              <span className="text-slate-500 text-sm font-bold tracking-wide ml-4">
+                <span className="text-slate-500 text-xs font-normal">施術時刻 </span>
                 {watch('startTime_unix') && watch('endTime_unix') ? (
                   <>
                     {formatJpTime(watch('startTime_unix')!)}
@@ -852,7 +858,7 @@ export default function ReservationForm() {
 
           <div>
             <Label>合計金額</Label>
-            <p className="text-lg font-bold">¥{totalPriceCalculated}</p>
+            <p className="text-lg font-bold">¥{totalPriceCalculated.toLocaleString()}</p>
           </div>
           <div>
             <Label>所要時間</Label>
