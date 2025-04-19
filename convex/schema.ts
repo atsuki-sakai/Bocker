@@ -213,6 +213,7 @@ export default defineSchema({
     endTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
     notes: v.optional(v.string()), // メモ
     type: v.optional(staffScheduleType), // タイプ
+    isAllDay: v.optional(v.boolean()), // 全日フラグ
     ...CommonFields,
   })
     .index('by_staff_id', ['staffId', 'isArchive'])
@@ -438,9 +439,9 @@ export default defineSchema({
   // =====================
   // 最大保存期間は1~2年間
   reservation: defineTable({
-    customerId: v.id('customer'), // 顧客ID
+    customerId: v.optional(v.id('customer')), // 顧客ID
     staffId: v.id('staff'), // スタッフID
-    menuId: v.id('menu'), // メニューID
+    menuIds: v.optional(v.array(v.id('menu'))), // メニューID
     salonId: v.id('salon'), // サロンID
     optionIds: v.optional(v.array(v.id('salon_option'))), // オプションID
     unitPrice: v.optional(v.number()), // 単価
@@ -458,7 +459,6 @@ export default defineSchema({
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_customer_id', ['salonId', 'customerId', 'isArchive'])
     .index('by_staff_id', ['salonId', 'staffId', 'isArchive'])
-    .index('by_menu_id', ['salonId', 'menuId', 'isArchive'])
     .index('by_status', ['salonId', 'status', 'isArchive'])
     .index('by_salon_date', ['salonId', 'startTime_unix', 'isArchive'])
     .index('by_staff_date', ['salonId', 'staffId', 'startTime_unix', 'isArchive'])
