@@ -7,6 +7,30 @@ import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 import { genderType } from '@/services/convex/shared/types/common';
 
+// サロンIDとメールアドレスからスタッフを取得
+export const getById = query({
+  args: {
+    id: v.id('staff'),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+    const staff = await ctx.db.get(args.id);    
+    if (!staff) {
+      const err = new ConvexCustomError(
+        'low',
+        '指定されたスタッフが存在しません',
+        'NOT_FOUND',
+        404,
+        {
+          ...args,
+        }
+      );
+      throw err;
+    }
+    return staff;
+  },
+});
+
 // サロンIDからスタッフ一覧を取得
 export const getStaffListBySalonId = query({
   args: {
@@ -16,7 +40,7 @@ export const getStaffListBySalonId = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true);
     validateStaff(args);
     return await ctx.db
       .query('staff')
