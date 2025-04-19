@@ -213,8 +213,6 @@ export default function WeekHourSchedule() {
   });
   // 初期データ保存と変更検知用
   const [initialScheduleData, setInitialScheduleData] = useState<WeekScheduleData | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
-
   // すでに登録されているデータを取得
   const salonWeekSchedules = useQuery(
     api.schedule.salon_week_schedule.query.getAllBySalonId,
@@ -328,9 +326,6 @@ export default function WeekHourSchedule() {
         commonStartHour: weekScheduleData.commonStartHour,
         commonEndHour: weekScheduleData.commonEndHour,
       });
-      const initialJson = stableStringify(parsedInitial);
-      const currentJson = stableStringify(parsedCurrent);
-      setIsDirty(initialJson !== currentJson);
     }
   }, [weekScheduleData, initialScheduleData]);
 
@@ -852,7 +847,7 @@ export default function WeekHourSchedule() {
                     size="lg"
                     className="min-w-[120px]"
                     onClick={handleSubmit(onSubmit)}
-                    disabled={!isDirty || isSaving}
+                    disabled={isSaving}
                   >
                     {isSaving ? (
                       <>
