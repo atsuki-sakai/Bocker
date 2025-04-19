@@ -123,6 +123,7 @@ export default function StaffEditForm() {
   const { staff_id } = useParams();
   const { salon } = useSalon();
   const [selectedExclusionMenuIds, setSelectedExclusionMenuIds] = useState<Id<'menu'>[]>([]);
+  const [exclusionInitialized, setExclusionInitialized] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeletingImage, setIsDeletingImage] = useState(false);
@@ -346,14 +347,11 @@ export default function StaffEditForm() {
   };
 
   useEffect(() => {
-    if (
-      exclusionMenus &&
-      selectedExclusionMenuIds.length === 0 &&
-      initialExclusionMenus.length > 0
-    ) {
-      setSelectedExclusionMenuIds([...initialExclusionMenus.map((menu) => menu.menuId)]);
+    if (!exclusionInitialized && exclusionMenus) {
+      setSelectedExclusionMenuIds(initialExclusionMenus.map((menu) => menu.menuId));
+      setExclusionInitialized(true);
     }
-  }, [exclusionMenus, initialExclusionMenus, selectedExclusionMenuIds.length]);
+  }, [exclusionMenus, initialExclusionMenus, exclusionInitialized]);
 
   useEffect(() => {
     if (!staffAllData) return;
