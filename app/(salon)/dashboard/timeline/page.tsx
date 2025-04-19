@@ -6,7 +6,7 @@ import { DashboardSection } from '@/components/common';
 import { useSalon } from '@/hooks/useSalon';
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import { api } from '@/convex/_generated/api';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import {
   startOfWeek as startOfWeekFns,
   endOfWeek as endOfWeekFns,
@@ -97,7 +97,7 @@ export default function TimelinePage() {
     return days;
   };
 
-  const daysOfWeek = getDaysOfWeek();
+  const daysOfWeek = useMemo(() => getDaysOfWeek(), [startOfWeek]);
 
   // 画面サイズの変更を監視
   useEffect(() => {
@@ -125,7 +125,7 @@ export default function TimelinePage() {
   // 日付変更時に選択日も更新
   useEffect(() => {
     setSelectedDate(daysOfWeek[0]);
-  }, [currentDate, daysOfWeek]);
+  }, [daysOfWeek]);
 
   // 予約データの更新
   useEffect(() => {
