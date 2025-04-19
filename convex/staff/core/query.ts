@@ -1,3 +1,4 @@
+import { dayOfWeekType } from './../../../services/convex/shared/types/common';
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { paginationOptsValidator } from 'convex/server';
@@ -5,6 +6,7 @@ import { validateStaff } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 import { genderType } from '@/services/convex/shared/types/common';
+
 // サロンIDからスタッフ一覧を取得
 export const getStaffListBySalonId = query({
   args: {
@@ -279,3 +281,47 @@ export const findAvailableStaffByMenu = query({
   },
 });
 
+export const findSchedule = query({
+  args: {
+    staffId: v.id('staff'),
+    salonId: v.id('salon'),
+    dayOfWeek: v.optional(dayOfWeekType),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx, true);
+    validateStaff(args);
+    const staffSchedules = await ctx.db
+      .query('staff_schedule')
+      .withIndex('by_salon_staff_id', (q) =>
+        q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+      )
+      .collect();
+    const weekSchedule = await ctx.db
+      .query('staff_week_schedule')
+      .withIndex('by_salon_id_staff_id_day_of_week', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('staffId', args.staffId)
+          .eq('dayOfWeek', args.dayOfWeek)
+          .eq('isArchive', false)
+      )
+      .first();
+    return {
+      schedules: staffSchedules
+        .sort((a, b) => (a.startTime_unix ?? 0) - (b.startTime_unix ?? 0))
+        .map((schedule) => ({
+          type: schedule.type,
+          date: schedule.date,
+          startTime_unix: schedule.startTime_unix,
+          endTime_unix: schedule.endTime_unix,
+          isAllDay: schedule.isAllDay ?? false,
+        })),
+      week: {
+        dayOfWeek: weekSchedule?.dayOfWeek,
+        isOpen: weekSchedule?.isOpen,
+        startHour: weekSchedule?.startHour,
+        endHour: weekSchedule?.endHour,
+      },
+    };
+  },
+});
