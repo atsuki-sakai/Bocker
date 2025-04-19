@@ -1,8 +1,13 @@
+// 予約作成画面
+// /app/(salon)/dashboard/reservation/add/ReservationForm.tsx
+
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { ja } from 'date-fns/locale';
-
+import { getDayOfWeek, convertDayOfWeekToJa, formatJpTime } from '@/lib/schedule';
+import { PaymentMethod } from '@/services/convex/shared/types/common';
 // 入力値を数値または undefined に変換するプリプロセス関数
 const preprocessNumber = (val: unknown) => {
   if (typeof val === 'string' && val.trim() === '') return undefined;
@@ -28,19 +33,23 @@ const preprocessStringArray = (val: unknown) => {
 import * as React from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
-
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { Loader2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useZodForm } from '@/hooks/useZodForm';
 import { useSalon } from '@/hooks/useSalon';
 import { ZodTextField } from '@/components/common';
 import { Loading } from '@/components/common';
 import { Button } from '@/components/ui/button';
-
+import Image from 'next/image';
+import { DayOfWeek } from '@/services/convex/shared/types/common';
+import { toast } from 'sonner';
+import { useMutation } from 'convex/react';
 import {
   RESERVATION_STATUS_VALUES,
   PAYMENT_METHOD_VALUES,
@@ -48,7 +57,7 @@ import {
 const schemaReservation = z.object({
   customerId: z.string().optional(), // 顧客ID
   staffId: z.string().optional(), // スタッフID
-  menuId: z.string().optional(), // メニューID
+  menuIds: z.preprocess(preprocessStringArray, z.array(z.string())).optional(), // メニューID（複数選択可能に変更）
   salonId: z.string().optional(), // サロンID
   optionIds: z.preprocess(preprocessStringArray, z.array(z.string())).optional(), // オプションID（カンマ区切り → 配列）
   unitPrice: z.preprocess(preprocessNumber, z.number()).optional(), // 単価
@@ -63,7 +72,7 @@ const schemaReservation = z.object({
   paymentMethod: z.preprocess(preprocessEmptyString, z.enum(PAYMENT_METHOD_VALUES)).optional(), // 支払い方法
 });
 
-import { usePaginatedQuery } from 'convex/react';
+import { usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import {
   Select,
@@ -73,10 +82,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { fetchQuery } from 'convex/nextjs';
-import { useState } from 'react';
 import { Id } from '@/convex/_generated/dataModel';
 import { Textarea } from '@/components/ui/textarea';
 import { Gender } from '@/services/convex/shared/types/common';
+import { Checkbox } from '@/components/ui/checkbox';
 type AvailableStaff = {
   _id: Id<'staff'>;
   name: string;
@@ -91,11 +100,39 @@ type AvailableStaff = {
 
 export default function ReservationForm() {
   const { salonId, salon } = useSalon();
-
-  const [selectedMenuId, setSelectedMenuId] = useState<Id<'menu'> | null>(null);
+  const router = useRouter();
+  // 複数選択に対応するためにstateを配列に変更
+  const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null);
   const [selectdate, setSelectDate] = useState<Date | null>(null);
+  const [staffSchedule, setStaffSchedule] = useState<{
+    schedules: {
+      type: 'holiday' | 'other' | 'reservation' | undefined;
+      date: string | undefined;
+      startTime_unix: number | undefined;
+      endTime_unix: number | undefined;
+      isAllDay: boolean | undefined;
+    }[];
+    week: {
+      dayOfWeek: DayOfWeek;
+      isOpen: boolean;
+      startHour: string;
+      endHour: string;
+    } | null;
+  } | null>(null);
+  const [selectedOptionIds, setSelectedOptionIds] = useState<Id<'salon_option'>[]>([]);
   const [availableStaff, setAvailableStaff] = useState<AvailableStaff[]>([]);
+  const [isLoadingStaff, setIsLoadingStaff] = useState<boolean>(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const scheduleConfig = useQuery(
+    api.salon.schedule.query.findBySalonId,
+    salonId
+      ? {
+          salonId: salonId,
+        }
+      : 'skip'
+  );
+
   const { results: menus } = usePaginatedQuery(
     api.menu.core.query.listBySalonId,
     salonId
@@ -118,6 +155,17 @@ export default function ReservationForm() {
     { initialNumItems: 100 }
   );
 
+  const salonWeekSchedules = useQuery(
+    api.schedule.salon_week_schedule.query.getAllBySalonId,
+    salonId
+      ? {
+          salonId: salonId,
+        }
+      : 'skip'
+  );
+
+  const createReservation = useMutation(api.reservation.mutation.create);
+
   const {
     register,
     handleSubmit,
@@ -127,12 +175,17 @@ export default function ReservationForm() {
     watch,
   } = useZodForm(schemaReservation);
 
+  // 時間スロットの状態を追加
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<
+    { startTime: number; endTime: number; startTimeFormatted: string; endTimeFormatted?: string }[]
+  >([]);
+
   useEffect(() => {
     if (!salonId) return;
     reset({
-      customerId: 'customer_id', // 顧客ID
-      staffId: '', // スタッフID
-      menuId: '', // メニューID
+      customerId: undefined, // 顧客ID
+      staffId: undefined, // スタッフID
+      menuIds: [], // メニューID（複数）
       salonId: salonId, // サロンID
       status: 'pending', // 予約ステータス
       optionIds: [], // オプションID
@@ -144,40 +197,269 @@ export default function ReservationForm() {
       couponId: undefined, // クーポンID
       featuredHairimgPath: undefined, // 顧客が希望する髪型の画像ファイルパス
       notes: undefined, // 備考
-      paymentMethod: undefined, // 支払い方法
+      paymentMethod: 'cash', // 支払い方法
     });
   }, [salonId, reset]);
 
   useEffect(() => {
-    if (!selectedMenuId || !salonId) return;
-    const getAvailableStaff = async () => {
-      const getAvailableStaffs = await fetchQuery(api.staff.core.query.findAvailableStaffByMenu, {
-        salonId: salonId,
-        menuId: selectedMenuId,
-      });
-      setAvailableStaff(getAvailableStaffs as AvailableStaff[]);
-      setValue('staffId', getAvailableStaffs[0]._id);
-    };
-    getAvailableStaff();
-  }, [selectedMenuId, salonId, setAvailableStaff, setValue]);
+    if (selectedMenuIds.length === 0 || !salonId) {
+      setAvailableStaff([]);
+      return;
+    }
 
-  const onSubmit = (data: z.infer<typeof schemaReservation>) => {
-    console.log(data, errors);
-    console.log('onSubmit');
-  };
+    const getAvailableStaffForAllMenus = async () => {
+      setIsLoadingStaff(true);
+      try {
+        // 最初のメニューに対応するスタッフを取得
+        const firstMenuStaffs = (await fetchQuery(api.staff.core.query.findAvailableStaffByMenu, {
+          salonId: salonId,
+          menuId: selectedMenuIds[0],
+        })) as AvailableStaff[];
+
+        if (selectedMenuIds.length === 1) {
+          // 単一メニューの場合はそのまま設定
+          setAvailableStaff(firstMenuStaffs);
+        } else {
+          // 複数メニューの場合は、各メニューに対応するスタッフを取得して共通するスタッフを抽出
+          let eligibleStaff = [...firstMenuStaffs];
+
+          // 2番目以降のメニューについてループ
+          for (let i = 1; i < selectedMenuIds.length; i++) {
+            const menuId = selectedMenuIds[i];
+            const menuStaffs = (await fetchQuery(api.staff.core.query.findAvailableStaffByMenu, {
+              salonId: salonId,
+              menuId: menuId,
+            })) as AvailableStaff[];
+
+            // 共通するスタッフのみをフィルタリング
+            eligibleStaff = eligibleStaff.filter((staff) =>
+              menuStaffs.some((menuStaff) => menuStaff._id === staff._id)
+            );
+
+            // 共通するスタッフがいない場合は早期リターン
+            if (eligibleStaff.length === 0) break;
+          }
+
+          setAvailableStaff(eligibleStaff);
+        }
+      } catch (error) {
+        console.error('スタッフの取得中にエラーが発生しました:', error);
+        setAvailableStaff([]);
+      } finally {
+        setIsLoadingStaff(false);
+      }
+    };
+
+    getAvailableStaffForAllMenus();
+  }, [selectedMenuIds, salonId]);
+
+  useEffect(() => {
+    console.log('selectdate: ', typeof selectdate);
+    if (selectedStaffId && salonId && selectdate) {
+      const getExceptionSchedule = async () => {
+        const schedules = await fetchQuery(api.staff.core.query.findSchedule, {
+          salonId: salonId,
+          staffId: selectedStaffId,
+          dayOfWeek: getDayOfWeek(selectdate) as DayOfWeek,
+        });
+        if (schedules && schedules.week && schedules.week.dayOfWeek !== undefined) {
+          setStaffSchedule({
+            schedules: schedules.schedules,
+            week: {
+              dayOfWeek: schedules.week.dayOfWeek as DayOfWeek,
+              isOpen: !!schedules.week.isOpen,
+              startHour: schedules.week.startHour ?? '',
+              endHour: schedules.week.endHour ?? '',
+            },
+          });
+
+          // 終日予約を受け付けない日
+          const allDaySchedules = schedules.schedules.filter(
+            (schedule) => schedule.isAllDay || schedule.startTime_unix === schedule.endTime_unix
+          );
+
+          console.log('allDaySchedules: ', allDaySchedules);
+        } else {
+          setStaffSchedule({
+            schedules: schedules ? schedules.schedules : [],
+            week: null,
+          });
+        }
+      };
+      getExceptionSchedule();
+    }
+  }, [selectedStaffId, salonId, selectdate]);
+
+  // 合計所要時間 (メニューとオプションの timeToMin を合算)
+  const totalTimeMinutes = React.useMemo(() => {
+    const menuTime = selectedMenuIds.reduce((sum, id) => {
+      const menu = menus.find((m) => m._id === id);
+      return sum + (menu?.timeToMin ?? 0);
+    }, 0);
+    const optionTime = selectedOptionIds.reduce((sum, id) => {
+      const option = options.find((o) => o._id === id);
+      return sum + (option?.timeToMin ?? 0);
+    }, 0);
+    return menuTime + optionTime;
+  }, [selectedMenuIds, menus, selectedOptionIds, options]);
 
   if (!salon || !salonId) return <Loading />;
 
-  console.log('selectedMenuId: ', selectedMenuId);
-  console.log('watch menuId: ', watch('menuId'));
-  console.log('availableStaff: ', availableStaff);
+  // 選択されたメニューの合計金額 (salePrice があれば salePrice、なければ unitPrice)
+  const menuTotalPrice = React.useMemo(() => {
+    return selectedMenuIds.reduce((sum, id) => {
+      const menu = menus.find((m) => m._id === id);
+      return sum + (menu ? (menu.salePrice ?? menu.unitPrice ?? 0) : 0);
+    }, 0);
+  }, [selectedMenuIds, menus]);
 
-  console.log('selectedStaffId: ', selectedStaffId);
-  console.log('watch staffId: ', watch('staffId'));
+  // 選択されたオプションの合計金額 (salePrice があれば salePrice、なければ unitPrice)
+  const optionTotalPrice = React.useMemo(() => {
+    return selectedOptionIds.reduce((sum, id) => {
+      const option = options.find((o) => o._id === id);
+      return sum + (option ? (option.salePrice ?? option.unitPrice ?? 0) : 0);
+    }, 0);
+  }, [selectedOptionIds, options]);
 
-  console.log('selectdate: ', new Date(selectdate as Date).toLocaleDateString());
+  // スタッフ指名料
+  const extraChargePrice = React.useMemo(() => {
+    return selectedStaffId
+      ? (availableStaff.find((s) => s._id === selectedStaffId)?.extraCharge ?? 0)
+      : 0;
+  }, [selectedStaffId, availableStaff]);
+
+  // 総合計金額をフォームの totalPrice にセット
+  const totalPriceCalculated = menuTotalPrice + optionTotalPrice + extraChargePrice;
+  useEffect(() => {
+    setValue('totalPrice', totalPriceCalculated);
+    setValue('unitPrice', menuTotalPrice);
+  }, [setValue, totalPriceCalculated]);
+
+  // 日付とスタッフの変更で空き時間を取得
+  useEffect(() => {
+    const getAvailableTimeSlots = async () => {
+      if (selectedStaffId && salonId && selectdate && totalTimeMinutes) {
+        // 日付をYYYY-MM-DD形式に変換
+        const formattedDate = format(selectdate, 'yyyy-MM-dd');
+        console.log('API呼び出し - パラメータ:', {
+          salonId,
+          staffId: selectedStaffId,
+          date: formattedDate,
+          totalTimeToMin: totalTimeMinutes,
+        });
+
+        try {
+          const result = await fetchQuery(api.reservation.query.getAvailableTimeSlots, {
+            salonId: salonId,
+            staffId: selectedStaffId,
+            date: formattedDate, // ISO形式ではなくYYYY-MM-DD形式に変更
+            totalTimeToMin: totalTimeMinutes,
+          });
+
+          console.log('API呼び出し結果:', result);
+
+          if (result && result.timeSlots) {
+            setAvailableTimeSlots(result.timeSlots);
+          } else {
+            setAvailableTimeSlots([]);
+          }
+        } catch (error) {
+          console.error('空き時間取得エラー:', error);
+          setAvailableTimeSlots([]);
+        }
+      } else {
+        // 必要な情報が揃っていない場合は空にする
+        setAvailableTimeSlots([]);
+      }
+    };
+    getAvailableTimeSlots();
+  }, [selectedStaffId, salonId, selectdate, totalTimeMinutes]);
+
+  // メニュー選択を処理する関数
+  const handleMenuToggle = (menuId: Id<'menu'>, checked: boolean) => {
+    if (checked) {
+      // 選択されたメニューを追加
+      const newSelectedMenuIds = [...selectedMenuIds, menuId];
+      setSelectedMenuIds(newSelectedMenuIds);
+      setValue('unitPrice', menus.find((m) => m._id === menuId)?.unitPrice ?? 0);
+
+      setValue('menuIds', newSelectedMenuIds);
+    } else {
+      // 選択解除されたメニューを削除
+      const newSelectedMenuIds = selectedMenuIds.filter((id) => id !== menuId);
+      setSelectedMenuIds(newSelectedMenuIds);
+      setValue('menuIds', newSelectedMenuIds);
+    }
+
+    // メニュー変更時にスタッフ選択をリセット
+    setSelectedStaffId(null);
+    setValue('staffId', '');
+  };
+
+  // オプション選択を処理する関数
+  const handleOptionToggle = (optionId: Id<'salon_option'>, checked: boolean) => {
+    if (checked) {
+      // 選択されたオプションを追加
+      const newSelectedOptionIds = [...selectedOptionIds, optionId];
+      setSelectedOptionIds(newSelectedOptionIds);
+      setValue('optionIds', newSelectedOptionIds);
+    } else {
+      // 選択解除されたオプションを削除
+      const newSelectedOptionIds = selectedOptionIds.filter((id) => id !== optionId);
+      setSelectedOptionIds(newSelectedOptionIds);
+      setValue('optionIds', newSelectedOptionIds);
+    }
+  };
+
+  const onSubmit = async (data: z.infer<typeof schemaReservation>) => {
+    console.log('submit: ', data);
+
+    try {
+      await createReservation({
+        ...data,
+        customerId: data.customerId as Id<'customer'>,
+        salonId: salonId as Id<'salon'>,
+        menuIds: data.menuIds as Id<'menu'>[],
+        startTime_unix: data.startTime_unix as number,
+        endTime_unix: data.endTime_unix as number,
+        status: 'confirmed',
+        unitPrice: data.unitPrice as number,
+        staffId: data.staffId as Id<'staff'>,
+        couponId: data.couponId as Id<'coupon'>,
+        usePoints: data.usePoints as number,
+        notes: data.notes as string,
+        paymentMethod: data.paymentMethod as PaymentMethod,
+        totalPrice: data.totalPrice as number,
+        optionIds: data.optionIds?.map((id) => id as Id<'salon_option'>),
+      });
+      toast.success('予約が完了しました' + JSON.stringify(data));
+      router.push('/dashboard/reservation');
+    } catch (error) {
+      console.error('予約作成エラー:', error);
+      toast.error('予約作成に失敗しました');
+    }
+  };
+
+  const selectMenu = menus.find((menu) => menu._id === selectedMenuIds[0]);
+  const selectStaff = availableStaff.find((staff) => staff._id === selectedStaffId);
+  const selectDate = selectdate;
+  const selectOptions = options.filter((option) => selectedOptionIds.includes(option._id));
+
+  console.log('selectMenu: ', selectMenu);
+  console.log('selectStaff: ', selectStaff);
+  console.log('selectDate: ', selectDate);
+  console.log('selectOptions: ', selectOptions);
+  console.log('staffSchedule.week: ', staffSchedule?.week);
+  console.log('staffSchedule.schedules: ', staffSchedule?.schedules);
+
+  const toDate = scheduleConfig?.reservationLimitDays
+    ? new Date(
+        new Date().setDate(new Date().getDate() + (scheduleConfig.reservationLimitDays ?? 30))
+      )
+    : undefined;
+
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto relative">
       <form
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={(e) => {
@@ -188,34 +470,73 @@ export default function ReservationForm() {
       >
         <div className="flex flex-col gap-4 my-6">
           <div>
-            <Label>予約するメニュー</Label>
-            <Select
-              value={selectedMenuId ?? watch('menuId')}
-              onValueChange={(value: string | undefined) => {
-                setSelectedMenuId(value as Id<'menu'>);
-                setValue('menuId', value as Id<'menu'>);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="メニューを選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {menus.map((menu) => (
-                  <SelectItem key={menu._id} value={menu._id}>
-                    {menu.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.menuId && <p className="text-red-500 text-sm">{errors.menuId.message}</p>}
+            <Label>予約するメニュー（複数選択可）</Label>
+            <div className="mt-2 space-y-2 border p-3 rounded-md">
+              {menus.map((menu) => (
+                <div key={menu._id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`menu-${menu._id}`}
+                    checked={selectedMenuIds.includes(menu._id)}
+                    onCheckedChange={(checked) => handleMenuToggle(menu._id, checked as boolean)}
+                  />
+                  <div className="flex items-start flex-col">
+                    <label
+                      htmlFor={`menu-${menu._id}`}
+                      className="ml-1 inline-block text-sm tracking-wide font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {menu.name} / {menu.timeToMin} 分
+                    </label>
+                    <span className="inline-block text-xs text-slate-500">
+                      {menu.salePrice ? (
+                        <span className="inline-block -ml-1 text-xs text-slate-500 line-through scale-75">
+                          ￥{menu.unitPrice}
+                        </span>
+                      ) : null}
+                      <span className="inline-block">￥{menu.salePrice ?? menu.unitPrice}</span>
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {errors.menuIds && <p className="text-red-500 text-sm">{errors.menuIds.message}</p>}
           </div>
-          {selectedMenuId && availableStaff.length > 0 && (
+          {/* 選択されたメニュー表示 */}
+          {selectedMenuIds.length > 0 && (
+            <div className="bg-slate-50 p-3 rounded-md">
+              <Label className="mb-2 block">選択中のメニュー</Label>
+              <div className="flex flex-wrap gap-2">
+                {selectedMenuIds.map((menuId) => {
+                  const menu = menus.find((m) => m._id === menuId);
+                  return menu ? (
+                    <div
+                      key={menuId}
+                      className="bg-white px-3 py-1 rounded-md flex items-center gap-2 border"
+                    >
+                      <span className="text-xs">{menu.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMenuToggle(menuId, false)}
+                        className="text-slate-500 hover:text-slate-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+            </div>
+          )}
+          {isLoadingStaff ? (
+            <div className="flex items-center justify-center p-4 bg-slate-50 rounded-md">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              <span>スタッフを検索中...</span>
+            </div>
+          ) : selectedMenuIds.length > 0 && availableStaff.length > 0 ? (
             <div>
               <Label>施術するスタッフ</Label>
               <Select
                 value={watch('staffId') ?? ''}
                 onValueChange={(value: string) => {
-                  console.log('スタッフ選択:', value); // デバッグ用
                   setValue('staffId', value);
                   setSelectedStaffId(value as Id<'staff'>);
                 }}
@@ -232,29 +553,132 @@ export default function ReservationForm() {
                 </SelectContent>
               </Select>
               {errors.staffId && <p className="text-red-500 text-sm">{errors.staffId.message}</p>}
+              {selectedStaffId && (
+                <div className="flex flex-col bg-slate-100 p-3 rounded-md border border-slate-300 mt-3">
+                  <div className="flex items-center gap-2">
+                    <Image
+                      src={selectStaff?.imgPath ?? ''}
+                      alt={selectStaff?.name ?? ''}
+                      className="w-10 h-10 rounded-full"
+                      width={40}
+                      height={40}
+                    />
+                    <div className="flex flex-col">
+                      <p className="text-slate-500 font-bold text-sm">{selectStaff?.name}</p>
+                      <p className="text-slate-500 text-sm">
+                        指名料 / ¥{selectStaff?.extraCharge.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : selectedMenuIds.length > 0 ? (
+            <div className="flex flex-col bg-slate-100 p-3 rounded-md border border-slate-300">
+              <p className="text-slate-500 font-bold text-sm">
+                選択したすべてのメニューに対応できるスタッフが見つかりません。メニューの組み合わせを変更してください。
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col bg-slate-100 p-3 rounded-md border border-slate-300">
+              <p className="text-slate-500 font-bold text-sm">メニューを選択してください</p>
             </div>
           )}
-
           <div>
-            <Label>オプション</Label>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="オプションを選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map((option) => (
-                  <SelectItem key={option._id} value={option._id}>
-                    {option.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>オプション（複数選択可）</Label>
+            <div className="mt-2 space-y-2 border p-3 rounded-md">
+              {options.map((option) => (
+                <div key={option._id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`option-${option._id}`}
+                    checked={selectedOptionIds.includes(option._id)}
+                    onCheckedChange={(checked) =>
+                      handleOptionToggle(option._id, checked as boolean)
+                    }
+                  />
+                  <div>
+                    <label
+                      htmlFor={`option-${option._id}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {option.name} / {option.timeToMin} 分
+                    </label>
+                    <p className="text-slate-500 text-xs">
+                      {option.salePrice ? (
+                        <span className="inline-block -ml-1 text-xs text-slate-500 line-through scale-75">
+                          ￥{option.unitPrice}
+                        </span>
+                      ) : null}
+                      <span className="inline-block">￥{option.salePrice ?? option.unitPrice}</span>
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
             {errors.optionIds && <p className="text-red-500 text-sm">{errors.optionIds.message}</p>}
           </div>
-
+          {/* 選択されたオプション表示 */}
+          {selectedOptionIds.length > 0 && (
+            <div className="bg-slate-50 p-3 rounded-md">
+              <Label className="mb-2 block">選択中のオプション</Label>
+              <div className="flex flex-wrap gap-2">
+                {selectedOptionIds.map((optionId) => {
+                  const option = options.find((o) => o._id === optionId);
+                  return option ? (
+                    <div
+                      key={optionId}
+                      className="bg-white px-3 py-1 rounded-md flex items-center gap-2 border"
+                    >
+                      <span className="text-xs">{option.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleOptionToggle(optionId, false)}
+                        className="text-slate-500 hover:text-slate-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+            </div>
+          )}
+          {salonWeekSchedules && (
+            <div className="flex flex-col gap-2 mt-2">
+              <p className="text-slate-500 text-xs">サロンの営業日</p>
+              <div className="text-slate-500 text-xs flex flex-wrap gap-2">
+                {salonWeekSchedules
+                  .filter((day) => day.isOpen)
+                  .sort((a, b) => {
+                    // 日曜→月曜→火曜…土曜 の順序を定義
+                    const order = [
+                      'sunday',
+                      'monday',
+                      'tuesday',
+                      'wednesday',
+                      'thursday',
+                      'friday',
+                      'saturday',
+                    ];
+                    return order.indexOf(a.dayOfWeek ?? '') - order.indexOf(b.dayOfWeek ?? '');
+                  })
+                  .map((day) => {
+                    const week = convertDayOfWeekToJa(day.dayOfWeek ?? '');
+                    return (
+                      <p
+                        key={day._id}
+                        className="bg-green-100 text-green-600 border border-green-300 p-1 rounded-sm"
+                      >
+                        {week}
+                      </p>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
           <div className="flex flex-col gap-2">
             <Label>予約日</Label>
-            <Popover>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant={'outline'}
@@ -269,17 +693,55 @@ export default function ReservationForm() {
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
+                  fromDate={new Date()}
+                  toDate={toDate}
                   className="rounded-md"
                   mode="single"
                   locale={ja}
                   selected={selectdate ?? undefined}
-                  onSelect={(day) => setSelectDate(day as Date)}
+                  onSelect={(day) => {
+                    setSelectDate(day as Date);
+                    setCalendarOpen(false);
+                  }}
                 />
               </PopoverContent>
             </Popover>
           </div>
-
+          {/* 予約可能時間を表示するコンポーネント */}
+          {selectdate && selectedStaffId && selectedMenuIds.length > 0 && (
+            <div className="mt-4">
+              <Label>予約可能時間</Label>
+              {availableTimeSlots.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-2">
+                  {availableTimeSlots.map((slot, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className={`py-2 px-4 text-sm font-medium rounded-md border hover:bg-opacity-50 ${
+                        watch('startTime_unix') === slot.startTime
+                          ? 'bg-green-100 text-green-600 hover:bg-green-600'
+                          : 'border-slate-300 '
+                      }`}
+                      onClick={() => {
+                        // 予約開始時間と終了時間を設定
+                        setValue('startTime_unix', slot.startTime);
+                        setValue('endTime_unix', slot.endTime);
+                      }}
+                    >
+                      {slot.startTimeFormatted}
+                      {slot.endTimeFormatted && <span>〜 {slot.endTimeFormatted}</span>}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-slate-50 p-4 rounded-md mt-2 text-center">
+                  <p className="text-slate-500">選択した日時に空き枠がありません</p>
+                </div>
+              )}
+            </div>
+          )}{' '}
           <ZodTextField
+            ghost
             register={register}
             errors={errors}
             name="startTime_unix"
@@ -287,28 +749,117 @@ export default function ReservationForm() {
             label="開始時間 UNIXタイム"
           />
           <ZodTextField
+            ghost
             register={register}
             errors={errors}
             name="endTime_unix"
             type="number"
             label="終了時間 UNIXタイム"
           />
-
-          <ZodTextField register={register} errors={errors} name="couponId" label="クーポンID" />
-
           <Textarea {...register('notes')} placeholder="備考" className="resize-none" rows={3} />
         </div>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <span className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              予約中...
-            </span>
-          ) : (
-            '予約を作成'
-          )}
-        </Button>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* 予約詳細カード */}
+
+          {/* メニュー */}
+          <div>
+            <p className="mb-2 text-xs font-medium text-gray-600">メニュー</p>
+            <div className="flex flex-wrap gap-2">
+              {selectedMenuIds.map((menuId) => {
+                const menu = menus.find((m) => m._id === menuId);
+                return (
+                  menu && (
+                    <Badge key={menuId} variant="outline" className="px-2 py-1 text-xs">
+                      {menu.name}
+                    </Badge>
+                  )
+                );
+              })}
+            </div>
+          </div>
+
+          {/* オプション */}
+          <div>
+            <p className="mb-2 text-xs font-medium text-gray-600">オプション</p>
+            <div className="flex flex-wrap gap-2">
+              {selectedOptionIds.map((optionId) => {
+                const option = options.find((o) => o._id === optionId);
+                return (
+                  option && (
+                    <Badge key={optionId} variant="secondary" className="px-2 py-1 text-xs">
+                      {option.name}
+                    </Badge>
+                  )
+                );
+              })}
+            </div>
+          </div>
+
+          {/* スタッフカード */}
+          <div className="flex items-center gap-2">
+            <Avatar className="h-16 w-16">
+              {selectStaff?.imgPath ? (
+                <AvatarImage src={selectStaff.imgPath} alt={selectStaff.name} />
+              ) : (
+                <AvatarFallback>{selectStaff?.name.slice(0, 1)}</AvatarFallback>
+              )}
+            </Avatar>
+            <div>
+              <p className="text-lg font-medium text-gray-800">{selectStaff?.name ?? '—'}</p>
+              <p className="text-sm text-gray-500">
+                指名料：¥{selectStaff?.extraCharge.toLocaleString() ?? '0'}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end w-full">
+          <Button
+            className="w-fit mb-8"
+            type="submit"
+            disabled={isSubmitting || selectedMenuIds.length === 0 || !selectedStaffId}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                予約中...
+              </span>
+            ) : (
+              '予約を作成'
+            )}
+          </Button>
+        </div>
       </form>
+      <div className="sticky bottom-2 left-0 right-0 justify-between items-center gap-4 p-4 mt-2 bg-slate-50 rounded-md border">
+        <div className="relative flex justify-between items-center gap-4 pt-3">
+          {selectdate ? (
+            <p className="absolute -top-2 left-0 text-sm text-slate-500">
+              <span className="text-slate-700 text-xs">予約日</span>{' '}
+              <span className="text-slate-500 text-sm tracking-wide">
+                {format(selectdate, 'yyyy/MM/dd')}
+              </span>
+              <span className="text-slate-500 text-sm tracking-wide ml-4">
+                {watch('startTime_unix') && watch('endTime_unix') ? (
+                  <>
+                    {formatJpTime(watch('startTime_unix')!)}
+                    {' ~ '}
+                    {formatJpTime(watch('endTime_unix')!)}
+                  </>
+                ) : null}
+              </span>
+            </p>
+          ) : null}
+
+          <div>
+            <Label>合計金額</Label>
+            <p className="text-lg font-bold">¥{totalPriceCalculated}</p>
+          </div>
+          <div>
+            <Label>所要時間</Label>
+            <p className="text-lg font-bold">{totalTimeMinutes} 分</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
