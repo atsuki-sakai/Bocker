@@ -150,7 +150,7 @@ export default function StaffSchedulePage() {
     setIsAllDay(newAllDayMap);
 
     setDateTimeSettings(sortedSettings);
-  }, [selectedDates]);
+  }, [selectedDates, dateTimeSettings]);
 
   // スタッフ選択時の既存スケジュール取得処理
   useEffect(() => {
