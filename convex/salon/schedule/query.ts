@@ -14,3 +14,16 @@ export const findBySalonId = query({
     return await salonService.findScheduleConfigBySalonId(ctx, args.salonId);
   },
 });
+
+export const getWeekSchedule = query({
+  args: {
+    salonId: v.id('salon'),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+    return await ctx.db
+      .query('salon_week_schedule')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .collect();
+  },
+});
