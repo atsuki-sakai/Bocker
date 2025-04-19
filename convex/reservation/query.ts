@@ -72,6 +72,7 @@ export const findBySalonId = query({
   args: {
     salonId: v.id('salon'),
     paginationOpts: paginationOptsValidator,
+    status: v.optional(reservationStatusType),
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
     includeArchive: v.optional(v.boolean()),
   },
@@ -81,8 +82,11 @@ export const findBySalonId = query({
 
     const reservations = await ctx.db
       .query('reservation')
-      .withIndex('by_salon_id', (q) =>
-        q.eq('salonId', args.salonId).eq('isArchive', args.includeArchive || false)
+      .withIndex('by_status', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('status', args.status || 'confirmed')
+          .eq('isArchive', args.includeArchive || false)
       )
       .order(args.sort || 'desc')
       .paginate(args.paginationOpts);

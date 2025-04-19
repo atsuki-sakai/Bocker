@@ -7,7 +7,12 @@ import { useSalon } from '@/hooks/useSalon';
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import { api } from '@/convex/_generated/api';
 import { useRef, useState, useEffect } from 'react';
-import { startOfWeek as startOfWeekFns, endOfWeek as endOfWeekFns, format } from 'date-fns';
+import {
+  startOfWeek as startOfWeekFns,
+  endOfWeek as endOfWeekFns,
+  format,
+  isSameDay,
+} from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Id, Doc } from '@/convex/_generated/dataModel';
 import {
@@ -18,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { usePaginatedQuery } from 'convex/react';
+
 export default function TimelinePage() {
   const { salonId } = useSalon();
 
@@ -26,7 +32,14 @@ export default function TimelinePage() {
   const containerOffset = useRef<HTMLDivElement | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null);
 
+  // 現在の日付と選択された日付を管理
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+
+  // スマートフォン表示用の選択日
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  // ビューモード（週表示または日表示）
+  const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
 
   // 日本の週の始まりは月曜日なので、optionsで指定
   const startOfWeek = startOfWeekFns(currentDate, { weekStartsOn: 1 });
@@ -86,6 +99,41 @@ export default function TimelinePage() {
 
   const daysOfWeek = getDaysOfWeek();
 
+  // 画面サイズの変更を監視
+  useEffect(() => {
+    const checkScreenSize = (): void => {
+      // モバイルの場合、デフォルトで日表示に
+      if (window.innerWidth < 768) {
+        setViewMode('day');
+      } else {
+        setViewMode('week');
+      }
+    };
+
+    // 初期チェック
+    checkScreenSize();
+
+    // リサイズイベントのリスナー
+    window.addEventListener('resize', checkScreenSize);
+
+    // クリーンアップ
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+    };
+  }, []);
+
+  // 日付変更時に選択日も更新
+  useEffect(() => {
+    setSelectedDate(daysOfWeek[0]);
+  }, [currentDate, daysOfWeek]);
+
+  // 予約データの更新
+  useEffect(() => {
+    if (reservations) {
+      setCurrentReservations(reservations);
+    }
+  }, [reservations]);
+
   const renderReservations = () => {
     if (!currentReservations) return null;
 
@@ -94,13 +142,22 @@ export default function TimelinePage() {
       const startTime = new Date(reservation.startTime_unix! * 1000 - 9 * 60 * 60 * 1000);
       const endTime = new Date(reservation.endTime_unix! * 1000 - 9 * 60 * 60 * 1000);
 
-      if (startTime < startOfWeek || startTime > endOfWeek) return null;
+      // 週表示の場合は週内の予約を全て表示
+      // 日表示の場合は選択された日付の予約のみを表示
+      if (viewMode === 'week') {
+        if (startTime < startOfWeek || startTime > endOfWeek) return null;
+      } else {
+        // 選択された日付と同じ日付かどうかをチェック
+        if (!isSameDay(startTime, selectedDate)) return null;
+      }
 
       // 日本の曜日（月曜始まり）に合わせて調整
       let dayOfWeek = startTime.getDay() - 1; // 0が月曜、6が日曜
       if (dayOfWeek < 0) dayOfWeek = 6; // 日曜日の場合
 
-      const colStart = dayOfWeek + 1;
+      // 週表示のときは各曜日の列に配置
+      // 日表示のときは1列目に配置
+      const colStart = viewMode === 'week' ? dayOfWeek + 1 : 1;
 
       const hours = startTime.getHours();
       const minutes = startTime.getMinutes();
@@ -158,11 +215,42 @@ export default function TimelinePage() {
     return slots;
   };
 
-  useEffect(() => {
-    if (reservations) {
-      setCurrentReservations(reservations);
+  // 前の日/週へ移動
+  const moveToPrevious = (): void => {
+    if (viewMode === 'week') {
+      const newDate = new Date(currentDate);
+      newDate.setDate(currentDate.getDate() - 7);
+      setCurrentDate(newDate);
+    } else {
+      const newDate = new Date(selectedDate);
+      newDate.setDate(selectedDate.getDate() - 1);
+      setSelectedDate(newDate);
     }
-  }, [reservations]);
+  };
+
+  // 次の日/週へ移動
+  const moveToNext = (): void => {
+    if (viewMode === 'week') {
+      const newDate = new Date(currentDate);
+      newDate.setDate(currentDate.getDate() + 7);
+      setCurrentDate(newDate);
+    } else {
+      const newDate = new Date(selectedDate);
+      newDate.setDate(selectedDate.getDate() + 1);
+      setSelectedDate(newDate);
+    }
+  };
+
+  // 今日/今週へ移動
+  const moveToToday = (): void => {
+    setCurrentDate(new Date());
+    setSelectedDate(new Date());
+  };
+
+  // 日表示と週表示の切り替え
+  const toggleViewMode = (): void => {
+    setViewMode(viewMode === 'week' ? 'day' : 'week');
+  };
 
   return (
     <DashboardSection
@@ -173,9 +261,7 @@ export default function TimelinePage() {
       <div>
         <div className="flex h-full flex-col">
           <div className="md:hidden flex flex-col gap-2 items-end justify-end">
-            <span className="text-sm text-gray-500">選択中のスタッフ</span>
             <div className="w-fit min-w-[180px]">
-              {' '}
               <Select
                 value={selectedStaffId ?? ''}
                 onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
@@ -195,31 +281,37 @@ export default function TimelinePage() {
           </div>
           <header className="flex flex-none items-center justify-between border-b border-gray-200 md:px-6 py-4">
             <h1 className="text-sm md:text-base font-semibold text-gray-900">
-              <time
-                dateTime={`${format(startOfWeek, 'yyyy-MM-dd')}/${format(endOfWeek, 'yyyy-MM-dd')}`}
-              >
-                {format(startOfWeek, 'yyyy年MM月dd日', { locale: ja })} 〜{' '}
-                {format(endOfWeek, 'yyyy年MM月dd日', { locale: ja })}
-              </time>
+              {viewMode === 'week' ? (
+                <time
+                  dateTime={`${format(startOfWeek, 'yyyy-MM-dd')}/${format(endOfWeek, 'yyyy-MM-dd')}`}
+                >
+                  {format(startOfWeek, 'yyyy年MM月dd日', { locale: ja })}
+                  <div className="md:hidden text-end mr-2 text-gray-500 text-xs">から</div>
+                  {format(endOfWeek, 'yyyy年MM月dd日', { locale: ja })}
+                </time>
+              ) : (
+                <time dateTime={format(selectedDate, 'yyyy-MM-dd')}>
+                  {format(selectedDate, 'yyyy年MM月dd日', { locale: ja })}
+                  <div className="md:hidden ml-2 inline-block text-gray-500 text-xs">
+                    ({weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]})
+                  </div>
+                </time>
+              )}
             </h1>
             <div className="flex items-center">
               <div className="relative flex items-center rounded-md bg-white shadow-xs md:items-stretch">
                 <button
                   type="button"
                   className="flex h-9 w-12 items-center justify-center rounded-l-md border-y border-l border-gray-300 pr-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pr-0 md:hover:bg-gray-50"
-                  onClick={() => {
-                    const newDate = new Date(currentDate);
-                    newDate.setDate(currentDate.getDate() - 7);
-                    setCurrentDate(newDate);
-                  }}
+                  onClick={moveToPrevious}
                 >
-                  <span className="sr-only">前週</span>
+                  <span className="sr-only">{viewMode === 'week' ? '前週' : '前日'}</span>
                   <ChevronLeft className="size-5" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
                   className="hidden border-y border-gray-300 px-3.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:relative md:block"
-                  onClick={() => setCurrentDate(new Date())}
+                  onClick={moveToToday}
                 >
                   今日
                 </button>
@@ -227,13 +319,9 @@ export default function TimelinePage() {
                 <button
                   type="button"
                   className="flex h-9 w-12 items-center justify-center rounded-r-md border-y border-r border-gray-300 pl-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pl-0 md:hover:bg-gray-50"
-                  onClick={() => {
-                    const newDate = new Date(currentDate);
-                    newDate.setDate(currentDate.getDate() + 7);
-                    setCurrentDate(newDate);
-                  }}
+                  onClick={moveToNext}
                 >
-                  <span className="sr-only">次週</span>
+                  <span className="sr-only">{viewMode === 'week' ? '次週' : '翌日'}</span>
                   <ChevronRight className="size-5" aria-hidden="true" />
                 </button>
               </div>
@@ -270,9 +358,18 @@ export default function TimelinePage() {
                       <a
                         href="#"
                         className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
-                        onClick={() => setCurrentDate(new Date())}
+                        onClick={moveToToday}
                       >
                         今日へ移動
+                      </a>
+                    </MenuItem>
+                    <MenuItem>
+                      <a
+                        href="#"
+                        className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
+                        onClick={toggleViewMode}
+                      >
+                        {viewMode === 'day' ? '週表示に切り替え' : '日表示に切り替え'}
                       </a>
                     </MenuItem>
                   </div>
@@ -280,100 +377,163 @@ export default function TimelinePage() {
               </Menu>
             </div>
           </header>
-          <div ref={container} className="isolate flex flex-auto flex-col overflow-auto bg-white">
-            <div
-              style={{ width: '165%' }}
-              className="flex max-w-full flex-none flex-col sm:max-w-none md:max-w-full"
-            >
+          {reservations.length > 0 ? (
+            <div ref={container} className="isolate flex flex-auto flex-col overflow-auto bg-white">
               <div
-                ref={containerNav}
-                className="sticky top-0 z-30 flex-none bg-white shadow-sm ring-1 ring-black/5 sm:pr-8"
+                style={{ width: viewMode === 'week' ? '165%' : '100%' }}
+                className="flex max-w-full flex-none flex-col sm:max-w-none md:max-w-full"
               >
-                {/* 日付ヘッダー部分（モバイル） - 日本語化 */}
-                <div className="grid grid-cols-7 text-sm/6 text-gray-500 sm:hidden">
-                  {daysOfWeek.map((date, index) => {
-                    const isToday = date.toDateString() === new Date().toDateString();
-                    return (
-                      <button
-                        key={index}
-                        type="button"
-                        className="flex flex-col items-center pt-2 pb-3"
-                      >
-                        {weekDays[index]}{' '}
-                        <span
-                          className={`mt-1 flex size-8 items-center justify-center ${
-                            isToday
-                              ? 'rounded-full bg-indigo-600 font-semibold text-white'
-                              : 'font-semibold text-gray-900'
-                          }`}
-                        >
-                          {date.getDate()}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <div
+                  ref={containerNav}
+                  className="sticky top-0 z-30 flex-none bg-white shadow-sm ring-1 ring-black/5 sm:pr-8"
+                >
+                  {/* 日付ヘッダー部分（モバイル） - 日本語化 */}
+                  {viewMode === 'week' && (
+                    <div className="grid grid-cols-7 text-sm/6 text-gray-500 sm:hidden">
+                      {daysOfWeek.map((date, index) => {
+                        const isToday = date.toDateString() === new Date().toDateString();
+                        const isSelected = date.toDateString() === selectedDate.toDateString();
+                        return (
+                          <button
+                            key={index}
+                            type="button"
+                            className="flex flex-col items-center pt-2 pb-3"
+                            onClick={() => {
+                              setSelectedDate(date);
+                              setViewMode('day');
+                            }}
+                          >
+                            {weekDays[index]}{' '}
+                            <span
+                              className={`mt-1 flex size-8 items-center justify-center ${
+                                isToday
+                                  ? 'rounded-full bg-indigo-600 font-semibold text-white'
+                                  : isSelected
+                                    ? 'rounded-full bg-indigo-100 font-semibold text-indigo-600'
+                                    : 'font-semibold text-gray-900'
+                              }`}
+                            >
+                              {date.getDate()}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
 
-                {/* 日付ヘッダー部分（デスクトップ） - 日本語化 */}
-                <div className="-mr-px hidden grid-cols-7 divide-x divide-gray-100 border-r border-gray-100 text-sm/6 text-gray-500 sm:grid">
-                  <div className="col-end-1 w-14" />
-                  {daysOfWeek.map((date, index) => {
-                    const isToday = date.toDateString() === new Date().toDateString();
-                    return (
-                      <div key={index} className="flex items-center justify-center py-3">
-                        <span className={isToday ? 'flex items-baseline' : ''}>
-                          {weekDaysFull[index].substring(0, 1)}{' '}
-                          {isToday ? (
-                            <span className="ml-1.5 flex size-8 items-center justify-center rounded-full bg-indigo-600 font-semibold text-white">
-                              {date.getDate()}
-                            </span>
-                          ) : (
-                            <span className="items-center justify-center font-semibold text-gray-900">
-                              {date.getDate()}
-                            </span>
-                          )}
+                  {viewMode === 'day' && (
+                    <div className="grid grid-cols-1 text-sm/6 text-gray-500 sm:hidden">
+                      <div className="flex justify-center items-center pt-2 pb-3">
+                        <span className="font-medium">
+                          {
+                            weekDaysFull[
+                              selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1
+                            ]
+                          }
                         </span>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                    </div>
+                  )}
 
-              <div className="flex flex-auto">
-                <div className="sticky left-0 z-10 w-14 flex-none bg-white ring-1 ring-gray-100" />
-                <div className="grid flex-auto grid-cols-1 grid-rows-1">
-                  {/* 時間の行 - 24時間分に修正 */}
+                  {/* 日付ヘッダー部分（デスクトップ） - 日本語化 */}
                   <div
-                    className="col-start-1 col-end-2 row-start-1 grid divide-y divide-gray-100"
-                    style={{ gridTemplateRows: 'repeat(48, minmax(3.5rem, 1fr))' }}
+                    className={`-mr-px hidden divide-x divide-gray-100 border-r border-gray-100 text-sm/6 text-gray-500 sm:grid ${
+                      viewMode === 'week' ? 'grid-cols-7' : 'grid-cols-1'
+                    }`}
                   >
-                    <div ref={containerOffset} className="row-end-1 h-7"></div>
-                    {renderTimeSlots()}
+                    <div className="col-end-1 w-14" />
+                    {viewMode === 'week' ? (
+                      daysOfWeek.map((date, index) => {
+                        const isToday = date.toDateString() === new Date().toDateString();
+                        return (
+                          <div key={index} className="flex items-center justify-center py-3">
+                            <span className={isToday ? 'flex items-baseline' : ''}>
+                              {weekDaysFull[index].substring(0, 1)}{' '}
+                              {isToday ? (
+                                <span className="ml-1.5 flex size-8 items-center justify-center rounded-full bg-indigo-600 font-semibold text-white">
+                                  {date.getDate()}
+                                </span>
+                              ) : (
+                                <span className="items-center justify-center font-semibold text-gray-900">
+                                  {date.getDate()}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="flex items-center justify-center py-3">
+                        <span className="font-medium">
+                          {
+                            weekDaysFull[
+                              selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1
+                            ]
+                          }
+                        </span>
+                      </div>
+                    )}
                   </div>
+                </div>
 
-                  {/* gridの線 - 境界線を追加 */}
-                  <div className="col-start-1 col-end-2 row-start-1 hidden grid-cols-7 grid-rows-1 divide-x divide-gray-100 sm:grid sm:grid-cols-7">
-                    <div className="col-start-1 row-span-full border-r border-gray-100" />
-                    <div className="col-start-2 row-span-full border-r border-gray-100" />
-                    <div className="col-start-3 row-span-full border-r border-gray-100" />
-                    <div className="col-start-4 row-span-full border-r border-gray-100" />
-                    <div className="col-start-5 row-span-full border-r border-gray-100" />
-                    <div className="col-start-6 row-span-full border-r border-gray-100" />
-                    <div className="col-start-7 row-span-full border-r border-gray-100" />
-                    <div className="col-start-8 row-span-full w-8" />
+                <div className="flex flex-auto">
+                  <div className="sticky left-0 z-10 w-14 flex-none bg-white ring-1 ring-gray-100" />
+                  <div className="grid flex-auto grid-cols-1 grid-rows-1">
+                    {/* 時間の行 - 24時間分に修正 */}
+                    <div
+                      className="col-start-1 col-end-2 row-start-1 grid divide-y divide-gray-100"
+                      style={{ gridTemplateRows: 'repeat(48, minmax(3.5rem, 1fr))' }}
+                    >
+                      <div ref={containerOffset} className="row-end-1 h-7"></div>
+                      {renderTimeSlots()}
+                    </div>
+
+                    {/* gridの線 - 境界線を追加 */}
+                    <div
+                      className={`col-start-1 col-end-2 row-start-1 hidden grid-rows-1 divide-x divide-gray-100 sm:grid ${
+                        viewMode === 'week'
+                          ? 'grid-cols-7 sm:grid-cols-7'
+                          : 'grid-cols-1 sm:grid-cols-1'
+                      }`}
+                    >
+                      {viewMode === 'week' ? (
+                        <>
+                          <div className="col-start-1 row-span-full border-r border-gray-100" />
+                          <div className="col-start-2 row-span-full border-r border-gray-100" />
+                          <div className="col-start-3 row-span-full border-r border-gray-100" />
+                          <div className="col-start-4 row-span-full border-r border-gray-100" />
+                          <div className="col-start-5 row-span-full border-r border-gray-100" />
+                          <div className="col-start-6 row-span-full border-r border-gray-100" />
+                          <div className="col-start-7 row-span-full border-r border-gray-100" />
+                          <div className="col-start-8 row-span-full w-8" />
+                        </>
+                      ) : (
+                        <div className="col-start-1 row-span-full border-r border-gray-100" />
+                      )}
+                    </div>
+
+                    {/* イベント表示エリア */}
+                    <ol
+                      className={`col-start-1 col-end-2 row-start-1 grid sm:pr-8 ${
+                        viewMode === 'week'
+                          ? 'grid-cols-1 sm:grid-cols-7'
+                          : 'grid-cols-1 sm:grid-cols-1'
+                      }`}
+                      style={{ gridTemplateRows: '1.75rem repeat(576, minmax(0, 1fr)) auto' }}
+                    >
+                      {renderReservations()}
+                    </ol>
                   </div>
-
-                  {/* イベント表示エリア */}
-                  <ol
-                    className="col-start-1 col-end-2 row-start-1 grid grid-cols-1 sm:grid-cols-7 sm:pr-8"
-                    style={{ gridTemplateRows: '1.75rem repeat(576, minmax(0, 1fr)) auto' }}
-                  >
-                    {renderReservations()}
-                  </ol>
                 </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto bg-gray-50">
+              <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
+                <p className="text-gray-500">スタッフを選択して予約を表示してください。</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </DashboardSection>

@@ -166,6 +166,17 @@ export default function ReservationForm() {
       : 'skip'
   );
 
+  const salonExceptionSchedules = useQuery(
+    api.schedule.salon_exception.query.displayExceptionSchedule,
+    salonId
+      ? {
+          salonId: salonId,
+          take: 8,
+          dateString: new Date().toISOString().split('T')[0],
+        }
+      : 'skip'
+  );
+  console.log('salonExceptionSchedules: ', salonExceptionSchedules);
   const createReservation = useMutation(api.reservation.mutation.create);
 
   const {
@@ -536,8 +547,8 @@ export default function ReservationForm() {
               <span>スタッフを検索中...</span>
             </div>
           ) : selectedMenuIds.length > 0 && availableStaff.length > 0 ? (
-            <div>
-              <Label>施術するスタッフ</Label>
+            <div className="flex flex-col gap-2 bg-green-50 p-3 border border-green-300 rounded-md">
+              <Label className="text-green-600 text-sm">施術するスタッフ</Label>
               <Select
                 value={watch('staffId') ?? ''}
                 onValueChange={(value: string) => {
@@ -558,7 +569,7 @@ export default function ReservationForm() {
               </Select>
               {errors.staffId && <p className="text-red-500 text-sm">{errors.staffId.message}</p>}
               {selectedStaffId && (
-                <div className="flex flex-col bg-slate-100 p-3 rounded-md border border-slate-300 mt-3">
+                <div className="flex flex-col bg-white p-3 rounded-md border border-slate-300 mt-3">
                   <div className="flex items-center gap-2">
                     <Image
                       src={selectStaff?.imgPath ?? ''}
@@ -578,8 +589,8 @@ export default function ReservationForm() {
               )}
             </div>
           ) : selectedMenuIds.length > 0 ? (
-            <div className="flex flex-col bg-slate-100 p-3 rounded-md border border-slate-300">
-              <p className="text-slate-500 font-bold text-sm">
+            <div className="flex flex-col bg-red-50 w-fit p-3 rounded-md border border-red-300">
+              <p className="text-red-500 text-sm">
                 選択したすべてのメニューに対応できるスタッフが見つかりません。メニューの組み合わせを変更してください。
               </p>
             </div>
@@ -674,6 +685,27 @@ export default function ReservationForm() {
                         className="bg-green-100 text-green-600 border border-green-300 p-1 rounded-sm"
                       >
                         {week}
+                      </p>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+          {salonExceptionSchedules && (
+            <div className="flex flex-col gap-2">
+              <p className="text-slate-500 text-xs">サロンの休日</p>
+              <div className="text-slate-500 text-xs flex flex-wrap gap-2">
+                {salonExceptionSchedules
+                  .sort((a, b) => {
+                    return new Date(b.date).getTime() + new Date(a.date).getTime();
+                  })
+                  .map((day) => {
+                    return (
+                      <p
+                        key={day._id}
+                        className="bg-red-100 text-red-600 border border-red-300 p-1 rounded-sm"
+                      >
+                        {day.date}
                       </p>
                     );
                   })}

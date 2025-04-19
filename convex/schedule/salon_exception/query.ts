@@ -14,6 +14,23 @@ import {
 } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 
+
+export const displayExceptionSchedule = query({
+  args: {
+    salonId: v.id('salon'),
+    dateString: v.string(),
+    take: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+    return await ctx.db
+      .query('salon_schedule_exception')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId))
+      .filter((q) => q.gte(q.field('date'), args.dateString)) // gteを使用して当日を含める
+      .order('desc')
+      .take(args.take || 10);
+  },
+});
 // 取得関数の修正
 export const getByScheduleList = query({
   args: {
