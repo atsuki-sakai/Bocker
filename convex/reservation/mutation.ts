@@ -13,9 +13,9 @@ import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 // 予約の追加
 export const create = mutation({
   args: {
-    customerId: v.id('customer'),
+    customerId: v.optional(v.id('customer')),
     staffId: v.id('staff'),
-    menuId: v.id('menu'),
+    menuIds: v.optional(v.array(v.id('menu'))),
     salonId: v.id('salon'),
     optionIds: v.optional(v.array(v.id('salon_option'))),
     unitPrice: v.optional(v.number()),
@@ -32,14 +32,6 @@ export const create = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateReservation(args);
-    // 顧客の存在確認
-    const customer = await ctx.db.get(args.customerId);
-    if (!customer) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
-      });
-      throw err;
-    }
 
     // スタッフの存在確認
     const staff = await ctx.db.get(args.staffId);
@@ -47,21 +39,6 @@ export const create = mutation({
       const err = new ConvexCustomError(
         'low',
         '指定されたスタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
-    }
-
-    // メニューの存在確認
-    const menu = await ctx.db.get(args.menuId);
-    if (!menu) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたメニューが存在しません',
         'NOT_FOUND',
         404,
         {
