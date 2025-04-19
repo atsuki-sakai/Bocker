@@ -1,4 +1,4 @@
-import { mutation } from '@/convex/_generated/server';
+import { mutation, query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import {
   removeEmptyFields,
@@ -10,11 +10,13 @@ import { reservationStatusType, paymentMethodType } from '@/services/convex/shar
 import { validateReservation, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { api } from '@/convex/_generated/api';
 // 予約の追加
 export const create = mutation({
   args: {
     customerId: v.optional(v.id('customer')),
     staffId: v.id('staff'),
+    staffName: v.optional(v.string()),
     menuIds: v.optional(v.array(v.id('menu'))),
     salonId: v.id('salon'),
     optionIds: v.optional(v.array(v.id('salon_option'))),
@@ -56,7 +58,6 @@ export const create = mutation({
       });
       throw err;
     }
-
     const reservationId = await ctx.db.insert('reservation', {
       ...args,
       isArchive: false,
