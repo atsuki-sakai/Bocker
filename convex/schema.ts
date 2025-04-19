@@ -441,6 +441,7 @@ export default defineSchema({
   reservation: defineTable({
     customerId: v.optional(v.id('customer')), // 顧客ID
     staffId: v.id('staff'), // スタッフID
+    staffName: v.optional(v.string()), // スタッフ名
     menuIds: v.optional(v.array(v.id('menu'))), // メニューID
     salonId: v.id('salon'), // サロンID
     optionIds: v.optional(v.array(v.id('salon_option'))), // オプションID
