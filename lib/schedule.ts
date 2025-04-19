@@ -10,6 +10,14 @@ export function getCurrentUnixTime(addHours?: number) {
   return addHours ? Math.floor(Date.now() / 1000) + addHours * 3600 : Math.floor(Date.now() / 1000);
 }
 
+export function convertUnixTimeToDateString(unixTime: number) {
+  return new Date(unixTime * 1000).toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+}
+
 export function getDayOfWeek(date: Date, ja: boolean = false): string {
   switch (date.getDay()) {
     case 0:
