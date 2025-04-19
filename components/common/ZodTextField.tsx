@@ -22,6 +22,7 @@ type ZodTextFieldProps<TSchema extends z.ZodTypeAny> = {
   className?: string;
   required?: boolean;
   readOnly?: boolean;
+  ghost?: boolean;
 };
 
 // ZodTextField コンポーネント - 再利用可能なフォームフィールド
@@ -36,9 +37,10 @@ export default function ZodTextField({
   className,
   required = false,
   readOnly = false,
+  ghost = false,
 }: ZodTextFieldProps<z.ZodType>) {
   return (
-    <div className={`flex flex-col gap-2 ${className}`}>
+    <div className={`flex flex-col gap-2 ${className} ${ghost ? 'sr-only' : ''}`}>
       <Label htmlFor={name} className="flex items-center gap-2 text-gray-700">
         <div className="scale-75">{icon}</div>
         {label}
