@@ -6,7 +6,7 @@ import { DashboardSection } from '@/components/common';
 import { useSalon } from '@/hooks/useSalon';
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import { api } from '@/convex/_generated/api';
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import {
   startOfWeek as startOfWeekFns,
   endOfWeek as endOfWeekFns,
@@ -84,24 +84,28 @@ export default function TimelinePage() {
     '日曜日',
   ];
 
-  // 現在の週の日付をメモ化して計算
-  const daysOfWeek = useMemo(() => {
+  // 現在の週の日付を計算
+  const getDaysOfWeek = (): Date[] => {
     const days: Date[] = [];
     const day = new Date(startOfWeek);
+
     for (let i = 0; i < 7; i++) {
       days.push(new Date(day));
       day.setDate(day.getDate() + 1);
     }
+
     return days;
-  }, [startOfWeek]);
+  };
+
+  const daysOfWeek = getDaysOfWeek();
 
   const renderReservations = () => {
     if (!currentReservations) return null;
 
     return currentReservations.map((reservation) => {
       // Adjust for JST offset (UTC+9)
-      const startTime = new Date(reservation.startTime_unix ?? 0 * 1000 - 9 * 60 * 60 * 1000);
-      const endTime = new Date(reservation.endTime_unix ?? 0 * 1000 - 9 * 60 * 60 * 1000);
+      const startTime = new Date(reservation.startTime_unix! * 1000 - 9 * 60 * 60 * 1000);
+      const endTime = new Date(reservation.endTime_unix! * 1000 - 9 * 60 * 60 * 1000);
 
       // 週表示の場合は週内の予約を全て表示
       // 日表示の場合は選択された日付の予約のみを表示
@@ -212,11 +216,6 @@ export default function TimelinePage() {
   const toggleViewMode = (): void => {
     setViewMode(viewMode === 'week' ? 'day' : 'week');
   };
-
-  // 日付変更時に選択日も更新
-  useEffect(() => {
-    setSelectedDate(daysOfWeek[0]);
-  }, [daysOfWeek]);
 
   // 予約データの更新
   useEffect(() => {
@@ -350,7 +349,7 @@ export default function TimelinePage() {
               </Menu>
             </div>
           </header>
-          {reservations.length > 0 ? (
+          {reservations && reservations.length > 0 ? (
             <div ref={container} className="isolate flex flex-auto flex-col overflow-auto bg-white">
               <div
                 style={{ width: viewMode === 'week' ? '165%' : '100%' }}
