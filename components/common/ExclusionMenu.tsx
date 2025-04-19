@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Menu, Search, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,6 @@ import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import { api } from '@/convex/_generated/api';
 import { useSalon } from '@/hooks/useSalon';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,6 +28,7 @@ export default function ExclusionMenu({
 }: ExclusionMenuProps) {
   const { salon } = useSalon();
   const [searchTerm, setSearchTerm] = useState('');
+  const [localSelectedIds, setLocalSelectedIds] = useState<Id<'menu'>[]>(selectedMenuIds);
 
   const {
     results: menus,
@@ -40,26 +40,48 @@ export default function ExclusionMenu({
     { initialNumItems: numberOfMenus }
   );
 
-  // 単純なトグル処理
+  useEffect(() => {
+    setLocalSelectedIds(selectedMenuIds);
+  }, [selectedMenuIds]);
+
+  const updateSelectedIds = (newIds: Id<'menu'>[]) => {
+    setLocalSelectedIds(newIds);
+    setSelectedMenuIdsAction(newIds);
+  };
+
   function handleToggleMenu(menuId: Id<'menu'>) {
-    const newSelectedIds = selectedMenuIds.includes(menuId)
-      ? selectedMenuIds.filter((id) => id !== menuId)
-      : [...selectedMenuIds, menuId];
-
-    setSelectedMenuIdsAction(newSelectedIds);
+    const isCurrentlySelected = localSelectedIds.includes(menuId);
+    const newSelectedIds = isCurrentlySelected
+      ? localSelectedIds.filter((id) => id !== menuId)
+      : [...localSelectedIds, menuId];
+    console.log('トグル:', {
+      menuId,
+      isCurrentlySelected,
+      beforeIds: localSelectedIds,
+      afterIds: newSelectedIds,
+    });
+    updateSelectedIds(newSelectedIds);
   }
 
-  // 単純な全選択/全解除処理
   function handleToggleAll() {
-    if (!menus || menus.length === 0) return;
-
-    const allMenuIds = menus.map((menu: Doc<'menu'>) => menu._id);
-    const isAllSelected = menus.length > 0 && menus.length === selectedMenuIds.length;
-
-    setSelectedMenuIdsAction(isAllSelected ? [] : allMenuIds);
+    if (!filteredMenus || filteredMenus.length === 0) return;
+    const visibleMenuIds = filteredMenus.map((m) => m._id);
+    const allVisibleSelected = visibleMenuIds.every((id) => localSelectedIds.includes(id));
+    let newSelectedIds: Id<'menu'>[];
+    if (allVisibleSelected) {
+      newSelectedIds = localSelectedIds.filter((id) => !visibleMenuIds.includes(id));
+    } else {
+      newSelectedIds = Array.from(new Set([...localSelectedIds, ...visibleMenuIds]));
+    }
+    console.log('全選択/全解除:', {
+      allVisibleSelected,
+      visibleMenuIds,
+      beforeIds: localSelectedIds,
+      afterIds: newSelectedIds,
+    });
+    updateSelectedIds(newSelectedIds);
   }
 
-  // 検索フィルタリング
   const filteredMenus = useMemo(() => {
     if (!menus) return [];
     if (!searchTerm.trim()) return menus;
@@ -71,9 +93,9 @@ export default function ExclusionMenu({
     );
   }, [menus, searchTerm]);
 
-  // 選択状態のテキスト表示
-  const selectedMenusCount = selectedMenuIds.length;
-  const totalMenusCount = menus?.length || 0;
+  const selectedMenusCount = localSelectedIds.length;
+  // 表示中のメニュー数に応じて全選択状態を判断する
+  const totalMenusCount = filteredMenus.length;
   const selectionText =
     selectedMenusCount === 0
       ? '選択なし'
@@ -81,11 +103,8 @@ export default function ExclusionMenu({
         ? 'すべて選択'
         : `${selectedMenusCount}件選択`;
 
-  // 選択されたメニューの情報を取得
-  const selectedMenus = useMemo(() => {
-    if (!menus) return [];
-    return menus.filter((menu: Doc<'menu'>) => selectedMenuIds.includes(menu._id));
-  }, [menus, selectedMenuIds]);
+  const allVisibleSelected =
+    filteredMenus.length > 0 && filteredMenus.every((menu) => localSelectedIds.includes(menu._id));
 
   return (
     <Card className="w-full">
@@ -100,7 +119,7 @@ export default function ExclusionMenu({
             <div className="flex gap-2 items-center">
               <span className="text-sm text-gray-500">{selectionText}</span>
               <Button size="sm" onClick={handleToggleAll} className="text-xs h-8" type="button">
-                {totalMenusCount > 0 && selectedMenusCount === totalMenusCount ? (
+                {totalMenusCount > 0 && allVisibleSelected ? (
                   <span className="flex items-center gap-1">
                     <Minus size={14} />
                     全て解除
@@ -114,35 +133,6 @@ export default function ExclusionMenu({
               </Button>
             </div>
           </div>
-
-          {/* 選択済みメニューのサマリー表示 */}
-          {selectedMenus.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {selectedMenus.map((menu: Doc<'menu'>) => (
-                <Badge
-                  key={menu._id}
-                  variant="secondary"
-                  className="flex items-center gap-1 py-1 pl-2 pr-1"
-                >
-                  {menu.name}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-5 w-5 p-0 rounded-full hover:bg-destructive/10"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleToggleMenu(menu._id);
-                    }}
-                    type="button"
-                  >
-                    <span className="sr-only">削除</span>
-                    <Minus size={12} />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          )}
 
           {/* 検索フィールド */}
           <div className="relative">
@@ -166,7 +156,7 @@ export default function ExclusionMenu({
                 >
                   <Checkbox
                     id={menu._id}
-                    checked={selectedMenuIds.includes(menu._id)}
+                    checked={localSelectedIds.includes(menu._id)}
                     onCheckedChange={() => handleToggleMenu(menu._id)}
                     className="data-[state=checked]:bg-primary"
                   />
