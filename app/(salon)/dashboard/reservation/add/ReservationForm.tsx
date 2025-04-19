@@ -303,8 +303,6 @@ export default function ReservationForm() {
     return menuTime + optionTime;
   }, [selectedMenuIds, menus, selectedOptionIds, options]);
 
-  if (!salon || !salonId) return <Loading />;
-
   // 選択されたメニューの合計金額 (salePrice があれば salePrice、なければ unitPrice)
   const menuTotalPrice = React.useMemo(() => {
     return selectedMenuIds.reduce((sum, id) => {
@@ -333,7 +331,7 @@ export default function ReservationForm() {
   useEffect(() => {
     setValue('totalPrice', totalPriceCalculated);
     setValue('unitPrice', menuTotalPrice);
-  }, [setValue, totalPriceCalculated]);
+  }, [setValue, totalPriceCalculated, menuTotalPrice, optionTotalPrice, extraChargePrice]);
 
   // 日付とスタッフの変更で空き時間を取得
   useEffect(() => {
@@ -457,6 +455,8 @@ export default function ReservationForm() {
         new Date().setDate(new Date().getDate() + (scheduleConfig.reservationLimitDays ?? 30))
       )
     : undefined;
+
+  if (!salon || !salonId) return <Loading />;
 
   return (
     <div className="container mx-auto relative">

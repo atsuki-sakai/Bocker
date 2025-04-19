@@ -1,40 +1,6 @@
 'use client';
 
-// Zod schema for schedule data change detection
-const scheduleDataSchema = z.object({
-  useCommonHours: z.boolean(),
-  commonStartHour: z.string(),
-  commonEndHour: z.string(),
-  scheduleSettings: z.object({
-    monday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
-    tuesday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
-    wednesday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
-    thursday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
-    friday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
-    saturday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
-    sunday: z.object({ isOpen: z.boolean(), startHour: z.string(), endHour: z.string() }),
-  }),
-});
 
-// オブジェクトのキーをソートして文字列化し、安定した比較を行う
-function stableStringify(obj: unknown): string {
-  return JSON.stringify(
-    obj,
-    (_key: string, value: unknown) => {
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        const sorted: Record<string, unknown> = {};
-        Object.keys(value)
-          .sort()
-          .forEach((k) => {
-            sorted[k] = (value as Record<string, unknown>)[k];
-          });
-        return sorted;
-      }
-      return value;
-    },
-    2
-  );
-}
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -211,8 +177,7 @@ export default function WeekHourSchedule() {
     commonStartHour: defaultScheduleHour.startHour,
     commonEndHour: defaultScheduleHour.endHour,
   });
-  // 初期データ保存と変更検知用
-  const [initialScheduleData, setInitialScheduleData] = useState<WeekScheduleData | null>(null);
+
   // すでに登録されているデータを取得
   const salonWeekSchedules = useQuery(
     api.schedule.salon_week_schedule.query.getAllBySalonId,
@@ -305,29 +270,9 @@ export default function WeekHourSchedule() {
           ...updatedCommonHours,
           scheduleSettings: newScheduleSettings,
         }));
-        // 初期状態として保存
-        setInitialScheduleData({
-          scheduleSettings: newScheduleSettings,
-          useCommonHours: hasOpenDay,
-          commonStartHour: hasOpenDay ? earliestStartHour : defaultScheduleHour.startHour,
-          commonEndHour: hasOpenDay ? latestEndHour : defaultScheduleHour.endHour,
-        });
       }
     }
   }, [salonWeekSchedules]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 変更検知
-  useEffect(() => {
-    if (initialScheduleData) {
-      const parsedInitial = scheduleDataSchema.parse(initialScheduleData);
-      const parsedCurrent = scheduleDataSchema.parse({
-        scheduleSettings: weekScheduleData.scheduleSettings,
-        useCommonHours: weekScheduleData.useCommonHours,
-        commonStartHour: weekScheduleData.commonStartHour,
-        commonEndHour: weekScheduleData.commonEndHour,
-      });
-    }
-  }, [weekScheduleData, initialScheduleData]);
 
   // 営業日変更時の処理
   const handleDayToggle = useCallback((day: DayOfWeek) => {
