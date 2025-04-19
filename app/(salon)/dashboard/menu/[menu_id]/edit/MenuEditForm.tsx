@@ -226,6 +226,7 @@ export default function MenuEditForm() {
       setTargetType(targetTypeValue);
       setPaymentMethod(paymentMethodValue);
 
+      console.log('menuData', menuData);
       // フォームを初期化
       reset({
         name: menuData.name || '',
@@ -459,7 +460,7 @@ export default function MenuEditForm() {
             {/* 価格関連 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ZodTextField
-                name="price"
+                name="unitPrice"
                 label="通常価格"
                 icon={<DollarSign className="text-gray-500" />}
                 type="number"
