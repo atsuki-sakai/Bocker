@@ -6,7 +6,7 @@
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { ja } from 'date-fns/locale';
-import { getDayOfWeek, convertDayOfWeekToJa, formatJpTime } from '@/lib/schedule';
+import { getDayOfWeek, formatJpTime } from '@/lib/schedule';
 import { PaymentMethod } from '@/services/convex/shared/types/common';
 // 入力値を数値または undefined に変換するプリプロセス関数
 const preprocessNumber = (val: unknown) => {
@@ -317,19 +317,24 @@ export default function ReservationForm() {
     return menuTime + optionTime;
   }, [selectedMenuIds, menus, selectedOptionIds, options]);
 
-  // 選択されたメニューの合計金額 (salePrice があれば salePrice、なければ unitPrice)
+  // 選択されたメニューの合計金額 (salePrice が 0 か未定義の場合は unitPrice)
   const menuTotalPrice = React.useMemo(() => {
     return selectedMenuIds.reduce((sum, id) => {
       const menu = menus.find((m) => m._id === id);
-      return sum + (menu ? (menu.salePrice ?? menu.unitPrice ?? 0) : 0);
+      if (!menu) return sum;
+      const price = menu.salePrice && menu.salePrice > 0 ? menu.salePrice : (menu.unitPrice ?? 0);
+      return sum + price;
     }, 0);
   }, [selectedMenuIds, menus]);
 
-  // 選択されたオプションの合計金額 (salePrice があれば salePrice、なければ unitPrice)
+  // 選択されたオプションの合計金額 (salePrice が 0 か未定義の場合は unitPrice)
   const optionTotalPrice = React.useMemo(() => {
     return selectedOptionIds.reduce((sum, id) => {
       const option = options.find((o) => o._id === id);
-      return sum + (option ? (option.salePrice ?? option.unitPrice ?? 0) : 0);
+      if (!option) return sum;
+      const price =
+        option.salePrice && option.salePrice > 0 ? option.salePrice : (option.unitPrice ?? 0);
+      return sum + price;
     }, 0);
   }, [selectedOptionIds, options]);
 
@@ -485,7 +490,10 @@ export default function ReservationForm() {
       >
         <div className="flex flex-col gap-4 my-6">
           <div>
-            <Label>予約するメニュー（複数選択可）</Label>
+            <div className="flex items-center gap-2">
+              <p className="text-slate-500 text-lg font-bold">1</p>
+              <Label>予約するメニュー（複数選択可）</Label>
+            </div>
             <div className="mt-2 space-y-2 border p-3 rounded-md">
               {menus.map((menu) => (
                 <div key={menu._id} className="flex items-center space-x-2">
@@ -507,7 +515,9 @@ export default function ReservationForm() {
                           ￥{menu.unitPrice}
                         </span>
                       ) : null}
-                      <span className="inline-block">￥{menu.salePrice ?? menu.unitPrice}</span>
+                      <span className="inline-block">
+                        ￥{menu.salePrice && menu.salePrice > 0 ? menu.salePrice : menu.unitPrice}
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -547,8 +557,11 @@ export default function ReservationForm() {
               <span>スタッフを検索中...</span>
             </div>
           ) : selectedMenuIds.length > 0 && availableStaff.length > 0 ? (
-            <div className="flex flex-col gap-2 bg-green-50 p-3 border border-green-300 rounded-md">
-              <Label className="text-green-600 text-sm">施術するスタッフ</Label>
+            <div className="flex flex-col gap-2 my-3">
+              <div className="flex items-center gap-2">
+                <p className="text-slate-500 text-lg font-bold">2</p>
+                <Label>施術するスタッフ</Label>
+              </div>
               <Select
                 value={watch('staffId') ?? ''}
                 onValueChange={(value: string) => {
@@ -569,7 +582,7 @@ export default function ReservationForm() {
               </Select>
               {errors.staffId && <p className="text-red-500 text-sm">{errors.staffId.message}</p>}
               {selectedStaffId && (
-                <div className="flex flex-col bg-white p-3 rounded-md border border-slate-300 mt-3">
+                <div className="flex flex-col bg-slate-50 p-3 rounded-md border border-slate-300 mt-3">
                   <div className="flex items-center gap-2">
                     <Image
                       src={selectStaff?.imgPath ?? ''}
@@ -594,44 +607,49 @@ export default function ReservationForm() {
                 選択したすべてのメニューに対応できるスタッフが見つかりません。メニューの組み合わせを変更してください。
               </p>
             </div>
-          ) : (
-            <div className="flex flex-col bg-slate-100 p-3 rounded-md border border-slate-300">
-              <p className="text-slate-500 font-bold text-sm">メニューを選択してください</p>
+          ) : null}
+          {selectedMenuIds.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-slate-500 text-lg font-bold">3</p>
+                <Label>オプション（複数選択可）</Label>
+              </div>
+              <div className="mt-2 space-y-2 border p-3 rounded-md">
+                {options.map((option) => (
+                  <div key={option._id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`option-${option._id}`}
+                      checked={selectedOptionIds.includes(option._id)}
+                      onCheckedChange={(checked) =>
+                        handleOptionToggle(option._id, checked as boolean)
+                      }
+                    />
+                    <div>
+                      <label
+                        htmlFor={`option-${option._id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {option.name} / {option.timeToMin} 分
+                      </label>
+                      <p className="text-slate-500 text-xs">
+                        {option.salePrice ? (
+                          <span className="inline-block -ml-1 text-xs text-slate-500 line-through scale-75">
+                            ￥{option.unitPrice}
+                          </span>
+                        ) : null}
+                        <span className="inline-block">
+                          ￥{option.unitPrice ?? option.salePrice}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {errors.optionIds && (
+                <p className="text-red-500 text-sm">{errors.optionIds.message}</p>
+              )}
             </div>
           )}
-          <div>
-            <Label>オプション（複数選択可）</Label>
-            <div className="mt-2 space-y-2 border p-3 rounded-md">
-              {options.map((option) => (
-                <div key={option._id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`option-${option._id}`}
-                    checked={selectedOptionIds.includes(option._id)}
-                    onCheckedChange={(checked) =>
-                      handleOptionToggle(option._id, checked as boolean)
-                    }
-                  />
-                  <div>
-                    <label
-                      htmlFor={`option-${option._id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {option.name} / {option.timeToMin} 分
-                    </label>
-                    <p className="text-slate-500 text-xs">
-                      {option.salePrice ? (
-                        <span className="inline-block -ml-1 text-xs text-slate-500 line-through scale-75">
-                          ￥{option.unitPrice}
-                        </span>
-                      ) : null}
-                      <span className="inline-block">￥{option.salePrice ?? option.unitPrice}</span>
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {errors.optionIds && <p className="text-red-500 text-sm">{errors.optionIds.message}</p>}
-          </div>
           {/* 選択されたオプション表示 */}
           {selectedOptionIds.length > 0 && (
             <div className="bg-slate-50 p-3 rounded-md">
@@ -658,91 +676,55 @@ export default function ReservationForm() {
               </div>
             </div>
           )}
-          {salonWeekSchedules && (
-            <div className="flex flex-col gap-2 mt-2">
-              <p className="text-slate-500 text-xs">サロンの営業日</p>
-              <div className="text-slate-500 text-xs flex flex-wrap gap-2">
-                {salonWeekSchedules
-                  .filter((day) => day.isOpen)
-                  .sort((a, b) => {
-                    // 日曜→月曜→火曜…土曜 の順序を定義
-                    const order = [
-                      'sunday',
-                      'monday',
-                      'tuesday',
-                      'wednesday',
-                      'thursday',
-                      'friday',
-                      'saturday',
-                    ];
-                    return order.indexOf(a.dayOfWeek ?? '') - order.indexOf(b.dayOfWeek ?? '');
-                  })
-                  .map((day) => {
-                    const week = convertDayOfWeekToJa(day.dayOfWeek ?? '');
-                    return (
-                      <p
-                        key={day._id}
-                        className="bg-green-100 text-green-600 border border-green-300 p-1 rounded-sm"
-                      >
-                        {week}
-                      </p>
-                    );
-                  })}
+          {selectedMenuIds.length > 0 && selectedStaffId && selectedOptionIds.length > 0 && (
+            <div className="flex flex-col gap-2 my-3">
+              <div className="flex items-center gap-2">
+                <p className="text-slate-500 text-lg font-bold">4</p>
+                <Label>予約日</Label>
               </div>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={'outline'}
+                    className={cn(
+                      'w-[240px] justify-start text-left font-normal',
+                      !selectdate && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon />
+                    {selectdate ? format(selectdate, 'yyyy/MM/dd') : <span>予約日を選択</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    fromDate={new Date()}
+                    toDate={toDate}
+                    disabled={[
+                      ...(salonExceptionSchedules?.map((day) => new Date(day.date)) ?? []),
+                      // サロンの営業曜日外を除外
+                      (date: Date) => {
+                        const dayKey = getDayOfWeek(date);
+
+                        const weekSchedule = salonWeekSchedules?.find(
+                          (s) => s.dayOfWeek === dayKey
+                        );
+                        // 営業スケジュールがあれば isOpen が false の日を無効化。見つからなければ無効化しない。
+                        return weekSchedule ? !weekSchedule.isOpen : false;
+                      },
+                    ]}
+                    className="rounded-md"
+                    mode="single"
+                    locale={ja}
+                    selected={selectdate ?? undefined}
+                    onSelect={(day) => {
+                      setSelectDate(day as Date);
+                      setCalendarOpen(false);
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           )}
-          {salonExceptionSchedules && (
-            <div className="flex flex-col gap-2">
-              <p className="text-slate-500 text-xs">サロンの休日</p>
-              <div className="text-slate-500 text-xs flex flex-wrap gap-2">
-                {salonExceptionSchedules
-                  .sort((a, b) => {
-                    return new Date(b.date).getTime() + new Date(a.date).getTime();
-                  })
-                  .map((day) => {
-                    return (
-                      <p
-                        key={day._id}
-                        className="bg-red-100 text-red-600 border border-red-300 p-1 rounded-sm"
-                      >
-                        {day.date}
-                      </p>
-                    );
-                  })}
-              </div>
-            </div>
-          )}
-          <div className="flex flex-col gap-2">
-            <Label>予約日</Label>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={'outline'}
-                  className={cn(
-                    'w-[240px] justify-start text-left font-normal',
-                    !selectdate && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon />
-                  {selectdate ? format(selectdate, 'yyyy/MM/dd') : <span>予約日を選択</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  fromDate={new Date()}
-                  toDate={toDate}
-                  className="rounded-md"
-                  mode="single"
-                  locale={ja}
-                  selected={selectdate ?? undefined}
-                  onSelect={(day) => {
-                    setSelectDate(day as Date);
-                    setCalendarOpen(false);
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
           {/* 予約可能時間を表示するコンポーネント */}
           {selectdate && selectedStaffId && selectedMenuIds.length > 0 && (
             <div className="mt-4">
@@ -799,41 +781,46 @@ export default function ReservationForm() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* 予約詳細カード */}
-
           {/* メニュー */}
           <div>
             <p className="mb-2 text-xs font-medium text-gray-600">メニュー</p>
             <div className="flex flex-wrap gap-2">
-              {selectedMenuIds.map((menuId) => {
-                const menu = menus.find((m) => m._id === menuId);
-                return (
-                  menu && (
-                    <Badge key={menuId} variant="outline" className="px-2 py-1 text-xs">
-                      {menu.name}
-                    </Badge>
-                  )
-                );
-              })}
+              {selectedMenuIds.length > 0 ? (
+                selectedMenuIds.map((menuId) => {
+                  const menu = menus.find((m) => m._id === menuId);
+                  return (
+                    menu && (
+                      <Badge key={menuId} variant="outline" className="px-2 py-1 text-xs">
+                        {menu.name}
+                      </Badge>
+                    )
+                  );
+                })
+              ) : (
+                <p className="text-slate-500 text-sm">メニューを選択してください</p>
+              )}
             </div>
           </div>
-
           {/* オプション */}
           <div>
             <p className="mb-2 text-xs font-medium text-gray-600">オプション</p>
             <div className="flex flex-wrap gap-2">
-              {selectedOptionIds.map((optionId) => {
-                const option = options.find((o) => o._id === optionId);
-                return (
-                  option && (
-                    <Badge key={optionId} variant="secondary" className="px-2 py-1 text-xs">
-                      {option.name}
-                    </Badge>
-                  )
-                );
-              })}
+              {selectedOptionIds.length > 0 ? (
+                selectedOptionIds.map((optionId) => {
+                  const option = options.find((o) => o._id === optionId);
+                  return (
+                    option && (
+                      <Badge key={optionId} variant="secondary" className="px-2 py-1 text-xs">
+                        {option.name}
+                      </Badge>
+                    )
+                  );
+                })
+              ) : (
+                <p className="text-slate-500 text-sm">オプションは選択されていません</p>
+              )}
             </div>
           </div>
-
           {/* スタッフカード */}
           <div className="flex items-center gap-2">
             <Avatar className="h-16 w-16">
