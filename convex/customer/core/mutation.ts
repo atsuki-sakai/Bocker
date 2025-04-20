@@ -8,7 +8,7 @@ import {
 import { validateCustomer, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { ConvexCustomError } from '@/services/convex/shared/utils/error';
-
+import { genderType } from '@/services/convex/shared/types/common';
 // 顧客の追加
 export const create = mutation({
   args: {
@@ -193,5 +193,69 @@ export const kill = mutation({
     validateRequired(args.customerId, 'customerId');
 
     await killRecord(ctx, args.customerId);
+  },
+});
+
+export const createCompleteFields = mutation({
+  args: {
+    salonId: v.id('salon'),
+    lineId: v.optional(v.string()), // LINE ID
+    lineUserName: v.optional(v.string()), // LINEユーザー名
+    phone: v.optional(v.string()), // 電話番号
+    email: v.optional(v.string()), // メールアドレス
+    firstName: v.optional(v.string()), // 名前
+    lastName: v.optional(v.string()), // 苗字
+    useCount: v.optional(v.number()), // 利用回数
+    lastReservationDate_unix: v.optional(v.number()), // 最終予約日
+    tags: v.optional(v.array(v.string())), // タグ
+    age: v.optional(v.number()), // 年齢
+    birthday: v.optional(v.string()), // 誕生日
+    gender: v.optional(genderType), // 性別
+    notes: v.optional(v.string()), // メモ
+    totalPoints: v.optional(v.number()), // ポイント
+    lastTransactionDate_unix: v.optional(v.number()), // 最終トランザクション日
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+    validateCustomer(args);
+
+    try {
+      const customerId = await ctx.db.insert('customer', {
+        salonId: args.salonId, // サロンID
+        lineId: args.lineId, // LINE ID
+        lineUserName: args.lineUserName, // LINEユーザー名
+        phone: args.phone, // 電話番号
+        email: args.email, // メールアドレス
+        firstName: args.firstName, // 名前
+        lastName: args.lastName, // 苗字
+        fullName: (args.lastName ?? '') + (args.firstName ?? '') + (args.lineUserName ?? ''), // 検索用フルネーム
+        useCount: args.useCount, // 利用回数
+        lastReservationDate_unix: args.lastReservationDate_unix, // 最終予約日
+        tags: args.tags, // タグ
+        isArchive: false,
+      });
+
+      await ctx.db.insert('customer_detail', {
+        customerId: customerId,
+        email: args.email, // メールアドレス
+        age: args.age, // 年齢
+        birthday: args.birthday, // 誕生日
+        gender: args.gender, // 性別
+        notes: args.notes, // メモ
+        isArchive: false,
+      });
+
+      await ctx.db.insert('customer_points', {
+        customerId: customerId,
+        salonId: args.salonId,
+        totalPoints: args.totalPoints, // ポイント
+        lastTransactionDate_unix: args.lastTransactionDate_unix, // 最終トランザクション日
+        isArchive: false,
+      });
+      return customerId;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
   },
 });
