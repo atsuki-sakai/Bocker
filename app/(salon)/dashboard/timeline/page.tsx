@@ -1,17 +1,20 @@
+// カレンダーの日付表示部分を修正し、予約がある日には特別なマークを表示する
 'use client';
 
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { ChevronLeft, ChevronRight, Ellipsis } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Ellipsis, Calendar } from 'lucide-react';
 import { DashboardSection } from '@/components/common';
 import { useSalon } from '@/hooks/useSalon';
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import { api } from '@/convex/_generated/api';
-import { useRef, useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import {
   startOfWeek as startOfWeekFns,
   endOfWeek as endOfWeekFns,
   format,
   isSameDay,
+  isToday,
 } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Id, Doc } from '@/convex/_generated/dataModel';
@@ -99,6 +102,28 @@ export default function TimelinePage() {
 
   const daysOfWeek = getDaysOfWeek();
 
+  // 予約のある日を特定する関数
+  const datesWithReservations = useMemo(() => {
+    if (!currentReservations || currentReservations.length === 0) return {};
+
+    const dates: Record<string, boolean> = {};
+
+    currentReservations.forEach((reservation) => {
+      // Adjust for JST offset (UTC+9)
+      const startTime = new Date(reservation.startTime_unix! * 1000 - 9 * 60 * 60 * 1000);
+      const dateKey = format(startTime, 'yyyy-MM-dd');
+      dates[dateKey] = true;
+    });
+
+    return dates;
+  }, [currentReservations]);
+
+  // 当日に予約があるかをチェックする関数
+  const hasReservationsOnDate = (date: Date): boolean => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    return !!datesWithReservations[dateKey];
+  };
+
   const renderReservations = () => {
     if (!currentReservations) return null;
 
@@ -140,7 +165,7 @@ export default function TimelinePage() {
             gridColumn: `${colStart} / span 1`,
           }}
         >
-          <a
+          <Link
             href={`/dashboard/reservation/${reservation._id}`}
             className="group absolute inset-1 flex flex-col overflow-y-auto rounded-lg bg-indigo-50 p-2 text-xs/5 hover:bg-indigo-100"
           >
@@ -151,7 +176,7 @@ export default function TimelinePage() {
               </time>
             </p>
             <p className="mt-1 text-indigo-700">¥{reservation.totalPrice?.toLocaleString()}</p>
-          </a>
+          </Link>
         </li>
       );
     });
@@ -336,13 +361,13 @@ export default function TimelinePage() {
                       </a>
                     </MenuItem>
                     <MenuItem>
-                      <a
+                      <Link
                         href="#"
                         className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
                         onClick={toggleViewMode}
                       >
                         {viewMode === 'day' ? '週表示に切り替え' : '日表示に切り替え'}
-                      </a>
+                      </Link>
                     </MenuItem>
                   </div>
                 </MenuItems>
@@ -363,8 +388,9 @@ export default function TimelinePage() {
                   {viewMode === 'week' && (
                     <div className="grid grid-cols-7 text-sm/6 text-gray-500 sm:hidden">
                       {daysOfWeek.map((date, index) => {
-                        const isToday = date.toDateString() === new Date().toDateString();
+                        const dateIsToday = isToday(date);
                         const isSelected = date.toDateString() === selectedDate.toDateString();
+                        const hasReservations = hasReservationsOnDate(date);
                         return (
                           <button
                             key={index}
@@ -375,14 +401,21 @@ export default function TimelinePage() {
                               setViewMode('day');
                             }}
                           >
-                            {weekDays[index]}{' '}
+                            <div className="flex items-center justify-center">
+                              {weekDays[index]}{' '}
+                              {hasReservations && (
+                                <span className="ml-1 w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                              )}
+                            </div>
                             <span
                               className={`mt-1 flex size-8 items-center justify-center ${
-                                isToday
+                                dateIsToday
                                   ? 'rounded-full bg-indigo-600 font-semibold text-white'
                                   : isSelected
                                     ? 'rounded-full bg-indigo-100 font-semibold text-indigo-600'
-                                    : 'font-semibold text-gray-900'
+                                    : hasReservations
+                                      ? 'font-semibold text-indigo-600 ring-1 ring-indigo-500 rounded-full'
+                                      : 'font-semibold text-gray-900'
                               }`}
                             >
                               {date.getDate()}
@@ -403,6 +436,11 @@ export default function TimelinePage() {
                             ]
                           }
                         </span>
+                        {hasReservationsOnDate(selectedDate) && (
+                          <span className="ml-2 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                            予約あり
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
@@ -416,21 +454,41 @@ export default function TimelinePage() {
                     <div className="col-end-1 w-14" />
                     {viewMode === 'week' ? (
                       daysOfWeek.map((date, index) => {
-                        const isToday = date.toDateString() === new Date().toDateString();
+                        const dateIsToday = isToday(date);
+                        const hasReservations = hasReservationsOnDate(date);
                         return (
-                          <div key={index} className="flex items-center justify-center py-3">
-                            <span className={isToday ? 'flex items-baseline' : ''}>
-                              {weekDaysFull[index].substring(0, 1)}{' '}
-                              {isToday ? (
-                                <span className="ml-1.5 flex size-8 items-center justify-center rounded-full bg-indigo-600 font-semibold text-white">
+                          <div
+                            key={index}
+                            className="flex flex-col items-center justify-center py-3"
+                          >
+                            <div className="flex items-center justify-center">
+                              {weekDaysFull[index].substring(0, 1)}
+                              {hasReservations && (
+                                <span className="ml-1 w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                              )}
+                            </div>
+                            <div className="flex items-baseline mt-1">
+                              {dateIsToday ? (
+                                <span className="flex size-8 items-center justify-center rounded-full bg-indigo-600 font-semibold text-white">
                                   {date.getDate()}
                                 </span>
                               ) : (
-                                <span className="items-center justify-center font-semibold text-gray-900">
+                                <span
+                                  className={`flex items-center justify-center font-semibold ${
+                                    hasReservations
+                                      ? 'text-indigo-600 ring-1 ring-indigo-500 rounded-full w-8 h-8'
+                                      : 'text-gray-900'
+                                  }`}
+                                >
                                   {date.getDate()}
                                 </span>
                               )}
-                            </span>
+                              {hasReservations && dateIsToday && (
+                                <div className="ml-1 -mt-1">
+                                  <Calendar className="size-3 text-indigo-500" />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         );
                       })
@@ -443,6 +501,14 @@ export default function TimelinePage() {
                             ]
                           }
                         </span>
+                        {hasReservationsOnDate(selectedDate) && (
+                          <div className="ml-2 flex items-center">
+                            <Calendar className="size-4 text-indigo-500 mr-1" />
+                            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                              予約あり
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
