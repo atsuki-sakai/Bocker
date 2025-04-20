@@ -552,9 +552,9 @@ export default function ReservationForm() {
             </div>
           )}
           {isLoadingStaff ? (
-            <div className="flex items-center justify-center p-4 bg-slate-50 rounded-md">
-              <Loader2 className="h-5 w-5 animate-spin mr-2" />
-              <span>スタッフを検索中...</span>
+            <div className="flex items-center justify-center p-4 bg-green-50 rounded-md">
+              <Loader2 className="h-5 w-5 animate-spin mr-2 text-green-500" />
+              <span className="text-green-500">スタッフを検索中...</span>
             </div>
           ) : selectedMenuIds.length > 0 && availableStaff.length > 0 ? (
             <div className="flex flex-col gap-2 my-3">
@@ -676,7 +676,7 @@ export default function ReservationForm() {
               </div>
             </div>
           )}
-          {selectedMenuIds.length > 0 && selectedStaffId && selectedOptionIds.length > 0 && (
+          {selectedMenuIds.length > 0 && (
             <div className="flex flex-col gap-2 my-3">
               <div className="flex items-center gap-2">
                 <p className="text-slate-500 text-lg font-bold">4</p>
