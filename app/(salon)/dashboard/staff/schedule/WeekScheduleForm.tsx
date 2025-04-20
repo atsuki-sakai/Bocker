@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Id } from '@/convex/_generated/dataModel';
+import { useRouter } from 'next/navigation';
 import { handleError } from '@/lib/error';
 import {
   Select,
@@ -20,7 +21,6 @@ import {
   Clock,
   Calendar,
   Save,
-  CheckCircle2,
   Clock3,
   Coffee,
   Settings2,
@@ -154,7 +154,6 @@ const fadeInVariants = {
 
 const defaultScheduleHour = { startHour: '08:00', endHour: '19:00' };
 
-
 // 情報アイコンコンポーネント
 const InfoIcon = ({ className }: { className?: string }) => (
   <svg
@@ -175,10 +174,9 @@ const InfoIcon = ({ className }: { className?: string }) => (
 
 export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'> }) {
   const { salonId } = useSalon();
-  const [showToast, setShowToast] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [scheduleTab, setScheduleTab] = useState('common');
-
+  const router = useRouter();
   // スケジュールデータの状態
   const [weekScheduleData, setWeekScheduleData] = useState<WeekScheduleData>({
     scheduleSettings: {
@@ -512,16 +510,14 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
 
       // 成功メッセージ
       toast.success('営業時間を更新しました');
-
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      router.refresh();
     } catch (err) {
       const errorDetails = handleError(err);
       toast.error(errorDetails.message);
     } finally {
       setIsSaving(false);
     }
-  }, [weekScheduleData, salonId, updateWeekSchedule, staffId]);
+  }, [weekScheduleData, salonId, updateWeekSchedule, staffId, router]);
 
   // ローディング状態
   if (staffWeekSchedules === undefined) {
@@ -550,16 +546,41 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
           <motion.div className="space-y-8" variants={containerVariants}>
             {/* 営業日設定 */}
             <motion.div variants={itemVariants}>
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="h-5 w-5 text-blue-600" />
-                <h3 className="text-lg font-semibold">勤務日設定</h3>
-              </div>
-
               <div className="bg-blue-50 p-4 rounded-lg mb-4 flex items-center gap-2 text-sm">
                 <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0" />
                 <p className="text-blue-700">
                   勤務する曜日を選択してください。勤務しない曜日は休日として設定されます。
                 </p>
+              </div>
+              <p className="text-sm mb-2 font-semibold">サロンの営業日</p>
+              <div className="flex flex-wrap w-fit items-start gap-2 bg-blue-50 p-4 rounded-lg mb-4">
+                {DAYS_OF_WEEK.map((day) => {
+                  const schedule = salonWeekSchedules?.find(
+                    (schedule) => schedule.dayOfWeek === day.id
+                  );
+                  return (
+                    <div
+                      key={day.id}
+                      className="flex flex-col justify-center items-center gap-2 text-xs p-1"
+                    >
+                      <span className="font-semibold">{day.week}</span>
+                      {schedule?.isOpen ? (
+                        <span className="text-green-600 bg-green-50 rounded-full px-2 py-1">
+                          営業日
+                        </span>
+                      ) : (
+                        <span className="text-red-600 bg-red-50 rounded-full px-2 py-1">
+                          定休日
+                        </span>
+                      )}
+                      {schedule?.isOpen && (
+                        <span className="text-gray-500">
+                          {schedule?.startHour} ~ {schedule?.endHour}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -707,6 +728,9 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
                           <InfoIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
                           <div>
                             すべての勤務日に同じ勤務時間が適用されます。曜日ごとに個別の時間を設定する場合は、共通設定をオフにしてください。
+                            <br />
+                            サロンの営業日と重複している場合は、サロンの営業日時とスタッフの出勤スケジュールは開始時間は遅い方(09:00
+                            より 10:00)、終了時間は早い方(18:00 より 17:00) を優先して設定されます。
                           </div>
                         </div>
                       </div>
@@ -804,20 +828,6 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
           </motion.div>
 
           <motion.div className="mt-8 flex justify-end items-center gap-3" variants={itemVariants}>
-            <AnimatePresence>
-              {showToast && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="flex items-center text-green-600"
-                >
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  設定を保存しました
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
