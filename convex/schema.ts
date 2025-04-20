@@ -242,7 +242,9 @@ export default defineSchema({
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_salon_line_id', ['salonId', 'lineId', 'isArchive'])
     .index('by_salon_phone', ['salonId', 'phone', 'isArchive'])
-    .index('by_salon_id_full_name', ['salonId', 'fullName', 'isArchive']),
+    .index('by_salon_email', ['salonId', 'email', 'isArchive'])
+    .index('by_salon_id_full_name', ['salonId', 'fullName', 'isArchive'])
+    .index('by_salon_id_line_user_name', ['salonId', 'lineUserName', 'isArchive']),
 
   // 顧客の詳細テーブル
   customer_detail: defineTable({
