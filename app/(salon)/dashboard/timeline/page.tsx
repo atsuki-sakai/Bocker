@@ -2,9 +2,10 @@
 'use client';
 
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { ChevronLeft, ChevronRight, Ellipsis, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Ellipsis, Calendar, Loader2 } from 'lucide-react';
 import { DashboardSection } from '@/components/common';
 import { useSalon } from '@/hooks/useSalon';
+
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
@@ -50,7 +51,7 @@ export default function TimelinePage() {
 
   const [currentReservations, setCurrentReservations] = useState<Doc<'reservation'>[]>([]);
 
-  const { results: reservations } = useStablePaginatedQuery(
+  const { results: reservations, isLoading: isReservationsLoading } = useStablePaginatedQuery(
     api.reservation.query.findBySalonIdAndStaffId,
     salonId && selectedStaffId
       ? {
@@ -257,34 +258,20 @@ export default function TimelinePage() {
     >
       <div>
         <div className="flex h-full flex-col">
-          <div className="md:hidden flex flex-col gap-2 items-end justify-end">
-            <div className="w-fit min-w-[180px]">
-              <Select
-                value={selectedStaffId ?? ''}
-                onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="スタッフを選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {staffs.results?.map((staff) => (
-                    <SelectItem key={staff._id} value={staff._id}>
-                      {staff.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
           <header className="flex flex-none items-center justify-between border-b border-gray-200 md:px-6 py-4">
-            <h1 className="text-sm md:text-base font-semibold text-gray-900">
+            <h1 className="text-sm md:text-lg font-semibold text-gray-900">
               {viewMode === 'week' ? (
                 <time
+                  className="flex flex-col md:flex-row items-center justify-center gap-1"
                   dateTime={`${format(startOfWeek, 'yyyy-MM-dd')}/${format(endOfWeek, 'yyyy-MM-dd')}`}
                 >
-                  {format(startOfWeek, 'yyyy年MM月dd日', { locale: ja })}
-                  <div className="md:hidden text-end mr-2 text-gray-500 text-xs">から</div>
-                  {format(endOfWeek, 'yyyy年MM月dd日', { locale: ja })}
+                  <span className="font-bold text-xl md:text-2xl">
+                    {format(startOfWeek, 'yyyy年MM月dd日', { locale: ja })}
+                  </span>
+                  <div className=" text-gray-500 text-xs">から</div>
+                  <span className="font-bold text-xl md:text-2xl">
+                    {format(endOfWeek, 'yyyy年MM月dd日', { locale: ja })}
+                  </span>
                 </time>
               ) : (
                 <time dateTime={format(selectedDate, 'yyyy-MM-dd')}>
@@ -295,83 +282,103 @@ export default function TimelinePage() {
                 </time>
               )}
             </h1>
-            <div className="flex items-center">
-              <div className="relative flex items-center rounded-md bg-white shadow-xs md:items-stretch">
-                <button
-                  type="button"
-                  className="flex h-9 w-12 items-center justify-center rounded-l-md border-y border-l border-gray-300 pr-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pr-0 md:hover:bg-gray-50"
-                  onClick={moveToPrevious}
-                >
-                  <span className="sr-only">{viewMode === 'week' ? '前週' : '前日'}</span>
-                  <ChevronLeft className="size-5" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="hidden border-y border-gray-300 px-3.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:relative md:block"
-                  onClick={moveToToday}
-                >
-                  今日
-                </button>
-                <span className="relative -mx-px h-5 w-px bg-gray-300 md:hidden" />
-                <button
-                  type="button"
-                  className="flex h-9 w-12 items-center justify-center rounded-r-md border-y border-r border-gray-300 pl-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pl-0 md:hover:bg-gray-50"
-                  onClick={moveToNext}
-                >
-                  <span className="sr-only">{viewMode === 'week' ? '次週' : '翌日'}</span>
-                  <ChevronRight className="size-5" aria-hidden="true" />
-                </button>
+            <div className="flex flex-col gap-2">
+              <div className="md:hidden flex flex-col gap-2 items-end justify-end">
+                <div className="w-fit min-w-[180px]">
+                  <Select
+                    value={selectedStaffId ?? ''}
+                    onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="スタッフを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {staffs.results?.map((staff) => (
+                        <SelectItem key={staff._id} value={staff._id}>
+                          {staff.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="hidden md:ml-4 md:flex md:flex-col md:items-center">
-                <span className="text-sm text-gray-500">選択中のスタッフ</span>
-                <Select
-                  value={selectedStaffId ?? ''}
-                  onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="スタッフを選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {staffs.results?.map((staff) => (
-                      <SelectItem key={staff._id} value={staff._id}>
-                        {staff.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Menu as="div" className="relative ml-6 md:hidden">
-                <MenuButton className="-mx-2 flex items-center rounded-full border border-transparent p-2 text-gray-400 hover:text-gray-500">
-                  <span className="sr-only">メニューを開く</span>
-                  <Ellipsis className="size-5" aria-hidden="true" />
-                </MenuButton>
+              <div className="flex items-center">
+                <div className="relative flex items-center rounded-md bg-white shadow-xs md:items-stretch">
+                  <button
+                    type="button"
+                    className="flex h-9 w-12 items-center justify-center rounded-l-md border-y border-l border-gray-300 pr-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pr-0 md:hover:bg-gray-50"
+                    onClick={moveToPrevious}
+                  >
+                    <span className="sr-only">{viewMode === 'week' ? '前週' : '前日'}</span>
+                    <ChevronLeft className="size-5" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="hidden border-y border-gray-300 px-3.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:relative md:block"
+                    onClick={moveToToday}
+                  >
+                    今日
+                  </button>
+                  <span className="relative -mx-px h-5 w-px bg-gray-300 md:hidden" />
+                  <button
+                    type="button"
+                    className="flex h-9 w-12 items-center justify-center rounded-r-md border-y border-r border-gray-300 pl-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pl-0 md:hover:bg-gray-50"
+                    onClick={moveToNext}
+                  >
+                    <span className="sr-only">{viewMode === 'week' ? '次週' : '翌日'}</span>
+                    <ChevronRight className="size-5" aria-hidden="true" />
+                  </button>
+                </div>
+                <div className="hidden md:ml-4 md:flex md:flex-col md:items-center">
+                  <Select
+                    value={selectedStaffId ?? ''}
+                    onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="スタッフを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {staffs.results?.map((staff) => (
+                        <SelectItem key={staff._id} value={staff._id}>
+                          {staff.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Menu as="div" className="relative ml-6 md:hidden">
+                  <MenuButton className="-mx-2 flex items-center rounded-full border border-transparent p-2 text-gray-400 hover:text-gray-500">
+                    <span className="sr-only">メニューを開く</span>
+                    <Ellipsis className="size-5" aria-hidden="true" />
+                  </MenuButton>
 
-                <MenuItems
-                  transition
-                  className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-hidden data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
-                >
-                  <div className="py-1">
-                    <MenuItem>
-                      <a
-                        href="#"
-                        className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
-                        onClick={moveToToday}
-                      >
-                        今日へ移動
-                      </a>
-                    </MenuItem>
-                    <MenuItem>
-                      <Link
-                        href="#"
-                        className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
-                        onClick={toggleViewMode}
-                      >
-                        {viewMode === 'day' ? '週表示に切り替え' : '日表示に切り替え'}
-                      </Link>
-                    </MenuItem>
-                  </div>
-                </MenuItems>
-              </Menu>
+                  <MenuItems
+                    transition
+                    className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-hidden data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
+                  >
+                    <div className="py-1">
+                      <MenuItem>
+                        <a
+                          href="#"
+                          className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
+                          onClick={moveToToday}
+                        >
+                          今日へ移動
+                        </a>
+                      </MenuItem>
+                      <MenuItem>
+                        <Link
+                          href="#"
+                          className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
+                          onClick={toggleViewMode}
+                        >
+                          {viewMode === 'day' ? '週表示に切り替え' : '日表示に切り替え'}
+                        </Link>
+                      </MenuItem>
+                    </div>
+                  </MenuItems>
+                </Menu>
+              </div>
             </div>
           </header>
           {reservations && reservations.length > 0 ? (
@@ -519,7 +526,7 @@ export default function TimelinePage() {
                   <div className="grid flex-auto grid-cols-1 grid-rows-1">
                     {/* 時間の行 - 24時間分に修正 */}
                     <div
-                      className="col-start-1 col-end-2 row-start-1 grid divide-y divide-gray-100"
+                      className={`col-start-1 col-end-2 row-start-1 grid divide-y divide-gray-100`}
                       style={{ gridTemplateRows: 'repeat(48, minmax(3.5rem, 1fr))' }}
                     >
                       <div ref={containerOffset} className="row-end-1 h-7"></div>
@@ -563,6 +570,12 @@ export default function TimelinePage() {
                     </ol>
                   </div>
                 </div>
+              </div>
+            </div>
+          ) : isReservationsLoading && selectedStaffId ? (
+            <div className="flex-1 overflow-y-auto">
+              <div className="flex items-center justify-center h-full pt-24 py-12 px-4 sm:px-6 lg:px-8">
+                <Loader2 className="h-5 w-5 animate-spin mr-2 text-indigo-500" />
               </div>
             </div>
           ) : (
