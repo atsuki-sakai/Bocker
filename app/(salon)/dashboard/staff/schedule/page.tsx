@@ -121,36 +121,30 @@ export default function StaffSchedulePage() {
 
   // 日付選択時の処理を更新
   useEffect(() => {
-    // 選択された日付から時間設定用の配列を作成
-    const newDateTimeSettings: DateWithTimes[] = selectedDates.map((date) => {
-      // すでに設定がある場合はそれを使用
-      const existingSetting = dateTimeSettings.find(
-        (setting) => format(setting.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-      );
-
-      if (existingSetting) {
-        return existingSetting;
-      }
-
-      // 新規設定の場合はデフォルト値（9:00-18:00）を設定
-      return {
-        date: date,
-        startTime: undefined,
-        endTime: undefined,
-      };
-    });
-
-    // 日付で昇順にソート
-    const sortedSettings = [...newDateTimeSettings].sort((a, b) => compareAsc(a.date, b.date));
-    // ここから追加：終日フラグをデフォルトで true に設定
+    // 終日フラグを selectedDates に基づいて初期化
     const newAllDayMap: { [key: string]: boolean } = {};
-    sortedSettings.forEach((setting) => {
-      newAllDayMap[setting.date.toISOString()] = true;
+    selectedDates.forEach((date) => {
+      newAllDayMap[date.toISOString()] = true;
     });
     setIsAllDay(newAllDayMap);
 
-    setDateTimeSettings(sortedSettings);
-  }, [selectedDates, dateTimeSettings]);
+    // selectedDates が変更されたとき、新しい時間設定を構築
+    setDateTimeSettings((prevSettings) => {
+      const newSettings: DateWithTimes[] = selectedDates.map((date) => {
+        const existingSetting = prevSettings.find(
+          (setting) => format(setting.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+        );
+        return (
+          existingSetting || {
+            date,
+            startTime: undefined,
+            endTime: undefined,
+          }
+        );
+      });
+      return [...newSettings].sort((a, b) => compareAsc(a.date, b.date));
+    });
+  }, [selectedDates]);
 
   // スタッフ選択時の既存スケジュール取得処理
   useEffect(() => {
@@ -212,8 +206,6 @@ export default function StaffSchedulePage() {
     }
     setDateTimeSettings(newSettings);
   };
-
-  console.log('isAllDay: ', isAllDay);
 
   return (
     <DashboardSection
