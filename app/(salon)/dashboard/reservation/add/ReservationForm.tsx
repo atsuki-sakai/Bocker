@@ -366,17 +366,38 @@ export default function ReservationForm() {
         });
 
         try {
-          const result = await fetchQuery(api.reservation.query.getAvailableTimeSlots, {
+          // newAvailableTimeSlotsはスタッフごとの配列を返す
+          const result = await fetchQuery(api.reservation.query.newAvailableTimeSlots, {
             salonId: salonId,
             staffId: selectedStaffId,
-            date: formattedDate, // ISO形式ではなくYYYY-MM-DD形式に変更
+            date: formattedDate,
             totalTimeToMin: totalTimeMinutes,
+            onionMode: {
+              slotSize: 60,
+              layer: 2,
+              pointHour: 15,
+            },
           });
 
           console.log('API呼び出し結果:', result);
 
-          if (result && result.timeSlots) {
-            setAvailableTimeSlots(result.timeSlots);
+          // 結果が配列で返され、選択したスタッフのスロットを含む場合
+          if (Array.isArray(result) && result.length > 0) {
+            // 指定したスタッフのデータを探す
+            const staffData = result.find((item) => item.staffId === selectedStaffId);
+
+            if (staffData && staffData.slots && staffData.slots.length > 0) {
+              // スタッフのスロットを現在のUIで必要な形式に変換
+              const staffSlots = staffData.slots.map((slot) => ({
+                startTime: slot.startTime_unix,
+                endTime: slot.endTime_unix,
+                startTimeFormatted: formatJpTime(slot.startTime_unix),
+                endTimeFormatted: formatJpTime(slot.endTime_unix),
+              }));
+              setAvailableTimeSlots(staffSlots);
+            } else {
+              setAvailableTimeSlots([]);
+            }
           } else {
             setAvailableTimeSlots([]);
           }

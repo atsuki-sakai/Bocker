@@ -132,8 +132,8 @@ export default defineSchema({
   // サロンの営業スケジュール設定テーブル
   salon_schedule_config: defineTable({
     salonId: v.id('salon'),
-    availableSheet: v.optional(v.number()), // 予約可能席数
-    reservationLimitDays: v.optional(v.number()), // 予約可能日数
+    availableSheet: v.optional(v.number()), // 同一時間内での最大予約数(席数が最大の施術数になるので席数と同じになる)
+    reservationLimitDays: v.optional(v.number()), // 現在から何日先まで予約できるかの日数
     availableCancelDays: v.optional(v.number()), // 予約キャンセル可能日数
     reservationIntervalMinutes: v.optional(reservationIntervalMinutesType) || 0, // 予約時間間隔(分)
     ...CommonFields,
@@ -162,20 +162,20 @@ export default defineSchema({
   // サロンの曜日毎のスケジュールテーブル
   salon_week_schedule: defineTable({
     salonId: v.id('salon'),
-    isOpen: v.optional(v.boolean()), // 営業日フラグ
-    dayOfWeek: v.optional(dayOfWeekType), // 曜日
-    startHour: v.optional(v.string()), // 開始時間 例: 09:00
-    endHour: v.optional(v.string()), // 終了時間 例: 18:00
+    isOpen: v.optional(v.boolean()), // 営業しているか？false: 休日なので予約を受け付けない。
+    dayOfWeek: v.optional(dayOfWeekType), // 営業している曜日
+    startHour: v.optional(v.string()), // 営業している開始時間 例: 09:00
+    endHour: v.optional(v.string()), // 営業している終了時間 例: 18:00
     ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_salon_week_is_open_day_of_week', ['salonId', 'dayOfWeek', 'isOpen', 'isArchive']),
 
-  // サロンのスケジュール例外テーブル 事前に登録する
+  // サロンのスケジュール例外テーブル 事前に登録する(サロンの休業日を設定する)
   salon_schedule_exception: defineTable({
     salonId: v.id('salon'), // フィルタリング用
     type: v.optional(salonScheduleExceptionType), // 例外タイプ
-    date: v.string(), // 日付 "YYYY-MM-DD" 形式
+    date: v.string(), // 日付 "YYYY-MM-DD" または "YYYY/MM/DD" 形式 この日は予約を受け付けない。
     ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
@@ -187,10 +187,10 @@ export default defineSchema({
   staff_week_schedule: defineTable({
     staffId: v.id('staff'),
     salonId: v.id('salon'),
-    isOpen: v.optional(v.boolean()), // 営業日フラグ
-    dayOfWeek: v.optional(dayOfWeekType), // 曜日
-    startHour: v.optional(v.string()), // 開始時間 例: 09:00
-    endHour: v.optional(v.string()), // 終了時間 例: 18:00
+    isOpen: v.optional(v.boolean()), // 営業しているか？false: 休日なので予約を受け付けない。
+    dayOfWeek: v.optional(dayOfWeekType), // 営業している曜日
+    startHour: v.optional(v.string()), // 営業している開始時間 例: 09:00
+    endHour: v.optional(v.string()), // 営業している終了時間 例: 18:00
     ...CommonFields,
   })
     .index('by_salon_staff_week_is_open', [
@@ -208,12 +208,12 @@ export default defineSchema({
   staff_schedule: defineTable({
     staffId: v.id('staff'),
     salonId: v.id('salon'),
-    date: v.optional(v.string()), // "YYYY-MM-DD" 形式
-    startTime_unix: v.optional(v.number()), // 開始時間 UNIXタイム
-    endTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
+    date: v.optional(v.string()), // 予約する日付 "YYYY-MM-DD" または "YYYY/MM/DD" 形式
+    startTime_unix: v.optional(v.number()), // 予約した施術の開始時間 UNIXタイム isAllDay: falseの場合はこちらで判定する予約がスケジュールに含まれるかどうかを判定するために使用
+    endTime_unix: v.optional(v.number()), // 予約した施術の終了時間 UNIXタイム isAllDay: falseの場合はこちらで判定する予約がスケジュールに含まれるかどうかを判定するために使用
     notes: v.optional(v.string()), // メモ
-    type: v.optional(staffScheduleType), // タイプ
-    isAllDay: v.optional(v.boolean()), // 全日フラグ
+    type: v.optional(staffScheduleType), // 予約タイプ 現状はholiday(休日)のみ
+    isAllDay: v.optional(v.boolean()), // true: 全日予約, false: 時間予約(時間指定が有効指定時間内のみ予約を受け付けないためのフラグ)
     ...CommonFields,
   })
     .index('by_staff_id', ['staffId', 'isArchive'])

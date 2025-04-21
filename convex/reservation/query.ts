@@ -244,6 +244,594 @@ export const findBySalonAndStatus = query({
   },
 });
 
+// 新たに予約可能な時間枠を計算して返す
+export const newAvailableTimeSlots = query({
+  args: {
+    salonId: v.id('salon'),
+    date: v.string(), // "YYYY-MM-DD"
+    staffId: v.optional(v.id('staff')), // オプション: 特定スタッフを選ぶ場合
+    totalTimeToMin: v.number(), // 合計施術時間(分)
+    onionMode: v.optional(v.object({
+      slotSize: v.optional(v.number()), // 時間枠の分割サイズ(分)
+      layer: v.optional(v.number()), // 先頭/末尾から抽出する枠数
+      pointHour: v.optional(v.number()), // layer適用時の基準時刻(例: 12)
+    })),
+  },
+  handler: async (ctx, args) => {
+    // 引数バリデーション
+    if (!args.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      console.log('日付形式が不正です:', args.date);
+      return [];
+    }
+
+    if (args.totalTimeToMin <= 0) {
+      console.log('施術時間が不正です:', args.totalTimeToMin);
+      return [];
+    }
+
+    // 日付から曜日を取得
+    const targetDate = new Date(args.date);
+    if (isNaN(targetDate.getTime())) {
+      console.log('日付の変換に失敗しました:', args.date);
+      return [];
+    }
+    const dayOfWeek = getDayOfWeek(targetDate);
+
+    // 1. サロン設定の取得
+    const salonConfig = await ctx.db
+      .query('salon_schedule_config')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .first();
+
+    if (!salonConfig || !salonConfig.availableSheet) {
+      console.log('サロン設定が見つからないか、最大予約数が設定されていません');
+      return [];
+    }
+    const availableSheet = salonConfig.availableSheet;
+
+    // 2. サロンの週間スケジュール取得
+    const salonWeekSchedule = await ctx.db
+      .query('salon_week_schedule')
+      .withIndex('by_salon_week_is_open_day_of_week', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('dayOfWeek', dayOfWeek)
+          .eq('isOpen', true)
+          .eq('isArchive', false)
+      )
+      .first();
+
+    if (!salonWeekSchedule || !salonWeekSchedule.isOpen) {
+      console.log(`サロンは${dayOfWeek}曜日は営業していません`);
+      return [];
+    }
+
+    if (!salonWeekSchedule.startHour || !salonWeekSchedule.endHour) {
+      console.log(`サロンの${dayOfWeek}曜日の営業時間が設定されていません`);
+      return [];
+    }
+
+    // 3. サロンの例外スケジュール (休業日) チェック
+    const salonException = await ctx.db
+      .query('salon_schedule_exception')
+      .withIndex('by_salon_date_type', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('date', args.date)
+          .eq('type', 'holiday')
+          .eq('isArchive', false)
+      )
+      .first();
+
+    if (salonException) {
+      console.log('サロンの臨時休業日です:', args.date);
+      return [];
+    }
+
+    // 4. スタッフの取得
+    let staffList = [];
+    if (args.staffId) {
+      // 特定のスタッフが指定されている場合
+      const staff = await ctx.db
+        .query('staff')
+        .withIndex('by_salon_id', (q) =>
+          q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
+        )
+        .filter((q) => q.eq(q.field('_id'), args.staffId))
+        .first();
+
+      if (!staff) {
+        console.log('指定されたスタッフが見つからないか、非アクティブです');
+        return [];
+      }
+      staffList.push(staff);
+    } else {
+      // スタッフが指定されていない場合、優先度順にアクティブなスタッフを取得
+      const staffs = await ctx.db
+        .query('staff')
+        .withIndex('by_salon_id', (q) =>
+          q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
+        )
+        .collect();
+
+      if (staffs.length === 0) {
+        console.log('アクティブなスタッフが見つかりません');
+        return [];
+      }
+
+      // スタッフ設定(priority)を取得して優先度でソート
+      const staffConfigs = await Promise.all(
+        staffs.map(async (staff) => {
+          const config = await ctx.db
+            .query('staff_config')
+            .withIndex('by_staff_id', (q) => q.eq('staffId', staff._id).eq('isArchive', false))
+            .first();
+          
+          return {
+            staff,
+            priority: config?.priority || 0
+          };
+        })
+      );
+
+      // 優先度順にソートして上位5名を取得
+      staffList = staffConfigs
+        .sort((a, b) => b.priority - a.priority)
+        .slice(0, 5)
+        .map(item => item.staff);
+    }
+
+    // 5. 各スタッフごとの空き時間を計算
+    const result = await Promise.all(
+      staffList.map(async (staff) => {
+        // 5.1 スタッフの週間スケジュール取得
+        const staffWeekSchedule = await ctx.db
+          .query('staff_week_schedule')
+          .withIndex('by_salon_staff_week_is_open', (q) =>
+            q
+              .eq('salonId', args.salonId)
+              .eq('staffId', staff._id)
+              .eq('dayOfWeek', dayOfWeek)
+              .eq('isOpen', true)
+              .eq('isArchive', false)
+          )
+          .first();
+
+        // スタッフがその曜日に勤務していない場合
+        if (!staffWeekSchedule || !staffWeekSchedule.isOpen) {
+          return {
+            staffId: staff._id,
+            slots: []
+          };
+        }
+
+        // 5.2 サロンとスタッフの営業時間から有効な勤務時間帯を計算
+        const year = targetDate.getFullYear();
+        const month = targetDate.getMonth();
+        const day = targetDate.getDate();
+
+        // サロンの営業時間
+        const [salonStartH, salonStartM] = salonWeekSchedule.startHour ? salonWeekSchedule.startHour.split(':').map(Number) : [0, 0];
+        const [salonEndH, salonEndM] = salonWeekSchedule.endHour ? salonWeekSchedule.endHour.split(':').map(Number) : [23, 59];
+        const salonOpenTime = new Date(year, month, day, salonStartH, salonStartM, 0).getTime();
+        const salonCloseTime = new Date(year, month, day, salonEndH, salonEndM, 0).getTime();
+
+        // スタッフの勤務時間
+        let staffOpenTime, staffCloseTime;
+        if (staffWeekSchedule.startHour && staffWeekSchedule.endHour) {
+          const [staffStartH, staffStartM] = staffWeekSchedule.startHour.split(':').map(Number);
+          const [staffEndH, staffEndM] = staffWeekSchedule.endHour.split(':').map(Number);
+          staffOpenTime = new Date(year, month, day, staffStartH, staffStartM, 0).getTime();
+          staffCloseTime = new Date(year, month, day, staffEndH, staffEndM, 0).getTime();
+        } else {
+          // スタッフの詳細勤務時間がない場合はサロンの時間を採用
+          staffOpenTime = salonOpenTime;
+          staffCloseTime = salonCloseTime;
+        }
+
+        // 有効な営業時間範囲を計算 (サロンとスタッフの共通部分)
+        const effectiveOpenTime = Math.max(salonOpenTime, staffOpenTime);
+        const effectiveCloseTime = Math.min(salonCloseTime, staffCloseTime);
+
+        // 有効な営業時間がない場合
+        if (effectiveOpenTime >= effectiveCloseTime) {
+          return {
+            staffId: staff._id,
+            slots: []
+          };
+        }
+
+        // 5.3 スタッフの個別スケジュール (休日/ブロック時間) チェック
+        const staffSchedules = await ctx.db
+          .query('staff_schedule')
+          .withIndex('by_salon_staff_date', (q) =>
+            q
+              .eq('salonId', args.salonId)
+              .eq('staffId', staff._id)
+              .eq('date', args.date)
+              .eq('isArchive', false)
+          )
+          .collect();
+
+        // 全日休みの場合
+        if (staffSchedules.some(s => s.type === 'holiday' && s.isAllDay)) {
+          return {
+            staffId: staff._id,
+            slots: []
+          };
+        }
+
+        // 5.4 勤務可能な時間帯を計算
+        // 初期の連続勤務可能区間 (スタッフの営業時間全体)
+        let availableRanges = [{
+          start: effectiveOpenTime,
+          end: effectiveCloseTime
+        }];
+
+        // 個別スケジュールによるブロック時間を反映
+        const blockRanges = staffSchedules
+          .filter(s => !s.isAllDay && s.startTime_unix && s.endTime_unix)
+          .map(s => ({
+            start: s.startTime_unix! * 1000, // UNIXタイム(秒)からミリ秒へ変換
+            end: s.endTime_unix! * 1000
+          }));
+
+        // ブロック時間によって勤務可能区間を分割
+        for (const block of blockRanges) {
+          const newRanges = [];
+          for (const range of availableRanges) {
+            // ブロック時間が現在の区間と重なる場合
+            if (block.start < range.end && block.end > range.start) {
+              // ブロック前の区間があれば追加
+              if (range.start < block.start) {
+                newRanges.push({
+                  start: range.start,
+                  end: block.start
+                });
+              }
+              // ブロック後の区間があれば追加
+              if (range.end > block.end) {
+                newRanges.push({
+                  start: block.end,
+                  end: range.end
+                });
+              }
+            } else {
+              // 重ならない場合はそのまま追加
+              newRanges.push(range);
+            }
+          }
+          availableRanges = newRanges;
+        }
+
+        // 5.5 既存予約の取得（スタッフ個別とサロン全体の両方）
+        const startOfDay = new Date(year, month, day, 0, 0, 0).getTime() / 1000;
+        const endOfDay = new Date(year, month, day, 23, 59, 59).getTime() / 1000;
+
+        // 予約間隔を取得（分単位）
+        const intervalMinutes = salonConfig.reservationIntervalMinutes || 30; // デフォルト30分
+        const intervalMillis = intervalMinutes * 60 * 1000;
+
+        // スタッフ個別の予約を取得（当日のみ）
+        const staffReservations = await ctx.db
+          .query('reservation')
+          .withIndex('by_staff_id', (q) =>
+            q.eq('salonId', args.salonId).eq('staffId', staff._id).eq('isArchive', false)
+          )
+          .filter((q) =>
+            q.and(
+              // 開始時刻が当日範囲内の予約のみ（日付をまたぐ予約は受け付けない）
+              q.gte(q.field('startTime_unix'), startOfDay),
+              q.lte(q.field('startTime_unix'), endOfDay),
+              q.or(q.eq(q.field('status'), 'confirmed'), q.eq(q.field('status'), 'pending'))
+            )
+          )
+          .collect();
+
+        // サロン全体の予約を取得（同時予約数チェック用）
+        const allSalonReservations = await ctx.db
+          .query('reservation')
+          .withIndex('by_salon_id', (q) =>
+            q.eq('salonId', args.salonId).eq('isArchive', false)
+          )
+          .filter((q) =>
+            q.and(
+              // 開始時刻が当日範囲内の予約のみ（日付をまたぐ予約は受け付けない）
+              q.gte(q.field('startTime_unix'), startOfDay),
+              q.lte(q.field('startTime_unix'), endOfDay),
+              q.or(q.eq(q.field('status'), 'confirmed'), q.eq(q.field('status'), 'pending'))
+            )
+          )
+          .collect();
+
+        // スタッフ個別の予約カウント
+        const staffTimeSlotCounts = new Map();
+        for (const res of staffReservations) {
+          const startTime = res.startTime_unix! * 1000; // 秒→ミリ秒に変換
+          const endTime = res.endTime_unix! * 1000;
+          
+          // 予約間隔に合わせてサンプリング
+          for (let time = startTime; time < endTime; time += intervalMillis) {
+            const count = staffTimeSlotCounts.get(time) || 0;
+            staffTimeSlotCounts.set(time, count + 1);
+          }
+        }
+        
+        // サロン全体の予約カウント（同時予約上限チェック用）
+        const salonTimeSlotCounts = new Map();
+        for (const res of allSalonReservations) {
+          const startTime = res.startTime_unix! * 1000;
+          const endTime = res.endTime_unix! * 1000;
+          
+          // 予約間隔に合わせてサンプリング
+          for (let time = startTime; time < endTime; time += intervalMillis) {
+            const count = salonTimeSlotCounts.get(time) || 0;
+            salonTimeSlotCounts.set(time, count + 1);
+          }
+        }
+
+        // 5.6 同時予約数を考慮した空き時間帯の計算
+        const finalRanges = [];
+        for (const range of availableRanges) {
+          let currentStart = range.start;
+          let isRangeOpen = true;
+
+          // 予約間隔でチェック
+          for (let time = range.start; time < range.end; time += intervalMillis) {
+            const staffCount = staffTimeSlotCounts.get(time) || 0;
+            const salonCount = salonTimeSlotCounts.get(time) || 0;
+            
+            // スタッフが既に予約済み、またはサロン全体の最大同時予約数に達した場合
+            if (staffCount > 0 || salonCount >= availableSheet) {
+              if (isRangeOpen) {
+                // 現在のオープン区間を閉じる
+                if (currentStart < time) {
+                  finalRanges.push({
+                    start: currentStart,
+                    end: time
+                  });
+                }
+                isRangeOpen = false;
+              }
+            } else if (!isRangeOpen) {
+              // 新しい区間を開始
+              currentStart = time;
+              isRangeOpen = true;
+            }
+          }
+
+          // 最後の区間を追加
+          if (isRangeOpen && currentStart < range.end) {
+            finalRanges.push({
+              start: currentStart,
+              end: range.end
+            });
+          }
+        }
+
+        // 5.7 施術時間を確保できる時間枠を抽出
+        const requiredDuration = args.totalTimeToMin * 60000; // ミリ秒に変換
+        let availableSlots: { startTime_unix: number; endTime_unix: number }[] = [];
+
+        for (const range of finalRanges) {
+          // 区間の長さが施術時間以上の場合のみ処理
+          if (range.end - range.start >= requiredDuration) {
+            // 各開始可能時点を予約間隔に従って検出
+            for (let startTime = range.start; startTime + requiredDuration <= range.end; startTime += intervalMillis) {
+              availableSlots.push({
+                startTime_unix: Math.floor(startTime / 1000),
+                endTime_unix: Math.floor((startTime + requiredDuration) / 1000)
+              });
+            }
+          }
+        }
+
+        // 5.8 オニオンモードの適用
+        if (args.onionMode) {
+          const { slotSize, layer, pointHour } = args.onionMode;
+          
+          // slotSizeが指定されている場合、時間枠を分割
+          if (slotSize && slotSize > 0) {
+            const slotDuration = slotSize * 60000; // ミリ秒に変換
+            const splitSlots = [];
+            
+            // 連続区間を指定サイズに分割（予約間隔の倍数になるように）
+            for (const range of finalRanges) {
+              // スロットサイズが予約間隔未満の場合は、予約間隔を使用
+              const effectiveSlotDuration = Math.max(slotDuration, intervalMillis);
+              
+              for (let start = range.start; start + effectiveSlotDuration <= range.end; start += effectiveSlotDuration) {
+                // 分割した時間枠が施術時間を確保できるか確認
+                if (start + requiredDuration <= range.end) {
+                  splitSlots.push({
+                    startTime_unix: Math.floor(start / 1000),
+                    endTime_unix: Math.floor((start + requiredDuration) / 1000)
+                  });
+                }
+              }
+            }
+            
+            availableSlots = splitSlots;
+          }
+          
+          // layerが指定されている場合、slotSize分の時間区切りを開始・終了から計算
+          if (layer && layer > 0) {
+            const maxLayer = Math.min(layer, 3); // 最大3レイヤーまで
+            
+            // 全スロットを時間順にソート
+            availableSlots.sort((a, b) => a.startTime_unix - b.startTime_unix);
+            
+            if (availableSlots.length === 0) {
+              // スロットがなければ空配列を返す
+              return {
+                staffId: staff._id,
+                slots: []
+              };
+            }
+            
+            // 営業時間の範囲を計算
+            // 営業開始時間（スタッフのスケジュールから）
+            const startWorkTime = effectiveOpenTime;
+            
+            // 営業終了時間（スタッフのスケジュールから）
+            const endWorkTime = effectiveCloseTime;
+            
+            // 施術時間（ミリ秒）
+            const treatmentTimeMs = args.totalTimeToMin * 60 * 1000;
+            
+            // スロットサイズをミリ秒に変換
+            const slotSizeMs = (slotSize || 60) * 60 * 1000; // デフォルト60分
+            
+            // 全ての可能な時間枠（予約可能かどうかは未チェック）を生成
+            const allPossibleSlots = [];
+            
+            // 営業時間内で、スロットサイズごとの全ての開始可能時間を生成
+            for (let time = startWorkTime; time + treatmentTimeMs <= endWorkTime; time += slotSizeMs) {
+              // この時間枠が予約可能かどうかチェック
+              let isSlotAvailable = true;
+              
+              // 予約間隔でチェック
+              for (let checkTime = time; checkTime < time + treatmentTimeMs; checkTime += intervalMillis) {
+                // スタッフの予約状況をチェック
+                const staffCount = staffTimeSlotCounts.get(checkTime) || 0;
+                // サロン全体の予約状況をチェック
+                const salonCount = salonTimeSlotCounts.get(checkTime) || 0;
+                
+                // スタッフがすでに予約済み、またはサロンの同時予約上限に達している場合
+                if (staffCount > 0 || salonCount >= availableSheet) {
+                  isSlotAvailable = false;
+                  break;
+                }
+              }
+              
+              // 予約可能な場合のみスロットに追加
+              if (isSlotAvailable) {
+                allPossibleSlots.push({
+                  startTime: time,
+                  endTime: time + treatmentTimeMs
+                });
+              }
+            }
+            
+            // 予約可能な時間枠がない場合
+            if (allPossibleSlots.length === 0) {
+              return {
+                staffId: staff._id,
+                slots: []
+              };
+            }
+            
+            // 時間順にソート
+            allPossibleSlots.sort((a, b) => a.startTime - b.startTime);
+            
+            // pointHourを計算
+            let pointHourMillis: number | null = null;
+            if (pointHour) {
+              pointHourMillis = new Date(year, month, day, pointHour, 0, 0).getTime();
+            }
+            
+            // pointHourに基づいて前半・後半を分ける
+            let frontSlots: { startTime: number; endTime: number }[] = [];
+            let backSlots: { startTime: number; endTime: number }[] = [];
+            
+            if (pointHourMillis && allPossibleSlots.length > 0) {
+              // pointHourがスタッフの終了時間より後の場合は、スタッフの終了時間を使用
+              if (pointHourMillis > endWorkTime) {
+                pointHourMillis = endWorkTime - treatmentTimeMs;
+              }
+              
+              // pointHourがスタッフの開始時間より前の場合は、スタッフの開始時間を使用
+              if (pointHourMillis < startWorkTime) {
+                pointHourMillis = startWorkTime;
+              }
+              
+              const firstSlotTime = allPossibleSlots[0].startTime;
+              const lastSlotTime = allPossibleSlots[allPossibleSlots.length - 1].startTime;
+              
+              if (firstSlotTime >= pointHourMillis) {
+                // 全ての枠がpointHour以降の場合は、全て後半セクションとして扱う
+                frontSlots = [];
+                backSlots = allPossibleSlots;
+              } else if (lastSlotTime < pointHourMillis) {
+                // 全ての枠がpointHour以前の場合は、全て前半セクションとして扱う
+                frontSlots = allPossibleSlots;
+                backSlots = [];
+              } else {
+                // pointHourを境界として前半と後半に分ける
+                frontSlots = allPossibleSlots.filter(slot => slot.startTime < pointHourMillis!);
+                backSlots = allPossibleSlots.filter(slot => slot.startTime >= pointHourMillis!);
+              }
+            } else {
+              // pointHourが指定されていない場合は、時間枠の長さを半分に分割
+              const halfIndex = Math.floor(allPossibleSlots.length / 2);
+              frontSlots = allPossibleSlots.slice(0, halfIndex);
+              backSlots = allPossibleSlots.slice(halfIndex);
+            }
+            
+            // 最終的に選択されるスロット
+            const selectedSlots: { startTime: number; endTime: number }[] = [];
+            
+            // 前半から最大maxLayer個取得
+            const frontSelected = frontSlots.slice(0, maxLayer);
+            selectedSlots.push(...frontSelected);
+            
+            // 後半からも最大maxLayer個取得
+            const backSelected = backSlots.slice(0, maxLayer);
+            selectedSlots.push(...backSelected);
+            
+            // 前半セクションが足りない場合、後半から補充
+            const frontNeeded = maxLayer - frontSelected.length;
+            if (frontNeeded > 0 && backSlots.length > maxLayer) {
+              // 後半セクションから先頭以外の追加スロットを取得
+              const additionalFromBack = backSlots.slice(maxLayer, maxLayer + frontNeeded);
+              selectedSlots.push(...additionalFromBack);
+            }
+            
+            // 後半セクションが足りない場合、前半から補充
+            const backNeeded = maxLayer - backSelected.length;
+            if (backNeeded > 0 && frontSlots.length > maxLayer) {
+              // 前半セクションから末尾以外の追加スロットを取得
+              const additionalFromFront = frontSlots.slice(maxLayer, maxLayer + backNeeded);
+              selectedSlots.push(...additionalFromFront);
+            }
+            
+            // スロットが十分でない場合は追加でスロットを補充
+            if (selectedSlots.length < maxLayer * 2 && allPossibleSlots.length > selectedSlots.length) {
+              // 既に選択されたスロット以外から補充
+              const remainingSlots = allPossibleSlots.filter(
+                slot => !selectedSlots.some(s => s.startTime === slot.startTime)
+              );
+              
+              const additionalNeeded = Math.min(
+                maxLayer * 2 - selectedSlots.length,
+                remainingSlots.length
+              );
+              
+              selectedSlots.push(...remainingSlots.slice(0, additionalNeeded));
+            }
+            
+            // 時刻順に並べ替え
+            selectedSlots.sort((a, b) => a.startTime - b.startTime);
+            
+            // 最終形式に変換
+            availableSlots = selectedSlots.map(slot => ({
+              startTime_unix: Math.floor(slot.startTime / 1000),
+              endTime_unix: Math.floor(slot.endTime / 1000)
+            }));
+          }
+        }
+
+        return {
+          staffId: staff._id,
+          slots: availableSlots
+        };
+      })
+    );
+
+    return result;
+  },
+});
+
 // 利用可能な予約の空き時間枠を取得
 export const getAvailableTimeSlots = query({
   args: {
@@ -692,7 +1280,7 @@ export const getAvailableTimeSlots = query({
   },
 });
 
-// FIXME: 予約可能かの判定
+// 予約可能かの判定
 export const checkAvailableTimeSlot = query({
   args: {
     salonId: v.id('salon'),
