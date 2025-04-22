@@ -374,8 +374,7 @@ export default function ReservationForm() {
             totalTimeToMin: totalTimeMinutes,
             onionMode: {
               slotSize: 60,
-              layer: 2,
-              pointHour: 15,
+              layer: 4,
             },
           });
 

@@ -251,11 +251,13 @@ export const newAvailableTimeSlots = query({
     date: v.string(), // "YYYY-MM-DD"
     staffId: v.optional(v.id('staff')), // オプション: 特定スタッフを選ぶ場合
     totalTimeToMin: v.number(), // 合計施術時間(分)
-    onionMode: v.optional(v.object({
-      slotSize: v.optional(v.number()), // 時間枠の分割サイズ(分)
-      layer: v.optional(v.number()), // 先頭/末尾から抽出する枠数
-      pointHour: v.optional(v.number()), // layer適用時の基準時刻(例: 12)
-    })),
+    onionMode: v.optional(
+      v.object({
+        slotSize: v.optional(v.number()), // 時間枠の分割サイズ(分)
+        layer: v.optional(v.number()), // 先頭/末尾から抽出する枠数
+        disableBackSlots: v.optional(v.boolean()), // 終了時間から逆算するスロットを無効にする
+      })
+    ),
   },
   handler: async (ctx, args) => {
     // 引数バリデーション
@@ -366,10 +368,10 @@ export const newAvailableTimeSlots = query({
             .query('staff_config')
             .withIndex('by_staff_id', (q) => q.eq('staffId', staff._id).eq('isArchive', false))
             .first();
-          
+
           return {
             staff,
-            priority: config?.priority || 0
+            priority: config?.priority || 0,
           };
         })
       );
@@ -378,7 +380,7 @@ export const newAvailableTimeSlots = query({
       staffList = staffConfigs
         .sort((a, b) => b.priority - a.priority)
         .slice(0, 5)
-        .map(item => item.staff);
+        .map((item) => item.staff);
     }
 
     // 5. 各スタッフごとの空き時間を計算
@@ -401,7 +403,7 @@ export const newAvailableTimeSlots = query({
         if (!staffWeekSchedule || !staffWeekSchedule.isOpen) {
           return {
             staffId: staff._id,
-            slots: []
+            slots: [],
           };
         }
 
@@ -411,8 +413,12 @@ export const newAvailableTimeSlots = query({
         const day = targetDate.getDate();
 
         // サロンの営業時間
-        const [salonStartH, salonStartM] = salonWeekSchedule.startHour ? salonWeekSchedule.startHour.split(':').map(Number) : [0, 0];
-        const [salonEndH, salonEndM] = salonWeekSchedule.endHour ? salonWeekSchedule.endHour.split(':').map(Number) : [23, 59];
+        const [salonStartH, salonStartM] = salonWeekSchedule.startHour
+          ? salonWeekSchedule.startHour.split(':').map(Number)
+          : [0, 0];
+        const [salonEndH, salonEndM] = salonWeekSchedule.endHour
+          ? salonWeekSchedule.endHour.split(':').map(Number)
+          : [23, 59];
         const salonOpenTime = new Date(year, month, day, salonStartH, salonStartM, 0).getTime();
         const salonCloseTime = new Date(year, month, day, salonEndH, salonEndM, 0).getTime();
 
@@ -437,7 +443,7 @@ export const newAvailableTimeSlots = query({
         if (effectiveOpenTime >= effectiveCloseTime) {
           return {
             staffId: staff._id,
-            slots: []
+            slots: [],
           };
         }
 
@@ -454,26 +460,28 @@ export const newAvailableTimeSlots = query({
           .collect();
 
         // 全日休みの場合
-        if (staffSchedules.some(s => s.type === 'holiday' && s.isAllDay)) {
+        if (staffSchedules.some((s) => s.type === 'holiday' && s.isAllDay)) {
           return {
             staffId: staff._id,
-            slots: []
+            slots: [],
           };
         }
 
         // 5.4 勤務可能な時間帯を計算
         // 初期の連続勤務可能区間 (スタッフの営業時間全体)
-        let availableRanges = [{
-          start: effectiveOpenTime,
-          end: effectiveCloseTime
-        }];
+        let availableRanges = [
+          {
+            start: effectiveOpenTime,
+            end: effectiveCloseTime,
+          },
+        ];
 
         // 個別スケジュールによるブロック時間を反映
         const blockRanges = staffSchedules
-          .filter(s => !s.isAllDay && s.startTime_unix && s.endTime_unix)
-          .map(s => ({
+          .filter((s) => !s.isAllDay && s.startTime_unix && s.endTime_unix)
+          .map((s) => ({
             start: s.startTime_unix! * 1000, // UNIXタイム(秒)からミリ秒へ変換
-            end: s.endTime_unix! * 1000
+            end: s.endTime_unix! * 1000,
           }));
 
         // ブロック時間によって勤務可能区間を分割
@@ -486,14 +494,14 @@ export const newAvailableTimeSlots = query({
               if (range.start < block.start) {
                 newRanges.push({
                   start: range.start,
-                  end: block.start
+                  end: block.start,
                 });
               }
               // ブロック後の区間があれば追加
               if (range.end > block.end) {
                 newRanges.push({
                   start: block.end,
-                  end: range.end
+                  end: range.end,
                 });
               }
             } else {
@@ -531,9 +539,7 @@ export const newAvailableTimeSlots = query({
         // サロン全体の予約を取得（同時予約数チェック用）
         const allSalonReservations = await ctx.db
           .query('reservation')
-          .withIndex('by_salon_id', (q) =>
-            q.eq('salonId', args.salonId).eq('isArchive', false)
-          )
+          .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
           .filter((q) =>
             q.and(
               // 開始時刻が当日範囲内の予約のみ（日付をまたぐ予約は受け付けない）
@@ -549,20 +555,20 @@ export const newAvailableTimeSlots = query({
         for (const res of staffReservations) {
           const startTime = res.startTime_unix! * 1000; // 秒→ミリ秒に変換
           const endTime = res.endTime_unix! * 1000;
-          
+
           // 予約間隔に合わせてサンプリング
           for (let time = startTime; time < endTime; time += intervalMillis) {
             const count = staffTimeSlotCounts.get(time) || 0;
             staffTimeSlotCounts.set(time, count + 1);
           }
         }
-        
+
         // サロン全体の予約カウント（同時予約上限チェック用）
         const salonTimeSlotCounts = new Map();
         for (const res of allSalonReservations) {
           const startTime = res.startTime_unix! * 1000;
           const endTime = res.endTime_unix! * 1000;
-          
+
           // 予約間隔に合わせてサンプリング
           for (let time = startTime; time < endTime; time += intervalMillis) {
             const count = salonTimeSlotCounts.get(time) || 0;
@@ -580,7 +586,7 @@ export const newAvailableTimeSlots = query({
           for (let time = range.start; time < range.end; time += intervalMillis) {
             const staffCount = staffTimeSlotCounts.get(time) || 0;
             const salonCount = salonTimeSlotCounts.get(time) || 0;
-            
+
             // スタッフが既に予約済み、またはサロン全体の最大同時予約数に達した場合
             if (staffCount > 0 || salonCount >= availableSheet) {
               if (isRangeOpen) {
@@ -588,7 +594,7 @@ export const newAvailableTimeSlots = query({
                 if (currentStart < time) {
                   finalRanges.push({
                     start: currentStart,
-                    end: time
+                    end: time,
                   });
                 }
                 isRangeOpen = false;
@@ -604,7 +610,7 @@ export const newAvailableTimeSlots = query({
           if (isRangeOpen && currentStart < range.end) {
             finalRanges.push({
               start: currentStart,
-              end: range.end
+              end: range.end,
             });
           }
         }
@@ -617,10 +623,14 @@ export const newAvailableTimeSlots = query({
           // 区間の長さが施術時間以上の場合のみ処理
           if (range.end - range.start >= requiredDuration) {
             // 各開始可能時点を予約間隔に従って検出
-            for (let startTime = range.start; startTime + requiredDuration <= range.end; startTime += intervalMillis) {
+            for (
+              let startTime = range.start;
+              startTime + requiredDuration <= range.end;
+              startTime += intervalMillis
+            ) {
               availableSlots.push({
                 startTime_unix: Math.floor(startTime / 1000),
-                endTime_unix: Math.floor((startTime + requiredDuration) / 1000)
+                endTime_unix: Math.floor((startTime + requiredDuration) / 1000),
               });
             }
           }
@@ -628,202 +638,194 @@ export const newAvailableTimeSlots = query({
 
         // 5.8 オニオンモードの適用
         if (args.onionMode) {
-          const { slotSize, layer, pointHour } = args.onionMode;
-          
-          // slotSizeが指定されている場合、時間枠を分割
-          if (slotSize && slotSize > 0) {
-            const slotDuration = slotSize * 60000; // ミリ秒に変換
-            const splitSlots = [];
-            
-            // 連続区間を指定サイズに分割（予約間隔の倍数になるように）
-            for (const range of finalRanges) {
-              // スロットサイズが予約間隔未満の場合は、予約間隔を使用
-              const effectiveSlotDuration = Math.max(slotDuration, intervalMillis);
-              
-              for (let start = range.start; start + effectiveSlotDuration <= range.end; start += effectiveSlotDuration) {
-                // 分割した時間枠が施術時間を確保できるか確認
-                if (start + requiredDuration <= range.end) {
-                  splitSlots.push({
-                    startTime_unix: Math.floor(start / 1000),
-                    endTime_unix: Math.floor((start + requiredDuration) / 1000)
-                  });
+          const { slotSize = 60, layer = 2, disableBackSlots = false } = args.onionMode;
+
+          // 営業開始時間と終了時間を分単位に変換
+          const startWorkTimeMin = Math.floor(effectiveOpenTime / 1000 / 60); // 分単位
+          const endWorkTimeMin = Math.floor(effectiveCloseTime / 1000 / 60); // 分単位
+
+          // 施術時間（分単位）
+          const totalMin = args.totalTimeToMin;
+
+          // 仕様に従った関数を実装
+          const generateTimeSlots = (
+            totalmin: number,
+            startMin: number,
+            endMin: number,
+            layer: number,
+            slotsize: number,
+            disableBack: boolean
+          ) => {
+            // 2. 前方から時間枠を生成
+            const frontSlots: [number, number][] = [];
+            for (let i = 0; i < layer; i++) {
+              const slotStart = startMin + i * slotsize;
+              const slotEnd = slotStart + totalmin;
+
+              // 営業時間内かチェック
+              if (slotStart >= startMin && slotEnd <= endMin) {
+                // この時間枠が予約可能かどうかチェック
+                let isSlotAvailable = true;
+                const slotStartMs = slotStart * 60 * 1000;
+                const slotEndMs = slotEnd * 60 * 1000;
+
+                // 予約間隔でチェック
+                for (
+                  let checkTime = slotStartMs;
+                  checkTime < slotEndMs;
+                  checkTime += intervalMillis
+                ) {
+                  // スタッフの予約状況をチェック
+                  const staffCount = staffTimeSlotCounts.get(checkTime) || 0;
+                  // サロン全体の予約状況をチェック
+                  const salonCount = salonTimeSlotCounts.get(checkTime) || 0;
+
+                  // スタッフがすでに予約済み、またはサロンの同時予約上限に達している場合
+                  if (staffCount > 0 || salonCount >= availableSheet) {
+                    isSlotAvailable = false;
+                    break;
+                  }
+                }
+
+                // 予約可能な場合のみスロットに追加
+                if (isSlotAvailable) {
+                  frontSlots.push([slotStart, slotEnd]);
                 }
               }
             }
-            
-            availableSlots = splitSlots;
-          }
-          
-          // layerが指定されている場合、slotSize分の時間区切りを開始・終了から計算
-          if (layer && layer > 0) {
-            const maxLayer = Math.min(layer, 3); // 最大3レイヤーまで
-            
-            // 全スロットを時間順にソート
-            availableSlots.sort((a, b) => a.startTime_unix - b.startTime_unix);
-            
-            if (availableSlots.length === 0) {
-              // スロットがなければ空配列を返す
-              return {
-                staffId: staff._id,
-                slots: []
+
+            // disableBackSlotsが有効な場合は後方スロットを追加しない
+            if (disableBack) {
+              // 時間順に並べ替え
+              frontSlots.sort((a, b) => a[0] - b[0]);
+
+              // フォーマット関数
+              const formatMinutes = (total: number) => {
+                const hh = Math.floor(total / 60);
+                const mm = total % 60;
+                return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
               };
+
+              // 時間枠をUNIXタイムに変換して返す
+              return frontSlots.map(([s, e]) => {
+                const startTimeUnix = Math.floor(s * 60); // 秒単位
+                const endTimeUnix = Math.floor(e * 60); // 秒単位
+
+                return {
+                  startTime_unix: startTimeUnix,
+                  endTime_unix: endTimeUnix,
+                  // デバッグ用にフォーマット済みの時間も含める
+                  startTimeFormatted: formatMinutes(s),
+                  endTimeFormatted: formatMinutes(e),
+                };
+              });
             }
-            
-            // 営業時間の範囲を計算
-            // 営業開始時間（スタッフのスケジュールから）
-            const startWorkTime = effectiveOpenTime;
-            
-            // 営業終了時間（スタッフのスケジュールから）
-            const endWorkTime = effectiveCloseTime;
-            
-            // 施術時間（ミリ秒）
-            const treatmentTimeMs = args.totalTimeToMin * 60 * 1000;
-            
-            // スロットサイズをミリ秒に変換
-            const slotSizeMs = (slotSize || 60) * 60 * 1000; // デフォルト60分
-            
-            // 全ての可能な時間枠（予約可能かどうかは未チェック）を生成
-            const allPossibleSlots = [];
-            
-            // 営業時間内で、スロットサイズごとの全ての開始可能時間を生成
-            for (let time = startWorkTime; time + treatmentTimeMs <= endWorkTime; time += slotSizeMs) {
-              // この時間枠が予約可能かどうかチェック
-              let isSlotAvailable = true;
-              
-              // 予約間隔でチェック
-              for (let checkTime = time; checkTime < time + treatmentTimeMs; checkTime += intervalMillis) {
-                // スタッフの予約状況をチェック
-                const staffCount = staffTimeSlotCounts.get(checkTime) || 0;
-                // サロン全体の予約状況をチェック
-                const salonCount = salonTimeSlotCounts.get(checkTime) || 0;
-                
-                // スタッフがすでに予約済み、またはサロンの同時予約上限に達している場合
-                if (staffCount > 0 || salonCount >= availableSheet) {
-                  isSlotAvailable = false;
+
+            // 3. 後方から時間枠を生成 (disableBackSlotsが無効の場合のみ)
+            const backSlots: [number, number][] = [];
+            for (let i = 0; i < layer; i++) {
+              const slotEnd = endMin - i * slotsize;
+              const slotStart = slotEnd - totalmin;
+
+              // 営業時間内かチェック
+              if (slotStart >= startMin && slotEnd <= endMin) {
+                // この時間枠が予約可能かどうかチェック
+                let isSlotAvailable = true;
+                const slotStartMs = slotStart * 60 * 1000;
+                const slotEndMs = slotEnd * 60 * 1000;
+
+                // 予約間隔でチェック
+                for (
+                  let checkTime = slotStartMs;
+                  checkTime < slotEndMs;
+                  checkTime += intervalMillis
+                ) {
+                  // スタッフの予約状況をチェック
+                  const staffCount = staffTimeSlotCounts.get(checkTime) || 0;
+                  // サロン全体の予約状況をチェック
+                  const salonCount = salonTimeSlotCounts.get(checkTime) || 0;
+
+                  // スタッフがすでに予約済み、またはサロンの同時予約上限に達している場合
+                  if (staffCount > 0 || salonCount >= availableSheet) {
+                    isSlotAvailable = false;
+                    break;
+                  }
+                }
+
+                // 予約可能な場合のみスロットに追加
+                if (isSlotAvailable) {
+                  backSlots.push([slotStart, slotEnd]);
+                }
+              }
+            }
+
+            // 後方スロットを開始時間昇順にソート
+            backSlots.sort((a, b) => a[0] - b[0]);
+
+            // 4. 前方と後方を結合し、重複を除外
+            const merged = [...frontSlots];
+            for (const [bs, be] of backSlots) {
+              // 既存のスロットと重複してないか確認
+              let isOverlap = false;
+              for (const [ms, me] of merged) {
+                // 重複判定: 開始時間が既存の終了時間以前 かつ 終了時間が既存の開始時間以降
+                if (!(be <= ms || bs >= me)) {
+                  isOverlap = true;
                   break;
                 }
               }
-              
-              // 予約可能な場合のみスロットに追加
-              if (isSlotAvailable) {
-                allPossibleSlots.push({
-                  startTime: time,
-                  endTime: time + treatmentTimeMs
-                });
+
+              // 重複がない場合のみ追加（仕様: 早い方を優先）
+              if (!isOverlap) {
+                merged.push([bs, be]);
               }
             }
-            
-            // 予約可能な時間枠がない場合
-            if (allPossibleSlots.length === 0) {
+
+            // 時間順に並べ替え
+            merged.sort((a, b) => a[0] - b[0]);
+
+            // フォーマット関数
+            const formatMinutes = (total: number) => {
+              const hh = Math.floor(total / 60);
+              const mm = total % 60;
+              return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+            };
+
+            // 時間枠をUNIXタイムに変換して返す
+            return merged.map(([s, e]) => {
+              const startTimeUnix = Math.floor(s * 60); // 秒単位
+              const endTimeUnix = Math.floor(e * 60); // 秒単位
+
               return {
-                staffId: staff._id,
-                slots: []
+                startTime_unix: startTimeUnix,
+                endTime_unix: endTimeUnix,
+                // デバッグ用にフォーマット済みの時間も含める
+                startTimeFormatted: formatMinutes(s),
+                endTimeFormatted: formatMinutes(e),
               };
-            }
-            
-            // 時間順にソート
-            allPossibleSlots.sort((a, b) => a.startTime - b.startTime);
-            
-            // pointHourを計算
-            let pointHourMillis: number | null = null;
-            if (pointHour) {
-              pointHourMillis = new Date(year, month, day, pointHour, 0, 0).getTime();
-            }
-            
-            // pointHourに基づいて前半・後半を分ける
-            let frontSlots: { startTime: number; endTime: number }[] = [];
-            let backSlots: { startTime: number; endTime: number }[] = [];
-            
-            if (pointHourMillis && allPossibleSlots.length > 0) {
-              // pointHourがスタッフの終了時間より後の場合は、スタッフの終了時間を使用
-              if (pointHourMillis > endWorkTime) {
-                pointHourMillis = endWorkTime - treatmentTimeMs;
-              }
-              
-              // pointHourがスタッフの開始時間より前の場合は、スタッフの開始時間を使用
-              if (pointHourMillis < startWorkTime) {
-                pointHourMillis = startWorkTime;
-              }
-              
-              const firstSlotTime = allPossibleSlots[0].startTime;
-              const lastSlotTime = allPossibleSlots[allPossibleSlots.length - 1].startTime;
-              
-              if (firstSlotTime >= pointHourMillis) {
-                // 全ての枠がpointHour以降の場合は、全て後半セクションとして扱う
-                frontSlots = [];
-                backSlots = allPossibleSlots;
-              } else if (lastSlotTime < pointHourMillis) {
-                // 全ての枠がpointHour以前の場合は、全て前半セクションとして扱う
-                frontSlots = allPossibleSlots;
-                backSlots = [];
-              } else {
-                // pointHourを境界として前半と後半に分ける
-                frontSlots = allPossibleSlots.filter(slot => slot.startTime < pointHourMillis!);
-                backSlots = allPossibleSlots.filter(slot => slot.startTime >= pointHourMillis!);
-              }
-            } else {
-              // pointHourが指定されていない場合は、時間枠の長さを半分に分割
-              const halfIndex = Math.floor(allPossibleSlots.length / 2);
-              frontSlots = allPossibleSlots.slice(0, halfIndex);
-              backSlots = allPossibleSlots.slice(halfIndex);
-            }
-            
-            // 最終的に選択されるスロット
-            const selectedSlots: { startTime: number; endTime: number }[] = [];
-            
-            // 前半から最大maxLayer個取得
-            const frontSelected = frontSlots.slice(0, maxLayer);
-            selectedSlots.push(...frontSelected);
-            
-            // 後半からも最大maxLayer個取得
-            const backSelected = backSlots.slice(0, maxLayer);
-            selectedSlots.push(...backSelected);
-            
-            // 前半セクションが足りない場合、後半から補充
-            const frontNeeded = maxLayer - frontSelected.length;
-            if (frontNeeded > 0 && backSlots.length > maxLayer) {
-              // 後半セクションから先頭以外の追加スロットを取得
-              const additionalFromBack = backSlots.slice(maxLayer, maxLayer + frontNeeded);
-              selectedSlots.push(...additionalFromBack);
-            }
-            
-            // 後半セクションが足りない場合、前半から補充
-            const backNeeded = maxLayer - backSelected.length;
-            if (backNeeded > 0 && frontSlots.length > maxLayer) {
-              // 前半セクションから末尾以外の追加スロットを取得
-              const additionalFromFront = frontSlots.slice(maxLayer, maxLayer + backNeeded);
-              selectedSlots.push(...additionalFromFront);
-            }
-            
-            // スロットが十分でない場合は追加でスロットを補充
-            if (selectedSlots.length < maxLayer * 2 && allPossibleSlots.length > selectedSlots.length) {
-              // 既に選択されたスロット以外から補充
-              const remainingSlots = allPossibleSlots.filter(
-                slot => !selectedSlots.some(s => s.startTime === slot.startTime)
-              );
-              
-              const additionalNeeded = Math.min(
-                maxLayer * 2 - selectedSlots.length,
-                remainingSlots.length
-              );
-              
-              selectedSlots.push(...remainingSlots.slice(0, additionalNeeded));
-            }
-            
-            // 時刻順に並べ替え
-            selectedSlots.sort((a, b) => a.startTime - b.startTime);
-            
-            // 最終形式に変換
-            availableSlots = selectedSlots.map(slot => ({
-              startTime_unix: Math.floor(slot.startTime / 1000),
-              endTime_unix: Math.floor(slot.endTime / 1000)
-            }));
-          }
+            });
+          };
+
+          // オニオンモードで時間枠を生成
+          const generatedSlots = generateTimeSlots(
+            totalMin,
+            startWorkTimeMin,
+            endWorkTimeMin,
+            layer,
+            slotSize,
+            disableBackSlots
+          );
+
+          // UNIX形式のスロットのみに変換して返す
+          availableSlots = generatedSlots.map((slot) => ({
+            startTime_unix: slot.startTime_unix,
+            endTime_unix: slot.endTime_unix,
+          }));
         }
 
         return {
           staffId: staff._id,
-          slots: availableSlots
+          slots: availableSlots,
         };
       })
     );
