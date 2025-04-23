@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
 import { compressAndConvertToWebP, fileToBase64, decryptString, encryptString } from '@/lib/utils';
 import { Id } from '@/convex/_generated/dataModel';
@@ -309,8 +309,7 @@ export default function StaffEditForm() {
         }
       }
 
-      const errorDetails = handleError(error);
-      toast.error(errorDetails.message, {
+      toast.error(handleErrorToMsg(error), {
         icon: <X className="h-4 w-4 text-red-500" />,
       });
     } finally {

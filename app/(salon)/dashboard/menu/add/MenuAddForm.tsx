@@ -12,7 +12,7 @@ import { compressAndConvertToWebP, fileToBase64, cn } from '@/lib/utils';
 import { useAction, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { TagBadge } from '@/components/common';
@@ -266,8 +266,7 @@ export default function MenuAddForm() {
           imgUrl: uploadImagePath,
         });
       }
-      const errorDetails = handleError(error);
-      toast.error('メニュー登録に失敗しました: ' + errorDetails.message);
+      toast.error(handleErrorToMsg(error));
     } finally {
       setIsUploading(false);
     }

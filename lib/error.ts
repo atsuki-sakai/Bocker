@@ -82,6 +82,7 @@ export const throwConvexError = (errorInfo: {
   severity: ErrorSeverity | null; // エラーの重大度
   code: ErrorCode | null; // エラーコード
   status: number | null; // エラーステータスコード
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   details: Record<string, any> | null; // エラー詳細
 }) => {
   if (errorInfo.severity && errorInfo.severity !== 'low') {

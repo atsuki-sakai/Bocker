@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 
 // カスタムカレンダーコンポーネントをインポート
 import CalendarMultiSelect from '@/components/common/CalendarMultiSelect';
@@ -205,8 +205,7 @@ export default function SalonExceptionScheduleForm() {
           setTimeout(() => setShowSuccess(false), 3000);
         } catch (error: unknown) {
           console.error('休業日の保存に失敗しました', error);
-          const errorDetails = handleError(error);
-          toast.error(errorDetails.message);
+          toast.error(handleErrorToMsg(error));
         } finally {
           setIsSaving(false);
         }

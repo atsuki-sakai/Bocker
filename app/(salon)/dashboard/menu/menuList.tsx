@@ -34,7 +34,7 @@ import { useMutation, useAction } from 'convex/react';
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { Id } from '@/convex/_generated/dataModel';
 
 const numberOfMenus = 10;
@@ -327,8 +327,7 @@ export default function MenuList() {
       toast.success('メニューを削除しました');
       setIsDeleteDialogOpen(false);
     } catch (error) {
-      const errorDetails = handleError(error);
-      toast.error(errorDetails.message);
+      toast.error(handleErrorToMsg(error));
     }
   }, [deletingMenuId, deletingImgPath, killMenu, deleteMenuImage]);
 

@@ -31,7 +31,7 @@ import { ZodTextField } from '@/components/common';
 import { Save } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
 import xor from 'lodash-es/xor';
 
@@ -153,9 +153,7 @@ export default function PointTabs() {
       toast.success('設定を保存しました');
       router.refresh();
     } catch (error) {
-      const errorDetails = handleError(error);
-      console.error(errorDetails);
-      toast.error(errorDetails.message);
+      toast.error(handleErrorToMsg(error));
     }
   };
 

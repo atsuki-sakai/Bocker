@@ -22,7 +22,7 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -95,9 +95,7 @@ const ApiSettingsCard = () => {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       } catch (error) {
-        const errorDetails = handleError(error);
-        console.error('API設定の保存に失敗しました:', errorDetails);
-        toast.error(errorDetails.message);
+        toast.error(handleErrorToMsg(error));
       } finally {
         setSubmitting(false);
       }

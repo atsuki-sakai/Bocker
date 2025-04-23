@@ -3,7 +3,7 @@ import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
 import { Id } from '@/convex/_generated/dataModel';
 import { StripeResult } from '@/services/stripe/types';
-import { throwConvexError } from '@/lib/error';
+import { throwConvexError, handleErrorToMsg } from '@/lib/error';
 
 /**
  * Stripe Connect APIを扱うリポジトリクラス
@@ -27,16 +27,6 @@ export class StripeConnectRepository {
     }
     return StripeConnectRepository.instance;
   }
-
-  /**
-   * 共通のエラーハンドリング処理
-   */
-  private handleError(error: unknown, operation: string): string {
-    const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
-    console.error(`Error during ${operation}:`, error);
-    return errorMessage;
-  }
-
   /**
    * アカウントのステータスを判定するためのヘルパーメソッド
    */
@@ -161,7 +151,7 @@ export class StripeConnectRepository {
     } catch (error) {
       return {
         success: false,
-        error: this.handleError(error, 'アカウントステータスの確認に失敗しました'),
+        error: handleErrorToMsg(error),
       };
     }
   }
@@ -237,7 +227,7 @@ export class StripeConnectRepository {
     } catch (error) {
       return {
         success: false,
-        error: this.handleError(error, 'creating Connect account'),
+        error: handleErrorToMsg(error),
       };
     }
   }
@@ -283,10 +273,10 @@ export class StripeConnectRepository {
         if (error.code === 'account_invalid') {
           errorMessage = 'このアカウントは現在利用できません。Stripeの設定を完了してください。';
         } else {
-          errorMessage = this.handleError(error, 'ログインリンクの生成に失敗しました');
+          errorMessage = handleErrorToMsg(error);
         }
       } else {
-        errorMessage = this.handleError(error, 'Stripeのエラーが発生しました');
+        errorMessage = handleErrorToMsg(error);
       }
 
       return {

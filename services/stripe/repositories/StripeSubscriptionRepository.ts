@@ -8,7 +8,8 @@ import * as Sentry from '@sentry/nextjs';
 import { STRIPE_API_VERSION } from '@/lib/constants';
 import { fetchMutation } from 'convex/nextjs';
 import { retryOperation } from '@/lib/utils';
-import { throwConvexError } from '@/lib/error';
+import { throwConvexError, handleErrorToMsg } from '@/lib/error';
+
 /**
  * Stripe Subscription APIを扱うリポジトリクラス
  */
@@ -30,21 +31,6 @@ export class StripeSubscriptionRepository {
       StripeSubscriptionRepository.instance = new StripeSubscriptionRepository(stripe);
     }
     return StripeSubscriptionRepository.instance;
-  }
-
-  /**
-   * 共通のエラーハンドリング処理
-   */
-  private handleError(error: unknown, operation: string): string {
-    const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
-    console.error(`Error during ${operation}:`, error);
-    Sentry.captureException(error, {
-      level: 'error',
-      tags: {
-        function: operation,
-      },
-    });
-    return errorMessage;
   }
 
   /**
@@ -112,7 +98,7 @@ export class StripeSubscriptionRepository {
       console.error('サブスクリプションデータの更新に失敗しました:', error);
       return {
         success: false,
-        error: this.handleError(error, 'syncSubscription'),
+        error: handleErrorToMsg(error),
       };
     }
   }
@@ -141,7 +127,7 @@ export class StripeSubscriptionRepository {
       console.error(`サブスクリプション ${subscriptionId} の支払い失敗処理に失敗しました:`, error);
       return {
         success: false,
-        error: this.handleError(error, 'handlePaymentFailed'),
+        error: handleErrorToMsg(error),
       };
     }
   }
@@ -425,7 +411,7 @@ export class StripeSubscriptionRepository {
       });
       return {
         success: false,
-        error: this.handleError(error, 'applyDiscount'),
+        error: handleErrorToMsg(error),
       };
     }
   }

@@ -19,7 +19,7 @@ import { ArrowRight, RefreshCw, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 
 // ステータスの日本語表記
 const statusNameMap: Record<string, string> = {
@@ -86,8 +86,7 @@ export default function StripeConnectStatus() {
 
       return { data: responseData };
     } catch (error) {
-      const errorDetails = handleError(error);
-      return { error: errorDetails.message };
+      return { error: handleErrorToMsg(error) };
     } finally {
       setIsLoading(false);
     }
@@ -123,8 +122,7 @@ export default function StripeConnectStatus() {
         window.location.href = data.accountLink;
       }
     } catch (error) {
-      const errorDetails = handleError(error);
-      toast.error(errorDetails.message);
+      toast.error(handleErrorToMsg(error));
     }
   };
 
@@ -149,8 +147,7 @@ export default function StripeConnectStatus() {
         router.push(data.url);
       }
     } catch (error) {
-      const errorDetails = handleError(error);
-      toast.error(errorDetails.message);
+      toast.error(handleErrorToMsg(error));
     }
   };
 

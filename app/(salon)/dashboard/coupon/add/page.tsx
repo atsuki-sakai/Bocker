@@ -11,7 +11,7 @@ import { ja } from 'date-fns/locale';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useSalon } from '@/hooks/useSalon';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { Loading } from '@/components/common';
 import { toast } from 'sonner';
 // コンポーネントのインポート
@@ -315,8 +315,7 @@ function CouponForm() {
       toast.success('クーポンを作成しました');
       router.push(`/dashboard/coupon`);
     } catch (error) {
-      const { message } = handleError(error);
-      toast.error(message);
+      toast.error(handleErrorToMsg(error));
     } finally {
       setIsSubmitting(false);
     }

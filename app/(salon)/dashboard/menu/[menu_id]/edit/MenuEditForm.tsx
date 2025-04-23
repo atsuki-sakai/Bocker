@@ -13,7 +13,7 @@ import { compressAndConvertToWebP, fileToBase64, cn } from '@/lib/utils';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { getMinuteMultiples } from '@/lib/schedule';
@@ -368,8 +368,7 @@ export default function MenuEditForm() {
           // ここでユーザーに追加の指示を出すことも検討 (例: 手動での削除依頼)
         }
       }
-      const errorDetails = handleError(error);
-      toast.error(errorDetails.message);
+      toast.error(handleErrorToMsg(error));
     } finally {
       // isUploading は try ブロック内で適切に false に設定されるため、ここでの再設定は不要な場合がある
       // ただし、tryブロックの途中で予期せず終了する可能性を考慮すると残しておいても安全

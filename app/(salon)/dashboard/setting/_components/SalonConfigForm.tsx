@@ -14,7 +14,7 @@ import { fileToBase64 } from '@/lib/utils';
 import { useZodForm } from '@/hooks/useZodForm';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FormField } from '@/components/common';
 import { compressAndConvertToWebP } from '@/lib/utils';
@@ -101,8 +101,7 @@ export default function SalonConfigForm() {
           toast.error('住所が見つかりませんでした');
         }
       } catch (error) {
-        const errorDetails = handleError(error);
-        toast.error(errorDetails.message);
+        toast.error(handleErrorToMsg(error));
       }
     },
     [setValue]
@@ -153,8 +152,7 @@ export default function SalonConfigForm() {
           toast.success('画像を保存しました');
         }
       } catch (error) {
-        const errorDetails = handleError(error);
-        toast.error(errorDetails.message);
+        toast.error(handleErrorToMsg(error));
       } finally {
         setIsUploading(false);
       }
@@ -184,9 +182,7 @@ export default function SalonConfigForm() {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       } catch (error) {
-        const errorDetails = handleError(error);
-
-        toast.error(errorDetails.message);
+        toast.error(handleErrorToMsg(error));
       }
     },
     [updateSalonConfig, salonId, setSaveSuccess]

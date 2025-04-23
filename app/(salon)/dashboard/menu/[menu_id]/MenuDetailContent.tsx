@@ -30,7 +30,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -144,8 +144,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
       router.push('/dashboard/menu');
       toast.success('メニューを削除しました');
     } catch (error) {
-      const errorDetails = handleError(error);
-      toast.error(errorDetails.message);
+      toast.error(handleErrorToMsg(error));
     }
   };
 

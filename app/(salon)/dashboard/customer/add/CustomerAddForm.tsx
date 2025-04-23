@@ -15,7 +15,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { api } from '@/convex/_generated/api';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { useRouter } from 'next/navigation';
 import { GENDER_VALUES, Gender } from '@/services/convex/shared/types/common';
 import {
@@ -145,9 +145,7 @@ export default function CustomerAddForm() {
       toast.success('顧客を追加しました');
       router.push('/dashboard/customer');
     } catch (error) {
-      const errorDetail = handleError(error);
-      console.log(errorDetail);
-      toast.error(errorDetail.message);
+      toast.error(handleErrorToMsg(error));
     }
   };
 

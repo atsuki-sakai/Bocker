@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useMutation } from 'convex/react';
 import { Id, Doc } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 
 const numberOfItems = 10;
 export default function OptionList() {
@@ -50,8 +50,7 @@ export default function OptionList() {
       toast.success('オプションを削除しました');
       setIsDialogOpen(false);
     } catch (error) {
-      const errorDetails = handleError(error);
-      toast.error(errorDetails.message);
+      toast.error(handleErrorToMsg(error));
     }
   };
 

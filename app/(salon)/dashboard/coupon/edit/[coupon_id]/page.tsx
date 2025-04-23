@@ -44,7 +44,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
 import type { Id } from '@/convex/_generated/dataModel';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { toast } from 'sonner';
 import { ZodTextField } from '@/components/common';
 
@@ -271,8 +271,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
       toast.success('クーポンを更新しました');
       router.push(`/dashboard/coupon`);
     } catch (e) {
-      const { message: errorMessage } = handleError(e);
-      toast.error(errorMessage);
+      toast.error(handleErrorToMsg(e));
     }
   };
 

@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { decryptString } from '@/lib/utils';
 
 // アイコン
@@ -161,8 +161,7 @@ export default function StaffDetails() {
     } catch (error) {
       // エラーが発生した場合は削除処理中フラグを元に戻す
       setIsDeleting(false);
-      const errorDetails = handleError(error);
-      toast.error(errorDetails.message);
+      toast.error(handleErrorToMsg(error));
     }
   };
 

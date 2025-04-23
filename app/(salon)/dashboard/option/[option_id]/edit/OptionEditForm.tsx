@@ -16,7 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
 import { getMinuteMultiples } from '@/lib/schedule'; // getMinuteMultiplesを追加
 import { Tag, DollarSign, ShoppingBag, Boxes, Info, AlertCircle, Clock, Save } from 'lucide-react'; // Clockを追加
@@ -261,8 +261,7 @@ export default function OptionEditForm() {
       toast.success('オプションを更新しました');
       router.push('/dashboard/option');
     } catch (error) {
-      const errorDetails = handleError(error);
-      toast.error(errorDetails.message);
+      toast.error(handleErrorToMsg(error));
     }
   };
 

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as Sentry from '@sentry/nextjs';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import { useSearchParams } from 'next/navigation';
 import {
   Card,
@@ -412,15 +412,7 @@ export default function SignUpPage() {
 
       toast.success('アカウントが作成されました。メールを確認してください');
     } catch (err) {
-      const errorDetails = handleError(err);
-      Sentry.captureException(err, {
-        level: 'error',
-        tags: {
-          operation: 'signUp.create',
-          email: data.email,
-        },
-      });
-      toast.error(errorDetails.message);
+      toast.error(handleErrorToMsg(err));
     }
   };
 

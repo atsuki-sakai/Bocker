@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Id } from '@/convex/_generated/dataModel';
 import { useRouter } from 'next/navigation';
-import { handleError } from '@/lib/error';
+import { handleErrorToMsg } from '@/lib/error';
 import {
   Select,
   SelectContent,
@@ -512,8 +512,7 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
       toast.success('営業時間を更新しました');
       router.refresh();
     } catch (err) {
-      const errorDetails = handleError(err);
-      toast.error(errorDetails.message);
+      toast.error(handleErrorToMsg(err));
     } finally {
       setIsSaving(false);
     }
