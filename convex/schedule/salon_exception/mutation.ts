@@ -1,12 +1,11 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 import {
   removeEmptyFields,
   archiveRecord,
   killRecord,
 } from '@/services/convex/shared/utils/helper';
-import { paginationOptsValidator } from 'convex/server';
 import { salonScheduleExceptionType, dayOfWeekType } from '@/services/convex/shared/types/common';
 import {
   validateRequired,
@@ -29,10 +28,15 @@ export const create = mutation({
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        callFunc: 'schedule.salon_exception.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     return await ctx.db.insert('salon_schedule_exception', {
@@ -57,16 +61,15 @@ export const update = mutation({
     // サロンスケジュール例外の存在確認
     const salonScheduleException = await ctx.db.get(args.salonScheduleExceptionId);
     if (!salonScheduleException || salonScheduleException.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたサロンスケジュール例外が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたサロンスケジュール例外が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンスケジュール例外が存在しません',
+        callFunc: 'schedule.salon_exception.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);

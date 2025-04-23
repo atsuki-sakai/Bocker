@@ -1,7 +1,7 @@
 import { BaseRepository } from '../BaseRepository';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { ConvexError } from 'convex/values';
 import { MutationCtx, QueryCtx } from '@/convex/_generated/server';
-import { excludeFields, killRecord } from '@/services/convex/shared/utils/helper';
+import { killRecord } from '@/services/convex/shared/utils/helper';
 import {
   CreateCouponInput,
   UpdateCouponInput,
@@ -25,10 +25,13 @@ export class CouponRepository extends BaseRepository<'coupon'> {
   async createCoupon(ctx: MutationCtx, args: CreateCouponInput) {
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw new ConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        details: { ...args },
       });
-      throw err;
     }
 
     return await this.create(ctx, args);
@@ -37,16 +40,13 @@ export class CouponRepository extends BaseRepository<'coupon'> {
   async updateCoupon(ctx: MutationCtx, id: Id<'coupon'>, args: UpdateCouponInput) {
     const coupon = await ctx.db.get(id);
     if (!coupon || coupon.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたクーポンが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw new ConvexError({
+        message: '指定されたクーポンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたクーポンが存在しません',
+        details: { ...args },
+      });
     }
     return await this.update(ctx, id, args);
   }
@@ -54,32 +54,26 @@ export class CouponRepository extends BaseRepository<'coupon'> {
   async killRelatedTables(ctx: MutationCtx, id: Id<'coupon'>) {
     const coupon = await ctx.db.get(id);
     if (!coupon || coupon.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたクーポンが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          id,
-        }
-      );
-      throw err;
+      throw new ConvexError({
+        message: '指定されたクーポンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたクーポンが存在しません',
+        details: { id },
+      });
     }
     const couponConfig = await ctx.db
       .query('coupon_config')
       .withIndex('by_coupon_id', (q) => q.eq('couponId', id))
       .first();
     if (!couponConfig || couponConfig.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたクーポン設定が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          id,
-        }
-      );
-      throw err;
+      throw new ConvexError({
+        message: '指定されたクーポン設定が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたクーポン設定が存在しません',
+        details: { id },
+      });
     }
     await killRecord(ctx, id);
     await killRecord(ctx, couponConfig._id);

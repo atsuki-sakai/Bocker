@@ -1,16 +1,16 @@
-import { mutation, query } from '@/convex/_generated/server';
+import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import {
   removeEmptyFields,
   archiveRecord,
   killRecord,
 } from '@/services/convex/shared/utils/helper';
-import { paginationOptsValidator } from 'convex/server';
 import { reservationStatusType, paymentMethodType } from '@/services/convex/shared/types/common';
 import { validateReservation, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 import { api } from '@/convex/_generated/api';
+import { throwConvexError } from '@/lib/error';
+
 // 予約の追加
 export const create = mutation({
   args: {
@@ -35,29 +35,86 @@ export const create = mutation({
     checkAuth(ctx);
     validateReservation(args);
 
+    // 必須フィールドの存在確認
+    if (!args.startTime_unix || !args.endTime_unix) {
+      throw throwConvexError({
+        message: '予約の開始時間と終了時間は必須です',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        title: '必須フィールドが不足しています',
+        callFunc: 'reservation.create',
+        severity: 'low',
+        details: { ...args },
+      });
+    }
+
     // スタッフの存在確認
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        title: 'スタッフが見つかりません',
+        message: '指定されたスタッフが存在しません',
+        code: 'NOT_FOUND',
+        status: 404,
+        callFunc: 'reservation.create',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'サロンが見つかりません',
+        callFunc: 'reservation.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
+
+    if (args.startTime_unix === undefined || args.endTime_unix === undefined) {
+      throw throwConvexError({
+        message: '予約の開始時間と終了時間は必須です',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        title: '必須フィールドが不足しています',
+        callFunc: 'reservation.create',
+        severity: 'low',
+        details: { ...args },
+      });
+    }
+    // 予約時間の日付を取得
+    const reservationDate = new Date(args.startTime_unix * 1000);
+    const dateString = reservationDate.toISOString().split('T')[0]; // YYYY-MM-DD形式
+
+    // 予約時間の重複チェック
+    const isAvailable = await ctx.runQuery(api.reservation.query.checkAvailableTimeSlot, {
+      salonId: args.salonId,
+      staffId: args.staffId,
+      date: dateString,
+      startTime: args.startTime_unix,
+      endTime: args.endTime_unix,
+    });
+
+    if (!isAvailable) {
+      throw throwConvexError({
+        message: '予約が重複しています。別の時間を選択してください。',
+        status: 409,
+        code: 'CONFLICT',
+        title: '予約が重複しています',
+        callFunc: 'reservation.create',
+        severity: 'low',
+        details: {
+          ...args,
+        },
+      });
+    }
+
+    // 予約の作成
     const reservationId = await ctx.db.insert('reservation', {
       ...args,
       isArchive: false,
@@ -85,13 +142,87 @@ export const update = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateReservation(args);
+
     // 予約の存在確認
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation || reservation.isArchive) {
-      const err = new ConvexCustomError('low', '指定された予約が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された予約が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '予約が見つかりません',
+        callFunc: 'reservation.update',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
+    }
+
+    // 予約時間が変更されている場合、重複チェックを行う
+    if (
+      args.startTime_unix !== undefined &&
+      args.endTime_unix !== undefined &&
+      (args.startTime_unix !== reservation.startTime_unix ||
+        args.endTime_unix !== reservation.endTime_unix)
+    ) {
+      // 予約時間の日付を取得
+      const reservationDate = new Date(args.startTime_unix * 1000);
+      const dateString = reservationDate.toISOString().split('T')[0]; // YYYY-MM-DD形式
+
+      // 予約時間の重複チェック（自分自身の予約は除外）
+      const staffId = reservation.staffId;
+      const salonId = reservation.salonId;
+
+      // 既存の予約を除外した形で利用可能かチェック
+      const existingReservations = await ctx.db
+        .query('reservation')
+        .withIndex('by_staff_id', (q) =>
+          q.eq('salonId', salonId).eq('staffId', staffId).eq('isArchive', false)
+        )
+        .filter((q) =>
+          q.and(
+            // 自分自身の予約は除外
+            q.neq(q.field('_id'), args.reservationId),
+            q.or(q.eq(q.field('status'), 'confirmed'), q.eq(q.field('status'), 'pending')),
+            // 予約時間と重複するかどうかをチェック
+            q.lt(q.field('startTime_unix'), args.endTime_unix!),
+            q.gt(q.field('endTime_unix'), args.startTime_unix!)
+          )
+        )
+        .collect();
+
+      if (existingReservations.length > 0) {
+        throw throwConvexError({
+          message: 'この時間帯はすでに予約が入っています。別の時間を選択してください。',
+          status: 409,
+          code: 'CONFLICT',
+          title: '予約が重複しています',
+          callFunc: 'reservation.update',
+          severity: 'low',
+          details: { ...args },
+        });
+      }
+
+      // スタッフのスケジュールもチェック
+      const isAvailable = await ctx.runQuery(api.reservation.query.checkAvailableTimeSlot, {
+        salonId: salonId,
+        staffId: staffId,
+        date: dateString,
+        startTime: args.startTime_unix,
+        endTime: args.endTime_unix,
+      });
+
+      if (!isAvailable) {
+        throw throwConvexError({
+          message:
+            'この時間帯はスタッフのスケジュールと重複しています。別の時間を選択してください。',
+          status: 409,
+          code: 'CONFLICT',
+          title: '予約が重複しています',
+          callFunc: 'reservation.update',
+          severity: 'low',
+          details: { ...args },
+        });
+      }
     }
 
     const updateData = removeEmptyFields(args);
@@ -136,13 +267,113 @@ export const upsert = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateReservation(args);
+
+    // 必須フィールドの存在確認
+    if (!args.startTime_unix || !args.endTime_unix) {
+      throw throwConvexError({
+        message: '予約の開始時間と終了時間は必須です',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        title: '予約の開始時間と終了時間は必須です',
+        callFunc: 'reservation.upsert',
+        severity: 'low',
+        details: { ...args },
+      });
+    }
+
+    // 予約時間の日付を取得
+    const reservationDate = new Date(args.startTime_unix * 1000);
+    const dateString = reservationDate.toISOString().split('T')[0]; // YYYY-MM-DD形式
+
     const existingReservation = await ctx.db.get(args.reservationId);
+
     if (!existingReservation || existingReservation.isArchive) {
+      // 新規予約の場合、重複チェックを行う
+      const isAvailable = await ctx.runQuery(api.reservation.query.checkAvailableTimeSlot, {
+        salonId: args.salonId,
+        staffId: args.staffId,
+        date: dateString,
+        startTime: args.startTime_unix,
+        endTime: args.endTime_unix,
+      });
+
+      if (!isAvailable) {
+        throw throwConvexError({
+          message:
+            'この時間帯はすでに予約が入っているか、スタッフのスケジュールと重複しています。別の時間を選択してください。',
+          status: 409,
+          code: 'CONFLICT',
+          title: '予約が重複しています',
+          callFunc: 'reservation.upsert',
+          severity: 'low',
+          details: { ...args },
+        });
+      }
+
       return await ctx.db.insert('reservation', {
         ...args,
         isArchive: false,
       });
     } else {
+      // 既存予約の更新の場合
+      // 予約時間が変更されている場合、重複チェックを行う
+      if (
+        args.startTime_unix !== existingReservation.startTime_unix ||
+        args.endTime_unix !== existingReservation.endTime_unix
+      ) {
+        // 既存の予約を除外した形で利用可能かチェック
+        const existingReservations = await ctx.db
+          .query('reservation')
+          .withIndex('by_staff_id', (q) =>
+            q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+          )
+          .filter((q) =>
+            q.and(
+              // 自分自身の予約は除外
+              q.neq(q.field('_id'), args.reservationId),
+              q.or(q.eq(q.field('status'), 'confirmed'), q.eq(q.field('status'), 'pending')),
+              // 予約時間と重複するかどうかをチェック
+              q.lt(q.field('startTime_unix'), args.endTime_unix!),
+              q.gt(q.field('endTime_unix'), args.startTime_unix!)
+            )
+          )
+          .collect();
+
+        if (existingReservations.length > 0) {
+          throw throwConvexError({
+            message: 'この時間帯はすでに予約が入っています。別の時間を選択してください。',
+            status: 409,
+            code: 'CONFLICT',
+            title: '予約が重複しています',
+            callFunc: 'reservation.upsert',
+            severity: 'low',
+            details: { ...args },
+          });
+        }
+
+        // スタッフのスケジュールもチェック
+        const isAvailable = await ctx.runQuery(api.reservation.query.checkAvailableTimeSlot, {
+          salonId: args.salonId,
+          staffId: args.staffId,
+          date: dateString,
+          startTime: args.startTime_unix,
+          endTime: args.endTime_unix,
+        });
+
+        if (!isAvailable) {
+          throw throwConvexError({
+            message:
+              'この時間帯はスタッフのスケジュールと重複しています。別の時間を選択してください。',
+            status: 409,
+            code: 'CONFLICT',
+            title: '予約が重複しています',
+            callFunc: 'reservation.upsert',
+            severity: 'low',
+            details: { ...args },
+          });
+        }
+      }
+
       const updateData = removeEmptyFields(args);
       delete updateData.reservationId;
       return await ctx.db.patch(existingReservation._id, updateData);

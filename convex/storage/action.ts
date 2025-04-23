@@ -5,7 +5,7 @@ import { v } from 'convex/values';
 import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { imgDirectoryType } from '@/services/convex/shared/types/common';
-import { StorageError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 import { validateRequired } from '@/services/convex/shared/utils/validation';
 
 export const upload = action({
@@ -23,39 +23,42 @@ export const upload = action({
     checkAuth(ctx);
     // ファイル名とMIMEタイプの検証
     if (!args.filePath) {
-      const err = new StorageError(
-        'low',
-        'ファイル名が指定されていません',
-        'INVALID_ARGUMENT',
-        400,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: 'ファイル名が指定されていません',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        callFunc: 'storage.upload',
+        title: 'ファイル名が指定されていません',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     if (!args.contentType) {
-      const err = new StorageError(
-        'low',
-        'ファイルタイプが指定されていません',
-        'INVALID_ARGUMENT',
-        400,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: 'ファイルタイプが指定されていません',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        callFunc: 'storage.upload',
+        title: 'ファイルタイプが指定されていません',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     // Base64データをデコードしてバッファに変換
     const binaryData = Buffer.from(args.base64Data, 'base64');
 
     if (binaryData.length === 0) {
-      const err = new StorageError('low', 'ファイルデータが空です', 'INVALID_ARGUMENT', 400, {
-        ...args,
+      throw throwConvexError({
+        message: 'ファイルデータが空です',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        callFunc: 'storage.upload',
+        title: 'ファイルデータが空です',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
     // GCSにアップロード - Fileオブジェクトを使わずに直接バッファを渡す
     return await gcsService.uploadFileBuffer(
@@ -79,10 +82,15 @@ export const kill = action({
       await gcsService.deleteImage(args.imgUrl);
       return { success: true };
     } catch (error) {
-      const err = new StorageError('low', 'ファイルの削除に失敗しました', 'INVALID_ARGUMENT', 400, {
-        ...args,
+      throw throwConvexError({
+        message: 'ファイルの削除に失敗しました',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        callFunc: 'storage.kill',
+        title: 'ファイルの削除に失敗しました',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
   },
 });

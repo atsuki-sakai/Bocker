@@ -7,7 +7,7 @@ import {
   OptionCreateInput,
   OptionUpdateInput,
 } from '@/services/convex/types/option';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 
 export class OptionRepository extends BaseRepository<'salon_option'> {
   private static instance: OptionRepository;
@@ -33,10 +33,15 @@ export class OptionRepository extends BaseRepository<'salon_option'> {
   public static async createOption(ctx: MutationCtx, args: OptionCreateInput) {
     const salon = await ctx.db.get(args.salonId);
     if (!salon || salon.isArchive) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        callFunc: 'OptionRepository.createOption',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // isActiveが指定されていない場合はデフォルトでtrueに設定

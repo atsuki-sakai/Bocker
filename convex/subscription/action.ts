@@ -15,7 +15,6 @@ import {
   validateRequired,
 } from '@/services/convex/shared/utils/validation';
 import { subscriptionService } from '@/services/convex/services';
-import { throwConvexApiError } from '@/services/convex/shared/utils/error';
 
 export const createSubscriptionSession = action({
   args: {
@@ -29,7 +28,7 @@ export const createSubscriptionSession = action({
       validateSubscription(args);
       return await subscriptionService.createSubscriptionSession(ctx, args);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -43,7 +42,7 @@ export const getStripeCustomer = action({
       validateRequired(args.stripeCustomerId, 'stripeCustomerId');
       return await subscriptionService.getStripeCustomer(ctx, args.stripeCustomerId);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -58,7 +57,7 @@ export const getSubscriptionUpdatePreview = action({
       validateSubscriptionUpdatePreview(args);
       return await subscriptionService.getSubscriptionUpdatePreview(ctx, args);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -73,7 +72,7 @@ export const createBillingPortalSession = action({
       validateSubscriptionBillingPortalSession(args);
       return await subscriptionService.createBillingPortalSession(ctx, args);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -90,7 +89,7 @@ export const confirmSubscriptionUpdate = action({
       validateConfirmSubscriptionUpdate(args);
       return await subscriptionService.confirmSubscriptionUpdate(ctx, args);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });

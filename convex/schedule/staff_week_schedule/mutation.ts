@@ -11,7 +11,7 @@ import {
 } from '@/services/convex/shared/utils/validation';
 import { dayOfWeekType } from '@/services/convex/shared/types/common';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 import { DayOfWeek } from '@/services/convex/shared/types/common';
 // スタッフスケジュールの追加
 export const create = mutation({
@@ -28,25 +28,29 @@ export const create = mutation({
     // スタッフの存在確認
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフが存在しません',
+        callFunc: 'schedule.staff_week_schedule.create',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        callFunc: 'schedule.staff_week_schedule.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     return await ctx.db.insert('staff_schedule', {
@@ -70,16 +74,15 @@ export const update = mutation({
     // スタッフスケジュールの存在確認
     const staffWeekSchedule = await ctx.db.get(args.staffWeekScheduleId);
     if (!staffWeekSchedule || staffWeekSchedule.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフスケジュールが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフスケジュールが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフスケジュールが存在しません',
+        callFunc: 'schedule.staff_week_schedule.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);
@@ -237,14 +240,15 @@ export const updateWeekSchedule = mutation({
         savedCount++;
       } catch (error) {
         console.error(`${dayOfWeek}の更新中にエラー:`, error);
-        const err = new ConvexCustomError(
-          'low',
-          `StaffWeekSchedule スケジュール更新エラー: ${error}`,
-          'UNEXPECTED_ERROR',
-          500,
-          { day: dayOfWeek, error }
-        );
-        throw err;
+        throw throwConvexError({
+          message: `StaffWeekSchedule スケジュール更新エラー: ${error}`,
+          status: 500,
+          code: 'UNEXPECTED_ERROR',
+          title: 'StaffWeekSchedule スケジュール更新エラー',
+          callFunc: 'schedule.staff_week_schedule.updateWeekSchedule',
+          severity: 'low',
+          details: { day: dayOfWeek, error: error as string },
+        });
       }
     }
 

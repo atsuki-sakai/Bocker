@@ -2,7 +2,7 @@ import { BaseRepository } from '@/services/convex/repositories/BaseRepository';
 import { Doc, Id } from '@/convex/_generated/dataModel';
 import { QueryCtx, MutationCtx } from '@/convex/_generated/server';
 import { PointConfigInput } from '@/services/convex/types/point';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { ConvexError } from 'convex/values';
 
 export class PointConfigRepository extends BaseRepository<'point_config'> {
   private static instance: PointConfigRepository | null = null;
@@ -30,10 +30,13 @@ export class PointConfigRepository extends BaseRepository<'point_config'> {
     data: PointConfigInput
   ): Promise<Id<'point_config'>> {
     if (!id) {
-      const err = new ConvexCustomError('low', 'サロンIDが必要です', 'INVALID_ARGUMENT', 400, {
-        ...data,
+      throw new ConvexError({
+        message: 'サロンIDが必要です',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        title: 'サロンIDが必要です',
+        details: { ...data },
       });
-      throw err;
     }
 
     const existing = await ctx.db

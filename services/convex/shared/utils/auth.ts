@@ -7,9 +7,9 @@
 
 import { MutationCtx, QueryCtx, ActionCtx } from '../../../../convex/_generated/server';
 import { Id } from '../../../../convex/_generated/dataModel';
-import { ConvexCustomError } from './error';
 import type { UserIdentity } from 'convex/server';
 import type { Role } from '../types/common';
+import { throwConvexError } from '@/lib/error';
 
 /**
  * 認証チェック - ユーザーが認証されているかを確認
@@ -29,16 +29,17 @@ export async function checkAuth(
 
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
-    const err = new ConvexCustomError(
-      'low',
-      '認証されていないユーザーです',
-      'AUTHENTICATION',
-      401,
-      {
+    throw throwConvexError({
+      message: '認証されていないユーザーです',
+      status: 401,
+      code: 'AUTHENTICATION',
+      title: '認証されていないユーザーです',
+      callFunc: 'checkAuth',
+      severity: 'low',
+      details: {
         identity,
-      }
-    );
-    throw err;
+      },
+    });
   }
 
   return identity;
@@ -65,10 +66,17 @@ export async function checkSalonAccess(
     // サロンの存在チェックのみ行う
     const salon = await ctx.db.get(salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', 'サロンが見つかりません', 'AUTHORIZATION', 403, {
-        salonId,
+      throw throwConvexError({
+        message: 'サロンが見つかりません',
+        status: 403,
+        code: 'AUTHORIZATION',
+        title: 'サロンが見つかりません',
+        callFunc: 'checkSalonAccess',
+        severity: 'low',
+        details: {
+          salonId,
+        },
       });
-      throw err;
     }
     return true;
   }
@@ -78,10 +86,17 @@ export async function checkSalonAccess(
   // サロンとユーザーの関連をチェック
   const salon = await ctx.db.get(salonId);
   if (!salon) {
-    const err = new ConvexCustomError('low', 'サロンが見つかりません', 'AUTHORIZATION', 403, {
-      salonId,
+    throw throwConvexError({
+      message: 'サロンが見つかりません',
+      status: 403,
+      code: 'AUTHORIZATION',
+      title: 'サロンが見つかりません',
+      callFunc: 'checkSalonAccess',
+      severity: 'low',
+      details: {
+        salonId,
+      },
     });
-    throw err;
   }
 
   // 管理者の場合は常に許可（設定に応じて）
@@ -100,16 +115,17 @@ export async function checkSalonAccess(
  */
 export function isAdmin(identity: UserIdentity | null): boolean {
   if (!identity) {
-    const err = new ConvexCustomError(
-      'low',
-      '認証されていないユーザーです',
-      'AUTHENTICATION',
-      401,
-      {
+    throw throwConvexError({
+      message: '認証されていないユーザーです',
+      status: 401,
+      code: 'AUTHENTICATION',
+      title: '認証されていないユーザーです',
+      callFunc: 'isAdmin',
+      severity: 'low',
+      details: {
         identity,
-      }
-    );
-    throw err;
+      },
+    });
   }
   const orgs = identity.org_role;
   return Boolean(orgs && Object.values(orgs).some((role) => ['owner', 'admin'].includes(role)));
@@ -137,16 +153,17 @@ export async function checkStaffAccess(
     .first();
 
   if (!staffAuth) {
-    const err = new ConvexCustomError(
-      'low',
-      'スタッフ認証情報が見つかりません',
-      'AUTHENTICATION',
-      401,
-      {
+    throw throwConvexError({
+      message: 'スタッフ認証情報が見つかりません',
+      status: 401,
+      code: 'AUTHENTICATION',
+      title: 'スタッフ認証情報が見つかりません',
+      callFunc: 'checkStaffAccess',
+      severity: 'low',
+      details: {
         staffId,
-      }
-    );
-    throw err;
+      },
+    });
   }
 
   // 権限レベルのチェック
@@ -161,18 +178,19 @@ export async function checkStaffAccess(
   const requiredRoleLevel = roleLevel[requiredRole];
 
   if (staffRoleLevel < requiredRoleLevel) {
-    const err = new ConvexCustomError(
-      'low',
-      'この操作を行う権限がありません',
-      'AUTHORIZATION',
-      403,
-      {
+    throw throwConvexError({
+      message: 'この操作を行う権限がありません',
+      status: 403,
+      code: 'AUTHORIZATION',
+      title: 'この操作を行う権限がありません',
+      callFunc: 'checkStaffAccess',
+      severity: 'low',
+      details: {
         staffId,
         currentRole: staffAuth.role,
         requiredRole,
-      }
-    );
-    throw err;
+      },
+    });
   }
   return true;
 }

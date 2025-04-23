@@ -14,7 +14,6 @@ import {
 } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { subscriptionService } from '@/services/convex/services';
-import { throwConvexApiError } from '@/services/convex/shared/utils/error';
 import { archiveRecord, killRecord } from '@/services/convex/shared/utils/helper';
 
 export const syncSubscription = mutation({
@@ -34,7 +33,7 @@ export const syncSubscription = mutation({
       validateSubscription(args.subscription);
       return await subscriptionService.syncSubscription(ctx, args.subscription);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -51,7 +50,7 @@ export const paymentFailed = mutation({
       validatePaymentFailed(args);
       return await subscriptionService.paymentFailed(ctx, args);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });

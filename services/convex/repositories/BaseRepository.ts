@@ -9,10 +9,9 @@
 import { MutationCtx, QueryCtx } from '@/convex/_generated/server';
 import { WithoutSystemFields } from 'convex/server';
 import { Doc, Id, TableNames } from '@/convex/_generated/dataModel';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 import { ARCHIVE_DURATION_SECONDS } from '@/services/convex/constants';
 import { CommonFields } from '@/services/convex/shared/types/common';
-
+import { throwConvexError } from '@/lib/error';
 export class BaseRepository<T extends TableNames> {
   /**
    * コンストラクタ
@@ -57,20 +56,28 @@ export class BaseRepository<T extends TableNames> {
     const record = await this.find(ctx, id, includeArchived);
 
     if (!record) {
-      const err = new ConvexCustomError('low', 'データが見つかりません', 'NOT_FOUND', 404, {
-        tableName: this.tableName,
-        id,
+      throw throwConvexError({
+        message: 'データが見つかりません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'データが見つかりません',
+        callFunc: 'get',
+        severity: 'low',
+        details: { tableName: this.tableName, id },
       });
-      throw err;
     }
 
     // アーカイブフラグがある場合はチェック
     if (!includeArchived && 'isArchive' in record && record.isArchive === true) {
-      const err = new ConvexCustomError('low', 'データが見つかりません', 'NOT_FOUND', 404, {
-        tableName: this.tableName,
-        id,
+      throw throwConvexError({
+        message: 'データが見つかりません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'データが見つかりません',
+        callFunc: 'get',
+        severity: 'low',
+        details: { tableName: this.tableName, id },
       });
-      throw err;
     }
     return record;
   }
@@ -103,12 +110,15 @@ export class BaseRepository<T extends TableNames> {
     // 存在確認
     const exists = await this.find(ctx, id);
     if (!exists) {
-      const err = new ConvexCustomError('low', 'データが見つかりません', 'NOT_FOUND', 404, {
-        call: 'update',
-        tableName: this.tableName,
-        id,
+      throw throwConvexError({
+        message: 'データが見つかりません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'データが見つかりません',
+        callFunc: 'update',
+        severity: 'medium',
+        details: { tableName: this.tableName, id },
       });
-      throw err;
     }
 
     await ctx.db.patch(id, data);
@@ -128,10 +138,14 @@ export class BaseRepository<T extends TableNames> {
     // 存在確認
     const exists = await this.find(ctx, id);
     if (!exists) {
-      throw new ConvexCustomError('low', 'データが見つかりません', 'NOT_FOUND', 404, {
-        call: 'archive',
-        tableName: this.tableName,
-        id,
+      throw throwConvexError({
+        message: 'データが見つかりません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'データが見つかりません',
+        callFunc: 'archive',
+        severity: 'medium',
+        details: { tableName: this.tableName, id },
       });
     }
 
@@ -158,10 +172,14 @@ export class BaseRepository<T extends TableNames> {
     // 存在確認
     const exists = await this.find(ctx, id);
     if (!exists) {
-      throw new ConvexCustomError('low', 'データが見つかりません', 'NOT_FOUND', 404, {
-        call: 'delete',
-        tableName: this.tableName,
-        id,
+      throw throwConvexError({
+        message: 'データが見つかりません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'データが見つかりません',
+        callFunc: 'delete',
+        severity: 'high',
+        details: { tableName: this.tableName, id },
       });
     }
 

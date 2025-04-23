@@ -8,7 +8,7 @@ import {
 import { validateStaffAuth, validateRequired } from '@/services/convex/shared/utils/validation';
 import { roleType } from '@/services/convex/shared/types/common';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 
 // スタッフ認証の追加
 export const create = mutation({
@@ -26,17 +26,15 @@ export const create = mutation({
       .withIndex('by_staff_id', (q) => q.eq('staffId', args.staffId))
       .first();
     if (staffAuth) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフ認証が存在します',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-          ...staffAuth,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフ認証が存在します',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフ認証が存在します',
+        callFunc: 'staff.auth.create',
+        severity: 'low',
+        details: { ...args, ...staffAuth },
+      });
     }
     return await ctx.db.insert('staff_auth', {
       ...args,
@@ -59,16 +57,15 @@ export const update = mutation({
     // スタッフ認証の存在確認
     const staffAuth = await ctx.db.get(args.staffAuthId);
     if (!staffAuth || staffAuth.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフ認証が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフ認証が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフ認証が存在しません',
+        callFunc: 'staff.auth.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);

@@ -2,7 +2,7 @@ import { BaseRepository } from '@/services/convex/repositories/BaseRepository';
 import { Doc, Id } from '@/convex/_generated/dataModel';
 import { QueryCtx, MutationCtx } from '@/convex/_generated/server';
 import { SalonScheduleConfigInput } from '@/services/convex/types/salon';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 /**
  * サロンスケジュール設定リポジトリクラス
  * サロンのスケジュール設定データの操作を提供します
@@ -34,10 +34,17 @@ export class SalonScheduleConfigRepository extends BaseRepository<'salon_schedul
     data: SalonScheduleConfigInput
   ): Promise<Id<'salon_schedule_config'>> {
     if (!data.salonId) {
-      const err = new ConvexCustomError('low', 'サロンIDが必要です', 'INVALID_ARGUMENT', 400, {
-        ...data,
+      throw throwConvexError({
+        message: 'サロンIDが必要です',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        title: '必須項目が不足しています',
+        callFunc: 'salonScheduleConfigRepository.upsert',
+        severity: 'low',
+        details: {
+          ...data,
+        },
       });
-      throw err;
     }
 
     const existing = await this.findBySalonId(ctx, data.salonId);

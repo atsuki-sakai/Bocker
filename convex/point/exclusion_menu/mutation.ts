@@ -1,10 +1,6 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import { killRecord, archiveRecord } from '@/services/convex/shared/utils/helper';
-import {
-  validatePointExclusionMenu,
-  validateRequired,
-} from '@/services/convex/shared/utils/validation';
+import { validatePointExclusionMenu } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { pointService } from '@/services/convex/services';
 

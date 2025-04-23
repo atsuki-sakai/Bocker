@@ -8,7 +8,7 @@ import {
 import { validateSalonSchedule, validateRequired } from '@/services/convex/shared/utils/validation';
 import { dayOfWeekType, DayOfWeek } from '@/services/convex/shared/types/common';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 // サロンスケジュールの追加
 export const create = mutation({
   args: {
@@ -24,10 +24,15 @@ export const create = mutation({
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        callFunc: 'schedule.salon_week_schedule.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     return await ctx.db.insert('salon_week_schedule', {
@@ -52,16 +57,15 @@ export const update = mutation({
     // サロンスケジュールの存在確認
     const salonWeekSchedule = await ctx.db.get(args.salonWeekScheduleId);
     if (!salonWeekSchedule) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたサロンスケジュールが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたサロンスケジュールが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンスケジュールが存在しません',
+        callFunc: 'schedule.salon_week_schedule.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);
@@ -214,15 +218,15 @@ export const updateWeekSchedule = mutation({
 
         savedCount++;
       } catch (error) {
-        console.error(`${dayOfWeek}の更新中にエラー:`, error);
-        const err = new ConvexCustomError(
-          'low',
-          `スケジュール更新エラー: ${error}`,
-          'UNEXPECTED_ERROR',
-          500,
-          { day: dayOfWeek, error }
-        );
-        throw err;
+        throw throwConvexError({
+          message: `スケジュール更新エラー: ${error}`,
+          status: 500,
+          code: 'UNEXPECTED_ERROR',
+          title: 'スケジュール更新エラー',
+          callFunc: 'schedule.salon_week_schedule.updateWeekSchedule',
+          severity: 'low',
+          details: { day: dayOfWeek, error: error as string },
+        });
       }
     }
 

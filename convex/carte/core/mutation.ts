@@ -7,7 +7,7 @@ import {
 } from '@/services/convex/shared/utils/helper';
 import { validateCarte, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 
 export const add = mutation({
   args: {
@@ -32,16 +32,15 @@ export const add = mutation({
       .first();
 
     if (existingCarte) {
-      const err = new ConvexCustomError(
-        'low',
-        '既に同じ顧客のカルテが存在します',
-        'DUPLICATE_RECORD',
-        400,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '既に同じ顧客のカルテが存在します',
+        status: 400,
+        code: 'DUPLICATE_RECORD',
+        title: '既に同じ顧客のカルテが存在します',
+        callFunc: 'carte.add',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     return await ctx.db.insert('carte', { ...args, isArchive: false });
@@ -63,10 +62,15 @@ export const update = mutation({
     // カルテの存在確認
     const carte = await ctx.db.get(args.id);
     if (!carte || carte.isArchive) {
-      const err = new ConvexCustomError('low', 'カルテが見つかりません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: 'カルテが見つかりません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'カルテが見つかりません',
+        callFunc: 'carte.update',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // 空フィールドを削除

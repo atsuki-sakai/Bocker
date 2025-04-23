@@ -6,7 +6,7 @@ import {
   killRecord,
 } from '@/services/convex/shared/utils/helper';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 import { validateStaffConfig, validateRequired } from '@/services/convex/shared/utils/validation';
 
 // スタッフ設定の追加
@@ -21,25 +21,29 @@ export const create = mutation({
     // スタッフの存在確認
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフが存在しません',
+        callFunc: 'staff.config.create',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        callFunc: 'staff.config.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     return await ctx.db.insert('staff_config', {
@@ -62,16 +66,15 @@ export const update = mutation({
     // スタッフ設定の存在確認
     const staffConfig = await ctx.db.get(args.staffConfigId);
     if (!staffConfig || staffConfig.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフ設定が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフ設定が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフ設定が存在しません',
+        callFunc: 'staff.config.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);

@@ -7,8 +7,8 @@ import {
 } from '@/services/convex/shared/utils/helper';
 import { validateCustomer, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 import { genderType } from '@/services/convex/shared/types/common';
+import { throwConvexError } from '@/lib/error';
 // 顧客の追加
 export const create = mutation({
   args: {
@@ -28,10 +28,15 @@ export const create = mutation({
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        callFunc: 'customer.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // fullNameが指定されていない場合は自動生成
@@ -67,10 +72,15 @@ export const update = mutation({
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer || customer.isArchive) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客が存在しません',
+        callFunc: 'customer.update',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     const updateData = removeEmptyFields(args);
@@ -109,10 +119,15 @@ export const archive = mutation({
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客が存在しません',
+        callFunc: 'customer.archive',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // 顧客詳細情報の削除
@@ -121,16 +136,15 @@ export const archive = mutation({
       .withIndex('by_customer_id', (q) => q.eq('customerId', args.customerId))
       .first();
     if (!customerDetail) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定された顧客の詳細が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定された顧客の詳細が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客の詳細が存在しません',
+        callFunc: 'customer.archive',
+        severity: 'low',
+        details: { ...args },
+      });
     }
     await archiveRecord(ctx, customer._id);
     await archiveRecord(ctx, customerDetail._id);

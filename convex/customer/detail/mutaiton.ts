@@ -11,8 +11,8 @@ import {
   validateRequired,
 } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 import { updateType } from '@/services/convex/shared/types/common';
+import { throwConvexError } from '@/lib/error';
 
 // 顧客詳細情報の追加
 export const create = mutation({
@@ -28,10 +28,15 @@ export const create = mutation({
     validateCustomerDetail(args);
     const customer = await ctx.db.get(args.customerId);
     if (!customer || customer.isArchive) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客が存在しません',
+        callFunc: 'customer.detail.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // 既存の詳細データがないか確認
@@ -43,16 +48,15 @@ export const create = mutation({
       .first();
 
     if (existingDetail) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定された顧客詳細情報が存在します',
-        'DUPLICATE_RECORD',
-        400,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定された顧客詳細情報が存在します',
+        status: 400,
+        code: 'DUPLICATE_RECORD',
+        title: '指定された顧客詳細情報が存在します',
+        callFunc: 'customer.detail.create',
+        severity: 'low',
+        details: { ...args },
+      });
     }
     const detailId = await ctx.db.insert('customer_detail', {
       ...args,
@@ -76,25 +80,29 @@ export const update = mutation({
     validateCustomerDetail(args);
     const detail = await ctx.db.get(args.detailId);
     if (!detail || detail.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定された顧客詳細情報が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定された顧客詳細情報が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客詳細情報が存在しません',
+        callFunc: 'customer.detail.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     // 顧客情報の取得
     const customer = await ctx.db.get(detail.customerId);
     if (!customer || customer.isArchive) {
-      const err = new ConvexCustomError('low', '関連する顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '関連する顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '関連する顧客が存在しません',
+        callFunc: 'customer.detail.update',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     const updateData = removeEmptyFields(args);
@@ -119,10 +127,15 @@ export const upsert = mutation({
     validateCustomerDetail(args);
     const customer = await ctx.db.get(args.customerId);
     if (!customer || customer.isArchive) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客が存在しません',
+        callFunc: 'customer.detail.upsert',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // 既存の詳細データがないか確認
@@ -183,10 +196,15 @@ export const updateUseCount = mutation({
     validateRequired(args.customerId, 'customerId');
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客が存在しません',
+        callFunc: 'customer.detail.updateUseCount',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     if (args.type === 'increment') {

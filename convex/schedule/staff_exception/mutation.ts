@@ -12,8 +12,7 @@ import {
   validateStaffScheduleException,
   validateRequired,
 } from '@/services/convex/shared/utils/validation';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
-
+import { throwConvexError } from '@/lib/error';
 // スタッフスケジュール例外の追加
 export const add = mutation({
   args: {
@@ -32,25 +31,29 @@ export const add = mutation({
     // スタッフの存在確認
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフが存在しません',
+        callFunc: 'schedule.staff_exception.add',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        callFunc: 'schedule.staff_exception.add',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     return await ctx.db.insert('staff_schedule', {
@@ -77,16 +80,15 @@ export const update = mutation({
     // スタッフスケジュール例外の存在確認
     const staffSchedule = await ctx.db.get(args.staffScheduleId);
     if (!staffSchedule || staffSchedule.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフスケジュール例外が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフスケジュール例外が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフスケジュール例外が存在しません',
+        callFunc: 'schedule.staff_exception.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);
@@ -171,23 +173,27 @@ export const upsertSchedules = mutation({
     validateStaffScheduleException(args);
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフが存在しません',
+        callFunc: 'schedule.staff_exception.upsertSchedules',
+        severity: 'low',
+        details: { ...args },
+      });
     }
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        callFunc: 'schedule.staff_exception.upsertSchedules',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // 引数に渡された日付のセットを作成

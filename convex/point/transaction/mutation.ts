@@ -5,14 +5,13 @@ import {
   killRecord,
   archiveRecord,
 } from '@/services/convex/shared/utils/helper';
-import { paginationOptsValidator } from 'convex/server';
 import {
   validatePointTransaction,
   validateRequired,
 } from '@/services/convex/shared/utils/validation';
 import { pointTransactionType } from '@/services/convex/shared/types/common';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 
 // ポイント取引の追加
 export const create = mutation({
@@ -31,44 +30,58 @@ export const create = mutation({
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        callFunc: 'point.transaction.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // 予約の存在確認
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation) {
-      const err = new ConvexCustomError('low', '指定された予約が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された予約が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された予約が存在しません',
+        callFunc: 'point.transaction.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客が存在しません',
+        callFunc: 'point.transaction.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // メニューの存在確認（指定されている場合）
     if (args.menuId) {
       const menu = await ctx.db.get(args.menuId);
       if (!menu) {
-        const err = new ConvexCustomError(
-          'low',
-          '指定されたメニューが存在しません',
-          'NOT_FOUND',
-          404,
-          {
-            ...args,
-          }
-        );
-        throw err;
+        throw throwConvexError({
+          message: '指定されたメニューが存在しません',
+          status: 404,
+          code: 'NOT_FOUND',
+          title: '指定されたメニューが存在しません',
+          callFunc: 'point.transaction.create',
+          severity: 'low',
+          details: { ...args },
+        });
       }
     }
     const pointTransactionId = await ctx.db.insert('point_transaction', {
@@ -93,16 +106,15 @@ export const update = mutation({
     // ポイント取引の存在確認
     const pointTransaction = await ctx.db.get(args.pointTransactionId);
     if (!pointTransaction || pointTransaction.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたポイント取引が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたポイント取引が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたポイント取引が存在しません',
+        callFunc: 'point.transaction.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);

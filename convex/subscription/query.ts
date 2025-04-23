@@ -9,7 +9,6 @@ import { v } from 'convex/values';
 import { validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { subscriptionService } from '@/services/convex/services';
-import { throwConvexApiError } from '@/services/convex/shared/utils/error';
 import { query } from '../_generated/server';
 
 /**
@@ -26,7 +25,7 @@ export const isSubscribed = query({
       validateRequired(args.salonId, 'salonId');
       return await subscriptionService.isSubscribed(ctx, args.salonId, args.includeArchive);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -49,7 +48,7 @@ export const findByStripeCustomerId = query({
         args.includeArchive || false
       );
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });

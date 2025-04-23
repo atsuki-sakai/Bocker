@@ -22,7 +22,7 @@ import {
   SalonStripeConnectInput,
 } from '@/services/convex/types/salon';
 import { removeEmptyFields, excludeFields } from '@/services/convex/shared/utils/helper';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 import { checkSalonAccess } from '@/services/convex/shared/utils/auth';
 import { WithoutSystemFields } from 'convex/server';
 /**
@@ -107,10 +107,17 @@ class SalonService {
       .withIndex('by_salon_id', (q) => q.eq('salonId', data.salonId))
       .first();
     if (!apiConfig) {
-      const err = new ConvexCustomError('low', 'API設定が見つかりません', 'NOT_FOUND', 404, {
-        salonId: data.salonId,
+      throw throwConvexError({
+        message: 'API設定が見つかりません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'API設定が見つかりません',
+        callFunc: 'SalonService.updateApiConfig',
+        severity: 'low',
+        details: {
+          salonId: data.salonId,
+        },
       });
-      throw err;
     }
     return await this.apiConfigRepo.update(ctx, apiConfig._id, data);
   }
@@ -137,25 +144,35 @@ class SalonService {
       .withIndex('by_salon_id', (q) => q.eq('salonId', data.salonId))
       .first();
     if (!scheduleConfig) {
-      const err = new ConvexCustomError(
-        'low',
-        'スケジュール設定が見つかりません',
-        'NOT_FOUND',
-        404,
-        {
+      throw throwConvexError({
+        message: 'スケジュール設定が見つかりません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'スケジュール設定が見つかりません',
+        callFunc: 'SalonService.updateScheduleConfig',
+        severity: 'low',
+        details: {
           salonId: data.salonId,
-        }
-      );
-      throw err;
+        },
+      });
     }
     return await this.scheduleConfigRepo.update(ctx, scheduleConfig._id, data);
   }
   async upsertScheduleConfig(ctx: MutationCtx, data: SalonScheduleConfigInput) {
     // サロンの存在確認
     if (!data.salonId) {
-      throw new Error('サロンIDは必須です');
+      throw throwConvexError({
+        message: 'サロンIDは必須です',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        title: 'サロンIDは必須です',
+        callFunc: 'SalonService.upsertScheduleConfig',
+        severity: 'low',
+        details: {
+          data,
+        },
+      });
     }
-
     await this.salonRepo.get(ctx, data.salonId);
     const cleanData = {
       ...removeEmptyFields(data),
@@ -175,10 +192,17 @@ class SalonService {
       ]);
 
       if (!salon) {
-        const err = new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
-          salonId,
+        throw throwConvexError({
+          message: 'サロンが見つかりません',
+          status: 404,
+          code: 'NOT_FOUND',
+          title: 'サロンが見つかりません',
+          callFunc: 'SalonService.getSalonRelations',
+          severity: 'low',
+          details: {
+            salonId,
+          },
         });
-        throw err;
       }
 
       return {
@@ -192,17 +216,18 @@ class SalonService {
           : null,
       };
     } catch (error) {
-      if (error instanceof ConvexCustomError) {
-        throw error; // すでにフォーマット済みなのでそのままスロー
-      }
-      const err = new ConvexCustomError(
-        'medium',
-        'サロン情報の取得中にエラーが発生しました',
-        'INTERNAL_ERROR',
-        500,
-        { salonId, error: error instanceof Error ? error.message : '不明なエラー' }
-      );
-      throw err;
+      throw throwConvexError({
+        message: 'サロン情報の取得中にエラーが発生しました',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: 'サロン情報の取得中にエラーが発生しました',
+        callFunc: 'SalonService.getSalonRelations',
+        severity: 'low',
+        details: {
+          salonId,
+          error: error instanceof Error ? error.message : '不明なエラー',
+        },
+      });
     }
   }
   async upsertSalonRelations(
@@ -236,10 +261,17 @@ class SalonService {
       // サロンの存在確認
       const existingSalon = await this.salonRepo.get(ctx, salonId);
       if (!existingSalon) {
-        const err = new ConvexCustomError('low', 'サロンが見つかりません', 'NOT_FOUND', 404, {
-          salonId,
+        throw throwConvexError({
+          message: 'サロンが見つかりません',
+          status: 404,
+          code: 'NOT_FOUND',
+          title: 'サロンが見つかりません',
+          callFunc: 'SalonService.upsertSalonRelations',
+          severity: 'low',
+          details: {
+            salonId,
+          },
         });
-        throw err;
       }
 
       // 各リポジトリを順番に更新
@@ -264,17 +296,18 @@ class SalonService {
 
       return true;
     } catch (error) {
-      if (error instanceof ConvexCustomError) {
-        throw error; // すでにフォーマット済みのエラーはそのままスロー
-      }
-      const err = new ConvexCustomError(
-        'medium',
-        'サロン情報の更新中にエラーが発生しました',
-        'INTERNAL_ERROR',
-        500,
-        { salonId, error: error instanceof Error ? error.message : '不明なエラー' }
-      );
-      throw err;
+      throw throwConvexError({
+        message: 'サロン情報の更新中にエラーが発生しました',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: 'サロン情報の更新中にエラーが発生しました',
+        callFunc: 'SalonService.upsertSalonRelations',
+        severity: 'low',
+        details: {
+          salonId,
+          error: error instanceof Error ? error.message : '不明なエラー',
+        },
+      });
     }
   }
 

@@ -5,7 +5,7 @@ import {
   SubscriptionSyncInput,
   SubscriptionPaymentFailedInput,
 } from '@/services/convex/types/subscription';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 
 export class SubscriptionRepository extends BaseRepository<'subscription'> {
   private static instance: SubscriptionRepository | null = null;
@@ -98,17 +98,18 @@ export class SubscriptionRepository extends BaseRepository<'subscription'> {
         });
       }
     } catch (error) {
-      const err = new ConvexCustomError(
-        'high',
-        'サブスクリプションの同期に失敗しました',
-        'INTERNAL_ERROR',
-        500,
-        {
+      throw throwConvexError({
+        message: 'サブスクリプションの同期に失敗しました',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: 'サブスクリプションの同期に失敗しました',
+        callFunc: 'syncSubscription',
+        severity: 'high',
+        details: {
           subscriptionId: data.subscriptionId,
           error: error instanceof Error ? error.message : '不明なエラー',
-        }
-      );
-      throw err;
+        },
+      });
     }
   }
 
@@ -137,14 +138,18 @@ export class SubscriptionRepository extends BaseRepository<'subscription'> {
       }
 
       if (!subscription) {
-        const err = new ConvexCustomError(
-          'medium',
-          'サブスクリプションが見つかりません',
-          'NOT_FOUND',
-          404,
-          { subscriptionId: data.subscriptionId, stripeCustomerId: data.stripeCustomerId }
-        );
-        throw err;
+        throw throwConvexError({
+          message: 'サブスクリプションが見つかりません',
+          status: 404,
+          code: 'NOT_FOUND',
+          title: 'サブスクリプションが見つかりません',
+          callFunc: 'handlePaymentFailed',
+          severity: 'high',
+          details: {
+            subscriptionId: data.subscriptionId,
+            stripeCustomerId: data.stripeCustomerId,
+          },
+        });
       }
 
       // ステータスを更新
@@ -153,17 +158,21 @@ export class SubscriptionRepository extends BaseRepository<'subscription'> {
       });
       return subscription._id;
     } catch (error) {
-      if (error instanceof ConvexCustomError) {
-        throw error;
-      }
-      const err = new ConvexCustomError(
-        'high',
-        '支払い失敗の処理中にエラーが発生しました',
-        'INTERNAL_ERROR',
-        500,
-        { data, error: error instanceof Error ? error.message : '不明なエラー' }
-      );
-      throw err;
+      throw throwConvexError({
+        message: 'Stripeのサブスクリプション支払い失敗の処理中にエラーが発生しました',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: '支払い失敗の処理中にエラーが発生しました',
+        callFunc: 'handlePaymentFailed',
+        severity: 'high',
+        details: {
+          data: {
+            subscriptionId: data.subscriptionId,
+            stripeCustomerId: data.stripeCustomerId,
+          },
+          error: error instanceof Error ? error.message : '不明なエラー',
+        },
+      });
     }
   }
 

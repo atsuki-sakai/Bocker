@@ -7,7 +7,7 @@ import {
 } from '@/services/convex/shared/utils/helper';
 import { validateMenu, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 import {
   genderType,
   targetType,
@@ -36,10 +36,15 @@ export const create = mutation({
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        callFunc: 'menu.core.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     const menuId = await ctx.db.insert('menu', {
@@ -72,16 +77,15 @@ export const update = mutation({
     // メニューの存在確認
     const menu = await ctx.db.get(args.menuId);
     if (!menu || menu.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたメニューが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたメニューが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたメニューが存在しません',
+        callFunc: 'menu.core.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);

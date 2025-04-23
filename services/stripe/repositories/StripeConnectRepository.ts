@@ -3,7 +3,7 @@ import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
 import { Id } from '@/convex/_generated/dataModel';
 import { StripeResult } from '@/services/stripe/types';
-import { StripeError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 
 /**
  * Stripe Connect APIを扱うリポジトリクラス
@@ -97,16 +97,15 @@ export class StripeConnectRepository {
           return { success: true, message: `未処理のイベントタイプ: ${event.type}` };
       }
     } catch (error) {
-      const err = new StripeError(
-        'high',
-        'Webhookイベントの処理に失敗しました',
-        'INTERNAL_ERROR',
-        500,
-        {
-          event,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: 'Webhookイベントの処理に失敗しました',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: 'Webhookイベントの処理に失敗しました',
+        callFunc: 'StripeConnectRepository.handleWebhookEvent',
+        severity: 'low',
+        details: { event, error: error instanceof Error ? error.message : '不明なエラー' },
+      });
     }
   }
 
@@ -188,21 +187,11 @@ export class StripeConnectRepository {
           // Stripeアカウントを削除
           await this.stripe.accounts.del(existingAccount.accountId);
         } catch (deleteError) {
-          // const err = new StripeError(
-          //   'high',
-          //   'Stripeアカウントの削除に失敗しました',
-          //   'INTERNAL_ERROR',
-          //   500,
-          //   {
-          //     deleteError,
-          //   }
-          // );
-          // throw err;
-          // 削除に失敗しても続行する
+          //削除に失敗しても続行する
         }
       }
 
-      // Stripe Connect アカウントを作成
+      // Stripe Connect アカウントを作成/
       const account = await this.stripe.accounts.create({
         type: 'express',
         country: 'JP',

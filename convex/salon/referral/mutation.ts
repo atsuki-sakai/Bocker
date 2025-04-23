@@ -1,8 +1,7 @@
 import { v } from 'convex/values';
 import { mutation } from '@/convex/_generated/server';
-import { throwConvexApiError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 import { generateReferralCode } from '@/lib/utils';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 
 export const create = mutation({
   args: {
@@ -21,8 +20,7 @@ export const create = mutation({
       });
       return salonReferralId;
     } catch (error) {
-      console.error('Referral作成エラー:', error);
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -34,14 +32,15 @@ export const incrementReferralCount = mutation({
   handler: async (ctx, args) => {
     const referral = await ctx.db.get(args.referralId);
     if (!referral) {
-      const reffrralError = new ConvexCustomError(
-        'medium',
-        '指定されたサロンの招待プログラムが存在しません',
-        'NOT_FOUND',
-        404,
-        { ...args }
-      );
-      throw reffrralError;
+      throw throwConvexError({
+        message: '指定されたサロンの招待プログラムが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンの招待プログラムが存在しません',
+        callFunc: 'salon.referral.incrementReferralCount',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     await ctx.db.patch(args.referralId, {

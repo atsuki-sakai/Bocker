@@ -3,7 +3,7 @@ import { v } from 'convex/values';
 import { killRecord, archiveRecord } from '@/services/convex/shared/utils/helper';
 import { validateMenuExclusionStaff } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 
 export const create = mutation({
   args: {
@@ -26,16 +26,15 @@ export const create = mutation({
       )
       .first();
     if (exclusionStaff) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたメニュー除外スタッフはすでに存在します',
-        'DUPLICATE_RECORD',
-        400,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたメニュー除外スタッフはすでに存在します',
+        status: 400,
+        code: 'DUPLICATE_RECORD',
+        title: '指定されたメニュー除外スタッフはすでに存在します',
+        callFunc: 'menu.menu_exclusion_staff.create',
+        severity: 'low',
+        details: { ...args },
+      });
     }
     const menuExclusionStaffId = await ctx.db.insert('menu_exclusion_staff', {
       ...args,
@@ -120,16 +119,15 @@ export const archive = mutation({
       )
       .first();
     if (!menuExclusionStaff || menuExclusionStaff.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたメニュー除外スタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたメニュー除外スタッフが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたメニュー除外スタッフが存在しません',
+        callFunc: 'menu.menu_exclusion_staff.archive',
+        severity: 'low',
+        details: { ...args },
+      });
     }
     return await archiveRecord(ctx, menuExclusionStaff._id);
   },
@@ -155,14 +153,15 @@ export const kill = mutation({
       )
       .first();
     if (!menuExclusionStaff || menuExclusionStaff.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたメニュー除外スタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        { ...args }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたメニュー除外スタッフが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたメニュー除外スタッフが存在しません',
+        callFunc: 'menu.menu_exclusion_staff.kill',
+        severity: 'low',
+        details: { ...args },
+      });
     }
     return await killRecord(ctx, menuExclusionStaff._id);
   },

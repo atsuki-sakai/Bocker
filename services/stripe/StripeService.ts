@@ -1,13 +1,12 @@
 import Stripe from 'stripe';
 import { STRIPE_API_VERSION } from '@/lib/constants';
-import { StripeError } from '@/services/convex/shared/utils/error';
 import {
   StripeConnectRepository,
   StripeSubscriptionRepository,
 } from '@/services/stripe/repositories';
 import { Id } from '@/convex/_generated/dataModel';
 import { StripeResult } from '@/services/stripe/types';
-
+import { throwConvexError } from '@/lib/error';
 /**
  * Stripeサービスクラス
  *
@@ -23,10 +22,15 @@ class StripeService {
 
   private constructor() {
     if (!process.env.STRIPE_SECRET_KEY) {
-      const err = new StripeError('high', 'Stripeの秘密鍵が設定されていません', 'NOT_FOUND', 404, {
-        stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+      throw throwConvexError({
+        message: 'Stripeの秘密鍵が設定されていません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'Stripeの秘密鍵が設定されていません',
+        callFunc: 'StripeService.getInstance',
+        severity: 'low',
+        details: { stripeSecretKey: process.env.STRIPE_SECRET_KEY },
       });
-      throw err;
     }
 
     // Stripeインスタンスの初期化
@@ -86,17 +90,15 @@ class StripeService {
         console.warn('⚠️ 開発環境で署名検証をスキップします');
         return JSON.parse(body) as Stripe.Event;
       } else {
-        const err = new StripeError(
-          'high',
-          'Webhook署名またはシークレットがありません',
-          'NOT_FOUND',
-          404,
-          {
-            signature,
-            webhookSecret,
-          }
-        );
-        throw err;
+        throw throwConvexError({
+          message: 'Webhook署名またはシークレットがありません',
+          status: 404,
+          code: 'NOT_FOUND',
+          title: 'Webhook署名またはシークレットがありません',
+          callFunc: 'StripeService.verifyWebhookSignature',
+          severity: 'low',
+          details: { signature, webhookSecret },
+        });
       }
     }
 

@@ -5,10 +5,9 @@ import {
   killRecord,
   archiveRecord,
 } from '@/services/convex/shared/utils/helper';
-import { paginationOptsValidator } from 'convex/server';
 import { validatePointQueue, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 // ポイントキューの追加
 export const create = mutation({
   args: {
@@ -23,18 +22,28 @@ export const create = mutation({
     // 予約の存在確認
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation) {
-      const err = new ConvexCustomError('low', '指定された予約が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された予約が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された予約が存在しません',
+        callFunc: 'point.task_queue.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客が存在しません',
+        callFunc: 'point.task_queue.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     const pointQueueId = await ctx.db.insert('point_task_queue', {
@@ -58,16 +67,15 @@ export const update = mutation({
     // ポイントキューの存在確認
     const pointQueue = await ctx.db.get(args.pointQueueId);
     if (!pointQueue || pointQueue.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたポイントキューが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたポイントキューが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたポイントキューが存在しません',
+        callFunc: 'point.task_queue.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);

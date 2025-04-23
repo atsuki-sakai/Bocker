@@ -4,7 +4,7 @@ import { validateMenu, validateRequired } from '@/services/convex/shared/utils/v
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { genderType, targetType } from '@/services/convex/shared/types/common';
 import { paginationOptsValidator } from 'convex/server';
-import { Doc } from '@/convex/_generated/dataModel';
+
 // メニューIDからメニューを取得
 export const get = query({
   args: {

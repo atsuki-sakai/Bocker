@@ -1,18 +1,11 @@
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  killRecord,
-  archiveRecord,
-} from '@/services/convex/shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
 import {
   validatePointTransaction,
   validateRequired,
 } from '@/services/convex/shared/utils/validation';
-import { pointTransactionType } from '@/services/convex/shared/types/common';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 
 // サロンと予約IDからポイント取引を取得
 export const getBySalonAndReservationId = query({

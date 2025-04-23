@@ -4,7 +4,7 @@ import { v } from 'convex/values';
 import { paginationOptsValidator } from 'convex/server';
 import { validateStaff } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 import { genderType } from '@/services/convex/shared/types/common';
 
 // サロンIDとメールアドレスからスタッフを取得
@@ -14,18 +14,17 @@ export const getById = query({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
-    const staff = await ctx.db.get(args.id);    
+    const staff = await ctx.db.get(args.id);
     if (!staff) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフが存在しません',
+        callFunc: 'staff.core.getById',
+        severity: 'low',
+        details: { ...args },
+      });
     }
     return staff;
   },
@@ -168,16 +167,15 @@ export const getRelatedTables = query({
     // staffの取得にもisArchiveチェックを追加
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフが存在しません',
+        callFunc: 'staff.core.getRelatedTables',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     // 残りのデータを並列で取得
@@ -197,29 +195,27 @@ export const getRelatedTables = query({
     ]);
 
     if (!staffConfig) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフの設定が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフの設定が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフの設定が存在しません',
+        callFunc: 'staff.core.getRelatedTables',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     if (!staffAuth) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフの認証情報が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフの認証情報が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフの認証情報が存在しません',
+        callFunc: 'staff.core.getRelatedTables',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     return {

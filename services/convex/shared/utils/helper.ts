@@ -1,8 +1,7 @@
-import { MutationCtx } from '../../../../convex/_generated/server';
-import { DataModel } from '../../../../convex/_generated/dataModel';
-import { Id } from '../../../../convex/_generated/dataModel';
-import { v } from 'convex/values';
-import { ConvexCustomError } from './error';
+import { MutationCtx } from '@/convex/_generated/server';
+import { DataModel } from '@/convex/_generated/dataModel';
+import { Id } from '@/convex/_generated/dataModel';
+import { throwConvexError } from '@/lib/error';
 
 /**
  * 現在の Unix タイムスタンプ（秒単位）を取得する
@@ -41,8 +40,15 @@ export const removeEmptyFields = <T extends Record<string, unknown>>(
     }
   }
   if (Object.keys(result).length === 0) {
-    const err = new ConvexCustomError('low', '更新するデータがありません', 'INVALID_ARGUMENT', 400);
-    throw err;
+    throw throwConvexError({
+      message: '更新するデータがありません',
+      status: 400,
+      code: 'INVALID_ARGUMENT',
+      title: '更新するデータがありません',
+      callFunc: 'removeEmptyFields',
+      severity: 'low',
+      details: { ...object },
+    });
   }
   return result;
 };
@@ -80,16 +86,15 @@ export function excludeFields<T extends Record<string, any>, K extends keyof T>(
 export async function archiveRecord<T extends keyof DataModel>(ctx: MutationCtx, id: Id<T>) {
   const record = await ctx.db.get(id);
   if (!record || record.isArchive) {
-    const err = new ConvexCustomError(
-      'low',
-      '指定されたレコードが存在しないか、アーカイブされています',
-      'NOT_FOUND',
-      404,
-      {
-        record,
-      }
-    );
-    throw err;
+    throw throwConvexError({
+      message: '指定されたレコードが存在しないか、アーカイブされています',
+      status: 404,
+      code: 'NOT_FOUND',
+      title: '指定されたレコードが存在しないか、アーカイブされています',
+      callFunc: 'archiveRecord',
+      severity: 'low',
+      details: { record },
+    });
   }
   await ctx.db.patch(id as Id<T> | any, {
     isArchive: true,
@@ -105,16 +110,15 @@ export async function archiveRecord<T extends keyof DataModel>(ctx: MutationCtx,
 export async function killRecord<T extends keyof DataModel>(ctx: MutationCtx, id: Id<T>) {
   const record = await ctx.db.get(id);
   if (!record || record.isArchive) {
-    const err = new ConvexCustomError(
-      'low',
-      '指定されたレコードが存在しないか、アーカイブされています',
-      'NOT_FOUND',
-      404,
-      {
-        record,
-      }
-    );
-    throw err;
+    throw throwConvexError({
+      message: '指定されたレコードが存在しないか、アーカイブされています',
+      status: 404,
+      code: 'NOT_FOUND',
+      title: '指定されたレコードが存在しないか、アーカイブされています',
+      callFunc: 'killRecord',
+      severity: 'low',
+      details: { record },
+    });
   }
   await ctx.db.delete(id as Id<T>);
 }

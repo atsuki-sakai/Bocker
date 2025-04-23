@@ -1,19 +1,9 @@
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
-import {
-  removeEmptyFields,
-  archiveRecord,
-  killRecord,
-} from '@/services/convex/shared/utils/helper';
-import { paginationOptsValidator } from 'convex/server';
-import { salonScheduleExceptionType, dayOfWeekType } from '@/services/convex/shared/types/common';
-import {
-  validateRequired,
-  validateSalonScheduleException,
-} from '@/services/convex/shared/utils/validation';
-import { checkAuth } from '@/services/convex/shared/utils/auth';
 
+import { paginationOptsValidator } from 'convex/server';
+import { salonScheduleExceptionType } from '@/services/convex/shared/types/common';
+import { checkAuth } from '@/services/convex/shared/utils/auth';
 
 export const displayExceptionSchedule = query({
   args: {
@@ -40,13 +30,6 @@ export const getByScheduleList = query({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
-
-    // デバッグ出力
-    console.log('検索条件:', {
-      salonId: args.salonId,
-      type: args.type,
-      includeArchive: args.includeArchive || false,
-    });
 
     // 基本クエリ
     let query = ctx.db

@@ -35,7 +35,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
-import { StorageError, ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { ConvexError } from 'convex/values';
 import {
   Save,
   ArrowLeft,
@@ -239,14 +239,13 @@ export default function StaffAddPage() {
               });
             }
           } catch (cleanupError) {
-            const err = new ConvexCustomError(
-              'high',
-              'スタッフ削除中にエラーが発生しました',
-              'INTERNAL_ERROR',
-              500,
-              { Error: JSON.stringify(cleanupError) }
-            );
-            throw err;
+            throw new ConvexError({
+              message: 'スタッフ削除中にエラーが発生しました',
+              status: 500,
+              code: 'INTERNAL_ERROR',
+              title: 'スタッフ削除中にエラーが発生しました',
+              details: { Error: JSON.stringify(cleanupError) },
+            });
           }
         }
         throw configAuthError; // 元のエラーを再スロー
@@ -259,14 +258,13 @@ export default function StaffAddPage() {
             imgUrl: uploadImageUrl,
           });
         } catch (deleteError) {
-          const err = new StorageError(
-            'high',
-            '画像削除中にエラーが発生しました',
-            'INTERNAL_ERROR',
-            500,
-            { Error: JSON.stringify(deleteError) }
-          );
-          throw err;
+          throw new ConvexError({
+            message: '画像削除中にエラーが発生しました',
+            status: 500,
+            code: 'INTERNAL_ERROR',
+            title: '画像削除中にエラーが発生しました',
+            details: { Error: JSON.stringify(deleteError) },
+          });
         }
 
         if (staffId) {
@@ -279,14 +277,13 @@ export default function StaffAddPage() {
               });
             }
           } catch (cleanupError) {
-            const err = new ConvexCustomError(
-              'high',
-              'スタッフ削除中にエラーが発生しました',
-              'INTERNAL_ERROR',
-              500,
-              { Error: JSON.stringify(cleanupError) }
-            );
-            throw err;
+            throw new ConvexError({
+              message: 'スタッフ削除中にエラーが発生しました',
+              status: 500,
+              code: 'INTERNAL_ERROR',
+              title: 'スタッフ削除中にエラーが発生しました',
+              details: { Error: JSON.stringify(cleanupError) },
+            });
           }
         }
         const errorDetails = handleError(error);

@@ -87,6 +87,8 @@ import { Id } from '@/convex/_generated/dataModel';
 import { Textarea } from '@/components/ui/textarea';
 import { Gender } from '@/services/convex/shared/types/common';
 import { Checkbox } from '@/components/ui/checkbox';
+import { handleErrorToMsg } from '@/lib/error';
+
 type AvailableStaff = {
   _id: Id<'staff'>;
   name: string;
@@ -374,7 +376,9 @@ export default function ReservationForm() {
             totalTimeToMin: totalTimeMinutes,
             onionMode: {
               slotSize: 60,
-              layer: 4,
+              layer: 3,
+              allowOverlap: 60,
+              disableBackSlots: false,
             },
           });
 
@@ -473,8 +477,7 @@ export default function ReservationForm() {
       toast.success('予約が完了しました');
       router.push('/dashboard/reservation');
     } catch (error) {
-      console.error('予約作成エラー:', error);
-      toast.error('予約作成に失敗しました');
+      toast.error(handleErrorToMsg(error));
     }
   };
 

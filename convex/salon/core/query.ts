@@ -9,7 +9,6 @@ import { v } from 'convex/values';
 import { validateSalon, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { salonService } from '@/services/convex/services';
-import { throwConvexApiError } from '@/services/convex/shared/utils/error';
 import { query } from '../../_generated/server';
 
 export const get = query({
@@ -22,7 +21,7 @@ export const get = query({
       validateRequired(args.id, 'id');
       return await salonService.getSalon(ctx, args.id);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -37,7 +36,7 @@ export const findByClerkId = query({
       validateSalon(args);
       return await salonService.findSalonByClerkId(ctx, args.clerkId);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -51,7 +50,6 @@ export const findByStripeCustomerId = query({
   },
 });
 
-
 export const getRelations = query({
   args: {
     id: v.id('salon'),
@@ -62,7 +60,7 @@ export const getRelations = query({
       validateRequired(args.id, 'id');
       return await salonService.getSalonRelations(ctx, args.id);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });

@@ -2,7 +2,7 @@ import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 
 // 顧客IDから詳細情報を取得
 export const getByCustomerId = query({
@@ -15,10 +15,15 @@ export const getByCustomerId = query({
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客が存在しません',
+        callFunc: 'customer.detail.getByCustomerId',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     const detail = await ctx.db

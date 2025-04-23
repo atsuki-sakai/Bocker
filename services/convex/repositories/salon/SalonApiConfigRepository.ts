@@ -2,7 +2,7 @@ import { BaseRepository } from '@/services/convex/repositories/BaseRepository';
 import { Doc, Id } from '@/convex/_generated/dataModel';
 import { QueryCtx, MutationCtx } from '@/convex/_generated/server';
 import { SalonApiConfigInput } from '@/services/convex/types/salon';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 /**
  * サロンAPI設定リポジトリクラス
  * サロンのAPI設定データの操作を提供します
@@ -31,10 +31,15 @@ export class SalonApiConfigRepository extends BaseRepository<'salon_api_config'>
 
   async upsert(ctx: MutationCtx, data: SalonApiConfigInput): Promise<Id<'salon_api_config'>> {
     if (!data.salonId) {
-      const err = new ConvexCustomError('low', 'サロンIDが必要です', 'INVALID_ARGUMENT', 400, {
-        ...data,
+      throwConvexError({
+        message: 'サロンIDが必要です',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        title: '必須項目が不足しています',
+        callFunc: 'salonApiConfigRepository.upsert',
+        severity: 'low',
+        details: { ...data },
       });
-      throw err;
     }
 
     const existing = await this.findBySalonId(ctx, data.salonId);

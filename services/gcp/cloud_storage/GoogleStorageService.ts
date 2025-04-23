@@ -1,6 +1,7 @@
 import { Storage } from '@google-cloud/storage';
 import { UploadResult } from './types';
 import { STORAGE_URL } from './constants';
+import { throwConvexError } from '@/lib/error';
 
 /**
  * GCSクライアントとバケット設定を管理するクラス
@@ -18,13 +19,19 @@ class GoogleStorageService {
     const privateKey = process.env.GCP_PRIVATE_KEY;
     const bucketName = process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME;
     if (!projectId || !clientEmail || !privateKey || !bucketName) {
-      console.error('必要な環境変数が不足しています', {
-        projectId: Boolean(projectId),
-        clientEmail: Boolean(clientEmail),
-        privateKey: Boolean(privateKey),
-        bucketName: Boolean(bucketName),
+      throw throwConvexError({
+        message: '必要な環境変数が不足しています',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: '必要な環境変数が不足しています',
+        callFunc: 'GoogleStorageService.getEnvConfig',
+        severity: 'low',
+        details: {
+          projectId: Boolean(projectId),
+          clientEmail: Boolean(clientEmail),
+          privateKey: Boolean(privateKey),
+        },
       });
-      throw new Error('必要な環境変数が設定されていません。');
     }
     return { projectId, clientEmail, privateKey, bucketName };
   }
@@ -36,12 +43,9 @@ class GoogleStorageService {
     if (this.storage !== null) {
       return;
     }
-    console.log('GCSクライアントの初期化開始');
 
     // 必要な環境変数をまとめて取得
     const { projectId, clientEmail, privateKey, bucketName } = this.getEnvConfig();
-    console.log('環境変数取得完了', { projectId, clientEmail, bucketName });
-
     try {
       // 改行のエスケープ解除（もし \n で設定している場合）
       const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
@@ -56,12 +60,16 @@ class GoogleStorageService {
       });
 
       this.bucketName = bucketName;
-      console.log('GCSクライアントの初期化完了');
     } catch (error) {
-      console.error('GCPストレージクライアントの初期化に失敗しました:', error);
-      throw new Error(
-        `GCPストレージクライアントの初期化に失敗しました: ${error instanceof Error ? error.message : String(error)}`
-      );
+      throw throwConvexError({
+        message: 'GCPストレージクライアントの初期化に失敗しました',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: 'GCPストレージクライアントの初期化に失敗しました',
+        callFunc: 'GoogleStorageService.initializeIfNeeded',
+        severity: 'low',
+        details: { error: this.formatErrorDetails(error) },
+      });
     }
   }
 
@@ -105,15 +113,9 @@ class GoogleStorageService {
 
     try {
       const bucket = this.storage!.bucket(this.bucketName!);
-      console.log('Bucket取得成功', { bucketName: this.bucketName });
       const timestamp = Date.now();
       const filePath = `${directory}/${timestamp}-${fileName}`;
-      console.log('生成されたファイルパス:', filePath);
       const blob = bucket.file(filePath);
-
-      console.log(
-        `バッファのアップロード開始: ${filePath}, サイズ: ${buffer.length} バイト, タイプ: ${contentType}`
-      );
 
       // バッファから直接アップロード
       await blob.save(buffer, {
@@ -123,28 +125,10 @@ class GoogleStorageService {
         },
       });
 
-      console.log(`バッファのアップロードが完了しました: ${filePath}`);
-
       // ファイルを公開状態に設定
       try {
         await blob.makePublic();
-        console.log(`ファイルを公開状態に設定しました: ${filePath}`);
-      } catch (publicError) {
-        // エラーの詳細を出力
-        console.warn(
-          `個別ファイルの公開設定に失敗しました:`,
-          publicError instanceof Error
-            ? {
-                message: publicError.message,
-                stack: publicError.stack,
-                name: publicError.name,
-              }
-            : publicError
-        );
-
-        // バケットレベルのアクセス制御が設定されていれば問題ない
-        console.log('バケットレベルのIAMポリシーでの公開アクセスを使用します');
-      }
+      } catch (publicError) {}
 
       // 公開URLを取得
       const publicUrl = `${STORAGE_URL}/${this.bucketName}/${filePath}`;
@@ -155,15 +139,21 @@ class GoogleStorageService {
       };
     } catch (error) {
       const errorDetails = this.formatErrorDetails(error);
-      console.error('バッファからのアップロードに失敗しました:', errorDetails, {
-        fileName,
-        contentType,
-        bufferSize: buffer.length,
-        directory,
+      throw throwConvexError({
+        message: 'バッファからのアップロードに失敗しました',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: 'バッファからのアップロードに失敗しました',
+        callFunc: 'GoogleStorageService.uploadFileBuffer',
+        severity: 'low',
+        details: {
+          fileName,
+          contentType,
+          bufferSize: buffer.length,
+          directory,
+          error: errorDetails,
+        },
       });
-      throw new Error(
-        `バッファからのアップロードに失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
     }
   }
 
@@ -191,8 +181,15 @@ class GoogleStorageService {
       const file = bucket.file(filePath);
       await file.delete();
     } catch (error) {
-      console.error('Error deleting file:', error);
-      throw new Error('ファイルの削除に失敗しました');
+      throw throwConvexError({
+        message: 'ファイルの削除に失敗しました',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: 'ファイルの削除に失敗しました',
+        callFunc: 'GoogleStorageService.deleteImage',
+        severity: 'low',
+        details: { error: this.formatErrorDetails(error) },
+      });
     }
   }
 }

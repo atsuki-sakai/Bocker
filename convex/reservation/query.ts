@@ -4,8 +4,7 @@ import { paginationOptsValidator } from 'convex/server';
 import { reservationStatusType } from '@/services/convex/shared/types/common';
 import { validateReservation, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
-import { stream, mergedStream } from 'convex-helpers/server/stream';
+import { throwConvexError } from '@/lib/error';
 import { canScheduling } from '@/lib/schedule';
 // 顧客IDから予約一覧を取得
 export const findByCustomerId = query({
@@ -256,6 +255,7 @@ export const newAvailableTimeSlots = query({
         slotSize: v.optional(v.number()), // 時間枠の分割サイズ(分)
         layer: v.optional(v.number()), // 先頭/末尾から抽出する枠数
         disableBackSlots: v.optional(v.boolean()), // 終了時間から逆算するスロットを無効にする
+        allowOverlap: v.optional(v.number()), // 営業時間を超過しても許容する分数
       })
     ),
   },
@@ -638,7 +638,12 @@ export const newAvailableTimeSlots = query({
 
         // 5.8 オニオンモードの適用
         if (args.onionMode) {
-          const { slotSize = 60, layer = 2, disableBackSlots = false } = args.onionMode;
+          const {
+            slotSize = 60,
+            layer = 2,
+            disableBackSlots = false,
+            allowOverlap = 0,
+          } = args.onionMode;
 
           // 営業開始時間と終了時間を分単位に変換
           const startWorkTimeMin = Math.floor(effectiveOpenTime / 1000 / 60); // 分単位
@@ -654,7 +659,8 @@ export const newAvailableTimeSlots = query({
             endMin: number,
             layer: number,
             slotsize: number,
-            disableBack: boolean
+            disableBack: boolean,
+            overlapMin: number = 0
           ) => {
             // 2. 前方から時間枠を生成
             const frontSlots: [number, number][] = [];
@@ -662,12 +668,14 @@ export const newAvailableTimeSlots = query({
               const slotStart = startMin + i * slotsize;
               const slotEnd = slotStart + totalmin;
 
-              // 営業時間内かチェック
-              if (slotStart >= startMin && slotEnd <= endMin) {
+              // 営業時間内かチェック (オーバーラップを許容)
+              if (slotStart >= startMin && slotEnd <= endMin + overlapMin) {
                 // この時間枠が予約可能かどうかチェック
                 let isSlotAvailable = true;
                 const slotStartMs = slotStart * 60 * 1000;
-                const slotEndMs = slotEnd * 60 * 1000;
+                // 営業時間を超える部分はチェックしない
+                const checkEndTime = Math.min(slotEnd, endMin);
+                const slotEndMs = checkEndTime * 60 * 1000;
 
                 // 予約間隔でチェック
                 for (
@@ -717,6 +725,8 @@ export const newAvailableTimeSlots = query({
                   // デバッグ用にフォーマット済みの時間も含める
                   startTimeFormatted: formatMinutes(s),
                   endTimeFormatted: formatMinutes(e),
+                  // オーバーラップがあるかどうかのフラグ
+                  hasOverlap: e > endMin,
                 };
               });
             }
@@ -802,6 +812,8 @@ export const newAvailableTimeSlots = query({
                 // デバッグ用にフォーマット済みの時間も含める
                 startTimeFormatted: formatMinutes(s),
                 endTimeFormatted: formatMinutes(e),
+                // オーバーラップがあるかどうかのフラグ
+                hasOverlap: e > endMin,
               };
             });
           };
@@ -813,7 +825,8 @@ export const newAvailableTimeSlots = query({
             endWorkTimeMin,
             layer,
             slotSize,
-            disableBackSlots
+            disableBackSlots,
+            allowOverlap
           );
 
           // UNIX形式のスロットのみに変換して返す
@@ -891,12 +904,15 @@ export const getAvailableTimeSlots = query({
 
     if (!salonConfig) {
       console.error('サロン設定が見つかりません:', args.salonId);
-      throw new ConvexCustomError(
-        'low',
-        'サロンのスケジュール設定が見つかりません',
-        'NOT_FOUND',
-        404
-      );
+      throw throwConvexError({
+        message: 'サロンのスケジュール設定が見つかりません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'サロンのスケジュール設定が見つかりません',
+        callFunc: 'reservation.getAvailableTimeSlots',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     // 予約間隔(分)を取得
@@ -986,7 +1002,15 @@ export const getAvailableTimeSlots = query({
 
       if (!staff) {
         console.error('指定されたスタッフが見つかりません:', args.staffId);
-        throw new ConvexCustomError('low', '指定されたスタッフが見つかりません', 'NOT_FOUND', 404);
+        throw throwConvexError({
+          message: '指定されたスタッフが見つかりません',
+          status: 404,
+          code: 'NOT_FOUND',
+          title: '指定されたスタッフが見つかりません',
+          callFunc: 'reservation.getAvailableTimeSlots',
+          severity: 'low',
+          details: { ...args },
+        });
       }
 
       staffIds.push(staff._id);
@@ -1298,7 +1322,15 @@ export const checkAvailableTimeSlot = query({
     // 日付オブジェクトの作成と曜日の取得
     const targetDate = new Date(args.date);
     if (isNaN(targetDate.getTime())) {
-      throw new ConvexCustomError('low', '無効な日付形式です', 'INVALID_ARGUMENT', 400);
+      throw throwConvexError({
+        message: '無効な日付形式です',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        title: '無効な日付形式です',
+        callFunc: 'reservation.checkAvailableTimeSlot',
+        severity: 'low',
+        details: { ...args },
+      });
     }
     const dayOfWeek = getDayOfWeek(targetDate);
 

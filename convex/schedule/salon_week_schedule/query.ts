@@ -1,14 +1,8 @@
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  archiveRecord,
-  killRecord,
-} from '@/services/convex/shared/utils/helper';
 import { validateSalonSchedule, validateRequired } from '@/services/convex/shared/utils/validation';
-import { dayOfWeekType, DayOfWeek } from '@/services/convex/shared/types/common';
+import { dayOfWeekType } from '@/services/convex/shared/types/common';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 
 // サロンスケジュールの取得
 export const get = query({

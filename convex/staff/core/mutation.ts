@@ -7,7 +7,7 @@ import {
 } from '@/services/convex/shared/utils/helper';
 import { validateStaff, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 import { genderType } from '@/services/convex/shared/types/common';
 // スタッフの追加
 export const create = mutation({
@@ -38,15 +38,15 @@ export const create = mutation({
       )
       .first();
     if (existingStaff) {
-      throw new ConvexCustomError(
-        'low',
-        '指定されたメールアドレスのスタッフがすでに存在します',
-        'NOT_FOUND',
-        404,
-        {
-          ...existingStaff,
-        }
-      );
+      throw throwConvexError({
+        message: '指定されたメールアドレスのスタッフがすでに存在します',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたメールアドレスのスタッフがすでに存在します',
+        callFunc: 'staff.core.create',
+        severity: 'low',
+        details: { ...existingStaff },
+      });
     }
 
     return await ctx.db.insert('staff', {
@@ -75,16 +75,15 @@ export const update = mutation({
     // スタッフの存在確認
     const staff = await ctx.db.get(args.staffId);
     if (!staff || staff.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+          message: '指定されたスタッフが存在しません',
+          status: 404,
+          code: 'NOT_FOUND',
+          title: '指定されたスタッフが存在しません',
+          callFunc: 'staff.core.update',
+          severity: 'low',
+          details: { ...args },
+        });
     }
 
     const updateData = removeEmptyFields(args);
@@ -185,16 +184,15 @@ export const removeImgPath = mutation({
     validateRequired(args.staffId, 'staffId');
     const staff = await ctx.db.get(args.staffId);
     if (!staff) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたスタッフが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたスタッフが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフが存在しません',
+        callFunc: 'staff.core.removeImgPath',
+        severity: 'low',
+        details: { ...args },
+      });
     }
     const deletedStaffImage = await ctx.db.patch(args.staffId, {
       imgPath: undefined,

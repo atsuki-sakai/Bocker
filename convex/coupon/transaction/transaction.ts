@@ -1,6 +1,5 @@
 import { mutation, query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import { ConvexError } from 'convex/values';
 import {
   removeEmptyFields,
   archiveRecord,
@@ -12,7 +11,7 @@ import {
   validateRequired,
 } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { ConvexError } from 'convex/values';
 
 // クーポン取引の追加
 export const add = mutation({
@@ -27,34 +26,37 @@ export const add = mutation({
     validateCouponTransaction(args);
     const coupon = await ctx.db.get(args.couponId);
     if (!coupon) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたクーポンが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw new ConvexError({
+        message: '指定されたクーポンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたクーポンが存在しません',
+        details: { ...args },
+      });
     }
 
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw new ConvexError({
+        message: '指定された顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客が存在しません',
+        details: { ...args },
       });
-      throw err;
     }
 
     // 予約の存在確認
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation) {
-      const err = new ConvexCustomError('low', '指定された予約が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw new ConvexError({
+        message: '指定された予約が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された予約が存在しません',
+        details: { ...args },
       });
-      throw err;
     }
 
     const couponTransactionId = await ctx.db.insert('coupon_transaction', {
@@ -77,16 +79,13 @@ export const update = mutation({
     // クーポン取引の存在確認
     const couponTransaction = await ctx.db.get(args.couponTransactionId);
     if (!couponTransaction || couponTransaction.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたクーポン取引が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw new ConvexError({
+        message: '指定されたクーポン取引が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたクーポン取引が存在しません',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);

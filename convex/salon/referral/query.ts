@@ -1,8 +1,6 @@
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
-import { validateRequired } from '@/services/convex/shared/utils/validation';
-
+import { throwConvexError } from '@/lib/error';
 export const findReferralCodeByCustomerId = query({
   args: {
     stripeCustomerId: v.string(),
@@ -16,14 +14,15 @@ export const findReferralCodeByCustomerId = query({
       .first();
 
     if (!salon) {
-      const salonError = new ConvexCustomError(
-        'low',
-        '指定されたStripe顧客IDに対応するサロンが存在しません',
-        'NOT_FOUND',
-        404,
-        { ...args }
-      );
-      throw salonError;
+      throw throwConvexError({
+        message: '指定されたStripe顧客IDに対応するサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたStripe顧客IDに対応するサロンが存在しません',
+        callFunc: 'salon.referral.findReferralCodeByCustomerId',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const referral = await ctx.db
@@ -32,14 +31,15 @@ export const findReferralCodeByCustomerId = query({
       .first();
 
     if (!referral) {
-      const referralError = new ConvexCustomError(
-        'low',
-        '指定されたサロンの招待プログラムが存在しません',
-        'NOT_FOUND',
-        404,
-        { ...args }
-      );
-      throw referralError;
+      throw throwConvexError({
+        message: '指定されたサロンの招待プログラムが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンの招待プログラムが存在しません',
+        callFunc: 'salon.referral.findReferralCodeByCustomerId',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     return referral;

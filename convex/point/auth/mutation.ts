@@ -1,5 +1,6 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
+import { throwConvexError } from '@/lib/error';
 import {
   removeEmptyFields,
   archiveRecord,
@@ -7,7 +8,6 @@ import {
 } from '@/services/convex/shared/utils/helper';
 import { validatePointAuth } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 import { validateRequired } from '@/services/convex/shared/utils/validation';
 
 // 予約ポイント認証の追加
@@ -25,19 +25,29 @@ export const create = mutation({
     // 予約の存在確認
     const reservation = await ctx.db.get(args.reservationId);
     if (!reservation) {
-      const err = new ConvexCustomError('low', '指定された予約が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された予約が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された予約が存在しません',
+        callFunc: 'point.auth.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客が存在しません',
+        callFunc: 'point.auth.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     const pointAuthId = await ctx.db.insert('point_auth', {
@@ -62,16 +72,15 @@ export const update = mutation({
     // 予約ポイント認証の存在確認
     const pointAuth = await ctx.db.get(args.pointAuthId);
     if (!pointAuth || pointAuth.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定された予約ポイント認証が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定された予約ポイント認証が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された予約ポイント認証が存在しません',
+        callFunc: 'point.auth.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);

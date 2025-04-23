@@ -10,7 +10,7 @@ import {
   validateRequired,
 } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 
 // 顧客ポイントの追加
 export const create = mutation({
@@ -25,19 +25,29 @@ export const create = mutation({
     validateCustomerPoints(args);
     const customer = await ctx.db.get(args.customerId);
     if (!customer) {
-      const err = new ConvexCustomError('low', '指定された顧客が存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定された顧客が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客が存在しません',
+        callFunc: 'customer.points.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
     if (!salon) {
-      const err = new ConvexCustomError('low', '指定されたサロンが存在しません', 'NOT_FOUND', 404, {
-        ...args,
+      throw throwConvexError({
+        message: '指定されたサロンが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたサロンが存在しません',
+        callFunc: 'customer.points.create',
+        severity: 'low',
+        details: { ...args },
       });
-      throw err;
     }
 
     const customerPointsId = await ctx.db.insert('customer_points', {
@@ -61,16 +71,15 @@ export const update = mutation({
     // 顧客ポイントの存在確認
     const customerPoints = await ctx.db.get(args.customerPointsId);
     if (!customerPoints || customerPoints.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定された顧客ポイントが存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定された顧客ポイントが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客ポイントが存在しません',
+        callFunc: 'customer.points.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     const updateData = removeEmptyFields(args);

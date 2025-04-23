@@ -2,7 +2,7 @@ import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { validateStaffScheduleException } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
+import { ConvexError } from 'convex/values';
 
 // サロンIDとスタッフIDと日付からスタッフスケジュール例外を取得
 export const getBySalonStaffAndDate = query({
@@ -39,17 +39,13 @@ export const findBySalonAndStaffId = query({
         )
         .collect();
     } catch (error) {
-      console.error(error);
-      const err = new ConvexCustomError(
-        'low',
-        'スタッフスケジュール例外の取得に失敗しました',
-        'INTERNAL_ERROR',
-        500,
-        {
-          error,
-        }
-      );
-      throw err;
+      throw new ConvexError({
+        message: 'スタッフスケジュール例外の取得に失敗しました',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: 'スタッフスケジュール例外の取得に失敗しました',
+        details: { ...args },
+      });
     }
   },
 });

@@ -3,13 +3,12 @@ import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
 import { StripeResult } from '@/services/stripe/types';
 import { normalizeSubscriptionStatus, priceIdToPlanInfo } from '@/lib/utils';
-import { StripeError } from '@/services/convex/shared/utils/error';
 import { fetchQuery } from 'convex/nextjs';
 import * as Sentry from '@sentry/nextjs';
 import { STRIPE_API_VERSION } from '@/lib/constants';
 import { fetchMutation } from 'convex/nextjs';
 import { retryOperation } from '@/lib/utils';
-
+import { throwConvexError } from '@/lib/error';
 /**
  * Stripe Subscription APIを扱うリポジトリクラス
  */
@@ -153,8 +152,14 @@ export class StripeSubscriptionRepository {
   async getStripeCustomer(customerId: string): Promise<Stripe.Customer | Stripe.DeletedCustomer> {
     const customer = await this.stripe.customers.retrieve(customerId);
     if (!customer) {
-      throw new StripeError('high', 'Stripe顧客が見つかりません', 'NOT_FOUND', 404, {
-        customerId,
+      throw throwConvexError({
+        message: 'Stripe顧客が見つかりません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: 'Stripe顧客が見つかりません',
+        callFunc: 'StripeSubscriptionRepository.getStripeCustomer',
+        severity: 'low',
+        details: { customerId },
       });
     }
     return customer;
@@ -320,22 +325,15 @@ export class StripeSubscriptionRepository {
           return { success: true, message: `未対応のStripeイベントタイプ: ${event.type}` };
       }
     } catch (error) {
-      const err = new StripeError(
-        'high',
-        'Webhookイベントの処理に失敗しました',
-        'INTERNAL_ERROR',
-        500,
-        {
-          event,
-        }
-      );
-      Sentry.captureException(error, {
-        level: 'error',
-        tags: {
-          function: 'handleWebhookEvent',
-        },
+      throw throwConvexError({
+        message: 'Webhookイベントの処理に失敗しました',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: 'Webhookイベントの処理に失敗しました',
+        callFunc: 'StripeSubscriptionRepository.handleWebhookEvent',
+        severity: 'low',
+        details: { event, error: error instanceof Error ? error.message : '不明なエラー' },
       });
-      throw err;
     }
   }
 

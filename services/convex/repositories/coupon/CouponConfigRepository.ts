@@ -1,8 +1,8 @@
 import { Id } from '@/convex/_generated/dataModel';
 import { BaseRepository } from '../BaseRepository';
-import { ConvexCustomError } from '@/services/convex/shared/utils/error';
 import { MutationCtx, QueryCtx } from '@/convex/_generated/server';
 import { CreateCouponConfigInput, UpdateCouponConfigInput } from '@/services/convex/types/coupon';
+import { throwConvexError } from '@/lib/error';
 export class CouponConfigRepository extends BaseRepository<'coupon_config'> {
   private static instance: CouponConfigRepository | null = null;
   constructor() {
@@ -32,16 +32,15 @@ export class CouponConfigRepository extends BaseRepository<'coupon_config'> {
   ) {
     const couponConfig = await ctx.db.get(id);
     if (!couponConfig || couponConfig.isArchive) {
-      const err = new ConvexCustomError(
-        'low',
-        '指定されたクーポン設定が存在しません',
-        'NOT_FOUND',
-        404,
-        {
-          ...args,
-        }
-      );
-      throw err;
+      throw throwConvexError({
+        message: '指定されたクーポン設定が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたクーポン設定が存在しません',
+        callFunc: 'CouponConfigRepository.updateCouponConfig',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
     return await this.update(ctx, id, args);

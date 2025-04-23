@@ -10,7 +10,7 @@ import { v } from 'convex/values';
 import { validateSalon, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { salonService } from '@/services/convex/services';
-import { ConvexCustomError, throwConvexApiError } from '@/services/convex/shared/utils/error';
+import { throwConvexError } from '@/lib/error';
 
 export const create = mutation({
   args: {
@@ -25,7 +25,7 @@ export const create = mutation({
 
       return await salonService.createSalon(ctx, args);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -50,7 +50,7 @@ export const update = mutation({
       return await salonService.updateSalon(ctx, args.id, args);
     } catch (error) {
       // エラーハンドリング
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -83,7 +83,7 @@ export const upsert = mutation({
       }
     } catch (error) {
       // エラーハンドリング
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -99,7 +99,7 @@ export const archive = mutation({
 
       return await salonService.archiveSalonRelations(ctx, args.id);
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
@@ -123,22 +123,23 @@ export const updateSubscription = mutation({
       );
 
       if (!result) {
-        const err = new ConvexCustomError(
-          'medium',
-          'サブスクリプション更新対象のサロンが見つかりません',
-          'NOT_FOUND',
-          404,
-          {
+        throw throwConvexError({
+          message: 'サブスクリプション更新対象のサロンが見つかりません',
+          status: 404,
+          code: 'NOT_FOUND',
+          title: 'サブスクリプション更新対象のサロンが見つかりません',
+          callFunc: 'salon.core.updateSubscription',
+          severity: 'low',
+          details: {
             stripeCustomerId: args.stripeCustomerId,
             subscriptionId: args.subscriptionId,
-          }
-        );
-        throw err;
+          },
+        });
       }
 
       return result;
     } catch (error) {
-      throwConvexApiError(error);
+      throw error;
     }
   },
 });
