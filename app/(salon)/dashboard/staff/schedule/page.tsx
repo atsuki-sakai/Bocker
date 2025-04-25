@@ -29,6 +29,7 @@ import { ja } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trash2 } from 'lucide-react';
+import { handleErrorToMsg } from '@/lib/error';
 // 開始時間と終了時間を含む日付の型定義
 type DateWithTimes = {
   date: Date;
@@ -73,6 +74,14 @@ export default function StaffSchedulePage() {
 
   // 時間設定を含めたスケジュール保存処理
   const handleUpsertSchedules = async (): Promise<void> => {
+    // 終日でない場合、開始時間と終了時間の設定を必須にする
+    for (const item of dateTimeSettings) {
+      const allDay = isAllDay[item.date.toISOString()];
+      if (!allDay && (!item.startTime || !item.endTime)) {
+        toast.error('終日の予定ではない場合は開始時間と終了時間を設定してください');
+        return;
+      }
+    }
     try {
       await upsertSchedules({
         staffId: selectedStaffId as Id<'staff'>,
@@ -96,8 +105,7 @@ export default function StaffSchedulePage() {
       });
       toast.success('スタッフの予定を保存しました');
     } catch (error) {
-      console.error('スタッフの予定保存エラー:', error);
-      toast.error('スタッフの予定保存に失敗しました');
+      toast.error(handleErrorToMsg(error));
     }
   };
 
@@ -119,30 +127,37 @@ export default function StaffSchedulePage() {
     setSelectedDates(newSelectedDates);
   };
 
-  // 日付選択時の処理を更新
+  // 日付選択ごとに追加・削除を差分で反映する
   useEffect(() => {
-    // 終日フラグを selectedDates に基づいて初期化
-    const newAllDayMap: { [key: string]: boolean } = {};
-    selectedDates.forEach((date) => {
-      newAllDayMap[date.toISOString()] = true;
-    });
-    setIsAllDay(newAllDayMap);
-
-    // selectedDates が変更されたとき、新しい時間設定を構築
-    setDateTimeSettings((prevSettings) => {
-      const newSettings: DateWithTimes[] = selectedDates.map((date) => {
-        const existingSetting = prevSettings.find(
-          (setting) => format(setting.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-        );
-        return (
-          existingSetting || {
-            date,
-            startTime: undefined,
-            endTime: undefined,
-          }
-        );
+    setIsAllDay((prev) => {
+      const next = { ...prev };
+      // 新しく追加された日付には false をセット
+      selectedDates.forEach((date) => {
+        const iso = date.toISOString();
+        if (!(iso in next)) {
+          next[iso] = false;
+        }
       });
-      return [...newSettings].sort((a, b) => compareAsc(a.date, b.date));
+      // 選択解除された日付のキーを削除
+      Object.keys(next).forEach((key) => {
+        if (!selectedDates.find((d) => d.toISOString() === key)) {
+          delete next[key];
+        }
+      });
+      return next;
+    });
+
+    setDateTimeSettings((prev) => {
+      const prevMap = new Map(prev.map((s) => [format(s.date, 'yyyy-MM-dd'), s]));
+      const nextSettings: DateWithTimes[] = selectedDates.map((date) => {
+        const key = format(date, 'yyyy-MM-dd');
+        if (prevMap.has(key)) {
+          return prevMap.get(key)!;
+        }
+        // 新規日付は時間未設定で追加
+        return { date, startTime: undefined, endTime: undefined, notes: undefined };
+      });
+      return nextSettings;
     });
   }, [selectedDates]);
 
@@ -157,7 +172,6 @@ export default function StaffSchedulePage() {
             staffId: selectedStaffId as Id<'staff'>,
           }
         );
-        console.log('staffSchedule: ', staffSchedule);
 
         // 重複する日付を排除した設定を作成
         const map = new Map<string, DateWithTimes>();
@@ -181,6 +195,8 @@ export default function StaffSchedulePage() {
           const iso = new Date(schedule.startTime_unix!).toISOString();
           allDayMap[iso] = !!schedule.isAllDay;
         });
+
+        console.log('staffSchedule: ', staffSchedule);
         setIsAllDay(allDayMap);
         setSelectedDates(uniqueSettings.map((s) => s.date));
         setDateTimeSettings(uniqueSettings);
