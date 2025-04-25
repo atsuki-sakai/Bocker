@@ -87,6 +87,28 @@ export const create = mutation({
         details: { ...args },
       });
     }
+
+    // 予約の重複チェック
+    const checkDoubleBooking = await ctx.runQuery(
+      api.schedule.staff_exception.query.checkDoubleBooking,
+      {
+        salonId: args.salonId,
+        staffId: args.staffId,
+        startTime_unix: args.startTime_unix,
+        endTime_unix: args.endTime_unix,
+      }
+    );
+    if (checkDoubleBooking.isOverlapping) {
+      throw throwConvexError({
+        message: 'この時間帯はすでに予約が入っています。別の時間を選択してください。',
+        status: 409,
+        code: 'CONFLICT',
+        title: '予約が重複しています',
+        callFunc: 'reservation.create',
+        severity: 'low',
+        details: { ...args },
+      });
+    }
     // 予約の作成
     const reservationId = await ctx.db.insert('reservation', {
       ...args,
