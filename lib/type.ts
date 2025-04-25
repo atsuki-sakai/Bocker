@@ -40,3 +40,9 @@ export type ClerkEmailAddress = {
   };
   primary?: boolean;
 };
+
+// 開始と終了時刻を表す型
+export type TimeRange = {
+  startHour: string; // 開始時刻 "HH:mm"
+  endHour: string; // 終了時刻 "HH:mm"
+};
