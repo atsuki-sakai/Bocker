@@ -283,6 +283,34 @@ export function validateDateStrFormat(
   return true;
 }
 
+// 日付形式チェックとエラー投げ、日付オブジェクトを返す
+export function validateDateStrToDate(date: string, funcName: string): Date {
+  if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    throw throwConvexError({
+      title: '日付形式が不正です',
+      message: '日付形式が不正です',
+      severity: 'low',
+      code: 'INVALID_ARGUMENT',
+      callFunc: funcName,
+      status: 400,
+      details: { date },
+    });
+  }
+  const d = new Date(date);
+  if (isNaN(d.getTime())) {
+    throw throwConvexError({
+      title: '日付の変換に失敗しました',
+      message: '日付の変換に失敗しました',
+      severity: 'low',
+      code: 'INVALID_ARGUMENT',
+      callFunc: funcName,
+      status: 400,
+      details: { date },
+    });
+  }
+  return d;
+}
+
 /**
  * 時刻文字列の形式を検証 (HH:MM)
  *
