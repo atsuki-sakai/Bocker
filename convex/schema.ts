@@ -18,7 +18,7 @@ import {
 
 /**
  * Convexスキーマ定義
- * 時間はUNIXタイムで管理し、取得後に日本時間に変換する
+ * 時間はUNIXタイム（ミリ秒）で管理し、取得後に日本時間に変換する
  * 日付の文字列は YYYY-MM-DD 形式、時間は HH:MM の形式で保存
  */
 
@@ -219,7 +219,16 @@ export default defineSchema({
     .index('by_staff_id', ['staffId', 'isArchive'])
     .index('by_salon_staff_id', ['salonId', 'staffId', 'isArchive'])
     .index('by_salon_staff_date', ['salonId', 'staffId', 'date', 'isArchive'])
-    .index('by_salon_staff_date_type', ['salonId', 'staffId', 'date', 'type', 'isArchive']),
+    .index('by_salon_staff_date_type', ['salonId', 'staffId', 'date', 'type', 'isArchive'])
+    .index('by_staff_start_end', ['staffId', 'startTime_unix', 'endTime_unix', 'isArchive'])
+    .index('by_salon_data_start_end', [
+      'salonId',
+      'date',
+      'startTime_unix',
+      'endTime_unix',
+      'isArchive',
+    ])
+    .index('by_salon_staff_date_all_day', ['salonId', 'staffId', 'date', 'isAllDay', 'isArchive']),
 
   // =====================
   // CUSTOMER
@@ -346,7 +355,8 @@ export default defineSchema({
     ...CommonFields,
   })
     .index('by_staff_id', ['staffId', 'isArchive'])
-    .index('by_salon_id', ['salonId', 'isArchive']),
+    .index('by_salon_id', ['salonId', 'isArchive'])
+    .index('by_staff_id_priority', ['staffId', 'isArchive', 'priority']),
 
   // =====================
   // MENU
@@ -463,9 +473,16 @@ export default defineSchema({
     .index('by_customer_id', ['salonId', 'customerId', 'isArchive'])
     .index('by_staff_id', ['salonId', 'staffId', 'isArchive'])
     .index('by_status', ['salonId', 'status', 'isArchive'])
-    .index('by_salon_date', ['salonId', 'startTime_unix', 'isArchive'])
-    .index('by_staff_date', ['salonId', 'staffId', 'startTime_unix', 'isArchive'])
-    .index('by_customer_date', ['salonId', 'customerId', 'startTime_unix', 'isArchive']),
+    .index('by_salon_start', ['salonId', 'isArchive', 'startTime_unix'])
+    .index('by_staff_date', ['salonId', 'staffId', 'isArchive', 'startTime_unix'])
+    .index('by_customer_date', ['salonId', 'customerId', 'isArchive', 'startTime_unix'])
+    .index('by_salon_staff_start_end', [
+      'salonId',
+      'staffId',
+      'isArchive',
+      'startTime_unix',
+      'endTime_unix',
+    ]),
 
   // =====================
   // POINT
