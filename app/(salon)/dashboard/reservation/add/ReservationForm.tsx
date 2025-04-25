@@ -2,7 +2,7 @@
 // /app/(salon)/dashboard/reservation/add/ReservationForm.tsx
 
 'use client';
-
+import { convertHourToUnixTimestamp } from '@/lib/schedule';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { ja } from 'date-fns/locale';
@@ -29,6 +29,8 @@ const preprocessStringArray = (val: unknown) => {
       .filter(Boolean);
   return val;
 };
+
+import type { TimeRange } from '@/lib/type';
 
 import * as React from 'react';
 import { format } from 'date-fns';
@@ -191,9 +193,9 @@ export default function ReservationForm() {
   } = useZodForm(schemaReservation);
 
   // 時間スロットの状態を追加
-  const [availableTimeSlots, setAvailableTimeSlots] = useState<
-    { startTime: number; endTime: number; startTimeFormatted: string; endTimeFormatted?: string }[]
-  >([]);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeRange[]>([]);
+  // 選択した日付を "yyyy-MM-dd" 形式で保持
+  const formattedDate = selectdate ? format(selectdate, 'yyyy-MM-dd') : '';
 
   useEffect(() => {
     if (!salonId) return;
@@ -369,38 +371,20 @@ export default function ReservationForm() {
 
         try {
           // newAvailableTimeSlotsはスタッフごとの配列を返す
-          const result = await fetchQuery(api.reservation.query.newAvailableTimeSlots, {
+          const result = await fetchQuery(api.reservation.query.calculateReservationTime, {
             salonId: salonId,
             staffId: selectedStaffId,
             date: formattedDate,
-            totalTimeToMin: totalTimeMinutes,
-            onionMode: {
-              slotSize: 60,
-              layer: 3,
-              allowOverlap: 60,
-              disableBackSlots: false,
-            },
+            durationMin: totalTimeMinutes,
           });
+
+          console.log('result: ', result);
 
           console.log('API呼び出し結果:', result);
 
           // 結果が配列で返され、選択したスタッフのスロットを含む場合
           if (Array.isArray(result) && result.length > 0) {
-            // 指定したスタッフのデータを探す
-            const staffData = result.find((item) => item.staffId === selectedStaffId);
-
-            if (staffData && staffData.slots && staffData.slots.length > 0) {
-              // スタッフのスロットを現在のUIで必要な形式に変換
-              const staffSlots = staffData.slots.map((slot) => ({
-                startTime: slot.startTime_unix,
-                endTime: slot.endTime_unix,
-                startTimeFormatted: formatJpTime(slot.startTime_unix),
-                endTimeFormatted: formatJpTime(slot.endTime_unix),
-              }));
-              setAvailableTimeSlots(staffSlots);
-            } else {
-              setAvailableTimeSlots([]);
-            }
+            setAvailableTimeSlots(result);
           } else {
             setAvailableTimeSlots([]);
           }
@@ -492,6 +476,8 @@ export default function ReservationForm() {
   console.log('selectOptions: ', selectOptions);
   console.log('staffSchedule.week: ', staffSchedule?.week);
   console.log('staffSchedule.schedules: ', staffSchedule?.schedules);
+
+  console.log('availableTimeSlots: ', availableTimeSlots);
 
   const toDate = scheduleConfig?.reservationLimitDays
     ? new Date(
@@ -759,19 +745,28 @@ export default function ReservationForm() {
                       key={index}
                       type="button"
                       className={`flex items-center justify-center py-2 px-4 text-sm font-medium rounded-md border  ${
-                        watch('startTime_unix') === slot.startTime
+                        watch('startTime_unix') ===
+                        convertHourToUnixTimestamp(slot.startHour, formattedDate)
                           ? 'bg-slate-600 text-white'
                           : 'border-slate-300 '
                       }`}
                       onClick={() => {
-                        // 予約開始時間と終了時間を設定
-                        setValue('startTime_unix', slot.startTime);
-                        setValue('endTime_unix', slot.endTime);
+                        // 日付込みでタイムスタンプ生成
+                        const timestampStart = convertHourToUnixTimestamp(
+                          slot.startHour,
+                          formattedDate
+                        )!;
+                        const timestampEnd = convertHourToUnixTimestamp(
+                          slot.endHour,
+                          formattedDate
+                        )!;
+                        setValue('startTime_unix', timestampStart);
+                        setValue('endTime_unix', timestampEnd);
                       }}
                     >
                       <p className="text-xs text-balance">
-                        {slot.startTimeFormatted && <span>{slot.startTimeFormatted}</span>}
-                        {slot.endTimeFormatted && <span> 〜 {slot.endTimeFormatted}</span>}
+                        {slot.startHour && <span>{slot.startHour}</span>}
+                        {slot.endHour && <span> 〜 {slot.endHour}</span>}
                       </p>
                     </button>
                   ))}
