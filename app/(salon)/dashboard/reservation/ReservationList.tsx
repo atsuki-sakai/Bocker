@@ -295,7 +295,7 @@ export default function ReservationList() {
     sortedReservations.forEach((reservation) => {
       if (!reservation.startTime_unix) return;
 
-      const startDate = new Date(reservation.startTime_unix * 1000);
+      const startDate = new Date(reservation.startTime_unix);
       startDate.setHours(0, 0, 0, 0);
 
       // 今日の予約
