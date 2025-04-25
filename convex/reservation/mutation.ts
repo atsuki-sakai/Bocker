@@ -87,38 +87,12 @@ export const create = mutation({
         details: { ...args },
       });
     }
-    // 予約時間の日付を取得
-    const reservationDate = new Date(args.startTime_unix * 1000);
-    const dateString = reservationDate.toISOString().split('T')[0]; // YYYY-MM-DD形式
-
-    // 予約時間の重複チェック
-    const isAvailable = await ctx.runQuery(api.reservation.query.checkAvailableTimeSlot, {
-      salonId: args.salonId,
-      staffId: args.staffId,
-      date: dateString,
-      startTime: args.startTime_unix,
-      endTime: args.endTime_unix,
-    });
-
-    if (!isAvailable) {
-      throw throwConvexError({
-        message: '予約が重複しています。別の時間を選択してください。',
-        status: 409,
-        code: 'CONFLICT',
-        title: '予約が重複しています',
-        callFunc: 'reservation.create',
-        severity: 'low',
-        details: {
-          ...args,
-        },
-      });
-    }
-
     // 予約の作成
     const reservationId = await ctx.db.insert('reservation', {
       ...args,
       isArchive: false,
     });
+
     return reservationId;
   },
 });
@@ -164,8 +138,8 @@ export const update = mutation({
       (args.startTime_unix !== reservation.startTime_unix ||
         args.endTime_unix !== reservation.endTime_unix)
     ) {
-      // 予約時間の日付を取得
-      const reservationDate = new Date(args.startTime_unix * 1000);
+      // ミリ秒単位のタイムスタンプをそのまま使用し、予約日を取得
+      const reservationDate = new Date(args.startTime_unix!);
       const dateString = reservationDate.toISOString().split('T')[0]; // YYYY-MM-DD形式
 
       // 予約時間の重複チェック（自分自身の予約は除外）
@@ -193,28 +167,6 @@ export const update = mutation({
       if (existingReservations.length > 0) {
         throw throwConvexError({
           message: 'この時間帯はすでに予約が入っています。別の時間を選択してください。',
-          status: 409,
-          code: 'CONFLICT',
-          title: '予約が重複しています',
-          callFunc: 'reservation.update',
-          severity: 'low',
-          details: { ...args },
-        });
-      }
-
-      // スタッフのスケジュールもチェック
-      const isAvailable = await ctx.runQuery(api.reservation.query.checkAvailableTimeSlot, {
-        salonId: salonId,
-        staffId: staffId,
-        date: dateString,
-        startTime: args.startTime_unix,
-        endTime: args.endTime_unix,
-      });
-
-      if (!isAvailable) {
-        throw throwConvexError({
-          message:
-            'この時間帯はスタッフのスケジュールと重複しています。別の時間を選択してください。',
           status: 409,
           code: 'CONFLICT',
           title: '予約が重複しています',
@@ -281,35 +233,13 @@ export const upsert = mutation({
       });
     }
 
-    // 予約時間の日付を取得
-    const reservationDate = new Date(args.startTime_unix * 1000);
+    // ミリ秒単位のタイムスタンプをそのまま使用し、予約日を取得
+    const reservationDate = new Date(args.startTime_unix!);
     const dateString = reservationDate.toISOString().split('T')[0]; // YYYY-MM-DD形式
 
     const existingReservation = await ctx.db.get(args.reservationId);
 
     if (!existingReservation || existingReservation.isArchive) {
-      // 新規予約の場合、重複チェックを行う
-      const isAvailable = await ctx.runQuery(api.reservation.query.checkAvailableTimeSlot, {
-        salonId: args.salonId,
-        staffId: args.staffId,
-        date: dateString,
-        startTime: args.startTime_unix,
-        endTime: args.endTime_unix,
-      });
-
-      if (!isAvailable) {
-        throw throwConvexError({
-          message:
-            'この時間帯はすでに予約が入っているか、スタッフのスケジュールと重複しています。別の時間を選択してください。',
-          status: 409,
-          code: 'CONFLICT',
-          title: '予約が重複しています',
-          callFunc: 'reservation.upsert',
-          severity: 'low',
-          details: { ...args },
-        });
-      }
-
       return await ctx.db.insert('reservation', {
         ...args,
         isArchive: false,
@@ -350,28 +280,6 @@ export const upsert = mutation({
             details: { ...args },
           });
         }
-
-        // スタッフのスケジュールもチェック
-        const isAvailable = await ctx.runQuery(api.reservation.query.checkAvailableTimeSlot, {
-          salonId: args.salonId,
-          staffId: args.staffId,
-          date: dateString,
-          startTime: args.startTime_unix,
-          endTime: args.endTime_unix,
-        });
-
-        if (!isAvailable) {
-          throw throwConvexError({
-            message:
-              'この時間帯はスタッフのスケジュールと重複しています。別の時間を選択してください。',
-            status: 409,
-            code: 'CONFLICT',
-            title: '予約が重複しています',
-            callFunc: 'reservation.upsert',
-            severity: 'low',
-            details: { ...args },
-          });
-        }
       }
 
       const updateData = removeEmptyFields(args);
@@ -391,3 +299,6 @@ export const kill = mutation({
     return await killRecord(ctx, args.reservationId);
   },
 });
+
+
+// 
