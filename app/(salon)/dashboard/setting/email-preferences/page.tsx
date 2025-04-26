@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useState } from 'react';
+import { useUser } from '@clerk/nextjs';
 import {
   MailIcon,
   CheckCircleIcon,
@@ -15,10 +14,8 @@ import {
 } from 'lucide-react';
 import { Dialog } from '@/components/common';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { DashboardSection } from '@/components/common';
 import type { ClerkEmailAddress } from '@/lib/type';
 
 export default function EmailPreferencesPage() {

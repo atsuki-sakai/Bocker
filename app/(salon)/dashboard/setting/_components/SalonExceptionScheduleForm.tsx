@@ -7,7 +7,6 @@ import { useSalon } from '@/hooks/useSalon';
 import { Button } from '@/components/ui/button';
 import { Doc, Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
 import { Loading } from '@/components/common';
 import { format, startOfToday } from 'date-fns';
 import { ja } from 'date-fns/locale';

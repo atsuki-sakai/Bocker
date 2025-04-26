@@ -220,6 +220,7 @@ export default function ChangePasswordPage() {
 
       router.push(`/dashboard`);
     } catch (error) {
+      console.error(error);
       toast.error('パスワードの更新に失敗しました', {
         description: 'もう一度お試しください',
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
