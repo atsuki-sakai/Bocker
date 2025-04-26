@@ -82,15 +82,7 @@ export const kill = action({
       await gcsService.deleteImage(args.imgUrl);
       return { success: true };
     } catch (error) {
-      throw throwConvexError({
-        message: 'ファイルの削除に失敗しました',
-        status: 400,
-        code: 'INVALID_ARGUMENT',
-        callFunc: 'storage.kill',
-        title: 'ファイルの削除に失敗しました',
-        severity: 'low',
-        details: { ...args },
-      });
+      throw error;
     }
   },
 });

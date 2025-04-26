@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { api } from '@/convex/_generated/api';
 import { useQuery, useMutation } from 'convex/react';
 import { useZodForm } from '@/hooks/useZodForm';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { useSalon } from '@/hooks/useSalon';
@@ -16,9 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExclusionMenu } from '@/components/common';
 import { DashboardSection } from '@/components/common';
 import { Label } from '@/components/ui/label';
+import { Loading } from '@/components/common';
 import {
   CalendarIcon,
-  Edit,
   Percent,
   PiggyBank,
   Tag,
@@ -44,7 +44,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
 import type { Id } from '@/convex/_generated/dataModel';
-import { handleErrorToMsg } from '@/lib/error';
+import { handleErrorToMsg, throwConvexError } from '@/lib/error';
 import { toast } from 'sonner';
 import { ZodTextField } from '@/components/common';
 
@@ -110,19 +110,14 @@ export default function Page({ params }: PageProps) {
       backLink="/dashboard/coupon"
       backLinkTitle="クーポン一覧へ戻る"
     >
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col gap-6"
-      >
+      <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
-          <p className="text-sm text-gray-500">クーポン情報を編集して保存できます。</p>
+          <p className="text-sm text-gray-500">クーポン情報を編集して内容を変更できます。</p>
           <Separator className="my-2" />
         </div>
 
         <CouponForm couponId={coupon_id} />
-      </motion.div>
+      </div>
     </DashboardSection>
   );
 }
@@ -139,9 +134,9 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
   };
 
   return (
-    <motion.div initial="hidden" animate="visible" variants={fadeIn} className="w-full">
-      <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200 shadow-md overflow-hidden">
-        <CardHeader className="pb-2 bg-gradient-to-r from-blue-600 to-purple-600">
+    <div className="w-full">
+      <Card className="shadow-md overflow-hidden">
+        <CardHeader className="pb-2 bg-slate-700">
           <CardTitle className="text-white flex items-center gap-2">
             <Tag size={18} />
             {data.name || 'クーポン名'}
@@ -151,9 +146,12 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col justify-start items-start gap-3">
             <div className="text-center">
-              <Badge variant="outline" className="px-3 py-1 text-lg font-bold bg-white">
+              <Badge
+                variant="outline"
+                className="px-3 py-1 text-lg font-bold bg-white border-green-600 text-green-600 "
+              >
                 {data.discountType === 'percentage'
                   ? `${data.percentageDiscountValue || 0}% OFF`
                   : `¥${data.fixedDiscountValue || 0} OFF`}
@@ -192,12 +190,15 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
           <div className="text-xs text-gray-500">
             クーポン適用外メニュー: {data.selectedMenus?.length || 0}件
           </div>
-          <Badge variant={data.isActive ? 'default' : 'destructive'} className="h-6">
+          <Badge
+            variant={data.isActive ? 'default' : 'destructive'}
+            className={`h-6 ${data.isActive ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}
+          >
             {data.isActive ? '有効' : '無効'}
           </Badge>
         </CardFooter>
       </Card>
-    </motion.div>
+    </div>
   );
 }
 
@@ -248,7 +249,18 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         return;
       }
       if (!couponConfig) {
-        throw new Error('クーポン設定が存在しません');
+        throw throwConvexError({
+          code: 'NOT_FOUND',
+          callFunc: 'updateCouponComplete',
+          message: 'クーポン設定が存在しません',
+          title: 'エラー',
+          severity: 'low',
+          status: 404,
+          details: {
+            couponId: couponId,
+            salonId: salon._id,
+          },
+        });
       }
       await updateCouponComplete({
         salonId: salon._id as Id<'salon'>,
@@ -306,9 +318,10 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
   const menuIdsChanged =
     JSON.stringify(selectedMenuIds.sort()) !== JSON.stringify(initialSelectedMenuIds.sort());
 
-  console.log('Form Errors:', errors);
-  console.log('Is Submitting:', isSubmitting);
-  console.log('Is Dirty:', isDirty);
+  if (!salon || coupon === undefined || couponConfig === undefined) {
+    return <Loading />;
+  }
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
@@ -328,13 +341,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
           <TabsContent value="preview">
             {/* フォーム入力部分 */}
             <div className="md:col-span-3 space-y-6">
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={fadeIn}
-                className="flex flex-col gap-6 bg-white rounded-lg p-6 shadow-sm border"
-              >
-                <div className="space-y-4 py-2">
+              <div className="flex flex-col gap-6 bg-white rounded-lg p-4 shadow-sm border">
+                <div className="space-y-4">
                   <ZodTextField
                     register={register}
                     errors={errors}
@@ -351,16 +359,22 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                     icon={<Hash size={16} />}
                     placeholder="例: COUPON-00123"
                   />
+                  <span className="text-xs text-gray-500">
+                    こちらのコードをクーポンコードとして入力する事で割引が適応されます。
+                  </span>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 justify-end items-end">
                     <div className="flex flex-col gap-2">
                       <Label className="flex items-center gap-2 text-gray-700">
                         <Percent size={16} />
                         割引タイプ
                       </Label>
-                      <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-md">
+                      <span className="text-xs text-gray-500">
+                        利用額に対する割引率と固定割引額を選択できます。
+                      </span>
+                      <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-md">
                         <div
-                          className={`flex-1 text-center p-2 rounded-md ${discountType === 'percentage' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-500'}`}
+                          className={`flex-1 text-center text-sm p-2 rounded-md ${discountType === 'percentage' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-500'}`}
                         >
                           割引率
                         </div>
@@ -378,52 +392,34 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                           )}
                         />
                         <div
-                          className={`flex-1 text-center p-2 rounded-md ${discountType === 'fixed' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500'}`}
+                          className={`flex-1 text-center text-sm  p-2 rounded-md ${discountType === 'fixed' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500'}`}
                         >
                           固定金額
                         </div>
                       </div>
                     </div>
 
-                    <AnimatePresence mode="wait">
-                      {discountType === 'percentage' ? (
-                        <motion.div
-                          key="percentage"
-                          initial="hidden"
-                          animate="visible"
-                          exit="exit"
-                          variants={fadeIn}
-                        >
-                          <ZodTextField
-                            register={register}
-                            errors={errors}
-                            name="percentageDiscountValue"
-                            label="割引率 (%)"
-                            type="number"
-                            icon={<Percent size={16} />}
-                            placeholder="例: 10"
-                          />
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="fixed"
-                          initial="hidden"
-                          animate="visible"
-                          exit="exit"
-                          variants={fadeIn}
-                        >
-                          <ZodTextField
-                            register={register}
-                            errors={errors}
-                            name="fixedDiscountValue"
-                            label="固定割引額 (円)"
-                            type="number"
-                            icon={<PiggyBank size={16} />}
-                            placeholder="例: 1000"
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {discountType === 'percentage' ? (
+                      <ZodTextField
+                        register={register}
+                        errors={errors}
+                        name="percentageDiscountValue"
+                        label="割引率 (%)"
+                        type="number"
+                        icon={<Percent size={16} />}
+                        placeholder="例: 10"
+                      />
+                    ) : (
+                      <ZodTextField
+                        register={register}
+                        errors={errors}
+                        name="fixedDiscountValue"
+                        label="固定割引額 (円)"
+                        type="number"
+                        icon={<PiggyBank size={16} />}
+                        placeholder="例: 1000"
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -531,8 +527,13 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                       )}
                     </div>
                   </div>
+                  <p className="text-xs text-gray-500">
+                    クーポンの有効期間は開始日から終了日までになります。
+                    <br />
+                    期間が過ぎた場合クーポンは自動的に利用できなくなります。
+                  </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                     <div className="flex flex-col gap-2">
                       <Label className="flex items-center gap-2 text-gray-700">
                         現在の利用回数
@@ -542,7 +543,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                           {isNaN(formValues.numberOfUse) ? 0 : formValues.numberOfUse || 0}
                         </span>{' '}
                         /
-                        <span className="text-xs text-gray-500">
+                        <span className="text-sm ml-1 text-gray-500">
                           {isNaN(formValues.maxUseCount)
                             ? '無制限'
                             : formValues.maxUseCount || '無制限'}
@@ -568,12 +569,17 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                       name="isActive"
                       render={({ field }) => (
                         <div className="flex items-center justify-between">
-                          <Label
-                            htmlFor="isActive"
-                            className="flex items-center gap-2 text-gray-700 cursor-pointer"
-                          >
-                            クーポンの有効/無効
-                          </Label>
+                          <div className="flex flex-col gap-2">
+                            <Label
+                              htmlFor="isActive"
+                              className="flex items-center gap-2 text-gray-700 cursor-pointer"
+                            >
+                              クーポンの有効/無効
+                            </Label>
+                            <span className="text-xs text-gray-500">
+                              無効にするとクーポンは利用できなくなります。
+                            </span>
+                          </div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm">{field.value ? '有効' : '無効'}</span>
                             <Switch
@@ -588,7 +594,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                     />
                   </div>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </TabsContent>
           <TabsContent value="detail">
@@ -602,19 +608,9 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         {/* プレビュー部分 */}
         <div className="md:col-span-1">
           <div className="sticky top-4 space-y-4">
-            <motion.h3
-              initial="hidden"
-              animate="visible"
-              variants={fadeIn}
-              className="text-lg font-medium flex items-center gap-2"
-            >
-              <Edit size={18} />
-              クーポンプレビュー
-            </motion.h3>
-
             <CouponPreview data={previewData} />
 
-            <motion.div initial="hidden" animate="visible" variants={fadeIn} className="mt-6">
+            <div className="mt-6">
               <Button
                 type="submit"
                 disabled={isSubmitting || !(isDirty || menuIdsChanged)}
@@ -623,10 +619,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
               >
                 {isSubmitting ? (
                   <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    >
+                    <motion.div className="animate-spin">
                       <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
                         <circle
                           className="opacity-25"
@@ -659,7 +652,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                   変更があります。保存を忘れずに。
                 </p>
               )}
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>

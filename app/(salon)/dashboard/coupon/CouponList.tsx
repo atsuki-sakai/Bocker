@@ -18,7 +18,7 @@ export default function CouponList() {
   const [selectedCouponId, setSelectedCouponId] = useState<Id<'coupon'> | null>(null);
   const deleteCoupon = useMutation(api.coupon.core.mutation.killRelatedTables);
 
-  const { results, loadMore, status } = usePaginatedQuery(
+  const { results, loadMore, status, isLoading } = usePaginatedQuery(
     api.coupon.core.query.list,
     salon ? { salonId: salon._id as Id<'salon'> } : 'skip',
     { initialNumItems: 10 }
@@ -35,7 +35,7 @@ export default function CouponList() {
     setIsDialogOpen(false);
   };
 
-  if (!salon) {
+  if (!salon || isLoading) {
     return <Loading />;
   }
 
@@ -43,7 +43,9 @@ export default function CouponList() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <p className="text-sm text-gray-500">
-          クーポンは、クーポンコードを入力することでメニューの割引を適用できるようになります。
+          予約時にクーポンコードを入力することでメニュー毎に独自の割引を適用できるようになります。
+          <br />
+          リピート率を上げる効果的な方法としてご活用ください。
         </p>
       </div>
       <div className="pt-2 flow-root">
@@ -138,7 +140,7 @@ export default function CouponList() {
                   ) : (
                     <tr>
                       <td colSpan={10} className="text-gray-400 text-sm text-center py-6">
-                        クーポンがありません。
+                        クーポンがまだありません。
                       </td>
                     </tr>
                   )}

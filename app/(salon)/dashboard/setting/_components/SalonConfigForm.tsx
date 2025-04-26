@@ -1,8 +1,7 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useSalon } from '@/hooks/useSalon';
@@ -15,7 +14,6 @@ import { useZodForm } from '@/hooks/useZodForm';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { handleErrorToMsg } from '@/lib/error';
-import { motion, AnimatePresence } from 'framer-motion';
 import { FormField } from '@/components/common';
 import { compressAndConvertToWebP } from '@/lib/utils';
 import {
@@ -28,10 +26,7 @@ import {
   Image as ImageIcon,
   Upload,
   Building,
-  Check,
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ZodTextField } from '@/components/common';
 
 const salonConfigFormSchema = z.object({
@@ -60,9 +55,6 @@ export default function SalonConfigForm() {
   const { salonId } = useSalon();
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState('basic');
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
   const salonConfig = useQuery(
     api.salon.config.query.findBySalonId,
     salonId ? { salonId } : 'skip'
@@ -178,14 +170,11 @@ export default function SalonConfigForm() {
         });
 
         toast.success('サロン設定を保存しました');
-
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
       } catch (error) {
         toast.error(handleErrorToMsg(error));
       }
     },
-    [updateSalonConfig, salonId, setSaveSuccess]
+    [updateSalonConfig, salonId]
   );
   // salonConfigが変更されたらフォームをリセット
   useEffect(() => {
@@ -194,66 +183,182 @@ export default function SalonConfigForm() {
     }
   }, [salonConfig, reset]);
 
-  // 画像プレビューURL（useMemoでメモ化）
-  const previewUrl = useMemo(() => {
-    if (currentFile) {
-      return URL.createObjectURL(currentFile);
-    }
-    return salonConfig?.imgPath && salonConfig?.imgPath !== ''
-      ? salonConfig?.imgPath
-      : 'https://placehold.co/600x400.png';
-  }, [currentFile, salonConfig?.imgPath]);
-
   if (!salonId) {
+    return <Loading />;
+  }
+  if (salonConfig === undefined) {
     return <Loading />;
   }
 
   return (
-    <motion.div
-      className=""
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Card className="shadow-md mb-8 border-0 overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700">
-          <CardTitle className="flex items-center gap-2">
-            <ImageIcon className="h-5 w-5 text-blue-500" />
-            サロンのイメージ画像
-          </CardTitle>
-          <CardDescription>サロンの雰囲気が伝わる画像をアップロードしてください</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <motion.div className="flex flex-col md:flex-row gap-6 items-center" layout>
-            <div className="relative w-full md:w-1/2 aspect-video overflow-hidden rounded-lg bg-muted">
-              <Image
-                src={previewUrl}
-                alt="salon logo"
-                className="object-cover"
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
+    <>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+            e.preventDefault();
+          }
+        }}
+      >
+        <div className="flex flex-col md:flex-row gap-6 items-start my-4">
+          <div className="w-full md:w-1/2 flex flex-col gap-4">
+            <h2 className="flex items-center gap-2 font-bold">
+              <ImageIcon className="h-5 w-5 text-blue-500" />
+              イメージ画像
+            </h2>
+            <span className="text-sm text-slate-600 dark:text-slate-300">
+              サロンの雰囲気が伝わる画像を設定してください
+            </span>
+            <ImageDrop
+              initialImageUrl={salonConfig?.imgPath}
+              maxSizeMB={4}
+              onFileSelect={(file) => {
+                setCurrentFile(file);
+              }}
+            />
+
+            <Button
+              onClick={handleSaveImg}
+              disabled={!currentFile || isUploading}
+              className="w-full"
+              variant="default"
+            >
+              {isUploading ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  保存中...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  画像を保存
+                </>
+              )}
+            </Button>
+          </div>
+          <div className="w-full md:w-1/2 flex flex-col gap-4 mt-5">
+            <FormField
+              label="サロンの説明"
+              icon={<Info className="h-4 w-4 text-muted-foreground" />}
+              error={errors.description?.message ?? ''}
+            >
+              <Textarea
+                {...register('description')}
+                placeholder="サロンの特徴や魅力を記入してください"
+                rows={6}
+                className="resize-y min-h-[150px] transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
               />
-            </div>
-            <div className="w-full md:w-1/2 flex flex-col gap-4">
-              <motion.div
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ImageDrop
-                  maxSizeMB={4}
-                  onFileSelect={(file) => {
-                    setCurrentFile(file);
-                  }}
+            </FormField>
+            <FormField
+              label="予約時のルール"
+              icon={<FileText className="h-4 w-4 text-muted-foreground" />}
+              error={errors.reservationRules?.message ?? ''}
+            >
+              <Textarea
+                {...register('reservationRules')}
+                placeholder="予約時のルールやご注意点を入力してください"
+                rows={6}
+                className="resize-y min-h-[150px] transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+              />
+            </FormField>
+          </div>
+        </div>
+
+        <div className=" mt-6">
+          <div className="pt-6">
+            <div className="flex flex-col gap-3 space-y-2">
+              <ZodTextField
+                name="salonName"
+                register={register}
+                label="サロン名"
+                placeholder="例: ブライダルサロン"
+                icon={<Building className="h-4 w-4 text-muted-foreground" />}
+                errors={errors}
+              />
+              <div>
+                <ZodTextField
+                  name="email"
+                  register={register}
+                  label="メールアドレス"
+                  placeholder="例: salon@example.com"
+                  icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+                  errors={errors}
+                  readOnly={true}
                 />
-              </motion.div>
-              <Button
-                onClick={handleSaveImg}
-                disabled={!currentFile || isUploading}
-                className="w-full"
-                variant="default"
-              >
-                {isUploading ? (
+                <p className="text-xs text-muted-foreground">
+                  メールアドレス変更は
+                  <Link className="text-blue-500" href="/dashboard/setting/change-email">
+                    こちら
+                  </Link>
+                  からお願いいたします。
+                </p>
+              </div>
+
+              <ZodTextField
+                name="phone"
+                register={register}
+                label="電話番号"
+                placeholder="例: 09012345678"
+                icon={<Phone className="h-4 w-4 text-muted-foreground" />}
+                errors={errors}
+              />
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="w-full md:w-1/3">
+                  <ZodTextField
+                    name="postalCode"
+                    register={register}
+                    label="郵便番号"
+                    placeholder="例: 2735521"
+                    icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
+                    errors={errors}
+                  />
+                  <span className="text-xs mt-1 text-slate-600 dark:text-slate-300">
+                    ハイフンなしの7桁で入力してください
+                    <div className="text-xs text-red-500">
+                      ※郵便番号を入力すると自動で住所を検索します
+                    </div>
+                  </span>
+                </div>
+                <div className="w-full md:w-2/3">
+                  <FormField
+                    label="住所"
+                    icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
+                    error={errors.address?.message ?? ''}
+                    tooltip="お客様に表示される住所です"
+                  >
+                    <Input
+                      {...register('address')}
+                      placeholder="住所"
+                      type="text"
+                      className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                    />
+                  </FormField>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <Button type="submit" disabled={isSubmitting || !isDirty} className="min-w-[120px]">
+                {isSubmitting ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -279,210 +384,15 @@ export default function SalonConfigForm() {
                   </>
                 ) : (
                   <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    画像を保存
+                    <Save className="mr-2 h-4 w-4" />
+                    保存する
                   </>
                 )}
               </Button>
             </div>
-          </motion.div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-md border-0 overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700">
-          <CardTitle>サロン設定</CardTitle>
-          <CardDescription>お客様に表示されるサロン情報を設定してください</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger
-                value="basic"
-                className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 dark:data-[state=active]:bg-blue-900 dark:data-[state=active]:text-blue-100"
-              >
-                <Building className="mr-2 h-4 w-4" />
-                基本情報
-              </TabsTrigger>
-              <TabsTrigger
-                value="detail"
-                className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 dark:data-[state=active]:bg-blue-900 dark:data-[state=active]:text-blue-100"
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                詳細情報
-              </TabsTrigger>
-            </TabsList>
-
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-                  e.preventDefault();
-                }
-              }}
-            >
-              <TabsContent value="basic" className="pt-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex flex-col gap-3"
-                >
-                  <ZodTextField
-                    name="salonName"
-                    register={register}
-                    label="サロン名"
-                    icon={<Building className="h-4 w-4 text-muted-foreground" />}
-                    errors={errors}
-                  />
-                  <ZodTextField
-                    name="email"
-                    register={register}
-                    label="メールアドレス"
-                    icon={<Mail className="h-4 w-4 text-muted-foreground" />}
-                    errors={errors}
-                    readOnly={true}
-                  />
-                  <p className="text-xs text-muted-foreground -mt-3">
-                    メールアドレス変更は
-                    <Link className="text-blue-500" href="/dashboard/setting/change-email">
-                      こちら
-                    </Link>
-                    からお願いいたします。
-                  </p>
-
-                  <ZodTextField
-                    name="phone"
-                    register={register}
-                    label="電話番号"
-                    icon={<Phone className="h-4 w-4 text-muted-foreground" />}
-                    errors={errors}
-                  />
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="w-full md:w-1/3">
-                      <ZodTextField
-                        name="postalCode"
-                        register={register}
-                        label="郵便番号"
-                        icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
-                        errors={errors}
-                      />
-                    </div>
-                    <div className="w-full md:w-2/3">
-                      <FormField
-                        label="住所"
-                        icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
-                        error={errors.address?.message ?? ''}
-                        tooltip="お客様に表示される住所です"
-                      >
-                        <Input
-                          {...register('address')}
-                          placeholder="住所"
-                          type="text"
-                          className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
-                        />
-                      </FormField>
-                    </div>
-                  </div>
-                </motion.div>
-              </TabsContent>
-
-              <TabsContent value="detail" className="pt-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <FormField
-                    label="予約ルール"
-                    icon={<FileText className="h-4 w-4 text-muted-foreground" />}
-                    error={errors.reservationRules?.message ?? ''}
-                    tooltip="2000文字以内で入力してください"
-                  >
-                    <Textarea
-                      {...register('reservationRules')}
-                      placeholder="予約時のルールやご注意点を入力してください"
-                      rows={6}
-                      className="resize-y min-h-[150px] transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
-                    />
-                  </FormField>
-
-                  <FormField
-                    label="サロン説明"
-                    icon={<Info className="h-4 w-4 text-muted-foreground" />}
-                    error={errors.description?.message ?? ''}
-                    tooltip="2000文字以内で入力してください"
-                  >
-                    <Textarea
-                      {...register('description')}
-                      placeholder="サロンの特徴や魅力を記入してください"
-                      rows={6}
-                      className="resize-y min-h-[150px] transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
-                    />
-                  </FormField>
-                </motion.div>
-              </TabsContent>
-
-              <motion.div className="mt-6 flex justify-end" layout>
-                <AnimatePresence>
-                  {saveSuccess && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="flex items-center mr-4 text-green-600"
-                    >
-                      <Check className="mr-1 h-4 w-4" />
-                      保存しました
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <motion.div
-                  whileHover={{ scale: isDirty ? 1.03 : 1 }}
-                  whileTap={{ scale: isDirty ? 0.97 : 1 }}
-                >
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting || !isDirty}
-                    className="min-w-[120px]"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        保存中...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        保存する
-                      </>
-                    )}
-                  </Button>
-                </motion.div>
-              </motion.div>
-            </form>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </motion.div>
+          </div>
+        </div>
+      </form>
+    </>
   );
 }

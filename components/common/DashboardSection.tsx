@@ -40,12 +40,12 @@ export default function DashboardSection({
         </div>
         <div className="flex flex-col md:flex-row gap-2">
           {infoBtn && (
-            <Button asChild className="text-xs md:text-base">
+            <Button asChild className="text-xs md:text-sm">
               <Link href={infoBtn.link}>{infoBtn.text}</Link>
             </Button>
           )}
           {subBtn && (
-            <Button asChild className="text-xs md:text-base">
+            <Button asChild className="text-xs md:text-sm">
               <Link href={subBtn.link}>{subBtn.text}</Link>
             </Button>
           )}

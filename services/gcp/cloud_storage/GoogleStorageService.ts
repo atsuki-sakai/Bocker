@@ -161,11 +161,17 @@ class GoogleStorageService {
    * imgUrl から GCS 内のファイルパスを抽出する
    */
   private extractFilePath(imgUrl: string): string {
-    const storageUrl = `${STORAGE_URL}/${process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME}`;
-    if (imgUrl.startsWith(storageUrl)) {
-      return imgUrl.substring(storageUrl.length + 1);
+    try {
+      const url = new URL(imgUrl);
+      // URL.pathname is "/bucketName/path/to/file"
+      const segments = url.pathname.split('/');
+      // Remove the leading empty segment and bucket name
+      const fileSegments = segments.slice(2);
+      return fileSegments.join('/');
+    } catch {
+      // If imgUrl isn't a full URL, assume it's already the object path
+      return imgUrl;
     }
-    return imgUrl;
   }
 
   /**
@@ -175,12 +181,22 @@ class GoogleStorageService {
     this.initializeIfNeeded();
 
     const filePath = this.extractFilePath(imgUrl);
+    console.log('Deleting GCS object path:', filePath);
 
     try {
       const bucket = this.storage!.bucket(this.bucketName!);
       const file = bucket.file(filePath);
       await file.delete();
     } catch (error) {
+      const errorDetails = this.formatErrorDetails(error);
+      const errAny = error as any;
+      // If the object is not found, skip deletion
+      if (errAny.code === 404 || errorDetails.code === 404) {
+        console.warn(`GCS object not found, skipping deletion: ${filePath}`);
+        return;
+      }
+      // Remove non-serializable fields
+      delete (errorDetails as any).response;
       throw throwConvexError({
         message: 'ファイルの削除に失敗しました',
         status: 500,
@@ -188,7 +204,7 @@ class GoogleStorageService {
         title: 'ファイルの削除に失敗しました',
         callFunc: 'GoogleStorageService.deleteImage',
         severity: 'low',
-        details: { error: this.formatErrorDetails(error) },
+        details: { error: errorDetails },
       });
     }
   }

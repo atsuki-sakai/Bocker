@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Coins, Gift } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Id } from '@/convex/_generated/dataModel';
@@ -11,7 +11,6 @@ import { z } from 'zod';
 import { POINT_EXPIRATION_DAYS } from '@/lib/constants';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Loading } from '@/components/common';
@@ -26,7 +25,6 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { AlertCircle } from 'lucide-react';
 import { DollarSign, Percent } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { ZodTextField } from '@/components/common';
 import { Save } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
@@ -68,16 +66,6 @@ const pointConfigSchema = z.object({
   ),
   pointExpirationDays: z.number().min(1).optional().default(POINT_EXPIRATION_DAYS[0].value),
 });
-
-// アニメーション設定
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4 },
-  },
-};
 
 export default function PointTabs() {
   const { salon } = useSalon();
@@ -161,6 +149,10 @@ export default function PointTabs() {
     return <Loading />;
   }
 
+  if (pointConfig === undefined || initialExclusionIds === undefined) {
+    return <Loading />;
+  }
+
   const watchedExpirationDays = watch('pointExpirationDays');
   const watchedIsFixedPoint = watch('isFixedPoint');
 
@@ -185,178 +177,189 @@ export default function PointTabs() {
           </TabsTrigger>
         </TabsList>
 
-        <AnimatePresence mode="wait">
-          <TabsContent value="basic" key="basic-tab">
-            <motion.div variants={cardVariants} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-5">
-                <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
-                  <CardHeader className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700">
-                    <CardTitle className="flex items-center gap-2">
-                      <Coins className="h-5 w-5 text-primary" />
-                      ポイント基本設定
-                    </CardTitle>
-                    <CardDescription>顧客へのポイント付与方法を設定します</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <ScrollArea className="h-[350px] w-full p-6">
-                      <div className="space-y-6">
-                        <div className="flex flex-col space-y-2">
-                          <Label htmlFor="point-type" className="text-xs">
-                            ポイント付与タイプ
-                          </Label>
-                          <div
-                            className={`flex items-center justify-between p-3 rounded-md ${
-                              watchedIsFixedPoint
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'bg-green-50 text-green-700'
-                            }`}
-                          >
-                            <span className="text-sm font-bold">
-                              {watchedIsFixedPoint ? '固定ポイント' : 'ポイント付与率'}
-                            </span>
+        <TabsContent value="basic" key="basic-tab">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-5">
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="p-3 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700">
+                  <h5 className="flex items-center font-bold gap-2">
+                    <Coins className="h-5 w-5 text-blue-600" />
+                    ポイント基本設定
+                  </h5>
+                  <p className="text-sm text-slate-500 py-2 mb-2">
+                    サロンを利用した顧客へのポイント付与方法を設定します。
+                    <br />
+                    ポイントは
+                    <span className="font-bold">1ポイント = 1円</span>
+                    で付与されます。
+                  </p>
 
-                            <Switch
-                              id="point-type"
-                              checked={watchedIsFixedPoint}
-                              onCheckedChange={(checked) => {
-                                setValue('isFixedPoint', checked, { shouldDirty: true });
-                              }}
-                              className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-green-600"
-                            />
-                          </div>
-                        </div>
+                  <span className="text-xs border-yellow-500 border bg-yellow-50 text-yellow-700 rounded-md p-2">
+                    ※ポイントを還元しない場合は0を設定してください。
+                  </span>
+                </div>
 
-                        {watchedIsFixedPoint ? (
-                          <ZodTextField
-                            register={register}
-                            errors={errors}
-                            name="fixedPoint"
-                            label="固定ポイント"
-                            type="number"
-                            icon={<DollarSign size={16} />}
-                            placeholder="例: 100"
-                          />
-                        ) : (
-                          <div className="space-y-2">
-                            <Label htmlFor="pointRate" className="flex items-center gap-2">
-                              <Percent size={16} />
-                              ポイント付与率 (%)
-                            </Label>
-                            <Input
-                              id="pointRate"
-                              type="number"
-                              placeholder="例: 5 (5%)"
-                              step="1"
-                              min="0"
-                              max="100"
-                              value={
-                                watch('pointRate') !== undefined ? watch('pointRate') || 0 : ''
-                              }
-                              onChange={(e) => {
-                                const percentValue = parseFloat(e.target.value);
-                                if (!isNaN(percentValue)) {
-                                  setValue('pointRate', percentValue, {
-                                    shouldValidate: true,
-                                    shouldDirty: true,
-                                  });
-                                } else {
-                                  setValue('pointRate', undefined, {
-                                    shouldValidate: true,
-                                    shouldDirty: true,
-                                  });
-                                }
-                              }}
-                            />
-                            {errors.pointRate && (
-                              <p className="text-sm text-red-500 flex items-center gap-1">
-                                <AlertCircle size={14} />
-                                {errors.pointRate.message as string}
-                              </p>
-                            )}
-                          </div>
-                        )}
+                <div className="space-y-6 p-3">
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="point-type" className="text-xs">
+                      ポイント付与タイプ
+                    </Label>
+                    <span className="text-xs text-slate-500">
+                      利用額に対してポイント付与するか、固定ポイントを付与するかを選択します。
+                    </span>
+                    <div
+                      className={`flex items-center justify-between p-3 rounded-md ${
+                        watchedIsFixedPoint
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-green-50 text-green-700'
+                      }`}
+                    >
+                      <span className="text-sm font-bold">
+                        {watchedIsFixedPoint ? '固定ポイント' : 'ポイント付与率'}
+                      </span>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="expiration" className=" font-medium">
-                            ポイント有効期限
-                          </Label>
-                          <Select
-                            value={
-                              watchedExpirationDays !== undefined
-                                ? String(watchedExpirationDays)
-                                : String(POINT_EXPIRATION_DAYS[0].value)
-                            }
-                            onValueChange={handleExpirationChange}
-                          >
-                            <SelectTrigger id="expiration" className="w-full">
-                              <SelectValue placeholder="ポイント有効期限（日）" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {POINT_EXPIRATION_DAYS.map((data) => (
-                                <SelectItem key={data.value} value={String(data.value)}>
-                                  {data.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
+                      <Switch
+                        id="point-type"
+                        checked={watchedIsFixedPoint}
+                        onCheckedChange={(checked) => {
+                          setValue('isFixedPoint', checked, { shouldDirty: true });
+                        }}
+                        className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-green-600"
+                      />
+                    </div>
+                  </div>
+
+                  {watchedIsFixedPoint ? (
+                    <ZodTextField
+                      register={register}
+                      errors={errors}
+                      name="fixedPoint"
+                      label="固定ポイント"
+                      type="number"
+                      icon={<DollarSign size={16} />}
+                      placeholder="例: 100"
+                    />
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="pointRate" className="flex items-center gap-2">
+                        <Percent size={16} />
+                        ポイント付与率 (%)
+                      </Label>
+                      <Input
+                        id="pointRate"
+                        type="number"
+                        placeholder="例: 5 (5%)"
+                        step="1"
+                        min="0"
+                        max="100"
+                        value={watch('pointRate') !== undefined ? watch('pointRate') || 0 : ''}
+                        onChange={(e) => {
+                          const percentValue = parseFloat(e.target.value);
+                          if (!isNaN(percentValue)) {
+                            setValue('pointRate', percentValue, {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            });
+                          } else {
+                            setValue('pointRate', undefined, {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            });
+                          }
+                        }}
+                      />
+                      {errors.pointRate && (
+                        <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertCircle size={14} />
+                          {errors.pointRate.message as string}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="expiration" className=" font-medium">
+                      ポイント有効期限
+                    </Label>
+                    <Select
+                      value={
+                        watchedExpirationDays !== undefined
+                          ? String(watchedExpirationDays)
+                          : String(POINT_EXPIRATION_DAYS[0].value)
+                      }
+                      onValueChange={handleExpirationChange}
+                    >
+                      <SelectTrigger id="expiration" className="w-full">
+                        <SelectValue placeholder="ポイント有効期限（日）" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {POINT_EXPIRATION_DAYS.map((data) => (
+                          <SelectItem key={data.value} value={String(data.value)}>
+                            {data.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-xs text-slate-500">
+                      顧客のポイントはサロンを利用した最終日から
+                      {POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)?.label}
+                      後に失効します。
+                    </span>
+                  </div>
+                </div>
               </div>
+            </div>
 
-              <div className="lg:col-span-7">
-                <motion.div variants={cardVariants}>
-                  <Card className="h-full shadow-md hover:shadow-lg transition-shadow duration-300">
-                    <CardHeader className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700">
-                      <CardTitle className="flex items-center gap-2">
-                        <Gift className="h-5 w-5 text-primary" />
-                        ポイント設定概要
-                      </CardTitle>
-                      <CardDescription>
-                        現在の設定内容が適用されるとどのように適応されるのかを確認できます。
-                        <br />
-                        <p className="text-xs font-bold mt-2">1ポイント = 1円</p>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="py-2">
-                      <div className="space-y-3">
-                        <div className="space-y-2 text-sm">
-                          <p className="flex justify-between pt-2">
-                            <span className="text-xs dark:text-slate-400">ポイント付与タイプ:</span>
-                            <span className="font-medium text-xs">
-                              {watchedIsFixedPoint ? '固定ポイント' : 'ポイント付与率'}
-                            </span>
+            <div className="lg:col-span-7">
+              <div>
+                <div className="h-full shadow-md hover:shadow-lg transition-shadow duration-300 border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700 p-3">
+                    <h5 className="flex items-center font-bold gap-2">
+                      <Gift className="h-5 w-5 text-blue-500" />
+                      ポイント設定概要
+                    </h5>
+                    <div className="text-sm text-slate-500 mt-2">
+                      現在の設定内容が適用されるとどのように適応されるのかを確認できます。
+                      <br />
+                      <p className="text-xs font-bold mt-2">1ポイント = 1円</p>
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <div className="space-y-3">
+                      <div className="space-y-2 text-sm">
+                        <p className="flex justify-between pt-2">
+                          <span className="text-sm dark:text-slate-400">ポイント付与タイプ:</span>
+                          <span className="font-medium text-sm">
+                            {watchedIsFixedPoint ? '固定ポイント' : 'ポイント付与率'}
+                          </span>
+                        </p>
+                        {watchedIsFixedPoint ? (
+                          <p className="flex justify-between items-end text-sm font-bold">
+                            <span className="text-xs dark:text-slate-400">固定ポイント:</span>
+                            <span className="font-medium">{watch('fixedPoint') || 0} ポイント</span>
                           </p>
-                          {watchedIsFixedPoint ? (
-                            <p className="flex justify-between items-end text-xs font-bold">
-                              <span className="text-xs dark:text-slate-400">固定ポイント:</span>
-                              <span className="font-medium">
-                                {watch('fixedPoint') || 0} ポイント
-                              </span>
-                            </p>
-                          ) : (
-                            <p className="flex justify-between items-end text-xs font-bold">
-                              <span className="text-slate-500 dark:text-slate-400">
-                                ポイント付与率:
-                              </span>
-                              <span className="text-base font-bold tracking-wide">
-                                {watch('pointRate') || 0}%
-                              </span>
-                            </p>
-                          )}
-                          <p className="flex justify-between items-end text-xs font-bold">
+                        ) : (
+                          <p className="flex justify-between items-end text-sm font-bold">
                             <span className="text-slate-500 dark:text-slate-400">
-                              ポイント有効期限:
+                              ポイント付与率:
                             </span>
                             <span className="text-base font-bold tracking-wide">
-                              {POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)
-                                ?.label || POINT_EXPIRATION_DAYS[0].label}
+                              {watch('pointRate') || 0}%
                             </span>
                           </p>
-                          <p className="text-sm pt-4 w-full text-end text-slate-700 ">
-                            本日付与された場合、有効期限{' '}
+                        )}
+                        <p className="flex justify-between items-end text-sm font-bold">
+                          <span className="text-slate-500 dark:text-slate-400">
+                            ポイント有効期限:
+                          </span>
+                          <span className="text-base font-bold tracking-wide">
+                            {POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)
+                              ?.label || POINT_EXPIRATION_DAYS[0].label}
+                          </span>
+                        </p>
+                        <p className="text-sm pt-4 w-full text-slate-700 ">
+                          本日付与された場合、有効期限は{' '}
+                          <span className="font-bold">
                             {new Date(
                               Date.now() + watchedExpirationDays * 24 * 60 * 60 * 1000
                             ).toLocaleDateString('ja-JP', {
@@ -364,57 +367,52 @@ export default function PointTabs() {
                               month: '2-digit',
                               day: '2-digit',
                             })}
-                            です。
+                          </span>
+                          です。
+                        </p>
+                      </div>
+
+                      <div className="space-y-2 py-3">
+                        <div className=" bg-white dark:bg-slate-700 rounded shadow-sm">
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            1,000円の決済に対して
+                          </p>
+                          <p className="text-lg font-bold">
+                            {watchedIsFixedPoint
+                              ? watch('fixedPoint') || 0
+                              : Math.floor((watch('pointRate') || 0) * 10)}{' '}
+                            <span className="text-xs">ポイント付与</span>
                           </p>
                         </div>
-
-                        <div className="space-y-2 py-3">
-                          <div className=" bg-white dark:bg-slate-700 rounded shadow-sm">
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
-                              1,000円の決済に対して
-                            </p>
-                            <p className="text-lg font-bold">
-                              {watchedIsFixedPoint
-                                ? watch('fixedPoint') || 0
-                                : Math.floor((watch('pointRate') || 0) * 10)}{' '}
-                              <span className="text-xs">ポイント付与</span>
-                            </p>
-                          </div>
-                          <div className=" bg-white dark:bg-slate-700 rounded shadow-sm">
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
-                              5,000円の決済に対して
-                            </p>
-                            <p className="text-lg font-bold">
-                              {watchedIsFixedPoint
-                                ? watch('fixedPoint') || 0
-                                : Math.floor((watch('pointRate') || 0) * 50)}{' '}
-                              <span className="text-xs">ポイント付与</span>
-                            </p>
-                          </div>
+                        <div className=" bg-white dark:bg-slate-700 rounded shadow-sm">
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            5,000円の決済に対して
+                          </p>
+                          <p className="text-lg font-bold">
+                            {watchedIsFixedPoint
+                              ? watch('fixedPoint') || 0
+                              : Math.floor((watch('pointRate') || 0) * 50)}{' '}
+                            <span className="text-xs">ポイント付与</span>
+                          </p>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </motion.div>
-          </TabsContent>
+            </div>
+          </div>
+        </TabsContent>
 
-          <TabsContent value="exclusions" key="exclusions-tab">
-            <ExclusionMenu
-              title="適用しないメニュー"
-              selectedMenuIds={selectedMenuIds}
-              setSelectedMenuIdsAction={setSelectedMenuIds}
-            />
-          </TabsContent>
-        </AnimatePresence>
+        <TabsContent value="exclusions" key="exclusions-tab">
+          <ExclusionMenu
+            title="予約の完了時にポイントを付与しないメニュー"
+            selectedMenuIds={selectedMenuIds}
+            setSelectedMenuIdsAction={setSelectedMenuIds}
+          />
+        </TabsContent>
       </Tabs>
-      <motion.div
-        className="flex justify-end mt-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
+      <div className="flex justify-end mt-4">
         <Button
           type="submit"
           className="px-8 gap-2"
@@ -452,7 +450,7 @@ export default function PointTabs() {
             </>
           )}
         </Button>
-      </motion.div>
+      </div>
     </form>
   );
 }

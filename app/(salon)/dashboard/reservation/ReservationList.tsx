@@ -190,7 +190,7 @@ interface GroupTabProps {
 const GroupTab: React.FC<GroupTabProps> = memo(({ id, label, count, icon: Icon }) => (
   <TabsTrigger
     value={id}
-    className="relative px-3 py-1.5 transition-all data-[state=active]:bg-indigo-50"
+    className="relative px-3 py-1.5 transition-all"
     style={{ minWidth: '100px' }}
   >
     <div className="flex items-center gap-1.5">
@@ -198,7 +198,7 @@ const GroupTab: React.FC<GroupTabProps> = memo(({ id, label, count, icon: Icon }
       <span>{label}</span>
     </div>
     {count > 0 && (
-      <span className="absolute -top-1 -right-1 h-5 w-5 text-xs flex items-center justify-center bg-indigo-600 text-white rounded-full">
+      <span className="absolute -top-1 -right-1 h-6 w-6 text-xs flex items-center justify-center bg-white border border-slate-300 text-green-600 rounded-full">
         {count}
       </span>
     )}

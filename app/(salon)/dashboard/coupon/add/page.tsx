@@ -20,7 +20,6 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import {
   CalendarIcon,
-  Sparkles,
   Percent,
   PiggyBank,
   Tag,
@@ -110,23 +109,6 @@ const fadeIn = {
   exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
 };
 
-// ページトランジション用アニメーション
-const pageAnimation = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
-};
-
-// ステッパーアニメーション
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
 // ZodTextField コンポーネント - 再利用可能なフォームフィールド
 function ZodTextField({
   register,
@@ -194,21 +176,24 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
   };
 
   return (
-    <motion.div initial="hidden" animate="visible" variants={fadeIn} className="w-full">
-      <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200 shadow-md overflow-hidden">
-        <CardHeader className="pb-2 bg-gradient-to-r from-indigo-600 to-violet-600">
+    <div className="w-full">
+      <Card className="shadow-md overflow-hidden">
+        <CardHeader className="pb-2 bg-slate-700">
           <CardTitle className="text-white flex items-center gap-2">
             <Gift size={18} />
             {data.name || 'クーポン名'}
           </CardTitle>
-          <CardDescription className="text-indigo-100">
+          <CardDescription className="text-white">
             {data.isActive ? '有効なクーポン' : '無効なクーポン'}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col justify-start items-start gap-3">
             <div className="text-center">
-              <Badge variant="outline" className="px-3 py-1 text-lg font-bold bg-white">
+              <Badge
+                variant="outline"
+                className="px-3 py-1 text-lg font-bold border-green-500 bg-green-50 text-green-700"
+              >
                 {data.discountType === 'percentage'
                   ? `${data.percentageDiscountValue || 0}% OFF`
                   : `¥${data.fixedDiscountValue || 0} OFF`}
@@ -238,7 +223,7 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="bg-gray-50 pt-2 pb-2 flex justify-between">
+        <CardFooter className="bg-slate-50 pt-2 pb-2 flex justify-between">
           <div className="text-xs text-gray-500">
             対象メニュー: {data.selectedMenus?.length || 0}件
           </div>
@@ -250,7 +235,7 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
           </Badge>
         </CardFooter>
       </Card>
-    </motion.div>
+    </div>
   );
 }
 
@@ -280,13 +265,6 @@ function CouponForm() {
 
   // フォーム送信ハンドラー
   const onSubmit = async (data: z.infer<typeof couponSchema>) => {
-    // 選択されたメニューIDsを追加
-    const submitData = {
-      ...data,
-      selectedMenus: selectedMenuIds,
-    };
-
-    console.log('送信データ:', submitData);
     setIsSubmitting(true);
 
     try {
@@ -375,33 +353,23 @@ function CouponForm() {
       className="space-y-8"
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <Tabs defaultValue="preview" className="md:col-span-2">
+        <Tabs defaultValue="setting" className="md:col-span-2">
           <TabsList>
-            <TabsTrigger value="preview">プレビュー</TabsTrigger>
+            <TabsTrigger value="setting">基本設定</TabsTrigger>
             <TabsTrigger value="exclusion">除外メニュー</TabsTrigger>
           </TabsList>
-          <TabsContent value="preview">
-            <div className=" space-y-6">
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={fadeIn}
-                className="bg-white rounded-lg p-6 shadow-sm border"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full font-bold">
+          <TabsContent value="setting">
+            <div className=" space-y-8">
+              <div className="bg-white rounded-lg p-6 shadow-sm border">
+                <div className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                  <div className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full font-bold">
                     1
                   </div>
                   基本情報
                 </div>
 
-                <motion.div
-                  variants={staggerContainer}
-                  initial="hidden"
-                  animate="visible"
-                  className="space-y-4 py-2"
-                >
-                  <motion.div variants={fadeIn}>
+                <div className="space-y-4 py-3">
+                  <div>
                     <ZodTextField
                       register={register}
                       errors={errors}
@@ -410,8 +378,8 @@ function CouponForm() {
                       icon={<Tag size={16} />}
                       placeholder="例: 初回限定20%OFF"
                     />
-                  </motion.div>
-                  <motion.div variants={fadeIn}>
+                  </div>
+                  <div>
                     <ZodTextField
                       register={register}
                       errors={errors}
@@ -420,16 +388,22 @@ function CouponForm() {
                       icon={<Ticket size={16} />}
                       placeholder="例: CODE12345"
                     />
-                  </motion.div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <motion.div variants={fadeIn} className="flex flex-col gap-2">
+                    <span className="text-xs text-gray-500">
+                      顧客はこちらのコードを予約時に使用する事で決済からクーポンを利用できます。
+                    </span>
+                  </div>
+                  <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 justify-end items-end">
+                    <div className="flex flex-col gap-2">
                       <Label className="flex items-center gap-2 text-gray-700">
                         <Percent size={16} />
                         割引タイプ
                       </Label>
+                      <span className="text-xs text-gray-500">
+                        固定割引と利用額に対する割引率を設定できます。
+                      </span>
                       <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-md">
                         <div
-                          className={`flex-1 text-center p-2 rounded-md ${discountType === 'percentage' ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-500'}`}
+                          className={`flex-1 text-center p-2 rounded-md text-sm ${discountType === 'percentage' ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-500'}`}
                         >
                           割引率
                         </div>
@@ -447,74 +421,52 @@ function CouponForm() {
                           )}
                         />
                         <div
-                          className={`flex-1 text-center p-2 rounded-md ${discountType === 'fixed' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500'}`}
+                          className={`flex-1 text-center p-2 rounded-md text-sm ${discountType === 'fixed' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500'}`}
                         >
                           固定金額
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
 
-                    <AnimatePresence mode="wait">
-                      {discountType === 'percentage' ? (
-                        <motion.div
-                          key="percentage"
-                          initial="hidden"
-                          animate="visible"
-                          exit="exit"
-                          variants={fadeIn}
-                        >
-                          <ZodTextField
-                            register={register}
-                            errors={errors}
-                            name="percentageDiscountValue"
-                            label="割引率 (%)"
-                            type="number"
-                            icon={<Percent size={16} />}
-                            placeholder="例: 10"
-                          />
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="fixed"
-                          initial="hidden"
-                          animate="visible"
-                          exit="exit"
-                          variants={fadeIn}
-                        >
-                          <ZodTextField
-                            register={register}
-                            errors={errors}
-                            name="fixedDiscountValue"
-                            label="固定割引額 (円)"
-                            type="number"
-                            icon={<PiggyBank size={16} />}
-                            placeholder="例: 1000"
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {discountType === 'percentage' ? (
+                      <ZodTextField
+                        register={register}
+                        errors={errors}
+                        name="percentageDiscountValue"
+                        label="割引率 (%)"
+                        type="number"
+                        icon={<Percent size={16} />}
+                        placeholder="例: 10"
+                      />
+                    ) : (
+                      <ZodTextField
+                        register={register}
+                        errors={errors}
+                        name="fixedDiscountValue"
+                        label="固定割引額 (円)"
+                        type="number"
+                        icon={<PiggyBank size={16} />}
+                        placeholder="例: 1000"
+                      />
+                    )}
                   </div>
-                </motion.div>
+                </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full font-bold">
+                <div className="flex items-center gap-3 text-sm font-bold text-slate-700 mt-6">
+                  <div className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full font-bold">
                     2
                   </div>
                   有効期間と利用回数
                 </div>
 
-                <motion.div
-                  variants={staggerContainer}
-                  initial="hidden"
-                  animate="visible"
-                  className="space-y-4 py-2"
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <motion.div variants={fadeIn} className="flex flex-col gap-2">
+                <div className="space-y-4 py-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 justify-end items-end">
+                    <div className="flex flex-col gap-2">
                       <Label className="flex items-center gap-2 text-gray-700">
                         <CalendarIcon size={16} />
                         開始日
                       </Label>
+
                       <Controller
                         control={control}
                         name="startDate"
@@ -559,9 +511,9 @@ function CouponForm() {
                           {errors.startDate?.message}
                         </motion.p>
                       )}
-                    </motion.div>
+                    </div>
 
-                    <motion.div variants={fadeIn} className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2">
                       <Label className="flex items-center gap-2 text-gray-700">
                         <CalendarIcon size={16} />
                         終了日
@@ -610,36 +562,36 @@ function CouponForm() {
                           {errors.endDate?.message}
                         </motion.p>
                       )}
-                    </motion.div>
+                    </div>
                   </div>
+                  <span className="text-xs text-gray-500">
+                    クーポンの有効期間は開始日から終了日までになります。
+                    期間が過ぎた場合クーポンは自動的に利用できなくなります。
+                  </span>
 
-                  <motion.div variants={fadeIn}>
-                    <ZodTextField
-                      register={register}
-                      errors={errors}
-                      name="maxUseCount"
-                      label="最大利用回数"
-                      type="number"
-                      icon={<Hash size={16} />}
-                      placeholder="例: 100"
-                    />
-                  </motion.div>
-                </motion.div>
+                  <ZodTextField
+                    register={register}
+                    errors={errors}
+                    name="maxUseCount"
+                    label="最大利用回数"
+                    type="number"
+                    icon={<Hash size={16} />}
+                    placeholder="例: 100"
+                  />
+                  <span className="text-xs text-gray-500">
+                    最大利用回数を超えた場合はクーポンは自動的に利用できなくなります。
+                  </span>
+                </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full font-bold">
+                <div className="flex items-center gap-3 text-sm font-bold text-slate-700 mt-4">
+                  <div className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full font-bold">
                     3
                   </div>
                   対象メニューと有効設定
                 </div>
 
-                <motion.div
-                  variants={staggerContainer}
-                  initial="hidden"
-                  animate="visible"
-                  className="space-y-4 py-2"
-                >
-                  <motion.div variants={fadeIn} className="flex flex-col gap-2 pt-2">
+                <div className="space-y-4 py-2">
+                  <div className="flex flex-col gap-2 pt-2">
                     <Controller
                       control={control}
                       name="isActive"
@@ -649,7 +601,7 @@ function CouponForm() {
                             htmlFor="isActive"
                             className="flex items-center gap-2 text-gray-700 cursor-pointer"
                           >
-                            クーポンの有効/無効
+                            クーポンを有効/無効にする
                           </Label>
                           <div className="flex items-center gap-2">
                             <Badge
@@ -668,9 +620,13 @@ function CouponForm() {
                         </div>
                       )}
                     />
-                  </motion.div>
-                </motion.div>
-              </motion.div>
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    無効にするとクーポンは利用できなくなります。利用を停止したい場合は
+                    こちらを選択してください。
+                  </span>
+                </div>
+              </div>
             </div>
           </TabsContent>
           <TabsContent value="exclusion">
@@ -685,31 +641,13 @@ function CouponForm() {
         {/* プレビュー部分 */}
         <div className="md:col-span-1">
           <div className="sticky top-4 space-y-4">
-            <motion.h3
-              initial="hidden"
-              animate="visible"
-              variants={fadeIn}
-              className="text-lg font-medium flex items-center gap-2"
-            >
-              <Sparkles size={18} className="text-indigo-500" />
-              クーポンプレビュー
-            </motion.h3>
-
             <CouponPreview data={previewData} />
 
-            <motion.div initial="hidden" animate="visible" variants={fadeIn} className="mt-6">
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 shadow-lg"
-                size="lg"
-              >
+            <div className="mt-6">
+              <Button type="submit" disabled={isSubmitting} className="w-full " size="lg">
                 {isSubmitting ? (
                   <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    >
+                    <div className="animate-spin">
                       <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
                         <circle
                           className="opacity-25"
@@ -726,7 +664,7 @@ function CouponForm() {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         />
                       </svg>
-                    </motion.div>
+                    </div>
                     追加中...
                   </>
                 ) : (
@@ -736,7 +674,7 @@ function CouponForm() {
                   </>
                 )}
               </Button>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>
@@ -752,12 +690,7 @@ export default function AddCouponPage() {
       backLink="/dashboard/coupon"
       backLinkTitle="クーポン一覧へ戻る"
     >
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={pageAnimation}
-        className="flex flex-col gap-6"
-      >
+      <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <p className="text-sm text-gray-500">
             新しいクーポンの情報を入力して作成できます。ステップに沿って入力を進めてください。
@@ -766,7 +699,7 @@ export default function AddCouponPage() {
         </div>
 
         <CouponForm />
-      </motion.div>
+      </div>
     </DashboardSection>
   );
 }

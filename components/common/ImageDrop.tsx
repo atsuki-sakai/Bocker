@@ -158,19 +158,32 @@ export default function ImageDrop({
           <Image
             src={displayImageUrl}
             alt="Preview"
+            unoptimized
+            loader={({ src }) => src}
             className="mx-auto rounded-md object-contain max-h-[192px] max-w-[192px]"
             width={previewWidth}
             height={previewHeight}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute top-0 right-0 rounded-full bg-blue-600 hover:bg-blue-600 text-white hover:text-white shadow-md"
-            onClick={clearPreview}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          {initialImageUrl ? (
+            <Button
+              type="button"
+              size="sm"
+              className="absolute top-0 right-0 m-2"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              画像を更新
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute top-0 right-0 rounded-full bg-blue-600 hover:bg-blue-600 text-white shadow-md"
+              onClick={clearPreview}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
           {fileInputRef.current?.files?.[0] && (
             <div className="text-xs text-gray-500 mt-2 text-start">
               <p>

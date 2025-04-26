@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
+import Loading from './Loading';
 
 const numberOfMenus = 10;
 
@@ -34,6 +35,7 @@ export default function ExclusionMenu({
     results: menus,
     loadMore,
     status,
+    isLoading,
   } = useStablePaginatedQuery(
     api.menu.core.query.listBySalonId,
     salon ? { salonId: salon._id as Id<'salon'> } : 'skip',
@@ -73,12 +75,6 @@ export default function ExclusionMenu({
     } else {
       newSelectedIds = Array.from(new Set([...localSelectedIds, ...visibleMenuIds]));
     }
-    console.log('全選択/全解除:', {
-      allVisibleSelected,
-      visibleMenuIds,
-      beforeIds: localSelectedIds,
-      afterIds: newSelectedIds,
-    });
     updateSelectedIds(newSelectedIds);
   }
 
@@ -106,19 +102,28 @@ export default function ExclusionMenu({
   const allVisibleSelected =
     filteredMenus.length > 0 && filteredMenus.every((menu) => localSelectedIds.includes(menu._id));
 
+  if (filteredMenus === undefined || isLoading) return <Loading />;
+
+  if (filteredMenus.length === 0)
+    return (
+      <div className="text-center py-12 text-gray-500 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700 rounded-md border border-slate-200">
+        登録されているメニューがありません。
+      </div>
+    );
+
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-slate-50">
       <CardContent className="p-4">
         <div className="flex flex-col gap-4">
           {/* ヘッダー */}
           <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-2 text-gray-700 font-medium">
+            <Label className="flex items-center gap-2 text-gray-700 font-medium text-sm">
               <Menu size={16} />
               {title ?? '除外するメニュー'}
             </Label>
-            <div className="flex gap-2 items-center">
+            <div className="flex flex-col md:flex-row gap-2 items-center">
               <span className="text-sm text-gray-500">{selectionText}</span>
-              <Button size="sm" onClick={handleToggleAll} className="text-xs h-8" type="button">
+              <Button size="sm" onClick={handleToggleAll} className="text-sm h-8" type="button">
                 {totalMenusCount > 0 && allVisibleSelected ? (
                   <span className="flex items-center gap-1">
                     <Minus size={14} />
@@ -135,7 +140,7 @@ export default function ExclusionMenu({
           </div>
 
           {/* 検索フィールド */}
-          <div className="relative">
+          <div className="relative bg-white rounded-md">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
             <Input
               placeholder="メニューを検索..."
@@ -147,7 +152,7 @@ export default function ExclusionMenu({
           </div>
 
           {/* メニューリスト */}
-          <ScrollArea className="max-h-[80vh] rounded-md border p-2">
+          <ScrollArea className="max-h-[80vh] rounded-md border p-2 bg-white">
             <div className="space-y-1">
               {filteredMenus.map((menu: Doc<'menu'>) => (
                 <div
@@ -158,20 +163,33 @@ export default function ExclusionMenu({
                     id={menu._id}
                     checked={localSelectedIds.includes(menu._id)}
                     onCheckedChange={() => handleToggleMenu(menu._id)}
-                    className="data-[state=checked]:bg-primary"
                   />
                   <label
                     htmlFor={menu._id}
                     className="flex flex-1 justify-between items-center cursor-pointer text-sm py-1"
                   >
                     <span className="font-medium">{menu.name}</span>
-                    <span className="text-gray-500">¥{menu.unitPrice?.toLocaleString()}</span>
+                    <div className="flex items-center gap-1">
+                      {/* セール価格が数値として 0 より大きいときだけ元の価格を打ち消し線 */}
+                      {typeof menu.salePrice === 'number' && menu.salePrice > 0 && (
+                        <span className="line-through text-gray-400">
+                          ¥{menu.unitPrice?.toLocaleString()}
+                        </span>
+                      )}
+
+                      {/* 表示する価格 */}
+                      <span className="text-gray-800">
+                        ¥
+                        {(typeof menu.salePrice === 'number' && menu.salePrice > 0
+                          ? menu.salePrice
+                          : menu.unitPrice
+                        )?.toLocaleString()}
+                      </span>
+                    </div>
                   </label>
                 </div>
               ))}
-              {filteredMenus.length === 0 && (
-                <div className="text-center py-4 text-gray-500">該当するメニューがありません</div>
-              )}
+
               {menus && menus.length >= numberOfMenus && status === 'CanLoadMore' && (
                 <div className="flex justify-center pt-2">
                   <Button

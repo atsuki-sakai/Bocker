@@ -8,7 +8,6 @@ import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { motion } from 'framer-motion';
 import { SUBSCRIPTION_PLANS } from '@/lib/constants';
 import { getPriceStrFromPlanAndPeriod } from '@/lib/utils';
 import { Doc } from '@/convex/_generated/dataModel';
@@ -261,21 +260,14 @@ export default function SubscriptionForm({
   ]);
 
   return (
-    <motion.div
-      className="flex flex-col items-center justify-center min-h-[calc(100vh-20vh)]"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-20vh)]">
       {/* ヘッダー部分 */}
-      <motion.div
-        initial={{ y: 30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="mb-8 text-center"
-      >
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 bg-clip-text text-transparent mb-2">
-          Bcker サブスクリプション プラン
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-800 via-purple-800 to-pink-800 bg-clip-text text-transparent mb-2">
+          Bcker{' '}
+          <span className="text-base text-slate-600 dark:text-slate-300">
+            サブスクリプション プラン
+          </span>
         </h1>
         <p className="text-slate-600 dark:text-slate-300 max-w-md mx-auto text-sm mb-6">
           あなたのサロンに最適なプランをお選びください
@@ -286,7 +278,7 @@ export default function SubscriptionForm({
           billingPeriod={billingPeriod}
           setBillingPeriodAction={setBillingPeriodAction}
         />
-      </motion.div>
+      </div>
 
       {/* 現在のプラン表示 */}
       <CurrentPlanBanner
@@ -311,12 +303,7 @@ export default function SubscriptionForm({
       />
 
       {/* プラン一覧 */}
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
-        className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6"
-      >
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Lite プラン */}
         <PlanCard
           title="Lite"
@@ -394,37 +381,26 @@ export default function SubscriptionForm({
           highlightColor="from-rose-500 to-pink-500"
           delay={0.2}
         />
-      </motion.div>
+      </div>
 
       {/* エラーメッセージ */}
       {error && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.3 }}
-          className="mt-8 w-full max-w-5xl"
-        >
+        <div className="mt-8 w-full max-w-5xl">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-        </motion.div>
+        </div>
       )}
 
       {/* フッター部分 */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.4 }}
-        className="mt-12 text-center text-sm text-slate-500 max-w-md"
-      >
+      <div className="mt-12 text-center text-sm text-slate-500 max-w-md">
         <p>
           すべてのプランには30日間の無料トライアル期間が含まれています。
           <br />
           いつでもキャンセルまたはプラン変更が可能です。
         </p>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
