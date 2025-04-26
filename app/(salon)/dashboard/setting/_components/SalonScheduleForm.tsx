@@ -7,6 +7,7 @@ import { useSalon } from '@/hooks/useSalon';
 import { Loading } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { useZodForm } from '@/hooks/useZodForm';
+import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { handleErrorToMsg } from '@/lib/error';
@@ -347,14 +348,25 @@ export default function SalonScheduleForm() {
         </div>
         <div className="text-sm text-muted-foreground mt-2 bg-blue-50 rounded-md p-3 max-w-4xl">
           <p className="font-bold text-base mb-2 text-blue-600">予約間隔の設定について</p>
-          <ul className="list-decimal list-inside space-y-1 text-blue-600">
-            <li>無駄な待ち時間の発生を防ぐために設定します。</li>
-            <li>0分に設定すると顧客が予約可能な時間枠全てが表示されます。</li>
+          <ul className="list-disc list-inside space-y-1 text-blue-600">
+            予約時間枠の「間隔」設定 — ポイントまとめ
+            <p className="font-bold">目的</p>
             <li>
-              08:00から予約が可能な場合、60分に設定した場合、08:00からの開始時間とピッタリ合う時間の08:00からが表示されます。
+              顧客の予約候補を絞り込み、無駄な待ち時間（中途半端な空き）を発生させないための設定です。
             </li>
+            <li>間隔を「0 分」にすると</li>
+            <li>期間内のすべての開始時刻（1 分刻みを含む）がそのまま表示されます。</li>
+            <li>例：08:00、08:01、08:02 … と細かく並ぶ。</li>
+            <li>間隔を「60 分」にすると</li>
             <li>
-              08:01~09:00の時間枠は表示されず、09:00~10:00,10:00~11:00...などの枠が表示されます。08:30などの枠が表示されない為無駄な時間の発生を抑えますが、08:01~09:00の枠が表示され無いことに注意してください。
+              予約開始可能時刻が 08:00 の場合、08:00 ちょうどを基準に 1
+              時間ごと（08:00、09:00、10:00 …）の枠だけが表示されます。
+            </li>
+            <li>08:30 など端数の枠は出ないため、余計な空き時間が生まれにくくなります。</li>
+            <p className="font-bold">注意点</p>
+            <li>
+              端数開始（08:01〜08:59
+              など）の枠は一切表示されなくなるので、必要な場合は間隔を短めに設定してください。
             </li>
           </ul>
         </div>
@@ -367,27 +379,7 @@ export default function SalonScheduleForm() {
             <Button type="submit" disabled={isSubmitting || !isDirty} className="min-w-[120px]">
               {isSubmitting ? (
                 <>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  >
-                    <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                  </motion.div>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   保存中...
                 </>
               ) : (

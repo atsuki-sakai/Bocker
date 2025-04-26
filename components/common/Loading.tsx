@@ -24,7 +24,7 @@ export default function Loading() {
       <style>{loadingTextAnimation}</style>
 
       <div className="flex flex-col items-center space-y-4">
-        <Loader className="h-8 w-8 md:h-12 md:w-12 text-blue-900 animate-spin" />
+        <Loader className="h-8 w-8 md:h-12 md:w-12 text-slate-500 animate-spin" />
 
         <p className="loading-text text-gray-600 font-medium tracking-widest text-xs md:text-sm">
           {letters.map((letter, index) => (

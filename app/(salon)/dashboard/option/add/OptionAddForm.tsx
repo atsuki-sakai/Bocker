@@ -12,9 +12,9 @@ import { ZodTextField } from '@/components/common';
 import { Label } from '@/components/ui/label';
 import { Tag } from 'lucide-react';
 import { TagBadge } from '@/components/common';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { toast } from 'sonner';
-import { DollarSign, ShoppingBag, Clock, Save } from 'lucide-react';
+import { DollarSign, ShoppingBag, Clock, Save, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import {
   Select,
@@ -26,7 +26,9 @@ import {
 import { getMinuteMultiples } from '@/lib/schedule';
 import { Loading } from '@/components/common';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+
+// 施術時間：5〜360分の5分刻みをキャッシュ
+const MINUTE_OPTIONS = getMinuteMultiples(5, 360);
 
 const optionSchema = z
   .object({
@@ -111,7 +113,7 @@ const optionSchema = z
     }
   );
 
-export default function OptionAddForm() {
+function OptionAddForm() {
   const { salon } = useSalon();
   const router = useRouter();
   const [currentTags, setCurrentTags] = useState<string[]>([]);
@@ -130,38 +132,48 @@ export default function OptionAddForm() {
 
   const isActive = watch('isActive');
 
-  // タグの操作ロジック
-  const addTag = (
-    e: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLInputElement>
-  ) => {
-    e.preventDefault();
-    if (!tagInput.trim()) return;
+  const addTag = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLInputElement>) => {
+      e.preventDefault();
+      if (!tagInput.trim()) return;
 
-    const newTags = [...currentTags];
+      const newTags = [...currentTags];
 
-    // カンマで区切られた複数のタグがある場合
-    const tagsToAdd = tagInput
-      .split(/[,、]/)
-      .map((t) => t.trim())
-      .filter((t) => t && !currentTags.includes(t));
+      const tagsToAdd = tagInput
+        .split(/[,、]/)
+        .map((t) => t.trim())
+        .filter((t) => t && !currentTags.includes(t));
 
-    if (newTags.length + tagsToAdd.length > 5) {
-      toast.warning('タグは最大5つまでです');
-      return;
-    }
+      if (newTags.length + tagsToAdd.length > 5) {
+        toast.warning('タグは最大5つまでです');
+        return;
+      }
 
-    const updatedTags = [...newTags, ...tagsToAdd].slice(0, 5);
-    setCurrentTags(updatedTags);
-    setValue('tags', updatedTags.join(',') as unknown as string[], { shouldValidate: true });
-    setTagInput('');
-  };
+      const updatedTags = [...newTags, ...tagsToAdd].slice(0, 5);
+      setCurrentTags(updatedTags);
+      setValue('tags', updatedTags.join(',') as unknown as string[], { shouldValidate: true });
+      setTagInput('');
+    },
+    [tagInput, currentTags, setValue]
+  );
 
-  const removeTag = (index: number) => {
-    const newTags = [...currentTags];
-    newTags.splice(index, 1);
-    setCurrentTags(newTags);
-    setValue('tags', newTags.join(',') as unknown as string[], { shouldValidate: true });
-  };
+  const removeTag = useCallback(
+    (index: number) => {
+      const newTags = [...currentTags];
+      newTags.splice(index, 1);
+      setCurrentTags(newTags);
+      setValue('tags', newTags.join(',') as unknown as string[], { shouldValidate: true });
+    },
+    [currentTags, setValue]
+  );
+
+  const tagBadges = useMemo(
+    () =>
+      currentTags.map((tag, idx) => (
+        <TagBadge key={tag} text={tag} onRemove={() => removeTag(idx)} />
+      )),
+    [currentTags, removeTag]
+  );
 
   const onSubmit = async (data: z.infer<typeof optionSchema>) => {
     try {
@@ -287,7 +299,7 @@ export default function OptionAddForm() {
                 <SelectValue placeholder="施術時間を選択" />
               </SelectTrigger>
               <SelectContent>
-                {getMinuteMultiples(5, 360).map((time) => (
+                {MINUTE_OPTIONS.map((time) => (
                   <SelectItem key={time} value={time.toString()}>
                     {time}分
                   </SelectItem>
@@ -307,11 +319,7 @@ export default function OptionAddForm() {
             タグ (最大5つ)
           </Label>
 
-          <div className="flex flex-wrap mb-2">
-            {currentTags.map((tag, index) => (
-              <TagBadge key={index} text={tag} onRemove={() => removeTag(index)} />
-            ))}
-          </div>
+          <div className="flex flex-wrap mb-2">{tagBadges}</div>
           <div className="flex gap-2">
             <input
               type="text"
@@ -378,32 +386,12 @@ export default function OptionAddForm() {
           >
             {isSubmitting ? (
               <>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                >
-                  <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                </motion.div>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 追加中...
               </>
             ) : (
               <>
-                <Save className="h-4 w-4" />
+                <Save className="mr-2 h-4 w-4" />
                 オプションを追加
               </>
             )}
@@ -413,3 +401,5 @@ export default function OptionAddForm() {
     </form>
   );
 }
+
+export default memo(OptionAddForm);

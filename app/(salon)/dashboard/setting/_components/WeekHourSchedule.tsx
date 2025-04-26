@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2 } from 'lucide-react';
 import { Id } from '@/convex/_generated/dataModel';
 import { handleErrorToMsg } from '@/lib/error';
 import { Loading } from '@/components/common';
@@ -481,7 +481,7 @@ export default function WeekHourSchedule() {
         <div className="space-y-8">
           {/* 営業日設定 */}
 
-          <div className="bg-blue-50 p-4 rounded-lg my-4 flex items-center gap-2 text-sm">
+          <div className="bg-blue-50 p-4 rounded-lg my-4 flex items-center gap-2 text-sm w-fit">
             <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0" />
             <p className="text-blue-700">
               営業する曜日を選択してください。営業しない曜日は定休日として設定されます。
@@ -617,7 +617,7 @@ export default function WeekHourSchedule() {
                       </div>
                     </div>
 
-                    <div className="mt-4 p-3 bg-white rounded border border-blue-200 text-sm text-blue-700">
+                    <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200 text-sm text-blue-700 w-fit">
                       <div className="flex items-start gap-2">
                         <InfoIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
                         <div>
@@ -728,27 +728,7 @@ export default function WeekHourSchedule() {
           >
             {isSaving ? (
               <>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                >
-                  <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                </motion.div>
+                <Loader2 className="h-4 w-4 animate-spin" />
                 保存中...
               </>
             ) : (

@@ -1,9 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FormField, Loading } from '@/components/common';
-import { MessageSquare, Key, Lock, Shield, Save, EyeOff, Eye } from 'lucide-react';
+import { MessageSquare, Key, Lock, Shield, Save, EyeOff, Eye, Loader2 } from 'lucide-react';
 
 import { handleErrorToMsg } from '@/lib/error';
 import { Input } from '@/components/ui/input';
@@ -110,126 +111,163 @@ const ApiSettingsCard = () => {
           <br />
           設定を行うと、LINE公式アカウントと連携した予約システムを使用できるようになります。
         </p>
-        <p className="mt-4 text-sm text-green-600">
-          設定が難しい場合はお気軽にお問い合わせください。弊社スタッフが必要情報を頂けますと設定させていただきます。
+        <div className="w-fit h-full p-2 bg-green-50 border border-green-400 rounded-md my-5">
+          <ul className="list-inside list-decimal text-sm space-y-2">
+            <li>
+              LINEアクセストークンの取得方法は{' '}
+              <Link href="https://youtu.be/1234567890" target="_blank" className="text-blue-500">
+                こちらの動画
+              </Link>{' '}
+              を参考にしてください。
+            </li>
+            <li>
+              LINEチャネルシークレットの取得方法は{' '}
+              <Link href="https://youtu.be/1234567890" target="_blank" className="text-blue-500">
+                こちらの動画
+              </Link>{' '}
+              を参考にしてください。
+            </li>
+            <li>
+              LIFF IDの取得方法は{' '}
+              <Link href="https://youtu.be/1234567890" target="_blank" className="text-blue-500">
+                こちらの動画
+              </Link>{' '}
+              を参考にしてください。
+            </li>
+          </ul>
+        </div>
+        <p className="text-sm mt-2">
+          設定が難しい場合はお気軽に
+          <Link
+            href="https://line.me/R/ti/p/%40160zqyqy"
+            target="_blank"
+            className="text-sm text-blue-500"
+          >
+            お問い合わせ
+          </Link>
+          ください。
         </p>
       </div>
 
-      <div className="pt-6">
-        <form
-          onSubmit={handleSubmit(onApiSubmit)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-              e.preventDefault();
-            }
-          }}
-          autoComplete="off"
-          className="space-y-6"
-        >
-          <div className="space-y-4">
-            <div className="p-1">
-              <div className="space-y-4 mt-4">
-                <FormField
-                  label="LINE アクセストークン"
-                  icon={<Key className="h-4 w-4 text-blue-500" />}
-                  error={errors.lineAccessToken?.message}
-                  tooltip="LINE Developers から取得したアクセストークンを入力してください"
-                >
-                  <div className="flex items-center gap-2 relative">
-                    <Input
-                      type={showFields.lineAccessToken ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      {...register('lineAccessToken')}
-                      placeholder="LINE アクセストークン"
-                      className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
-                    />
-                    <Button
-                      className="absolute right-0"
-                      variant="outline"
-                      size="icon"
-                      onClick={(e) => handleShowFields(e, 'lineAccessToken')}
-                    >
-                      {showFields.lineAccessToken ? (
-                        <Eye className="h-4 w-4" />
-                      ) : (
-                        <EyeOff className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </FormField>
+      <form
+        onSubmit={handleSubmit(onApiSubmit)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+            e.preventDefault();
+          }
+        }}
+        autoComplete="off"
+        className="space-y-6"
+      >
+        <div className="space-y-4">
+          <div className="p-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <FormField
+                label="LINE アクセストークン"
+                icon={<Key className="h-4 w-4 text-blue-500" />}
+                error={errors.lineAccessToken?.message}
+                tooltip="LINE Developers から取得したアクセストークンを入力してください"
+              >
+                <div className="flex items-center gap-2 relative">
+                  <Input
+                    type={showFields.lineAccessToken ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    {...register('lineAccessToken')}
+                    placeholder="LINE アクセストークン"
+                    className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                  />
+                  <Button
+                    className="absolute right-0"
+                    variant="outline"
+                    size="icon"
+                    onClick={(e) => handleShowFields(e, 'lineAccessToken')}
+                  >
+                    {showFields.lineAccessToken ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </FormField>
 
-                <FormField
-                  label="LINE チャンネルシークレット"
-                  icon={<Lock className="h-4 w-4 text-blue-500" />}
-                  error={errors.lineChannelSecret?.message}
-                  tooltip="LINE Developers から取得したチャネルシークレットを入力してください"
-                >
-                  <div className="flex items-center gap-2 relative">
-                    <Input
-                      autoComplete="new-password"
-                      type={showFields.lineChannelSecret ? 'text' : 'password'}
-                      {...register('lineChannelSecret')}
-                      placeholder="LINE チャンネルシークレット"
-                      className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
-                    />
-                    <Button
-                      className="absolute right-0"
-                      variant="outline"
-                      size="icon"
-                      onClick={(e) => handleShowFields(e, 'lineChannelSecret')}
-                    >
-                      {showFields.lineChannelSecret ? (
-                        <Eye className="h-4 w-4" />
-                      ) : (
-                        <EyeOff className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </FormField>
+              <FormField
+                label="LINE チャンネルシークレット"
+                icon={<Lock className="h-4 w-4 text-blue-500" />}
+                error={errors.lineChannelSecret?.message}
+                tooltip="LINE Developers から取得したチャネルシークレットを入力してください"
+              >
+                <div className="flex items-center gap-2 relative">
+                  <Input
+                    autoComplete="new-password"
+                    type={showFields.lineChannelSecret ? 'text' : 'password'}
+                    {...register('lineChannelSecret')}
+                    placeholder="LINE チャンネルシークレット"
+                    className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                  />
+                  <Button
+                    className="absolute right-0"
+                    variant="outline"
+                    size="icon"
+                    onClick={(e) => handleShowFields(e, 'lineChannelSecret')}
+                  >
+                    {showFields.lineChannelSecret ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </FormField>
 
-                <FormField
-                  label="LIFF ID"
-                  icon={<Shield className="h-4 w-4 text-blue-500" />}
-                  error={errors.liffId?.message}
-                  tooltip="LIFF（LINE Front-end Framework）のIDを入力してください"
-                >
-                  <div className="flex items-center gap-2 relative">
-                    <Input
-                      type={showFields.liffId ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      {...register('liffId')}
-                      placeholder="LIFF ID"
-                      className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
-                    />
+              <FormField
+                label="LIFF ID"
+                icon={<Shield className="h-4 w-4 text-blue-500" />}
+                error={errors.liffId?.message}
+                tooltip="LIFF（LINE Front-end Framework）のIDを入力してください"
+              >
+                <div className="flex items-center gap-2 relative">
+                  <Input
+                    type={showFields.liffId ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    {...register('liffId')}
+                    placeholder="LIFF ID"
+                    className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                  />
 
-                    <Button
-                      className="absolute right-0"
-                      variant="outline"
-                      size="icon"
-                      onClick={(e) => handleShowFields(e, 'liffId')}
-                    >
-                      {showFields.liffId ? (
-                        <Eye className="h-4 w-4" />
-                      ) : (
-                        <EyeOff className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </FormField>
+                  <Button
+                    className="absolute right-0"
+                    variant="outline"
+                    size="icon"
+                    onClick={(e) => handleShowFields(e, 'liffId')}
+                  >
+                    {showFields.liffId ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </FormField>
 
+              <div>
+                <p className="text-sm text-muted-foreground mb-2 bg-yellow-50 border border-yellow-400 rounded-md p-1 text-yellow-600 w-fit">
+                  近日実装予定
+                </p>
                 <FormField
                   label="LINE公式アカウント識別子"
                   icon={<MessageSquare className="h-4 w-4 text-blue-500" />}
                   error={errors.destinationId?.message}
                   tooltip="LINE公式アカウントの識別子を入力してください"
                 >
-                  <div className="flex items-center gap-2 relative">
+                  <div className="flex items-center gap-2 relative bg-yellow-50 border border-yellow-400 rounded-md p-1">
                     <Input
+                      readOnly
                       type={showFields.destinationId ? 'text' : 'password'}
                       autoComplete="new-password"
                       {...register('destinationId')}
                       placeholder="LINE公式アカウント識別子"
-                      className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                      className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400 pointer-events-none"
                     />
                     <Button
                       className="absolute right-0"
@@ -248,49 +286,29 @@ const ApiSettingsCard = () => {
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="px-0 pt-4 pb-0 flex justify-end gap-4">
-            <motion.div
-              whileHover={{ scale: isDirty ? 1.03 : 1 }}
-              whileTap={{ scale: isDirty ? 0.97 : 1 }}
-            >
-              <Button type="submit" disabled={submitting || !isDirty} className="min-w-[140px]">
-                {submitting ? (
-                  <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    >
-                      <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                    </motion.div>
-                    保存中...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    API設定を保存
-                  </>
-                )}
-              </Button>
-            </motion.div>
-          </div>
-        </form>
-      </div>
+        <div className="px-0 pt-4 pb-0 flex justify-end gap-4">
+          <motion.div
+            whileHover={{ scale: isDirty ? 1.03 : 1 }}
+            whileTap={{ scale: isDirty ? 0.97 : 1 }}
+          >
+            <Button type="submit" disabled={submitting || !isDirty} className="min-w-[140px]">
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  保存中...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  API設定を保存
+                </>
+              )}
+            </Button>
+          </motion.div>
+        </div>
+      </form>
     </div>
   );
 };

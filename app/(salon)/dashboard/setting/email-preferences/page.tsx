@@ -143,53 +143,40 @@ export default function EmailPreferencesPage() {
   };
 
   return (
-    <DashboardSection
-      title="メールアドレス設定"
-      backLink="/dashboard"
-      backLinkTitle="ダッシュボードに戻る"
-    >
-      <p className="text-sm text-muted-foreground mb-4">
-        メールアドレスを変更する場合は、
-        <Link href="/dashboard/setting/change-email" className="text-blue-500 hover:underline">
-          メールアドレス変更
-        </Link>
-        から可能です。
-      </p>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MailIcon className="h-5 w-5 text-primary" />
+    <>
+      <div className="space-y-4 grid grid-cols-1 md:grid-cols-2">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm">
+            <MailIcon className="h-4 w-4 text-primary" />
             登録済みメールアドレス
-          </CardTitle>
-          <CardDescription>
-            <p className="my-2 font-bold text-sm">
+          </div>
+          <div className="text-sm text-muted-foreground">
+            <p className="my-2 text-xs">
               プライマリーに設定されたメールアドレスがログインとシステム通知に使用されます。
             </p>
-            <br />
-            登録されているメールアドレス全てでログイン可能。
-            <br />
-            未使用のメールアドレスについては適宜削除するようにしてください。
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </div>
+        </div>
+        <div>
           {emailAddresses.length === 0 ? (
             <div className="p-4 border rounded-lg text-center text-muted-foreground flex flex-col items-center gap-2">
               <MailQuestionIcon className="h-10 w-10" />
               <p>メールアドレスが登録されていません</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {emailAddresses.map((email) => (
                 <div
                   key={email.id}
                   className={`p-4 border rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 
-                                ${email.primary ? 'bg-primary/5 border-primary/20' : ''}`}
+                                ${email.primary ? 'bg-slate-50 border-slate-200' : ''}`}
                 >
                   <div className="flex items-center gap-2 flex-1">
                     <MailIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     <div className="space-y-1 min-w-0">
                       <div className="flex flex-wrap gap-2 items-center">
-                        <span className="font-medium break-all">{email.emailAddress}</span>
+                        <span className="font-light tracking-wide break-all">
+                          {email.emailAddress}
+                        </span>
                         <div className="flex flex-wrap gap-1">
                           {email.primary && (
                             <Badge className="bg-primary text-primary-foreground">
@@ -274,8 +261,8 @@ export default function EmailPreferencesPage() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-    </DashboardSection>
+        </div>
+      </div>
+    </>
   );
 } 

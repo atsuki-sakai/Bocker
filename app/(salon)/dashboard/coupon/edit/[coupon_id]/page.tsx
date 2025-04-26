@@ -230,7 +230,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     reset,
     watch,
     formState: { isSubmitting, errors, isDirty },
-  } = useZodForm(couponSchema);
+  } = useZodForm(couponSchema, { shouldUnregister: false });
 
   // フォームの値を監視
   const formValues = watch();
@@ -399,7 +399,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                       </div>
                     </div>
 
-                    {discountType === 'percentage' ? (
+                    {/* 割引額入力（常にマウントして値を保持し、表示だけ切り替える） */}
+                    <div className={discountType === 'percentage' ? '' : 'hidden'}>
                       <ZodTextField
                         register={register}
                         errors={errors}
@@ -409,7 +410,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                         icon={<Percent size={16} />}
                         placeholder="例: 10"
                       />
-                    ) : (
+                    </div>
+                    <div className={discountType === 'fixed' ? '' : 'hidden'}>
                       <ZodTextField
                         register={register}
                         errors={errors}
@@ -419,7 +421,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                         icon={<PiggyBank size={16} />}
                         placeholder="例: 1000"
                       />
-                    )}
+                    </div>
                   </div>
                 </div>
 

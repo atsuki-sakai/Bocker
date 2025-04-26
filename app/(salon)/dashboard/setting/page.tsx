@@ -20,14 +20,16 @@ export default function SettingPage() {
 
   return (
     <Tabs value={currentTab} onValueChange={setCurrentTab}>
-      <TabsList className="flex flex-wrap justify-start h-auto w-fit gap-2 p-2 mb-6">
-        <TabsTrigger value="basic">基本設定</TabsTrigger>
-        <TabsTrigger value="api">外部サービス連携</TabsTrigger>
-        <TabsTrigger value="reservation-setting">予約受付設定</TabsTrigger>
-        <TabsTrigger value="week-schedule">営業日設定</TabsTrigger>
-        <TabsTrigger value="exception-schedule">休業日設定</TabsTrigger>
-        <TabsTrigger value="payment">決済設定</TabsTrigger>
-      </TabsList>
+      <div className="overflow-x-scroll">
+        <TabsList className="flex w-fit gap-2 mb-6">
+          <TabsTrigger value="basic">基本設定</TabsTrigger>
+          <TabsTrigger value="api">外部サービス連携</TabsTrigger>
+          <TabsTrigger value="reservation-setting">予約受付設定</TabsTrigger>
+          <TabsTrigger value="week-schedule">営業日設定</TabsTrigger>
+          <TabsTrigger value="exception-schedule">休業日設定</TabsTrigger>
+          <TabsTrigger value="payment">決済設定</TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="basic">
         <SalonConfigForm />

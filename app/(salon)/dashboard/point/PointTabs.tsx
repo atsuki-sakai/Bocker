@@ -173,7 +173,7 @@ export default function PointTabs() {
           </TabsTrigger>
           <TabsTrigger value="exclusions" className="flex items-center gap-2">
             <Gift className="h-4 w-4" />
-            除外メニュー
+            ポイント対象外メニュー
           </TabsTrigger>
         </TabsList>
 
@@ -406,7 +406,7 @@ export default function PointTabs() {
 
         <TabsContent value="exclusions" key="exclusions-tab">
           <ExclusionMenu
-            title="予約の完了時にポイントを付与しないメニュー"
+            title="購入されてもポイントを付与しないメニュー"
             selectedMenuIds={selectedMenuIds}
             setSelectedMenuIdsAction={setSelectedMenuIds}
           />
