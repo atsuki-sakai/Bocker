@@ -1,10 +1,6 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  archiveRecord,
-  killRecord,
-} from '@/services/convex/shared/utils/helper';
+import { excludeFields, archiveRecord, killRecord } from '@/services/convex/shared/utils/helper';
 import { validateStaff, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { throwConvexError } from '@/lib/error';
@@ -21,6 +17,7 @@ export const create = mutation({
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
+    tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -68,6 +65,7 @@ export const update = mutation({
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
+    tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -76,19 +74,17 @@ export const update = mutation({
     const staff = await ctx.db.get(args.staffId);
     if (!staff || staff.isArchive) {
       throw throwConvexError({
-          message: '指定されたスタッフが存在しません',
-          status: 404,
-          code: 'NOT_FOUND',
-          title: '指定されたスタッフが存在しません',
-          callFunc: 'staff.core.update',
-          severity: 'low',
-          details: { ...args },
-        });
+        message: '指定されたスタッフが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定されたスタッフが存在しません',
+        callFunc: 'staff.core.update',
+        severity: 'low',
+        details: { ...args },
+      });
     }
 
-    const updateData = removeEmptyFields(args);
-    // staffId はパッチ対象から削除する
-    delete updateData.staffId;
+    const updateData = excludeFields(args, ['staffId']);
 
     return await ctx.db.patch(args.staffId, updateData);
   },
@@ -117,6 +113,7 @@ export const upsert = mutation({
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
+    tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -129,9 +126,7 @@ export const upsert = mutation({
         isArchive: false,
       });
     } else {
-      const updateData = removeEmptyFields(args);
-      delete updateData.staffId;
-      delete updateData.salonId;
+      const updateData = excludeFields(args, ['staffId', 'salonId']);
       return await ctx.db.patch(existingStaff._id, updateData);
     }
   },

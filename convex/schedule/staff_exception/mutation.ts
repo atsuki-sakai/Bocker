@@ -1,11 +1,7 @@
 import { mutation } from '@/convex/_generated/server';
 
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  archiveRecord,
-  killRecord,
-} from '@/services/convex/shared/utils/helper';
+import { excludeFields, archiveRecord, killRecord } from '@/services/convex/shared/utils/helper';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { staffScheduleType } from '@/services/convex/shared/types/common';
 import {
@@ -91,9 +87,7 @@ export const update = mutation({
       });
     }
 
-    const updateData = removeEmptyFields(args);
-    // staffScheduleExceptionId はパッチ対象から削除する
-    delete updateData.staffScheduleId;
+    const updateData = excludeFields(args, ['staffScheduleId']);
     return await ctx.db.patch(args.staffScheduleId, updateData);
   },
 });
@@ -133,10 +127,7 @@ export const upsert = mutation({
         isArchive: false,
       });
     } else {
-      const updateData = removeEmptyFields(args);
-      delete updateData.staffScheduleId;
-      delete updateData.staffId;
-      delete updateData.salonId;
+      const updateData = excludeFields(args, ['staffScheduleId', 'staffId', 'salonId']);
       return await ctx.db.patch(existingStaffSchedule._id, updateData);
     }
   },

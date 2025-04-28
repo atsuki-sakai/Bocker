@@ -9,3 +9,4 @@ export { default as ZodTextField } from './ZodTextField';
 export { default as Dialog } from './Dialog';
 export { default as TagBadge } from './TagBadge';
 export { default as ExclusionMenu } from './ExclusionMenu';
+export { TagInput } from './TagInput';

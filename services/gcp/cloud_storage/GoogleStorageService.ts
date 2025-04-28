@@ -130,8 +130,8 @@ class GoogleStorageService {
         await blob.makePublic();
       } catch (publicError) {}
 
-      // 公開URLを取得
-      const publicUrl = `${STORAGE_URL}/${this.bucketName}/${filePath}`;
+      // encode path segments so spaces etc. become %20 – keeps DB key “raw” but URL safe
+      const publicUrl = `${STORAGE_URL}/${this.bucketName}/${encodeURI(filePath)}`;
 
       return {
         publicUrl,
@@ -180,7 +180,8 @@ class GoogleStorageService {
   async deleteImage(imgUrl: string): Promise<void> {
     this.initializeIfNeeded();
 
-    const filePath = this.extractFilePath(imgUrl);
+    // decode in case imgUrl or stored key is URL‑encoded
+    const filePath = decodeURIComponent(this.extractFilePath(imgUrl));
     console.log('Deleting GCS object path:', filePath);
 
     try {

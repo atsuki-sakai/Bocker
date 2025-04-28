@@ -1,10 +1,6 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  killRecord,
-  archiveRecord,
-} from '@/services/convex/shared/utils/helper';
+import { excludeFields, killRecord, archiveRecord } from '@/services/convex/shared/utils/helper';
 import {
   validatePointTransaction,
   validateRequired,
@@ -117,9 +113,7 @@ export const update = mutation({
       });
     }
 
-    const updateData = removeEmptyFields(args);
-    // pointTransactionId はパッチ対象から削除する
-    delete updateData.pointTransactionId;
+    const updateData = excludeFields(args, ['pointTransactionId']);
     const newPointTransactionId = await ctx.db.patch(args.pointTransactionId, updateData);
     return newPointTransactionId;
   },
@@ -159,11 +153,12 @@ export const upsert = mutation({
         isArchive: false,
       });
     } else {
-      const updateData = removeEmptyFields(args);
-      delete updateData.pointTransactionId;
-      delete updateData.salonId;
-      delete updateData.customerId;
-      delete updateData.reservationId;
+      const updateData = excludeFields(args, [
+        'pointTransactionId',
+        'salonId',
+        'customerId',
+        'reservationId',
+      ]);
       return await ctx.db.patch(existingPointTransaction._id, updateData);
     }
   },

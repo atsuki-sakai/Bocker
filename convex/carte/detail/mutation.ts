@@ -1,10 +1,6 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  archiveRecord,
-  killRecord,
-} from '@/services/convex/shared/utils/helper';
+import { archiveRecord, killRecord, excludeFields } from '@/services/convex/shared/utils/helper';
 import { validateCarteDetail, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { throwConvexError } from '@/lib/error';
@@ -70,8 +66,7 @@ export const update = mutation({
       });
     }
 
-    const updateData = removeEmptyFields({ ...args });
-    delete updateData.id;
+    const updateData = excludeFields(args, ['id']);
 
     return await ctx.db.patch(args.id, updateData);
   },
@@ -98,10 +93,7 @@ export const upsert = mutation({
       .first();
 
     if (existingCarteDetail) {
-      const updateData = removeEmptyFields({ ...args });
-      delete updateData.id;
-      delete updateData.carteId;
-      delete updateData.reservationId;
+      const updateData = excludeFields(args, ['id', 'carteId', 'reservationId']);
       return await ctx.db.patch(existingCarteDetail._id, updateData);
     }
 

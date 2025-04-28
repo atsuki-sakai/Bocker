@@ -11,15 +11,31 @@ import { Loading, ZodTextField } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { handleErrorToMsg } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
+import { TagInput } from '@/components/common';
 import { getMinuteMultiples } from '@/lib/schedule'; // getMinuteMultiplesを追加
-import { Tag, DollarSign, ShoppingBag, Boxes, Info, AlertCircle, Clock, Save } from 'lucide-react'; // Clockを追加
+import {
+  Tag,
+  DollarSign,
+  ShoppingBag,
+  Boxes,
+  Info,
+  AlertCircle,
+  Clock,
+  Save,
+  Loader2,
+} from 'lucide-react'; // Clockを追加
 import {
   Select,
   SelectTrigger,
@@ -27,8 +43,6 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'; // Select関連を追加
-import { Badge } from '@/components/ui/badge'; // Badgeを追加
-
 // バリデーションスキーマ
 const optionSchema = z
   .object({
@@ -66,6 +80,12 @@ const optionSchema = z
         message: '最大注文数は必須です',
       }), // refineを更新
     timeToMin: z // timeToMinのバリデーションを追加
+      .string()
+      .min(1, { message: '時間は必須です' })
+      .max(5, { message: '時間は5文字で入力してください' })
+      .refine((val) => val !== '', { message: '時間は必須です' })
+      .optional(),
+    ensureTimeToMin: z // timeToMinのバリデーションを追加
       .string()
       .min(1, { message: '時間は必須です' })
       .max(5, { message: '時間は5文字で入力してください' })
@@ -113,13 +133,23 @@ const optionSchema = z
       message: 'セール価格は通常価格より低く設定してください',
       path: ['salePrice'],
     }
+  )
+  .refine(
+    (data) => {
+      if (
+        data.timeToMin &&
+        data.ensureTimeToMin &&
+        Number(data.timeToMin) >= Number(data.ensureTimeToMin)
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: '確保する時間は実際の稼働時間より短く設定してください',
+      path: ['ensureTimeToMin'], // エラーメッセージをensureTimeToMinフィールドに表示
+    }
   );
-
-// アニメーション設定
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
 
 // エラーメッセージコンポーネント
 const ErrorMessage = ({ message }: { message: string | undefined }) => (
@@ -133,16 +163,6 @@ const ErrorMessage = ({ message }: { message: string | undefined }) => (
   </motion.p>
 );
 
-// タグバッジコンポーネントを追加
-const TagBadge = ({ text, onRemove }: { text: string; onRemove: () => void }) => (
-  <Badge variant="secondary" className="px-3 py-1 mr-2 mb-2 flex items-center gap-1 text-sm">
-    {text}
-    <button onClick={onRemove} className="ml-1 text-gray-500 hover:text-gray-700">
-      ×
-    </button>
-  </Badge>
-);
-
 export default function OptionEditForm() {
   const router = useRouter();
   const params = useParams();
@@ -153,7 +173,6 @@ export default function OptionEditForm() {
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentTags, setCurrentTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState<string>('');
 
   const {
     register,
@@ -169,6 +188,7 @@ export default function OptionEditForm() {
   useEffect(() => {
     if (optionData && !isInitialized) {
       const timeToMinValueString = optionData.timeToMin?.toString() || undefined;
+      const ensureTimeToMinValueString = optionData.ensureTimeToMin?.toString() || undefined;
       const initialTags = optionData.tags || [];
 
       // Stateの更新
@@ -180,6 +200,7 @@ export default function OptionEditForm() {
       setValue('salePrice', optionData.salePrice ?? undefined);
       setValue('orderLimit', optionData.orderLimit ?? 1);
       setValue('timeToMin', timeToMinValueString);
+      setValue('ensureTimeToMin', ensureTimeToMinValueString);
       setValue('tags', initialTags);
       setValue('description', optionData.description || '');
       setValue('isActive', optionData.isActive ?? true);
@@ -187,37 +208,6 @@ export default function OptionEditForm() {
       setIsInitialized(true);
     }
   }, [optionData, setValue, isInitialized]);
-
-  // タグの操作ロジックを追加
-  const addTag = (
-    e: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLInputElement>
-  ) => {
-    e.preventDefault();
-    if (!tagInput.trim()) return;
-
-    const newTags = [...currentTags];
-    const tagsToAdd = tagInput
-      .split(/[,、]/)
-      .map((t) => t.trim())
-      .filter((t) => t && !currentTags.includes(t));
-
-    if (newTags.length + tagsToAdd.length > 5) {
-      toast.warning('タグは最大5つまでです');
-      return;
-    }
-
-    const updatedTags = [...newTags, ...tagsToAdd].slice(0, 5);
-    setCurrentTags(updatedTags);
-    setValue('tags', updatedTags, { shouldValidate: true });
-    setTagInput('');
-  };
-
-  const removeTag = (index: number) => {
-    const newTags = [...currentTags];
-    newTags.splice(index, 1);
-    setCurrentTags(newTags);
-    setValue('tags', newTags, { shouldValidate: true });
-  };
 
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof optionSchema>) => {
@@ -234,6 +224,7 @@ export default function OptionEditForm() {
         unitPrice: data.unitPrice,
         orderLimit: data.orderLimit,
         timeToMin: data.timeToMin ? Number(data.timeToMin) : undefined, // 文字列を数値 or undefined に変換
+        ensureTimeToMin: data.ensureTimeToMin ? Number(data.ensureTimeToMin) : undefined, // 文字列を数値 or undefined に変換
         tags: data.tags, // zodで変換された配列 or undefined
         description: data.description,
         isActive: data.isActive,
@@ -270,7 +261,7 @@ export default function OptionEditForm() {
   }
 
   return (
-    <motion.div initial="hidden" animate="visible" variants={fadeIn} transition={{ duration: 0.5 }}>
+    <div>
       <form
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={(e) => {
@@ -279,22 +270,34 @@ export default function OptionEditForm() {
           }
         }}
       >
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-lg">オプション基本情報</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* オプション名 */}
-            <ZodTextField
-              name="name"
-              label="オプション名"
-              icon={<Tag className="text-gray-500" />}
-              placeholder="オプション名を入力してください"
-              register={register}
-              errors={errors}
-              required
-              className="border-gray-200 focus-within:border-blue-500 transition-colors"
-            />
+        <div className="mb-8">
+          <h4 className="text-lg font-bold mb-2">オプション基本情報</h4>
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              {/* オプション名 */}
+              <ZodTextField
+                name="name"
+                label="オプション名"
+                icon={<Tag className="text-gray-500" />}
+                placeholder="オプション名を入力してください"
+                register={register}
+                errors={errors}
+                required
+                className="border-gray-200 focus-within:border-blue-500 transition-colors w-full"
+              />
+              {/* 最大注文数 */}
+              <ZodTextField
+                name="orderLimit"
+                label="最大注文数"
+                icon={<Boxes className="text-gray-500" />}
+                type="number"
+                placeholder="例: 5"
+                register={register}
+                errors={errors}
+                required
+                className="border-gray-200 focus-within:border-blue-500 transition-colors"
+              />
+            </div>
 
             {/* 価格関連 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -323,90 +326,84 @@ export default function OptionEditForm() {
             </div>
 
             {/* 施術時間 - Selectコンポーネントを更新 */}
-            <div className="max-w-md">
-              <Label className="text-sm flex items-center gap-2">
-                <Clock size={16} className="text-gray-500" />
-                施術時間（任意）
-              </Label>
-              <Select
-                value={watchTimeToMin?.toString() ?? ''}
-                onValueChange={(value) => {
-                  if (!value.trim()) return;
-                  const numValue = Number(value);
-                  setValue('timeToMin', value, { shouldValidate: true });
-                  console.log('施術時間を選択:', { value, numValue }); // デバッグ用
-                }}
-              >
-                <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
-                  <SelectValue placeholder="施術時間を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">選択しない</SelectItem>
-                  {getMinuteMultiples(5, 360).map((time) => (
-                    <SelectItem key={time} value={time.toString()}>
-                      {time}分
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.timeToMin && <ErrorMessage message={errors.timeToMin.message} />}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="w-full">
+                <Label className="text-sm flex items-center gap-2">
+                  <Clock size={16} className="text-gray-500" />
+                  実際にスタッフが稼働する施術時間
+                </Label>
 
-            {/* 最大注文数 */}
-            <ZodTextField
-              name="orderLimit"
-              label="最大注文数"
-              icon={<Boxes className="text-gray-500" />}
-              type="number"
-              placeholder="例: 5"
-              register={register}
-              errors={errors}
-              required
-              className="border-gray-200 focus-within:border-blue-500 transition-colors"
-            />
+                <Select
+                  value={watchTimeToMin?.toString() ?? ''}
+                  onValueChange={(value) => {
+                    if (!value.trim()) return;
+                    const numValue = Number(value);
+                    setValue('timeToMin', value, { shouldValidate: true });
+                    console.log('実際にスタッフが稼働する施術時間を選択:', { value, numValue }); // デバッグ用
+                  }}
+                >
+                  <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
+                    <SelectValue placeholder="実際にスタッフが稼働する施術時間を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">選択しない</SelectItem>
+                    {getMinuteMultiples(5, 360).map((time) => (
+                      <SelectItem key={time} value={time.toString()}>
+                        {time}分
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-gray-500">
+                  スタッフが手を動かして施術に集中している正味の作業時間を指します。
+                </span>
+                {errors.timeToMin && <ErrorMessage message={errors.timeToMin.message} />}
+              </div>
+              <div className="w-full">
+                <Label className="text-sm flex items-center gap-2">
+                  <Clock size={16} className="text-gray-500" />
+                  待機時間なども含めたトータルの施術時間
+                </Label>
+                <Select
+                  value={watch('ensureTimeToMin')?.toString() ?? ''}
+                  onValueChange={(value) => {
+                    if (!value.trim()) return;
+                    const numValue = Number(value);
+                    setValue('ensureTimeToMin', value, { shouldValidate: true });
+                    console.log('待機時間を含めたトータルの施術時間を選択:', { value, numValue }); // デバッグ用
+                  }}
+                >
+                  <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
+                    <SelectValue placeholder="待機時間を含めたトータルの施術時間を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">選択しない</SelectItem>
+                    {getMinuteMultiples(5, 360).map((time) => (
+                      <SelectItem key={time} value={time.toString()}>
+                        {time}分
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-gray-500">
+                  施術席を専有する必要はあるものの、スタッフが別の作業に移れる待機時間を指します。
+                </span>
+                {errors.ensureTimeToMin && (
+                  <ErrorMessage message={errors.ensureTimeToMin.message} />
+                )}
+              </div>
+            </div>
 
             {/* タグセクションを追加 */}
-            <div className="flex flex-col w-full gap-2">
-              <Label className=" flex items-center gap-2 text-sm mb-2">
-                <Tag size={16} className="text-gray-500" />
-                タグ (最大5つ、任意)
-              </Label>
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-wrap mb-2">
-                  {currentTags.map((tag, index) => (
-                    <TagBadge key={index} text={tag} onRemove={() => removeTag(index)} />
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addTag(e);
-                      }
-                    }}
-                    placeholder="タグを入力（カンマ区切りで複数入力可）"
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                    disabled={currentTags.length >= 5}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addTag}
-                    disabled={currentTags.length >= 5 || !tagInput.trim()}
-                    className="text-sm"
-                  >
-                    追加
-                  </Button>
-                </div>
-              </div>
-              {errors.tags && <ErrorMessage message={errors.tags.message} />}
-            </div>
-          </CardContent>
-        </Card>
+            <TagInput
+              tags={currentTags}
+              setTagsAction={(tags) => {
+                setCurrentTags(tags);
+                setValue('tags', tags, { shouldValidate: true });
+              }}
+            />
+          </div>
+        </div>
 
         <Separator className="my-8" />
 
@@ -428,8 +425,8 @@ export default function OptionEditForm() {
         {/* 公開/非公開スイッチ */}
         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md mb-6 mt-6">
           <div>
-            <p className="text-base font-medium">オプションを公開する</p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm font-medium">オプションを公開する</p>
+            <p className="text-xs text-gray-500 mt-1">
               オフにすると、このオプションはお客様に表示されません
             </p>
           </div>
@@ -442,8 +439,8 @@ export default function OptionEditForm() {
         </div>
 
         {/* 送信ボタン */}
-        <div className="flex justify-end mt-6">
-          <div className="flex gap-3">
+        <div className="flex justify-end mt-6 w-full">
+          <div className="flex justify-between gap-3 w-full">
             <Button
               type="button"
               variant="outline"
@@ -456,28 +453,8 @@ export default function OptionEditForm() {
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    >
-                      <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                    </motion.div>
-                    追加中...
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    更新中...
                   </>
                 ) : (
                   <>
@@ -490,6 +467,41 @@ export default function OptionEditForm() {
           </div>
         </div>
       </form>
-    </motion.div>
+      <Accordion type="multiple" className="mt-8 space-y-2">
+        {/* 実際の稼働時間と確保する時間の違いについて */}
+        <AccordionItem value="line-access-token">
+          <AccordionTrigger>
+            実際の稼働時間と待機時間を含めたトータルの施術時間の違いについて
+          </AccordionTrigger>
+          <AccordionContent className="space-y-2 text-sm text-slate-600">
+            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <li>
+                <strong>実際の稼働時間 :</strong>
+                スタッフが手を動かして施術に集中している正味の作業時間を指します。
+                <br />
+                例）パーマの薬剤塗布・カット・シャンプーなど。
+              </li>
+              <li>
+                <strong>待機時間を含めたトータルの施術時間 :</strong>
+                施術席を専有する必要はあるものの、スタッフが別の作業に移れる待機時間を指します。
+                <br />
+                例）薬剤の放置時間・髪の乾燥時間など。
+              </li>
+              <li>
+                予約枠のアルゴリズムは <strong>実際の稼働時間</strong> を基準に空き時間を算出し、
+                <strong>待機時間を含めたトータルの施術時間</strong>{' '}
+                を待機時間として扱うことで、同じ席を効率よく回転させられます。
+              </li>
+            </ol>
+
+            <p className="text-xs text-slate-500 space-y-1">
+              * 両時間とも必須入力です。
+              <br />* <strong>入力例：</strong> パーマ 90 分（実際の稼働 45 分 ＋ 確保 45
+              分）の場合、スタッフは途中 45 分間ほかの顧客を担当できます。
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </div>
   );
 }

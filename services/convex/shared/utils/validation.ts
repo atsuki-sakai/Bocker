@@ -645,6 +645,9 @@ export function validateMenu(args: Partial<Doc<'menu'>>) {
   if (args.timeToMin) {
     validateNumberRange(args.timeToMin, 0, MAX_NUM, '施術時間');
   }
+  if (args.ensureTimeToMin) {
+    validateNumberRange(args.ensureTimeToMin, 0, MAX_NUM, 'トータルの施術時間');
+  }
 
   if (args.description) {
     validateStringLength(args.description, MAX_NOTES_LENGTH, '説明');
@@ -652,6 +655,10 @@ export function validateMenu(args: Partial<Doc<'menu'>>) {
 
   if (args.tags) {
     validateTags(args.tags, 'タグ');
+  }
+
+  if (args.category) {
+    validateStringLength(args.category, MAX_TEXT_LENGTH, 'カテゴリ');
   }
 }
 

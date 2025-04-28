@@ -1,10 +1,6 @@
 import { mutation, query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  archiveRecord,
-  killRecord,
-} from '@/services/convex/shared/utils/helper';
+import { archiveRecord, killRecord, excludeFields } from '@/services/convex/shared/utils/helper';
 import { paginationOptsValidator } from 'convex/server';
 import {
   validateCouponTransaction,
@@ -88,9 +84,7 @@ export const update = mutation({
       });
     }
 
-    const updateData = removeEmptyFields(args);
-    // couponTransactionId はパッチ対象から削除する
-    delete updateData.couponTransactionId;
+    const updateData = excludeFields(args, ['couponTransactionId']);
 
     const newCouponTransactionId = await ctx.db.patch(args.couponTransactionId, updateData);
     return newCouponTransactionId;
@@ -123,8 +117,7 @@ export const upsert = mutation({
     const existingCouponTransaction = await ctx.db.get(args.couponTransactionId);
 
     if (!existingCouponTransaction || existingCouponTransaction.isArchive) {
-      const updateData = removeEmptyFields(args);
-      delete updateData.couponTransactionId;
+      const updateData = excludeFields(args, ['couponTransactionId']);
       return await ctx.db.insert('coupon_transaction', {
         ...updateData,
         couponId: args.couponId,
@@ -133,8 +126,7 @@ export const upsert = mutation({
         isArchive: false,
       });
     } else {
-      const updateData = removeEmptyFields(args);
-      delete updateData.couponTransactionId;
+      const updateData = excludeFields(args, ['couponTransactionId']);
       return await ctx.db.patch(existingCouponTransaction._id, updateData);
     }
   },

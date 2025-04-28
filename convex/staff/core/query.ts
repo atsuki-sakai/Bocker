@@ -228,6 +228,7 @@ export const getRelatedTables = query({
       description: staff.description,
       imgPath: staff.imgPath,
       isActive: staff.isActive,
+      tags: staff.tags,
       staffAuthId: staffAuth._id,
       role: staffAuth.role,
       staffConfigId: staffConfig._id,

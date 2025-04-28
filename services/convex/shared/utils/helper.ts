@@ -54,28 +54,24 @@ export const removeEmptyFields = <T extends Record<string, unknown>>(
 };
 
 /**
- * オブジェクトから指定したフィールドを除外する
+ * オブジェクトから指定したフィールドを除外した新しいオブジェクトを返す（非破壊）
  *
  * @param obj 元のオブジェクト
  * @param keysToExclude 除外するフィールド名の配列
- * @returns 指定したフィールドを除外した新しいオブジェクト
+ * @returns 指定したフィールドを除外したオブジェクト
  *
  * @example
  * const user = { id: 1, name: 'John', password: '123456', email: 'john@example.com' };
  * const safeUser = excludeFields(user, ['password']);
  * // => { id: 1, name: 'John', email: 'john@example.com' }
  */
-export function excludeFields<T extends Record<string, any>, K extends keyof T>(
+export function excludeFields<T extends Record<string, unknown>, K extends keyof T>(
   obj: T,
-  keysToExclude: K[]
+  keysToExclude: readonly K[]
 ): Omit<T, K> {
-  const result = { ...obj };
-
-  keysToExclude.forEach((key) => {
-    delete result[key];
-  });
-
-  return result;
+  return Object.fromEntries(
+    Object.entries(obj).filter(([key]) => !keysToExclude.includes(key as K))
+  ) as Omit<T, K>;
 }
 
 /**

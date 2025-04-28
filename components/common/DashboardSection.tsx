@@ -1,6 +1,6 @@
-import { ChevronLeft } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 interface SectionContainerProps {
   children: React.ReactNode;
   title: string;
@@ -27,12 +27,12 @@ export default function DashboardSection({
   return (
     <div className="container mx-auto">
       <div className="flex justify-between items-center">
-        <div className=" flex flex-col gap-2 py-4 z-10">
-          <div className="flex justify-between items-center">
+        <div className=" flex flex-col w-full mb-6 z-10">
+          <div className="flex justify-between items-center mb-4">
             <Link href={backLink} className="group">
-              <span className="text-xs md:text-sm text-slate-600 flex items-center gap-2 hover:text-slate-800">
-                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-xs md:text-sm text-slate-600 flex items-center gap-2 hover:text-slate-800 hover:underline">
                 <span>{backLinkTitle}</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </span>
             </Link>
           </div>
@@ -51,7 +51,7 @@ export default function DashboardSection({
           )}
         </div>
       </div>
-      {children}
+      <div>{children}</div>
     </div>
   );
 }

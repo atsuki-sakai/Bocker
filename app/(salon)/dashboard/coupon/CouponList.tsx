@@ -120,15 +120,17 @@ export default function CouponList() {
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                           <Link
                             href={`/dashboard/coupon/edit/${coupon._id}`}
-                            className="text-indigo-600 hover:text-indigo-900"
+                            className="text-indigo-600 hover:text-indigo-800"
                           >
-                            編集<span className="sr-only">, {coupon.name}</span>
+                            <Button variant="ghost" size="sm">
+                              編集<span className="sr-only">, {coupon.name}</span>
+                            </Button>
                           </Link>
                         </td>
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                           <Button
                             variant="ghost"
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-800"
                             size="sm"
                             onClick={() => showDialog(coupon._id)}
                           >

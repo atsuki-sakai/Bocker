@@ -1,6 +1,5 @@
 'use client';
-
-import Link from 'next/link';
+  
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -27,6 +26,7 @@ import {
   Image as ImageIcon,
   Upload,
   Building,
+  Settings,
 } from 'lucide-react';
 import { ZodTextField } from '@/components/common';
 
@@ -44,8 +44,8 @@ const salonConfigFormSchema = z.object({
   postalCode: z
     .string()
     .optional()
-    .refine((val) => val === undefined || val === '' || /^\d{7}$/.test(val), {
-      message: '郵便番号は7桁の数字で入力してください',
+    .refine((val) => val === undefined || val === '' || /^\d{3}-?\d{4}$/.test(val), {
+      message: '郵便番号は7桁の数字（ハイフンあり/なし）で入力してください',
     }),
   address: z.string().max(200, '住所は200文字以内で入力してください').optional(), // 住所（入力された場合は最低1文字必要）
   reservationRules: z.string().max(2000, '予約ルールは2000文字以内で入力してください').optional(), // 予約ルール（入力された場合は最大500文字）
@@ -78,10 +78,11 @@ export default function SalonConfigForm() {
   // 郵便番号から住所を取得する関数（useCallbackでメモ化）
   const fetchAddressByPostalCode = useCallback(
     async (code: string) => {
-      if (!code || code.length !== 7) return;
+      const digits = code.replace(/-/g, '');
+      if (!digits || digits.length !== 7) return;
 
       try {
-        const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${code}`);
+        const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${digits}`);
         const data = await response.json();
 
         if (data.results && data.results.length > 0) {
@@ -102,7 +103,7 @@ export default function SalonConfigForm() {
 
   // 郵便番号が7桁になったら自動的に住所を検索する
   useEffect(() => {
-    if (postalCode && postalCode.length === 7) {
+    if (postalCode) {
       fetchAddressByPostalCode(postalCode);
     }
   }, [postalCode, fetchAddressByPostalCode]);
@@ -201,7 +202,72 @@ export default function SalonConfigForm() {
           }
         }}
       >
-        <div className="flex flex-col md:flex-row gap-6 items-start mb-4">
+        <div className="flex items-center gap-2">
+          <Settings className="h-5 w-5 text-blue-500" />
+          <h4 className="text-lg font-bold">基本設定</h4>
+        </div>
+        <p className="text-sm text-muted-foreground">こちらの情報は顧客に公開されます。</p>
+        <div className="pt-4">
+          <div className="flex flex-col gap-3 space-y-2">
+            <ZodTextField
+              name="salonName"
+              register={register}
+              label="サロン名"
+              placeholder="例: ブライダルサロン"
+              icon={<Building className="h-4 w-4 text-muted-foreground" />}
+              errors={errors}
+            />
+            <div>
+              <ZodTextField
+                name="email"
+                register={register}
+                label="メールアドレス"
+                placeholder="例: salon@example.com"
+                icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+                errors={errors}
+                readOnly={true}
+              />
+            </div>
+
+            <ZodTextField
+              name="phone"
+              register={register}
+              label="電話番号"
+              placeholder="例: 09012345678"
+              icon={<Phone className="h-4 w-4 text-muted-foreground" />}
+              errors={errors}
+            />
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="w-full md:w-1/3">
+                <ZodTextField
+                  name="postalCode"
+                  register={register}
+                  label="郵便番号"
+                  placeholder="例: 273-5521"
+                  icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
+                  errors={errors}
+                />
+              </div>
+
+              <div className="w-full md:w-2/3">
+                <FormField
+                  label="住所"
+                  icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
+                  error={errors.address?.message ?? ''}
+                  tooltip="お客様に表示される住所です"
+                >
+                  <Input
+                    {...register('address')}
+                    placeholder="住所"
+                    type="text"
+                    className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                  />
+                </FormField>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col md:flex-row gap-6 items-start my-4 mt-12">
           <div className="w-full md:w-1/2 flex flex-col gap-4">
             <h2 className="flex items-center gap-2 font-bold">
               <ImageIcon className="h-5 w-5 text-blue-500" />
@@ -283,96 +349,20 @@ export default function SalonConfigForm() {
             </FormField>
           </div>
         </div>
-
-        <div className=" mt-6">
-          <div className="pt-6">
-            <div className="flex flex-col gap-3 space-y-2">
-              <ZodTextField
-                name="salonName"
-                register={register}
-                label="サロン名"
-                placeholder="例: ブライダルサロン"
-                icon={<Building className="h-4 w-4 text-muted-foreground" />}
-                errors={errors}
-              />
-              <div>
-                <ZodTextField
-                  name="email"
-                  register={register}
-                  label="メールアドレス"
-                  placeholder="例: salon@example.com"
-                  icon={<Mail className="h-4 w-4 text-muted-foreground" />}
-                  errors={errors}
-                  readOnly={true}
-                />
-                <p className="text-xs text-muted-foreground">
-                  メールアドレス変更は
-                  <Link className="text-blue-500" href="/dashboard/setting/change-email">
-                    こちら
-                  </Link>
-                  からお願いいたします。
-                </p>
-              </div>
-
-              <ZodTextField
-                name="phone"
-                register={register}
-                label="電話番号"
-                placeholder="例: 09012345678"
-                icon={<Phone className="h-4 w-4 text-muted-foreground" />}
-                errors={errors}
-              />
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="w-full md:w-1/3">
-                  <ZodTextField
-                    name="postalCode"
-                    register={register}
-                    label="郵便番号"
-                    placeholder="例: 2735521"
-                    icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
-                    errors={errors}
-                  />
-                  <span className="text-xs mt-1 text-slate-600 dark:text-slate-300">
-                    ハイフンなしの7桁で入力してください
-                    <div className="text-xs text-red-500">
-                      ※郵便番号を入力すると自動で住所を検索します
-                    </div>
-                  </span>
-                </div>
-                <div className="w-full md:w-2/3">
-                  <FormField
-                    label="住所"
-                    icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
-                    error={errors.address?.message ?? ''}
-                    tooltip="お客様に表示される住所です"
-                  >
-                    <Input
-                      {...register('address')}
-                      placeholder="住所"
-                      type="text"
-                      className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
-                    />
-                  </FormField>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <Button type="submit" disabled={isSubmitting || !isDirty} className="min-w-[120px]">
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    保存中...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    保存する
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+        <div className="mt-6 flex justify-end">
+          <Button type="submit" disabled={isSubmitting || !isDirty} className="min-w-[120px]">
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                保存中...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                保存する
+              </>
+            )}
+          </Button>
         </div>
       </form>
     </>

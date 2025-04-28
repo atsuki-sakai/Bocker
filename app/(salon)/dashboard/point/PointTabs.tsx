@@ -16,6 +16,12 @@ import { Input } from '@/components/ui/input';
 import { Loading } from '@/components/common';
 import { useRouter } from 'next/navigation';
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -199,11 +205,9 @@ export default function PointTabs() {
                   </span>
                 </div>
 
-                <div className="space-y-6 p-3">
+                <div className="space-y-6 p-3 my-3">
                   <div className="flex flex-col space-y-2">
-                    <Label htmlFor="point-type" className="text-xs">
-                      ポイント付与タイプ
-                    </Label>
+                    <Label htmlFor="point-type">ポイント付与タイプ</Label>
                     <span className="text-xs text-slate-500">
                       利用額に対してポイント付与するか、固定ポイントを付与するかを選択します。
                     </span>
@@ -313,7 +317,7 @@ export default function PointTabs() {
             <div className="lg:col-span-7">
               <div>
                 <div className="h-full shadow-md hover:shadow-lg transition-shadow duration-300 border border-slate-200 rounded-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700 p-3">
+                  <div className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700 p-4">
                     <h5 className="flex items-center font-bold gap-2">
                       <Gift className="h-5 w-5 text-blue-500" />
                       ポイント設定概要
@@ -321,18 +325,12 @@ export default function PointTabs() {
                     <div className="text-sm text-slate-500 mt-2">
                       現在の設定内容が適用されるとどのように適応されるのかを確認できます。
                       <br />
-                      <p className="text-xs font-bold mt-2">1ポイント = 1円</p>
+                      <p className="text-sm font-bold mt-2">1ポイント = 1円</p>
                     </div>
                   </div>
                   <div className="p-3">
-                    <div className="space-y-3">
+                    <div className="space-y-5">
                       <div className="space-y-2 text-sm">
-                        <p className="flex justify-between pt-2">
-                          <span className="text-sm dark:text-slate-400">ポイント付与タイプ:</span>
-                          <span className="font-medium text-sm">
-                            {watchedIsFixedPoint ? '固定ポイント' : 'ポイント付与率'}
-                          </span>
-                        </p>
                         {watchedIsFixedPoint ? (
                           <p className="flex justify-between items-end text-sm font-bold">
                             <span className="text-xs dark:text-slate-400">固定ポイント:</span>
@@ -340,7 +338,7 @@ export default function PointTabs() {
                           </p>
                         ) : (
                           <p className="flex justify-between items-end text-sm font-bold">
-                            <span className="text-slate-500 dark:text-slate-400">
+                            <span className="text-slate-600 dark:text-slate-400">
                               ポイント付与率:
                             </span>
                             <span className="text-base font-bold tracking-wide">
@@ -349,7 +347,7 @@ export default function PointTabs() {
                           </p>
                         )}
                         <p className="flex justify-between items-end text-sm font-bold">
-                          <span className="text-slate-500 dark:text-slate-400">
+                          <span className="text-slate-600 dark:text-slate-400">
                             ポイント有効期限:
                           </span>
                           <span className="text-base font-bold tracking-wide">
@@ -451,6 +449,93 @@ export default function PointTabs() {
           )}
         </Button>
       </div>
+      <Accordion type="single" collapsible className="space-y-2">
+        {/* ① 付与の仕組み */}
+        <AccordionItem value="point-scheme">
+          <AccordionTrigger>ポイント付与の仕組み</AccordionTrigger>
+          <AccordionContent className="space-y-2 text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-lg mb-4">
+            <p>
+              <strong>付与日:</strong> 施術が完了した予約をまとめて計算し、
+              <span className="font-bold">利用月の翌月15日</span>に自動でポイントを付与します。
+            </p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>例：4月来店分 ⇒ 5月15日に付与</li>
+            </ul>
+
+            <p className="pt-2">
+              <strong>付与方法:</strong>
+            </p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>ポイント付与率: 決済額 × 設定率（%）。小数点以下は切り捨て。</li>
+              <li>固定ポイント: 施術メニューに関係なく一律ポイントを付与。</li>
+            </ul>
+
+            <p className="pt-2">
+              <strong>交換レート:</strong> 1ポイント = 1円相当として会計時に利用できます。
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* ② 失効タイミング */}
+        <AccordionItem value="point-expiration">
+          <AccordionTrigger>ポイント失効のタイミング</AccordionTrigger>
+          <AccordionContent className="space-y-2 text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-lg mb-4">
+            <p>
+              ポイントの有効期限はサロンを利用した最終日から
+              <span className="font-bold">
+                {POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)?.label}
+              </span>
+              後です。
+            </p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>失効日はポイントごとに個別管理され、自動で残高から差し引かれます。</li>
+              <li>大量失効の 7〜14 日前にリマインド通知を送ると来店促進効果が高まります。</li>
+            </ul>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* ③ 注意点 */}
+        <AccordionItem value="point-caution">
+          <AccordionTrigger>ポイント利用・付与の注意点</AccordionTrigger>
+          <AccordionContent className="space-y-2 text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-lg mb-4">
+            <ul className="list-disc list-inside space-y-1">
+              <li>
+                ポイントを利用した決済額部分には新たなポイントは付与されません（二重付与防止）。
+              </li>
+              <li>
+                ポイントの利用は<span className="font-bold">ポイントを付与した店舗</span>でのみ
+                有効です。
+              </li>
+
+              {/* 利用フローを段階的に説明 */}
+              <li>
+                ポイント利用フロー:
+                <ol className="list-decimal list-inside ml-5 space-y-0.5">
+                  <li>顧客が予約時に使用ポイント数を入力・確定</li>
+                  <li>
+                    予約確定後に <code className="font-mono">利用コード</code> が自動発行
+                  </li>
+                  <li>来店時に顧客がコードを提示し、スタッフが管理画面へ入力して確定</li>
+                </ol>
+              </li>
+              <li>スタッフ確認が完了しない限りポイントは消費されません（不正利用防止）。</li>
+
+              <li>
+                「ポイント対象外メニュー」に設定したメニューには{' '}
+                <span className="font-bold">ポイント加算されません</span>が、保有ポイントの
+                利用は可能です。
+              </li>
+              <li>付与率計算の端数は切り捨て推奨です。</li>
+              <li>未使用ポイントは会計上「ポイント引当金」として負債計上を推奨します。</li>
+              <li>ポイントは現金・他社ポイント等へ換金できません。</li>
+              <li>
+                予約キャンセル時には<strong>付与予定ポイントを無効化</strong>
+                し、利用済みポイントがあれば自動で返還されます。
+              </li>
+            </ul>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </form>
   );
 }

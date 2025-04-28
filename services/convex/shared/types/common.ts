@@ -122,4 +122,23 @@ export const imgDirectoryType = v.union(
 );
 export type ImgDirectoryType = Infer<typeof imgDirectoryType>;
 
-
+// メニューカテゴリの型定義
+export const MENU_CATEGORY_VALUES = [
+  'カット',
+  'カラー',
+  'パーマ',
+  'ストレートパーマ',
+  'トリートメント',
+  'エクステ',
+  'ヘアセット',
+  'ヘッドスパ',
+  'フェイスケア',
+  'ネイル',
+  'ヘアサロン',
+  'メイク',
+  'その他',
+] as const;
+export const menuCategoryType = v.union(
+  ...MENU_CATEGORY_VALUES.map((category) => v.literal(category))
+);
+export type MenuCategory = Infer<typeof menuCategoryType>;

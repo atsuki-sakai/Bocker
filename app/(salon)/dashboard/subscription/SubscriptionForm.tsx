@@ -262,12 +262,10 @@ export default function SubscriptionForm({
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-20vh)]">
       {/* ヘッダー部分 */}
-      <div className="mb-8 text-center">
+      <div className="mb-4 text-center">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-800 via-purple-800 to-pink-800 bg-clip-text text-transparent mb-2">
           Bcker{' '}
-          <span className="text-base text-slate-600 dark:text-slate-300">
-            サブスクリプション プラン
-          </span>
+          <span className="text-base text-slate-600 dark:text-slate-300">サブスクリプション</span>
         </h1>
         <p className="text-slate-600 dark:text-slate-300 max-w-md mx-auto text-sm mb-6">
           あなたのサロンに最適なプランをお選びください
@@ -287,7 +285,7 @@ export default function SubscriptionForm({
         onPortalAction={handleBillingPortal}
         isSubmitting={isSubmitting}
       />
-      <Separator className="mb-16 mt-4 w-1/4" />
+      <Separator className="mb-10 md:mb-16 mt-4 w-1/4" />
 
       {/* プレビューダイアログ */}
       <PreviewDialog

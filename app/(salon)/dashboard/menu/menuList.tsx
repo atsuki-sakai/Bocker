@@ -247,7 +247,7 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                         <Badge
                           key={idx}
                           variant="outline"
-                          className="text-xs bg-slate-500 text-white"
+                          className="text-xs font-light border border-green-600 text-green-600"
                         >
                           {tag}
                         </Badge>

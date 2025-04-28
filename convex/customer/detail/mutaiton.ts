@@ -1,10 +1,6 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  archiveRecord,
-  killRecord,
-} from '@/services/convex/shared/utils/helper';
+import { excludeFields, archiveRecord, killRecord } from '@/services/convex/shared/utils/helper';
 import { genderType } from '@/services/convex/shared/types/common';
 import {
   validateCustomerDetail,
@@ -105,9 +101,7 @@ export const update = mutation({
       });
     }
 
-    const updateData = removeEmptyFields(args);
-    // detailId はパッチ対象から削除する
-    delete updateData.detailId;
+    const updateData = excludeFields(args, ['detailId']);
     const newDetailId = await ctx.db.patch(args.detailId, updateData);
     return newDetailId;
   },
@@ -148,9 +142,7 @@ export const upsert = mutation({
 
     if (existingDetail) {
       // 更新
-      const updateData = removeEmptyFields(args);
-      // customerId はパッチ対象から削除する
-      delete updateData.customerId;
+      const updateData = excludeFields(args, ['customerId']);
       return await ctx.db.patch(existingDetail._id, updateData);
     } else {
       // 新規作成

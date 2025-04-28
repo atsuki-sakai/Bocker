@@ -5,13 +5,11 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useSalon } from '@/hooks/useSalon';
 import { Loading } from '@/components/common';
-import { Button } from '@/components/ui/button';
 import { useZodForm } from '@/hooks/useZodForm';
-import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { handleErrorToMsg } from '@/lib/error';
-import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/common';
 import { Clock, Save, Calendar, Clock3, PersonStanding } from 'lucide-react';
 import { SALON_RESERVATION_LIMIT_DAYS, SALON_RESERVATION_CANCEL_LIMIT_DAYS } from '@/lib/constants';
@@ -25,6 +23,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { MAX_TEXT_LENGTH } from '@/services/convex/constants';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Loader2 } from 'lucide-react';
+
 const salonScheduleFormSchema = z.object({
   salonId: z.string(),
   salonScheduleConfigId: z
@@ -208,6 +214,9 @@ export default function SalonScheduleForm() {
         <Clock className="h-5 w-5 text-blue-500" />
         <h4 className="text-lg font-bold">予約受付設定</h4>
       </div>
+      <p className="text-sm text-muted-foreground">
+        予約受付設定は、サロンの予約の受け付け時間の設定を変更する編集できます。
+      </p>
       <form
         className="pt-6"
         onSubmit={handleSubmit(onSubmit)}
@@ -346,52 +355,195 @@ export default function SalonScheduleForm() {
             </div>
           </div>
         </div>
-        <div className="text-sm text-muted-foreground mt-2 bg-blue-50 rounded-md p-3 max-w-4xl">
-          <p className="font-bold text-base mb-2 text-blue-600">予約間隔の設定について</p>
-          <ul className="list-disc list-inside space-y-1 text-blue-600">
-            予約時間枠の「間隔」設定 — ポイントまとめ
-            <p className="font-bold">目的</p>
-            <li>
-              顧客の予約候補を絞り込み、無駄な待ち時間（中途半端な空き）を発生させないための設定です。
-            </li>
-            <li>間隔を「0 分」にすると</li>
-            <li>期間内のすべての開始時刻（1 分刻みを含む）がそのまま表示されます。</li>
-            <li>例：08:00、08:01、08:02 … と細かく並ぶ。</li>
-            <li>間隔を「60 分」にすると</li>
-            <li>
-              予約開始可能時刻が 08:00 の場合、08:00 ちょうどを基準に 1
-              時間ごと（08:00、09:00、10:00 …）の枠だけが表示されます。
-            </li>
-            <li>08:30 など端数の枠は出ないため、余計な空き時間が生まれにくくなります。</li>
-            <p className="font-bold">注意点</p>
-            <li>
-              端数開始（08:01〜08:59
-              など）の枠は一切表示されなくなるので、必要な場合は間隔を短めに設定してください。
-            </li>
-          </ul>
-        </div>
 
-        <motion.div className="mt-6 flex justify-end" layout>
-          <motion.div
-            whileHover={{ scale: isDirty ? 1.03 : 1 }}
-            whileTap={{ scale: isDirty ? 0.97 : 1 }}
-          >
-            <Button type="submit" disabled={isSubmitting || !isDirty} className="min-w-[120px]">
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  保存中...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  営業時間を保存
-                </>
-              )}
-            </Button>
-          </motion.div>
-        </motion.div>
+        <div className="mt-6 flex justify-end">
+          <Button type="submit" disabled={isSubmitting || !isDirty} className="min-w-[120px]">
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                保存中...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                営業時間を保存
+              </>
+            )}
+          </Button>
+        </div>
       </form>
+
+      <Accordion type="multiple" className="mt-8">
+        <Accordion type="single" collapsible>
+          <AccordionItem value="max-days">
+            <AccordionTrigger>予約受付最大日数の設定とは？</AccordionTrigger>
+            <AccordionContent className="text-sm text-slate-600 space-y-4">
+              <section>
+                <p className="font-bold text-base text-slate-800 mb-2">
+                  予約受付最大日数の設定について
+                </p>
+
+                <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+                  <li>
+                    今日を含めて
+                    <span className="font-semibold"> {watch('reservationLimitDays')} 日先</span>
+                    まで予約を許可します。
+                  </li>
+                  <li>
+                    <span className="font-bold">例：</span>設定値が<strong>30</strong>日の場合、4 月
+                    27 日に開く カレンダーでは<strong>5 月 27 日</strong>までの日付が選択可能です。
+                  </li>
+                  <li>
+                    カレンダー UI
+                    では制限を超える日付が自動でグレーアウトされ、選択できなくなります。
+                  </li>
+                </ul>
+
+                <p className="font-bold text-slate-800 mt-2">注意点</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>短すぎるとリピート客が次回予約を取りづらくなり、機会損失につながります。</li>
+                  <li>長すぎると遠い将来の仮予約が増え、キャンセル率が高まる傾向があります。</li>
+                  <li>
+                    繁忙期（卒業・成人式シーズンなど）は<strong>60〜90 日</strong>
+                    に延長し、閑散期は短縮するなど、
+                    シーズナリティに合わせて調整するのがおすすめです。
+                  </li>
+                </ul>
+              </section>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        <AccordionItem value="item-2">
+          <AccordionTrigger>キャンセル可能日数の設定について</AccordionTrigger>
+          <AccordionContent className="text-sm text-slate-600 space-y-4">
+            <section>
+              <p className="font-bold text-base mb-2 text-slate-800">
+                キャンセル可能日数の設定について
+              </p>
+
+              <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+                <li>
+                  予約日の{' '}
+                  <span className="font-semibold">{watch('availableCancelDays')} 日前</span>{' '}
+                  までキャンセルを許可します。
+                </li>
+                <li>
+                  <span className="font-bold">例：</span>キャンセル可能日数を<strong>3</strong>
+                  日に設定すると、5 月 10 日 10:00 の予約は<strong>5 月 7 日 23:59</strong>
+                  までならシステム経由でキャンセルできます。
+                </li>
+                <li>
+                  期日を過ぎると予約詳細画面の<strong>キャンセルボタンが非表示</strong>
+                  になり、顧客は直接お店に連絡するフローになります。
+                </li>
+              </ul>
+
+              <p className="font-bold text-slate-800 mt-2">注意点</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>
+                  設定値が短いと<strong>直前キャンセル</strong>
+                  が増えやすく、空き枠の再販が難しくなります。
+                </li>
+                <li>
+                  長過ぎると逆に顧客の予定変更がしづらくなり、結果として<strong>機会損失</strong>
+                  が生じる可能性があります。
+                </li>
+                <li>
+                  繁忙期や長時間施術（縮毛矯正・ブリーチなど）は<strong>7〜14 日前</strong>
+                  に設定するなど、メニューや季節で調整するのがおすすめです。
+                </li>
+              </ul>
+            </section>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-3">
+          <AccordionTrigger>予約間隔の設定でどの様な変化がありますか？</AccordionTrigger>
+          <AccordionContent className="text-sm text-slate-600 space-y-4">
+            <section>
+              <p className="font-bold text-base mb-2 text-slate-800">予約間隔の設定について</p>
+
+              <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+                <li>
+                  現在、予約間隔は
+                  <span className="font-semibold"> {watch('reservationIntervalMinutes')} 分</span>
+                  に設定されています。
+                </li>
+                <li>
+                  <span className="font-bold">目的：</span>
+                  隙間時間の発生を抑え、席・スタッフの稼働率を最大化するために
+                  顧客へ提示する開始時刻を制限します。
+                </li>
+                <li>
+                  <span className="font-bold">例：</span>
+                  施術時間が<strong>30&nbsp;分</strong>の場合…
+                  <ul className="list-disc list-inside ml-5 space-y-1">
+                    <li>
+                      間隔<strong>0&nbsp;分</strong> → 08:00, 08:30, 09:00, 09:30 …
+                    </li>
+                    <li>
+                      間隔<strong>30&nbsp;分</strong> → 08:00, 08:30, 09:00, 09:30 …
+                      （0&nbsp;分と同じだが内部ロジックを合わせやすい）
+                    </li>
+                    <li>
+                      間隔<strong>60&nbsp;分</strong> → 08:00, 09:00, 10:00 …
+                      （30&nbsp;分の端数枠は非表示）
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+
+              <p className="font-bold text-slate-800 mt-2">注意点</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>間隔が長すぎると空席があっても予約候補に表示されず稼働率が低下します。</li>
+                <li>間隔が短すぎると候補が多くなり、顧客が選びづらくなる場合があります。</li>
+                <li>
+                  短すぎると顧客は細かく時間を選択できますが、サロンの無駄な待ち時間が発生しやすくなります。
+                  <strong>60&nbsp;分</strong>
+                  などの間隔を設定するのがおすすめです。60分間隔で予約を受け付けると、顧客が予約から予約を受ける際に60分未満の時間が余ってしまう予約枠が非表示になり無駄な待ち時間の発生を抑えることができます。
+                </li>
+              </ul>
+            </section>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-4">
+          <AccordionTrigger>予約可能席数の設定について</AccordionTrigger>
+          <AccordionContent className="text-sm text-slate-600 space-y-4">
+            <section>
+              <p className="font-bold text-base mb-2 text-slate-800">予約可能席数の設定について</p>
+
+              <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+                <li>
+                  現在、同一時間帯に<strong>{watch('availableSheet')} 席</strong>
+                  まで予約を受け付ける設定です。
+                </li>
+                <li>
+                  <span className="font-bold">例：</span>席数を<strong>5</strong>
+                  に設定した場合、08:00〜09:00 の枠では最大<strong>5 件</strong>
+                  まで同時予約できます。すでに同一時間帯に席が全て埋まっておりスタッフに空きがあっても08:00〜09:00
+                  は表示されなくなり選択できなくなります。
+                </li>
+                <li>
+                  パーマやカラーの<strong>放置時間</strong>
+                  でスタッフの待機が発生し席に空きが出れば、その時間帯に
+                  新しい予約枠が自動で開放されます。
+                </li>
+              </ul>
+
+              <p className="font-bold text-slate-800 mt-2">注意点</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>
+                  席数を過大に設定すると<strong>オーバーブッキング</strong>
+                  の恐れがあります。店舗での最大同時受付数を超える席数を設定すると席が空いていないのに予約が受け付けてしまうという事が発生します。
+                </li>
+                <li>
+                  スタッフ数や施術工程を考慮し、実際に<strong>同時対応可能</strong>
+                  な席数を設定してください。
+                </li>
+              </ul>
+            </section>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }

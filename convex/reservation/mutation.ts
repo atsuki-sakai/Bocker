@@ -1,10 +1,6 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  archiveRecord,
-  killRecord,
-} from '@/services/convex/shared/utils/helper';
+import { excludeFields, archiveRecord, killRecord } from '@/services/convex/shared/utils/helper';
 import { reservationStatusType, paymentMethodType } from '@/services/convex/shared/types/common';
 import { validateReservation, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
@@ -199,9 +195,7 @@ export const update = mutation({
       }
     }
 
-    const updateData = removeEmptyFields(args);
-    // reservationId はパッチ対象から削除する
-    delete updateData.reservationId;
+    const updateData = excludeFields(args, ['reservationId']);
 
     return await ctx.db.patch(args.reservationId, updateData);
   },
@@ -304,8 +298,7 @@ export const upsert = mutation({
         }
       }
 
-      const updateData = removeEmptyFields(args);
-      delete updateData.reservationId;
+      const updateData = excludeFields(args, ['reservationId']);
       return await ctx.db.patch(existingReservation._id, updateData);
     }
   },

@@ -60,24 +60,30 @@ const couponSchema = z.object({
   discountType: z.enum(['percentage', 'fixed']),
   percentageDiscountValue: z.preprocess(
     (val) => {
-      // 空文字列の場合はnullを返す
+      // 空文字列・NaN は null 扱い
       if (val === '' || val === null || val === undefined) return null;
-      // 数値に変換できない場合もnullを返す
-      const num = Number(val);
-      return isNaN(num) ? null : num;
-    },
-    z.number().max(100, { message: '割引率は100%以下で入力してください' }).nullable().optional()
-  ),
-  fixedDiscountValue: z.preprocess(
-    (val) => {
-      // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null;
-      // 数値に変換できない場合もnullを返す
+      if (typeof val === 'number' && isNaN(val)) return null; // 空の場合はnull扱い
       const num = Number(val);
       return isNaN(num) ? null : num;
     },
     z
       .number()
+      .min(0, { message: '割引率は0%以上で入力してください' })
+      .max(100, { message: '割引率は100%以下で入力してください' })
+      .nullable()
+      .optional()
+  ),
+  fixedDiscountValue: z.preprocess(
+    (val) => {
+      // 空文字列・NaN は null 扱い
+      if (val === '' || val === null || val === undefined) return null;
+      if (typeof val === 'number' && isNaN(val)) return null; // 空の場合はnull扱い
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    },
+    z
+      .number()
+      .min(0, { message: '割引額は0円以上で入力してください' })
       .max(99999, { message: '割引額は99999円以下で入力してください' })
       .nullable()
       .optional()
@@ -97,8 +103,16 @@ const couponSchema = z.object({
     },
     { message: '終了日は現在以降の日付を選択してください' }
   ),
-  maxUseCount: z.number().min(0, '0以上の値を入力してください'),
-  numberOfUse: z.number().min(0, '0以上の値を入力してください'),
+  maxUseCount: z
+    .number({ required_error: '必須です' })
+    .min(0, { message: '0以上の値を入力してください' })
+    .max(99999, { message: '99999以下の値を入力してください' })
+    .optional(),
+  numberOfUse: z
+    .number()
+    .min(0, '0以上の値を入力してください')
+    .max(99999, '99999以下の値を入力してください')
+    .optional(),
   selectedMenus: z.array(z.string()).optional(),
 });
 
@@ -183,6 +197,7 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
             <Gift size={18} />
             {data.name || 'クーポン名'}
           </CardTitle>
+          <span className="text-xs text-blue-100">{data.couponUid}</span>
           <CardDescription className="text-white">
             {data.isActive ? '有効なクーポン' : '無効なクーポン'}
           </CardDescription>

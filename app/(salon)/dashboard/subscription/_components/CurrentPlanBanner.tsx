@@ -52,7 +52,7 @@ export default function CurrentPlanBanner({
   return (
     <div className="w-full max-w-xl mb-8 border border-green-500 p-4 rounded-lg">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center  gap-3">
           <div className="bg-white dark:bg-green-800/30 border border-green-500 rounded-full p-1 shadow-md">
             <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
           </div>
@@ -63,15 +63,15 @@ export default function CurrentPlanBanner({
                 {planName}
               </span>
             </p>
-            <p className="text-sm text-slate-700 dark:text-slate-400 mt-1">
-              サブスクリプション契約は有効です。
-            </p>
           </div>
         </div>
         <Button onClick={handlePortalClick} variant="default" size="sm" disabled={isSubmitting}>
           {buttonContent}
         </Button>
       </div>
+      <p className=" text-sm text-slate-500 dark:text-slate-400 mt-3">
+        サブスクリプション契約は有効です。
+      </p>
     </div>
   );
 }

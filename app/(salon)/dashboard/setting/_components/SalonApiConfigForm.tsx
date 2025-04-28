@@ -5,7 +5,12 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FormField, Loading } from '@/components/common';
 import { MessageSquare, Key, Lock, Shield, Save, EyeOff, Eye, Loader2 } from 'lucide-react';
-
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
 import { handleErrorToMsg } from '@/lib/error';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,6 +21,8 @@ import { toast } from 'sonner';
 import { useSalon } from '@/hooks/useSalon';
 import { api } from '@/convex/_generated/api';
 import { useQuery, useMutation } from 'convex/react';
+// 共通リンクスタイル
+const externalLinkCls = 'text-blue-600 underline hover:text-blue-800';
 // APIの設定フォーム用のスキーマ
 const salonApiConfigFormSchema = z.object({
   lineAccessToken: z.string().optional(),
@@ -110,42 +117,6 @@ const ApiSettingsCard = () => {
           外部サービスとの連携に必要なAPI設定を行います。
           <br />
           設定を行うと、LINE公式アカウントと連携した予約システムを使用できるようになります。
-        </p>
-        <div className="w-fit h-full p-2 bg-green-50 border border-green-400 rounded-md my-5">
-          <ul className="list-inside list-decimal text-sm space-y-2">
-            <li>
-              LINEアクセストークンの取得方法は{' '}
-              <Link href="https://youtu.be/1234567890" target="_blank" className="text-blue-500">
-                こちらの動画
-              </Link>{' '}
-              を参考にしてください。
-            </li>
-            <li>
-              LINEチャネルシークレットの取得方法は{' '}
-              <Link href="https://youtu.be/1234567890" target="_blank" className="text-blue-500">
-                こちらの動画
-              </Link>{' '}
-              を参考にしてください。
-            </li>
-            <li>
-              LIFF IDの取得方法は{' '}
-              <Link href="https://youtu.be/1234567890" target="_blank" className="text-blue-500">
-                こちらの動画
-              </Link>{' '}
-              を参考にしてください。
-            </li>
-          </ul>
-        </div>
-        <p className="text-sm mt-2">
-          設定が難しい場合はお気軽に
-          <Link
-            href="https://line.me/R/ti/p/%40160zqyqy"
-            target="_blank"
-            className="text-sm text-blue-500"
-          >
-            お問い合わせ
-          </Link>
-          ください。
         </p>
       </div>
 
@@ -250,7 +221,7 @@ const ApiSettingsCard = () => {
                 </div>
               </FormField>
 
-              <div>
+              <div className="hidden">
                 <p className="text-sm text-muted-foreground mb-2 bg-yellow-50 border border-yellow-400 rounded-md p-1 text-yellow-600 w-fit">
                   近日実装予定
                 </p>
@@ -309,6 +280,117 @@ const ApiSettingsCard = () => {
           </motion.div>
         </div>
       </form>
+
+      <Accordion type="multiple" className="mt-8 space-y-2">
+        {/* LINE Access Token */}
+        <AccordionItem value="line-access-token">
+          <AccordionTrigger>LINE アクセストークンの取得方法</AccordionTrigger>
+          <AccordionContent className="space-y-2 text-sm text-slate-600">
+            <p className="font-semibold">取得手順</p>
+            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <li>
+                <Link
+                  href="https://developers.line.biz/console/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={externalLinkCls}
+                >
+                  LINE Developers コンソール
+                </Link>
+                で対象の <strong>Messaging API チャネル</strong> を開きます。
+              </li>
+              <li>
+                <strong>[Messaging&nbsp;API&nbsp;設定]</strong> タブ最下部の
+                <strong>「チャネルアクセストークン（長期）」</strong> を生成します。
+              </li>
+              <li>
+                発行されたトークンを<strong>コピー</strong>し、このフォームの
+                「LINE&nbsp;アクセストークン」欄へ貼り付けます。
+              </li>
+            </ol>
+            <p className="text-xs text-slate-500">
+              ※ トークンは一度しか表示されません。安全な場所へ保管してください。
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* LINE Channel Secret */}
+        <AccordionItem value="line-channel-secret">
+          <AccordionTrigger>LINE チャンネルシークレットの取得方法</AccordionTrigger>
+          <AccordionContent className="space-y-2 text-sm text-slate-600">
+            <p className="font-semibold">取得手順</p>
+            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <li>
+                <Link
+                  href="https://developers.line.biz/console/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={externalLinkCls}
+                >
+                  LINE Developers コンソール
+                </Link>
+                で<strong>基本設定</strong>タブを開きます。
+              </li>
+              <li>
+                「<strong>チャネルシークレット</strong>」横の<strong>コピーアイコン</strong>
+                をクリックします。
+              </li>
+              <li>
+                コピーした値を本フォームの「LINE&nbsp;チャンネルシークレット」欄に貼り付けます。
+              </li>
+            </ol>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* LIFF ID */}
+        <AccordionItem value="liff-id">
+          <AccordionTrigger>LIFF ID の取得方法</AccordionTrigger>
+          <AccordionContent className="space-y-2 text-sm text-slate-600">
+            <p className="font-semibold">取得手順</p>
+            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <li>
+                <Link
+                  href="https://developers.line.biz/console/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={externalLinkCls}
+                >
+                  LINE Developers コンソール
+                </Link>
+                で<strong>LIFF</strong>タブを開き、「<strong>追加</strong>」をクリックします。
+              </li>
+              <li>
+                <strong>アプリタイプ</strong>を「ウェブアプリ」にし、エンドポイント URL に
+                <code className="ml-1 bg-slate-200 px-1 rounded">
+                  https://{process.env.NEXT_PUBLIC_SITE_DOMAIN}/liff
+                </code>
+                を入力して保存します。
+              </li>
+              <li>
+                作成されたアプリの<strong>LIFF&nbsp;ID</strong>
+                をコピーし、本フォームの「LIFF&nbsp;ID」欄に貼り付けます。
+              </li>
+            </ol>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Destination ID */}
+        <AccordionItem value="destination-id" className="hidden">
+          <AccordionTrigger>LINE公式アカウント識別子の取得方法</AccordionTrigger>
+          <AccordionContent className="space-y-2 text-sm text-slate-600">
+            <p className="bg-yellow-50 border border-yellow-400 rounded-md p-3 text-yellow-700">
+              ※ この項目は近日実装予定です。現在は入力・変更できません。
+            </p>
+            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md opacity-50 pointer-events-none">
+              <li>LINE Official Account Manager からアカウント設定を開きます。</li>
+              <li>
+                「詳細設定」&gt;「基本設定」内の<strong>LINE ID</strong> を取得します。
+              </li>
+              <li>取得した ID を貼り付けると、Webhook で destinationId の照合が可能になります。</li>
+            </ol>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 };

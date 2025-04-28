@@ -7,6 +7,12 @@ import { Id } from '@/convex/_generated/dataModel';
 import { handleErrorToMsg } from '@/lib/error';
 import { Loading } from '@/components/common';
 import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -23,7 +29,6 @@ import {
   Clock3,
   Coffee,
   Settings2,
-  AlertCircle,
   X,
   Check,
   CalendarClock,
@@ -478,17 +483,10 @@ export default function WeekHourSchedule() {
           サロンの営業日と営業時間を設定します。定休日には予約を受け付けません。
         </p>
 
-        <div className="space-y-8">
+        <div className="space-y-8 my-5">
           {/* 営業日設定 */}
 
-          <div className="bg-blue-50 p-4 rounded-lg my-4 flex items-center gap-2 text-sm w-fit">
-            <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0" />
-            <p className="text-blue-700">
-              営業する曜日を選択してください。営業しない曜日は定休日として設定されます。
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-3">
             {DAYS_OF_WEEK.map((day) => {
               const dayId = day.id as DayOfWeek;
               const isOpen = weekScheduleData.scheduleSettings[dayId].isOpen;
@@ -498,7 +496,7 @@ export default function WeekHourSchedule() {
                   key={day.id}
                   onClick={() => handleDayToggle(dayId)}
                   className={`
-                          cursor-pointer p-3 rounded-lg border-2 transition-all
+                          cursor-pointer p-2 md:p-3 rounded-lg border-2 transition-all
                           ${
                             isOpen
                               ? `${day.color} border-current shadow-sm`
@@ -507,7 +505,7 @@ export default function WeekHourSchedule() {
                         `}
                 >
                   <div className="flex flex-col items-start justify-between">
-                    <span className="font-semibold">{day.week}</span>
+                    <span className="font-semibold mb-1">{day.week}</span>
                     {isOpen ? (
                       <div className="flex items-center gap-1 text-xs">
                         <Check className="h-4 w-4" />
@@ -522,7 +520,7 @@ export default function WeekHourSchedule() {
                   </div>
 
                   {isOpen && (
-                    <div className="mt-2 text-sm">
+                    <div className="mt-1 md:mt-2 text-sm md:text-base font-bold">
                       {weekScheduleData.scheduleSettings[dayId].startHour} ~{' '}
                       {weekScheduleData.scheduleSettings[dayId].endHour}
                     </div>
@@ -614,15 +612,6 @@ export default function WeekHourSchedule() {
                             </ScrollArea>
                           </SelectContent>
                         </Select>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200 text-sm text-blue-700 w-fit">
-                      <div className="flex items-start gap-2">
-                        <InfoIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <div>
-                          すべての営業日に同じ営業時間が適用されます。曜日ごとに個別の時間を設定する場合は、共通設定をオフにしてください。
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -740,24 +729,56 @@ export default function WeekHourSchedule() {
           </Button>
         </div>
       </div>
+      <div>
+        <Accordion type="multiple" className="mt-8">
+          <AccordionItem value="business-days">
+            <AccordionTrigger>営業日設定とは？</AccordionTrigger>
+            <AccordionContent className="text-sm text-slate-600 space-y-4">
+              <section>
+                <p className="font-bold text-base text-slate-800 mb-2">営業日設定について</p>
+
+                <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+                  <li>
+                    カレンダーに予約を受付ける<strong>曜日毎の営業時間</strong>を指定する機能です。
+                  </li>
+                  <li>
+                    チェックした曜日の営業時間内だけが予約画面に表示され、未チェックの曜日は
+                    <span className="font-semibold">定休日</span>として扱われます。
+                  </li>
+                </ul>
+
+                <p className="font-bold text-slate-800 mt-2">例</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>
+                    火曜を定休日にした場合、火曜日の予約枠は表示されず予約を受け付けられなくなります。
+                  </li>
+                  <li>
+                    臨時休業を設定したい場合は、
+                    <span className="font-semibold">休業日設定</span> を開き、
+                    該当曜日を選択して保存します。
+                    <br />
+                    隔週定休日の場合は、<span className="font-semibold">営業日設定</span>
+                    で基本の営業日を設定しておき、 該当曜日を定休日にして保存するだけです。
+                  </li>
+                </ul>
+
+                <p className="font-bold text-slate-800 mt-2">注意点</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>
+                    定休日を変更すると<strong>既存予約</strong>
+                    には影響しません。変更した時点から予約の受付が停止されます。
+                    必要に応じて顧客へ連絡してください。
+                  </li>
+                  <li>
+                    繁忙期や祝日営業の場合などは、営業日設定を一時的に変更すると
+                    <strong>すぐに反映</strong>されます。
+                  </li>
+                </ul>
+              </section>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
     </div>
   );
 }
-
-// 情報アイコンコンポーネント
-const InfoIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="16" x2="12" y2="12" />
-    <line x1="12" y1="8" x2="12.01" y2="8" />
-  </svg>
-);

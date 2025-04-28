@@ -1,10 +1,6 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  killRecord,
-  archiveRecord,
-} from '@/services/convex/shared/utils/helper';
+import { killRecord, archiveRecord, excludeFields } from '@/services/convex/shared/utils/helper';
 import { validateMenu, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { throwConvexError } from '@/lib/error';
@@ -12,6 +8,7 @@ import {
   genderType,
   targetType,
   menuPaymentMethodType,
+  menuCategoryType,
 } from '@/services/convex/shared/types/common';
 
 // メニューの追加
@@ -19,9 +16,11 @@ export const create = mutation({
   args: {
     salonId: v.id('salon'),
     name: v.optional(v.string()),
+    category: v.optional(menuCategoryType),
     unitPrice: v.optional(v.number()),
     salePrice: v.optional(v.number()),
     timeToMin: v.optional(v.number()),
+    ensureTimeToMin: v.optional(v.number()),
     imgPath: v.optional(v.string()),
     description: v.optional(v.string()),
     targetGender: v.optional(genderType),
@@ -63,6 +62,7 @@ export const update = mutation({
     unitPrice: v.optional(v.number()),
     salePrice: v.optional(v.number()),
     timeToMin: v.optional(v.number()),
+    ensureTimeToMin: v.optional(v.number()),
     imgPath: v.optional(v.string()),
     description: v.optional(v.string()),
     targetGender: v.optional(genderType),
@@ -88,9 +88,7 @@ export const update = mutation({
       });
     }
 
-    const updateData = removeEmptyFields(args);
-    // menuId はパッチ対象から削除する
-    delete updateData.menuId;
+    const updateData = excludeFields(args, ['menuId']);
 
     const newMenuId = await ctx.db.patch(args.menuId, updateData);
     return newMenuId;
@@ -117,6 +115,7 @@ export const upsert = mutation({
     price: v.optional(v.number()),
     salePrice: v.optional(v.number()),
     timeToMin: v.optional(v.number()),
+    ensureTimeToMin: v.optional(v.number()),
     imgPath: v.optional(v.string()),
     description: v.optional(v.string()),
     targetGender: v.optional(genderType),
@@ -137,9 +136,7 @@ export const upsert = mutation({
         isArchive: false,
       });
     } else {
-      const updateData = removeEmptyFields(args);
-      delete updateData.menuId;
-      delete updateData.salonId;
+      const updateData = excludeFields(args, ['menuId', 'salonId']);
       return await ctx.db.patch(existingMenu._id, updateData);
     }
   },

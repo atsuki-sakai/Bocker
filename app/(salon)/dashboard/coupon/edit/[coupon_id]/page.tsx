@@ -141,6 +141,7 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
             <Tag size={18} />
             {data.name || 'クーポン名'}
           </CardTitle>
+          <span className="text-xs text-blue-100">{data.couponUid}</span>
           <CardDescription className="text-blue-100">
             {data.isActive ? '有効なクーポン' : '無効なクーポン'}
           </CardDescription>

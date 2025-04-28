@@ -261,7 +261,7 @@ export default function ReservationForm() {
           setAvailableStaff(eligibleStaff);
         }
       } catch (error) {
-        console.error('スタッフの取得中にエラーが発生しました:', error);
+        toast.error(handleErrorToMsg(error));
         setAvailableStaff([]);
       } finally {
         setIsLoadingStaff(false);
@@ -304,7 +304,11 @@ export default function ReservationForm() {
           });
         }
       };
-      getExceptionSchedule();
+      try {
+        getExceptionSchedule();
+      } catch (error) {
+        toast.error(handleErrorToMsg(error));
+      }
     }
   }, [selectedStaffId, salonId, selectdate]);
 
@@ -362,12 +366,6 @@ export default function ReservationForm() {
       if (selectedStaffId && salonId && selectdate && totalTimeMinutes) {
         // 日付をYYYY-MM-DD形式に変換
         const formattedDate = format(selectdate, 'yyyy-MM-dd');
-        console.log('API呼び出し - パラメータ:', {
-          salonId,
-          staffId: selectedStaffId,
-          date: formattedDate,
-          totalTimeToMin: totalTimeMinutes,
-        });
 
         try {
           // newAvailableTimeSlotsはスタッフごとの配列を返す
@@ -378,10 +376,6 @@ export default function ReservationForm() {
             durationMin: totalTimeMinutes,
           });
 
-          console.log('result: ', result);
-
-          console.log('API呼び出し結果:', result);
-
           // 結果が配列で返され、選択したスタッフのスロットを含む場合
           if (Array.isArray(result) && result.length > 0) {
             setAvailableTimeSlots(result);
@@ -389,7 +383,7 @@ export default function ReservationForm() {
             setAvailableTimeSlots([]);
           }
         } catch (error) {
-          console.error('空き時間取得エラー:', error);
+          toast.error(handleErrorToMsg(error));
           setAvailableTimeSlots([]);
         }
       } else {
@@ -593,17 +587,24 @@ export default function ReservationForm() {
               {selectedStaffId && (
                 <div className="flex flex-col bg-slate-50 p-3 rounded-md border border-slate-300 mt-3">
                   <div className="flex items-center gap-2">
-                    <Image
-                      src={selectStaff?.imgPath ?? ''}
-                      alt={selectStaff?.name ?? ''}
-                      className="w-10 h-10 rounded-full"
-                      width={40}
-                      height={40}
-                    />
+                    {selectStaff?.imgPath ? (
+                      <Image
+                        src={selectStaff.imgPath}
+                        alt={selectStaff?.name ?? ''}
+                        className="w-10 h-10 rounded-full"
+                        width={40}
+                        height={40}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
+                        {selectStaff?.name?.slice(0, 1) ?? '?'}
+                      </div>
+                    )}
                     <div className="flex flex-col">
                       <p className="text-slate-500 font-bold text-sm">{selectStaff?.name}</p>
                       <p className="text-slate-500 text-sm">
-                        指名料 / ¥{selectStaff?.extraCharge.toLocaleString()}
+                        指名料 / ¥
+                        {selectStaff?.extraCharge ? selectStaff?.extraCharge.toLocaleString() : '0'}
                       </p>
                     </div>
                   </div>
@@ -851,7 +852,8 @@ export default function ReservationForm() {
             <div>
               <p className="text-lg font-medium text-gray-800">{selectStaff?.name ?? '—'}</p>
               <p className="text-sm text-gray-500">
-                指名料：¥{selectStaff?.extraCharge.toLocaleString() ?? '0'}
+                指名料：¥
+                {selectStaff?.extraCharge ? selectStaff?.extraCharge.toLocaleString() : '0'}
               </p>
             </div>
           </div>

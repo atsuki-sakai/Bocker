@@ -1,11 +1,7 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { throwConvexError } from '@/lib/error';
-import {
-  removeEmptyFields,
-  archiveRecord,
-  killRecord,
-} from '@/services/convex/shared/utils/helper';
+import { excludeFields, archiveRecord, killRecord } from '@/services/convex/shared/utils/helper';
 import { salonScheduleExceptionType, dayOfWeekType } from '@/services/convex/shared/types/common';
 import {
   validateRequired,
@@ -72,9 +68,7 @@ export const update = mutation({
       });
     }
 
-    const updateData = removeEmptyFields(args);
-    // salonScheduleExceptionId はパッチ対象から削除する
-    delete updateData.salonScheduleExceptionId;
+    const updateData = excludeFields(args, ['salonScheduleExceptionId']);
 
     return await ctx.db.patch(args.salonScheduleExceptionId, updateData);
   },
@@ -151,9 +145,7 @@ export const upsert = mutation({
       console.log('更新します。ID:', existingRecord._id);
 
       // 更新データの準備
-      const updateData = removeEmptyFields(args);
-      delete updateData.salonScheduleExceptionId;
-      delete updateData.salonId; // パッチ時にはサロンIDも更新不要
+      const updateData = excludeFields(args, ['salonScheduleExceptionId', 'salonId']);
 
       return await ctx.db.patch(existingRecord._id, updateData);
     }

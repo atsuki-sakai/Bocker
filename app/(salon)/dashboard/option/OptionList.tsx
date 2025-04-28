@@ -153,14 +153,16 @@ export default function OptionList() {
                         {option.timeToMin ? `${option.timeToMin}分` : '未設定'}
                       </td>
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
-                        {option.tags && option.tags.length > 0 ? option.tags.join(', ') : '未設定'}
+                        {option.tags && option.tags.length > 0 ? option.tags.join('、') : '未設定'}
                       </td>
                       <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                         <Link
                           href={`/dashboard/option/${option._id}/edit`}
                           className="text-indigo-600 hover:text-indigo-900"
                         >
-                          編集<span className="sr-only">, {option.name}</span>
+                          <Button variant="ghost" size="sm">
+                            編集<span className="sr-only">, {option.name}</span>
+                          </Button>
                         </Link>
                       </td>
                       <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">

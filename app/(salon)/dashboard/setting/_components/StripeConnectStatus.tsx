@@ -14,6 +14,12 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { handleErrorToMsg } from '@/lib/error';
 import { Loader2 } from 'lucide-react';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
 
 // ステータスの日本語表記
 const statusNameMap: Record<string, string> = {
@@ -26,25 +32,27 @@ const statusNameMap: Record<string, string> = {
 };
 
 const statusColorMap: Record<string, string> = {
-  not_connected: 'border border-gray-500 text-gray-500 bg-gray-50',
-  pending: 'border border-yellow-500 text-yellow-500 bg-yellow-50',
-  incomplete: 'border border-red-500 text-red-500 bg-red-50',
-  restricted: 'border border-orange-500 text-orange-500 bg-orange-50',
-  active: 'border border-green-500 text-green-500 bg-green-50',
+  not_connected: 'border border-gray-600 text-gray-600 bg-gray-50',
+  pending: 'border border-yellow-600 text-yellow-600 bg-yellow-50',
+  incomplete: 'border border-red-600 text-red-600 bg-red-50',
+  restricted: 'border border-orange-600 text-orange-600 bg-orange-50',
+  active: 'border border-green-600 text-green-600 bg-green-50',
 };
 
 // ステータスの説明
 const statusDescriptionMap: Record<string, string> = {
   not_connected:
-    'Stripeアカウントが連携されていません。「連携する」ボタンをクリックして始めましょう。',
-  pending: '連携プロセスが開始されましたが、Stripeアカウントの設定が完了していません。',
+    'Stripeアカウントがまだ連携されていません。右上の「Stripeと連携する」ボタンからビジネス情報登録を開始してください。',
+  pending:
+    '連携プロセスは開始されていますが、登録が完了していません。届いたメールか「設定を完了する」ボタンから残りの手続きを行ってください。',
   incomplete:
-    '追加情報の入力が必要です。Stripeダッシュボードにアクセスして残りの手続きを完了してください。',
+    'Stripeから追加書類または情報の提出を求められています。「設定を完了する」をクリックしてダッシュボードで不足項目を入力してください。',
   restricted:
-    'アカウントは一部制限付きで有効です。すべての機能を使用するには、Stripeダッシュボードで追加の手続きを完了してください。',
-  active: 'Stripeアカウントが完全に連携され、すべての機能が使用可能です。',
+    '決済は利用できますが、入金（振込）が制限されています。ダッシュボードで銀行口座の確認や追加情報を提出し、制限を解除してください。',
+  active:
+    'Stripeアカウント連携が完了し、決済と振込機能をすべて利用できます。ダッシュボードで取引状況や残高を確認できます。',
   deauthorized:
-    'アカウントの連携が解除されました。再度連携するには「連携する」ボタンをクリックしてください。',
+    'Stripeとの連携が解除されています。売上を受け取るには「Stripeと連携する」ボタンから再接続を行ってください。',
 };
 
 export default function StripeConnectStatus() {
@@ -185,7 +193,7 @@ export default function StripeConnectStatus() {
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-end items-start md:items-center gap-2 mb-4">
+      <div className="flex flex-col md:flex-row justify-start items-start md:items-center gap-2 my-6">
         {isConnected && (
           <Button
             size="sm"
@@ -315,7 +323,7 @@ export default function StripeConnectStatus() {
       <div className="bg-gray-50 px-6 py-4 dark:bg-gray-800/50">
         <div className="w-full flex flex-col-reverse sm:flex-row justify-between gap-3">
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            <p className="text-xs font-bold">決済手数料: 4% + 40円/件</p>
+            <p className="text-sm font-bold">決済手数料: 4% + 40円/件</p>
             <div className="flex items-center gap-2 mt-2">
               <p className="text-xs">※ 売り上げは毎月25日に設定した銀行口座へ振込まれます。</p>
             </div>
@@ -361,6 +369,198 @@ export default function StripeConnectStatus() {
           )}
         </div>
       </div>
+      <Accordion type="multiple" className="mt-8 space-y-2 tracking-normal">
+        {/* What is Stripe */}
+        <AccordionItem value="stripe-overview">
+          <AccordionTrigger>Stripe とは？</AccordionTrigger>
+          <AccordionContent className="space-y-3 text-sm text-slate-600">
+            <p>
+              <strong>Stripe（ストライプ）</strong> は、米国発のオンライン決済サービスで、 世界 120
+              か国以上・数百万社以上のビジネスで利用されています。Bcker は<strong>Stripe</strong>{' '}
+              を採用することで、
+              サロン様が複雑な契約やシステム開発を行うことなく、クレジットカード決済を
+              すぐに導入できる環境を提供しています。
+            </p>
+            <p>
+              Stripeアカウントを作成すると、カード決済・売上管理・振込管理が すべて Stripe
+              で完結。サロン様は「売上を見る」「いつ入金されるか確認する」
+              だけのシンプルな運用で済みます。
+            </p>
+            <p className="bg-slate-100 p-3 rounded-md">
+              <strong>ポイント</strong>
+              <br />
+              ・Bcker もサロン様もカード番号を保持しないため情報漏えいリスクを最小化
+              <br />
+              ・国内外の主要カードブランド（Visa/Mastercard/JCB 等）に標準対応
+              <br />
+              ・決済手段の追加（Apple Pay や Google Pay 等）も将来的に拡張可能
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Requirements & Flow */}
+        <AccordionItem value="stripe-signup">
+          <AccordionTrigger>登録に必要なもの・手続きの流れ</AccordionTrigger>
+          <AccordionContent className="space-y-3 text-sm text-slate-600">
+            <p className="font-medium">登録に必要なもの</p>
+            <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <li>サロンの正式名称・所在地・電話番号</li>
+              <li>運営責任者（代表者）の氏名・生年月日・住所</li>
+              <li>本人確認書類（運転免許証・パスポート等）の画像</li>
+              <li>売上振込用の日本国内銀行口座情報</li>
+              <li>連絡用メールアドレスと SMS 受信用携帯番号</li>
+            </ul>
+
+            <p className="font-medium">手続きの流れ（所要時間 10〜15 分）</p>
+            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <li>
+                Bcker で <strong>「Stripeと連携する」</strong> をクリック
+              </li>
+              <li>Stripe のオンボーディング画面が開く</li>
+              <li>ビジネス情報の入力（名称・所在地・業種など）</li>
+              <li>運営責任者情報と本人確認書類のアップロード</li>
+              <li>銀行口座情報の入力</li>
+              <li>
+                内容を確認して <strong>送信</strong>
+              </li>
+              <li>審査完了のメールを受信後、カード決済が利用可能に</li>
+            </ol>
+            <p className="text-xs text-slate-500">
+              情報に不備がある場合は Stripe から追加提出のメールが届きます。
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Safety & Security */}
+        <AccordionItem value="stripe-safety">
+          <AccordionTrigger>安全性・セキュリティ</AccordionTrigger>
+          <AccordionContent className="space-y-3 text-sm text-slate-600">
+            <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <li>
+                国際基準 <strong>PCI‑DSS レベル&nbsp;1</strong>（最高位）を取得
+              </li>
+              <li>
+                通信は全て <strong>256bit&nbsp;TLS</strong> で暗号化
+              </li>
+              <li>
+                AI 不正検知システムが <strong>24&nbsp;時間&nbsp;365&nbsp;日</strong> 監視
+              </li>
+            </ul>
+            <p>
+              これらの仕組みにより、カード情報の盗難・不正利用リスクを大幅に低減できます。 Bcker /
+              サロン様は決済データに直接触れないため、追加で高額な
+              セキュリティ認証を取得する必要もありません。
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Liability & Risk */}
+        <AccordionItem value="stripe-liability">
+          <AccordionTrigger>責任分担とリスクのない理由</AccordionTrigger>
+          <AccordionContent className="space-y-3 text-sm text-slate-600">
+            <p>
+              Bcker とサロン様は <strong>決済代行業務</strong> を Stripe に委託しています。
+              そのため、カード情報の保管・不正監視・チャージバック対応など、
+              高度なセキュリティ管理は Stripe が担います。
+            </p>
+            <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <li>
+                カード番号は <strong>Bcker / サロン様のサーバーに一切保存されません</strong>
+              </li>
+              <li>
+                チャージバック発生時のカード会社対応は Stripe が一次窓口となり、 必要に応じて Bcker
+                が仲介します
+              </li>
+              <li>
+                PCI‑DSS、改正割賦販売法、資金決済法 等の
+                <strong>法令遵守</strong> は Stripe が実施
+              </li>
+              <li>決済障害時は Stripe が 24 時間体制で復旧対応・顧客への返金手続きも自動化</li>
+            </ul>
+            <p>
+              これにより、サロン様はクレジットカード決済の
+              <strong>法的・技術的リスクから解放</strong>され、 本業に専念できます。
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Payout flow */}
+        <AccordionItem value="stripe-payout">
+          <AccordionTrigger>売上の入金サイクル</AccordionTrigger>
+          <AccordionContent className="space-y-3 text-sm text-slate-600">
+            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <li>お客様が Bcker でカード決済</li>
+              <li>決済額は Stripe 上の残高に即時反映</li>
+              <li>
+                毎月 <strong>25&nbsp;日</strong> に前月 1〜末日の総売上をまとめて振込
+              </li>
+              <li>
+                登録口座に <strong>1‑2&nbsp;営業日</strong> で着金
+              </li>
+            </ol>
+
+            <p>
+              振込スケジュールは Stripe ダッシュボードでいつでも確認できるため、
+              キャッシュフローの見通しが立てやすくなります。
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Fees */}
+        <AccordionItem value="stripe-fee">
+          <AccordionTrigger>手数料について</AccordionTrigger>
+          <AccordionContent className="space-y-3 text-sm text-slate-600">
+            <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <li>
+                <strong>決済手数料:</strong> 売上の <strong>4%</strong> + <strong>40円</strong> / 件
+              </li>
+              <li>
+                <strong>振込手数料:</strong> 0円（Bcker が負担）
+              </li>
+              <li>
+                <strong>月額固定費:</strong> 0円（Bcker が負担）
+              </li>
+            </ul>
+            <p className="text-sm">
+              例）10,000 円のお会計の場合：10,000 × 4% + 40 = <strong>440 円</strong>
+              のみが手数料として引かれ、<strong>9,560&nbsp;円</strong> が振込対象額となります。
+            </p>
+            <p className="text-xs text-slate-500">
+              ※ 一部ブランドの海外発行カードは追加 1.5% が発生する場合があります。
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* FAQ */}
+        <AccordionItem value="stripe-faq">
+          <AccordionTrigger>よくある質問</AccordionTrigger>
+          <AccordionContent className="space-y-4 text-sm text-slate-600">
+            <div>
+              <p className="font-semibold">カード決済が失敗した場合は？</p>
+              <p>
+                Stripe が自動で再試行し、それでも失敗した場合は Bcker からお客様へメールで
+                お知らせします。サロン側での個別請求も可能です。
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold">返金はどう行いますか？</p>
+              <p>
+                Stripe ダッシュボードからワンクリックで即時返金 できます。返金手数料は
+                <strong>無料</strong>です。ただ<strong>決済時に発生した手数料4%</strong>
+                は返金されません。
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold">導入にどのくらい時間がかかりますか？</p>
+              <p>
+                オンライン申請のみで<strong>最短 10 分</strong>で利用開始できます。
+                本人確認書類の提出が必要ですが、審査状況はダッシュボードでリアルタイムに
+                確認できます。
+              </p>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }

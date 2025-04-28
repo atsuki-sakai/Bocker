@@ -1,10 +1,6 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  archiveRecord,
-  killRecord,
-} from '@/services/convex/shared/utils/helper';
+import { excludeFields, archiveRecord, killRecord } from '@/services/convex/shared/utils/helper';
 import { validateCustomer, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { genderType } from '@/services/convex/shared/types/common';
@@ -83,9 +79,7 @@ export const update = mutation({
       });
     }
 
-    const updateData = removeEmptyFields(args);
-    // customerId はパッチ対象から削除する
-    delete updateData.customerId;
+    const updateData = excludeFields(args, ['customerId']);
 
     // fullNameを更新
     if (
@@ -188,8 +182,7 @@ export const upsert = mutation({
         ' ' +
         (args.firstName ?? existingCustomer.firstName);
       validateCustomer({ ...args, fullName: fullName });
-      const updateData = removeEmptyFields(args);
-      delete updateData.customerId;
+      const updateData = excludeFields(args, ['customerId']);
       return await ctx.db.patch(existingCustomer._id, {
         ...updateData,
         fullName: fullName,

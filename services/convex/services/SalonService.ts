@@ -21,7 +21,7 @@ import {
   SalonScheduleConfigInput,
   SalonStripeConnectInput,
 } from '@/services/convex/types/salon';
-import { removeEmptyFields, excludeFields } from '@/services/convex/shared/utils/helper';
+import { excludeFields } from '@/services/convex/shared/utils/helper';
 import { throwConvexError } from '@/lib/error';
 import { checkSalonAccess } from '@/services/convex/shared/utils/auth';
 import { WithoutSystemFields } from 'convex/server';
@@ -174,11 +174,11 @@ class SalonService {
       });
     }
     await this.salonRepo.get(ctx, data.salonId);
-    const cleanData = {
-      ...removeEmptyFields(data),
+    const upsertData = {
+      ...data,
       salonId: data.salonId, // salonIdは必ず保持する
     };
-    return await this.scheduleConfigRepo.upsert(ctx, cleanData);
+    return await this.scheduleConfigRepo.upsert(ctx, upsertData);
   }
 
   // Complete

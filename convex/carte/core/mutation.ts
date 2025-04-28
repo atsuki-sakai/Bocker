@@ -1,10 +1,6 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import {
-  removeEmptyFields,
-  archiveRecord,
-  killRecord,
-} from '@/services/convex/shared/utils/helper';
+import { archiveRecord, killRecord, excludeFields } from '@/services/convex/shared/utils/helper';
 import { validateCarte, validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { throwConvexError } from '@/lib/error';
@@ -73,11 +69,8 @@ export const update = mutation({
       });
     }
 
-    // 空フィールドを削除
-    const updateData = removeEmptyFields(args);
-
     // データベースを更新
-    const updatedId = await ctx.db.patch(args.id, updateData);
+    const updatedId = await ctx.db.patch(args.id, args);
     return updatedId;
   },
 });
@@ -103,10 +96,7 @@ export const upsert = mutation({
       )
       .first();
     if (existingCarte) {
-      const updateData = removeEmptyFields(args);
-      delete updateData.id;
-      delete updateData.salonId;
-      delete updateData.customerId;
+      const updateData = excludeFields(args, ['id', 'salonId', 'customerId']);
       return await ctx.db.patch(existingCarte._id, updateData);
     } else {
       return await ctx.db.insert('carte', { ...args, isArchive: false });

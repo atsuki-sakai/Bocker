@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useZodForm } from '@/hooks/useZodForm';
 import { useMutation, useAction, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -8,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useEffect, useState } from 'react';
-import { ImageDrop, Loading, Dialog } from '@/components/common';
+import { ImageDrop, Loading, Dialog, TagInput } from '@/components/common';
 import { ExclusionMenu } from '@/components/common';
 import { z } from 'zod';
 import { Gender, Role, GENDER_VALUES, ROLE_VALUES } from '@/services/convex/shared/types/common';
@@ -30,7 +29,6 @@ import { compressAndConvertToWebP, fileToBase64, decryptString, encryptString } 
 import { Id } from '@/convex/_generated/dataModel';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
@@ -57,6 +55,7 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useMemo } from 'react';
+import { Loader2 } from 'lucide-react';
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
@@ -115,6 +114,23 @@ const staffAddSchema = z.object({
     },
     z.number().max(999, { message: '優先度は999以下で入力してください' }).nullable().optional()
   ),
+  tags: z.preprocess(
+    (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
+    z
+      .string()
+      .max(100, { message: 'タグは合計100文字以内で入力してください' })
+      .transform((val) =>
+        val
+          ? val
+              .replace(/[,、]/g, ',')
+              .split(',')
+              .map((tag) => tag.trim())
+              .filter((tag) => tag !== '')
+          : []
+      )
+      .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
+      .optional()
+  ),
   exclusionMenuIds: z.array(z.string()).optional(),
 });
 
@@ -128,6 +144,7 @@ export default function StaffEditForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeletingImage, setIsDeletingImage] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [currentTags, setCurrentTags] = useState<string[]>([]);
 
   const uploadImage = useAction(api.storage.action.upload);
   const deleteImage = useAction(api.storage.action.kill);
@@ -224,6 +241,7 @@ export default function StaffEditForm() {
         description: data.description,
         imgPath: uploadImageUrl ?? undefined,
         isActive: data.isActive,
+        tags: data.tags,
       });
 
       try {
@@ -381,9 +399,12 @@ export default function StaffEditForm() {
           role: staffAllData.role,
           extraCharge: staffAllData.extraCharge,
           priority: staffAllData.priority,
+          tags: staffAllData.tags,
           // 復号した PIN コードをセット
           pinCode: decryptedPinCode ?? undefined,
         });
+        // 既存タグをローカル state に同期
+        setCurrentTags(staffAllData.tags || []);
       } catch (error) {
         console.error('ピンコードの復号に失敗しました:', error);
         toast.error('ピンコードの復号に失敗しました', {
@@ -408,11 +429,7 @@ export default function StaffEditForm() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Tabs defaultValue="basic">
           <TabsList>
@@ -426,95 +443,61 @@ export default function StaffEditForm() {
                 <div>
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <div className="flex justify-between gap-2">
-                        <div className="mb-2 flex items-center">
-                          <ImageIcon className="h-4 w-4 mr-2 text-gray-500" />
-                          <span className="text-sm font-medium text-gray-700">スタッフ画像</span>
+                      {staffAllData?.imgPath && (
+                        <div className="flex justify-between gap-2">
+                          <div className="mb-2 flex items-center">
+                            <ImageIcon className="h-4 w-4 mr-2 text-gray-500" />
+                            <span className="text-sm font-medium text-gray-700">スタッフ画像</span>
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="mb-2"
+                            onClick={handleShowDeleteDialog}
+                          >
+                            {isDeletingImage ? (
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                              >
+                                <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                    fill="none"
+                                  />
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  />
+                                </svg>
+                              </motion.div>
+                            ) : (
+                              <Trash className="h-3 w-3 mr-2" />
+                            )}
+                            {isDeletingImage ? '削除中...' : '画像を削除'}
+                          </Button>
                         </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="mb-2"
-                          onClick={handleShowDeleteDialog}
-                        >
-                          {isDeletingImage ? (
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                            >
-                              <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                                <circle
-                                  className="opacity-25"
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="currentColor"
-                                  strokeWidth="4"
-                                  fill="none"
-                                />
-                                <path
-                                  className="opacity-75"
-                                  fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                />
-                              </svg>
-                            </motion.div>
-                          ) : (
-                            <Trash className="h-3 w-3 mr-2" />
-                          )}
-                          {isDeletingImage ? '削除中...' : '画像を削除'}
-                        </Button>
-                      </div>
+                      )}
 
                       <div className="w-full flex flex-col md:flex-row items-end justify-center gap-4">
-                        <div className="w-full h-full overflow-hidden">
-                          {staffAllData?.imgPath ? (
-                            <div>
-                              <div className="w-full max-h-[300px] h-full overflow-hidden">
-                                <Image
-                                  src={staffAllData.imgPath}
-                                  alt="スタッフ画像"
-                                  className="object-cover"
-                                  width={400}
-                                  height={400}
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="w-full h-40 flex items-center justify-center bg-gray-100 rounded-md">
-                              <ImageIcon className="h-10 w-10 text-gray-400" />
-                              <p className="text-sm text-gray-500">画像が設定されていません</p>
-                            </div>
-                          )}
-                        </div>
-
                         <div className="w-full flex flex-col">
-                          <p className="text-sm text-gray-500">変更する画像を設定してください。</p>
+                          <p className="text-sm text-gray-500">スタッフ画像</p>
                           <ImageDrop
+                            initialImageUrl={staffAllData?.imgPath}
                             onFileSelect={(file) => setSelectedFile(file)}
                             className="transition-all duration-200 hover:opacity-90"
                           />
                         </div>
                       </div>
-
-                      {selectedFile && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="mt-2"
-                        >
-                          <Badge
-                            variant="outline"
-                            className="flex items-center text-green-600 bg-green-50"
-                          >
-                            <Check className="h-3 w-3 mr-1" />
-                            {selectedFile.name}
-                          </Badge>
-                        </motion.div>
-                      )}
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div>
                         <ZodTextField
                           name="name"
@@ -527,7 +510,7 @@ export default function StaffEditForm() {
                         />
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-4">
                         <div className="w-1/2">
                           <Label className="flex items-center mb-2 font-medium text-gray-700">
                             <User className="h-4 w-4 mr-2 text-gray-500" />
@@ -569,22 +552,37 @@ export default function StaffEditForm() {
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2 pt-1">
-                        <Switch
-                          id="isActive"
-                          className="data-[state=checked]:bg-green-500"
-                          checked={watch('isActive')}
-                          onCheckedChange={(checked) =>
-                            setValue('isActive', checked, { shouldDirty: true })
-                          }
-                        />
-                        <Label htmlFor="isActive" className="text-sm cursor-pointer">
-                          {watch('isActive') ? (
-                            <span className="text-green-600 font-medium">有効</span>
-                          ) : (
-                            <span className="text-red-500 font-medium">無効</span>
-                          )}
-                        </Label>
+                      <TagInput
+                        tags={currentTags}
+                        setTagsAction={(tags) => {
+                          setCurrentTags(tags);
+                          setValue('tags', tags, { shouldDirty: true, shouldValidate: true });
+                        }}
+                        error={errors.tags?.message}
+                        title="スタッフの得意なメニュー"
+                        exampleText="ヘアセット, カット, メイク"
+                      />
+                      <div className="flex flex-col space-y-2 pt-1">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id="isActive"
+                            className="data-[state=checked]:bg-green-500"
+                            checked={watch('isActive')}
+                            onCheckedChange={(checked) =>
+                              setValue('isActive', checked, { shouldDirty: true })
+                            }
+                          />
+                          <Label htmlFor="isActive" className="text-sm cursor-pointer">
+                            {watch('isActive') ? (
+                              <span className="text-green-600 font-medium">有効</span>
+                            ) : (
+                              <span className="text-red-500 font-medium">無効</span>
+                            )}
+                          </Label>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          無効にすると予約画面に表示されなくなります。
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -596,10 +594,10 @@ export default function StaffEditForm() {
                     </div>
                     <Textarea
                       value={watch('description')}
-                      rows={5}
+                      rows={12}
                       {...register('description')}
                       placeholder="スタッフの紹介を入力してください"
-                      className="resize-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                      className="transition-all duration-200"
                     />
                     {errors.description && (
                       <motion.p
@@ -623,9 +621,8 @@ export default function StaffEditForm() {
                   </div>
 
                   <Alert className="bg-blue-50 border-blue-100 mb-4">
-                    <Info className="h-4 w-4 text-blue-500" />
                     <AlertDescription className="text-blue-700 text-sm">
-                      スタッフがログインする際に使用する認証情報です。安全なピンコードを設定してください。
+                      スタッフがログインする際に使用する認証情報です。スタッフはメールアドレスとピンコードを使用してログインできます。
                     </AlertDescription>
                   </Alert>
 
@@ -695,9 +692,8 @@ export default function StaffEditForm() {
                               desc: 'すべての機能にアクセス可能',
                             },
                           ].map((item) => (
-                            <motion.div
+                            <div
                               key={item.role}
-                              whileHover={{ scale: 1.02 }}
                               className={`border rounded-md p-3 cursor-pointer transition-all ${
                                 watch('role') === item.role
                                   ? 'border-blue-500 bg-blue-50'
@@ -709,7 +705,7 @@ export default function StaffEditForm() {
                             >
                               <div className="font-medium text-sm mb-1">{item.label}</div>
                               <div className="text-xs text-gray-500">{item.desc}</div>
-                            </motion.div>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -781,6 +777,11 @@ export default function StaffEditForm() {
                         placeholder="優先度を入力してください"
                         className="transition-all duration-200"
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        数値が大きいほど予約画面などで上位に表示されます。
+                        <br />
+                        指名無しの予約などで優先的に予約を確保したい場合は高い数値を設定してください。
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -802,7 +803,7 @@ export default function StaffEditForm() {
             )}
           </TabsContent>
         </Tabs>
-        <div className="flex justify-between py-4 bg-gray-50">
+        <div className="flex justify-between py-4 ">
           <Button
             type="button"
             variant="outline"
@@ -819,27 +820,7 @@ export default function StaffEditForm() {
           >
             {isSubmitting || isLoading ? (
               <>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                >
-                  <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                </motion.div>
+                <Loader2 className="h-4 w-4 animate-spin" />
                 追加中...
               </>
             ) : (
@@ -858,6 +839,6 @@ export default function StaffEditForm() {
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
       />
-    </motion.div>
+    </div>
   );
 }
