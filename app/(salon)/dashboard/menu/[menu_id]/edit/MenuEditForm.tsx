@@ -10,6 +10,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '@/components/ui/accordion';
+import { Loader2 } from 'lucide-react';
 import { MENU_CATEGORY_VALUES, MenuCategory } from '@/services/convex/shared/types/common';
 import { z } from 'zod';
 import { useZodForm } from '@/hooks/useZodForm';
@@ -219,15 +220,14 @@ export default function MenuEditForm() {
       setTargetType(targetTypeValue);
       setPaymentMethod(paymentMethodValue);
 
-      console.log(menuData);
       // フォームを初期化
       reset({
         name: menuData.name || '',
         category: categoryValue,
         unitPrice: menuData.unitPrice ?? undefined,
         salePrice: menuData.salePrice ?? undefined,
-        timeToMin: timeToMinValue,
-        ensureTimeToMin: ensureTimeToMinValue,
+        timeToMin: timeToMinValue ?? undefined,
+        ensureTimeToMin: ensureTimeToMinValue ?? undefined,
         imgFilePath: menuData.imgPath || '',
         description: menuData.description || '',
         targetGender: targetGenderValue,
@@ -340,6 +340,11 @@ export default function MenuEditForm() {
   // 確実に初期値がレンダリングされることを確認
   const renderTargetType = targetType || menuData?.targetType || 'all';
   const renderTargetGender = targetGender || menuData?.targetGender || 'unselected';
+  const renderCategory = watch('category') || menuData?.category || undefined;
+  const renderTimeToMin = watch('timeToMin') || menuData?.timeToMin || undefined;
+  const renderEnsureTimeToMin = watch('ensureTimeToMin') || menuData?.ensureTimeToMin || undefined;
+
+  console.log(renderCategory, renderTimeToMin, renderEnsureTimeToMin);
 
   if (!salon || !menuData) {
     return <Loading />;
@@ -358,39 +363,34 @@ export default function MenuEditForm() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* 左カラム - 画像アップロード */}
           <div className="md:col-span-1">
-            <Card className="border border-dashed h-full flex flex-col">
+            <div className="h-full flex flex-col">
               <CardHeader className="pb-0">
                 <CardTitle className="text-base flex items-center gap-2">
                   <ImageIcon size={18} className="text-gray-600" />
                   メニュー画像
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-grow flex items-center justify-center">
-                <div className="flex flex-col w-full gap-2">
-                  <Label className="text-sm flex items-center gap-2 mb-2">
-                    　新しく設定する画像を選択してください
-                  </Label>
-                  <ImageDrop
-                    initialImageUrl={existingImageUrl}
-                    maxSizeMB={4}
-                    onFileSelect={(file) => {
-                      setCurrentFile(file);
-                      setValue('imgFilePath', file.name, { shouldValidate: true });
-                    }}
-                    className="h-60 rounded-md"
-                  />
-                </div>
-              </CardContent>
+
+              <ImageDrop
+                initialImageUrl={existingImageUrl}
+                maxSizeMB={6}
+                onFileSelect={(file) => {
+                  setCurrentFile(file);
+                  setValue('imgFilePath', file.name, { shouldValidate: true });
+                }}
+                className="h-60 md:h-80 rounded-md"
+              />
+
               <CardFooter className="pt-0">
                 {errors.imgFilePath && <ErrorMessage message={errors.imgFilePath.message} />}
-                <p className="text-xs text-gray-500 mt-1">推奨サイズ: 1200 x 800px (最大4MB)</p>
+                <p className="text-xs text-gray-500 mt-1">推奨サイズ: 1200 x 1200px (最大6MB)</p>
               </CardFooter>
-            </Card>
+            </div>
           </div>
 
           {/* 右カラム - 基本情報 */}
-          <div className="md:col-span-2 space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               {/* メニュー名 */}
               <ZodTextField
                 name="name"
@@ -403,9 +403,12 @@ export default function MenuEditForm() {
                 className="border-gray-200 focus-within:border-blue-500 transition-colors"
               />
               <div>
-                <Label className="text-sm flex items-center gap-2 mb-2">カテゴリー</Label>
+                <div className="text-sm flex items-start gap-2 mb-2">
+                  <Label className="text-sm flex items-center gap-2">カテゴリー</Label>
+                  <span className="text-red-500">*</span>
+                </div>
                 <Select
-                  value={watch('category')}
+                  value={watch('category') ?? renderCategory}
                   onValueChange={(value) =>
                     setValue('category', value as MenuCategory, { shouldValidate: true })
                   }
@@ -421,6 +424,13 @@ export default function MenuEditForm() {
                     ))}
                   </SelectContent>
                 </Select>
+                <span className="text-xs text-gray-500">
+                  もしカテゴリがない場合は
+                  <a href="mailto:atk721@icloud.com" className="text-blue-500 underline">
+                    こちら
+                  </a>
+                  から追加申請いただけます。
+                </span>
               </div>
             </div>
             {/* 価格関連 */}
@@ -456,7 +466,7 @@ export default function MenuEditForm() {
                   実際にスタッフが稼働する施術時間 <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <Select
-                  value={watch('timeToMin')?.toString() ?? ''}
+                  value={watch('timeToMin')?.toString() ?? renderTimeToMin?.toString()}
                   onValueChange={(value) => {
                     if (!value) {
                       // プレースホルダが選ばれた場合は undefined 扱い
@@ -492,7 +502,7 @@ export default function MenuEditForm() {
                   待機時間を含めたトータルの施術時間 <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <Select
-                  value={watch('ensureTimeToMin')?.toString() ?? ''}
+                  value={watch('ensureTimeToMin')?.toString() ?? renderEnsureTimeToMin?.toString()}
                   onValueChange={(value) => {
                     if (!value) {
                       setValue('ensureTimeToMin', undefined, { shouldValidate: true });
@@ -715,8 +725,8 @@ export default function MenuEditForm() {
         </div>
 
         {/* 送信ボタン */}
-        <div className="flex justify-end mt-6">
-          <div className="flex gap-3">
+        <div className="flex w-full mt-6">
+          <div className="flex justify-between w-full gap-3">
             <Button
               type="button"
               variant="outline"
@@ -725,41 +735,19 @@ export default function MenuEditForm() {
             >
               戻る
             </Button>
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Button type="submit" disabled={isSubmitting || isUploading}>
-                {isSubmitting || isUploading ? (
-                  <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    >
-                      <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                    </motion.div>
-                    追加中...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    メニューを更新
-                  </>
-                )}
-              </Button>
-            </motion.div>
+            <Button type="submit" disabled={isSubmitting || isUploading}>
+              {isSubmitting || isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  追加中...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  メニューを更新
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </form>

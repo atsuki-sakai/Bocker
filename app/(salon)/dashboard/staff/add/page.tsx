@@ -447,7 +447,7 @@ export default function StaffAddPage() {
                             setValue('tags', tags, { shouldValidate: true });
                           }}
                           error={errors.tags?.message}
-                          title="スタッフの得意なメニュー"
+                          title="スタッフに付与するタグ"
                           exampleText="ヘアセット, カット, メイク"
                         />
 
@@ -618,22 +618,6 @@ export default function StaffAddPage() {
 
                     <div className="grid md:grid-cols-2 gap-6">
                       <div>
-                        <div className="flex items-center mb-2">
-                          <Tag className="h-4 w-4 mr-2 text-gray-500" />
-                          <Label className="font-medium text-gray-700">指名料金</Label>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="h-4 w-4 ml-1 text-gray-400 cursor-help" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="text-xs w-56">
-                                  お客様がこのスタッフを指名した場合の追加料金です。
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
                         <ZodTextField
                           name="extraCharge"
                           label="指名料金"
@@ -643,25 +627,12 @@ export default function StaffAddPage() {
                           placeholder="指名料金を入力してください"
                           className="transition-all duration-200"
                         />
+                        <p className="text-xs mt-1 text-gray-500">
+                          お客様がこのスタッフを指名した場合に追加料金を設定します。
+                        </p>
                       </div>
 
                       <div>
-                        <div className="flex items-center mb-2">
-                          <Sparkles className="h-4 w-4 mr-2 text-gray-500" />
-                          <Label className="font-medium text-gray-700">優先度</Label>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="h-4 w-4 ml-1 text-gray-400 cursor-help" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="text-xs w-56">
-                                  数値が大きいほど予約画面などで上位に表示されます。
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
                         <ZodTextField
                           name="priority"
                           label="優先度"
@@ -671,6 +642,9 @@ export default function StaffAddPage() {
                           placeholder="優先度を入力してください"
                           className="transition-all duration-200"
                         />
+                        <p className="text-xs mt-1 text-gray-500">
+                          数値が大きいほど予約画面などで上位に表示されます。
+                        </p>
                       </div>
                     </div>
                   </div>

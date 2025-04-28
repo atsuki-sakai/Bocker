@@ -581,18 +581,19 @@ function subtractScheduleFromAvailable(
 function computeNextAlignedStart(
   minNextStart: number,
   durationMin: number,
-  maxStart: number
+  maxStart: number,
+  stepMin: number // ← 追加: アライメントの間隔（例 30 分）
 ): number | null {
-  const kStart = Math.ceil(minNextStart / 60);
-  const candStart = kStart * 60;
-  const kEnd = Math.ceil((minNextStart + durationMin) / 60);
-  const candEnd = kEnd * 60 - durationMin;
-  const candidates: number[] = [];
-  if (candStart >= minNextStart) candidates.push(candStart);
-  if (candEnd >= minNextStart) candidates.push(candEnd);
-  if (candidates.length === 0) return null;
-  const next = Math.min(...candidates);
-  return next <= maxStart ? next : null;
+  const kStart = Math.ceil(minNextStart / stepMin)
+  const candStart = kStart * stepMin
+  const kEnd = Math.ceil((minNextStart + durationMin) / stepMin)
+  const candEnd = kEnd * stepMin - durationMin
+  const candidates: number[] = []
+  if (candStart >= minNextStart) candidates.push(candStart)
+  if (candEnd >= minNextStart) candidates.push(candEnd)
+  if (candidates.length === 0) return null
+  const next = Math.min(...candidates)
+  return next <= maxStart ? next : null
 }
 
 function generateTimeSlotsWithAlignment(
@@ -601,46 +602,82 @@ function generateTimeSlotsWithAlignment(
   includeTrailing: boolean = false,
   minSlotSize: number = 60
 ): TimeRange[] {
-  const { startHour, endHour } = availableTimeSlot;
-  const windowStart = toMinutes(startHour);
-  const windowEnd = toMinutes(endHour);
-  const windowLen = windowEnd - windowStart;
-  if (windowLen < durationMin) return [];
+  // ───────────────────────────────────────────────────────────────
+  //  予約可能なウィンドウ（availableTimeSlot）から、施術時間 durationMin
+  //  をピッタリ充填できる時間スロット一覧を生成する。
+  //
+  //  例）
+  //    availableTimeSlot: { 10:00 ~ 16:00 }, durationMin: 90
+  //      → 10:00~11:30, 11:30~13:00, 13:00~14:30, 14:30~16:00
+  //
+  //  オプション:
+  //    includeTrailing : 最後に「余り」を強制的に入れるか
+  //    minSlotSize     : スロットのアライメント間隔（例 30 分）兼ギャップ判定
+  // ───────────────────────────────────────────────────────────────
+  const { startHour, endHour } = availableTimeSlot
 
-  let result: TimeRange[] = [];
-  result.push({
-    startHour: toHourString(windowStart),
-    endHour: toHourString(windowStart + durationMin),
-  });
-  let lastStart = windowStart;
+  // HH:mm 文字列 → 分数に変換
+  const windowStart = toMinutes(startHour)
+  const windowEnd = toMinutes(endHour)
+  const windowLen = windowEnd - windowStart
+  // 予約ウィンドウ自体が施術時間より短ければスロット 0
+  if (windowLen < durationMin) return []
+
+  // === 1. 最初のスロット（ウィンドウ開始から durationMin 分） ===
+  const result: TimeRange[] = [
+    {
+      startHour: toHourString(windowStart),
+      endHour: toHourString(windowStart + durationMin),
+    },
+  ]
+
+  // lastStart: 直近でスロット開始に採用した minutes 値
+  let lastStart = windowStart
+
+  // === 2. 前回スロット開始から durationMin 以上空けて、
+  //        かつ minSlotSize 分単位に「良い感じ」で揃った次の開始時刻を探す ===
   while (true) {
-    const minNext = lastStart + durationMin;
-    const aligned = computeNextAlignedStart(minNext, durationMin, windowEnd - durationMin);
-    if (aligned === null) break;
+    const minNext = lastStart + durationMin // 次スロットが始められる最短分
+    // minSlotSize 分単位の「揃った」時刻を算出（helper）
+    const aligned = computeNextAlignedStart(
+      minNext,
+      durationMin,
+      windowEnd - durationMin,
+      minSlotSize
+    )
+    if (aligned === null) break // もう置けない
     result.push({
       startHour: toHourString(aligned),
       endHour: toHourString(aligned + durationMin),
-    });
-    lastStart = aligned;
+    })
+    lastStart = aligned
   }
+
+  // === 3. includeTrailing が true のとき、末尾ギリギリのスロットも追加 ===
   if (includeTrailing) {
-    const backStart = windowEnd - durationMin;
-    if (backStart >= windowStart && !result.some((r) => toMinutes(r.startHour) === backStart)) {
+    const backStart = windowEnd - durationMin
+    const alreadyExists = result.some((r) => toMinutes(r.startHour) === backStart)
+    if (backStart >= windowStart && !alreadyExists) {
       result.push({
         startHour: toHourString(backStart),
         endHour: toHourString(windowEnd),
-      });
+      })
     }
   }
+
+  // === 4. スロットをフィルタ：
+  //       ・ウィンドウの端を含むものは常に残す
+  //       ・それ以外は、前後ギャップが minSlotSize 以上あるものだけ残す
   const filtered = result.filter((slot) => {
-    const startMin = toMinutes(slot.startHour);
-    const endMin = toMinutes(slot.endHour);
-    if (startMin === windowStart || endMin === windowEnd) return true;
-    const beforeGap = startMin - windowStart;
-    const afterGap = windowEnd - endMin;
-    return beforeGap >= minSlotSize && afterGap >= minSlotSize;
-  });
-  return filtered;
+    const startMin = toMinutes(slot.startHour)
+    const endMin = toMinutes(slot.endHour)
+    if (startMin === windowStart || endMin === windowEnd) return true
+    const beforeGap = startMin - windowStart
+    const afterGap = windowEnd - endMin
+    return beforeGap >= minSlotSize && afterGap >= minSlotSize
+  })
+
+  return filtered
 }
 
 /**
@@ -664,21 +701,21 @@ export const calculateReservationTime = query({
   },
   handler: async (ctx, args): Promise<TimeRange[]> => {
     // 共通日付バリデーション
-    validateDateStrToDate(args.date, 'calculateReservationTime');
+    validateDateStrToDate(args.date, 'calculateReservationTime')
 
     // findAvailableTimeSlots, findStaffSchedules, findStaffReservations を直接呼び出し
     const availableTimeSlots = await ctx.runQuery(api.reservation.query.findAvailableTimeSlots, {
       salonId: args.salonId,
       staffId: args.staffId,
       date: args.date,
-    });
+    })
 
     const staffAllDaySchedules = await ctx.runQuery(api.reservation.query.findStaffSchedules, {
       salonId: args.salonId,
       staffId: args.staffId,
       date: args.date,
       isAllDay: true,
-    });
+    })
 
     if (staffAllDaySchedules.length > 0) {
       throw throwConvexError({
@@ -693,31 +730,25 @@ export const calculateReservationTime = query({
           staffId: args.staffId,
           date: args.date,
         },
-      });
+      })
     }
+
+    const salonScheduleConfig = await ctx.runQuery(api.salon.schedule.query.findBySalonId, {
+      salonId: args.salonId,
+    })
 
     const staffSchedules = await ctx.runQuery(api.reservation.query.findStaffSchedules, {
       salonId: args.salonId,
       staffId: args.staffId,
       date: args.date,
       isAllDay: false,
-    });
+    })
 
     const staffReservations = await ctx.runQuery(api.reservation.query.findStaffReservations, {
       salonId: args.salonId,
       staffId: args.staffId,
       date: args.date,
-    });
-
-    console.log('予約受付可能時間: ', availableTimeSlots);
-    console.log('スタッフの予約: ', staffReservations.length);
-
-    staffReservations.map((reservation) => {
-      console.log(
-        'スタッフの予約: ',
-        formatJpTime(reservation.startTime!) + ' 〜 ' + formatJpTime(reservation.endTime!)
-      );
-    });
+    })
 
     const allSchedules = [
       ...staffSchedules.map((schedule) => ({
@@ -728,7 +759,7 @@ export const calculateReservationTime = query({
         startHour: formatJpTime(reservation.startTime!),
         endHour: formatJpTime(reservation.endTime!),
       })),
-    ];
+    ]
 
     const subtractedSchedules = subtractScheduleFromAvailable(
       availableTimeSlots,
@@ -736,15 +767,60 @@ export const calculateReservationTime = query({
         startHour: schedule.startHour,
         endHour: schedule.endHour,
       }))
-    );
-
-    console.log('予約可能な時間枠: ', subtractedSchedules);
+    )
 
     const subtractedSchedulesWithStep = subtractedSchedules.map((schedule) => {
-      const timeSlots = generateTimeSlotsWithAlignment(schedule, args.durationMin, true);
-      return timeSlots;
-    });
-    // 結果を一つの配列にまとめて返す
-    return subtractedSchedulesWithStep.flat();
+      const timeSlots = generateTimeSlotsWithAlignment(
+        schedule,
+        args.durationMin,
+        true,
+        salonScheduleConfig?.reservationIntervalMinutes
+      )
+      return timeSlots
+    })
+
+    return subtractedSchedulesWithStep.flat()
   },
-});
+})
+
+// 指定した時間帯に重複している予約件数を取得し、
+// 同時利用可能席数(availableSheet)を超えている場合はエラーを返す
+export const countAvailableSheetInTimeRange = query({
+  args: {
+    salonId: v.id('salon'),
+    startTime: v.number(), // 予約開始 UNIX 秒
+    endTime: v.number(), // 予約終了 UNIX 秒
+  },
+  handler: async (ctx, args) => {
+    // 1. サロン設定から同時予約可能席数を取得
+    const salonConfig = await ctx.db
+      .query('salon_schedule_config')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .first()
+
+    const availableSheet = salonConfig?.availableSheet ?? null // null → 上限無し
+
+    // 2. 指定時間帯と重複する予約を取得
+    //    (予約開始 < 検索終了) かつ (予約終了 > 検索開始) で重複判定
+    const overlapping = await ctx.db
+      .query('reservation')
+      .withIndex('by_salon_start', (q) =>
+        q.eq('salonId', args.salonId).eq('isArchive', false).lt('startTime_unix', args.endTime)
+      )
+      .filter((q) => q.gt(q.field('endTime_unix'), args.startTime))
+      .collect()
+
+    const overlapCount = overlapping.length
+
+    // 3. 上限を超えていれば「利用不可」を返す
+    const isAvailable =
+      availableSheet === null || availableSheet === 0 || overlapCount < availableSheet
+
+    // 4. 結果を返却（エラーはスローしない）
+    return {
+      operationCount: overlapCount,
+      availableSheet,
+      isAvailable, // ← 追加フィールド
+    }
+  },
+})

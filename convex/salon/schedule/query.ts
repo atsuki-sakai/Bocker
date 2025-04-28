@@ -9,7 +9,7 @@ export const findBySalonId = query({
     salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true)
     validateSalonScheduleConfig(args);
     return await salonService.findScheduleConfigBySalonId(ctx, args.salonId);
   },

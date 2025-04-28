@@ -25,8 +25,8 @@ export default function ImageDrop({
   onFileSelect,
   onPreviewChange,
   maxSizeMB = 4,
-  previewWidth = 192,
-  previewHeight = 192,
+  previewWidth = 256,
+  previewHeight = 256,
   className = '',
   placeholderText = '画像をドラッグするか、クリックして選択',
   accept = 'image/*',
@@ -160,7 +160,7 @@ export default function ImageDrop({
             alt="Preview"
             unoptimized
             loader={({ src }) => src}
-            className="mx-auto rounded-md object-contain max-h-[192px] max-w-[192px]"
+            className="mx-auto rounded-md object-contain max-h-[256px] max-w-[256px]"
             width={previewWidth}
             height={previewHeight}
           />
@@ -171,7 +171,7 @@ export default function ImageDrop({
               className="absolute top-0 right-0 m-2"
               onClick={() => fileInputRef.current?.click()}
             >
-              画像を更新
+              画像を変更
             </Button>
           ) : (
             <Button

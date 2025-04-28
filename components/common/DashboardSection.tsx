@@ -51,7 +51,7 @@ export default function DashboardSection({
           )}
         </div>
       </div>
-      <div>{children}</div>
+      <div className="mb-6">{children}</div>
     </div>
   );
 }

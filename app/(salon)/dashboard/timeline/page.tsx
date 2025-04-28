@@ -661,10 +661,18 @@ export default function TimelinePage() {
                 <Loader2 className="h-5 w-5 animate-spin mr-2 text-indigo-500" />
               </div>
             </div>
-          ) : (
-            <div className="flex-1 overflow-y-auto bg-gray-50">
+          ) : reservations.length === 0 && selectedStaffId ? (
+            <div className="flex-1 overflow-y-auto bg-slate-50 rounded-md mt-4">
               <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
-                <p className="text-gray-500">スタッフを選択して予約を表示してください。</p>
+                <p className="text-slate-700 text-sm">予約がありません。</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto bg-slate-50 rounded-md mt-4">
+              <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
+                <p className="text-slate-700 text-sm">
+                  右上のプルダウンからスタッフを選択して予約を表示してください。
+                </p>
               </div>
             </div>
           )}

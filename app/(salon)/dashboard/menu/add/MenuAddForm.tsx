@@ -304,7 +304,7 @@ export default function MenuAddForm() {
               <CardContent className="flex-grow flex items-center justify-center">
                 <motion.div whileHover={{ scale: 1.02 }} className="w-full">
                   <ImageDrop
-                    maxSizeMB={4}
+                    maxSizeMB={6}
                     onFileSelect={(file) => {
                       setCurrentFile(file);
                       setValue('imgFilePath', file.name, { shouldValidate: true });
@@ -315,7 +315,7 @@ export default function MenuAddForm() {
               </CardContent>
               <CardFooter className="pt-0">
                 {errors.imgFilePath && <ErrorMessage message={errors.imgFilePath.message} />}
-                <p className="text-xs text-gray-500 mt-1">推奨サイズ: 1200 x 800px (最大4MB)</p>
+                <p className="text-xs text-gray-500 mt-1">推奨サイズ: 1200 x 1200px (最大6MB)</p>
               </CardFooter>
             </Card>
           </div>
@@ -323,7 +323,7 @@ export default function MenuAddForm() {
           {/* 右カラム - 基本情報 */}
           <div className="md:col-span-2 space-y-5">
             {/* メニュー名 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <ZodTextField
                 name="name"
                 label="メニュー名"
@@ -335,7 +335,10 @@ export default function MenuAddForm() {
                 className="border-gray-200 focus-within:border-blue-500 transition-colors"
               />
               <div>
-                <Label className="text-sm flex items-center gap-2 mb-2">カテゴリー</Label>
+                <div className="text-sm flex items-start gap-2 mb-2">
+                  <Label className="text-sm flex items-center gap-2">カテゴリー</Label>
+                  <span className="text-red-500">*</span>
+                </div>
                 <Select
                   value={watch('category')}
                   onValueChange={(value) => {
@@ -353,6 +356,13 @@ export default function MenuAddForm() {
                     ))}
                   </SelectContent>
                 </Select>
+                <span className="text-xs text-gray-500">
+                  もしカテゴリがない場合は
+                  <a href="mailto:atk721@icloud.com" className="text-blue-500 underline">
+                    こちら
+                  </a>
+                  から追加申請いただけます。
+                </span>
               </div>
             </div>
             {/* 価格関連 */}

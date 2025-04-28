@@ -30,6 +30,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trash2 } from 'lucide-react';
 import { handleErrorToMsg } from '@/lib/error';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 // 開始時間と終了時間を含む日付の型定義
 type DateWithTimes = {
   date: Date;
@@ -425,6 +431,117 @@ export default function StaffSchedulePage() {
               </div>
             </TabsContent>
           </Tabs>
+        </div>
+        <div className="mt-4">
+          <Accordion type="multiple">
+            <AccordionItem value="common">
+              <AccordionTrigger>スタッフの週間スケジュールについて</AccordionTrigger>
+              <AccordionContent className="space-y-4 text-sm leading-relaxed">
+                <ol className="list-none space-y-2 text-slate-700">
+                  <strong className="text-yellow-700">前提：サロンの営業日を確認</strong>
+                  <li className="bg-yellow-50 p-2 text-yellow-700 rounded-md">
+                    先に「サロン営業日」を登録しておくと、スタッフ側では営業日だけが選択肢として表示されます。
+                    <br />
+                    スタッフの勤務日は <em>サロンが休業の日には設定できません</em>。
+                  </li>
+                  <li className="bg-slate-50 p-2 rounded-md">
+                    <strong>勤務日にしたい曜日をクリック</strong>
+                    <br />
+                    グレー（休日）→ カラー（勤務日）に切り替わります。
+                    <br />
+                    勤務日が ON になった曜日だけが予約時のスタッフの選択肢に表示されます。
+                  </li>
+                  <li className="bg-slate-50 p-2 rounded-md">
+                    <strong>共通勤務時間の有無を決める</strong>
+                    <br />
+                    「共通設定」を <em>ON</em> にすると、全勤務日に同じ時間帯を適用します。
+                    <br />
+                    OFF にすると曜日ごとに個別設定が可能です。
+                  </li>
+                  <li className="bg-slate-50 p-2 rounded-md">
+                    <strong>時間を入力／選択</strong>
+                    <br />
+                    開始時刻を選ぶと、その時刻より後だけが終了時刻の候補に残ります。
+                  </li>
+                  <li className="bg-slate-50 p-2 rounded-md">
+                    <strong>サロン営業時間との衝突ルール</strong>
+                    <br />
+                    開始時刻は <em>遅い方</em>、終了時刻は <em>早い方</em> が採用されます。
+                    <br />
+                    例：サロン&nbsp;09:00‑18:00, スタッフ&nbsp;08:30‑19:00 → 実際は&nbsp;
+                    <strong>09:00‑18:00</strong>。
+                  </li>
+                </ol>
+
+                <h4 className="font-semibold pt-2 text-slate-700">よくある質問</h4>
+                <ul className="space-y-2 pl-4 list-disc text-slate-700">
+                  <li>
+                    <strong>勤務日を後から変更すると時間はどうなる？</strong>
+                    <br />
+                    新たに ON にした日は「共通設定 ON 時は共通時間」「OFF 時はデフォルト
+                    09:00‑17:00」が初期値になります。
+                  </li>
+                  <li>
+                    <strong>サロン営業日を変更したら？</strong>
+                    <br />
+                    休業日に切り替えた曜日は自動でスタッフ勤務日も OFF になります。
+                  </li>
+                  <li>
+                    <strong>24:00 を跨ぐシフトは？</strong>
+                    <br />
+                    現仕様では同日内で完結する時間のみ対応です。深夜帯シフトの機能追加までお待ちください。
+                  </li>
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="guide">
+              <AccordionTrigger>スケジュール設定の使い方</AccordionTrigger>
+              <AccordionContent className="space-y-4 text-sm leading-relaxed">
+                <ol className="list-decimal list-inside space-y-2 text-slate-700">
+                  <li className="bg-slate-50 p-2 rounded-md">
+                    <strong>スタッフを選択</strong>
+                    <br />
+                    上部のプルダウンから予定を登録したいスタッフを選びます。
+                  </li>
+                  <li className="bg-slate-50 p-2 rounded-md">
+                    <strong>日付をカレンダーで選択</strong>
+                    <br />
+                    クリックするだけで複数日をまとめて指定できます。もう一度クリックすると解除されます。
+                  </li>
+                  <li className="bg-slate-50 p-2 rounded-md">
+                    <strong>終日 or 時間帯を設定</strong>
+                    <br />
+                    「終日」スイッチを ON にするとその日は 24 時間受付停止、OFF
+                    の場合は開始・終了時刻を 10 分刻みで入力します。
+                  </li>
+                  <li className="bg-slate-50 p-2 rounded-md">
+                    <strong>備考を入力（任意）</strong>
+                    <br />
+                    理由やメモを残すとチーム内で共有できます。
+                  </li>
+                  <li className="bg-slate-50 p-2 rounded-md">
+                    <strong>保存</strong>
+                    <br />
+                    「予定を保存」を押すと即時反映。予約カレンダーから該当枠が非表示になります。
+                  </li>
+                </ol>
+
+                <h4 className="font-semibold pt-2 text-slate-700">よくある質問</h4>
+                <ul className="space-y-2 pl-4  text-slate-700 bg-slate-50 p-2 rounded-md">
+                  <li>
+                    <strong>1日に複数のスケジュールを登録したい</strong>
+                    <br />
+                    現在は1日に1つのスケジュールしか登録できません。
+                  </li>
+                  <li>
+                    <strong>誤って作成したスケジュールを削除したい</strong>
+                    <br />
+                    カード右上のゴミ箱アイコンをクリックして非選択にして保存すると削除されます。
+                  </li>
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       </div>
     </DashboardSection>

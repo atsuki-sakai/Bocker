@@ -59,6 +59,7 @@ export const update = mutation({
   args: {
     menuId: v.id('menu'),
     name: v.optional(v.string()),
+    category: v.optional(menuCategoryType),
     unitPrice: v.optional(v.number()),
     salePrice: v.optional(v.number()),
     timeToMin: v.optional(v.number()),
@@ -112,7 +113,8 @@ export const upsert = mutation({
     menuId: v.id('menu'),
     salonId: v.id('salon'),
     name: v.optional(v.string()),
-    price: v.optional(v.number()),
+    category: v.optional(menuCategoryType),
+    unitPrice: v.optional(v.number()),
     salePrice: v.optional(v.number()),
     timeToMin: v.optional(v.number()),
     ensureTimeToMin: v.optional(v.number()),

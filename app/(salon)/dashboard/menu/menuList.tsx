@@ -48,14 +48,7 @@ interface MenuItemProps {
 
 const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.2 }}
-      className="col-span-1"
-    >
+    <div className="col-span-1">
       <Card className="h-full overflow-hidden hover:shadow-md transition-all">
         <div className="relative h-32 md:h-48 w-full">
           {menu.imgPath ? (
@@ -69,7 +62,11 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
           )}
           <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
             {menu.tags?.map((tag: string, idx: number) => (
-              <Badge key={idx} variant="secondary" className="bg-slate-700 text-white text-xs">
+              <Badge
+                key={idx}
+                variant="secondary"
+                className="bg-white border border-green-500 text-green-500 text-xs font-light"
+              >
                 {tag}
               </Badge>
             ))}
@@ -107,6 +104,11 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
           </DropdownMenu>
         </div>
         <CardContent className="p-2 md:p-4">
+          {menu.category && (
+            <Badge variant="default" className="mb-1">
+              {menu.category}
+            </Badge>
+          )}
           <h3 className="font-semibold text-base md:text-lg line-clamp-1">{menu.name}</h3>
 
           <div className="mt-2 flex items-center justify-between">
@@ -123,7 +125,7 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
               </div>
               <div className="flex items-center text-sm text-muted-foreground mt-1">
                 <Clock className="h-3 w-3 mr-1" />
-                {menu.timeToMin}分
+                {menu.timeToMin}分{menu.ensureTimeToMin ? ` / ${menu.ensureTimeToMin}分` : ''}
               </div>
             </div>
           </div>
@@ -140,7 +142,7 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
           )}
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 };
 
@@ -211,6 +213,11 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0 md:pl-2">
+                    {menu.category && (
+                      <Badge variant="default" className="text-xs mb-1">
+                        {menu.category}
+                      </Badge>
+                    )}
                     <h3 className="font-medium text-base md:text-lg truncate">{menu.name}</h3>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
@@ -227,7 +234,8 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
 
                       <div className="flex items-center">
                         <Clock className="h-3 w-3 mr-1" />
-                        {menu.timeToMin}分
+                        {menu.timeToMin}分{' '}
+                        {menu.ensureTimeToMin ? ` / ${menu.ensureTimeToMin}分` : ''}
                       </div>
 
                       {menu.paymentMethod && (

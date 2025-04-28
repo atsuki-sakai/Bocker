@@ -480,9 +480,23 @@ export default defineSchema({
     customerId: v.optional(v.id('customer')), // 顧客ID
     staffId: v.id('staff'), // スタッフID
     staffName: v.optional(v.string()), // スタッフ名
-    menuIds: v.optional(v.array(v.id('menu'))), // メニューID
+    menus: v.optional(
+      v.array(
+        v.object({
+          menuId: v.id('menu'),
+          quantity: v.number(),
+        })
+      )
+    ), // メニューID
     salonId: v.id('salon'), // サロンID
-    optionIds: v.optional(v.array(v.id('salon_option'))), // オプションID
+    options: v.optional(
+      v.array(
+        v.object({
+          optionId: v.id('salon_option'),
+          quantity: v.number(),
+        })
+      )
+    ), // オプションID
     unitPrice: v.optional(v.number()), // 単価
     totalPrice: v.optional(v.number()), // 合計金額
     status: v.optional(reservationStatusType), // 予約ステータス

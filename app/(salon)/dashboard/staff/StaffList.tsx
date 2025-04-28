@@ -74,6 +74,12 @@ export default function StaffList() {
                   >
                     性別
                   </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                  >
+                    タグ
+                  </th>
                   <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
                     <span className="sr-only">詳細</span>
                   </th>
@@ -86,7 +92,7 @@ export default function StaffList() {
                 {staffs && staffs.length > 0 ? (
                   staffs.map((staff: Doc<'staff'>, index: number) => (
                     <tr key={index}>
-                      <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6">
+                      <td className="py-4 pr-3 pl-4 text-xs font-medium whitespace-nowrap text-gray-900 sm:pl-6">
                         {staff.isActive ? (
                           <Badge variant="outline" className="bg-green-600 text-white">
                             有効
@@ -131,12 +137,21 @@ export default function StaffList() {
                             ? '男性'
                             : '女性'}
                       </td>
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500 flex flex-wrap gap-2">
+                        {staff.tags?.map((tag: string, index: number) => (
+                          <Badge variant="default" key={index}>
+                            {tag}
+                          </Badge>
+                        ))}
+                      </td>
                       <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                         <Link
                           href={`/dashboard/staff/${staff._id}`}
-                          className="text-yellow-600 hover:text-yellow-900"
+                          className="text-purple-600 hover:text-purple-900"
                         >
-                          　詳細<span className="sr-only">, {staff.name}</span>
+                          <Button variant="ghost" size="sm">
+                            <span>詳細</span>
+                          </Button>
                         </Link>
                       </td>
                       <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
@@ -144,7 +159,9 @@ export default function StaffList() {
                           href={`/dashboard/staff/${staff._id}/edit`}
                           className="text-indigo-600 hover:text-indigo-900"
                         >
-                          編集<span className="sr-only">, {staff.name}</span>
+                          <Button variant="ghost" size="sm">
+                            <span>編集</span>
+                          </Button>
                         </Link>
                       </td>
                     </tr>

@@ -175,8 +175,6 @@ export default function StaffEditForm() {
       : 'skip'
   );
 
-  console.log('staffAllData', staffAllData);
-
   const initialExclusionMenus = useMemo(() => {
     return exclusionMenus ? [...exclusionMenus].sort() : [];
   }, [exclusionMenus]);

@@ -33,36 +33,6 @@ import { toast } from 'sonner';
 import { handleErrorToMsg } from '@/lib/error';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
-// アニメーション設定
-const animations = {
-  container: {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.1,
-      },
-    },
-  },
-  item: {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: 'spring',
-        damping: 25,
-        stiffness: 200,
-      },
-    },
-  },
-  image: {
-    hover: { scale: 1.02, transition: { duration: 0.3 } },
-  },
-};
 
 // ラベル定義をコンポーネント外に移動し、再レンダリングの影響を受けないようにする
 const labels = {
@@ -165,49 +135,27 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   }
 
   return (
-    <motion.div
-      className="space-y-6"
-      variants={animations.container}
-      initial="hidden"
-      animate="visible"
-    >
+    <div className="space-y-6">
       {/* アクションボタン */}
-      <motion.div variants={animations.item} className="flex items-center justify-end gap-3">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href={`/dashboard/menu/${menu._id}/edit`}>
-                <Button variant="default" size="sm" className="group">
-                  <Edit className="w-4 h-4 mr-2" /> 編集
-                </Button>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>このメニューを編集する</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+      <div className="flex items-center justify-end gap-3">
+        <Link href={`/dashboard/menu/${menu._id}/edit`}>
+          <Button variant="default" size="sm" className="group">
+            <Edit className="w-4 h-4 mr-2" /> 編集
+          </Button>
+        </Link>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="destructive" size="sm" onClick={() => setIsDeleteDialogOpen(true)}>
-                <Trash className="w-4 h-4 mr-2" /> 削除
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>このメニューを削除する</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </motion.div>
+        <Button variant="destructive" size="sm" onClick={() => setIsDeleteDialogOpen(true)}>
+          <Trash className="w-4 h-4 mr-2" /> 削除
+        </Button>
+      </div>
 
       {/* ヘッダー情報 */}
-      <motion.div
-        variants={animations.item}
-        className="flex flex-col md:flex-row gap-6 items-start"
-      >
+      <div className="flex flex-col md:flex-row gap-6 items-start">
         {/* メニュー画像 */}
         <Card className="w-full md:w-1/3 overflow-hidden transition-shadow hover:shadow-md">
           <div className="relative h-64 overflow-hidden">
             {menu.imgPath ? (
-              <motion.div whileHover={animations.image.hover} className="h-full w-full">
+              <div className="h-full w-full">
                 <Image
                   src={menu.imgPath}
                   alt={menu.name || 'メニュー画像'}
@@ -217,7 +165,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   priority
                   loading="eager"
                 />
-              </motion.div>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-full bg-gray-50 text-gray-400">
                 <Info className="w-8 h-8 mr-2 opacity-30" />
@@ -228,7 +176,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
           <CardFooter className="p-4 flex flex-wrap gap-2">
             <Badge
               variant={menu.isActive ? 'default' : 'secondary'}
-              className={`transition-all ${menu.isActive ? 'bg-green-500' : 'bg-gray-500'}`}
+              className={`transition-all ${menu.isActive ? 'bg-green-50 border-green-500 text-green-500' : 'bg-gray-50 border border-gray-500 text-gray-500'}`}
             >
               {menu.isActive ? (
                 <>
@@ -250,9 +198,14 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
         </Card>
 
         {/* メニュー情報 */}
-        <Card className="w-full md:w-2/3 shadow-sm hover:shadow transition-shadow">
+        <div className="w-full md:w-2/3">
           <CardHeader className="pb-2">
-            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+            {menu.category && (
+              <Badge variant={'default'} className="text-xs w-fit px-2 py-1">
+                <p>{menu.category}</p>
+              </Badge>
+            )}
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent py-1">
               {menu.name}
             </CardTitle>
           </CardHeader>
@@ -267,7 +220,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
               <TabsContent value="basic" className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* 料金情報 */}
-                  <div className="flex items-start p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <div className="flex items-start p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
                     <CreditCard className="w-5 h-5 mt-1 mr-3 text-blue-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">料金</p>
@@ -289,16 +242,24 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   </div>
 
                   {/* 所要時間 */}
-                  <div className="flex items-start p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <div className="flex items-start p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
                     <Clock className="w-5 h-5 mt-1 mr-3 text-indigo-500" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">所要時間</p>
-                      <p className="text-lg font-medium text-gray-900">{menu.timeToMin || 0}分</p>
+                    <div className="flex flex-row gap-6">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">実作業時間</p>
+                        <p className="text-lg font-medium text-gray-900">{menu.timeToMin || 0}分</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">トータル施術時間</p>
+                        <p className="text-lg font-medium text-gray-900">
+                          {menu.ensureTimeToMin || 0}分
+                        </p>
+                      </div>
                     </div>
                   </div>
 
                   {/* 対象性別 */}
-                  <div className="flex items-start p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <div className="flex items-start p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
                     <Users className="w-5 h-5 mt-1 mr-3 text-purple-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">対象</p>
@@ -309,7 +270,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   </div>
 
                   {/* ターゲット */}
-                  <div className="flex items-start p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <div className="flex items-start p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
                     <Repeat className="w-5 h-5 mt-1 mr-3 text-green-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">ターゲット</p>
@@ -320,7 +281,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   </div>
 
                   {/* 支払い方法 */}
-                  <div className="flex items-start p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <div className="flex items-start p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
                     <CreditCard className="w-5 h-5 mt-1 mr-3 text-amber-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">支払い方法</p>
@@ -375,7 +336,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
 
                 {/* タグ */}
                 <div className="space-y-2">
-                  <h3 className="text-md font-medium text-gray-700 flex items-center">
+                  <h3 className="text-md text-gray-700 flex items-center">
                     <Tag className="w-4 h-4 mr-2 text-blue-500" />
                     タグ
                   </h3>
@@ -385,7 +346,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                         <Badge
                           key={index}
                           variant="outline"
-                          className="bg-gray-50 hover:bg-blue-50 hover:border-blue-200 transition-colors py-1 px-3"
+                          className="bg-green-50 text-green-500 border-green-500 font-light hover:bg-green-50 hover:border-green-200 transition-colors py-1 px-3"
                         >
                           {tag}
                         </Badge>
@@ -409,8 +370,8 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
               </TabsContent>
             </Tabs>
           </CardContent>
-        </Card>
-      </motion.div>
+        </div>
+      </div>
 
       {/* 削除確認ダイアログ */}
       <Dialog
@@ -422,6 +383,6 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
       />
-    </motion.div>
+    </div>
   );
 }

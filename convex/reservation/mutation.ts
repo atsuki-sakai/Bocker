@@ -13,9 +13,23 @@ export const create = mutation({
     customerId: v.optional(v.id('customer')),
     staffId: v.id('staff'),
     staffName: v.optional(v.string()),
-    menuIds: v.optional(v.array(v.id('menu'))),
+    menus: v.optional(
+      v.array(
+        v.object({
+          menuId: v.id('menu'),
+          quantity: v.number(),
+        })
+      )
+    ),
     salonId: v.id('salon'),
-    optionIds: v.optional(v.array(v.id('salon_option'))),
+    options: v.optional(
+      v.array(
+        v.object({
+          optionId: v.id('salon_option'),
+          quantity: v.number(),
+        })
+      )
+    ),
     unitPrice: v.optional(v.number()),
     totalPrice: v.optional(v.number()),
     status: v.optional(reservationStatusType),
@@ -28,8 +42,8 @@ export const create = mutation({
     paymentMethod: v.optional(paymentMethodType),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateReservation(args);
+    checkAuth(ctx)
+    validateReservation(args)
 
     // 必須フィールドの存在確認
     if (!args.startTime_unix || !args.endTime_unix) {
@@ -41,11 +55,11 @@ export const create = mutation({
         callFunc: 'reservation.create',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
     // スタッフの存在確認
-    const staff = await ctx.db.get(args.staffId);
+    const staff = await ctx.db.get(args.staffId)
     if (!staff) {
       throw throwConvexError({
         title: 'スタッフが見つかりません',
@@ -55,11 +69,11 @@ export const create = mutation({
         callFunc: 'reservation.create',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
     // サロンの存在確認
-    const salon = await ctx.db.get(args.salonId);
+    const salon = await ctx.db.get(args.salonId)
     if (!salon) {
       throw throwConvexError({
         message: '指定されたサロンが存在しません',
@@ -69,7 +83,7 @@ export const create = mutation({
         callFunc: 'reservation.create',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
     if (args.startTime_unix === undefined || args.endTime_unix === undefined) {
@@ -81,7 +95,7 @@ export const create = mutation({
         callFunc: 'reservation.create',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
     // 予約の重複チェック
@@ -93,7 +107,7 @@ export const create = mutation({
         startTime_unix: args.startTime_unix,
         endTime_unix: args.endTime_unix,
       }
-    );
+    )
     if (checkDoubleBooking.isOverlapping) {
       throw throwConvexError({
         message: 'この時間帯はすでに予約が入っています。別の時間を選択してください。',
@@ -103,17 +117,17 @@ export const create = mutation({
         callFunc: 'reservation.create',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
     // 予約の作成
     const reservationId = await ctx.db.insert('reservation', {
       ...args,
       isArchive: false,
-    });
+    })
 
-    return reservationId;
+    return reservationId
   },
-});
+})
 
 // 予約情報の更新
 export const update = mutation({
@@ -218,9 +232,23 @@ export const upsert = mutation({
     reservationId: v.id('reservation'),
     customerId: v.id('customer'),
     staffId: v.id('staff'),
-    menuId: v.id('menu'),
+    menus: v.optional(
+      v.array(
+        v.object({
+          menuId: v.id('menu'),
+          quantity: v.number(),
+        })
+      )
+    ),
     salonId: v.id('salon'),
-    optionIds: v.optional(v.array(v.id('salon_option'))),
+    options: v.optional(
+      v.array(
+        v.object({
+          optionId: v.id('salon_option'),
+          quantity: v.number(),
+        })
+      )
+    ),
     unitPrice: v.optional(v.number()),
     totalPrice: v.optional(v.number()),
     status: v.optional(reservationStatusType),
@@ -233,8 +261,8 @@ export const upsert = mutation({
     paymentMethod: v.optional(paymentMethodType),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateReservation(args);
+    checkAuth(ctx)
+    validateReservation(args)
 
     // 必須フィールドの存在確認
     if (!args.startTime_unix || !args.endTime_unix) {
@@ -246,20 +274,16 @@ export const upsert = mutation({
         callFunc: 'reservation.upsert',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
-    // ミリ秒単位のタイムスタンプをそのまま使用し、予約日を取得
-    const reservationDate = new Date(args.startTime_unix!);
-    const dateString = reservationDate.toISOString().split('T')[0]; // YYYY-MM-DD形式
-
-    const existingReservation = await ctx.db.get(args.reservationId);
+    const existingReservation = await ctx.db.get(args.reservationId)
 
     if (!existingReservation || existingReservation.isArchive) {
       return await ctx.db.insert('reservation', {
         ...args,
         isArchive: false,
-      });
+      })
     } else {
       // 既存予約の更新の場合
       // 予約時間が変更されている場合、重複チェックを行う
@@ -283,7 +307,7 @@ export const upsert = mutation({
               q.gt(q.field('endTime_unix'), args.startTime_unix!)
             )
           )
-          .collect();
+          .collect()
 
         if (existingReservations.length > 0) {
           throw throwConvexError({
@@ -294,26 +318,24 @@ export const upsert = mutation({
             callFunc: 'reservation.upsert',
             severity: 'low',
             details: { ...args },
-          });
+          })
         }
       }
 
-      const updateData = excludeFields(args, ['reservationId']);
-      return await ctx.db.patch(existingReservation._id, updateData);
+      const updateData = excludeFields(args, ['reservationId'])
+      return await ctx.db.patch(existingReservation._id, updateData)
     }
   },
-});
+})
 
 export const kill = mutation({
   args: {
     reservationId: v.id('reservation'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateRequired(args.reservationId, 'reservationId');
-    return await killRecord(ctx, args.reservationId);
+    checkAuth(ctx)
+    validateRequired(args.reservationId, 'reservationId')
+    return await killRecord(ctx, args.reservationId)
   },
-});
+})
 
-
-// 

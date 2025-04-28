@@ -1,12 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Id } from '@/convex/_generated/dataModel';
 import { useRouter } from 'next/navigation';
 import { handleErrorToMsg } from '@/lib/error';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import {
   Select,
   SelectContent,
@@ -22,9 +27,9 @@ import {
   Calendar,
   Save,
   Clock3,
+  Loader2,
   Coffee,
   Settings2,
-  AlertCircle,
   X,
   Check,
   CalendarClock,
@@ -36,8 +41,8 @@ import { Loading } from '@/components/common';
 import { useZodForm } from '@/hooks/useZodForm';
 import { z } from 'zod';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+
 // dayOfWeekTypeの値を定義（エラー修正用）
 const DAY_OF_WEEK_VALUES = [
   'monday',
@@ -93,13 +98,13 @@ const DAYS_OF_WEEK = [
     id: 'saturday',
     week: '土曜日',
     shortWeek: '土',
-    color: 'bg-orange-50 border-orange-200 text-orange-700',
+    color: 'bg-blue-50 border-blue-200 text-blue-700',
   },
   {
     id: 'sunday',
     week: '日曜日',
     shortWeek: '日',
-    color: 'bg-orange-50 border-orange-200 text-orange-700',
+    color: 'bg-blue-50 border-blue-200 text-blue-700',
   },
 ];
 
@@ -131,28 +136,7 @@ export interface WeekScheduleData {
   commonEndHour: string;
 }
 
-// アニメーション設定
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.05,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const fadeInVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.3 } },
-};
-
-const defaultScheduleHour = { startHour: '08:00', endHour: '19:00' };
+const defaultScheduleHour = { startHour: '09:00', endHour: '17:00' };
 
 // 情報アイコンコンポーネント
 const InfoIcon = ({ className }: { className?: string }) => (
@@ -174,6 +158,24 @@ const InfoIcon = ({ className }: { className?: string }) => (
 
 export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'> }) {
   const { salonId } = useSalon();
+  // 横スクロール可否判定用
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isScrollable, setIsScrollable] = useState(false);
+
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const updateScrollable = () => {
+      setIsScrollable(el.scrollWidth > el.clientWidth);
+    };
+    updateScrollable(); // 初回判定
+    el.addEventListener('scroll', updateScrollable);
+    window.addEventListener('resize', updateScrollable);
+    return () => {
+      el.removeEventListener('scroll', updateScrollable);
+      window.removeEventListener('resize', updateScrollable);
+    };
+  }, []);
   const [isSaving, setIsSaving] = useState(false);
   const [scheduleTab, setScheduleTab] = useState('common');
   const router = useRouter();
@@ -524,12 +526,7 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
   }
 
   return (
-    <motion.div
-      className=""
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div>
       <Card className="border shadow-lg overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 border-b">
           <div className="flex items-center gap-2">
@@ -542,44 +539,49 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
         </CardHeader>
 
         <CardContent className="p-6">
-          <motion.div className="space-y-8" variants={containerVariants}>
+          <div className="space-y-8">
             {/* 営業日設定 */}
-            <motion.div variants={itemVariants}>
-              <div className="bg-blue-50 p-4 rounded-lg mb-4 flex items-center gap-2 text-sm">
-                <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                <p className="text-blue-700">
-                  勤務する曜日を選択してください。勤務しない曜日は休日として設定されます。
-                </p>
-              </div>
+            <div>
               <p className="text-sm mb-2 font-semibold">サロンの営業日</p>
-              <div className="flex flex-wrap w-fit items-start gap-2 bg-blue-50 p-4 rounded-lg mb-4">
-                {DAYS_OF_WEEK.map((day) => {
-                  const schedule = salonWeekSchedules?.find(
-                    (schedule) => schedule.dayOfWeek === day.id
-                  );
-                  return (
-                    <div
-                      key={day.id}
-                      className="flex flex-col justify-center items-center gap-2 text-xs p-1"
-                    >
-                      <span className="font-semibold">{day.week}</span>
-                      {schedule?.isOpen ? (
-                        <span className="text-green-600 bg-green-50 rounded-full px-2 py-1">
-                          営業日
-                        </span>
-                      ) : (
-                        <span className="text-red-600 bg-red-50 rounded-full px-2 py-1">
-                          定休日
-                        </span>
-                      )}
-                      {schedule?.isOpen && (
-                        <span className="text-gray-500">
-                          {schedule?.startHour} ~ {schedule?.endHour}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+              {/* 横スクロール可能リスト  */}
+              <div className="relative mb-4">
+                <div
+                  ref={scrollContainerRef}
+                  className="flex overflow-x-auto w-full items-start gap-2 bg-white rounded-lg pr-6"
+                >
+                  {DAYS_OF_WEEK.map((day) => {
+                    const schedule = salonWeekSchedules?.find(
+                      (schedule) => schedule.dayOfWeek === day.id
+                    );
+                    return (
+                      <div
+                        key={day.id}
+                        className="flex flex-col min-w-24 justify-center items-center gap-2 text-xs p-1"
+                      >
+                        <span className="font-semibold">{day.week}</span>
+                        {schedule?.isOpen ? (
+                          <span className="text-green-600 bg-green-50 rounded-full px-2 py-1">
+                            営業日
+                          </span>
+                        ) : (
+                          <span className="text-red-600 bg-red-50 rounded-full px-2 py-1">
+                            定休日
+                          </span>
+                        )}
+                        {schedule?.isOpen && (
+                          <span className="text-gray-500">
+                            {schedule?.startHour} ~ {schedule?.endHour}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 右端グラデーション（スクロールヒント） */}
+                {isScrollable && (
+                  <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-white/90 to-transparent" />
+                )}
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -592,10 +594,8 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
                   const isOpen = weekScheduleData.scheduleSettings[dayId].isOpen;
 
                   return (
-                    <motion.div
+                    <div
                       key={day.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                       onClick={() => handleDayToggle(dayId)}
                       className={`
                           cursor-pointer p-3 rounded-lg border-2 transition-all
@@ -607,7 +607,7 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
                         `}
                     >
                       <div className="flex flex-col items-start justify-between">
-                        <span className="font-semibold">{day.week}</span>
+                        <span className="font-semibold mb-1">{day.week}</span>
                         {isOpen ? (
                           <div className="flex items-center gap-1 text-xs">
                             <Check className="h-4 w-4" />
@@ -622,22 +622,17 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
                       </div>
 
                       {isOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="mt-2 text-sm"
-                        >
+                        <div className="mt-2 text-sm font-bold ">
                           {weekScheduleData.scheduleSettings[dayId].startHour} ~{' '}
                           {weekScheduleData.scheduleSettings[dayId].endHour}
-                        </motion.div>
+                        </div>
                       )}
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
-            </motion.div>
-            <motion.div variants={itemVariants}>
+            </div>
+            <div>
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="h-5 w-5 text-blue-600" />
                 <h3 className="text-lg font-semibold">勤務時間設定</h3>
@@ -721,24 +716,12 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
                           </Select>
                         </div>
                       </div>
-
-                      <div className="mt-4 p-3 bg-white rounded border border-blue-200 text-sm text-blue-700">
-                        <div className="flex items-start gap-2">
-                          <InfoIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                          <div>
-                            すべての勤務日に同じ勤務時間が適用されます。曜日ごとに個別の時間を設定する場合は、共通設定をオフにしてください。
-                            <br />
-                            サロンの営業日と重複している場合は、サロンの営業日時とスタッフの出勤スケジュールは開始時間は遅い方(09:00
-                            より 10:00)、終了時間は早い方(18:00 より 17:00) を優先して設定されます。
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   )}
                 </TabsContent>
 
                 <TabsContent value="individual">
-                  <motion.div variants={fadeInVariants} initial="hidden" animate="visible">
+                  <div>
                     {activeDays.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {DAYS_OF_WEEK.filter(
@@ -820,63 +803,34 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
                         </p>
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 </TabsContent>
               </Tabs>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
 
-          <motion.div className="mt-8 flex justify-end items-center gap-3" variants={itemVariants}>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="min-w-[120px]"
-                    onClick={handleSubmit(onSubmit)}
-                  >
-                    {isSaving ? (
-                      <>
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        >
-                          <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              fill="none"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                          </svg>
-                        </motion.div>
-                        保存中...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4" />
-                        勤務時間を保存
-                      </>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>勤務日と勤務時間の設定を保存します</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </motion.div>
+          <div className="mt-8 flex justify-end items-center gap-3">
+            <Button
+              type="submit"
+              size="lg"
+              className="min-w-[120px]"
+              onClick={handleSubmit(onSubmit)}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  保存中...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  勤務時間を保存
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 }

@@ -222,7 +222,7 @@ export default function SalonScheduleForm() {
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-            e.preventDefault();
+            e.preventDefault()
           }
         }}
       >
@@ -301,8 +301,8 @@ export default function SalonScheduleForm() {
                     reservationIntervalMinutesValue || defaultSchedule.reservationIntervalMinutes
                   }
                   onValueChange={(value) => {
-                    const validValue = value || defaultSchedule.reservationIntervalMinutes;
-                    setValue('reservationIntervalMinutes', validValue, { shouldDirty: true });
+                    const validValue = value || defaultSchedule.reservationIntervalMinutes
+                    setValue('reservationIntervalMinutes', validValue, { shouldDirty: true })
                   }}
                 >
                   <SelectTrigger className="w-full">
@@ -316,9 +316,7 @@ export default function SalonScheduleForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  予約が埋まる事で予約間隔未満の時間が余ってしまう時間枠を非表示にします。
-                </p>
+                <p className="text-xs text-muted-foreground">予約枠を生成する間隔を設定します。</p>
               </FormField>
             </div>
 
@@ -333,8 +331,8 @@ export default function SalonScheduleForm() {
                   value={availableSheetValue || defaultSchedule.availableSheet}
                   onValueChange={(value) => {
                     // 空の値の場合はデフォルト値の'30'を設定
-                    const validValue = value || defaultSchedule.availableSheet;
-                    setValue('availableSheet', validValue, { shouldDirty: true });
+                    const validValue = value || defaultSchedule.availableSheet
+                    setValue('availableSheet', validValue, { shouldDirty: true })
                   }}
                 >
                   <SelectTrigger className="w-full">
@@ -464,29 +462,39 @@ export default function SalonScheduleForm() {
 
               <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
                 <li>
+                  生成される予約枠の間隔は施術時間との時間か予約間隔のどちらか大きい方になります。
                   現在、予約間隔は
                   <span className="font-semibold"> {watch('reservationIntervalMinutes')} 分</span>
                   に設定されています。
                 </li>
                 <li>
+                  例えば施術時間が30分で予約間隔が60分の場合、生成される予約枠の間隔は60分になります。
+                </li>
+                <li>
+                  施術時間が30分で予約間隔が30分の場合、生成される予約枠の間隔は30分になります。
+                </li>
+                <li>
+                  施術時間が30分で予約間隔が15分の場合、生成される予約枠の間隔は30分になります。
+                </li>
+                <li>
                   <span className="font-bold">目的：</span>
-                  隙間時間の発生を抑え、席・スタッフの稼働率を最大化するために
-                  顧客へ提示する開始時刻を制限します。
+                  予約枠の開始時刻は<span className="font-semibold">予約間隔</span> の倍数に揃え、
+                  端数枠を非表示にすることで席・スタッフの稼働率を最大化します。
                 </li>
                 <li>
                   <span className="font-bold">例：</span>
-                  施術時間が<strong>30&nbsp;分</strong>の場合…
                   <ul className="list-disc list-inside ml-5 space-y-1">
                     <li>
-                      間隔<strong>0&nbsp;分</strong> → 08:00, 08:30, 09:00, 09:30 …
+                      予約間隔<strong>0&nbsp;分</strong> → 施術時間のみで区切り (例: 30 分施術なら
+                      08:00, 08:30, 09:00 …)
                     </li>
                     <li>
-                      間隔<strong>30&nbsp;分</strong> → 08:00, 08:30, 09:00, 09:30 …
-                      （0&nbsp;分と同じだが内部ロジックを合わせやすい）
+                      予約間隔<strong>30&nbsp;分</strong> → 08:00, 08:30, 09:00, 09:30 … （30
+                      分単位で揃える）
                     </li>
                     <li>
-                      間隔<strong>60&nbsp;分</strong> → 08:00, 09:00, 10:00 …
-                      （30&nbsp;分の端数枠は非表示）
+                      予約間隔<strong>60&nbsp;分</strong> → 08:00, 09:00, 10:00 … （30
+                      分の端数枠は非表示）
                     </li>
                   </ul>
                 </li>
@@ -499,7 +507,11 @@ export default function SalonScheduleForm() {
                 <li>
                   短すぎると顧客は細かく時間を選択できますが、サロンの無駄な待ち時間が発生しやすくなります。
                   <strong>60&nbsp;分</strong>
-                  などの間隔を設定するのがおすすめです。60分間隔で予約を受け付けると、顧客が予約から予約を受ける際に60分未満の時間が余ってしまう予約枠が非表示になり無駄な待ち時間の発生を抑えることができます。
+                  などの <span className="font-semibold">minSlotSize</span>{' '}
+                  を設定するのがおすすめです。60分間隔で予約を受け付けると、顧客が予約から予約を受ける際に60分未満の時間が余ってしまう予約枠が非表示になり無駄な待ち時間の発生を抑えることができます。
+                </li>
+                <li>
+                  推奨設定は<strong>60分間隔</strong>になります。
                 </li>
               </ul>
             </section>
@@ -545,5 +557,5 @@ export default function SalonScheduleForm() {
         </AccordionItem>
       </Accordion>
     </div>
-  );
+  )
 }

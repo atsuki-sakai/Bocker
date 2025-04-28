@@ -8,12 +8,9 @@ import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useSalon } from '@/hooks/useSalon';
 import { Loading } from '@/components/common';
-import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Dialog } from '@/components/common';
 import Link from 'next/link';
-// Shadcn UI コンポーネント
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,31 +35,6 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { MAX_PRIORITY } from '@/services/convex/constants';
-
-// アニメーション設定
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      duration: 0.5,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { y: 10, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      type: 'spring',
-      stiffness: 100,
-      damping: 12,
-    },
-  },
-};
 
 export default function StaffDetails() {
   const { staff_id } = useParams();
@@ -166,14 +138,14 @@ export default function StaffDetails() {
   };
 
   return (
-    <motion.div initial="hidden" animate="visible" variants={containerVariants} className="pb-8">
+    <div className="pb-8">
       {/* スタッフヘッダーカード - 改良版 */}
-      <motion.div variants={itemVariants}>
-        <Card className="mb-6 border border-slate-200 shadow-sm overflow-hidden">
-          <CardContent className="p-0">
+      <div>
+        <div className="mb-6">
+          <div className="p-0">
             <div className="flex flex-col md:flex-row">
               {/* サムネイル部分 - スタイル改良 */}
-              <div className="relative bg-gradient-to-br from-primary/10 to-primary/5 p-6 flex items-center justify-center md:w-1/3">
+              <div className="relative bg-slate-50 rounded-lg p-6 flex items-center justify-center md:w-1/3">
                 <div className="aspect-square flex items-center justify-center w-48 h-48 mx-auto overflow-hidden">
                   {staffAllData.imgPath ? (
                     <Image
@@ -229,6 +201,14 @@ export default function StaffDetails() {
                 <p className=" text-slate-600  mb-5  border-slate-100">
                   {staffAllData.description || '説明がありません'}
                 </p>
+
+                {staffAllData.tags && staffAllData.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {staffAllData.tags.map((tag) => (
+                      <Badge key={tag}>{tag}</Badge>
+                    ))}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
                   {/* 指名料金 */}
@@ -342,9 +322,9 @@ export default function StaffDetails() {
                 )}
               </div>
             </div>
-          </CardContent>
+          </div>
 
-          <CardFooter className="bg-slate-50 px-6 py-3 flex justify-between">
+          <div className=" py-3 flex justify-between">
             <div className="text-xs text-slate-500 tracking-wider">
               <span>作成日: </span>
               {new Date(staffAllData._creationTime).toLocaleDateString()}
@@ -366,9 +346,9 @@ export default function StaffDetails() {
                 </Button>
               </Link>
             </div>
-          </CardFooter>
-        </Card>
-      </motion.div>
+          </div>
+        </div>
+      </div>
 
       {/* 削除確認ダイアログ */}
       <Dialog
@@ -378,6 +358,6 @@ export default function StaffDetails() {
         description="この操作は元に戻すことができません。"
         onConfirmAction={handleDeleteStaff}
       />
-    </motion.div>
+    </div>
   );
 }
