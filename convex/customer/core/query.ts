@@ -4,6 +4,17 @@ import { paginationOptsValidator } from 'convex/server';
 import { validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 
+export const getById = query({
+  args: {
+    customerId: v.id('customer'),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx)
+    validateRequired(args.customerId, 'customerId')
+    return await ctx.db.get(args.customerId)
+  },
+})
+
 // サロンIDから顧客一覧を取得
 export const findBySalonId = query({
   args: {
@@ -184,3 +195,17 @@ export const listBySalonId = query({
     return customerQuery.order(args.sort || 'desc').paginate(args.paginationOpts);
   },
 });
+
+export const completeCustomer = query({
+  args: {
+    customerId: v.id('customer'),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx)
+    validateRequired(args.customerId, 'customerId')
+
+    const customer = await ctx.db.get(args.customerId)
+
+    return customer
+  },
+})

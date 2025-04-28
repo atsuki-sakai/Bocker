@@ -27,31 +27,32 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { usePaginatedQuery } from 'convex/react';
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 export default function TimelinePage() {
-  const { salonId } = useSalon();
+  const { salonId } = useSalon()
 
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const container = useRef<HTMLDivElement | null>(null);
-  const containerNav = useRef<HTMLDivElement | null>(null);
-  const containerOffset = useRef<HTMLDivElement | null>(null);
-  const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
+  const container = useRef<HTMLDivElement | null>(null)
+  const containerNav = useRef<HTMLDivElement | null>(null)
+  const containerOffset = useRef<HTMLDivElement | null>(null)
+  const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null)
 
   // 現在の日付と選択された日付を管理
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [currentDate, setCurrentDate] = useState<Date>(new Date())
 
   // スマートフォン表示用の選択日
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 
   // ビューモード（週表示または日表示）
-  const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
+  const [viewMode, setViewMode] = useState<'week' | 'day'>('week')
 
   // 日本の週の始まりは月曜日なので、optionsで指定
-  const startOfWeek = startOfWeekFns(currentDate, { weekStartsOn: 1 });
-  const endOfWeek = endOfWeekFns(currentDate, { weekStartsOn: 1 });
+  const startOfWeek = startOfWeekFns(currentDate, { weekStartsOn: 1 })
+  const endOfWeek = endOfWeekFns(currentDate, { weekStartsOn: 1 })
 
-  const [currentReservations, setCurrentReservations] = useState<Doc<'reservation'>[]>([]);
-  const [currentSchedules, setCurrentSchedules] = useState<Doc<'staff_schedule'>[]>([]);
+  const [currentReservations, setCurrentReservations] = useState<Doc<'reservation'>[]>([])
+  const [currentSchedules, setCurrentSchedules] = useState<Doc<'staff_schedule'>[]>([])
 
   // FIXME: 100件ずつ取得しているので、100件以上の予約がある場合は、ページネーションを実装する
   const { results: reservations, isLoading: isReservationsLoading } = useStablePaginatedQuery(
@@ -65,7 +66,7 @@ export default function TimelinePage() {
     {
       initialNumItems: 100,
     }
-  );
+  )
 
   const { results: staffSchedules } = useStablePaginatedQuery(
     api.schedule.staff_exception.query.paginateBySalonAndStaffId,
@@ -78,14 +79,14 @@ export default function TimelinePage() {
     {
       initialNumItems: 100,
     }
-  );
+  )
 
-  console.log('staffSchedules', staffSchedules);
+  console.log('staffSchedules', staffSchedules)
   useEffect(() => {
     if (staffSchedules) {
-      setCurrentSchedules(staffSchedules);
+      setCurrentSchedules(staffSchedules)
     }
-  }, [staffSchedules]);
+  }, [staffSchedules])
 
   const staffs = usePaginatedQuery(
     api.staff.core.query.getStaffListBySalonId,
@@ -97,10 +98,10 @@ export default function TimelinePage() {
     {
       initialNumItems: 50,
     }
-  );
+  )
 
   // 曜日の配列（日本語）
-  const weekDays: string[] = ['月', '火', '水', '木', '金', '土', '日'];
+  const weekDays: string[] = ['月', '火', '水', '木', '金', '土', '日']
   const weekDaysFull: string[] = [
     '月曜日',
     '火曜日',
@@ -109,65 +110,71 @@ export default function TimelinePage() {
     '金曜日',
     '土曜日',
     '日曜日',
-  ];
+  ]
+
+  // ビューモードに応じたカラム数クラス（SP/PC 共通）
+  const gridColsClass = viewMode === 'week' ? 'grid-cols-8' : 'grid-cols-1'
+
+  // SP 週表示時は横スクロール出来る様に最小幅を確保し、PC では自動調整
+  const timelineContainerWidthClass = viewMode === 'week' ? 'min-w-[900px] md:min-w-0' : 'w-full'
 
   // 現在の週の日付を計算
   const getDaysOfWeek = (): Date[] => {
-    const days: Date[] = [];
-    const day = new Date(startOfWeek);
+    const days: Date[] = []
+    const day = new Date(startOfWeek)
 
     for (let i = 0; i < 7; i++) {
-      days.push(new Date(day));
-      day.setDate(day.getDate() + 1);
+      days.push(new Date(day))
+      day.setDate(day.getDate() + 1)
     }
 
-    return days;
-  };
+    return days
+  }
 
-  const daysOfWeek = getDaysOfWeek();
+  const daysOfWeek = getDaysOfWeek()
 
   // 予約のある日を特定する関数
   const datesWithReservations = useMemo(() => {
-    if (!currentReservations || currentReservations.length === 0) return {};
+    if (!currentReservations || currentReservations.length === 0) return {}
 
-    const dates: Record<string, boolean> = {};
+    const dates: Record<string, boolean> = {}
 
     currentReservations.forEach((reservation) => {
       // startTime_unix はミリ秒のタイムスタンプなので、そのまま使用
-      const startTime = new Date(reservation.startTime_unix!);
-      const dateKey = format(startTime, 'yyyy-MM-dd');
-      dates[dateKey] = true;
-    });
+      const startTime = new Date(reservation.startTime_unix!)
+      const dateKey = format(startTime, 'yyyy-MM-dd')
+      dates[dateKey] = true
+    })
 
-    return dates;
-  }, [currentReservations]);
+    return dates
+  }, [currentReservations])
 
   // 当日に予約があるかをチェックする関数
   const hasReservationsOnDate = (date: Date): boolean => {
-    const dateKey = format(date, 'yyyy-MM-dd');
-    return !!datesWithReservations[dateKey];
-  };
+    const dateKey = format(date, 'yyyy-MM-dd')
+    return !!datesWithReservations[dateKey]
+  }
 
   const renderSchedules = () => {
-    if (!currentSchedules) return null;
+    if (!currentSchedules) return null
     return currentSchedules.map((schedule) => {
-      const startTime = new Date(schedule.startTime_unix!);
+      const startTime = new Date(schedule.startTime_unix!)
       // ビュー外のスケジュールは表示しない
       if (viewMode === 'week') {
-        if (startTime < startOfWeek || startTime > endOfWeek) return null;
+        if (startTime < startOfWeek || startTime > endOfWeek) return null
       } else {
-        if (!isSameDay(startTime, selectedDate)) return null;
+        if (!isSameDay(startTime, selectedDate)) return null
       }
-      const endTime = new Date(schedule.endTime_unix!);
+      const endTime = new Date(schedule.endTime_unix!)
       // 全日スケジュール
       if (schedule.isAllDay) {
         // 全日スケジュール: 00:00から23:59まで赤く表示
-        const dayIndex = (new Date(schedule.startTime_unix!).getDay() + 6) % 7;
-        const colStart = viewMode === 'week' ? dayIndex + 1 : 1;
+        const dayIndex = (new Date(schedule.startTime_unix!).getDay() + 6) % 7
+        const colStart = viewMode === 'week' ? dayIndex + 2 : 1
         return (
           <li
             key={`sched-${schedule._id}`}
-            className="relative flex"
+            className="relative flex]"
             style={{
               gridColumn: `${colStart} / span 1`,
               gridRow: `2 / span 576`,
@@ -175,14 +182,14 @@ export default function TimelinePage() {
           >
             <div className="absolute inset-1 bg-red-200 opacity-75 rounded-md" />
           </li>
-        );
+        )
       }
       // 部分スケジュール（赤く表示）
-      const dayIndex = (startTime.getDay() + 6) % 7;
-      const colStart = viewMode === 'week' ? dayIndex + 1 : 1;
-      const startRow = startTime.getHours() * 24 + Math.floor(startTime.getMinutes() / 2.5) + 2;
-      const totalMinutes = (endTime.getTime() - startTime.getTime()) / 60000;
-      const rowSpan = Math.ceil(totalMinutes / 2.5);
+      const dayIndex = (startTime.getDay() + 6) % 7
+      const colStart = viewMode === 'week' ? dayIndex + 2 : 1
+      const startRow = startTime.getHours() * 24 + Math.floor(startTime.getMinutes() / 2.5) + 2
+      const totalMinutes = (endTime.getTime() - startTime.getTime()) / 60000
+      const rowSpan = Math.ceil(totalMinutes / 2.5)
       return (
         <li
           key={`sched-${schedule._id}`}
@@ -201,41 +208,41 @@ export default function TimelinePage() {
             </p>
           </div>
         </li>
-      );
-    });
-  };
+      )
+    })
+  }
 
   const renderReservations = () => {
-    if (!currentReservations) return null;
+    if (!currentReservations) return null
 
     return currentReservations.map((reservation) => {
       // startTime_unix, endTime_unix はミリ秒のタイムスタンプなので、そのまま使用
-      const startTime = new Date(reservation.startTime_unix!);
-      const endTime = new Date(reservation.endTime_unix!);
+      const startTime = new Date(reservation.startTime_unix!)
+      const endTime = new Date(reservation.endTime_unix!)
 
       // 週表示の場合は週内の予約を全て表示
       // 日表示の場合は選択された日付の予約のみを表示
       if (viewMode === 'week') {
-        if (startTime < startOfWeek || startTime > endOfWeek) return null;
+        if (startTime < startOfWeek || startTime > endOfWeek) return null
       } else {
         // 選択された日付と同じ日付かどうかをチェック
-        if (!isSameDay(startTime, selectedDate)) return null;
+        if (!isSameDay(startTime, selectedDate)) return null
       }
 
       // 日本の曜日（月曜始まり）に合わせて調整
-      let dayOfWeek = startTime.getDay() - 1; // 0が月曜、6が日曜
-      if (dayOfWeek < 0) dayOfWeek = 6; // 日曜日の場合
+      let dayOfWeek = startTime.getDay() - 1 // 0が月曜、6が日曜
+      if (dayOfWeek < 0) dayOfWeek = 6 // 日曜日の場合
 
       // 週表示のときは各曜日の列に配置
       // 日表示のときは1列目に配置
-      const colStart = viewMode === 'week' ? dayOfWeek + 1 : 1;
+      const colStart = viewMode === 'week' ? dayOfWeek + 2 : 1
 
-      const hours = startTime.getHours();
-      const minutes = startTime.getMinutes();
-      const startRow = hours * 24 + Math.floor(minutes / 2.5) + 2;
+      const hours = startTime.getHours()
+      const minutes = startTime.getMinutes()
+      const startRow = hours * 24 + Math.floor(minutes / 2.5) + 2
 
-      const totalMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
-      const rowSpan = Math.ceil(totalMinutes / 2.5);
+      const totalMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60)
+      const rowSpan = Math.ceil(totalMinutes / 2.5)
 
       return (
         <li
@@ -259,425 +266,349 @@ export default function TimelinePage() {
             <p className="mt-1 text-indigo-700">¥{reservation.totalPrice?.toLocaleString()}</p>
           </Link>
         </li>
-      );
-    });
-  };
+      )
+    })
+  }
 
   // 24時間分の時間表示を生成する関数
   const renderTimeSlots = () => {
-    const slots: React.ReactNode[] = [];
+    const slots: React.ReactNode[] = []
 
     for (let i = 0; i < 24; i++) {
-      const hour = i;
-      const ampm = hour < 12 ? 'AM' : 'PM';
-      const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+      const hour = i
+      const ampm = hour < 12 ? '午前' : '午後'
+      const hour12 = hour % 12 === 0 ? 12 : hour % 12
 
       slots.push(
         <div key={`hour-${i}`}>
-          <div className="sticky left-0 z-20 -mt-2.5 -ml-14 w-14 pr-2 text-right text-xs/5 text-gray-400">
-            {hour12}
+          <div className="sticky left-0 z-20 -mt-2.5 -ml-14 w-14 pr-2 text-right text-xs/5 text-gray-400 text-nowrap">
             {ampm}
+            {hour12}時
           </div>
         </div>
-      );
-      slots.push(<div key={`hour-half-${i}`} />);
+      )
+      slots.push(<div key={`hour-half-${i}`} />)
     }
 
-    return slots;
-  };
+    return slots
+  }
 
   // 前の日/週へ移動
   const moveToPrevious = (): void => {
     if (viewMode === 'week') {
-      const newDate = new Date(currentDate);
-      newDate.setDate(currentDate.getDate() - 7);
-      setCurrentDate(newDate);
+      const newDate = new Date(currentDate)
+      newDate.setDate(currentDate.getDate() - 7)
+      setCurrentDate(newDate)
     } else {
-      const newDate = new Date(selectedDate);
-      newDate.setDate(selectedDate.getDate() - 1);
-      setSelectedDate(newDate);
+      const newDate = new Date(selectedDate)
+      newDate.setDate(selectedDate.getDate() - 1)
+      setSelectedDate(newDate)
     }
-  };
+  }
 
   // 次の日/週へ移動
   const moveToNext = (): void => {
     if (viewMode === 'week') {
-      const newDate = new Date(currentDate);
-      newDate.setDate(currentDate.getDate() + 7);
-      setCurrentDate(newDate);
+      const newDate = new Date(currentDate)
+      newDate.setDate(currentDate.getDate() + 7)
+      setCurrentDate(newDate)
     } else {
-      const newDate = new Date(selectedDate);
-      newDate.setDate(selectedDate.getDate() + 1);
-      setSelectedDate(newDate);
+      const newDate = new Date(selectedDate)
+      newDate.setDate(selectedDate.getDate() + 1)
+      setSelectedDate(newDate)
     }
-  };
+  }
 
   // 今日/今週へ移動
   const moveToToday = (): void => {
-    setCurrentDate(new Date());
-    setSelectedDate(new Date());
-  };
+    setCurrentDate(new Date())
+    setSelectedDate(new Date())
+  }
 
   // 日表示と週表示の切り替え
   const toggleViewMode = (): void => {
-    setViewMode(viewMode === 'week' ? 'day' : 'week');
-  };
+    setViewMode(viewMode === 'week' ? 'day' : 'week')
+  }
 
   // 予約データの更新
   useEffect(() => {
     if (reservations) {
-      setCurrentReservations(reservations);
+      setCurrentReservations(reservations)
     }
-  }, [reservations]);
+  }, [reservations])
 
   return (
-    <DashboardSection
-      title="タイムライン"
-      backLink="/dashboard/timeline"
-      backLinkTitle="タイムラインに戻る"
-    >
-      <div>
-        <div className="relative flex h-full flex-col">
-          <div className="sticky top-[60px] bg-white z-10">
-            <header className="flex flex-none items-center justify-between border-b border-gray-200 md:px-6 py-4">
-              <h1 className="text-sm md:text-lg font-semibold text-gray-900">
-                {viewMode === 'week' ? (
-                  <time
-                    className="flex flex-col md:flex-row items-center justify-center gap-1"
-                    dateTime={`${format(startOfWeek, 'yyyy-MM-dd')}/${format(endOfWeek, 'yyyy-MM-dd')}`}
-                  >
-                    <span className="font-bold text-xl md:text-2xl">
-                      {format(startOfWeek, 'yyyy年MM月dd日', { locale: ja })}
-                    </span>
-                    <div className=" text-gray-500 text-xs">から</div>
-                    <span className="font-bold text-xl md:text-2xl">
-                      {format(endOfWeek, 'yyyy年MM月dd日', { locale: ja })}
-                    </span>
-                  </time>
-                ) : (
-                  <time dateTime={format(selectedDate, 'yyyy-MM-dd')}>
-                    {format(selectedDate, 'yyyy年MM月dd日', { locale: ja })}
-                    <div className="md:hidden ml-2 inline-block text-gray-500 text-xs">
-                      ({weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]})
-                    </div>
-                  </time>
-                )}
-              </h1>
-              <div className="flex flex-col gap-2">
-                <div className="md:hidden flex flex-col gap-2 items-end justify-end">
-                  <div className="w-fit min-w-[180px]">
-                    <Select
-                      value={selectedStaffId ?? ''}
-                      onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="スタッフを選択" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {staffs.results?.map((staff) => (
-                          <SelectItem key={staff._id} value={staff._id}>
-                            {staff.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="relative flex items-center rounded-md bg-white shadow-xs md:items-stretch">
-                    <button
-                      type="button"
-                      className="flex h-9 w-12 items-center justify-center rounded-l-md border-y border-l border-gray-300 pr-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pr-0 md:hover:bg-gray-50"
-                      onClick={moveToPrevious}
-                    >
-                      <span className="sr-only">{viewMode === 'week' ? '前週' : '前日'}</span>
-                      <ChevronLeft className="size-5" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className="hidden border-y border-gray-300 px-3.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:relative md:block"
-                      onClick={moveToToday}
-                    >
-                      今日
-                    </button>
-                    <span className="relative -mx-px h-5 w-px bg-gray-300 md:hidden" />
-                    <button
-                      type="button"
-                      className="flex h-9 w-12 items-center justify-center rounded-r-md border-y border-r border-gray-300 pl-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pl-0 md:hover:bg-gray-50"
-                      onClick={moveToNext}
-                    >
-                      <span className="sr-only">{viewMode === 'week' ? '次週' : '翌日'}</span>
-                      <ChevronRight className="size-5" aria-hidden="true" />
-                    </button>
-                  </div>
-                  <div className="hidden md:ml-4 md:flex md:flex-col md:items-center">
-                    <Select
-                      value={selectedStaffId ?? ''}
-                      onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="スタッフを選択" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {staffs.results?.map((staff) => (
-                          <SelectItem key={staff._id} value={staff._id}>
-                            {staff.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Menu as="div" className="relative ml-6 md:hidden">
-                    <MenuButton className="-mx-2 flex items-center rounded-full border border-transparent p-2 text-gray-400 hover:text-gray-500">
-                      <span className="sr-only">メニューを開く</span>
-                      <Ellipsis className="size-5" aria-hidden="true" />
-                    </MenuButton>
-
-                    <MenuItems
-                      transition
-                      className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-hidden data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
-                    >
-                      <div className="py-1">
-                        <MenuItem>
-                          <a
-                            href="#"
-                            className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
-                            onClick={moveToToday}
-                          >
-                            今日へ移動
-                          </a>
-                        </MenuItem>
-                        <MenuItem>
-                          <Link
-                            href="#"
-                            className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
-                            onClick={toggleViewMode}
-                          >
-                            {viewMode === 'day' ? '週表示に切り替え' : '日表示に切り替え'}
-                          </Link>
-                        </MenuItem>
-                      </div>
-                    </MenuItems>
-                  </Menu>
-                </div>
-              </div>
-            </header>
-          </div>
-          {reservations && reservations.length > 0 ? (
-            <div ref={container} className="isolate flex flex-auto flex-col overflow-auto bg-white">
-              <div
-                style={{ width: viewMode === 'week' ? '165%' : '100%' }}
-                className="flex max-w-full flex-none flex-col sm:max-w-none md:max-w-full"
-              >
-                <div
-                  ref={containerNav}
-                  className="sticky top-0 z-30 flex-none bg-white shadow-sm ring-1 ring-black/5 sm:pr-8"
+    <DashboardSection backLink="/dashboard/timeline" backLinkTitle="タイムラインに戻る">
+      <div className="flex h-full flex-col">
+        <div className="sticky bg-white z-10 md:pt-5">
+          <header className="flex flex-none items-center justify-between border-b border-gray-200 md:px-6 pb-2">
+            <h1 className="text-sm md:text-lg font-semibold text-gray-900">
+              {viewMode === 'week' ? (
+                <time
+                  className="flex flex-col md:flex-row items-center justify-center gap-1"
+                  dateTime={`${format(startOfWeek, 'yyyy-MM-dd')}/${format(endOfWeek, 'yyyy-MM-dd')}`}
                 >
-                  {/* 日付ヘッダー部分（モバイル） - 日本語化 */}
-                  {viewMode === 'week' && (
-                    <div className="grid grid-cols-7 text-sm/6 text-gray-500 sm:hidden">
-                      {daysOfWeek.map((date, index) => {
-                        const dateIsToday = isToday(date);
-                        const isSelected = date.toDateString() === selectedDate.toDateString();
-                        const hasReservations = hasReservationsOnDate(date);
-                        return (
-                          <button
-                            key={index}
-                            type="button"
-                            className="flex flex-col items-center pt-2 pb-3"
-                            onClick={() => {
-                              setSelectedDate(date);
-                              setViewMode('day');
-                            }}
-                          >
-                            <div className="flex items-center justify-center">
-                              {weekDays[index]}{' '}
-                              {hasReservations && (
-                                <span className="ml-1 w-1.5 h-1.5 bg-indigo-500 rounded-full" />
-                              )}
-                            </div>
-                            <span
-                              className={`mt-1 flex size-8 items-center justify-center ${
-                                dateIsToday
-                                  ? 'rounded-full bg-indigo-600 font-semibold text-white'
-                                  : isSelected
-                                    ? 'rounded-full bg-indigo-100 font-semibold text-indigo-600'
-                                    : hasReservations
-                                      ? 'font-semibold text-indigo-600 ring-1 ring-indigo-500 rounded-full'
-                                      : 'font-semibold text-gray-900'
-                              }`}
-                            >
-                              {date.getDate()}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {viewMode === 'day' && (
-                    <div className="grid grid-cols-1 text-sm/6 text-gray-500 sm:hidden">
-                      <div className="flex justify-center items-center pt-2 pb-3">
-                        <span className="font-medium">
-                          {
-                            weekDaysFull[
-                              selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1
-                            ]
-                          }
-                        </span>
-                        {hasReservationsOnDate(selectedDate) && (
-                          <span className="ml-2 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                            予約あり
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 日付ヘッダー部分（デスクトップ） - 日本語化 */}
-                  <div
-                    className={`-mr-px hidden divide-x divide-gray-100 border-r border-gray-100 text-sm/6 text-gray-500 sm:grid ${
-                      viewMode === 'week' ? 'grid-cols-7' : 'grid-cols-1'
-                    }`}
+                  <span className="font-bold text-base md:text-xl">
+                    {format(startOfWeek, 'yyyy年MM月dd日', { locale: ja })}
+                  </span>
+                  <div className=" text-gray-500 text-xs">から</div>
+                  <span className="font-bold text-base md:text-xl">
+                    {format(endOfWeek, 'yyyy年MM月dd日', { locale: ja })}
+                  </span>
+                </time>
+              ) : (
+                <time dateTime={format(selectedDate, 'yyyy-MM-dd')}>
+                  {format(selectedDate, 'yyyy年MM月dd日', { locale: ja })}
+                  <div className="md:hidden ml-2 inline-block text-gray-500 text-xs">
+                    ({weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]})
+                  </div>
+                </time>
+              )}
+            </h1>
+            <div className="flex flex-col gap-2">
+              <div className="md:hidden flex flex-col gap-2 items-end justify-end">
+                <div className="w-fit min-w-[180px]">
+                  <Select
+                    value={selectedStaffId ?? ''}
+                    onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
                   >
-                    <div className="col-end-1 w-14" />
-                    {viewMode === 'week' ? (
-                      daysOfWeek.map((date, index) => {
-                        const dateIsToday = isToday(date);
-                        const hasReservations = hasReservationsOnDate(date);
-                        return (
-                          <div
-                            key={index}
-                            className="flex flex-col items-center justify-center py-3"
-                          >
-                            <div className="flex items-center justify-center">
-                              {weekDaysFull[index].substring(0, 1)}
-                              {hasReservations && (
-                                <span className="ml-1 w-1.5 h-1.5 bg-indigo-500 rounded-full" />
-                              )}
-                            </div>
-                            <div className="flex items-baseline mt-1">
-                              {dateIsToday ? (
-                                <span className="flex size-8 items-center justify-center rounded-full bg-indigo-600 font-semibold text-white">
-                                  {date.getDate()}
-                                </span>
-                              ) : (
-                                <span
-                                  className={`flex items-center justify-center font-semibold ${
-                                    hasReservations
-                                      ? 'text-indigo-600 ring-1 ring-indigo-500 rounded-full w-8 h-8'
-                                      : 'text-gray-900'
-                                  }`}
-                                >
-                                  {date.getDate()}
-                                </span>
-                              )}
-                              {hasReservations && dateIsToday && (
-                                <div className="ml-1 -mt-1">
-                                  <Calendar className="size-3 text-indigo-500" />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="flex items-center justify-center py-3">
-                        <span className="font-medium">
-                          {
-                            weekDaysFull[
-                              selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1
-                            ]
-                          }
-                        </span>
-                        {hasReservationsOnDate(selectedDate) && (
-                          <div className="ml-2 flex items-center">
-                            <Calendar className="size-4 text-indigo-500 mr-1" />
-                            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                              予約あり
-                            </span>
-                          </div>
+                    <SelectTrigger>
+                      <SelectValue placeholder="スタッフを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {staffs.results?.map((staff) => (
+                        <SelectItem key={staff._id} value={staff._id}>
+                          {staff.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <div className="relative flex items-center rounded-md bg-white shadow-xs md:items-stretch">
+                  <button
+                    type="button"
+                    className="flex h-9 w-12 items-center justify-center rounded-l-md border-y border-l border-gray-300 pr-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pr-0 md:hover:bg-gray-50"
+                    onClick={moveToPrevious}
+                  >
+                    <span className="sr-only">{viewMode === 'week' ? '前週' : '前日'}</span>
+                    <ChevronLeft className="size-5" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="hidden border-y border-gray-300 px-3.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:relative md:block"
+                    onClick={moveToToday}
+                  >
+                    今日
+                  </button>
+                  <span className="relative -mx-px h-5 w-px bg-gray-300 md:hidden" />
+                  <button
+                    type="button"
+                    className="flex h-9 w-12 items-center justify-center rounded-r-md border-y border-r border-gray-300 pl-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pl-0 md:hover:bg-gray-50"
+                    onClick={moveToNext}
+                  >
+                    <span className="sr-only">{viewMode === 'week' ? '次週' : '翌日'}</span>
+                    <ChevronRight className="size-5" aria-hidden="true" />
+                  </button>
+                </div>
+                {/* ビューモード切替ボタン（PC表示専用） */}
+                <button
+                  type="button"
+                  onClick={toggleViewMode}
+                  className="ml-4 hidden md:inline-flex items-center rounded-md border border-gray-300 bg-white px-3.5 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-50"
+                >
+                  {viewMode === 'day' ? '週表示' : '日表示'}
+                </button>
+                <div className="hidden md:ml-4 md:flex md:flex-col md:items-center">
+                  <Select
+                    value={selectedStaffId ?? ''}
+                    onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="スタッフを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {staffs.results?.map((staff) => (
+                        <SelectItem key={staff._id} value={staff._id}>
+                          {staff.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Menu as="div" className="relative ml-6 md:hidden">
+                  <MenuButton className="-mx-2 flex items-center rounded-full border border-transparent p-2 text-gray-400 hover:text-gray-500">
+                    <span className="sr-only">メニューを開く</span>
+                    <Ellipsis className="size-5" aria-hidden="true" />
+                  </MenuButton>
+
+                  <MenuItems
+                    transition
+                    className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-hidden data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
+                  >
+                    <div className="py-1">
+                      <MenuItem>
+                        <a
+                          href="#"
+                          className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
+                          onClick={moveToToday}
+                        >
+                          今日へ移動
+                        </a>
+                      </MenuItem>
+                      <MenuItem>
+                        <Link
+                          href="#"
+                          className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
+                          onClick={toggleViewMode}
+                        >
+                          {viewMode === 'day' ? '週表示に切り替え' : '日表示に切り替え'}
+                        </Link>
+                      </MenuItem>
+                    </div>
+                  </MenuItems>
+                </Menu>
+              </div>
+            </div>
+          </header>
+        </div>
+        {reservations && reservations.length > 0 ? (
+          <div className="flex h-full flex-col">
+            {/* 日付ヘッダー部分（モバイル） - 日本語化 */}
+            {viewMode === 'week' && (
+              <div
+                className={`grid  ${gridColsClass} z-10 bg-white`}
+                style={{ gridTemplateRows: '1.75rem repeat(576, minmax(0, 1fr)) auto' }}
+              >
+                <div className="min-w-[56px]"></div>
+                {daysOfWeek.map((date, index) => {
+                  const dateIsToday = isToday(date)
+                  const isSelected = date.toDateString() === selectedDate.toDateString()
+                  const hasReservations = hasReservationsOnDate(date)
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      className="flex flex-col items-center pt-2 pb-3 bg-white"
+                      onClick={() => {
+                        setSelectedDate(date)
+                        setViewMode('day')
+                      }}
+                    >
+                      <div className="flex items-center justify-center">
+                        {weekDays[index]}{' '}
+                        {hasReservations && (
+                          <span className="ml-1 w-1.5 h-1.5 bg-indigo-500  text-white rounded-full" />
                         )}
                       </div>
-                    )}
-                  </div>
+                      <span
+                        className={`mt-1 flex size-8 items-center justify-center py-3  ${
+                          dateIsToday
+                            ? 'rounded-full bg-indigo-600 font-semibold text-white'
+                            : isSelected
+                              ? 'rounded-full bg-indigo-100 font-semibold text-indigo-600'
+                              : hasReservations
+                                ? 'font-semibold text-indigo-600 ring-1 ring-indigo-500 bg-white rounded-full'
+                                : 'font-semibold text-gray-900'
+                        }`}
+                      >
+                        {date.getDate()}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            {viewMode === 'day' && (
+              <div className="grid grid-cols-1 text-sm/6 text-gray-500 sm:hidden">
+                <div className="flex justify-center items-center pt-2 pb-3">
+                  <span className="font-medium">
+                    {weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]}
+                  </span>
+                  {hasReservationsOnDate(selectedDate) && (
+                    <span className="ml-2 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                      予約あり
+                    </span>
+                  )}
                 </div>
+              </div>
+            )}
+            <ScrollArea className="relative h-[calc(100vh-15rem)]">
+              <div className=" flex flex-auto flex-col">
+                <div
+                  className={`flex flex-none flex-col max-w-full  ${timelineContainerWidthClass}`}
+                >
+                  <div className="flex flex-auto overflow-auto">
+                    <div className="grid flex-auto grid-cols-1 grid-rows-1">
+                      {/* 時間の行 - 24時間分に修正 */}
+                      <div
+                        className={`col-start-1 col-end-2 row-start-1 grid divide-y divide-gray-100`}
+                        style={{ gridTemplateRows: 'repeat(48, minmax(3.5rem, 1fr))' }}
+                      >
+                        <div ref={containerOffset} className="row-end-1 h-7"></div>
+                        {renderTimeSlots()}
+                      </div>
 
-                <div ref={scrollContainerRef} className="flex flex-auto overflow-auto">
-                  <div className="sticky left-0 z-10 w-14 flex-none bg-white ring-1 ring-gray-100" />
-                  <div className="grid flex-auto grid-cols-1 grid-rows-1">
-                    {/* 時間の行 - 24時間分に修正 */}
-                    <div
-                      className={`col-start-1 col-end-2 row-start-1 grid divide-y divide-gray-100`}
-                      style={{ gridTemplateRows: 'repeat(48, minmax(3.5rem, 1fr))' }}
-                    >
-                      <div ref={containerOffset} className="row-end-1 h-7"></div>
-                      {renderTimeSlots()}
-                    </div>
-
-                    {/* gridの線 - 境界線を追加 */}
-                    <div
-                      className={`col-start-1 col-end-2 row-start-1 hidden grid-rows-1 divide-x divide-gray-100 sm:grid ${
-                        viewMode === 'week'
-                          ? 'grid-cols-7 sm:grid-cols-7'
-                          : 'grid-cols-1 sm:grid-cols-1'
-                      }`}
-                    >
-                      {viewMode === 'week' ? (
-                        <>
+                      {/* gridの線 - 境界線を追加 */}
+                      <div
+                        className={`col-start-1 col-end-2 row-start-1 ${
+                          viewMode === 'week' ? 'grid' : 'hidden'
+                        } grid-rows-1 divide-x divide-gray-100 ${gridColsClass}`}
+                      >
+                        {viewMode === 'week' ? (
+                          <>
+                            <div className="col-start-1 row-span-full border-r border-gray-100" />
+                            <div className="col-start-2 row-span-full border-r border-gray-100" />
+                            <div className="col-start-3 row-span-full border-r border-gray-100" />
+                            <div className="col-start-4 row-span-full border-r border-gray-100" />
+                            <div className="col-start-5 row-span-full border-r border-gray-100" />
+                            <div className="col-start-6 row-span-full border-r border-gray-100" />
+                            <div className="col-start-7 row-span-full border-r border-gray-100" />
+                            <div className="col-start-8 row-span-full w-8 hidden sm:block" />
+                          </>
+                        ) : (
                           <div className="col-start-1 row-span-full border-r border-gray-100" />
-                          <div className="col-start-2 row-span-full border-r border-gray-100" />
-                          <div className="col-start-3 row-span-full border-r border-gray-100" />
-                          <div className="col-start-4 row-span-full border-r border-gray-100" />
-                          <div className="col-start-5 row-span-full border-r border-gray-100" />
-                          <div className="col-start-6 row-span-full border-r border-gray-100" />
-                          <div className="col-start-7 row-span-full border-r border-gray-100" />
-                          <div className="col-start-8 row-span-full w-8" />
-                        </>
-                      ) : (
-                        <div className="col-start-1 row-span-full border-r border-gray-100" />
-                      )}
-                    </div>
+                        )}
+                      </div>
 
-                    {/* イベント表示エリア */}
-                    <ol
-                      className={`col-start-1 col-end-2 row-start-1 grid sm:pr-8 ${
-                        viewMode === 'week'
-                          ? 'grid-cols-1 sm:grid-cols-7'
-                          : 'grid-cols-1 sm:grid-cols-1'
-                      }`}
-                      style={{ gridTemplateRows: '1.75rem repeat(576, minmax(0, 1fr)) auto' }}
-                    >
-                      {renderSchedules()}
-                      {renderReservations()}
-                    </ol>
+                      {/* イベント表示エリア */}
+                      <ol
+                        className={`col-start-1 col-end-2 row-start-1 grid ${gridColsClass}`}
+                        style={{ gridTemplateRows: '1.75rem repeat(576, minmax(0, 1fr)) auto' }}
+                      >
+                        <div className="w-[56px]"></div>
+                        {renderSchedules()}
+                        {renderReservations()}
+                      </ol>
+                    </div>
                   </div>
                 </div>
               </div>
+            </ScrollArea>
+          </div>
+        ) : isReservationsLoading && selectedStaffId ? (
+          <div className="flex-1 overflow-y-auto">
+            <div className="flex items-center justify-center h-full pt-24 py-12 px-4 sm:px-6 lg:px-8">
+              <Loader2 className="h-5 w-5 animate-spin mr-2 text-indigo-500" />
             </div>
-          ) : isReservationsLoading && selectedStaffId ? (
-            <div className="flex-1 overflow-y-auto">
-              <div className="flex items-center justify-center h-full pt-24 py-12 px-4 sm:px-6 lg:px-8">
-                <Loader2 className="h-5 w-5 animate-spin mr-2 text-indigo-500" />
-              </div>
+          </div>
+        ) : reservations.length === 0 && selectedStaffId ? (
+          <div className="flex-1 overflow-y-auto bg-slate-50 rounded-md mt-4">
+            <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
+              <p className="text-slate-700 text-sm">予約がありません。</p>
             </div>
-          ) : reservations.length === 0 && selectedStaffId ? (
-            <div className="flex-1 overflow-y-auto bg-slate-50 rounded-md mt-4">
-              <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
-                <p className="text-slate-700 text-sm">予約がありません。</p>
-              </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto bg-slate-50 rounded-md mt-4">
+            <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
+              <p className="text-slate-700 text-sm">
+                右上のプルダウンからスタッフを選択して予約を表示してください。
+              </p>
             </div>
-          ) : (
-            <div className="flex-1 overflow-y-auto bg-slate-50 rounded-md mt-4">
-              <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
-                <p className="text-slate-700 text-sm">
-                  右上のプルダウンからスタッフを選択して予約を表示してください。
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </DashboardSection>
-  );
+  )
 }

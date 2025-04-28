@@ -191,17 +191,51 @@ export const upsert = mutation({
   },
 });
 
-export const kill = mutation({
+// 顧客の完全削除
+export const killRelatedTables = mutation({
   args: {
     customerId: v.id('customer'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateRequired(args.customerId, 'customerId');
+    checkAuth(ctx)
+    validateRequired(args.customerId, 'customerId')
 
-    await killRecord(ctx, args.customerId);
+    await killRecord(ctx, args.customerId)
+    const customerDetailId = await ctx.db
+      .query('customer_detail')
+      .withIndex('by_customer_id', (q) => q.eq('customerId', args.customerId))
+      .first()
+    if (!customerDetailId) {
+      throw throwConvexError({
+        message: '指定された顧客の詳細が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客の詳細が存在しません',
+        callFunc: 'customer.kill',
+        severity: 'low',
+        details: { ...args },
+      })
+    }
+    await killRecord(ctx, customerDetailId._id)
+    const customerPointsId = await ctx.db
+      .query('customer_points')
+      .withIndex('by_customer_id', (q) => q.eq('customerId', args.customerId))
+      .first()
+    if (!customerPointsId) {
+      throw throwConvexError({
+        message: '指定された顧客のポイントが存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '指定された顧客のポイントが存在しません',
+        callFunc: 'customer.kill',
+        severity: 'low',
+        details: { ...args },
+      })
+    }
+    await killRecord(ctx, customerPointsId._id)
+    return true
   },
-});
+})
 
 export const createCompleteFields = mutation({
   args: {
@@ -256,9 +290,9 @@ export const createCompleteFields = mutation({
         customerId: customerId,
         salonId: args.salonId,
         totalPoints: args.totalPoints, // ポイント
-        lastTransactionDate_unix: args.lastTransactionDate_unix, // 最終トランザクション日
+        lastTransactionDate_unix: undefined, // 最終トランザクション日
         isArchive: false,
-      });
+      })
       return customerId;
     } catch (error) {
       console.error(error);

@@ -275,7 +275,9 @@ export default defineSchema({
     totalPoints: v.optional(v.number()), // 保有ポイント
     lastTransactionDate_unix: v.optional(v.number()), // 最終トランザクション日時
     ...CommonFields,
-  }).index('by_salon_customer_archive', ['salonId', 'customerId', 'isArchive']),
+  })
+    .index('by_salon_customer_archive', ['salonId', 'customerId', 'isArchive'])
+    .index('by_customer_id', ['customerId', 'isArchive']),
 
   // =====================
   // CARTE
@@ -591,4 +593,4 @@ export default defineSchema({
       'reservationId',
       'isArchive',
     ]),
-});
+})

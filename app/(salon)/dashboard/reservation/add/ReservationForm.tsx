@@ -136,21 +136,6 @@ export default function ReservationForm() {
     startTime_unix: number | undefined
     endTime_unix: number | undefined
   } | null>(null)
-  const [staffSchedule, setStaffSchedule] = useState<{
-    schedules: {
-      type: 'holiday' | 'other' | 'reservation' | undefined
-      date: string | undefined
-      startTime_unix: number | undefined
-      endTime_unix: number | undefined
-      isAllDay: boolean | undefined
-    }[]
-    week: {
-      dayOfWeek: DayOfWeek
-      isOpen: boolean
-      startHour: string
-      endHour: string
-    } | null
-  } | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<
     { optionId: Id<'salon_option'>; quantity: number }[]
   >([])
@@ -304,44 +289,6 @@ export default function ReservationForm() {
     getAvailableStaffForAllMenus()
   }, [selectedMenus, salonId])
 
-  useEffect(() => {
-    if (selectedStaffId && salonId && selectdate) {
-      const getExceptionSchedule = async () => {
-        const schedules = await fetchQuery(api.staff.core.query.findSchedule, {
-          salonId: salonId,
-          staffId: selectedStaffId,
-          dayOfWeek: getDayOfWeek(selectdate) as DayOfWeek,
-        })
-        if (schedules && schedules.week && schedules.week.dayOfWeek !== undefined) {
-          setStaffSchedule({
-            schedules: schedules.schedules,
-            week: {
-              dayOfWeek: schedules.week.dayOfWeek as DayOfWeek,
-              isOpen: !!schedules.week.isOpen,
-              startHour: schedules.week.startHour ?? '',
-              endHour: schedules.week.endHour ?? '',
-            },
-          })
-
-          // 終日予約を受け付けない日
-          const allDaySchedules = schedules.schedules.filter(
-            (schedule) => schedule.isAllDay || schedule.startTime_unix === schedule.endTime_unix
-          )
-        } else {
-          setStaffSchedule({
-            schedules: schedules ? schedules.schedules : [],
-            week: null,
-          })
-        }
-      }
-      try {
-        getExceptionSchedule()
-      } catch (error) {
-        toast.error(handleErrorToMsg(error))
-      }
-    }
-  }, [selectedStaffId, salonId, selectdate])
-
   // 合計所要時間 (メニューとオプションの timeToMin を合算)
   const totalTimeMinutes = React.useMemo(() => {
     const menuTime = selectedMenus.reduce((sum, item) => {
@@ -362,13 +309,14 @@ export default function ReservationForm() {
   const ensureTotalMinutes = React.useMemo(() => {
     const menuEnsure = selectedMenus.reduce((sum, item) => {
       const menu = menus.find((m) => m._id === item.menuId)
-      return sum + (menu?.ensureTimeToMin ?? 0)
+      const ensure = menu?.ensureTimeToMin ?? menu?.timeToMin ?? 0
+      return sum + ensure
     }, 0)
 
-    // ✅ 数量を掛ける
     const optionEnsure = selectedOptions.reduce((sum, item) => {
       const option = options.find((o) => o._id === item.optionId)
-      return sum + (option?.ensureTimeToMin ?? 0) * item.quantity
+      const ensure = option?.ensureTimeToMin ?? option?.timeToMin ?? 0
+      return sum + ensure * item.quantity
     }, 0)
 
     return menuEnsure + optionEnsure
@@ -404,7 +352,8 @@ export default function ReservationForm() {
   const totalPriceCalculated = menuTotalPrice + optionTotalPrice + extraChargePrice
   // 差分時間（安全に NaN を防ぐ）
   const diffMinutes = React.useMemo(() => {
-    const diff = ensureTotalMinutes - totalTimeMinutes
+    const ensureMin = ensureTotalMinutes ? ensureTotalMinutes : totalTimeMinutes
+    const diff = ensureMin - totalTimeMinutes
     return Number.isFinite(diff) ? diff : 0
   }, [ensureTotalMinutes, totalTimeMinutes])
   useEffect(() => {
@@ -587,12 +536,7 @@ export default function ReservationForm() {
     }
   }
 
-  const selectMenu = menus.find((menu) => selectedMenus.some((m) => m.menuId === menu._id))
   const selectStaff = availableStaff.find((staff) => staff._id === selectedStaffId)
-  const selectDate = selectdate
-  const selectOptions = options.filter((option) =>
-    selectedOptions.some((o) => o.optionId === option._id)
-  )
 
   const toDate = scheduleConfig?.reservationLimitDays
     ? new Date(
@@ -613,16 +557,15 @@ export default function ReservationForm() {
         }}
       >
         <div className="flex flex-col gap-4 my-6">
-          ; ; ; ; ; ; ; ;
           <div>
             <div className="flex items-center gap-2">
               <p className="text-slate-500 text-lg font-bold">1</p>
               <Label>予約するメニュー（複数選択可）</Label>
-              <span className="text-slate-500 text-sm">※メニューは最大5件まで選択できます。</span>
             </div>
+            <span className="text-slate-500 text-xs">※メニューは最大5件まで選択できます。</span>
             <Popover open={menuPopoverOpen} onOpenChange={setMenuPopoverOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="mt-2 w-full justify-start">
+                <Button variant="outline" className="mt-2 w-full justify-start h-fit">
                   {selectedMenus.length > 0 ? (
                     <span className="flex flex-wrap gap-1">
                       {uniqMenuIds.map((id) => {
@@ -641,7 +584,20 @@ export default function ReservationForm() {
               </PopoverTrigger>
               <PopoverContent className="w-full min-w-[350px] p-2 overflow-y-auto h-full">
                 <Command>
-                  <CommandInput placeholder="メニューを検索..." className="border-b" />
+                  <div className="flex items-center justify-between border-b">
+                    <CommandInput
+                      placeholder="メニューを検索..."
+                      className="flex-1 border-0 focus:ring-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMenuPopoverOpen(false)}
+                      className="p-2 text-slate-700 hover:text-slate-600"
+                    >
+                      <X className="w-4 h-4" aria-hidden="true" />
+                      <span className="sr-only">閉じる</span>
+                    </button>
+                  </div>
                   <CommandList className="max-h-[500px] overflow-y-auto">
                     {menus.map((menu) => {
                       const count = getMenuCount(menu._id)
@@ -728,7 +684,7 @@ export default function ReservationForm() {
                       <button
                         type="button"
                         onClick={() => removeMenuAll(menuId)}
-                        className="text-slate-500 hover:text-slate-700"
+                        className="text-slate-700 hover:text-slate-600"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -812,9 +768,9 @@ export default function ReservationForm() {
               </div>
               <Popover open={optionPopoverOpen} onOpenChange={setOptionPopoverOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="mt-2 w-full justify-start">
+                  <Button variant="outline" className="mt-2 w-full justify-start h-fit">
                     {selectedOptions.length > 0 ? (
-                      <span className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1">
                         {selectedOptions.map((selectedOption) => {
                           const option = options.find((o) => o._id === selectedOption.optionId)
                           return option ? (
@@ -823,7 +779,7 @@ export default function ReservationForm() {
                             </Badge>
                           ) : null
                         })}
-                      </span>
+                      </div>
                     ) : (
                       'オプションを選択'
                     )}
@@ -831,7 +787,20 @@ export default function ReservationForm() {
                 </PopoverTrigger>
                 <PopoverContent className="w-full min-w-[320px] p-2">
                   <Command>
-                    <CommandInput placeholder="オプションを検索..." className="border-b" />
+                    <div className="flex justify-between items-center w-full border-b">
+                      <CommandInput
+                        placeholder="オプションを検索..."
+                        className=" border-0 focus:ring-0 w-full"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setOptionPopoverOpen(false)}
+                        className="p-2 text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-4 h-4" aria-hidden="true" />
+                        <span className="sr-only">閉じる</span>
+                      </button>
+                    </div>
                     <CommandList className="max-h-64 overflow-y-auto">
                       {options.map((option) => {
                         const count = getOptionCount(option._id)
