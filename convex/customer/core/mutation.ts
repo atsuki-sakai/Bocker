@@ -300,3 +300,91 @@ export const createCompleteFields = mutation({
     }
   },
 });
+
+export const updateRelatedTables = mutation({
+  args: {
+    salonId: v.id('salon'), // サロンID
+    customerId: v.id('customer'), // 顧客ID
+    lineId: v.optional(v.string()), // LINE ID
+    lineUserName: v.optional(v.string()), // LINEユーザー名
+    phone: v.optional(v.string()), // 電話番号
+    email: v.optional(v.string()), // メールアドレス
+    firstName: v.optional(v.string()), // 名前
+    lastName: v.optional(v.string()), // 苗字
+    fullName: v.optional(v.string()), // 検索用フルネーム
+    useCount: v.optional(v.number()), // 利用回数
+    lastReservationDate_unix: v.optional(v.number()), // 最終予約日
+    tags: v.optional(v.array(v.string())), // タグ
+    age: v.optional(v.number()), // 年齢
+    birthday: v.optional(v.string()), // 誕生日
+    gender: v.optional(genderType), // 性別
+    notes: v.optional(v.string()), // メモ
+    totalPoints: v.optional(v.number()), // ポイント
+    lastTransactionDate_unix: v.optional(v.number()), // 最終トランザクション日
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx)
+    validateCustomer(args)
+
+    try {
+      const updateCustomerId = await ctx.db.patch(args.customerId, {
+        salonId: args.salonId, // サロンID
+        lineId: args.lineId, // LINE ID
+        lineUserName: args.lineUserName, // LINEユーザー名
+        phone: args.phone, // 電話番号
+        email: args.email, // メールアドレス
+        fullName: (args.lastName ?? '') + (args.firstName ?? '') + (args.lineUserName ?? ''), // 検索用フルネーム
+        useCount: args.useCount, // 利用回数
+        lastReservationDate_unix: args.lastReservationDate_unix, // 最終予約日
+        tags: args.tags, // タグ
+      })
+
+      const updateCustomerDetailId = await ctx.db
+        .query('customer_detail')
+        .withIndex('by_customer_id', (q) => q.eq('customerId', args.customerId))
+        .first()
+      if (!updateCustomerDetailId) {
+        throw throwConvexError({
+          message: '指定された顧客の詳細が存在しません',
+          status: 404,
+          code: 'NOT_FOUND',
+          title: '指定された顧客の詳細が存在しません',
+          callFunc: 'customer.updateCompleteFields',
+          severity: 'low',
+          details: { ...args },
+        })
+      }
+      await ctx.db.patch(updateCustomerDetailId._id, {
+        email: args.email, // メールアドレス
+        age: args.age, // 年齢
+        birthday: args.birthday, // 誕生日
+        gender: args.gender, // 性別
+        notes: args.notes, // メモ
+      })
+
+      const updateCustomerPointsId = await ctx.db
+        .query('customer_points')
+        .withIndex('by_customer_id', (q) => q.eq('customerId', args.customerId))
+        .first()
+      if (!updateCustomerPointsId) {
+        throw throwConvexError({
+          message: '指定された顧客のポイントが存在しません',
+          status: 404,
+          code: 'NOT_FOUND',
+          title: '指定された顧客のポイントが存在しません',
+          callFunc: 'customer.updateCompleteFields',
+          severity: 'low',
+          details: { ...args },
+        })
+      }
+      await ctx.db.patch(updateCustomerPointsId._id, {
+        totalPoints: args.totalPoints, // ポイント
+        lastTransactionDate_unix: args.lastTransactionDate_unix, // 最終トランザクション日
+      })
+      return updateCustomerId
+    } catch (error) {
+      console.error(error)
+      throw error
+    }
+  },
+})

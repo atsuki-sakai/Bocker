@@ -8,14 +8,7 @@ import { useQuery } from 'convex/react'
 import { Loading } from '@/components/common' // Assuming this is your loading component
 
 // Import Shadcn UI components
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator' // Useful for separating sections
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip' // For displaying full IDs on hover
@@ -47,59 +40,63 @@ import { ja } from 'date-fns/locale' // Japanese locale for date formatting
 
 // Define the CustomerDetailPage component
 export default function CustomerDetailPage() {
-  const salon = useSalon()
   const params = useParams()
   // Extract customer_id and cast it to the correct type, checking for existence
   const customerId = params.customer_id ? (params.customer_id as Id<'customer'>) : undefined
 
-  // --- Data Fetching ---
-  // Fetch customer basic data
-  const customer = useQuery(api.customer.core.query.getById, customerId ? { customerId } : 'skip')
-
-  // Fetch customer details data (birthday, notes) - Assuming a query exists
-  // Replace 'api.customer.details.query.getByCustomerId' with your actual query name
-  const customerDetails = useQuery(
-    api.customer.detail.query.getByCustomerId,
+  const completeCustomer = useQuery(
+    api.customer.core.query.completeCustomer,
     customerId ? { customerId } : 'skip'
   )
-
-  // Fetch customer transaction summary data (last transaction date) - Assuming a query exists
-  // Replace 'api.customer.transactions.query.getByCustomerId' with your actual query name
-  const customerPoints = useQuery(
-    api.customer.points.query.findBySalonAndCustomerId,
-    customerId && salon?.salonId ? { salonId: salon.salonId, customerId } : 'skip'
-  )
-  // --- End Data Fetching ---
+  if (!completeCustomer) {
+    return <Loading />
+  }
 
   // --- Loading State ---
   // Show a loading state if any of the required data is not yet loaded
-  if (!customer || !customerDetails || !customerPoints) {
+  if (
+    !completeCustomer.customer ||
+    !completeCustomer.customerDetails ||
+    !completeCustomer.customerPoints
+  ) {
     return <Loading />
   }
   // --- End Loading State ---
 
   // --- Data Formatting ---
   // Format the creation time
-  const formattedCreationTime = format(new Date(customer._creationTime), 'yyyy年MM月dd日 HH:mm', {
-    locale: ja,
-  })
+  const formattedCreationTime = format(
+    new Date(completeCustomer.customer._creationTime),
+    'yyyy年MM月dd日 HH:mm',
+    {
+      locale: ja,
+    }
+  )
 
   // Format the birthday if it exists
-  const formattedBirthday = customerDetails.birthday
-    ? format(new Date(customerDetails.birthday), 'yyyy年MM月dd日', { locale: ja })
+  const formattedBirthday = completeCustomer.customerDetails.birthday
+    ? format(new Date(completeCustomer.customerDetails.birthday), 'yyyy年MM月dd日', { locale: ja })
     : '未登録'
 
   // Format the last transaction date if it exists
-  const formattedLastTransactionDate = customerPoints.lastTransactionDate_unix
-    ? format(new Date(customerPoints.lastTransactionDate_unix * 1000), 'yyyy年MM月dd日 HH:mm', {
-        locale: ja,
-      }) // Convert unix timestamp to milliseconds
+  const formattedLastTransactionDate = completeCustomer.customerPoints.lastTransactionDate_unix
+    ? format(
+        new Date(completeCustomer.customerPoints.lastTransactionDate_unix * 1000),
+        'yyyy年MM月dd日 HH:mm',
+        {
+          locale: ja,
+        }
+      ) // Convert unix timestamp to milliseconds
     : '取引履歴なし'
 
-  const formattedLastReservationDate = customer.lastReservationDate_unix
-    ? format(new Date(customer.lastReservationDate_unix * 1000), 'yyyy年MM月dd日 HH:mm', {
-        locale: ja,
-      }) // Convert unix timestamp to milliseconds
+  const formattedLastReservationDate = completeCustomer.customer.lastReservationDate_unix
+    ? format(
+        new Date(completeCustomer.customer.lastReservationDate_unix * 1000),
+        'yyyy年MM月dd日 HH:mm',
+        {
+          locale: ja,
+        }
+      ) // Convert unix timestamp to milliseconds
     : '予約履歴なし'
   // --- End Data Formatting ---
 
@@ -121,13 +118,15 @@ export default function CustomerDetailPage() {
           <CardTitle className="text-3xl font-bold text-primary">
             {' '}
             {/* Larger and highlighted name */}
-            {customer.fullName}
+            {completeCustomer.customer.fullName}
           </CardTitle>
           <Badge variant="default">
-            {!customerPoints.totalPoints ? (
+            {!completeCustomer.customerPoints.totalPoints ? (
               <>
                 <span className="text-sm font-medium text-muted-foreground">保有ポイント : </span>
-                <span className="text-base ml-1">{customerPoints.totalPoints ?? 0}</span>
+                <span className="text-base ml-1">
+                  {completeCustomer.customerPoints.totalPoints ?? 0}
+                </span>
               </>
             ) : (
               'ポイント無し'
@@ -147,23 +146,27 @@ export default function CustomerDetailPage() {
               {/* Last Name */}
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-muted-foreground">姓:</span>
-                <span className="text-base font-semibold">{customer.lastName}</span>
+                <span className="text-base font-semibold">
+                  {completeCustomer.customer.lastName}
+                </span>
               </div>
               {/* First Name */}
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-muted-foreground">名:</span>
-                <span className="text-base font-semibold">{customer.firstName}</span>
+                <span className="text-base font-semibold">
+                  {completeCustomer.customer.firstName}
+                </span>
               </div>
               {/* Phone Number - spans both columns on medium screens and above */}
               <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
                 <Phone className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">電話番号:</span>
-                <span className="text-base">{customer.phone || '未登録'}</span>
+                <span className="text-base">{completeCustomer.customer.phone || '未登録'}</span>
               </div>
               <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
                 <Mail className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">メールアドレス:</span>
-                <span className="text-base">{customer.email || '未登録'}</span>
+                <span className="text-base">{completeCustomer.customer.email || '未登録'}</span>
               </div>
             </div>
           </div>
@@ -185,12 +188,16 @@ export default function CustomerDetailPage() {
               <div className="flex items-center space-x-2">
                 <Cake className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">年齢:</span>
-                <span className="text-base">{customerDetails.age || '未登録'}</span>
+                <span className="text-base">
+                  {completeCustomer.customerDetails.age || '未登録'}
+                </span>
               </div>
               <div className="flex items-center space-x-2">
                 <Cake className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">性別:</span>
-                <span className="text-base">{customerDetails.gender || '未登録'}</span>
+                <span className="text-base">
+                  {completeCustomer.customerDetails.gender || '未登録'}
+                </span>
               </div>
               {/* Notes - potentially long, use ScrollArea or Collapsible */}
               <div className="col-span-1 md:col-span-2">
@@ -200,11 +207,11 @@ export default function CustomerDetailPage() {
                   <NotebookPen className="mr-2 h-5 w-5 text-muted-foreground" />
                   メモ:
                 </span>
-                {customerDetails.notes ? (
+                {completeCustomer.customerDetails.notes ? (
                   <ScrollArea className="h-24 w-full rounded-md border p-4 text-sm">
                     {' '}
                     {/* ScrollArea for long notes */}
-                    {customerDetails.notes}
+                    {completeCustomer.customerDetails.notes}
                   </ScrollArea>
                 ) : (
                   <p className="text-base text-muted-foreground italic">メモはありません。</p>
@@ -230,14 +237,14 @@ export default function CustomerDetailPage() {
             </div>
             <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
               <span className="text-sm font-medium text-muted-foreground">来店回数:</span>
-              <span className="text-base">{customer.useCount || 0}回</span>
+              <span className="text-base">{completeCustomer.customer.useCount || 0}回</span>
             </div>
             {/* Future: Add a table or list of recent transactions here */}
           </div>
           {/* --- End Transaction Info Section --- */}
           {/* --- Tags Section --- */}
           {/* Only render the tags section if tags exist and the array is not empty */}
-          {customer.tags && customer.tags.length > 0 ? (
+          {completeCustomer.customer.tags && completeCustomer.customer.tags.length > 0 ? (
             <>
               <Separator /> {/* Separator before tags */}
               <div>
@@ -248,7 +255,7 @@ export default function CustomerDetailPage() {
                 <div className="flex flex-wrap gap-2">
                   {/* Map over tags and display each as a Badge */}
                   {/* Using tag string as key assuming tags are unique strings. */}
-                  {customer.tags.map((tag) => (
+                  {completeCustomer.customer.tags.map((tag: string) => (
                     <Badge key={tag} variant="secondary" className="text-sm">
                       {tag}
                     </Badge>
@@ -284,11 +291,13 @@ export default function CustomerDetailPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   {/* Display a shortened version of the ID */}
-                  <span className="underline cursor-help">{customer._id.substring(0, 8)}...</span>
+                  <span className="underline cursor-help">
+                    {completeCustomer.customer._id.substring(0, 8)}...
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent>
                   {/* Display the full ID on hover */}
-                  <p>{customer._id}</p>
+                  <p>{completeCustomer.customer._id}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

@@ -3,7 +3,8 @@ import { v } from 'convex/values';
 import { paginationOptsValidator } from 'convex/server';
 import { validateRequired } from '@/services/convex/shared/utils/validation';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
-
+import { throwConvexError } from '@/lib/error'
+import { excludeFields } from '@/services/convex/shared/utils/helper'
 export const getById = query({
   args: {
     customerId: v.id('customer'),
@@ -25,8 +26,8 @@ export const findBySalonId = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateRequired(args.salonId, 'salonId');
+    checkAuth(ctx)
+    validateRequired(args.salonId, 'salonId')
 
     // 検索条件が指定されていない場合は通常の一覧を返す
     if (!args.searchTerm || args.searchTerm.trim() === '') {
@@ -36,11 +37,11 @@ export const findBySalonId = query({
           q.eq('salonId', args.salonId).eq('isArchive', args.includeArchive || false)
         )
         .order(args.sort || 'desc')
-        .paginate(args.paginationOpts);
+        .paginate(args.paginationOpts)
     }
 
     // 検索条件がある場合は検索を行う
-    const searchTerm = args.searchTerm.toLowerCase().trim();
+    const searchTerm = args.searchTerm.toLowerCase().trim()
 
     // 名前での検索
     const nameResults = await ctx.db
@@ -48,19 +49,19 @@ export const findBySalonId = query({
       .withIndex('by_salon_id_full_name', (q) =>
         q.eq('salonId', args.salonId).eq('fullName', searchTerm)
       )
-      .collect();
+      .collect()
 
     // 電話番号での検索
     const phoneResults = await ctx.db
       .query('customer')
       .withIndex('by_salon_phone', (q) => q.eq('salonId', args.salonId).eq('phone', searchTerm))
-      .collect();
+      .collect()
 
     // メールアドレスでの検索
     const emailResults = await ctx.db
       .query('customer')
       .withIndex('by_salon_email', (q) => q.eq('salonId', args.salonId).eq('email', searchTerm))
-      .collect();
+      .collect()
 
     // LINEユーザー名での検索
     const lineResults = await ctx.db
@@ -68,19 +69,19 @@ export const findBySalonId = query({
       .withIndex('by_salon_id_line_user_name', (q) =>
         q.eq('salonId', args.salonId).eq('lineUserName', searchTerm)
       )
-      .collect();
+      .collect()
 
     // 結果を結合して重複を排除
-    const allResults = [...nameResults, ...phoneResults, ...emailResults, ...lineResults];
-    const uniqueResults = Array.from(new Map(allResults.map((item) => [item._id, item])).values());
+    const allResults = [...nameResults, ...phoneResults, ...emailResults, ...lineResults]
+    const uniqueResults = Array.from(new Map(allResults.map((item) => [item._id, item])).values())
 
     // 結果をソート
     const sortedResults = uniqueResults.sort((a, b) => {
       if (args.sort === 'asc') {
-        return a._creationTime - b._creationTime;
+        return a._creationTime - b._creationTime
       }
-      return b._creationTime - a._creationTime;
-    });
+      return b._creationTime - a._creationTime
+    })
 
     // ページネーション用のデータ形式に変換
     const paginatedResults = {
@@ -90,11 +91,11 @@ export const findBySalonId = query({
         sortedResults.length > args.paginationOpts.numItems
           ? { numItems: args.paginationOpts.numItems, cursor: args.paginationOpts.numItems }
           : undefined,
-    };
+    }
 
-    return paginatedResults;
+    return paginatedResults
   },
-});
+})
 
 // LINE IDから顧客情報を取得
 export const findByLineId = query({
@@ -104,8 +105,8 @@ export const findByLineId = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateRequired(args.salonId, 'salonId');
+    checkAuth(ctx)
+    validateRequired(args.salonId, 'salonId')
     return await ctx.db
       .query('customer')
       .withIndex('by_salon_line_id', (q) =>
@@ -114,9 +115,9 @@ export const findByLineId = query({
           .eq('lineId', args.lineId)
           .eq('isArchive', args.includeArchive || false)
       )
-      .first();
+      .first()
   },
-});
+})
 
 // 電話番号から顧客情報を取得
 export const findByPhone = query({
@@ -126,8 +127,8 @@ export const findByPhone = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateRequired(args.salonId, 'salonId');
+    checkAuth(ctx)
+    validateRequired(args.salonId, 'salonId')
     return await ctx.db
       .query('customer')
       .withIndex('by_salon_phone', (q) =>
@@ -136,9 +137,9 @@ export const findByPhone = query({
           .eq('phone', args.phone)
           .eq('isArchive', args.includeArchive || false)
       )
-      .first();
+      .first()
   },
-});
+})
 
 // 名前での顧客検索
 export const findByName = query({
@@ -148,15 +149,15 @@ export const findByName = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateRequired(args.salonId, 'salonId');
+    checkAuth(ctx)
+    validateRequired(args.salonId, 'salonId')
     return await ctx.db
       .query('customer')
       .withIndex('by_salon_id_full_name', (q) => q.eq('salonId', args.salonId))
       .filter((q) => q.eq(q.field('fullName'), args.searchName))
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 export const listBySalonId = query({
   args: {
@@ -167,34 +168,34 @@ export const listBySalonId = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateRequired(args.salonId, 'salonId');
+    checkAuth(ctx)
+    validateRequired(args.salonId, 'salonId')
 
     // Create a query with the index
     let customerQuery = ctx.db
       .query('customer')
-      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId));
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId))
 
     // Apply isArchive filter as part of the main filter chain
     customerQuery = customerQuery.filter((q) =>
       q.eq(q.field('isArchive'), args.includeArchive || false)
-    );
+    )
 
     // 検索語がある場合
     if (args.searchTerm && args.searchTerm.length > 0) {
       customerQuery = customerQuery.filter((q) => {
-        const fullName = q.field('fullName');
+        const fullName = q.field('fullName')
         // 文字列が存在し、検索語を含むかどうかをチェック
-        return q.neq(fullName, undefined);
+        return q.neq(fullName, undefined)
         // 注意: ここでは完全な検索機能を実装できません
         // 実際には全文検索インデックスの使用を検討してください
-      });
+      })
     }
 
     // Apply sorting and pagination
-    return customerQuery.order(args.sort || 'desc').paginate(args.paginationOpts);
+    return customerQuery.order(args.sort || 'desc').paginate(args.paginationOpts)
   },
-});
+})
 
 export const completeCustomer = query({
   args: {
@@ -206,6 +207,71 @@ export const completeCustomer = query({
 
     const customer = await ctx.db.get(args.customerId)
 
-    return customer
+    if (!customer) {
+      throw throwConvexError({
+        callFunc: 'customer.core.query.completeCustomer',
+        message: 'Customer not found',
+        title: '顧客が見つかりません',
+        severity: 'low',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: {
+          customerId: args.customerId,
+        },
+      })
+    }
+
+    const customerDetail = await ctx.db
+      .query('customer_detail')
+      .withIndex('by_customer_id', (q) => q.eq('customerId', args.customerId))
+      .first()
+
+    if (!customerDetail) {
+      throw throwConvexError({
+        callFunc: 'customer.core.query.completeCustomer',
+        message: 'Customer detail not found',
+        title: '顧客詳細が見つかりません',
+        severity: 'low',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: {
+          customerId: args.customerId,
+        },
+      })
+    }
+
+    const customerPoints = await ctx.db
+      .query('customer_points')
+      .withIndex('by_customer_id', (q) => q.eq('customerId', args.customerId))
+      .first()
+
+    if (!customerPoints) {
+      throw throwConvexError({
+        callFunc: 'customer.core.query.completeCustomer',
+        message: 'Customer points not found',
+        title: '顧客ポイントが見つかりません',
+        severity: 'low',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: {
+          customerId: args.customerId,
+        },
+      })
+    }
+    return {
+      customer: excludeFields(customer, ['deletedAt', 'isArchive', 'salonId']),
+      customerDetails: excludeFields(customerDetail, [
+        '_creationTime',
+        'deletedAt',
+        'isArchive',
+        'customerId',
+      ]),
+      customerPoints: excludeFields(customerPoints, [
+        '_creationTime',
+        'deletedAt',
+        'isArchive',
+        'customerId',
+      ]),
+    }
   },
 })

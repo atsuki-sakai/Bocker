@@ -151,7 +151,7 @@ export default function CustomerList() {
               filteredCustomers.map((customer) => (
                 <TableRow key={customer._id} className="hover:bg-transparent">
                   <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 text-nowrap">
                       {customer.lastName} {customer.firstName}
                     </div>
                   </TableCell>
@@ -189,11 +189,15 @@ export default function CustomerList() {
                       {formatDate(customer.lastReservationDate_unix)}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="w-full min-w-[280px]">
                     {customer.tags && customer.tags.length > 0 ? (
-                      <div className="flex flex-wrap gap-1 w-[200px]">
+                      <div className="flex flex-wrap gap-1 w-full">
                         {customer.tags.map((tag: string, index: number) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="text-xs py-1 px-1 font-light"
+                          >
                             {tag}
                           </Badge>
                         ))}
