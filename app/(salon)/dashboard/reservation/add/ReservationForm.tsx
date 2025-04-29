@@ -586,8 +586,10 @@ export default function ReservationForm() {
                 <Command>
                   <div className="flex items-center justify-between border-b">
                     <CommandInput
-                      placeholder="メニューを検索..."
+                      placeholder="メニューを検索…"
                       className="flex-1 border-0 focus:ring-0"
+                      inputMode="none"
+                      readOnly
                     />
                     <button
                       type="button"
@@ -598,7 +600,7 @@ export default function ReservationForm() {
                       <span className="sr-only">閉じる</span>
                     </button>
                   </div>
-                  <CommandList className="max-h-[500px] overflow-y-auto">
+                  <CommandList className="max-h-[300px] py-8 overflow-y-auto">
                     {menus.map((menu) => {
                       const count = getMenuCount(menu._id)
                       return (

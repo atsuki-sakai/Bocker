@@ -95,7 +95,7 @@ export default function OptionList() {
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                   >
-                    施術時間
+                    実施術時間/トータル施術時間
                   </th>
                   <th
                     scope="col"
@@ -151,6 +151,7 @@ export default function OptionList() {
                       </td>
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
                         {option.timeToMin ? `${option.timeToMin}分` : '未設定'}
+                        {option.ensureTimeToMin ? `/ ${option.ensureTimeToMin}分` : ''}
                       </td>
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
                         {option.tags && option.tags.length > 0 ? option.tags.join('、') : '未設定'}
@@ -203,5 +204,5 @@ export default function OptionList() {
         onConfirmAction={() => handleDelete(deleteOptionId!)}
       />
     </div>
-  );
+  )
 }

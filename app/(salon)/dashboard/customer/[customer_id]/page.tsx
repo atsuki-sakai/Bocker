@@ -107,19 +107,9 @@ export default function CustomerDetailPage() {
       backLink="/dashboard/customer"
       backLinkTitle="顧客一覧に戻る"
     >
-      {/* Use a Card component to structure and style the customer details */}
-      <Card className="w-full max-w-3xl mx-auto shadow-lg">
-        {' '}
-        {/* Increased max-w for more content */}
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          {' '}
-          {/* Increased padding */}
-          {/* Display the full name as the card title */}
-          <CardTitle className="text-3xl font-bold text-primary">
-            {' '}
-            {/* Larger and highlighted name */}
-            {completeCustomer.customer.fullName}
-          </CardTitle>
+      <div>
+        <div className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <h3 className="text-3xl font-bold text-primary">{completeCustomer.customer.fullName}</h3>
           <Badge variant="default">
             {!completeCustomer.customerPoints.totalPoints ? (
               <>
@@ -132,11 +122,8 @@ export default function CustomerDetailPage() {
               'ポイント無し'
             )}
           </Badge>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-4">
-          {' '}
-          {/* Increased space-y for better separation */}
-          {/* --- Basic Info Section --- */}
+        </div>
+        <div className="space-y-6 pt-4">
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center">
               <User className="mr-2 h-5 w-5 text-muted-foreground" />
@@ -170,16 +157,13 @@ export default function CustomerDetailPage() {
               </div>
             </div>
           </div>
-          {/* --- End Basic Info Section --- */}
-          <Separator /> {/* Separator between sections */}
-          {/* --- Additional Info Section (Birthday, Notes) --- */}
+          <Separator />
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center">
               <NotebookPen className="mr-2 h-5 w-5 text-muted-foreground" />
               追加情報
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Birthday */}
               <div className="flex items-center space-x-2">
                 <Cake className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">誕生日:</span>
@@ -219,42 +203,31 @@ export default function CustomerDetailPage() {
               </div>
             </div>
           </div>
-          {/* --- End Additional Info Section --- */}
-          <Separator /> {/* Separator between sections */}
-          {/* --- Transaction Info Section --- */}
+          <Separator />
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center">
               <History className="mr-2 h-5 w-5 text-muted-foreground" />
-              取引情報
+              利用情報
             </h3>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-muted-foreground">最終取引日:</span>
-              <span className="text-base">{formattedLastTransactionDate}</span>
-            </div>
+
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium text-muted-foreground">最終予約日:</span>
-              <span className="text-base">{formattedLastReservationDate}</span>
+              <span className="text-sm">{formattedLastReservationDate}</span>
             </div>
             <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
               <span className="text-sm font-medium text-muted-foreground">来店回数:</span>
-              <span className="text-base">{completeCustomer.customer.useCount || 0}回</span>
+              <span className="text-sm">{completeCustomer.customer.useCount || 0}回</span>
             </div>
-            {/* Future: Add a table or list of recent transactions here */}
           </div>
-          {/* --- End Transaction Info Section --- */}
-          {/* --- Tags Section --- */}
-          {/* Only render the tags section if tags exist and the array is not empty */}
+
           {completeCustomer.customer.tags && completeCustomer.customer.tags.length > 0 ? (
             <>
-              <Separator /> {/* Separator before tags */}
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center">
                   <Tag className="mr-2 h-5 w-5 text-muted-foreground" />
                   タグ
                 </h3>
-                <div className="flex flex-wrap gap-2">
-                  {/* Map over tags and display each as a Badge */}
-                  {/* Using tag string as key assuming tags are unique strings. */}
+                <div className="flex flex-wrap gap-2 mb-4">
                   {completeCustomer.customer.tags.map((tag: string) => (
                     <Badge key={tag} variant="secondary" className="text-sm">
                       {tag}
@@ -266,7 +239,6 @@ export default function CustomerDetailPage() {
           ) : (
             // Display a message if no tags are present
             <>
-              <Separator /> {/* Separator even if no tags */}
               <div className="flex items-center space-x-2 text-muted-foreground text-sm">
                 <Tag className="h-5 w-5" />
                 <span>タグは登録されていません。</span>
@@ -274,37 +246,32 @@ export default function CustomerDetailPage() {
             </>
           )}
           {/* --- End Tags Section --- */}
-        </CardContent>
-        {/* --- CardFooter for metadata --- */}
-        <CardFooter className="flex flex-col items-start space-y-2 text-sm text-muted-foreground pt-4 border-t">
-          {/* Creation Time */}
+        </div>
+        <div className="flex flex-col items-start space-y-2 text-sm text-muted-foreground pt-4 border-t">
           <div className="flex items-center space-x-2">
             <CalendarDays className="h-4 w-4" />
             <span>登録日: {formattedCreationTime}</span>
           </div>
-          {/* Customer ID with Tooltip for full ID */}
+
           <div className="flex items-center space-x-2">
             <Info className="h-4 w-4" />
             <span>顧客ID: </span>
-            {/* TooltipProvider should ideally wrap the root of your app, but included here for self-contained example */}
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  {/* Display a shortened version of the ID */}
                   <span className="underline cursor-help">
                     {completeCustomer.customer._id.substring(0, 8)}...
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {/* Display the full ID on hover */}
                   <p>{completeCustomer.customer._id}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-        </CardFooter>
-        {/* --- End CardFooter --- */}
-      </Card>
+        </div>
+      </div>
     </DashboardSection>
   )
 }

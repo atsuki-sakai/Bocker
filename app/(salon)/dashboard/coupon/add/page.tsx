@@ -244,14 +244,14 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
           </div>
           <Badge
             variant={data.isActive ? 'default' : 'destructive'}
-            className={`h-6 ${data.isActive ? 'bg-green-500' : 'bg-red-500'}`}
+            className={`h-6 ${data.isActive ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
           >
             {data.isActive ? '有効' : '無効'}
           </Badge>
         </CardFooter>
       </Card>
     </div>
-  );
+  )
 }
 
 // メインのフォームコンポーネント
@@ -362,7 +362,7 @@ function CouponForm() {
       onSubmit={handleSubmit(onSubmit)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-          e.preventDefault();
+          e.preventDefault()
         }
       }}
       className="space-y-8"
@@ -429,7 +429,7 @@ function CouponForm() {
                             <Switch
                               checked={field.value === 'fixed'}
                               onCheckedChange={(checked) => {
-                                field.onChange(checked ? 'fixed' : 'percentage');
+                                field.onChange(checked ? 'fixed' : 'percentage')
                               }}
                               className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-blue-500"
                             />
@@ -621,7 +621,7 @@ function CouponForm() {
                           <div className="flex items-center gap-2">
                             <Badge
                               variant={field.value ? 'default' : 'destructive'}
-                              className={`px-2 py-0.5 ${field.value ? 'bg-green-500' : 'bg-red-500'}`}
+                              className={`px-2 py-0.5 ${field.value ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
                             >
                               {field.value ? '有効' : '無効'}
                             </Badge>
@@ -694,7 +694,7 @@ function CouponForm() {
         </div>
       </div>
     </form>
-  );
+  )
 }
 
 // ページコンポーネント

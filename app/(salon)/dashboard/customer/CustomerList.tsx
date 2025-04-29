@@ -128,13 +128,13 @@ export default function CustomerList() {
       <div className="rounded-md border overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50 text-slate-600">
-              <TableHead className="w-[250px]">顧客名</TableHead>
-              <TableHead>LINEユーザー名</TableHead>
-              <TableHead>連絡先</TableHead>
-              <TableHead className="w-[100px] text-center">来店回数</TableHead>
-              <TableHead className="w-[150px]">最終来店日</TableHead>
-              <TableHead>タグ</TableHead>
+            <TableRow className="bg-slate-50 text-slate-700">
+              <TableHead className="w-[250px] px-2">顧客名</TableHead>
+              <TableHead className="px-2">LINEユーザー名</TableHead>
+              <TableHead className="px-2">連絡先</TableHead>
+              <TableHead className="w-[100px] text-center px-2">来店回数</TableHead>
+              <TableHead className="w-[150px] px-2">最終来店日</TableHead>
+              <TableHead className="px-2">タグ</TableHead>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[50px]"></TableHead>
@@ -150,12 +150,12 @@ export default function CustomerList() {
             ) : (
               filteredCustomers.map((customer) => (
                 <TableRow key={customer._id} className="hover:bg-transparent">
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium px-2">
                     <div className="flex items-center gap-2 text-nowrap">
                       {customer.lastName} {customer.firstName}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-2">
                     {customer.lineUserName ? (
                       <div className="flex items-center gap-2">
                         <span>{customer.lineUserName}</span>
@@ -164,7 +164,7 @@ export default function CustomerList() {
                       <span className="text-muted-foreground text-sm">未登録</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-2">
                     <div className="space-y-1">
                       {customer.phone && (
                         <div className="flex items-center gap-2 text-sm">
@@ -183,13 +183,13 @@ export default function CustomerList() {
                   <TableCell className="text-center">
                     <Badge variant="outline">{customer.useCount ?? 0}回</Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-2">
                     <div className="flex items-center gap-2">
                       <Calendar size={16} className="text-muted-foreground" />
                       {formatDate(customer.lastReservationDate_unix)}
                     </div>
                   </TableCell>
-                  <TableCell className="w-full min-w-[280px]">
+                  <TableCell className="w-full">
                     {customer.tags && customer.tags.length > 0 ? (
                       <div className="flex flex-wrap gap-1 w-full">
                         {customer.tags.map((tag: string, index: number) => (
@@ -206,7 +206,7 @@ export default function CustomerList() {
                       <span className="text-muted-foreground text-sm">タグなし</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-2">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -215,7 +215,7 @@ export default function CustomerList() {
                       <Link href={`/dashboard/customer/${customer._id}`}>詳細</Link>
                     </Button>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-2">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -224,7 +224,7 @@ export default function CustomerList() {
                       <Link href={`/dashboard/customer/${customer._id}/edit`}>編集</Link>
                     </Button>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-2">
                     <Button
                       variant="ghost"
                       size="icon"
