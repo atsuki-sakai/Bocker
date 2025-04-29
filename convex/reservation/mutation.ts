@@ -339,3 +339,40 @@ export const kill = mutation({
   },
 })
 
+
+export const updateStatus = mutation({
+  args: {
+    reservationId: v.id('reservation'),
+    status: reservationStatusType,
+  },
+  handler: async (ctx, args) => {
+    validateRequired(args.reservationId, 'reservationId')
+    validateRequired(args.status, 'status')
+    const reservation = await ctx.db.get(args.reservationId)
+    if (!reservation || reservation.isArchive) {
+      throw throwConvexError({
+        message: '指定された予約が存在しません',
+        status: 404,
+        code: 'NOT_FOUND',
+        title: '予約が見つかりません',
+        callFunc: 'reservation.cancel',
+        severity: 'low',
+        details: { ...args },
+      })
+    }
+    if (reservation.status === 'cancelled') {
+      throw throwConvexError({
+        message: 'すでにキャンセルされています',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        title: 'すでにキャンセルされています',
+        callFunc: 'reservation.cancel',
+        severity: 'low',
+        details: { ...args },
+      })
+    }
+    return await ctx.db.patch(args.reservationId, {
+      status: args.status,
+    })
+  },
+})

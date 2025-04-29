@@ -47,6 +47,7 @@ export const getDisplayByIds = query({
           unitPrice: menu.unitPrice,
           salePrice: menu.salePrice,
           timeToMin: menu.timeToMin,
+          ensureTimeToMin: menu.ensureTimeToMin,
         })),
       options: options
         .filter((option) => option !== null) // nullを除外
@@ -56,8 +57,9 @@ export const getDisplayByIds = query({
           unitPrice: option.unitPrice,
           salePrice: option.salePrice,
           timeToMin: option.timeToMin,
+          ensureTimeToMin: option.ensureTimeToMin,
         })),
-    };
+    }
   },
 });
 // サロンIDからメニュー一覧を取得

@@ -54,40 +54,81 @@ export const reservationStatusType = v.union(
 );
 export type ReservationStatus = Infer<typeof reservationStatusType>;
 
+export const convertReservationStatus = (status: ReservationStatus): string => {
+  switch (status) {
+    case 'confirmed':
+      return '確定'
+    case 'cancelled':
+      return 'キャンセル'
+    case 'pending':
+      return '保留'
+    case 'completed':
+      return '完了'
+    case 'refunded':
+      return '返金'
+    default:
+      return '不明'
+  }
+}
+
 // 予約間隔の型定義
 export const RESERVATION_INTERVAL_MINUTES_VALUES = [
   0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,
-] as const;
+] as const
 export const reservationIntervalMinutesType = v.union(
   ...RESERVATION_INTERVAL_MINUTES_VALUES.map((minutes) => v.literal(minutes))
-);
-export type ReservationIntervalMinutes = Infer<typeof reservationIntervalMinutesType>;
+)
+export type ReservationIntervalMinutes = Infer<typeof reservationIntervalMinutesType>
 // サロンスケジュール例外タイプの定義
-export const SALON_SCHEDULE_EXCEPTION_VALUES = ['holiday', 'other'] as const;
+export const SALON_SCHEDULE_EXCEPTION_VALUES = ['holiday', 'other'] as const
 export const salonScheduleExceptionType = v.union(
   ...SALON_SCHEDULE_EXCEPTION_VALUES.map((type) => v.literal(type))
-);
-export type SalonScheduleException = Infer<typeof salonScheduleExceptionType>;
+)
+export type SalonScheduleException = Infer<typeof salonScheduleExceptionType>
 // スタッフスケジュール例外タイプの定義
-export const STAFF_SCHEDULE_EXCEPTION_VALUES = ['holiday', 'reservation', 'other'] as const;
+export const STAFF_SCHEDULE_EXCEPTION_VALUES = ['holiday', 'reservation', 'other'] as const
 export const staffScheduleType = v.union(
   ...STAFF_SCHEDULE_EXCEPTION_VALUES.map((type) => v.literal(type))
-);
-export type StaffSchedule = Infer<typeof staffScheduleType>;
+)
+export type StaffSchedule = Infer<typeof staffScheduleType>
 
 // 支払い方法の型定義
-export const PAYMENT_METHOD_VALUES = ['cash', 'credit_card', 'other'] as const;
+export const PAYMENT_METHOD_VALUES = ['cash', 'credit_card', 'other'] as const
 export const paymentMethodType = v.union(
   ...PAYMENT_METHOD_VALUES.map((method) => v.literal(method))
-);
-export type PaymentMethod = Infer<typeof paymentMethodType>;
+)
+export type PaymentMethod = Infer<typeof paymentMethodType>
+export const convertPaymentMethod = (method: PaymentMethod): string => {
+  switch (method) {
+    case 'cash':
+      return '店舗支払い'
+    case 'credit_card':
+      return 'クレジットカード'
+    case 'other':
+      return 'その他'
+    default:
+      return '不明'
+  }
+}
 
 // メニュー支払い方法の型定義
-export const MENU_PAYMENT_METHOD_VALUES = ['cash', 'credit_card', 'all'] as const;
+export const MENU_PAYMENT_METHOD_VALUES = ['cash', 'credit_card', 'all'] as const
 export const menuPaymentMethodType = v.union(
   ...MENU_PAYMENT_METHOD_VALUES.map((method) => v.literal(method))
-);
-export type MenuPaymentMethod = Infer<typeof menuPaymentMethodType>;
+)
+export type MenuPaymentMethod = Infer<typeof menuPaymentMethodType>
+export const convertMenuPaymentMethod = (method: MenuPaymentMethod): string => {
+  switch (method) {
+    case 'cash':
+      return '店舗支払い'
+    case 'credit_card':
+      return 'クレジットカード'
+    case 'all':
+      return '両方対応'
+    default:
+      return '不明'
+  }
+}
 
 // スタッフロールの型定義
 export const ROLE_VALUES = ['owner', 'manager', 'staff'] as const;
