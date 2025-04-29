@@ -589,7 +589,6 @@ export default function ReservationForm() {
                       placeholder="メニューを検索…"
                       className="flex-1 border-0 focus:ring-0"
                       inputMode="none"
-                      readOnly
                     />
                     <button
                       type="button"
