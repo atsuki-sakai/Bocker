@@ -11,6 +11,7 @@ import { throwConvexError } from '@/lib/error';
 export const create = mutation({
   args: {
     customerId: v.optional(v.id('customer')),
+    customerName: v.optional(v.string()),
     staffId: v.id('staff'),
     staffName: v.optional(v.string()),
     menus: v.optional(
@@ -133,7 +134,26 @@ export const create = mutation({
 export const update = mutation({
   args: {
     reservationId: v.id('reservation'),
-    optionIds: v.optional(v.array(v.id('salon_option'))),
+    customerId: v.optional(v.id('customer')),
+    customerName: v.optional(v.string()),
+    staffId: v.id('staff'),
+    staffName: v.optional(v.string()),
+    menus: v.optional(
+      v.array(
+        v.object({
+          menuId: v.id('menu'),
+          quantity: v.number(),
+        })
+      )
+    ),
+    options: v.optional(
+      v.array(
+        v.object({
+          optionId: v.id('salon_option'),
+          quantity: v.number(),
+        })
+      )
+    ),
     unitPrice: v.optional(v.number()),
     totalPrice: v.optional(v.number()),
     status: v.optional(reservationStatusType),
@@ -146,11 +166,11 @@ export const update = mutation({
     paymentMethod: v.optional(paymentMethodType),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateReservation(args);
+    checkAuth(ctx)
+    validateReservation(args)
 
     // 予約の存在確認
-    const reservation = await ctx.db.get(args.reservationId);
+    const reservation = await ctx.db.get(args.reservationId)
     if (!reservation || reservation.isArchive) {
       throw throwConvexError({
         message: '指定された予約が存在しません',
@@ -160,7 +180,7 @@ export const update = mutation({
         callFunc: 'reservation.update',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
     // 予約時間が変更されている場合、重複チェックを行う
@@ -171,12 +191,12 @@ export const update = mutation({
         args.endTime_unix !== reservation.endTime_unix)
     ) {
       // ミリ秒単位のタイムスタンプをそのまま使用し、予約日を取得
-      const reservationDate = new Date(args.startTime_unix!);
-      const dateString = reservationDate.toISOString().split('T')[0]; // YYYY-MM-DD形式
+      const reservationDate = new Date(args.startTime_unix!)
+      const dateString = reservationDate.toISOString().split('T')[0] // YYYY-MM-DD形式
 
       // 予約時間の重複チェック（自分自身の予約は除外）
-      const staffId = reservation.staffId;
-      const salonId = reservation.salonId;
+      const staffId = reservation.staffId
+      const salonId = reservation.salonId
 
       // 既存の予約を除外した形で利用可能かチェック
       const existingReservations = await ctx.db
@@ -194,7 +214,7 @@ export const update = mutation({
             q.gt(q.field('endTime_unix'), args.startTime_unix!)
           )
         )
-        .collect();
+        .collect()
 
       if (existingReservations.length > 0) {
         throw throwConvexError({
@@ -205,15 +225,15 @@ export const update = mutation({
           callFunc: 'reservation.update',
           severity: 'low',
           details: { ...args },
-        });
+        })
       }
     }
 
-    const updateData = excludeFields(args, ['reservationId']);
+    const updateData = excludeFields(args, ['reservationId'])
 
-    return await ctx.db.patch(args.reservationId, updateData);
+    return await ctx.db.patch(args.reservationId, updateData)
   },
-});
+})
 
 // 予約の削除
 export const archive = mutation({
@@ -221,11 +241,11 @@ export const archive = mutation({
     reservationId: v.id('reservation'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateRequired(args.reservationId, 'reservationId');
-    return await archiveRecord(ctx, args.reservationId);
+    checkAuth(ctx)
+    validateRequired(args.reservationId, 'reservationId')
+    return await archiveRecord(ctx, args.reservationId)
   },
-});
+})
 
 export const upsert = mutation({
   args: {
@@ -339,7 +359,6 @@ export const kill = mutation({
   },
 })
 
-
 export const updateStatus = mutation({
   args: {
     reservationId: v.id('reservation'),
@@ -360,17 +379,7 @@ export const updateStatus = mutation({
         details: { ...args },
       })
     }
-    if (reservation.status === 'cancelled') {
-      throw throwConvexError({
-        message: 'すでにキャンセルされています',
-        status: 400,
-        code: 'INVALID_ARGUMENT',
-        title: 'すでにキャンセルされています',
-        callFunc: 'reservation.cancel',
-        severity: 'low',
-        details: { ...args },
-      })
-    }
+
     return await ctx.db.patch(args.reservationId, {
       status: args.status,
     })

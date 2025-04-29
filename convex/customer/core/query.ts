@@ -141,7 +141,8 @@ export const findByPhone = query({
   },
 })
 
-// 名前での顧客検索
+
+// 名前での顧客検索（部分一致）
 export const findByName = query({
   args: {
     salonId: v.id('salon'),
@@ -153,8 +154,9 @@ export const findByName = query({
     validateRequired(args.salonId, 'salonId')
     return await ctx.db
       .query('customer')
-      .withIndex('by_salon_id_full_name', (q) => q.eq('salonId', args.salonId))
-      .filter((q) => q.eq(q.field('fullName'), args.searchName))
+      .withSearchIndex('search_full_name', (q) =>
+        q.search('fullName', args.searchName).eq('salonId', args.salonId)
+      )
       .paginate(args.paginationOpts)
   },
 })

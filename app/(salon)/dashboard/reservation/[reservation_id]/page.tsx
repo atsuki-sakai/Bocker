@@ -13,6 +13,7 @@ import { convertReservationStatus, ReservationStatus } from '@/services/convex/s
 import { convertPaymentMethod, PaymentMethod } from '@/services/convex/shared/types/common'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/common'
+import { useRouter } from 'next/navigation'
 import {
   Select,
   SelectTrigger,
@@ -25,23 +26,24 @@ import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
 
 const statusColorMap = {
-  confirmed: 'bg-green-50 border border-green-500 text-green-500',
-  cancelled: 'bg-red-50 border border-red-500 text-red-500',
-  pending: 'bg-yellow-50 border border-yellow-500 text-yellow-500',
-  completed: 'bg-blue-50 border border-blue-500 text-blue-500',
-  refunded: 'bg-gray-50 border border-gray-500 text-gray-500',
+  confirmed: 'bg-white border border-green-600 text-green-600',
+  cancelled: 'bg-white border border-red-600 text-red-600',
+  pending: 'bg-white border border-yellow-600 text-yellow-600',
+  completed: 'bg-white border border-blue-600 text-blue-600',
+  refunded: 'bg-white border border-gray-600 text-gray-600',
 }
 export default function ReservationPage() {
   const { reservation_id } = useParams()
-
+  const router = useRouter()
   const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false)
   const reservation = useQuery(api.reservation.query.getById, {
     reservationId: reservation_id as Id<'reservation'>,
   })
   const [status, setStatus] = useState<ReservationStatus>(reservation?.status as ReservationStatus)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
 
   const updateStatus = useMutation(api.reservation.mutation.updateStatus)
-
+  const deleteReservation = useMutation(api.reservation.mutation.kill)
   const customer = useQuery(
     api.customer.core.query.getById,
     reservation?.customerId ? { customerId: reservation?.customerId as Id<'customer'> } : 'skip'
@@ -90,10 +92,28 @@ export default function ReservationPage() {
         status: status,
       })
       toast.success('ステータスを変更しました')
+      router.push('/dashboard/reservation')
     } catch (error) {
       toast.error(handleErrorToMsg(error))
     } finally {
       setIsUpdateStatusModalOpen(false)
+    }
+  }
+
+  const handleShowDeleteModal = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    setIsDeleteModalOpen(true)
+  }
+
+  const handleDeleteReservation = async () => {
+    try {
+      await deleteReservation({ reservationId: reservation._id })
+      toast.success('予約を削除しました')
+      router.push('/dashboard/reservation')
+    } catch (error) {
+      toast.error(handleErrorToMsg(error))
+    } finally {
+      setIsDeleteModalOpen(false)
     }
   }
 
@@ -126,13 +146,16 @@ export default function ReservationPage() {
               <Button variant="default" onClick={(e) => handleShowUpdateStatusModal(e)}>
                 ステータス変更
               </Button>
+
+              <Button variant="destructive" onClick={(e) => handleShowDeleteModal(e)}>
+                削除
+              </Button>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-gray-600">ステータス:</p>
               <p
-                className={`w-fit px-4 my-2 rounded-md font-medium text-lg ${statusColorMap[reservation.status as ReservationStatus]}`}
+                className={`w-fit px-4 py-1 my-2 rounded-md font-medium text-sm ${statusColorMap[reservation.status as ReservationStatus]}`}
               >
                 {convertReservationStatus(reservation.status as ReservationStatus)}
               </p>
@@ -154,6 +177,12 @@ export default function ReservationPage() {
                 {convertPaymentMethod(reservation.paymentMethod as PaymentMethod)}
               </p>
             </div>
+            {reservation.notes && reservation.notes.trim() !== '' && (
+              <div className="text-gray-600 text-sm">
+                <p className="font-medium text-lg">備考:</p>
+                <p className="text-gray-700 text-sm">{reservation.notes}</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -266,6 +295,13 @@ export default function ReservationPage() {
         title="予約ステータス変更"
         description="予約のステータスを変更しますか？"
         onConfirmAction={handleUpdateStatus}
+      />
+      <Dialog
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        title="予約削除"
+        description="予約を削除しますか？"
+        onConfirmAction={handleDeleteReservation}
       />
     </DashboardSection>
   )

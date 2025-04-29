@@ -5,41 +5,43 @@
 import { convertHourToUnixTimestamp } from '@/lib/schedule';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
-import { ja } from 'date-fns/locale';
-import { getDayOfWeek, formatJpTime } from '@/lib/schedule';
-import { PaymentMethod } from '@/services/convex/shared/types/common';
+import { useDebounce } from 'use-debounce'
+import Image from 'next/image'
+import { ja } from 'date-fns/locale'
+import { getDayOfWeek, formatJpTime } from '@/lib/schedule'
+import { PaymentMethod } from '@/services/convex/shared/types/common'
 // 入力値を数値または undefined に変換するプリプロセス関数
 const preprocessNumber = (val: unknown) => {
-  if (typeof val === 'string' && val.trim() === '') return undefined;
-  if (typeof val === 'string') return Number(val);
-  return val;
-};
+  if (typeof val === 'string' && val.trim() === '') return undefined
+  if (typeof val === 'string') return Number(val)
+  return val
+}
 // 空文字を undefined に変換するプリプロセス関数（enum 用）
 const preprocessEmptyString = (val: unknown) => {
-  if (typeof val === 'string' && val.trim() === '') return undefined;
-  return val;
-};
+  if (typeof val === 'string' && val.trim() === '') return undefined
+  return val
+}
 // カンマ区切り文字列を文字列配列に変換するプリプロセス関数（optionIds 用）
 const preprocessStringArray = (val: unknown) => {
-  if (typeof val === 'string' && val.trim() === '') return undefined;
+  if (typeof val === 'string' && val.trim() === '') return undefined
   if (typeof val === 'string')
     return val
       .split(',')
       .map((s) => s.trim())
-      .filter(Boolean);
-  return val;
-};
+      .filter(Boolean)
+  return val
+}
 
-import type { TimeRange } from '@/lib/type';
+import type { TimeRange } from '@/lib/type'
 
-import * as React from 'react';
-import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import * as React from 'react'
+import { format } from 'date-fns'
+import { CalendarIcon } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { cn } from '@/lib/utils'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandList, CommandInput, CommandItem } from '@/components/ui/command'
 import { Label } from '@/components/ui/label'
 import { Loader2, X, Plus, Minus } from 'lucide-react'
@@ -49,8 +51,7 @@ import { useSalon } from '@/hooks/useSalon'
 import { ZodTextField } from '@/components/common'
 import { Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
-import Image from 'next/image'
-import { DayOfWeek } from '@/services/convex/shared/types/common'
+import { Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { useMutation } from 'convex/react'
 
@@ -97,6 +98,7 @@ const schemaReservation = z.object({
   paymentMethod: z.preprocess(preprocessEmptyString, z.enum(PAYMENT_METHOD_VALUES)).optional(), // 支払い方法
 })
 
+import { Input } from '@/components/ui/input'
 import { usePaginatedQuery, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import {
@@ -107,7 +109,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { fetchQuery } from 'convex/nextjs'
-import { Id } from '@/convex/_generated/dataModel'
+import { Id, Doc } from '@/convex/_generated/dataModel'
 import { Textarea } from '@/components/ui/textarea'
 import { Gender } from '@/services/convex/shared/types/common'
 import { handleErrorToMsg } from '@/lib/error'
@@ -136,6 +138,9 @@ export default function ReservationForm() {
     startTime_unix: number | undefined
     endTime_unix: number | undefined
   } | null>(null)
+  const [searchName, setSearchName] = useState<string>('')
+  const [reservationCustomer, setReservationCustomer] = useState<Doc<'customer'> | null>(null)
+  const [debouncedSearchName] = useDebounce(searchName, 1000)
   const [selectedOptions, setSelectedOptions] = useState<
     { optionId: Id<'salon_option'>; quantity: number }[]
   >([])
@@ -145,6 +150,7 @@ export default function ReservationForm() {
   // メニュー & オプションのポップオーバー
   const [menuPopoverOpen, setMenuPopoverOpen] = useState(false)
   const [optionPopoverOpen, setOptionPopoverOpen] = useState(false)
+  const [customerPopoverOpen, setCustomerPopoverOpen] = useState(false)
   // メニュー選択の上限（数量合計）
   const MAX_MENU_ITEMS = 5
   // オプション選択の上限（ユニーク件数）
@@ -198,6 +204,18 @@ export default function ReservationForm() {
           dateString: new Date().toISOString().split('T')[0],
         }
       : 'skip'
+  )
+  const customers = usePaginatedQuery(
+    api.customer.core.query.findByName,
+    salonId
+      ? {
+          salonId: salonId,
+          searchName: debouncedSearchName,
+        }
+      : 'skip',
+    {
+      initialNumItems: 100,
+    }
   )
   const createReservation = useMutation(api.reservation.mutation.create)
 
@@ -520,6 +538,17 @@ export default function ReservationForm() {
     }
   }, [optionPopoverOpen])
 
+  useEffect(() => {
+    if (customerPopoverOpen) {
+      setTimeout(() => {
+        const input = document.querySelector(
+          '[cmdk-input-wrapper] input'
+        ) as HTMLInputElement | null
+        input?.blur()
+      }, 0)
+    }
+  }, [customerPopoverOpen])
+
   const onSubmit = async (data: z.infer<typeof schemaReservation>) => {
     if (!salonId) return
     try {
@@ -535,9 +564,14 @@ export default function ReservationForm() {
         toast.error('同時に予約できる人数を超えています。')
         return
       }
+
+      const customerName =
+        (reservationCustomer?.lastName ?? '') +
+        (reservationCustomer?.firstName ? ' ' + reservationCustomer?.firstName : '')
       await createReservation({
         ...data,
-        customerId: data.customerId as Id<'customer'>,
+        customerId: reservationCustomer?._id ?? undefined,
+        customerName: customerName,
         salonId: salonId as Id<'salon'>,
         menus: data.menus as { menuId: Id<'menu'>; quantity: number }[],
         startTime_unix: data.startTime_unix as number,
@@ -570,6 +604,9 @@ export default function ReservationForm() {
 
   if (!salon || !salonId) return <Loading />
 
+  console.log(searchName)
+  console.log(customers.results)
+
   return (
     <div className="container mx-auto relative">
       <form
@@ -582,6 +619,88 @@ export default function ReservationForm() {
       >
         <div className="flex flex-col gap-4 my-6">
           <div>
+            <div className="flex flex-col gap-2 mb-4">
+              <div className="flex flex-col items-start gap-2">
+                <div className="flex flex-col items-start gap-2">
+                  <Label className="text-slate-700 text-sm font-bold">顧客検索</Label>
+                  <p className="text-slate-500 text-xs">
+                    既存顧客の予約を作成する場合はこちらから
+                    <strong>顧客無しでも予約は作成できます。</strong>
+                  </p>
+                </div>
+                <Input
+                  placeholder="顧客を検索"
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                />
+              </div>
+              {customers && customers.results.length > 0 ? (
+                customers.results.map((customer) => {
+                  return (
+                    <div key={customer._id}>
+                      <p className="text-slate-500 text-xs">検索結果</p>
+                      <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className=" w-full justify-start h-fit">
+                            {customer.lastName} {customer.firstName}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full min-w-[350px] p-2 overflow-y-auto h-fit">
+                          <Command>
+                            <div className="flex items-center justify-between border-b">
+                              <p>検索結果</p>
+                              <button
+                                type="button"
+                                onClick={() => setCustomerPopoverOpen(false)}
+                                className="p-2 text-slate-700 hover:text-slate-600"
+                              >
+                                <X className="w-4 h-4" aria-hidden="true" />
+                                <span className="sr-only">閉じる</span>
+                              </button>
+                            </div>
+                            <CommandList className="max-h-[300px] py-2 overflow-y-auto">
+                              {customers.results.map((customer) => {
+                                return (
+                                  <CommandItem
+                                    key={customer._id}
+                                    className="flex items-center justify-between"
+                                    onSelect={() => {
+                                      setReservationCustomer(customer)
+                                      setCustomerPopoverOpen(false)
+                                    }}
+                                  >
+                                    <div className="flex items-start gap-1 text-xs">
+                                      <p className="text-sm">
+                                        {customer.lastName} {customer.firstName}
+                                      </p>
+                                      <br />
+                                      <p className="text-sm">{customer.phone}</p>
+                                    </div>
+                                  </CommandItem>
+                                )
+                              })}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  )
+                })
+              ) : (
+                <p className="text-slate-500 text-sm text-center bg-slate-50 p-2 rounded-md">
+                  顧客が見つかりません
+                </p>
+              )}
+              {reservationCustomer && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <p className="text-slate-700 text-sm font-bold">予約をする顧客情報</p>
+                  <p className="text-slate-500 text-sm">
+                    {reservationCustomer.lastName} {reservationCustomer.firstName}
+                  </p>
+                  <span className="text-slate-500 text-xs -mt-2">{reservationCustomer.phone}</span>
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <p className="text-slate-500 text-lg font-bold">1</p>
               <Label>予約するメニュー（複数選択可）</Label>
@@ -825,7 +944,7 @@ export default function ReservationForm() {
                         <span className="sr-only">閉じる</span>
                       </button>
                     </div>
-                    <CommandList className="max-h-64 overflow-y-auto">
+                    <CommandList className="max-h-[300px] overflow-y-auto py-8">
                       {options.map((option) => {
                         const count = getOptionCount(option._id)
                         return (

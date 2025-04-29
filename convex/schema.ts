@@ -255,7 +255,11 @@ export default defineSchema({
     .index('by_salon_phone', ['salonId', 'phone', 'isArchive'])
     .index('by_salon_email', ['salonId', 'email', 'isArchive'])
     .index('by_salon_id_full_name', ['salonId', 'fullName', 'isArchive'])
-    .index('by_salon_id_line_user_name', ['salonId', 'lineUserName', 'isArchive']),
+    .index('by_salon_id_line_user_name', ['salonId', 'lineUserName', 'isArchive'])
+    .searchIndex('search_full_name', {
+      searchField: 'fullName',
+      filterFields: ['salonId'],
+    }),
 
   // 顧客の詳細テーブル
   customer_detail: defineTable({
@@ -480,6 +484,7 @@ export default defineSchema({
   // 最大保存期間は1~2年間
   reservation: defineTable({
     customerId: v.optional(v.id('customer')), // 顧客ID
+    customerName: v.optional(v.string()), // 顧客名
     staffId: v.id('staff'), // スタッフID
     staffName: v.optional(v.string()), // スタッフ名
     menus: v.optional(

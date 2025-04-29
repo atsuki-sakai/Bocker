@@ -6,6 +6,7 @@ import { usePaginatedQuery } from 'convex/react';
 import { Loading } from '@/components/common';
 import { formatJpTime, convertUnixTimeToDateString } from '@/lib/schedule';
 import Link from 'next/link';
+import { Label } from '@/components/ui/label'
 import { useMemo, memo, useState, useEffect } from 'react'
 import {
   Calendar,
@@ -19,7 +20,13 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   endOfWeek,
   startOfMonth,
@@ -35,6 +42,10 @@ import {
 } from 'date-fns'
 
 import { Id } from '@/convex/_generated/dataModel'
+import {
+  RESERVATION_STATUS_VALUES,
+  convertReservationStatus,
+} from '@/services/convex/shared/types/common'
 
 // 予約ステータスの型定義
 type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'refunded'
@@ -81,23 +92,23 @@ interface StatusConfig {
 // ステータスマッピング
 const statusMap: Record<ReservationStatus, StatusConfig> = {
   pending: {
-    color: 'bg-yellow-500 hover:bg-yellow-600',
+    color: 'bg-yellow-600 hover:bg-yellow-600',
     text: '未確認',
   },
   confirmed: {
-    color: 'bg-green-500 hover:bg-green-600',
-    text: '確認済み',
+    color: 'bg-green-600 hover:bg-green-600',
+    text: '予約確定',
   },
   cancelled: {
-    color: 'bg-red-500 hover:bg-red-600',
+    color: 'bg-red-600 hover:bg-red-600',
     text: 'キャンセル',
   },
   completed: {
-    color: 'bg-blue-500 hover:bg-blue-600',
+    color: 'bg-blue-600 hover:bg-blue-600',
     text: '完了',
   },
   refunded: {
-    color: 'bg-gray-500 hover:bg-gray-600',
+    color: 'bg-gray-600 hover:bg-gray-600',
     text: '返金',
   },
 }
@@ -141,7 +152,7 @@ const ReservationCard: React.FC<ReservationCardProps> = memo(({ reservation }) =
               <Badge variant={'default'}>{statusMap[status].text}</Badge>
               <span className="text-sm font-medium flex items-center gap-1">
                 <User className="h-3 w-3" />
-                {reservation.customerName || '顧客名なし'}
+                {reservation.customerName ? reservation.customerName : '顧客名なし'}
               </span>
             </div>
             <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -211,43 +222,20 @@ GroupTab.displayName = 'GroupTab'
 export default function ReservationList() {
   const { salonId } = useSalon()
   const [activeTab, setActiveTab] = useState<string>(ReservationGroup.TODAY)
+  const [currentStatus, setCurrentStatus] = useState<ReservationStatus>('confirmed')
 
   const { results: reservations, isLoading } = usePaginatedQuery(
     api.reservation.query.findBySalonId,
     salonId
       ? {
           salonId,
+          status: currentStatus,
         }
       : 'skip',
     {
-      initialNumItems: 50,
+      initialNumItems: 100,
     }
   )
-
-  // 月の範囲を取得
-  const monthRanges = useMemo<{ current: Date[]; next: Date[]; afterNext: Date[] }>(() => {
-    const today = new Date()
-    const currentMonth = {
-      start: startOfMonth(today),
-      end: endOfMonth(today),
-    }
-
-    const nextMonth = {
-      start: startOfMonth(addMonths(today, 1)),
-      end: endOfMonth(addMonths(today, 1)),
-    }
-
-    const monthAfterNext = {
-      start: startOfMonth(addMonths(today, 2)),
-      end: endOfMonth(addMonths(today, 2)),
-    }
-
-    return {
-      current: [currentMonth.start, currentMonth.end],
-      next: [nextMonth.start, nextMonth.end],
-      afterNext: [monthAfterNext.start, monthAfterNext.end],
-    }
-  }, [])
 
   // --- 1) グループ分け ----
   const groupedReservations = useMemo<Record<ReservationGroup, Reservation[]>>(() => {
@@ -425,6 +413,26 @@ export default function ReservationList() {
       <Card className="border-0 shadow-none">
         <CardContent className="p-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="flex justify-end mb-2">
+              <div className="w-fit min-w-[180px]">
+                <Label className="mb-2 text-xs">予約ステータス</Label>
+                <Select
+                  value={currentStatus}
+                  onValueChange={(value) => setCurrentStatus(value as ReservationStatus)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="予約ステータス" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RESERVATION_STATUS_VALUES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {convertReservationStatus(status)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="mb-4 overflow-x-auto pb-1">
               <TabsList className="w-full justify-start bg-muted/50 p-1">
                 {groupConfigs.map((group) => (
