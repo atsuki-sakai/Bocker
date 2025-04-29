@@ -30,9 +30,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClerkProvider dynamic>
           <ConvexClientProvider>
             {children}
@@ -41,5 +42,5 @@ export default function RootLayout({
         </ClerkProvider>
       </body>
     </html>
-  );
+  )
 }

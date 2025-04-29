@@ -509,6 +509,17 @@ export default function ReservationForm() {
     }
   }, [menuPopoverOpen])
 
+  useEffect(() => {
+    if (optionPopoverOpen) {
+      setTimeout(() => {
+        const input = document.querySelector(
+          '[cmdk-input-wrapper] input'
+        ) as HTMLInputElement | null
+        input?.blur()
+      }, 0)
+    }
+  }, [optionPopoverOpen])
+
   const onSubmit = async (data: z.infer<typeof schemaReservation>) => {
     if (!salonId) return
     try {
