@@ -135,19 +135,7 @@ export default function CustomerEditForm() {
     formState: { errors, isSubmitting, isDirty },
     setValue,
     watch,
-  } = useZodForm(customerEditFormSchema, {
-    defaultValues: {
-      lastName: '',
-      firstName: '',
-      phone: '',
-      email: '',
-      birthday: '',
-      gender: 'unselected',
-      notes: '',
-      tags: [],
-      totalPoints: 0,
-    },
-  })
+  } = useZodForm(customerEditFormSchema)
 
   // Get register object for birthday to access its onChange handler
   const birthdayRegister = register('birthday')
@@ -166,11 +154,8 @@ export default function CustomerEditForm() {
         tags: completeCustomer.customer?.tags ?? [],
         totalPoints: completeCustomer.customerPoints?.totalPoints ?? 0,
       })
-      setValue('gender', completeCustomer.customerDetails?.gender ?? 'unselected', {
-        shouldDirty: true,
-      })
     }
-  }, [completeCustomer, reset]) // Depend on completeCustomer and reset
+  }, [completeCustomer]) // Depend on completeCustomer and reset
 
   const onSubmit = async (data: z.infer<typeof customerEditFormSchema>) => {
     console.log('Submitting Form Data:', data)
@@ -232,24 +217,14 @@ export default function CustomerEditForm() {
     }
   }
 
+  console.log('watch(gender):', watch('gender'))
   // Show loading state while fetching initial data or if salonId is missing
-  if (!completeCustomer || !salonId) {
+  if (!completeCustomer || !salonId || !watch('gender')) {
     return <Loading />
   }
 
-  // Watch birthday and gender to display them dynamically
-  const watchedBirthday = watch('birthday')
-  const watchedGender = watch('gender')
-
   // Calculate age for display directly from the watched birthday
-  const displayAge = calculateAge(watchedBirthday)
-
-  console.log(
-    'Rendering form. watchedGender:',
-    watchedGender,
-    ' Fetched Gender:',
-    completeCustomer?.customerDetails?.gender
-  ) // Log gender values during render
+  const displayAge = calculateAge(watch('birthday'))
 
   return (
     <div className="container mx-auto py-4">
@@ -291,24 +266,23 @@ export default function CustomerEditForm() {
         </div>
 
         {/* Age, Gender, Birthday, Points section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Age and Gender Display */}
+        <div className="flex items-center gap-2">
+          <p className="text-lg text-slate-700">
+            {/* Display age or '-' */}
+            {displayAge !== undefined && displayAge !== null ? displayAge : '-'}
+            <span className="text-base font-normal text-slate-700">歳</span>{' '}
+            <span className="text-base font-normal text-slate-700">
+              {watch('gender') === 'male'
+                ? '男性'
+                : watch('gender') === 'female'
+                  ? '女性'
+                  : '未選択'}
+            </span>
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div className="flex flex-col gap-4">
-            {/* Age and Gender Display */}
-            <div className="flex items-center gap-2">
-              <p className="text-lg text-gray-500">
-                {/* Display age or '-' */}
-                {displayAge !== undefined && displayAge !== null ? displayAge : '-'}
-                <span className="text-sm font-normal text-gray-500">歳</span>{' '}
-                <span className="text-sm font-normal text-gray-500">
-                  {watchedGender === 'male'
-                    ? '男性'
-                    : watchedGender === 'female'
-                      ? '女性'
-                      : '未選択'}
-                </span>
-              </p>
-            </div>
-
             {/* Points Field */}
             <div>
               <ZodTextField
@@ -332,7 +306,9 @@ export default function CustomerEditForm() {
                 onValueChange={(value) => {
                   setValue('gender', value as Gender, { shouldDirty: true })
                 }}
-                value={watchedGender ? watchedGender : completeCustomer?.customerDetails?.gender}
+                value={
+                  watch('gender') ? watch('gender') : completeCustomer?.customerDetails?.gender
+                }
               >
                 <SelectTrigger className={errors.gender ? 'border-destructive' : ''}>
                   <SelectValue placeholder="性別を選択してください" />

@@ -518,15 +518,17 @@ export default defineSchema({
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_customer_id', ['salonId', 'customerId', 'isArchive'])
-    .index('by_staff_id', ['salonId', 'staffId', 'isArchive'])
+    .index('by_staff_id_status', ['salonId', 'staffId', 'isArchive', 'status'])
     .index('by_status', ['salonId', 'status', 'isArchive'])
-    .index('by_salon_start', ['salonId', 'isArchive', 'startTime_unix'])
+    .index('by_salon_status_start', ['salonId', 'isArchive', 'status', 'startTime_unix'])
     .index('by_staff_date', ['salonId', 'staffId', 'isArchive', 'startTime_unix'])
+    .index('by_staff_date_status', ['salonId', 'staffId', 'isArchive', 'status', 'startTime_unix'])
     .index('by_customer_date', ['salonId', 'customerId', 'isArchive', 'startTime_unix'])
-    .index('by_salon_staff_start_end', [
+    .index('by_salon_staff_status_start_end', [
       'salonId',
       'staffId',
       'isArchive',
+      'status',
       'startTime_unix',
       'endTime_unix',
     ]),

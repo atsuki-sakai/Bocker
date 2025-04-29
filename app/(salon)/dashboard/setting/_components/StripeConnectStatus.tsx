@@ -336,7 +336,7 @@ export default function StripeConnectStatus() {
                       '現在の連携を解除して、新しくアカウントを作成しますか？\n※以前の設定内容は失われます'
                     )
                   ) {
-                    handleConnectStripe();
+                    handleConnectStripe()
                   }
                 }}
                 className="block mt-2 text-xs text-blue-500 hover:underline"
@@ -345,7 +345,8 @@ export default function StripeConnectStatus() {
               </button>
             )}
           </div>
-          {isConnected && status === 'deauthorized' && (
+
+          {status === 'not_connected' && (
             <Button
               onClick={handleConnectStripe}
               disabled={isLoading || (isConnected && status !== 'deauthorized')}
@@ -562,5 +563,5 @@ export default function StripeConnectStatus() {
         </AccordionItem>
       </Accordion>
     </div>
-  );
+  )
 }

@@ -192,7 +192,6 @@ export const update = mutation({
     ) {
       // ミリ秒単位のタイムスタンプをそのまま使用し、予約日を取得
       const reservationDate = new Date(args.startTime_unix!)
-      const dateString = reservationDate.toISOString().split('T')[0] // YYYY-MM-DD形式
 
       // 予約時間の重複チェック（自分自身の予約は除外）
       const staffId = reservation.staffId
@@ -201,8 +200,12 @@ export const update = mutation({
       // 既存の予約を除外した形で利用可能かチェック
       const existingReservations = await ctx.db
         .query('reservation')
-        .withIndex('by_staff_id', (q) =>
-          q.eq('salonId', salonId).eq('staffId', staffId).eq('isArchive', false)
+        .withIndex('by_staff_id_status', (q) =>
+          q
+            .eq('salonId', salonId)
+            .eq('staffId', staffId)
+            .eq('isArchive', false)
+            .eq('status', 'confirmed')
         )
         .filter((q) =>
           q.and(
@@ -314,8 +317,12 @@ export const upsert = mutation({
         // 既存の予約を除外した形で利用可能かチェック
         const existingReservations = await ctx.db
           .query('reservation')
-          .withIndex('by_staff_id', (q) =>
-            q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+          .withIndex('by_staff_id_status', (q) =>
+            q
+              .eq('salonId', args.salonId)
+              .eq('staffId', args.staffId)
+              .eq('isArchive', false)
+              .eq('status', 'confirmed')
           )
           .filter((q) =>
             q.and(
@@ -375,6 +382,18 @@ export const updateStatus = mutation({
         code: 'NOT_FOUND',
         title: '予約が見つかりません',
         callFunc: 'reservation.cancel',
+        severity: 'low',
+        details: { ...args },
+      })
+    }
+
+    if (reservation.status == 'cancelled') {
+      throw throwConvexError({
+        message: 'この予約はすでにキャンセルされています',
+        status: 400,
+        code: 'INVALID_ARGUMENT',
+        title: '予約はすでにキャンセルされています',
+        callFunc: 'reservation.updateStatus',
         severity: 'low',
         details: { ...args },
       })

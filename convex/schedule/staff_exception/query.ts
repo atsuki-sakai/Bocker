@@ -90,20 +90,21 @@ export const checkDoubleBooking = query({
     endTime_unix: v.number(), // 予約がないか確認したい時間の範囲の終了時間
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx, true);
-    validateStaffScheduleException(args);
+    checkAuth(ctx, true)
+    validateStaffScheduleException(args)
     // Add date range filtering if possible
     const reservations = await ctx.db
       .query('reservation')
-      .withIndex('by_salon_staff_start_end', (q) =>
+      .withIndex('by_salon_staff_status_start_end', (q) =>
         q
           .eq('salonId', args.salonId)
           .eq('staffId', args.staffId)
           .eq('isArchive', false)
+          .eq('status', 'confirmed')
           .gte('startTime_unix', args.startTime_unix) // Add time constraints
           .lt('startTime_unix', args.endTime_unix)
       )
-      .first();
+      .first()
     if (reservations) {
       return {
         isOverlapping: true,

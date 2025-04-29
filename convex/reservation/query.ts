@@ -57,20 +57,21 @@ export const findByStaffId = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateReservation(args);
+    checkAuth(ctx)
+    validateReservation(args)
     return await ctx.db
       .query('reservation')
-      .withIndex('by_staff_id', (q) =>
+      .withIndex('by_staff_id_status', (q) =>
         q
           .eq('salonId', args.salonId)
           .eq('staffId', args.staffId)
           .eq('isArchive', args.includeArchive || false)
+          .eq('status', 'confirmed')
       )
       .order(args.sort || 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 // サロンIDから予約一覧を取得
 export const findBySalonId = query({
@@ -82,8 +83,8 @@ export const findBySalonId = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateReservation(args);
+    checkAuth(ctx)
+    validateReservation(args)
 
     const reservations = await ctx.db
       .query('reservation')
@@ -94,11 +95,11 @@ export const findBySalonId = query({
           .eq('isArchive', args.includeArchive || false)
       )
       .order(args.sort || 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
 
-    return reservations;
+    return reservations
   },
-});
+})
 
 export const findBySalonIdAndStaffId = query({
   args: {
@@ -109,16 +110,20 @@ export const findBySalonIdAndStaffId = query({
   handler: async (ctx, args) => {
     const reservations = await ctx.db
       .query('reservation')
-      .withIndex('by_staff_id', (q) =>
-        q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+      .withIndex('by_staff_id_status', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('staffId', args.staffId)
+          .eq('isArchive', false)
+          .eq('status', 'confirmed')
       )
       .filter((q) => q.gt(q.field('startTime_unix'), Date.now() / 1000))
       .order('desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
 
-    return reservations;
+    return reservations
   },
-});
+})
 
 // ステータスから予約一覧を取得
 export const findByStatus = query({
@@ -130,8 +135,8 @@ export const findByStatus = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateReservation(args);
+    checkAuth(ctx)
+    validateReservation(args)
     return await ctx.db
       .query('reservation')
       .withIndex('by_status', (q) =>
@@ -141,9 +146,9 @@ export const findByStatus = query({
           .eq('isArchive', args.includeArchive || false)
       )
       .order(args.sort || 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 // サロンIDと日付から予約一覧を取得
 export const findBySalonAndDate = query({
@@ -155,20 +160,21 @@ export const findBySalonAndDate = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateReservation(args);
+    checkAuth(ctx)
+    validateReservation(args)
     return await ctx.db
       .query('reservation')
-      .withIndex('by_salon_start', (q) =>
+      .withIndex('by_salon_status_start', (q) =>
         q
           .eq('salonId', args.salonId)
           .eq('isArchive', args.includeArchive || false)
+          .eq('status', 'confirmed')
           .eq('startTime_unix', args.startTime_unix)
       )
       .order(args.sort || 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 // スタッフIDと日付から予約一覧を取得
 export const findByStaffAndDate = query({
@@ -181,21 +187,22 @@ export const findByStaffAndDate = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateReservation(args);
+    checkAuth(ctx)
+    validateReservation(args)
     return await ctx.db
       .query('reservation')
-      .withIndex('by_staff_date', (q) =>
+      .withIndex('by_staff_date_status', (q) =>
         q
           .eq('salonId', args.salonId)
           .eq('staffId', args.staffId)
           .eq('isArchive', args.includeArchive || false)
+          .eq('status', 'confirmed')
           .eq('startTime_unix', args.startTime_unix)
       )
       .order(args.sort || 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 // 顧客IDと日付から予約一覧を取得
 export const findByCustomerAndDate = query({
@@ -208,8 +215,8 @@ export const findByCustomerAndDate = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateReservation(args);
+    checkAuth(ctx)
+    validateReservation(args)
     return await ctx.db
       .query('reservation')
       .withIndex('by_customer_date', (q) =>
@@ -220,9 +227,9 @@ export const findByCustomerAndDate = query({
           .eq('startTime_unix', args.startTime_unix)
       )
       .order(args.sort || 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 // サロンIDとステータスから予約一覧を取得
 export const findBySalonAndStatus = query({
@@ -234,8 +241,8 @@ export const findBySalonAndStatus = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    validateReservation(args);
-    checkAuth(ctx);
+    validateReservation(args)
+    checkAuth(ctx)
     return await ctx.db
       .query('reservation')
       .withIndex('by_status', (q) =>
@@ -245,9 +252,9 @@ export const findBySalonAndStatus = query({
           .eq('isArchive', args.includeArchive || false)
       )
       .order(args.sort || 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 /**
  * サロン・スタッフ・日付から、その日の予約受付可能時間帯を取得するクエリハンドラ。
@@ -269,8 +276,8 @@ export const findAvailableTimeSlots = query({
   },
   handler: async (ctx, args) => {
     // 共通日付バリデーション
-    const targetDate = validateDateStrToDate(args.date, 'findAvailableTimeSlots');
-    const dayOfWeek = getDayOfWeek(targetDate);
+    const targetDate = validateDateStrToDate(args.date, 'findAvailableTimeSlots')
+    const dayOfWeek = getDayOfWeek(targetDate)
 
     // 1. サロンの週間スケジュール取得
     const salonWeekSchedule = await ctx.db
@@ -292,7 +299,7 @@ export const findAvailableTimeSlots = query({
           .eq('isOpen', true)
           .eq('isArchive', false)
       )
-      .first();
+      .first()
     if (!salonWeekSchedule) {
       throw throwConvexError({
         title: `サロンは${dayOfWeek}曜日は営業していません`,
@@ -302,7 +309,7 @@ export const findAvailableTimeSlots = query({
         callFunc: 'findAvailableTimeSlots',
         status: 400,
         details: { salonId: args.salonId, staffId: args.staffId, date: args.date },
-      });
+      })
     }
     if (!salonWeekSchedule.startHour || !salonWeekSchedule.endHour) {
       throw throwConvexError({
@@ -317,7 +324,7 @@ export const findAvailableTimeSlots = query({
           staffId: args.staffId,
           date: args.date,
         },
-      });
+      })
     }
 
     // 2. サロンの例外スケジュール (休業日) チェック
@@ -330,7 +337,7 @@ export const findAvailableTimeSlots = query({
           .eq('type', 'holiday')
           .eq('isArchive', false)
       )
-      .first();
+      .first()
     if (salonException) {
       throw throwConvexError({
         title: `サロンの臨時休業日です: ${args.date}`,
@@ -344,7 +351,7 @@ export const findAvailableTimeSlots = query({
           staffId: args.staffId,
           date: args.date,
         },
-      });
+      })
     }
 
     // 3. スタッフの営業時間取得
@@ -367,7 +374,7 @@ export const findAvailableTimeSlots = query({
           )
           .eq('isArchive', false)
       )
-      .first();
+      .first()
     if (!staffWeekSchedule) {
       throw throwConvexError({
         title: 'スタッフの営業時間が見つかりません',
@@ -377,7 +384,7 @@ export const findAvailableTimeSlots = query({
         callFunc: 'findAvailableTimeSlots',
         status: 400,
         details: { salonId: args.salonId, staffId: args.staffId, date: args.date },
-      });
+      })
     }
     if (!staffWeekSchedule.isOpen) {
       throw throwConvexError({
@@ -392,34 +399,34 @@ export const findAvailableTimeSlots = query({
           staffId: args.staffId,
           date: args.date,
         },
-      });
+      })
     }
 
-    const salonStart = convertHourToUnixTimestamp(salonWeekSchedule.startHour, args.date);
-    const salonEnd = convertHourToUnixTimestamp(salonWeekSchedule.endHour, args.date);
+    const salonStart = convertHourToUnixTimestamp(salonWeekSchedule.startHour, args.date)
+    const salonEnd = convertHourToUnixTimestamp(salonWeekSchedule.endHour, args.date)
 
     const staffStart = staffWeekSchedule?.startHour
       ? convertHourToUnixTimestamp(staffWeekSchedule?.startHour, args.date)
-      : Number.MIN_SAFE_INTEGER;
+      : Number.MIN_SAFE_INTEGER
     const staffEnd = staffWeekSchedule?.endHour
       ? convertHourToUnixTimestamp(staffWeekSchedule?.endHour, args.date)
-      : Number.MAX_SAFE_INTEGER;
+      : Number.MAX_SAFE_INTEGER
 
     // サロン開始時刻とスタッフ開始時刻のうち、遅い方を採用
-    const resultStart = Math.max(salonStart!, staffStart!);
+    const resultStart = Math.max(salonStart!, staffStart!)
     // サロン終了時刻とスタッフ終了時刻のうち、早い方を採用
-    const resultEnd = Math.min(salonEnd!, staffEnd!);
+    const resultEnd = Math.min(salonEnd!, staffEnd!)
 
     // 予約できる時間の範囲の開始時刻と終了時刻を文字列に変換
-    const startHour = convertTimeStampToHour(resultStart);
-    const endHour = convertTimeStampToHour(resultEnd);
+    const startHour = convertTimeStampToHour(resultStart)
+    const endHour = convertTimeStampToHour(resultEnd)
 
     return {
       startHour,
       endHour,
-    };
+    }
   },
-});
+})
 
 /**
  * 指定サロン・スタッフ・日付のスタッフスケジュールを取得するクエリハンドラ。
@@ -448,9 +455,9 @@ export const findStaffSchedules = query({
   },
   handler: async (ctx, args) => {
     // 共通日付バリデーション
-    validateDateStrToDate(args.date, 'findStaffSchedules');
+    validateDateStrToDate(args.date, 'findStaffSchedules')
 
-    let staffSchedules;
+    let staffSchedules
     if (args.isAllDay) {
       staffSchedules = await ctx.db
         .query('staff_schedule')
@@ -461,7 +468,7 @@ export const findStaffSchedules = query({
             .eq('date', args.date)
             .eq('isAllDay', true)
         )
-        .collect();
+        .collect()
     } else {
       staffSchedules = await ctx.db
         .query('staff_schedule')
@@ -472,7 +479,7 @@ export const findStaffSchedules = query({
             .eq('date', args.date)
             .eq('isAllDay', false)
         )
-        .collect();
+        .collect()
     }
 
     return staffSchedules.map((staffSchedule) => {
@@ -482,10 +489,10 @@ export const findStaffSchedules = query({
         type: staffSchedule.type,
         startTime: staffSchedule.startTime_unix!,
         endTime: staffSchedule.endTime_unix!,
-      };
-    });
+      }
+    })
   },
-});
+})
 
 /**
  * 指定サロン・スタッフ・日付の予約データを取得するクエリハンドラ。
@@ -510,25 +517,26 @@ export const findStaffReservations = query({
   },
   handler: async (ctx, args) => {
     // 共通日付バリデーション
-    validateDateStrToDate(args.date, 'findStaffReservations');
+    validateDateStrToDate(args.date, 'findStaffReservations')
 
     // 引数の date に対応する日の予約を UNIX タイム範囲で取得
-    const startOfDay = convertHourToUnixTimestamp('00:00', args.date);
-    const endOfDay = convertHourToUnixTimestamp('23:59', args.date);
+    const startOfDay = convertHourToUnixTimestamp('00:00', args.date)
+    const endOfDay = convertHourToUnixTimestamp('23:59', args.date)
 
-    const startOfDaySec = Math.floor(startOfDay!);
-    const endOfDaySec = Math.floor(endOfDay!);
+    const startOfDaySec = Math.floor(startOfDay!)
+    const endOfDaySec = Math.floor(endOfDay!)
     const reservationSchedules = await ctx.db
       .query('reservation')
-      .withIndex('by_staff_date', (q) =>
+      .withIndex('by_staff_date_status', (q) =>
         q
           .eq('salonId', args.salonId)
           .eq('staffId', args.staffId)
           .eq('isArchive', false)
+          .eq('status', 'confirmed')
           .gte('startTime_unix', startOfDaySec)
           .lt('startTime_unix', endOfDaySec)
       )
-      .collect();
+      .collect()
 
     return reservationSchedules.map((reservationSchedule) => {
       return {
@@ -537,10 +545,10 @@ export const findStaffReservations = query({
         type: 'reservation',
         startTime: reservationSchedule.startTime_unix,
         endTime: reservationSchedule.endTime_unix,
-      };
-    });
+      }
+    })
   },
-});
+})
 
 // --- ユーティリティ関数としてファイル下部にまとめる ---
 function subtractScheduleFromAvailable(
@@ -548,34 +556,34 @@ function subtractScheduleFromAvailable(
   staffSchedules: TimeRange[]
 ): TimeRange[] {
   // 初期スロットは受付可能時間のみ
-  let slots: TimeRange[] = [available];
+  let slots: TimeRange[] = [available]
   for (const sched of staffSchedules) {
-    const scStart = toMinutes(sched.startHour);
-    const scEnd = toMinutes(sched.endHour);
-    const nextSlots: TimeRange[] = [];
+    const scStart = toMinutes(sched.startHour)
+    const scEnd = toMinutes(sched.endHour)
+    const nextSlots: TimeRange[] = []
     for (const slot of slots) {
-      const avStart = toMinutes(slot.startHour);
-      const avEnd = toMinutes(slot.endHour);
+      const avStart = toMinutes(slot.startHour)
+      const avEnd = toMinutes(slot.endHour)
       if (scEnd <= avStart || scStart >= avEnd) {
-        nextSlots.push(slot);
-        continue;
+        nextSlots.push(slot)
+        continue
       }
       if (avStart < scStart) {
         nextSlots.push({
           startHour: slot.startHour,
           endHour: toHourString(scStart),
-        });
+        })
       }
       if (scEnd < avEnd) {
         nextSlots.push({
           startHour: toHourString(scEnd),
           endHour: slot.endHour,
-        });
+        })
       }
     }
-    slots = nextSlots;
+    slots = nextSlots
   }
-  return slots;
+  return slots
 }
 
 function computeNextAlignedStart(
@@ -804,8 +812,12 @@ export const countAvailableSheetInTimeRange = query({
     //    (予約開始 < 検索終了) かつ (予約終了 > 検索開始) で重複判定
     const overlapping = await ctx.db
       .query('reservation')
-      .withIndex('by_salon_start', (q) =>
-        q.eq('salonId', args.salonId).eq('isArchive', false).lt('startTime_unix', args.endTime)
+      .withIndex('by_salon_status_start', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('isArchive', false)
+          .eq('status', 'confirmed')
+          .lt('startTime_unix', args.endTime)
       )
       .filter((q) => q.gt(q.field('endTime_unix'), args.startTime))
       .collect()
