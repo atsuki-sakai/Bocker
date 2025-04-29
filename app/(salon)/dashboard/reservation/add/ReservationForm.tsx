@@ -496,6 +496,19 @@ export default function ReservationForm() {
     setSelectedOptions(newOpts)
     setValue('options', newOpts)
   }
+
+  // スマホでポップオーバー開時に自動でキーボードが表示されるのを防ぐ
+  useEffect(() => {
+    if (menuPopoverOpen) {
+      setTimeout(() => {
+        const input = document.querySelector(
+          '[cmdk-input-wrapper] input'
+        ) as HTMLInputElement | null
+        input?.blur()
+      }, 0)
+    }
+  }, [menuPopoverOpen])
+
   const onSubmit = async (data: z.infer<typeof schemaReservation>) => {
     if (!salonId) return
     try {
@@ -588,7 +601,6 @@ export default function ReservationForm() {
                     <CommandInput
                       placeholder="メニューを検索…"
                       className="flex-1 border-0 focus:ring-0"
-                      inputMode="none"
                     />
                     <button
                       type="button"
