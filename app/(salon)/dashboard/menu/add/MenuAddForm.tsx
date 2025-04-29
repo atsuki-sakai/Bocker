@@ -75,10 +75,10 @@ const schemaMenu = z
     salePrice: z.preprocess(
       (val) => {
         // 空文字列の場合はnullを返す
-        if (val === '' || val === null || val === undefined) return null;
+        if (val === '' || val === null || val === undefined) return null
         // 数値に変換できない場合もnullを返す
-        const num = Number(val);
-        return isNaN(num) ? null : num;
+        const num = Number(val)
+        return isNaN(num) ? null : num
       },
       z
         .number()
@@ -125,9 +125,9 @@ const schemaMenu = z
     (data) => {
       // salePriceが存在する場合のみ、unitPriceとの比較を行う
       if (data.salePrice && data.unitPrice && data.salePrice >= data.unitPrice) {
-        return false;
+        return false
       }
-      return true;
+      return true
     },
     {
       message: 'セール価格は通常価格より低く設定してください',
@@ -136,16 +136,21 @@ const schemaMenu = z
   )
   .refine(
     (data) => {
-      if (data.timeToMin && data.ensureTimeToMin && data.timeToMin >= data.ensureTimeToMin) {
-        return false;
+      // 両方のフィールドが存在する場合のみ比較を行う
+      if (data.timeToMin !== undefined && data.ensureTimeToMin !== undefined) {
+        // 検証失敗条件: 確保する時間(ensureTimeToMin)が実際の稼働時間(timeToMin)より大きい場合
+        if (data.ensureTimeToMin > data.timeToMin) {
+          return false // 検証失敗
+        }
       }
-      return true;
+      // 上記以外のケース（比較しない場合、または ensureTimeToMin <= timeToMin の場合）は検証成功
+      return true
     },
     {
-      message: '確保する時間は実際の稼働時間より短く設定してください',
+      message: '確保する時間は実際の稼働時間以下に設定してください', // メッセージも少し調整するとより適切かもしれません
       path: ['ensureTimeToMin'], // エラーメッセージをensureTimeToMinフィールドに表示
     }
-  );
+  )
 
 // エラーメッセージコンポーネント
 const ErrorMessage = ({ message }: { message: string | undefined }) => (

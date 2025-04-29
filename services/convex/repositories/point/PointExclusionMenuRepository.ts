@@ -26,7 +26,7 @@ export class PointExclusionMenuRepository extends BaseRepository<'point_exclusio
         q.eq('salonId', salonId).eq('pointConfigId', pointConfigId).eq('isArchive', false)
       )
       .collect();
-    return exclusionMenus.map((item) => item.menuId);
+    return exclusionMenus.map((item) => item.menuId) ?? []
   }
 
   async upsert(

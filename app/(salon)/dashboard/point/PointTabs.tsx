@@ -154,9 +154,8 @@ export default function PointTabs() {
   if (!salon) {
     return <Loading />;
   }
-
-  if (pointConfig === undefined || initialExclusionIds === undefined) {
-    return <Loading />;
+  if (pointConfig === undefined && initialExclusionIds === undefined) {
+    return <Loading />
   }
 
   const watchedExpirationDays = watch('pointExpirationDays');
