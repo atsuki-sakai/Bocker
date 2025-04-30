@@ -4,27 +4,27 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { Id, Doc } from '@/convex/_generated/dataModel';
-import { useZodForm } from '@/hooks/useZodForm';
-import { z } from 'zod';
-import { Loading, ZodTextField } from '@/components/common';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { motion } from 'framer-motion';
-import { toast } from 'sonner';
-import { handleErrorToMsg } from '@/lib/error';
-import { useSalon } from '@/hooks/useSalon';
+import { Id } from '@/convex/_generated/dataModel'
+import { useZodForm } from '@/hooks/useZodForm'
+import { z } from 'zod'
+import { Loading, ZodTextField } from '@/components/common'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Separator } from '@/components/ui/separator'
+import { motion } from 'framer-motion'
+import { toast } from 'sonner'
+import { handleErrorToMsg } from '@/lib/error'
+import { useSalon } from '@/hooks/useSalon'
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from '@/components/ui/accordion';
-import { TagInput } from '@/components/common';
-import { getMinuteMultiples } from '@/lib/schedule'; // getMinuteMultiplesを追加
+} from '@/components/ui/accordion'
+import { TagInput } from '@/components/common'
+import { getMinuteMultiples } from '@/lib/schedule' // getMinuteMultiplesを追加
 import {
   Tag,
   DollarSign,
@@ -35,14 +35,14 @@ import {
   Clock,
   Save,
   Loader2,
-} from 'lucide-react'; // Clockを追加
+} from 'lucide-react' // Clockを追加
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '@/components/ui/select'; // Select関連を追加
+} from '@/components/ui/select' // Select関連を追加
 // バリデーションスキーマ
 const optionSchema = z
   .object({
@@ -180,7 +180,7 @@ export default function OptionEditForm() {
     handleSubmit,
     setValue,
     watch,
-    formState: { isSubmitting, errors, isDirty },
+    formState: { isSubmitting, errors },
   } = useZodForm(optionSchema)
   const isActive = watch('isActive')
   const watchTimeToMin = watch('timeToMin')

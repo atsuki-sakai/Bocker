@@ -7,21 +7,15 @@ import { Id } from '@/convex/_generated/dataModel';
 import { useRouter } from 'next/navigation';
 import { handleErrorToMsg } from '@/lib/error';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import {
   Clock,
   Calendar,
@@ -33,15 +27,15 @@ import {
   X,
   Check,
   CalendarClock,
-} from 'lucide-react';
-import { api } from '@/convex/_generated/api';
-import { useQuery, useMutation } from 'convex/react';
-import { useSalon } from '@/hooks/useSalon';
-import { Loading } from '@/components/common';
-import { useZodForm } from '@/hooks/useZodForm';
-import { z } from 'zod';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { toast } from 'sonner';
+} from 'lucide-react'
+import { api } from '@/convex/_generated/api'
+import { useQuery, useMutation } from 'convex/react'
+import { useSalon } from '@/hooks/useSalon'
+import { Loading } from '@/components/common'
+import { useZodForm } from '@/hooks/useZodForm'
+import { z } from 'zod'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { toast } from 'sonner'
 
 // dayOfWeekTypeの値を定義（エラー修正用）
 const DAY_OF_WEEK_VALUES = [
@@ -52,7 +46,7 @@ const DAY_OF_WEEK_VALUES = [
   'friday',
   'saturday',
   'sunday',
-] as const;
+] as const
 
 const staffScheduleConfigSchema = z.object({
   staffId: z.string().optional(),
@@ -60,7 +54,7 @@ const staffScheduleConfigSchema = z.object({
   isOpen: z.boolean().optional(),
   startHour: z.string().optional(),
   endHour: z.string().optional(),
-});
+})
 
 // 曜日の定義（日本語と英語の対応）- 月曜から日曜の順
 const DAYS_OF_WEEK = [
@@ -106,7 +100,7 @@ const DAYS_OF_WEEK = [
     shortWeek: '日',
     color: 'bg-blue-50 border-blue-200 text-blue-700',
   },
-];
+]
 
 // サロン曜日スケジュールの型定義
 export type DayOfWeek =
@@ -116,45 +110,28 @@ export type DayOfWeek =
   | 'thursday'
   | 'friday'
   | 'saturday'
-  | 'sunday';
+  | 'sunday'
 
 // 各曜日の営業時間設定
 export interface DaySchedule {
-  isOpen: boolean;
-  startHour: string;
-  endHour: string;
-  scheduleId?: string; // 既存レコードのID
+  isOpen: boolean
+  startHour: string
+  endHour: string
+  scheduleId?: string // 既存レコードのID
 }
 
 // 曜日スケジュールデータ
 export interface WeekScheduleData {
   // 各曜日の設定
-  scheduleSettings: Record<DayOfWeek, DaySchedule>;
+  scheduleSettings: Record<DayOfWeek, DaySchedule>
   // 共通設定
-  useCommonHours: boolean;
-  commonStartHour: string;
-  commonEndHour: string;
+  useCommonHours: boolean
+  commonStartHour: string
+  commonEndHour: string
 }
 
-const defaultScheduleHour = { startHour: '09:00', endHour: '17:00' };
+const defaultScheduleHour = { startHour: '09:00', endHour: '17:00' }
 
-// 情報アイコンコンポーネント
-const InfoIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="16" x2="12" y2="12" />
-    <line x1="12" y1="8" x2="12.01" y2="8" />
-  </svg>
-);
 
 export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'> }) {
   const { salonId } = useSalon();

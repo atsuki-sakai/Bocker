@@ -1,40 +1,36 @@
 // カレンダーの日付表示部分を修正し、予約がある日には特別なマークを表示する
 'use client';
 
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { ChevronLeft, ChevronRight, Ellipsis, Calendar, Loader2 } from 'lucide-react';
-import { DashboardSection } from '@/components/common';
-import { useSalon } from '@/hooks/useSalon';
-
-import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
-import { api } from '@/convex/_generated/api';
-import Link from 'next/link';
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { ChevronLeft, ChevronRight, Ellipsis, Loader2 } from 'lucide-react'
+import { DashboardSection } from '@/components/common'
+import { useSalon } from '@/hooks/useSalon'
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
+import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
+import { api } from '@/convex/_generated/api'
+import Link from 'next/link'
+import { useRef, useState, useEffect, useMemo } from 'react'
 import {
   startOfWeek as startOfWeekFns,
   endOfWeek as endOfWeekFns,
   format,
   isSameDay,
   isToday,
-} from 'date-fns';
-import { ja } from 'date-fns/locale';
-import { Id, Doc } from '@/convex/_generated/dataModel';
+} from 'date-fns'
+import { ja } from 'date-fns/locale'
+import { Id, Doc } from '@/convex/_generated/dataModel'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { usePaginatedQuery } from 'convex/react';
+} from '@/components/ui/select'
+import { usePaginatedQuery } from 'convex/react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 export default function TimelinePage() {
   const { salonId } = useSalon()
 
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
-  const container = useRef<HTMLDivElement | null>(null)
-  const containerNav = useRef<HTMLDivElement | null>(null)
   const containerOffset = useRef<HTMLDivElement | null>(null)
   const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null)
 

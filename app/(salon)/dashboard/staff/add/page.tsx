@@ -34,8 +34,7 @@ import { compressAndConvertToWebP, fileToBase64, encryptString } from '@/lib/uti
 import { Id } from '@/convex/_generated/dataModel';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator';
 import { ConvexError } from 'convex/values';
 import {
@@ -44,7 +43,6 @@ import {
   Info,
   Calendar,
   Shield,
-  Tag,
   Sparkles,
   User,
   Mail,
@@ -55,7 +53,7 @@ import {
   Lock,
   Shuffle,
   Copy,
-} from 'lucide-react';
+} from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExclusionMenu } from '@/components/common';

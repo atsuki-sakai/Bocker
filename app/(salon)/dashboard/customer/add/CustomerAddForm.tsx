@@ -112,8 +112,6 @@ export default function CustomerAddForm() {
   const { salon } = useSalon()
   const router = useRouter()
   const [currentTags, setCurrentTags] = useState<string[]>([])
-  const [tagInput, setTagInput] = useState<string>('')
-
   const createCompleteFields = useMutation(api.customer.core.mutation.createCompleteFields)
   const {
     register,
@@ -122,39 +120,6 @@ export default function CustomerAddForm() {
     formState: { errors, isSubmitting, isDirty },
     watch,
   } = useZodForm(schemaCustomer)
-
-  // タグの操作ロジック
-  const addTag = (
-    e: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLInputElement>
-  ) => {
-    e.preventDefault()
-    if (!tagInput.trim()) return
-
-    const newTags = [...currentTags]
-
-    // カンマで区切られた複数のタグがある場合
-    const tagsToAdd = tagInput
-      .split(/[,、]/)
-      .map((t) => t.trim())
-      .filter((t) => t && !currentTags.includes(t))
-
-    if (newTags.length + tagsToAdd.length > 5) {
-      toast.warning('タグは最大5つまでです')
-      return
-    }
-
-    const updatedTags = [...newTags, ...tagsToAdd].slice(0, 5)
-    setCurrentTags(updatedTags)
-    setValue('tags', updatedTags, { shouldValidate: true })
-    setTagInput('')
-  }
-
-  const removeTag = (index: number) => {
-    const newTags = [...currentTags]
-    newTags.splice(index, 1)
-    setCurrentTags(newTags)
-    setValue('tags', newTags, { shouldValidate: true })
-  }
 
   const onSubmit = async (data: z.infer<typeof schemaCustomer>) => {
     console.log(data)

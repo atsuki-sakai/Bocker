@@ -73,16 +73,6 @@ export default function CustomerDetailPage() {
     ? format(new Date(completeCustomer.customerDetails.birthday), 'yyyy年MM月dd日', { locale: ja })
     : '未登録'
 
-  // Format the last transaction date if it exists
-  const formattedLastTransactionDate = completeCustomer.customerPoints.lastTransactionDate_unix
-    ? format(
-        new Date(completeCustomer.customerPoints.lastTransactionDate_unix * 1000),
-        'yyyy年MM月dd日 HH:mm',
-        {
-          locale: ja,
-        }
-      ) // Convert unix timestamp to milliseconds
-    : '取引履歴なし'
 
   const formattedLastReservationDate = completeCustomer.customer.lastReservationDate_unix
     ? format(

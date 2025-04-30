@@ -155,7 +155,7 @@ export default function CustomerEditForm() {
         totalPoints: completeCustomer.customerPoints?.totalPoints ?? 0,
       })
     }
-  }, [completeCustomer]) // Depend on completeCustomer and reset
+  }, [completeCustomer, reset]) // Depend on completeCustomer and reset
 
   const onSubmit = async (data: z.infer<typeof customerEditFormSchema>) => {
     console.log('Submitting Form Data:', data)
