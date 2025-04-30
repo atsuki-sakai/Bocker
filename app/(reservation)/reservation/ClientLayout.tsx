@@ -7,7 +7,7 @@ import type { NextFontWithVariable } from 'next/dist/compiled/@next/font'
 import { Loading } from '@/components/common'
 import { getCookie } from '@/lib/utils'
 import { Id } from '@/convex/_generated/dataModel'
-const LINE_LOGIN_SESSION_KEY = process.env.NEXT_PUBLIC_LINE_LOGIN_SESSION_KEY || ''
+import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 
 interface ClientLayoutProps {
   children: React.ReactNode

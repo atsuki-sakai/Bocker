@@ -15,8 +15,7 @@ import { setCookie } from '@/lib/utils'
 import { useLiff } from '@/hooks/useLiff'
 import { Lock, Bell, CheckCircle, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
-
-const LINE_LOGIN_SESSION_KEY = process.env.NEXT_PUBLIC_LINE_LOGIN_SESSION_KEY || ''
+import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 
 export default function ReservePage() {
   const params = useParams()
@@ -25,10 +24,14 @@ export default function ReservePage() {
   const id = params.id as string
 
   const handleLogin = () => {
+    console.log('liff', liff)
     if (!liff?.isInClient()) {
+      console.log('liff?.isInClient()', liff?.isInClient())
       const session = JSON.stringify({
         salonId: id,
       })
+      console.log('session', session)
+
       setCookie(LINE_LOGIN_SESSION_KEY, session, 60)
       liff?.login()
     }
@@ -36,15 +39,15 @@ export default function ReservePage() {
 
   const benefits = [
     {
-      icon: <Bell className="h-5 w-5 text-green-700" />,
+      icon: <Bell className="h-5 w-5 text-green-600" />,
       text: '予約の確認や変更の通知をLINEで受け取れます',
     },
     {
-      icon: <Lock className="h-5 w-5 text-green-700" />,
+      icon: <Lock className="h-5 w-5 text-green-600" />,
       text: '安全なログインで個人情報を保護します',
     },
     {
-      icon: <CheckCircle className="h-5 w-5 text-green-700" />,
+      icon: <CheckCircle className="h-5 w-5 text-green-600" />,
       text: '次回からの予約がスムーズになります',
     },
   ]
@@ -64,7 +67,7 @@ export default function ReservePage() {
                 Bcker
               </h1>
               <span className="text-xs scale-75 -ml-5 -mt-1.5 text-gray-600">
-                ブッカーで予約を簡単・便利に
+                予約を簡単・便利に
               </span>
             </div>
             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">

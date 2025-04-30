@@ -9,7 +9,7 @@ export const getLiffId = query({
     salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx)
+    checkAuth(ctx, true)
     validateSalonApiConfig(args)
 
     const apiConfig = await salonService.findApiConfigBySalonId(ctx, args.salonId)
