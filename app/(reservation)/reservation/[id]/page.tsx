@@ -30,8 +30,6 @@ export default function ReservePage() {
       const session = JSON.stringify({
         salonId: id,
       })
-      console.log('session', session)
-
       setCookie(LINE_LOGIN_SESSION_KEY, session, 60)
       liff?.login()
     }
