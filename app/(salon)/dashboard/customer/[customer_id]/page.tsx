@@ -6,19 +6,14 @@ import { Id } from '@/convex/_generated/dataModel'
 import { api } from '@/convex/_generated/api'
 import { useQuery } from 'convex/react'
 import { Loading } from '@/components/common' // Assuming this is your loading component
-
-// Import Shadcn UI components
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { convertGender, Gender } from '@/services/convex/shared/types/common'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator' // Useful for separating sections
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip' // For displaying full IDs on hover
 import { ScrollArea } from '@/components/ui/scroll-area' // For potentially long notes
-import { useSalon } from '@/hooks/useSalon'
-// Import Lucide Icons
 import {
   Phone,
   User,
-  Archive,
   Tag,
   CalendarDays,
   Info,
@@ -180,7 +175,7 @@ export default function CustomerDetailPage() {
                 <Cake className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">性別:</span>
                 <span className="text-base">
-                  {completeCustomer.customerDetails.gender || '未登録'}
+                  {convertGender(completeCustomer.customerDetails.gender as Gender)}
                 </span>
               </div>
               {/* Notes - potentially long, use ScrollArea or Collapsible */}

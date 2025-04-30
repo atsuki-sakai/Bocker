@@ -125,8 +125,7 @@ export default function ReservationPage() {
     >
       <div className="flex flex-col gap-8 bg-white">
         <div className="border-b pb-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold mb-3">予約概要</h2>
+          <div className="flex justify-end w-full">
             <div className="flex gap-4">
               <Select
                 value={status}
@@ -152,7 +151,7 @@ export default function ReservationPage() {
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
               <p
                 className={`w-fit px-4 py-1 my-2 rounded-md font-medium text-sm ${statusColorMap[reservation.status as ReservationStatus]}`}

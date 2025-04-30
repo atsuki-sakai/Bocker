@@ -64,7 +64,9 @@ const schemaMenu = z
       .string()
       .min(1, { message: 'メニュー名は必須です' })
       .max(100, { message: 'メニュー名は100文字以内で入力してください' }),
-    category: z.enum(MENU_CATEGORY_VALUES, { message: 'カテゴリは必須です' }),
+    category: z
+      .enum(MENU_CATEGORY_VALUES, { message: 'カテゴリは必須です' })
+      .refine((val) => val !== undefined, { message: 'カテゴリは必須です' }),
     unitPrice: z
       .number()
       .min(1, { message: '価格は必須です' })
@@ -89,9 +91,7 @@ const schemaMenu = z
     timeToMin: z.number().refine((val) => val !== 0 && val !== null && val !== undefined, {
       message: '時間は必須です',
     }),
-    ensureTimeToMin: z.number().refine((val) => val !== 0 && val !== null && val !== undefined, {
-      message: '時間は必須です',
-    }),
+    ensureTimeToMin: z.number().optional(),
     imgFilePath: z.string().max(512).optional(),
     description: z
       .string()
@@ -136,10 +136,11 @@ const schemaMenu = z
   )
   .refine(
     (data) => {
+      console.log('data', data)
       // 両方のフィールドが存在する場合のみ比較を行う
       if (data.timeToMin !== undefined && data.ensureTimeToMin !== undefined) {
         // 検証失敗条件: 確保する時間(ensureTimeToMin)が実際の稼働時間(timeToMin)より大きい場合
-        if (data.ensureTimeToMin > data.timeToMin) {
+        if (data.ensureTimeToMin < data.timeToMin) {
           return false // 検証失敗
         }
       }
@@ -162,21 +163,21 @@ const ErrorMessage = ({ message }: { message: string | undefined }) => (
   >
     <AlertCircle size={14} /> {message ?? 'NULL'}
   </motion.p>
-);
+)
 
 export default function MenuAddForm() {
-  const router = useRouter();
-  const { salon } = useSalon();
-  const [currentFile, setCurrentFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [targetType, setTargetType] = useState<Target>('all');
-  const [targetGender, setTargetGender] = useState<Gender>('unselected');
-  const [paymentMethod, setPaymentMethod] = useState<MenuPaymentMethod>('cash');
-  const [currentTags, setCurrentTags] = useState<string[]>([]);
+  const router = useRouter()
+  const { salon } = useSalon()
+  const [currentFile, setCurrentFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [targetType, setTargetType] = useState<Target>('all')
+  const [targetGender, setTargetGender] = useState<Gender>('unselected')
+  const [paymentMethod, setPaymentMethod] = useState<MenuPaymentMethod>('cash')
+  const [currentTags, setCurrentTags] = useState<string[]>([])
 
-  const uploadImage = useAction(api.storage.action.upload);
-  const deleteImage = useAction(api.storage.action.kill);
-  const createMenu = useMutation(api.menu.core.mutation.create);
+  const uploadImage = useAction(api.storage.action.upload)
+  const deleteImage = useAction(api.storage.action.kill)
+  const createMenu = useMutation(api.menu.core.mutation.create)
 
   const {
     register,
@@ -185,34 +186,34 @@ export default function MenuAddForm() {
     reset,
     watch,
     formState: { isSubmitting, errors },
-  } = useZodForm(schemaMenu);
+  } = useZodForm(schemaMenu)
 
   // 支払い方法の選択ロジック
   const handlePaymentMethod = (
     e: React.MouseEvent<HTMLButtonElement>,
     method: MenuPaymentMethod
   ) => {
-    e.preventDefault();
-    setPaymentMethod(method);
-    setValue('paymentMethod', method, { shouldValidate: true });
-  };
+    e.preventDefault()
+    setPaymentMethod(method)
+    setValue('paymentMethod', method, { shouldValidate: true })
+  }
 
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
-    let uploadImagePath: string | undefined;
+    let uploadImagePath: string | undefined
     try {
       if (!salon?._id) {
-        toast.error('サロン情報が必要です');
-        return;
+        toast.error('サロン情報が必要です')
+        return
       }
 
       if (currentFile) {
-        setIsUploading(true);
+        setIsUploading(true)
 
         // 画像処理
-        const processedFile = await compressAndConvertToWebP(currentFile);
-        const base64Data = await fileToBase64(processedFile);
-        const filePath = `${Date.now()}-${processedFile.name}`;
+        const processedFile = await compressAndConvertToWebP(currentFile)
+        const base64Data = await fileToBase64(processedFile)
+        const filePath = `${Date.now()}-${processedFile.name}`
 
         // 画像アップロード
         const uploadResult = await uploadImage({
@@ -220,8 +221,8 @@ export default function MenuAddForm() {
           base64Data,
           filePath,
           contentType: processedFile.type,
-        });
-        uploadImagePath = uploadResult?.publicUrl;
+        })
+        uploadImagePath = uploadResult?.publicUrl
       }
 
       // APIに送信するデータを作成
@@ -239,51 +240,51 @@ export default function MenuAddForm() {
         isActive: data.isActive,
         imgPath: uploadImagePath || '',
         salePrice: data.salePrice || undefined,
-      };
+      }
 
       await createMenu({
         ...createData,
         salonId: salon._id,
-      });
+      })
 
-      toast.success('メニューを登録しました');
-      router.push('/dashboard/menu');
+      toast.success('メニューを登録しました')
+      router.push('/dashboard/menu')
     } catch (error) {
       if (uploadImagePath) {
         await deleteImage({
           imgUrl: uploadImagePath,
-        });
+        })
       }
-      toast.error(handleErrorToMsg(error));
+      toast.error(handleErrorToMsg(error))
     } finally {
-      setIsUploading(false);
+      setIsUploading(false)
     }
-  };
+  }
 
   // 初期化
   useEffect(() => {
     if (salon?._id) {
       reset({
-        name: '',
+        name: undefined as unknown as string,
         category: undefined as unknown as MenuCategory,
-        unitPrice: null as unknown as number,
-        salePrice: null as unknown as number,
-        timeToMin: 0,
-        ensureTimeToMin: 0,
-        imgFilePath: '',
-        description: '',
+        unitPrice: undefined as unknown as number,
+        salePrice: undefined as unknown as number,
+        timeToMin: undefined as unknown as number,
+        ensureTimeToMin: undefined as unknown as number,
+        imgFilePath: undefined as unknown as string,
+        description: undefined as unknown as string,
         targetGender: 'unselected',
         targetType: 'all',
         tags: [] as string[],
         paymentMethod: 'cash',
         isActive: true,
-      });
-      setCurrentTags([]);
+      })
+      setCurrentTags([])
     }
-  }, [salon?._id, reset]);
+  }, [salon?._id, reset])
 
   if (!salon) {
-    return <Loading />;
+    return <Loading />
   }
 
   return (
@@ -292,12 +293,11 @@ export default function MenuAddForm() {
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-            e.preventDefault();
+            e.preventDefault()
           }
         }}
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* 左カラム - 画像アップロード */}
           <div className="md:col-span-1">
             <Card className="border border-dashed h-full flex flex-col">
               <CardHeader className="pb-0">
@@ -311,8 +311,8 @@ export default function MenuAddForm() {
                   <ImageDrop
                     maxSizeMB={6}
                     onFileSelect={(file) => {
-                      setCurrentFile(file);
-                      setValue('imgFilePath', file.name, { shouldValidate: true });
+                      setCurrentFile(file)
+                      setValue('imgFilePath', file.name, { shouldValidate: true })
                     }}
                     className="h-60 rounded-md"
                   />
@@ -325,9 +325,7 @@ export default function MenuAddForm() {
             </Card>
           </div>
 
-          {/* 右カラム - 基本情報 */}
           <div className="md:col-span-2 space-y-5">
-            {/* メニュー名 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <ZodTextField
                 name="name"
@@ -347,7 +345,7 @@ export default function MenuAddForm() {
                 <Select
                   value={watch('category')}
                   onValueChange={(value) => {
-                    setValue('category', value as MenuCategory, { shouldValidate: true });
+                    setValue('category', value as MenuCategory, { shouldValidate: true })
                   }}
                 >
                   <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
@@ -362,15 +360,16 @@ export default function MenuAddForm() {
                   </SelectContent>
                 </Select>
                 <span className="text-xs text-gray-500">
-                  もしカテゴリがない場合は
+                  カテゴリがない場合は
                   <a href="mailto:atk721@icloud.com" className="text-blue-500 underline">
                     こちら
                   </a>
                   から追加申請いただけます。
                 </span>
+                {errors.category && <ErrorMessage message={errors.category.message} />}
               </div>
             </div>
-            {/* 価格関連 */}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ZodTextField
                 name="unitPrice"
@@ -395,9 +394,7 @@ export default function MenuAddForm() {
                 className="border-gray-200 focus-within:border-blue-500 transition-colors"
               />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* 施術時間 */}
               <div className="max-w-full">
                 <Label className="text-sm flex items-center gap-2">
                   <Clock size={16} className="text-gray-500" />
@@ -405,7 +402,7 @@ export default function MenuAddForm() {
                 </Label>
                 <Select
                   onValueChange={(value) => {
-                    setValue('timeToMin', parseInt(value), { shouldValidate: true });
+                    setValue('timeToMin', parseInt(value), { shouldValidate: true })
                   }}
                 >
                   <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
@@ -424,15 +421,14 @@ export default function MenuAddForm() {
                 </span>
                 {errors.timeToMin && <ErrorMessage message={errors.timeToMin.message} />}
               </div>
-              {/* 座席を確保する時間 */}
               <div className="max-w-full">
                 <Label className="text-sm flex items-center gap-2">
                   <Clock size={16} className="text-gray-500" />
-                  待機時間を含めたトータルの施術時間 <span className="text-red-500 ml-1">*</span>
+                  待機時間を含めたトータルの施術時間
                 </Label>
                 <Select
                   onValueChange={(value) => {
-                    setValue('ensureTimeToMin', parseInt(value), { shouldValidate: true });
+                    setValue('ensureTimeToMin', parseInt(value), { shouldValidate: true })
                   }}
                 >
                   <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
@@ -454,9 +450,8 @@ export default function MenuAddForm() {
                 )}
               </div>
             </div>
-            {/* 対象と性別 */}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* 対象タイプ */}
               <div>
                 <Label className="flex items-center gap-2 text-sm">
                   <Repeat size={16} className="text-gray-500" />
@@ -466,8 +461,8 @@ export default function MenuAddForm() {
                 <Select
                   value={targetType}
                   onValueChange={(value) => {
-                    setTargetType(value as Target);
-                    setValue('targetType', value as Target);
+                    setTargetType(value as Target)
+                    setValue('targetType', value as Target)
                   }}
                 >
                   <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
@@ -483,7 +478,6 @@ export default function MenuAddForm() {
                   メニューを主に利用する顧客属性を選択できます。
                 </span>
               </div>
-              {/* 性別 */}
               <div>
                 <Label className="flex items-center gap-2 text-sm">
                   <Users size={16} className="text-gray-500" />
@@ -493,8 +487,8 @@ export default function MenuAddForm() {
                 <Select
                   value={targetGender}
                   onValueChange={(value) => {
-                    setTargetGender(value as Gender);
-                    setValue('targetGender', value as Gender);
+                    setTargetGender(value as Gender)
+                    setValue('targetGender', value as Gender)
                   }}
                 >
                   <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
@@ -520,19 +514,15 @@ export default function MenuAddForm() {
 
         <Separator className="my-12 w-1/2 mx-auto" />
 
-        {/* タグセクション */}
-
         <TagInput
           tags={currentTags}
           setTagsAction={(tags) => {
-            setCurrentTags(tags);
-            setValue('tags', tags.join('、') as unknown as string[], { shouldValidate: true });
+            setCurrentTags(tags)
+            setValue('tags', tags.join('、') as unknown as string[], { shouldValidate: true })
           }}
           error={errors.tags?.message}
           exampleText="例: デジタルパーマ、夏にしたい髪型、面長に合う"
         />
-
-        {/* 支払い方法セクション */}
 
         <Label className="flex items-center gap-2 text-sm mb-3 mt-8">
           <CreditCard size={16} className="text-gray-500" />
@@ -613,8 +603,6 @@ export default function MenuAddForm() {
           </Tooltip>
         </TooltipProvider>
 
-        {/* 説明セクション */}
-
         <Label className="flex items-center gap-2 text-sm mb-2 mt-6">
           <Info size={16} className="text-gray-500" />
           メニュー説明 <span className="text-red-500 ml-1">*</span>
@@ -629,7 +617,6 @@ export default function MenuAddForm() {
         />
         {errors.description && <ErrorMessage message={errors.description?.message} />}
 
-        {/* 公開/非公開スイッチ */}
         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md mb-6 mt-4">
           <div>
             <p className="text-sm font-bold">メニューを公開する</p>
@@ -645,7 +632,6 @@ export default function MenuAddForm() {
           />
         </div>
 
-        {/* 送信ボタン */}
         <div className="flex justify-end mt-6">
           <div className="flex gap-3">
             <Button
@@ -675,7 +661,6 @@ export default function MenuAddForm() {
         </div>
       </form>
       <Accordion type="multiple" className="mt-8 space-y-2">
-        {/* 実際の稼働時間と確保する時間の違いについて */}
         <AccordionItem value="line-access-token">
           <AccordionTrigger>
             実際の稼働時間と待機時間を含めたトータルの施術時間の違いについて
@@ -710,5 +695,5 @@ export default function MenuAddForm() {
         </AccordionItem>
       </Accordion>
     </div>
-  );
+  )
 }

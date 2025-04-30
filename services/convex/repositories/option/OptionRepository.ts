@@ -8,6 +8,7 @@ import {
   OptionUpdateInput,
 } from '@/services/convex/types/option';
 import { throwConvexError } from '@/lib/error';
+import { killRecord } from '../../shared/utils/helper'
 
 export class OptionRepository extends BaseRepository<'salon_option'> {
   private static instance: OptionRepository;
@@ -55,7 +56,7 @@ export class OptionRepository extends BaseRepository<'salon_option'> {
   }
 
   public async kill(ctx: MutationCtx, args: OptionKillInput) {
-    await this.kill(ctx, args);
+    await killRecord(ctx, args.optionId)
     return true;
   }
 

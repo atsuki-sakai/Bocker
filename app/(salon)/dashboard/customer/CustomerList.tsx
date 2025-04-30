@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/common'
 import { Badge } from '@/components/ui/badge'
 import { Dialog } from '@/components/common'
+import { useDebounce } from 'use-debounce'
 import {
   Table,
   TableBody,
@@ -30,7 +31,7 @@ const numberOfItems: number = 20
 export default function CustomerList() {
   const salon = useSalon()
   const [searchTerm, setSearchTerm] = useState<string>('')
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('')
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 1500)
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState<Id<'customer'> | null>(null)
 
@@ -54,16 +55,6 @@ export default function CustomerList() {
       toast.error(handleErrorToMsg(error))
     }
   }
-
-  // 検索用語のデバウンス処理
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [searchTerm])
-
   const {
     results: customers,
     isLoading,
@@ -191,7 +182,7 @@ export default function CustomerList() {
                   </TableCell>
                   <TableCell className="w-full">
                     {customer.tags && customer.tags.length > 0 ? (
-                      <div className="flex flex-wrap gap-1 w-full">
+                      <div className="flex flex-wrap gap-1 w-full min-w-[140px]">
                         {customer.tags.map((tag: string, index: number) => (
                           <Badge
                             key={index}

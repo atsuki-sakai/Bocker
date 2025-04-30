@@ -51,7 +51,6 @@ import { useSalon } from '@/hooks/useSalon'
 import { ZodTextField } from '@/components/common'
 import { Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
-import { Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { useMutation } from 'convex/react'
 

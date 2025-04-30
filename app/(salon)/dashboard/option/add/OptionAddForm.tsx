@@ -95,7 +95,7 @@ const optionSchema = z
       .string()
       .min(1, { message: '時間は必須です' })
       .max(5, { message: '時間は5文字で入力してください' })
-      .refine((val) => val !== '', { message: '時間は必須です' }), // 時間(分)
+      .optional(), // 時間(分)
     tags: z.preprocess(
       (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
       z
@@ -137,7 +137,7 @@ const optionSchema = z
       // 両方のフィールドが存在する場合のみ比較を行う
       if (data.timeToMin !== undefined && data.ensureTimeToMin !== undefined) {
         // 検証失敗条件: 確保する時間(ensureTimeToMin)が実際の稼働時間(timeToMin)より大きい場合
-        if (data.ensureTimeToMin > data.timeToMin) {
+        if (data.ensureTimeToMin < data.timeToMin) {
           return false // 検証失敗
         }
       }
@@ -151,11 +151,11 @@ const optionSchema = z
   )
 
 function OptionAddForm() {
-  const { salon } = useSalon();
-  const router = useRouter();
-  const [currentTags, setCurrentTags] = useState<string[]>([]);
+  const { salon } = useSalon()
+  const router = useRouter()
+  const [currentTags, setCurrentTags] = useState<string[]>([])
 
-  const addOption = useMutation(api.option.mutation.create);
+  const addOption = useMutation(api.option.mutation.create)
 
   const {
     register,
@@ -164,15 +164,15 @@ function OptionAddForm() {
     setValue,
     watch,
     reset,
-  } = useZodForm(optionSchema);
+  } = useZodForm(optionSchema)
 
-  const isActive = watch('isActive');
+  const isActive = watch('isActive')
 
   const onSubmit = async (data: z.infer<typeof optionSchema>) => {
     try {
       if (!salon?._id) {
-        toast.error('サロン情報が必要です');
-        return;
+        toast.error('サロン情報が必要です')
+        return
       }
 
       // APIに送信するデータを作成
@@ -180,41 +180,43 @@ function OptionAddForm() {
         name: data.name,
         salonId: salon._id,
         timeToMin: Number(data.timeToMin),
-        ensureTimeToMin: Number(data.ensureTimeToMin),
-        salePrice: data.salePrice ? Number(data.salePrice) : 0,
+        ensureTimeToMin: data.ensureTimeToMin
+          ? Number(data.ensureTimeToMin)
+          : (undefined as unknown as number),
+        salePrice: data.salePrice ? Number(data.salePrice) : (undefined as unknown as number),
         unitPrice: Number(data.unitPrice), // 明示的に数値型に変換
         orderLimit: data.orderLimit,
         tags: data.tags,
         description: data.description,
         isActive: data.isActive,
-      };
-      await addOption(createData);
-      toast.success('オプションメニューを登録しました');
-      router.push('/dashboard/option');
+      }
+      await addOption(createData)
+      toast.success('オプションメニューを登録しました')
+      router.push('/dashboard/option')
     } catch (error) {
-      toast.error(handleErrorToMsg(error));
+      toast.error(handleErrorToMsg(error))
     }
-  };
+  }
 
   useEffect(() => {
     if (salon?._id) {
       reset({
-        name: '',
-        unitPrice: null as unknown as number,
-        salePrice: null as unknown as number,
+        name: undefined as unknown as string,
+        unitPrice: undefined as unknown as number,
+        salePrice: undefined as unknown as number,
         orderLimit: 1,
-        timeToMin: '',
-        ensureTimeToMin: '',
-        tags: '' as unknown as string[],
-        description: '',
+        timeToMin: undefined as unknown as string,
+        ensureTimeToMin: undefined as unknown as string,
+        tags: [] as unknown as string[],
+        description: undefined as unknown as string,
         isActive: true,
-      });
-      setCurrentTags([]);
+      })
+      setCurrentTags([])
     }
-  }, [salon?._id, reset]);
+  }, [salon?._id, reset])
 
   if (!salon) {
-    return <Loading />;
+    return <Loading />
   }
 
   return (
@@ -222,7 +224,7 @@ function OptionAddForm() {
       onSubmit={handleSubmit(onSubmit)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-          e.preventDefault();
+          e.preventDefault()
         }
       }}
     >
@@ -240,7 +242,7 @@ function OptionAddForm() {
           </div>
           <ZodTextField
             name="orderLimit"
-            label="一回の最大注文数"
+            label="一回最大注文数"
             type="number"
             placeholder="例: 1"
             register={register}
@@ -249,7 +251,7 @@ function OptionAddForm() {
             className="border-gray-200 focus-within:border-blue-500 transition-colors"
           />
         </div>
-        {/* 価格関連 */}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ZodTextField
             name="unitPrice"
@@ -276,7 +278,6 @@ function OptionAddForm() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* 施術時間 */}
           <div className="w-full">
             <Label className="text-sm flex items-center gap-2 mb-2">
               <Clock size={16} className="text-gray-500" />
@@ -284,7 +285,7 @@ function OptionAddForm() {
             </Label>
             <Select
               onValueChange={(value) => {
-                setValue('timeToMin', value, { shouldValidate: true });
+                setValue('timeToMin', value, { shouldValidate: true })
               }}
             >
               <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
@@ -306,15 +307,14 @@ function OptionAddForm() {
             )}
           </div>
 
-          {/* 席を確保しておく時間 */}
           <div className="w-full">
             <Label className="text-sm flex items-center gap-2 mb-2">
               <Clock size={16} className="text-gray-500" />
-              待ち時間なども含めたトータルの施術時間 <span className="text-red-500 ml-1">*</span>
+              待ち時間なども含めたトータルの施術時間
             </Label>
             <Select
               onValueChange={(value) => {
-                setValue('ensureTimeToMin', value, { shouldValidate: true });
+                setValue('ensureTimeToMin', value, { shouldValidate: true })
               }}
             >
               <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
@@ -336,8 +336,6 @@ function OptionAddForm() {
             )}
           </div>
         </div>
-
-        {/* タグセクション */}
         <TagInput
           tags={currentTags}
           setTagsAction={setCurrentTags}
@@ -345,8 +343,6 @@ function OptionAddForm() {
           title="タグ"
           exampleText="例: 期間限定、セール、デートなど"
         />
-
-        {/* 説明セクション */}
 
         <Label className="flex items-center gap-2 text-sm mt-4">
           <Info size={16} className="text-gray-500" />
@@ -385,8 +381,8 @@ function OptionAddForm() {
             type="submit"
             disabled={isSubmitting}
             onClick={() => {
-              console.log('ボタンクリック');
-              console.log('フォームバリデーション状態:', errors);
+              console.log('ボタンクリック')
+              console.log('フォームバリデーション状態:', errors)
             }}
           >
             {isSubmitting ? (
@@ -439,7 +435,7 @@ function OptionAddForm() {
         </AccordionItem>
       </Accordion>
     </form>
-  );
+  )
 }
 
 export default memo(OptionAddForm);

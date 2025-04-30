@@ -139,7 +139,7 @@ const optionSchema = z
       // 両方のフィールドが存在する場合のみ比較を行う
       if (data.timeToMin !== undefined && data.ensureTimeToMin !== undefined) {
         // 検証失敗条件: 確保する時間(ensureTimeToMin)が実際の稼働時間(timeToMin)より大きい場合
-        if (data.ensureTimeToMin > data.timeToMin) {
+        if (data.ensureTimeToMin < data.timeToMin) {
           return false // 検証失敗
         }
       }
@@ -162,67 +162,68 @@ const ErrorMessage = ({ message }: { message: string | undefined }) => (
   >
     <AlertCircle size={14} /> {message ?? 'NULL'}
   </motion.p>
-);
+)
 
 export default function OptionEditForm() {
-  const router = useRouter();
-  const params = useParams();
-  const optionId = params.option_id as Id<'salon_option'>;
-  const { salon } = useSalon();
-  const optionData = useQuery(api.option.query.get, { optionId });
-  const updateOption = useMutation(api.option.mutation.update);
+  const router = useRouter()
+  const params = useParams()
+  const optionId = params.option_id as Id<'salon_option'>
+  const { salon } = useSalon()
+  const optionData = useQuery(api.option.query.get, { optionId })
+  const updateOption = useMutation(api.option.mutation.update)
 
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [currentTags, setCurrentTags] = useState<string[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [currentTags, setCurrentTags] = useState<string[]>([])
 
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    formState: { isSubmitting, errors },
-  } = useZodForm(optionSchema);
-  const isActive = watch('isActive');
-  const watchTimeToMin = watch('timeToMin');
+    formState: { isSubmitting, errors, isDirty },
+  } = useZodForm(optionSchema)
+  const isActive = watch('isActive')
+  const watchTimeToMin = watch('timeToMin')
 
   // データ取得後にフォームを初期化
   useEffect(() => {
     if (optionData && !isInitialized) {
-      const timeToMinValueString = optionData.timeToMin?.toString() || undefined;
-      const ensureTimeToMinValueString = optionData.ensureTimeToMin?.toString() || undefined;
-      const initialTags = optionData.tags || [];
+      const timeToMinValueString = optionData.timeToMin?.toString() || undefined
+      const ensureTimeToMinValueString = optionData.ensureTimeToMin?.toString() || undefined
+      const initialTags = optionData.tags || []
 
       // Stateの更新
-      setCurrentTags(initialTags);
+      setCurrentTags(initialTags)
 
       // setValueで各フィールドの初期値を設定
-      setValue('name', optionData.name || '');
-      setValue('unitPrice', optionData.unitPrice ?? 1);
-      setValue('salePrice', optionData.salePrice ?? undefined);
-      setValue('orderLimit', optionData.orderLimit ?? 1);
-      setValue('timeToMin', timeToMinValueString);
-      setValue('ensureTimeToMin', ensureTimeToMinValueString);
-      setValue('tags', initialTags);
-      setValue('description', optionData.description || '');
-      setValue('isActive', optionData.isActive ?? true);
+      setValue('name', optionData.name || '')
+      setValue('unitPrice', optionData.unitPrice ?? 1)
+      setValue('salePrice', optionData.salePrice ?? undefined)
+      setValue('orderLimit', optionData.orderLimit ?? 1)
+      setValue('timeToMin', timeToMinValueString)
+      setValue('ensureTimeToMin', ensureTimeToMinValueString)
+      setValue('tags', initialTags)
+      setValue('description', optionData.description || '')
+      setValue('isActive', optionData.isActive ?? true)
 
-      setIsInitialized(true);
+      setIsInitialized(true)
     }
-  }, [optionData, setValue, isInitialized]);
+  }, [optionData, setValue, isInitialized])
 
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof optionSchema>) => {
     try {
       if (!salon?._id || !optionId) {
-        toast.error('サロン情報またはオプション情報が見つかりません');
-        return;
+        toast.error('サロン情報またはオプション情報が見つかりません')
+        return
       }
 
       // APIに送信するデータを作成
       // zod schemaで型変換後のデータを使用
-      const updateData: Partial<Doc<'salon_option'>> & { optionId: Id<'salon_option'> } = {
+      const updateData = {
         name: data.name,
         unitPrice: data.unitPrice,
+        salePrice: data.salePrice ? Number(data.salePrice) : 0,
         orderLimit: data.orderLimit,
         timeToMin: data.timeToMin ? Number(data.timeToMin) : undefined, // 文字列を数値 or undefined に変換
         ensureTimeToMin: data.ensureTimeToMin ? Number(data.ensureTimeToMin) : undefined, // 文字列を数値 or undefined に変換
@@ -230,35 +231,20 @@ export default function OptionEditForm() {
         description: data.description,
         isActive: data.isActive,
         optionId, // idは必須
-      };
-
-      // salePriceの処理
-      if (
-        data.salePrice === null ||
-        data.salePrice === undefined ||
-        (typeof data.salePrice === 'string' && data.salePrice === '') || // Zodのpreprocessで数値変換されるが念のため残す
-        isNaN(Number(data.salePrice))
-      ) {
-        updateData.salePrice = 0;
-      } else {
-        updateData.salePrice = Number(data.salePrice);
       }
-      // updateOptionの型定義に合わせて不要な undefined プロパティを除外
-      const finalUpdateData = Object.fromEntries(
-        Object.entries(updateData).filter(([, value]) => value !== undefined)
-      ) as Partial<Doc<'salon_option'>> & { optionId: Id<'salon_option'> };
 
-      await updateOption(finalUpdateData);
+      await updateOption(updateData)
 
-      toast.success('オプションを更新しました');
-      router.push('/dashboard/option');
+      toast.success('オプションを更新しました')
+      console.log(updateData)
+      // router.push('/dashboard/option')
     } catch (error) {
-      toast.error(handleErrorToMsg(error));
+      toast.error(handleErrorToMsg(error))
     }
-  };
+  }
 
   if (!salon || !optionData) {
-    return <Loading />;
+    return <Loading />
   }
 
   return (
@@ -267,7 +253,7 @@ export default function OptionEditForm() {
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-            e.preventDefault();
+            e.preventDefault()
           }
         }}
       >
@@ -275,7 +261,6 @@ export default function OptionEditForm() {
           <h4 className="text-lg font-bold mb-2">オプション基本情報</h4>
           <div className="space-y-6">
             <div className="flex gap-4">
-              {/* オプション名 */}
               <ZodTextField
                 name="name"
                 label="オプション名"
@@ -286,7 +271,7 @@ export default function OptionEditForm() {
                 required
                 className="border-gray-200 focus-within:border-blue-500 transition-colors w-full"
               />
-              {/* 最大注文数 */}
+
               <ZodTextField
                 name="orderLimit"
                 label="最大注文数"
@@ -300,7 +285,6 @@ export default function OptionEditForm() {
               />
             </div>
 
-            {/* 価格関連 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ZodTextField
                 name="unitPrice"
@@ -326,7 +310,6 @@ export default function OptionEditForm() {
               />
             </div>
 
-            {/* 施術時間 - Selectコンポーネントを更新 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="w-full">
                 <Label className="text-sm flex items-center gap-2">
@@ -337,17 +320,16 @@ export default function OptionEditForm() {
                 <Select
                   value={watchTimeToMin?.toString() ?? ''}
                   onValueChange={(value) => {
-                    if (!value.trim()) return;
-                    const numValue = Number(value);
-                    setValue('timeToMin', value, { shouldValidate: true });
-                    console.log('実際にスタッフが稼働する施術時間を選択:', { value, numValue }); // デバッグ用
+                    if (!value.trim()) return
+                    const numValue = Number(value)
+                    setValue('timeToMin', value, { shouldValidate: true })
+                    console.log('実際にスタッフが稼働する施術時間を選択:', { value, numValue }) // デバッグ用
                   }}
                 >
                   <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
                     <SelectValue placeholder="実際にスタッフが稼働する施術時間を選択" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">選択しない</SelectItem>
                     {getMinuteMultiples(5, 360).map((time) => (
                       <SelectItem key={time} value={time.toString()}>
                         {time}分
@@ -368,17 +350,16 @@ export default function OptionEditForm() {
                 <Select
                   value={watch('ensureTimeToMin')?.toString() ?? ''}
                   onValueChange={(value) => {
-                    if (!value.trim()) return;
-                    const numValue = Number(value);
-                    setValue('ensureTimeToMin', value, { shouldValidate: true });
-                    console.log('待機時間を含めたトータルの施術時間を選択:', { value, numValue }); // デバッグ用
+                    if (!value.trim()) return
+                    const numValue = Number(value)
+                    setValue('ensureTimeToMin', value, { shouldValidate: true })
+                    console.log('待機時間を含めたトータルの施術時間を選択:', { value, numValue }) // デバッグ用
                   }}
                 >
                   <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
                     <SelectValue placeholder="待機時間を含めたトータルの施術時間を選択" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">選択しない</SelectItem>
                     {getMinuteMultiples(5, 360).map((time) => (
                       <SelectItem key={time} value={time.toString()}>
                         {time}分
@@ -394,13 +375,11 @@ export default function OptionEditForm() {
                 )}
               </div>
             </div>
-
-            {/* タグセクションを追加 */}
             <TagInput
               tags={currentTags}
               setTagsAction={(tags) => {
-                setCurrentTags(tags);
-                setValue('tags', tags, { shouldValidate: true });
+                setCurrentTags(tags)
+                setValue('tags', tags, { shouldValidate: true })
               }}
             />
           </div>
@@ -439,7 +418,6 @@ export default function OptionEditForm() {
           />
         </div>
 
-        {/* 送信ボタン */}
         <div className="flex justify-end mt-6 w-full">
           <div className="flex justify-between gap-3 w-full">
             <Button
@@ -504,5 +482,5 @@ export default function OptionEditForm() {
         </AccordionItem>
       </Accordion>
     </div>
-  );
+  )
 }

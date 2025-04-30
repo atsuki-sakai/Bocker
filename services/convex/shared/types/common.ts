@@ -23,6 +23,18 @@ export type DayOfWeek = Infer<typeof dayOfWeekType>;
 export const GENDER_VALUES = ['unselected', 'male', 'female'] as const;
 export const genderType = v.union(...GENDER_VALUES.map((gender) => v.literal(gender)));
 export type Gender = Infer<typeof genderType>;
+export const convertGender = (gender: Gender): string => {
+  switch (gender) {
+    case 'unselected':
+      return '未選択'
+    case 'male':
+      return '男性'
+    case 'female':
+      return '女性'
+    default:
+      return '不明'
+  }
+}
 
 // 対象タイプの型定義
 export const TARGET_VALUES = ['all', 'first', 'repeat'] as const;
