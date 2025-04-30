@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
 // 認証不要なパス
-const publicPaths = ['/', '/api/webhook/clerk', '/api/webhook/stripe', '/reservation/:path*'];
+const publicPaths = ['/', '/api/webhook/clerk', '/api/webhook/stripe', '/reservation', '/reservation/:path*'];
 
 // ngrokの公開URL
 const deployUrl =
@@ -19,6 +19,11 @@ const protectedApiPaths = ['/api/verify-password', '/dashboard/:path*'];
 const isPublicPath = (pathname: string): boolean => {
   // 認証ページも公開パスとして扱う
   if (isAuthPath(pathname)) {
+    return true;
+  }
+
+  // 予約ページの特別処理
+  if (pathname.startsWith('/reservation')) {
     return true;
   }
 
