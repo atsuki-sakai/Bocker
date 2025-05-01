@@ -72,7 +72,7 @@ export const listBySalonId = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true)
     validateMenu(args);
     return await ctx.db
       .query('menu')

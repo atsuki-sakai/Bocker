@@ -56,7 +56,7 @@ export const getRelations = query({
   },
   handler: async (ctx, args) => {
     try {
-      checkAuth(ctx);
+      checkAuth(ctx, true)
       validateRequired(args.id, 'id');
       return await salonService.getSalonRelations(ctx, args.id);
     } catch (error) {

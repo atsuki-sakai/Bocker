@@ -40,18 +40,30 @@ export const convertGender = (gender: Gender): string => {
 export const TARGET_VALUES = ['all', 'first', 'repeat'] as const;
 export const targetType = v.union(...TARGET_VALUES.map((target) => v.literal(target)));
 export type Target = Infer<typeof targetType>;
+export const convertTarget = (target: Target): string => {
+  switch (target) {
+    case 'all':
+      return '全員'
+    case 'first':
+      return '初回'
+    case 'repeat':
+      return 'リピート'
+    default:
+      return '不明'
+  }
+}
 
 // サブスクリプション関連の型定義
-export const BILLING_PERIOD_VALUES = ['monthly', 'yearly'] as const;
+export const BILLING_PERIOD_VALUES = ['monthly', 'yearly'] as const
 export const billingPeriodType = v.union(
   ...BILLING_PERIOD_VALUES.map((period) => v.literal(period))
-);
-export type BillingPeriod = Infer<typeof billingPeriodType>;
+)
+export type BillingPeriod = Infer<typeof billingPeriodType>
 
 // 利用回数の更新タイプの型定義
-export const UPDATE_TYPE_VALUES = ['increment', 'decrement'] as const;
-export const updateType = v.union(...UPDATE_TYPE_VALUES.map((type) => v.literal(type)));
-export type UpdateType = Infer<typeof updateType>;
+export const UPDATE_TYPE_VALUES = ['increment', 'decrement'] as const
+export const updateType = v.union(...UPDATE_TYPE_VALUES.map((type) => v.literal(type)))
+export type UpdateType = Infer<typeof updateType>
 
 // 予約ステータスの型定義
 export const RESERVATION_STATUS_VALUES = [
@@ -60,11 +72,11 @@ export const RESERVATION_STATUS_VALUES = [
   'pending',
   'completed',
   'refunded',
-] as const;
+] as const
 export const reservationStatusType = v.union(
   ...RESERVATION_STATUS_VALUES.map((status) => v.literal(status))
-);
-export type ReservationStatus = Infer<typeof reservationStatusType>;
+)
+export type ReservationStatus = Infer<typeof reservationStatusType>
 
 export const convertReservationStatus = (status: ReservationStatus): string => {
   switch (status) {
@@ -105,7 +117,7 @@ export const staffScheduleType = v.union(
 export type StaffSchedule = Infer<typeof staffScheduleType>
 
 // 支払い方法の型定義
-export const PAYMENT_METHOD_VALUES = ['cash', 'credit_card', 'other'] as const
+export const PAYMENT_METHOD_VALUES = ['cash', 'credit_card', 'all'] as const
 export const paymentMethodType = v.union(
   ...PAYMENT_METHOD_VALUES.map((method) => v.literal(method))
 )
@@ -113,11 +125,11 @@ export type PaymentMethod = Infer<typeof paymentMethodType>
 export const convertPaymentMethod = (method: PaymentMethod): string => {
   switch (method) {
     case 'cash':
-      return '店舗支払い'
+      return '店舗支払いのみ'
     case 'credit_card':
-      return 'クレジットカード'
-    case 'other':
-      return 'その他'
+      return 'クレジットカードのみ'
+    case 'all':
+      return ''
     default:
       return '不明'
   }
