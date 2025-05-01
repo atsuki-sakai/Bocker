@@ -292,7 +292,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
       {/* 選択済みメニュー表示 */}
       {selectedMenus.length > 0 && (
         <div className="mt-4 border-t pt-2">
-          <h3 className="text-xs font-medium mb-2">選択中のメニュー {selectedMenus.length}点</h3>
+          <h3 className="text-sm font-medium mb-2">選択中のメニュー {selectedMenus.length}点</h3>
           <div className="space-y-2">
             {selectedMenus.map((menu) => (
               <div

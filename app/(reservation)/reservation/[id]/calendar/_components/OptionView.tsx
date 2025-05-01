@@ -42,8 +42,8 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
 
   return (
     <div>
-      <h2 className="text-xl">オプションを選択</h2>
-      <p className="text-gray-600 mb-4">
+      <h2 className="text-base">オプションを選択</h2>
+      <p className="text-gray-600 mb-4 text-sm">
         追加オプションがあれば選択してください。複数選択可能です。
       </p>
       <div className="space-y-3">

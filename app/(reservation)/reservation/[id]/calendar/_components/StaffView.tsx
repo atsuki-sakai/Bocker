@@ -58,27 +58,30 @@ export const StaffView = ({ selectedStaff, onChangeStaffAction }: StaffViewProps
 
   return (
     <div>
-      <h2 className="text-xl">スタッフを選択</h2>
-      <p className="text-gray-600 mb-4">
-        担当してほしいスタッフを選択してください。
-      </p>
+      <h2 className="text-base">スタッフを選択</h2>
+      <p className="text-gray-600 mb-4 text-sm">担当してほしいスタッフを選択してください。</p>
       <div className="space-y-3">
         {staffs.map((staff) => (
           <div key={staff._id} className="flex items-center justify-between border rounded-lg p-4">
             <div>
               <p className="font-medium">{staff.name}</p>
-              <p className="text-sm text-gray-500">{staff.role === 'stylist' ? 'スタイリスト' : 'アシスタント'}</p>
+              <p className="text-sm text-gray-500">
+                {staff.role === 'stylist' ? 'スタイリスト' : 'アシスタント'}
+              </p>
             </div>
             <Button
-                variant={selectedStaff?._id === staff._id ? 'default' : 'outline'}
-                onClick={() => {
-                    // スタッフIDに基づいて適切なstaffConfigを取得
-                    const staffConfig = staffsConfig.find((config) => config.staffId === staff._id);
-                    // スタッフとそのコンフィグを親コンポーネントに渡す
-                    onChangeStaffAction(staff as unknown as Doc<'staff'>, staffConfig as unknown as Doc<'staff_config'>);
-                }}
+              variant={selectedStaff?._id === staff._id ? 'default' : 'outline'}
+              onClick={() => {
+                // スタッフIDに基づいて適切なstaffConfigを取得
+                const staffConfig = staffsConfig.find((config) => config.staffId === staff._id)
+                // スタッフとそのコンフィグを親コンポーネントに渡す
+                onChangeStaffAction(
+                  staff as unknown as Doc<'staff'>,
+                  staffConfig as unknown as Doc<'staff_config'>
+                )
+              }}
             >
-                {selectedStaff?._id === staff._id ? '選択中' : '選択する'}
+              {selectedStaff?._id === staff._id ? '選択中' : '選択する'}
             </Button>
           </div>
         ))}
