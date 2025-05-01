@@ -15,7 +15,7 @@ export default function ReservationLink() {
     salon?._id ? { salonId: salon?._id } : 'skip'
   )
 
-  if (!salon) {
+  if (!salon || apiConfig === undefined) {
     return <Loading />
   }
   const baseUrl =
