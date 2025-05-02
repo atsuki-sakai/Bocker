@@ -27,7 +27,7 @@ export default function ReserveRedirectPage() {
   const { liff } = useLiff()
   const router = useRouter()
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
-  const createCompleteFields = useMutation(api.customer.core.mutation.create)
+  const createCompleteFields = useMutation(api.customer.core.mutation.createCompleteFields)
   const updateCustomer = useMutation(api.customer.core.mutation.updateRelatedTables)
 
   useEffect(() => {
