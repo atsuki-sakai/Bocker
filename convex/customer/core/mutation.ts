@@ -334,7 +334,7 @@ export const updateRelatedTables = mutation({
     lastTransactionDate_unix: v.optional(v.number()), // 最終トランザクション日
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx)
+    checkAuth(ctx, true)
     validateCustomer(args)
 
     try {
