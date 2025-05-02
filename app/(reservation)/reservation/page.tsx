@@ -27,8 +27,8 @@ export default function ReserveRedirectPage() {
   const { liff } = useLiff()
   const router = useRouter()
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
-  const createCustomer = useMutation(api.customer.core.mutation.create)
-  const updateCustomer = useMutation(api.customer.core.mutation.update)
+  const createCompleteFields = useMutation(api.customer.core.mutation.create)
+  const updateCustomer = useMutation(api.customer.core.mutation.updateRelatedTables)
 
   useEffect(() => {
     async function initLiff() {
@@ -73,7 +73,7 @@ export default function ReserveRedirectPage() {
 
         const userEmail = liff?.getDecodedIDToken()?.email || ''
         if (!existingCustomer) {
-          await createCustomer({
+          await createCompleteFields({
             salonId: salonId,
             lineId: profile?.userId,
             lineUserName: profile?.displayName || '',
@@ -85,6 +85,7 @@ export default function ReserveRedirectPage() {
         } else {
           await updateCustomer({
             customerId: existingCustomer._id,
+            salonId: salonId,
             lineId: profile?.userId ?? '',
             lineUserName: profile?.displayName || '',
             email: existingCustomer.email || userEmail,
@@ -129,7 +130,7 @@ export default function ReserveRedirectPage() {
     if (liff) {
       initLiff()
     }
-  }, [liff, router, createCustomer, updateCustomer])
+  }, [liff, router, createCompleteFields, updateCustomer])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-50 to-white p-4">

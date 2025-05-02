@@ -34,6 +34,7 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
     // セッションクッキーの取得を試みる
     try {
       const sessionCookie = getCookie(LINE_LOGIN_SESSION_KEY)
+      console.log('sessionCookie', sessionCookie)
       console.log('セッションクッキーの状態:', sessionCookie ? '取得成功' : '取得失敗')
 
       if (sessionCookie) {

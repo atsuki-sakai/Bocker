@@ -20,9 +20,9 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)
-    validateCustomer(args);
+    validateCustomer(args)
     // サロンの存在確認
-    const salon = await ctx.db.get(args.salonId);
+    const salon = await ctx.db.get(args.salonId)
     if (!salon) {
       throw throwConvexError({
         message: '指定されたサロンが存在しません',
@@ -32,21 +32,26 @@ export const create = mutation({
         callFunc: 'customer.create',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
-    // fullNameが指定されていない場合は自動生成
-    const fullName = [args.lastName, args.firstName, args.lineUserName].filter(Boolean).join(' ');
+    const nameParts: string[] = []
+    if (args.lastName?.trim()) nameParts.push(args.lastName.trim())
+    if (args.firstName?.trim()) nameParts.push(args.firstName.trim())
+    if (args.lineUserName?.trim()) nameParts.push(args.lineUserName.trim())
 
-    validateCustomer({ ...args, fullName: fullName });
+    // nameParts が空のときは lineUserName 優先、そうでなければ結合
+    const fullName = nameParts.length > 0 ? nameParts.join(' ') : (args.lineUserName?.trim() ?? '')
+
+    validateCustomer({ ...args, fullName })
     const customerId = await ctx.db.insert('customer', {
       ...args,
-      fullName: fullName,
+      fullName,
       isArchive: false,
-    });
-    return customerId;
+    })
+    return customerId
   },
-});
+})
 
 // 顧客情報の更新
 export const update = mutation({
@@ -64,9 +69,9 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)
-    validateCustomer(args);
+    validateCustomer(args)
     // 顧客の存在確認
-    const customer = await ctx.db.get(args.customerId);
+    const customer = await ctx.db.get(args.customerId)
     if (!customer || customer.isArchive) {
       throw throwConvexError({
         message: '指定された顧客が存在しません',
@@ -76,10 +81,10 @@ export const update = mutation({
         callFunc: 'customer.update',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
-    const updateData = excludeFields(args, ['customerId']);
+    const updateData = excludeFields(args, ['customerId'])
 
     // fullNameを更新
     if (
@@ -88,20 +93,26 @@ export const update = mutation({
       updateData.lineUserName !== undefined
     ) {
       const firstName =
-        updateData.firstName !== undefined ? updateData.firstName : customer.firstName;
-      const lastName = updateData.lastName !== undefined ? updateData.lastName : customer.lastName;
+        updateData.firstName !== undefined ? updateData.firstName : customer.firstName
+      const lastName = updateData.lastName !== undefined ? updateData.lastName : customer.lastName
       const lineUserName =
-        updateData.lineUserName !== undefined ? updateData.lineUserName : customer.lineUserName;
+        updateData.lineUserName !== undefined ? updateData.lineUserName : customer.lineUserName
 
-      const fullName = [lastName, firstName, lineUserName].filter(Boolean).join(' ');
+      const nameParts: string[] = []
+      if (lastName?.trim()) nameParts.push(lastName.trim())
+      if (firstName?.trim()) nameParts.push(firstName.trim())
+      if (lineUserName?.trim()) nameParts.push(lineUserName.trim())
 
-      updateData.fullName = fullName;
+      // nameParts が空のときは lineUserName 優先、そうでなければ結合
+      const fullName = nameParts.length > 0 ? nameParts.join(' ') : (lineUserName?.trim() ?? '')
+
+      updateData.fullName = fullName
     }
 
-    const newCustomerId = await ctx.db.patch(args.customerId, updateData);
-    return newCustomerId;
+    const newCustomerId = await ctx.db.patch(args.customerId, updateData)
+    return newCustomerId
   },
-});
+})
 
 // 顧客の削除
 export const archive = mutation({
