@@ -1,20 +1,20 @@
-import { dayOfWeekType } from './../../../services/convex/shared/types/common';
-import { query } from '@/convex/_generated/server';
-import { v } from 'convex/values';
-import { paginationOptsValidator } from 'convex/server';
-import { validateStaff } from '@/services/convex/shared/utils/validation';
-import { checkAuth } from '@/services/convex/shared/utils/auth';
-import { throwConvexError } from '@/lib/error';
-import { genderType } from '@/services/convex/shared/types/common';
-
+import { dayOfWeekType } from './../../../services/convex/shared/types/common'
+import { query } from '@/convex/_generated/server'
+import { v } from 'convex/values'
+import { paginationOptsValidator } from 'convex/server'
+import { validateStaff } from '@/services/convex/shared/utils/validation'
+import { checkAuth } from '@/services/convex/shared/utils/auth'
+import { throwConvexError } from '@/lib/error'
+import { genderType } from '@/services/convex/shared/types/common'
+import { api } from '@/convex/_generated/api'
 // サロンIDとメールアドレスからスタッフを取得
 export const getById = query({
   args: {
     id: v.id('staff'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    const staff = await ctx.db.get(args.id);
+    checkAuth(ctx)
+    const staff = await ctx.db.get(args.id)
     if (!staff) {
       throw throwConvexError({
         message: '指定されたスタッフが存在しません',
@@ -24,11 +24,11 @@ export const getById = query({
         callFunc: 'staff.core.getById',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
-    return staff;
+    return staff
   },
-});
+})
 
 // サロンIDからスタッフ一覧を取得
 export const getStaffListBySalonId = query({
@@ -39,8 +39,8 @@ export const getStaffListBySalonId = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx, true);
-    validateStaff(args);
+    checkAuth(ctx, true)
+    validateStaff(args)
     return await ctx.db
       .query('staff')
       .withIndex('by_salon_id', (q) =>
@@ -50,9 +50,9 @@ export const getStaffListBySalonId = query({
           .eq('isArchive', args.includeArchive || false)
       )
       .order(args.sort ?? 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 // スタッフ名で検索
 export const getStaffListByName = query({
@@ -63,8 +63,8 @@ export const getStaffListByName = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateStaff(args);
+    checkAuth(ctx)
+    validateStaff(args)
     return await ctx.db
       .query('staff')
       .withIndex('by_name', (q) =>
@@ -74,9 +74,9 @@ export const getStaffListByName = query({
           .eq('isArchive', args.includeArchive || false)
       )
       .order(args.sort ?? 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 // メールアドレスでスタッフを検索
 export const getStaffListByEmail = query({
@@ -87,8 +87,8 @@ export const getStaffListByEmail = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateStaff(args);
+    checkAuth(ctx)
+    validateStaff(args)
     return await ctx.db
       .query('staff')
       .withIndex('by_email', (q) =>
@@ -98,9 +98,9 @@ export const getStaffListByEmail = query({
           .eq('isArchive', args.includeArchive || false)
       )
       .order(args.sort ?? 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 // サロンIDとスタッフ名でスタッフを検索
 export const getStaffListBySalonIdAndName = query({
@@ -112,8 +112,8 @@ export const getStaffListBySalonIdAndName = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateStaff(args);
+    checkAuth(ctx)
+    validateStaff(args)
     return await ctx.db
       .query('staff')
       .withIndex('by_salon_id_name', (q) =>
@@ -124,9 +124,9 @@ export const getStaffListBySalonIdAndName = query({
           .eq('isArchive', args.includeArchive || false)
       )
       .order(args.sort ?? 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 // サロンIDとメールアドレスでスタッフを検索
 export const getBySalonIdAndEmail = query({
@@ -138,8 +138,8 @@ export const getBySalonIdAndEmail = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateStaff(args);
+    checkAuth(ctx)
+    validateStaff(args)
     return await ctx.db
       .query('staff')
       .withIndex('by_salon_id_email', (q) =>
@@ -150,9 +150,9 @@ export const getBySalonIdAndEmail = query({
           .eq('isArchive', args.includeArchive || false)
       )
       .order(args.sort ?? 'desc')
-      .paginate(args.paginationOpts);
+      .paginate(args.paginationOpts)
   },
-});
+})
 
 // 関連するテーブルの取得
 export const getRelatedTables = query({
@@ -162,10 +162,10 @@ export const getRelatedTables = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateStaff(args);
+    checkAuth(ctx)
+    validateStaff(args)
     // staffの取得にもisArchiveチェックを追加
-    const staff = await ctx.db.get(args.staffId);
+    const staff = await ctx.db.get(args.staffId)
     if (!staff) {
       throw throwConvexError({
         message: '指定されたスタッフが存在しません',
@@ -175,7 +175,7 @@ export const getRelatedTables = query({
         callFunc: 'staff.core.getRelatedTables',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
     // 残りのデータを並列で取得
@@ -192,7 +192,7 @@ export const getRelatedTables = query({
           q.eq('staffId', args.staffId).eq('isArchive', args.includeArchive || false)
         )
         .first(),
-    ]);
+    ])
 
     if (!staffConfig) {
       throw throwConvexError({
@@ -203,7 +203,7 @@ export const getRelatedTables = query({
         callFunc: 'staff.core.getRelatedTables',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
     if (!staffAuth) {
@@ -215,7 +215,7 @@ export const getRelatedTables = query({
         callFunc: 'staff.core.getRelatedTables',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
     return {
@@ -224,6 +224,7 @@ export const getRelatedTables = query({
       name: staff.name,
       age: staff.age,
       email: staff.email,
+      instagramLink: staff.instagramLink,
       gender: staff.gender,
       description: staff.description,
       imgPath: staff.imgPath,
@@ -236,9 +237,9 @@ export const getRelatedTables = query({
       priority: staffConfig.priority,
       pinCode: staffAuth.pinCode,
       _creationTime: staff._creationTime,
-    };
+    }
   },
-});
+})
 
 export const findAvailableStaffByMenu = query({
   args: {
@@ -265,27 +266,27 @@ export const findAvailableStaffByMenu = query({
       .withIndex('by_salon_id', (q) =>
         q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
       )
-      .collect();
+      .collect()
     // 2. 除外スタッフ取得
     const exclusions = await ctx.db
       .query('menu_exclusion_staff')
       .withIndex('by_salon_menu_id', (q) =>
         q.eq('salonId', args.salonId).eq('menuId', args.menuId).eq('isArchive', false)
       )
-      .collect();
-    const excludedIds = new Set(exclusions.map((r) => r.staffId));
+      .collect()
+    const excludedIds = new Set(exclusions.map((r) => r.staffId))
     // 3. 有効スタッフフィルタ
-    const availableStaff = allStaff.filter((staff) => !excludedIds.has(staff._id));
+    const availableStaff = allStaff.filter((staff) => !excludedIds.has(staff._id))
     // 4. 一度に staff_config を取得し、マッピング
     const configs = await ctx.db
       .query('staff_config')
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
-      .collect();
-    const configMap = new Map(configs.map((config) => [config.staffId, config]));
+      .collect()
+    const configMap = new Map(configs.map((config) => [config.staffId, config]))
 
     // 5. 結果作成
     const result = availableStaff.map((staff) => {
-      const config = configMap.get(staff._id);
+      const config = configMap.get(staff._id)
       return {
         _id: staff._id,
         name: staff.name,
@@ -296,11 +297,11 @@ export const findAvailableStaffByMenu = query({
         imgPath: staff.imgPath,
         extraCharge: config?.extraCharge,
         priority: config?.priority,
-      };
-    });
-    return result;
+      }
+    })
+    return result
   },
-});
+})
 
 export const findSchedule = query({
   args: {
@@ -309,14 +310,14 @@ export const findSchedule = query({
     dayOfWeek: v.optional(dayOfWeekType),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx, true);
-    validateStaff(args);
+    checkAuth(ctx, true)
+    validateStaff(args)
     const staffSchedules = await ctx.db
       .query('staff_schedule')
       .withIndex('by_salon_staff_id', (q) =>
         q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
       )
-      .collect();
+      .collect()
     const weekSchedule = await ctx.db
       .query('staff_week_schedule')
       .withIndex('by_salon_id_staff_id_day_of_week', (q) =>
@@ -326,7 +327,7 @@ export const findSchedule = query({
           .eq('dayOfWeek', args.dayOfWeek)
           .eq('isArchive', false)
       )
-      .first();
+      .first()
     return {
       schedules: staffSchedules
         .sort((a, b) => (a.startTime_unix ?? 0) - (b.startTime_unix ?? 0))
@@ -343,6 +344,45 @@ export const findSchedule = query({
         startHour: weekSchedule?.startHour,
         endHour: weekSchedule?.endHour,
       },
-    };
+    }
   },
-});
+})
+
+export const listDisplayData = query({
+  args: {
+    salonId: v.id('salon'),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx, true)
+    validateStaff(args)
+
+    const staffs = await ctx.db
+      .query('staff')
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
+      )
+      .collect()
+
+    const staffConfigs = await ctx.db
+      .query('staff_config')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .collect()
+
+    return staffs.map((staff) => ({
+      _id: staff._id,
+      name: staff.name,
+      age: staff.age,
+      email: staff.email,
+      instagramLink: staff.instagramLink,
+      gender: staff.gender,
+      description: staff.description,
+      imgPath: staff.imgPath,
+      isActive: staff.isActive,
+      tags: staff.tags,
+      _creationTime: staff._creationTime,
+      extraCharge: staffConfigs.find((config) => config.staffId === staff._id)?.extraCharge,
+      priority: staffConfigs.find((config) => config.staffId === staff._id)?.priority,
+      featuredHairimgPath: staff.featuredHairimgPath,
+    }))
+  },
+})

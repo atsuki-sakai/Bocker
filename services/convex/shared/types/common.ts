@@ -26,7 +26,7 @@ export type Gender = Infer<typeof genderType>;
 export const convertGender = (gender: Gender): string => {
   switch (gender) {
     case 'unselected':
-      return '未選択'
+      return ''
     case 'male':
       return '男性'
     case 'female':
@@ -37,9 +37,9 @@ export const convertGender = (gender: Gender): string => {
 }
 
 // 対象タイプの型定義
-export const TARGET_VALUES = ['all', 'first', 'repeat'] as const;
-export const targetType = v.union(...TARGET_VALUES.map((target) => v.literal(target)));
-export type Target = Infer<typeof targetType>;
+export const TARGET_VALUES = ['all', 'first', 'repeat'] as const
+export const targetType = v.union(...TARGET_VALUES.map((target) => v.literal(target)))
+export type Target = Infer<typeof targetType>
 export const convertTarget = (target: Target): string => {
   switch (target) {
     case 'all':
@@ -129,7 +129,7 @@ export const convertPaymentMethod = (method: PaymentMethod): string => {
     case 'credit_card':
       return 'クレジットカードのみ'
     case 'all':
-      return ''
+      return '店舗・クレジットカード'
     default:
       return '不明'
   }

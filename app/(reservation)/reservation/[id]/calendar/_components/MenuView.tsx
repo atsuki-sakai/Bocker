@@ -1,5 +1,3 @@
-
-
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
@@ -7,38 +5,45 @@ import { api } from '@/convex/_generated/api'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Label
-} from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 import { usePaginatedQuery } from 'convex/react'
 import { convertPaymentMethod, MenuCategory } from '@/services/convex/shared/types/common'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Clock } from 'lucide-react'
-import { convertGender, convertTarget, Gender, Target, PaymentMethod } from '@/services/convex/shared/types/common'
- 
+import {
+  convertGender,
+  convertTarget,
+  Gender,
+  Target,
+  PaymentMethod,
+} from '@/services/convex/shared/types/common'
+
 interface MenuViewProps {
-  salonId: Id<'salon'>,
-  selectedMenuIds: Id<'menu'>[] | null,
-  onChangeMenusAction: (menus: Doc<'menu'>[]) => void,
+  salonId: Id<'salon'>
+  selectedMenuIds: Id<'menu'>[] | null
+  onChangeMenusAction: (menus: Doc<'menu'>[]) => void
 }
 
 export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: MenuViewProps) => {
   // STATES
   const [currentCategory, setCurrentCategory] = useState<MenuCategory | null>(null)
-  const [showMenuDetails, setShowMenuDetails] = useState<boolean>(false);
+  const [showMenuDetails, setShowMenuDetails] = useState<boolean>(false)
   const [selectedMenu, setSelectedMenu] = useState<Doc<'menu'> | null>(null)
   // カテゴリごとに1つのメニューを管理するためのマップ
-  const [selectedMenuMap, setSelectedMenuMap] = useState<Partial<Record<MenuCategory, Doc<'menu'>>>>({})
+  const [selectedMenuMap, setSelectedMenuMap] = useState<
+    Partial<Record<MenuCategory, Doc<'menu'>>>
+  >({})
 
   // 選択されたメニューの配列を取得するための計算プロパティ
   const selectedMenus = useMemo(() => {
@@ -95,13 +100,13 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   // カテゴリに基づいてメニューをフィルタリング
   const getMenusByCategory = (category: MenuCategory | null): Doc<'menu'>[] => {
     if (!category || !menus) return []
-    
+
     if (category === 'その他') {
       // 「その他」カテゴリの場合、カテゴリがないメニューを返す
-      return menus.filter(menu => !menu.category || menu.category === 'その他')
+      return menus.filter((menu) => !menu.category || menu.category === 'その他')
     }
-    
-    return menus.filter(menu => menu.category === category)
+
+    return menus.filter((menu) => menu.category === category)
   }
 
   // カテゴリ変更時の処理
@@ -113,9 +118,9 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   const handleMenuSelect = (menu: Doc<'menu'>) => {
     // カテゴリがない場合は「その他」として扱う
     const menuCategory = menu.category || 'その他'
-    
+
     const newSelectedMenuMap = { ...selectedMenuMap }
-    
+
     // 既に同じメニューが選択されている場合は選択解除
     if (selectedMenuMap[menuCategory]?._id === menu._id) {
       delete newSelectedMenuMap[menuCategory]
@@ -123,16 +128,16 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
       // 同じカテゴリの別のメニューが選択された場合は置き換え
       newSelectedMenuMap[menuCategory] = menu
     }
-    
+
     setSelectedMenuMap(newSelectedMenuMap)
     // 選択されたメニューの配列を親コンポーネントに渡す
     onChangeMenusAction(Object.values(newSelectedMenuMap))
   }
 
   const handleShowMenuDetails = (menu: Doc<'menu'>) => {
-    console.log('handleShowMenuDetails が呼ばれました', menu.name); // デバッグ用
-    setSelectedMenu(menu);
-    setShowMenuDetails(true);
+    console.log('handleShowMenuDetails が呼ばれました', menu.name) // デバッグ用
+    setSelectedMenu(menu)
+    setShowMenuDetails(true)
   }
 
   // 初期メニュー選択の設定
@@ -140,15 +145,15 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
     if (selectedMenuIds && selectedMenuIds.length > 0 && menus) {
       // IDからメニューオブジェクトを取得
       const menuMap: Partial<Record<MenuCategory, Doc<'menu'>>> = {}
-      
-      selectedMenuIds.forEach(menuId => {
-        const menu = menus.find(m => m._id === menuId)
+
+      selectedMenuIds.forEach((menuId) => {
+        const menu = menus.find((m) => m._id === menuId)
         if (menu) {
           const category = menu.category || 'その他'
           menuMap[category] = menu
         }
       })
-      
+
       setSelectedMenuMap(menuMap)
     }
   }, [selectedMenuIds, menus])
@@ -328,11 +333,10 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
       <Dialog
         open={showMenuDetails}
         onOpenChange={(open) => {
-          console.log('Dialog onOpenChange:', open) // デバッグ用
           setShowMenuDetails(open)
         }}
       >
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-h-[90vh] w-[90vw] md:max-w-[500px] overflow-y-auto">
           {selectedMenu && (
             <>
               <DialogHeader>
@@ -343,14 +347,15 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                   {convertGender(selectedMenu.targetGender as Gender)}
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-4 py-2">
                 {selectedMenu.imgPath && (
-                  <div className="relative h-40 w-full rounded-md overflow-hidden bg-gray-100">
+                  <div className="relative h-60 w-full rounded-md overflow-hidden bg-gray-100">
                     <Image
                       src={selectedMenu.imgPath}
                       alt={selectedMenu.name || ''}
                       fill
-                      className="object-cover"
+                      sizes="(max-width: 42rem) 100vw, 42rem"
+                      className="object-cover h-60 w-full aspect-square"
                     />
                   </div>
                 )}
@@ -383,7 +388,9 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                 {selectedMenu.description && (
                   <div className="mt-2">
                     <Label className="text-sm font-medium">説明</Label>
-                    <p className="text-sm mt-1">{selectedMenu.description}</p>
+                    <p className="text-sm mt-1 w-full whitespace-normal break-all bg-slate-50 p-1 rounded-md">
+                      {selectedMenu.description}
+                    </p>
                   </div>
                 )}
 
@@ -404,13 +411,16 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                 )}
 
                 <div className="mt-2">
-                  <Label className="text-sm font-medium">支払い方法</Label>
-                  <p className="text-sm mt-1">
+                  <Label className="text-xs font-medium">支払い方法</Label>
+                  <p className="text-xs tracking-wide w-fit mt-1 bg-blue-50 border border-blue-500 rounded-md p-1 text-blue-600">
                     {convertPaymentMethod(selectedMenu.paymentMethod as PaymentMethod)}
                   </p>
                 </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="flex flex-row justify-between items-center">
+                <DialogClose asChild>
+                  <Button variant="outline">閉じる</Button>
+                </DialogClose>
                 <Button
                   onClick={() => {
                     handleMenuSelect(selectedMenu)

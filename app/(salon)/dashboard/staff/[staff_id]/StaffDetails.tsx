@@ -1,24 +1,24 @@
 'use client';
 
-import Image from 'next/image';
-import React, { useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { useQuery, useMutation, useAction } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { Id } from '@/convex/_generated/dataModel';
-import { useSalon } from '@/hooks/useSalon';
-import { Loading } from '@/components/common';
-import { useState } from 'react';
-import { Dialog } from '@/components/common';
-import Link from 'next/link';
-
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
-import { handleErrorToMsg } from '@/lib/error';
-import { decryptString } from '@/lib/utils';
+import Link from 'next/link'
+import Image from 'next/image'
+import React, { useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import { useQuery, useMutation, useAction } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Id } from '@/convex/_generated/dataModel'
+import { useSalon } from '@/hooks/useSalon'
+import { Loading } from '@/components/common'
+import { useState } from 'react'
+import { Dialog } from '@/components/common'
+import { Instagram } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
+import { handleErrorToMsg } from '@/lib/error'
+import { decryptString } from '@/lib/utils'
 
 // アイコン
 import {
@@ -33,17 +33,17 @@ import {
   Copy,
   Eye,
   EyeOff,
-} from 'lucide-react';
-import { MAX_PRIORITY } from '@/services/convex/constants';
+} from 'lucide-react'
+import { MAX_PRIORITY } from '@/services/convex/constants'
 
 export default function StaffDetails() {
-  const { staff_id } = useParams();
-  const { salon } = useSalon();
-  const router = useRouter();
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [decryptedPinCode, setDecryptedPinCode] = useState('');
-  const [showPinCode, setShowPinCode] = useState(false);
+  const { staff_id } = useParams()
+  const { salon } = useSalon()
+  const router = useRouter()
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [decryptedPinCode, setDecryptedPinCode] = useState('')
+  const [showPinCode, setShowPinCode] = useState(false)
 
   // メモ化されたクエリを使用してパフォーマンス向上
   const staffAllData = useQuery(
@@ -51,7 +51,7 @@ export default function StaffDetails() {
     salon?._id && staff_id && !isDeleting
       ? { salonId: salon?._id, staffId: staff_id as Id<'staff'> }
       : 'skip'
-  );
+  )
 
   const exclusionMenus = useQuery(
     api.menu.menu_exclusion_staff.query.listBySalonAndStaffId,
@@ -61,81 +61,81 @@ export default function StaffDetails() {
           staffId: staff_id as Id<'staff'>,
         }
       : 'skip'
-  );
+  )
 
-  const staffKill = useMutation(api.staff.core.mutation.killRelatedTables);
-  const deleteImage = useAction(api.storage.action.kill);
+  const staffKill = useMutation(api.staff.core.mutation.killRelatedTables)
+  const deleteImage = useAction(api.storage.action.kill)
 
   useEffect(() => {
     const asyncDecryptPinCode = async () => {
       if (staffAllData?.pinCode) {
         setDecryptedPinCode(
           await decryptString(staffAllData.pinCode, process.env.NEXT_PUBLIC_ENCRYPTION_SECRET_KEY!)
-        );
+        )
       }
-    };
-    asyncDecryptPinCode();
-  }, [staffAllData]);
+    }
+    asyncDecryptPinCode()
+  }, [staffAllData])
 
-  if (!staffAllData) return <Loading />;
+  if (!staffAllData) return <Loading />
 
   // アバターの頭文字を取得
   const getInitials = (name: string) => {
-    return name ? name.substring(0, 2).toUpperCase() : 'ST';
-  };
+    return name ? name.substring(0, 2).toUpperCase() : 'ST'
+  }
 
   // 性別を日本語で表示
   const getGenderText = (gender: string) => {
-    return gender === 'male' ? '男性' : gender === 'female' ? '女性' : '未選択';
-  };
+    return gender === 'male' ? '男性' : gender === 'female' ? '女性' : '未選択'
+  }
 
   // roleをわかりやすい表示に変換
   const getRoleDisplay = (role: string) => {
     switch (role) {
       case 'staff':
-        return 'スタッフ権限';
+        return 'スタッフ権限'
       case 'manager':
-        return 'マネージャー権限';
+        return 'マネージャー権限'
       case 'owner':
-        return 'オーナー権限';
+        return 'オーナー権限'
       default:
-        return role;
+        return role
     }
-  };
+  }
 
   const handleShowPinCode = () => {
-    setShowPinCode(!showPinCode);
-  };
+    setShowPinCode(!showPinCode)
+  }
 
   const handleShowDeleteDialog = () => {
-    setIsDeleteDialogOpen(true);
-  };
+    setIsDeleteDialogOpen(true)
+  }
 
   const handleDeleteStaff = async () => {
     try {
       // 削除処理中フラグを立てて、クエリの実行を停止
-      setIsDeleting(true);
+      setIsDeleting(true)
 
       if (staffAllData?.imgPath) {
         await deleteImage({
           imgUrl: staffAllData.imgPath,
-        });
+        })
       }
       if (staffAllData) {
         await staffKill({
           staffId: staff_id as Id<'staff'>,
           staffConfigId: staffAllData.staffConfigId,
           staffAuthId: staffAllData.staffAuthId,
-        });
+        })
       }
-      toast.success('スタッフを削除しました');
-      router.push('/dashboard/staff');
+      toast.success('スタッフを削除しました')
+      router.push('/dashboard/staff')
     } catch (error) {
       // エラーが発生した場合は削除処理中フラグを元に戻す
-      setIsDeleting(false);
-      toast.error(handleErrorToMsg(error));
+      setIsDeleting(false)
+      toast.error(handleErrorToMsg(error))
     }
-  };
+  }
 
   return (
     <div className="pb-8">
@@ -196,6 +196,18 @@ export default function StaffDetails() {
                     </div>
                   </div>
                 </div>
+
+                {staffAllData.instagramLink && (
+                  <div className="mt-4 w-full flex justify-end items-center">
+                    <Link
+                      href={staffAllData.instagramLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Instagram className="h-6 w-6 mr-5 text-pink-500" />
+                    </Link>
+                  </div>
+                )}
 
                 <span className="text-xs text-slate-500">スタッフ紹介</span>
                 <p className=" text-slate-600  mb-5  border-slate-100">
@@ -278,7 +290,7 @@ export default function StaffDetails() {
                             size="icon"
                             className=" scale-75"
                             onClick={() => {
-                              navigator.clipboard.writeText(decryptedPinCode);
+                              navigator.clipboard.writeText(decryptedPinCode)
                             }}
                           >
                             <Copy className="h-4 w-4" />
@@ -359,5 +371,5 @@ export default function StaffDetails() {
         onConfirmAction={handleDeleteStaff}
       />
     </div>
-  );
+  )
 }

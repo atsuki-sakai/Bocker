@@ -11,6 +11,7 @@ import { MenuView, StaffView, OptionView, DateView, PaymentView, PointView } fro
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check } from 'lucide-react'
+import type { StaffDisplay } from './_components/StaffView.tsx'
 
 // 予約ステップの定義
 type ReservationStep = 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'point'
@@ -63,8 +64,7 @@ export default function CalendarPage() {
   } | null>(null)
   const [selectedMenus, setSelectedMenus] = useState<Doc<'menu'>[]>([])
   const [selectedStaffCompleted, setSelectedStaffCompleted] = useState<{
-    staff: Doc<'staff'>
-    staff_config: Doc<'staff_config'>
+    staff: StaffDisplay | null
   } | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<Doc<'salon_option'>[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -186,6 +186,13 @@ export default function CalendarPage() {
       0
     )
     return menuTotal + optionTotal
+  }
+
+  const calculateTotalMinutes = () => {
+    const totalMinutes = selectedMenus.reduce((sum, menu) => {
+      return sum + (menu.ensureTimeToMin || menu.timeToMin || 0)
+    }, 0)
+    return totalMinutes
   }
 
   // ステップインジケーターのレンダリング
@@ -323,9 +330,9 @@ export default function CalendarPage() {
                   >
                     <StaffView
                       selectedStaff={selectedStaffCompleted?.staff as Doc<'staff'> | null}
-                      onChangeStaffAction={(staff, staff_config) => {
-                        if (staff && staff_config) {
-                          setSelectedStaffCompleted({ staff, staff_config })
+                      onChangeStaffAction={(staff) => {
+                        if (staff) {
+                          setSelectedStaffCompleted({ staff })
                         }
                       }}
                     />
@@ -440,10 +447,7 @@ export default function CalendarPage() {
                     <PointView
                       selectedMenus={selectedMenus}
                       selectedOptions={selectedOptions}
-                      selectedStaff={selectedStaffCompleted?.staff as Doc<'staff'> | null}
-                      selectedStaffConfig={
-                        selectedStaffCompleted?.staff_config as Doc<'staff_config'> | null
-                      }
+                      selectedStaff={selectedStaffCompleted?.staff as StaffDisplay | null}
                       totalAmount={calculateTotal()}
                       availablePoints={availablePoints ?? 1000}
                       usePoints={usePoints}
@@ -481,7 +485,7 @@ export default function CalendarPage() {
 
       {(selectedMenus.length > 0 || selectedStaffCompleted || selectedOptions.length > 0) && (
         <motion.div
-          className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-md"
+          className="fixed bottom-0 left-0 right-0 z-20 p-4 bg-white border-t shadow-md"
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
@@ -505,7 +509,16 @@ export default function CalendarPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
               >
-                合計: ¥{calculateTotal().toLocaleString()}
+                合計: ¥{calculateTotal().toLocaleString()} / {calculateTotalMinutes()}分
+              </motion.p>
+
+              <motion.p
+                className="text-sm text-gray-600"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                利用可能ポイント: {availablePoints?.toLocaleString()}点
               </motion.p>
             </div>
             <div className="flex space-x-2">

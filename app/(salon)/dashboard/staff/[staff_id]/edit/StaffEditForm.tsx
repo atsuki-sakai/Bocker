@@ -48,17 +48,19 @@ import {
   Check,
   X,
   Image as ImageIcon,
+  Instagram,
   Trash,
   Lock,
   Shuffle,
   Copy,
-} from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useMemo } from 'react';
-import { Loader2 } from 'lucide-react';
+} from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useMemo } from 'react'
+import { Loader2 } from 'lucide-react'
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
+  instagramLink: z.string().url({ message: 'URLが不正です' }).optional(),
   pinCode: z
     .string()
     .min(6, { message: 'ピンコードは6文字で入力してください' })
@@ -66,8 +68,8 @@ const staffAddSchema = z.object({
     .optional()
     .refine(
       (val) => {
-        if (val === null || val === undefined) return true;
-        return /^[A-Za-z0-9]+$/.test(val);
+        if (val === null || val === undefined) return true
+        return /^[A-Za-z0-9]+$/.test(val)
       },
       {
         message: 'ピンコードは英大文字、英小文字、数字を含む6文字で入力してください',
@@ -78,10 +80,10 @@ const staffAddSchema = z.object({
   age: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null;
+      if (val === '' || val === null || val === undefined) return null
       // 数値に変換できない場合もnullを返す
-      const num = Number(val);
-      return isNaN(num) ? null : num;
+      const num = Number(val)
+      return isNaN(num) ? null : num
     },
     z.number().max(99, { message: '年齢は99以下で入力してください' }).nullable().optional()
   ),
@@ -93,10 +95,10 @@ const staffAddSchema = z.object({
   extraCharge: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null;
+      if (val === '' || val === null || val === undefined) return null
       // 数値に変換できない場合もnullを返す
-      const num = Number(val);
-      return isNaN(num) ? null : num;
+      const num = Number(val)
+      return isNaN(num) ? null : num
     },
     z
       .number()
@@ -107,10 +109,10 @@ const staffAddSchema = z.object({
   priority: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null;
+      if (val === '' || val === null || val === undefined) return null
       // 数値に変換できない場合もnullを返す
-      const num = Number(val);
-      return isNaN(num) ? null : num;
+      const num = Number(val)
+      return isNaN(num) ? null : num
     },
     z.number().max(999, { message: '優先度は999以下で入力してください' }).nullable().optional()
   ),
@@ -132,39 +134,39 @@ const staffAddSchema = z.object({
       .optional()
   ),
   exclusionMenuIds: z.array(z.string()).optional(),
-});
+})
 
 export default function StaffEditForm() {
-  const router = useRouter();
-  const { staff_id } = useParams();
-  const { salon } = useSalon();
-  const [selectedExclusionMenuIds, setSelectedExclusionMenuIds] = useState<Id<'menu'>[]>([]);
-  const [exclusionInitialized, setExclusionInitialized] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDeletingImage, setIsDeletingImage] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [currentTags, setCurrentTags] = useState<string[]>([]);
+  const router = useRouter()
+  const { staff_id } = useParams()
+  const { salon } = useSalon()
+  const [selectedExclusionMenuIds, setSelectedExclusionMenuIds] = useState<Id<'menu'>[]>([])
+  const [exclusionInitialized, setExclusionInitialized] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isDeletingImage, setIsDeletingImage] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [currentTags, setCurrentTags] = useState<string[]>([])
 
-  const uploadImage = useAction(api.storage.action.upload);
-  const deleteImage = useAction(api.storage.action.kill);
-  const updateRole = useMutation(api.staff.auth.mutation.update);
-
-  // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
-  const staffUpsert = useMutation(api.staff.core.mutation.upsert);
-  const staffConfigUpsert = useMutation(api.staff.config.mutation.upsert);
-  const staffAuthUpsert = useMutation(api.staff.auth.mutation.upsert);
-  const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert);
+  const uploadImage = useAction(api.storage.action.upload)
+  const deleteImage = useAction(api.storage.action.kill)
+  const updateRole = useMutation(api.staff.auth.mutation.update)
 
   // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
-  const staffKill = useMutation(api.staff.core.mutation.killRelatedTables);
-  const removeImgPath = useMutation(api.staff.core.mutation.removeImgPath);
+  const staffUpsert = useMutation(api.staff.core.mutation.upsert)
+  const staffConfigUpsert = useMutation(api.staff.config.mutation.upsert)
+  const staffAuthUpsert = useMutation(api.staff.auth.mutation.upsert)
+  const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert)
+
+  // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
+  const staffKill = useMutation(api.staff.core.mutation.killRelatedTables)
+  const removeImgPath = useMutation(api.staff.core.mutation.removeImgPath)
 
   // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
   const exclusionMenus = useQuery(
     api.menu.menu_exclusion_staff.query.listBySalonAndStaffId,
     salon?._id && staff_id ? { salonId: salon._id, staffId: staff_id as Id<'staff'> } : 'skip'
-  );
+  )
   const staffAllData = useQuery(
     api.staff.core.query.getRelatedTables,
     salon?._id
@@ -173,11 +175,11 @@ export default function StaffEditForm() {
           salonId: salon._id,
         }
       : 'skip'
-  );
+  )
 
   const initialExclusionMenus = useMemo(() => {
-    return exclusionMenus ? [...exclusionMenus].sort() : [];
-  }, [exclusionMenus]);
+    return exclusionMenus ? [...exclusionMenus].sort() : []
+  }, [exclusionMenus])
 
   const {
     register,
@@ -186,46 +188,46 @@ export default function StaffEditForm() {
     setValue,
     formState: { isSubmitting, errors, isDirty },
     watch,
-  } = useZodForm(staffAddSchema);
+  } = useZodForm(staffAddSchema)
 
   const handleGeneratePinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    const pinCode = generatePinCode();
-    setValue('pinCode', pinCode, { shouldDirty: true });
-  };
+    e.preventDefault()
+    const pinCode = generatePinCode()
+    setValue('pinCode', pinCode, { shouldDirty: true })
+  }
 
   const handleCopyPinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    const pinCode = watch('pinCode');
+    e.preventDefault()
+    const pinCode = watch('pinCode')
     if (pinCode) {
-      navigator.clipboard.writeText(pinCode);
+      navigator.clipboard.writeText(pinCode)
     }
-  };
+  }
 
   const onSubmit = async (data: z.infer<typeof staffAddSchema>) => {
-    setIsLoading(true);
-    let uploadImageUrl: string | null = null;
-    let staffId: Id<'staff'> | null = null;
-    let staffConfigId: Id<'staff_config'> | null = null;
-    let staffAuthId: Id<'staff_auth'> | null = null;
+    setIsLoading(true)
+    let uploadImageUrl: string | null = null
+    let staffId: Id<'staff'> | null = null
+    let staffConfigId: Id<'staff_config'> | null = null
+    let staffAuthId: Id<'staff_auth'> | null = null
 
     try {
       if (!salon) {
-        toast.error('店舗が見つかりません');
-        return;
+        toast.error('店舗が見つかりません')
+        return
       }
 
       if (selectedFile) {
-        const compressed = await compressAndConvertToWebP(selectedFile);
-        const base64 = await fileToBase64(compressed);
-        const filePath = `${Date.now()}-${selectedFile.name}`;
+        const compressed = await compressAndConvertToWebP(selectedFile)
+        const base64 = await fileToBase64(compressed)
+        const filePath = `${Date.now()}-${selectedFile.name}`
         const uploadResult = await uploadImage({
           base64Data: base64,
           contentType: 'image/webp',
           directory: 'staff',
           filePath: filePath,
-        });
-        uploadImageUrl = uploadResult.publicUrl;
+        })
+        uploadImageUrl = uploadResult.publicUrl
       }
 
       // スタッフの基本情報を追加
@@ -235,12 +237,13 @@ export default function StaffEditForm() {
         name: data.name,
         age: data.age ?? undefined,
         email: data.email,
+        instagramLink: data.instagramLink ?? undefined,
         gender: data.gender,
         description: data.description,
         imgPath: uploadImageUrl ?? undefined,
         isActive: data.isActive,
         tags: data.tags,
-      });
+      })
 
       try {
         // スタッフの設定情報を追加
@@ -250,19 +253,19 @@ export default function StaffEditForm() {
           salonId: salon._id,
           extraCharge: data.extraCharge ?? undefined,
           priority: data.priority ?? undefined,
-        });
+        })
 
         // スタッフの認証情報を追加
         const encryptedPinCode = await encryptString(
           data.pinCode ?? '',
           process.env.NEXT_PUBLIC_ENCRYPTION_SECRET_KEY!
-        );
+        )
         staffAuthId = await staffAuthUpsert({
           staffAuthId: staffAllData?.staffAuthId as Id<'staff_auth'>,
           staffId: staff_id as Id<'staff'>,
           role: data.role,
           pinCode: encryptedPinCode,
-        });
+        })
 
         // 除外メニューを更新
 
@@ -270,19 +273,19 @@ export default function StaffEditForm() {
           salonId: salon._id,
           staffId: staff_id as Id<'staff'>,
           selectedMenuIds: selectedExclusionMenuIds,
-        });
+        })
 
         if (staffAllData && data.role !== staffAllData?.role) {
           await updateRole({
             staffAuthId: staffAllData.staffAuthId as Id<'staff_auth'>,
             role: data.role,
-          });
+          })
         }
 
         toast.success('スタッフを更新しました', {
           icon: <Check className="h-4 w-4 text-green-500" />,
-        });
-        router.push('/dashboard/staff');
+        })
+        router.push('/dashboard/staff')
       } catch (configAuthError) {
         // スタッフ設定または認証の保存に失敗した場合、作成したスタッフを削除
         if (staffId && staffConfigId && staffAuthId) {
@@ -291,12 +294,12 @@ export default function StaffEditForm() {
               staffId: staffId,
               staffConfigId: staffConfigId,
               staffAuthId: staffAuthId,
-            });
+            })
           } catch (cleanupError) {
-            console.error('スタッフ削除中にエラーが発生しました:', cleanupError);
+            console.error('スタッフ削除中にエラーが発生しました:', cleanupError)
           }
         }
-        throw configAuthError; // 元のエラーを再スロー
+        throw configAuthError // 元のエラーを再スロー
       }
     } catch (error: unknown) {
       // エラー発生時のクリーンアップ
@@ -304,9 +307,9 @@ export default function StaffEditForm() {
         try {
           await deleteImage({
             imgUrl: uploadImageUrl,
-          });
+          })
         } catch (deleteError) {
-          console.error('画像削除中にエラーが発生しました:', deleteError);
+          console.error('画像削除中にエラーが発生しました:', deleteError)
         }
       }
 
@@ -318,77 +321,78 @@ export default function StaffEditForm() {
               staffId: staffId,
               staffConfigId: staffConfigId,
               staffAuthId: staffAuthId,
-            });
+            })
           }
         } catch (killError) {
-          console.error('スタッフ削除中にエラーが発生しました:', killError);
+          console.error('スタッフ削除中にエラーが発生しました:', killError)
         }
       }
 
       toast.error(handleErrorToMsg(error), {
         icon: <X className="h-4 w-4 text-red-500" />,
-      });
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleShowDeleteDialog = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setShowDeleteDialog(true);
-  };
+    e.preventDefault()
+    setShowDeleteDialog(true)
+  }
 
   const handleDeleteImage = async () => {
-    setIsDeletingImage(true);
-    setShowDeleteDialog(false);
+    setIsDeletingImage(true)
+    setShowDeleteDialog(false)
     try {
       if (staffAllData?.imgPath && salon) {
         await deleteImage({
           imgUrl: staffAllData?.imgPath,
-        });
+        })
         await removeImgPath({
           staffId: staff_id as Id<'staff'>,
-        });
+        })
         toast.success('画像を削除しました', {
           icon: <Check className="h-4 w-4 text-green-500" />,
-        });
-        router.push('/dashboard/staff');
+        })
+        router.push('/dashboard/staff')
       }
     } catch (error) {
-      console.error('画像削除中にエラーが発生しました:', error);
+      console.error('画像削除中にエラーが発生しました:', error)
     } finally {
-      setIsDeletingImage(false);
+      setIsDeletingImage(false)
     }
-  };
+  }
 
   useEffect(() => {
     if (!exclusionInitialized && exclusionMenus) {
-      setSelectedExclusionMenuIds(initialExclusionMenus.map((menu) => menu.menuId));
-      setExclusionInitialized(true);
+      setSelectedExclusionMenuIds(initialExclusionMenus.map((menu) => menu.menuId))
+      setExclusionInitialized(true)
     }
-  }, [exclusionMenus, initialExclusionMenus, exclusionInitialized]);
+  }, [exclusionMenus, initialExclusionMenus, exclusionInitialized])
 
   useEffect(() => {
-    if (!staffAllData) return;
+    if (!staffAllData) return
 
     const initializeForm = async () => {
       try {
         // PINコードを復号
-        let decryptedPinCode: string | null = null;
+        let decryptedPinCode: string | null = null
         if (staffAllData.pinCode) {
           decryptedPinCode = await decryptString(
             staffAllData.pinCode ?? '',
             process.env.NEXT_PUBLIC_ENCRYPTION_SECRET_KEY!
-          );
+          )
         }
-        console.log('staffAllData.pinCode', staffAllData.pinCode);
+        console.log('staffAllData.pinCode', staffAllData.pinCode)
 
-        console.log('decryptedPinCode', decryptedPinCode);
+        console.log('decryptedPinCode', decryptedPinCode)
 
         // フォームの初期値をリセット
         reset({
           name: staffAllData.name,
           email: staffAllData.email,
+          instagramLink: staffAllData.instagramLink,
           gender: staffAllData.gender,
           age: staffAllData.age,
           description: staffAllData.description,
@@ -400,30 +404,30 @@ export default function StaffEditForm() {
           tags: staffAllData.tags,
           // 復号した PIN コードをセット
           pinCode: decryptedPinCode ?? undefined,
-        });
+        })
         // 既存タグをローカル state に同期
-        setCurrentTags(staffAllData.tags || []);
+        setCurrentTags(staffAllData.tags || [])
       } catch (error) {
-        console.error('ピンコードの復号に失敗しました:', error);
+        console.error('ピンコードの復号に失敗しました:', error)
         toast.error('ピンコードの復号に失敗しました', {
           icon: <X className="h-4 w-4 text-red-500" />,
-        });
+        })
         // 必要ならエラーハンドリング（トースト表示など）を追加
       }
-    };
+    }
 
-    initializeForm();
-  }, [reset, staffAllData, watch]);
+    initializeForm()
+  }, [reset, staffAllData, watch])
 
   const exclusionChanged = useMemo(() => {
-    if (exclusionMenus === undefined) return false; // データ未ロード時は false
-    const currentSorted = [...selectedExclusionMenuIds].sort();
+    if (exclusionMenus === undefined) return false // データ未ロード時は false
+    const currentSorted = [...selectedExclusionMenuIds].sort()
     // initialExclusionMenuIds は既にソート済み
-    return JSON.stringify(currentSorted) !== JSON.stringify(initialExclusionMenus);
-  }, [selectedExclusionMenuIds, initialExclusionMenus, exclusionMenus]);
+    return JSON.stringify(currentSorted) !== JSON.stringify(initialExclusionMenus)
+  }, [selectedExclusionMenuIds, initialExclusionMenus, exclusionMenus])
 
   if (!staffAllData) {
-    return <Loading />;
+    return <Loading />
   }
 
   return (
@@ -553,8 +557,8 @@ export default function StaffEditForm() {
                       <TagInput
                         tags={currentTags}
                         setTagsAction={(tags) => {
-                          setCurrentTags(tags);
-                          setValue('tags', tags, { shouldDirty: true, shouldValidate: true });
+                          setCurrentTags(tags)
+                          setValue('tags', tags, { shouldDirty: true, shouldValidate: true })
                         }}
                         error={errors.tags?.message}
                         title="スタッフの得意なメニュー"
@@ -583,6 +587,20 @@ export default function StaffEditForm() {
                         </p>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="flex items-center mb-2">
+                      <Instagram className="h-4 w-4 mr-2 text-gray-500" />
+                      <Label className="font-medium text-gray-700">SNS連携</Label>
+                    </div>
+                    <ZodTextField
+                      name="instagramLink"
+                      label="Instagramリンク"
+                      register={register}
+                      errors={errors}
+                      placeholder="スタッフのInstagramリンクを入力してください"
+                    />
                   </div>
 
                   <div className="mt-4">
@@ -838,5 +856,5 @@ export default function StaffEditForm() {
         onOpenChange={setShowDeleteDialog}
       />
     </div>
-  );
+  )
 }

@@ -317,6 +317,7 @@ export default defineSchema({
     age: v.optional(v.number()), // 年齢
     email: v.optional(v.string()), // メールアドレス
     gender: v.optional(genderType), // 性別
+    instagramLink: v.optional(v.string()), // SNSリンク
     description: v.optional(v.string()), // 説明
     imgPath: v.optional(v.string()), // 画像ファイルパス
     tags: v.optional(v.array(v.string())), // タグ

@@ -48,19 +48,21 @@ import {
   Mail,
   Clipboard,
   Check,
+  Instagram,
   X,
   Image as ImageIcon,
   Lock,
   Shuffle,
   Copy,
 } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ExclusionMenu } from '@/components/common';
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ExclusionMenu } from '@/components/common'
 
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
+  instagramLink: z.string().url({ message: 'URLが不正です' }).optional(),
   pinCode: z
     .string()
     .min(6, { message: 'ピンコードは6文字以上で入力してください' })
@@ -72,10 +74,10 @@ const staffAddSchema = z.object({
   age: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null;
+      if (val === '' || val === null || val === undefined) return null
       // 数値に変換できない場合もnullを返す
-      const num = Number(val);
-      return isNaN(num) ? null : num;
+      const num = Number(val)
+      return isNaN(num) ? null : num
     },
     z.number().max(99, { message: '年齢は99以下で入力してください' }).nullable().optional()
   ),
@@ -102,10 +104,10 @@ const staffAddSchema = z.object({
   extraCharge: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null;
+      if (val === '' || val === null || val === undefined) return null
       // 数値に変換できない場合もnullを返す
-      const num = Number(val);
-      return isNaN(num) ? null : num;
+      const num = Number(val)
+      return isNaN(num) ? null : num
     },
     z
       .number()
@@ -116,30 +118,30 @@ const staffAddSchema = z.object({
   priority: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null;
+      if (val === '' || val === null || val === undefined) return null
       // 数値に変換できない場合もnullを返す
-      const num = Number(val);
-      return isNaN(num) ? null : num;
+      const num = Number(val)
+      return isNaN(num) ? null : num
     },
     z.number().max(999, { message: '優先度は999以下で入力してください' }).nullable().optional()
   ),
-});
+})
 
 export default function StaffAddPage() {
-  const router = useRouter();
-  const { salon } = useSalon();
-  const [exclusionMenuIds, setExclusionMenuIds] = useState<Id<'menu'>[]>([]);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentTags, setCurrentTags] = useState<string[]>([]);
+  const router = useRouter()
+  const { salon } = useSalon()
+  const [exclusionMenuIds, setExclusionMenuIds] = useState<Id<'menu'>[]>([])
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [currentTags, setCurrentTags] = useState<string[]>([])
 
-  const staffAdd = useMutation(api.staff.core.mutation.create);
-  const staffConfigAdd = useMutation(api.staff.config.mutation.create);
-  const staffAuthAdd = useMutation(api.staff.auth.mutation.create);
-  const staffKill = useMutation(api.staff.core.mutation.killRelatedTables);
-  const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert);
-  const uploadImage = useAction(api.storage.action.upload);
-  const deleteImage = useAction(api.storage.action.kill);
+  const staffAdd = useMutation(api.staff.core.mutation.create)
+  const staffConfigAdd = useMutation(api.staff.config.mutation.create)
+  const staffAuthAdd = useMutation(api.staff.auth.mutation.create)
+  const staffKill = useMutation(api.staff.core.mutation.killRelatedTables)
+  const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert)
+  const uploadImage = useAction(api.storage.action.upload)
+  const deleteImage = useAction(api.storage.action.kill)
 
   const {
     register,
@@ -148,46 +150,46 @@ export default function StaffAddPage() {
     setValue,
     formState: { isSubmitting, errors, isDirty },
     watch,
-  } = useZodForm(staffAddSchema);
+  } = useZodForm(staffAddSchema)
 
   const handleGeneratePinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    const pinCode = generatePinCode();
-    setValue('pinCode', pinCode);
-  };
+    e.preventDefault()
+    const pinCode = generatePinCode()
+    setValue('pinCode', pinCode)
+  }
 
   const handleCopyPinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    const pinCode = watch('pinCode');
+    e.preventDefault()
+    const pinCode = watch('pinCode')
     if (pinCode) {
-      navigator.clipboard.writeText(pinCode);
+      navigator.clipboard.writeText(pinCode)
     }
-  };
+  }
 
   const onSubmit = async (data: z.infer<typeof staffAddSchema>) => {
-    setIsLoading(true);
-    let uploadImageUrl: string | null = null;
-    let staffId: Id<'staff'> | null = null;
-    let staffConfigId: Id<'staff_config'> | null = null;
-    let staffAuthId: Id<'staff_auth'> | null = null;
+    setIsLoading(true)
+    let uploadImageUrl: string | null = null
+    let staffId: Id<'staff'> | null = null
+    let staffConfigId: Id<'staff_config'> | null = null
+    let staffAuthId: Id<'staff_auth'> | null = null
 
     try {
       if (!salon) {
-        toast.error('店舗が見つかりません');
-        return;
+        toast.error('店舗が見つかりません')
+        return
       }
 
       if (selectedFile) {
-        const compressed = await compressAndConvertToWebP(selectedFile);
-        const base64 = await fileToBase64(compressed);
-        const filePath = `${Date.now()}-${selectedFile.name}`;
+        const compressed = await compressAndConvertToWebP(selectedFile)
+        const base64 = await fileToBase64(compressed)
+        const filePath = `${Date.now()}-${selectedFile.name}`
         const uploadResult = await uploadImage({
           base64Data: base64,
           contentType: 'image/webp',
           directory: 'staff',
           filePath: filePath,
-        });
-        uploadImageUrl = uploadResult.publicUrl;
+        })
+        uploadImageUrl = uploadResult.publicUrl
       }
 
       try {
@@ -198,21 +200,22 @@ export default function StaffAddPage() {
             name: data.name,
             age: data.age ?? undefined,
             email: data.email,
+            instagramLink: data.instagramLink ?? undefined,
             gender: data.gender,
             description: data.description,
             imgPath: uploadImageUrl ?? undefined,
             isActive: data.isActive,
             tags: data.tags,
-          });
+          })
         } catch (creationError) {
-          console.log('creationError type: ', typeof creationError);
-          console.log('creationError: ', creationError);
+          console.log('creationError type: ', typeof creationError)
+          console.log('creationError: ', creationError)
 
           toast.error(handleErrorToMsg(creationError), {
             icon: <X className="h-4 w-4 text-red-500" />,
-          });
-          setIsLoading(false);
-          return;
+          })
+          setIsLoading(false)
+          return
         }
         // スタッフの設定情報を追加
         staffConfigId = await staffConfigAdd({
@@ -220,29 +223,29 @@ export default function StaffAddPage() {
           salonId: salon._id,
           extraCharge: data.extraCharge ?? undefined,
           priority: data.priority ?? undefined,
-        });
+        })
         // スタッフの認証情報を追加
         const encryptedPinCode = await encryptString(
           watch('pinCode'),
           process.env.NEXT_PUBLIC_ENCRYPTION_SECRET_KEY!
-        );
+        )
         staffAuthId = await staffAuthAdd({
           staffId: staffId,
           pinCode: encryptedPinCode,
           role: data.role,
-        });
+        })
 
         // スタッフの対応外メニューを追加
         await menuExclusionStaffUpsert({
           salonId: salon._id,
           staffId: staffId,
           selectedMenuIds: exclusionMenuIds,
-        });
+        })
 
         toast.success('スタッフを追加しました', {
           icon: <Check className="h-4 w-4 text-green-500" />,
-        });
-        router.push('/dashboard/staff');
+        })
+        router.push('/dashboard/staff')
       } catch (configAuthError) {
         // スタッフ設定または認証の保存に失敗した場合、作成したスタッフを削除
         if (staffId) {
@@ -252,7 +255,7 @@ export default function StaffAddPage() {
                 staffId: staffId,
                 staffConfigId: staffConfigId,
                 staffAuthId: staffAuthId,
-              });
+              })
             }
           } catch (cleanupError) {
             throw new ConvexError({
@@ -261,10 +264,10 @@ export default function StaffAddPage() {
               code: 'INTERNAL_ERROR',
               title: 'スタッフ削除中にエラーが発生しました',
               details: { Error: JSON.stringify(cleanupError) },
-            });
+            })
           }
         }
-        throw configAuthError; // 元のエラーを再スロー
+        throw configAuthError // 元のエラーを再スロー
       }
     } catch (error: unknown) {
       // エラー発生時のクリーンアップ
@@ -272,7 +275,7 @@ export default function StaffAddPage() {
         try {
           await deleteImage({
             imgUrl: uploadImageUrl,
-          });
+          })
         } catch (deleteError) {
           throw new ConvexError({
             message: '画像削除中にエラーが発生しました',
@@ -280,7 +283,7 @@ export default function StaffAddPage() {
             code: 'INTERNAL_ERROR',
             title: '画像削除中にエラーが発生しました',
             details: { Error: JSON.stringify(deleteError) },
-          });
+          })
         }
 
         if (staffId) {
@@ -290,7 +293,7 @@ export default function StaffAddPage() {
                 staffId: staffId,
                 staffConfigId: staffConfigId,
                 staffAuthId: staffAuthId,
-              });
+              })
             }
           } catch (cleanupError) {
             throw new ConvexError({
@@ -299,26 +302,27 @@ export default function StaffAddPage() {
               code: 'INTERNAL_ERROR',
               title: 'スタッフ削除中にエラーが発生しました',
               details: { Error: JSON.stringify(cleanupError) },
-            });
+            })
           }
         }
         toast.error(handleErrorToMsg(error), {
           icon: <X className="h-4 w-4 text-red-500" />,
-        });
-        return;
+        })
+        return
       }
       toast.error(handleErrorToMsg(error), {
         icon: <X className="h-4 w-4 text-red-500" />,
-      });
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
     reset({
       name: '',
       email: '',
+      instagramLink: undefined,
       pinCode: generatePinCode(),
       gender: 'unselected',
       description: '',
@@ -328,9 +332,9 @@ export default function StaffAddPage() {
       extraCharge: undefined,
       priority: undefined,
       tags: [],
-    });
-    setCurrentTags([]);
-  }, [reset]);
+    })
+    setCurrentTags([])
+  }, [reset])
 
   return (
     <DashboardSection
@@ -440,9 +444,9 @@ export default function StaffAddPage() {
                         <TagInput
                           tags={currentTags}
                           setTagsAction={(tags) => {
-                            setCurrentTags(tags);
+                            setCurrentTags(tags)
 
-                            setValue('tags', tags, { shouldValidate: true });
+                            setValue('tags', tags, { shouldValidate: true })
                           }}
                           error={errors.tags?.message}
                           title="スタッフに付与するタグ"
@@ -470,6 +474,19 @@ export default function StaffAddPage() {
                       </div>
                     </div>
 
+                    <div className="mt-4">
+                      <div className="flex items-center mb-2">
+                        <Instagram className="h-4 w-4 mr-2 text-gray-500" />
+                        <Label className="font-medium text-gray-700">SNS登録</Label>
+                      </div>
+                      <ZodTextField
+                        name="instagramLink"
+                        label="Instagramリンク"
+                        register={register}
+                        errors={errors}
+                        placeholder="スタッフのInstagramリンクを入力してください"
+                      />
+                    </div>
                     <div className="mt-4">
                       <div className="flex items-center mb-2">
                         <Clipboard className="h-4 w-4 mr-2 text-gray-500" />
@@ -692,5 +709,5 @@ export default function StaffAddPage() {
         </div>
       </form>
     </DashboardSection>
-  );
+  )
 }

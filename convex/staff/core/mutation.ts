@@ -13,6 +13,7 @@ export const create = mutation({
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
+    instagramLink: v.optional(v.string()),
     gender: v.optional(genderType),
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
@@ -20,8 +21,8 @@ export const create = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateStaff(args);
+    checkAuth(ctx)
+    validateStaff(args)
 
     // スタッフの存在確認
     const existingStaff = await ctx.db
@@ -33,7 +34,7 @@ export const create = mutation({
           .eq('isActive', true)
           .eq('isArchive', false)
       )
-      .first();
+      .first()
     if (existingStaff) {
       throw throwConvexError({
         message: '指定されたメールアドレスのスタッフがすでに存在します',
@@ -43,16 +44,16 @@ export const create = mutation({
         callFunc: 'staff.core.create',
         severity: 'low',
         details: { ...existingStaff },
-      });
+      })
     }
 
     return await ctx.db.insert('staff', {
       ...args,
       isActive: true,
       isArchive: false,
-    });
+    })
   },
-});
+})
 
 // スタッフ情報の更新
 export const update = mutation({
@@ -61,6 +62,7 @@ export const update = mutation({
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
+    instagramLink: v.optional(v.string()),
     gender: v.optional(genderType),
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
@@ -68,10 +70,10 @@ export const update = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateStaff(args);
+    checkAuth(ctx)
+    validateStaff(args)
     // スタッフの存在確認
-    const staff = await ctx.db.get(args.staffId);
+    const staff = await ctx.db.get(args.staffId)
     if (!staff || staff.isArchive) {
       throw throwConvexError({
         message: '指定されたスタッフが存在しません',
@@ -81,14 +83,14 @@ export const update = mutation({
         callFunc: 'staff.core.update',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
-    const updateData = excludeFields(args, ['staffId']);
+    const updateData = excludeFields(args, ['staffId'])
 
-    return await ctx.db.patch(args.staffId, updateData);
+    return await ctx.db.patch(args.staffId, updateData)
   },
-});
+})
 
 // スタッフの削除
 export const archive = mutation({
@@ -96,11 +98,11 @@ export const archive = mutation({
     staffId: v.id('staff'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateRequired(args.staffId, 'staffId');
-    return await archiveRecord(ctx, args.staffId);
+    checkAuth(ctx)
+    validateRequired(args.staffId, 'staffId')
+    return await archiveRecord(ctx, args.staffId)
   },
-});
+})
 
 export const upsert = mutation({
   args: {
@@ -109,6 +111,7 @@ export const upsert = mutation({
     name: v.optional(v.string()),
     age: v.optional(v.number()),
     email: v.optional(v.string()),
+    instagramLink: v.optional(v.string()),
     gender: v.optional(genderType),
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
@@ -116,21 +119,21 @@ export const upsert = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateStaff(args);
-    const existingStaff = await ctx.db.get(args.staffId);
+    checkAuth(ctx)
+    validateStaff(args)
+    const existingStaff = await ctx.db.get(args.staffId)
 
     if (!existingStaff || existingStaff.isArchive) {
       return await ctx.db.insert('staff', {
         ...args,
         isArchive: false,
-      });
+      })
     } else {
-      const updateData = excludeFields(args, ['staffId', 'salonId']);
-      return await ctx.db.patch(existingStaff._id, updateData);
+      const updateData = excludeFields(args, ['staffId', 'salonId'])
+      return await ctx.db.patch(existingStaff._id, updateData)
     }
   },
-});
+})
 
 export const killRelatedTables = mutation({
   args: {
