@@ -105,7 +105,7 @@ export const findByLineId = query({
     includeArchive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx)
+    checkAuth(ctx, true)
     validateRequired(args.salonId, 'salonId')
     return await ctx.db
       .query('customer')

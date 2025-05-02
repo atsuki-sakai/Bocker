@@ -69,6 +69,8 @@ export default function ReserveRedirectPage() {
           salonId: salonId,
         })
 
+        console.log('既存顧客:', existingCustomer)
+
         const userEmail = liff?.getDecodedIDToken()?.email || ''
         if (!existingCustomer) {
           await createCustomer({
@@ -76,7 +78,7 @@ export default function ReserveRedirectPage() {
             lineId: profile?.userId,
             lineUserName: profile?.displayName || '',
             email: userEmail,
-            phone: '',
+            phone: undefined,
             tags: ['LINE'],
           })
           console.log('新規顧客を作成しました')

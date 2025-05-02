@@ -19,7 +19,7 @@ export const create = mutation({
     lastReservationDate_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true)
     validateCustomer(args);
     // サロンの存在確認
     const salon = await ctx.db.get(args.salonId);
@@ -63,7 +63,7 @@ export const update = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true)
     validateCustomer(args);
     // 顧客の存在確認
     const customer = await ctx.db.get(args.customerId);
