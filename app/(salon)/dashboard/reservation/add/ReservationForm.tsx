@@ -2,9 +2,10 @@
 // /app/(salon)/dashboard/reservation/add/ReservationForm.tsx
 
 'use client';
-import { convertHourToUnixTimestamp } from '@/lib/schedule';
-import { useRouter } from 'next/navigation';
-import { z } from 'zod';
+import Link from 'next/link'
+import { convertHourToUnixTimestamp } from '@/lib/schedule'
+import { useRouter } from 'next/navigation'
+import { z } from 'zod'
 import { useDebounce } from 'use-debounce'
 import Image from 'next/image'
 import { ja } from 'date-fns/locale'
@@ -577,7 +578,7 @@ export default function ReservationForm() {
         endTime_unix: data.endTime_unix as number,
         status: 'confirmed',
         unitPrice: data.unitPrice as number,
-        staffId: data.staffId as Id<'staff'>,
+        staffId: selectStaff?._id as Id<'staff'>,
         staffName: selectStaff?.name ?? undefined,
         couponId: data.couponId as Id<'coupon'>,
         usePoints: data.usePoints as number,
@@ -618,16 +619,27 @@ export default function ReservationForm() {
       >
         <div className="flex flex-col gap-4 my-6">
           <div>
-            <div className="flex flex-col gap-2 mb-4">
+            <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
               <div className="flex flex-col items-start gap-2">
                 <div className="flex flex-col items-start gap-2">
-                  <Label className="text-slate-700 text-sm font-bold">顧客検索</Label>
+                  <div className="flex items-center gap-2">
+                    <p className="text-slate-700 text-lg font-bold">1</p>
+                    <Label className="text-slate-700 text-sm font-bold">顧客検索</Label>
+                  </div>
                   <p className="text-slate-500 text-xs">
                     既存顧客の予約を作成する場合はこちらから
                     <strong>顧客無しでも予約は作成できます。</strong>
                   </p>
+                  <span className="text-slate-500 text-xs font-bold">
+                    新規顧客の場合は先に
+                    <Link className="text-blue-500 underline" href="/dashboard/customer/add">
+                      こちら
+                    </Link>
+                    から顧客を作成してください。
+                  </span>
                 </div>
                 <Input
+                  className="bg-white"
                   placeholder="顧客を検索"
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
@@ -686,13 +698,13 @@ export default function ReservationForm() {
                   )
                 })
               ) : (
-                <p className="text-slate-500 text-sm text-center bg-slate-50 p-2 rounded-md">
+                <p className="text-yellow-600 text-sm text-center bg-yellow-50 p-2 rounded-md">
                   顧客が見つかりません
                 </p>
               )}
               {reservationCustomer && (
-                <div className="flex flex-col gap-2 mt-2">
-                  <p className="text-slate-700 text-sm font-bold">予約をする顧客情報</p>
+                <div className="flex flex-col gap-2 mt-2 bg-green-50 p-3 rounded-md border border-green-300">
+                  <p className="text-green-700 text-sm font-bold">予約する顧客</p>
                   <p className="text-slate-500 text-sm">
                     {reservationCustomer.lastName} {reservationCustomer.firstName}
                   </p>
@@ -700,269 +712,87 @@ export default function ReservationForm() {
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <p className="text-slate-500 text-lg font-bold">1</p>
-              <Label>予約するメニュー（複数選択可）</Label>
-            </div>
-            <span className="text-slate-500 text-xs">※メニューは最大5件まで選択できます。</span>
-            <Popover open={menuPopoverOpen} onOpenChange={setMenuPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="mt-2 w-full justify-start h-fit">
-                  {selectedMenus.length > 0 ? (
-                    <span className="flex flex-wrap gap-1">
-                      {uniqMenuIds.map((id) => {
-                        const m = menus.find((m) => m._id === id)
-                        return m ? (
-                          <Badge key={id} variant="secondary" className="py-0.5 px-1.5">
-                            {m.name}
-                          </Badge>
-                        ) : null
-                      })}
-                    </span>
-                  ) : (
-                    'メニューを選択'
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full min-w-[350px] p-2 overflow-y-auto h-full">
-                <Command>
-                  <div className="flex items-center justify-between border-b">
-                    <CommandInput
-                      placeholder="メニューを検索…"
-                      className="flex-1 border-0 focus:ring-0"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setMenuPopoverOpen(false)}
-                      className="p-2 text-slate-700 hover:text-slate-600"
-                    >
-                      <X className="w-4 h-4" aria-hidden="true" />
-                      <span className="sr-only">閉じる</span>
-                    </button>
-                  </div>
-                  <CommandList className="max-h-[300px] py-8 overflow-y-auto">
-                    {menus.map((menu) => {
-                      const count = getMenuCount(menu._id)
-                      return (
-                        <CommandItem key={menu._id} className="flex items-center justify-between">
-                          {menu.imgPath && (
-                            <Image
-                              src={menu.imgPath}
-                              alt={menu.name ?? ''}
-                              className="w-10 h-10 rounded-full"
-                              width={40}
-                              height={40}
-                            />
-                          )}
-                          <div className="flex flex-col items-start gap-1 text-xs">
-                            <p className="text-sm">{menu.name}</p>
-                            <div>
-                              {menu.salePrice && menu.salePrice > 0 ? (
-                                <>
-                                  <span className="line-through text-slate-400">
-                                    ￥{menu.unitPrice?.toLocaleString()}
-                                  </span>
-                                  <span className="font-semibold text-green-600">
-                                    ￥{menu.salePrice.toLocaleString()}
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="">￥{menu.unitPrice?.toLocaleString()}</span>
-                              )}
-                              <div className="flex items-center gap-1">
-                                <p>{menu.timeToMin}分</p>
-                                {menu.ensureTimeToMin ? `/ ${menu.ensureTimeToMin}分` : ''}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              onClick={() => removeMenu(menu._id)}
-                              disabled={count === 0}
-                              className="p-1 disabled:opacity-30"
-                            >
-                              <Minus className="w-4 h-4 text-red-600" />
-                            </Button>
-                            <span className="w-5 text-center text-sm">{count}</span>
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              onClick={() => addMenu(menu._id)}
-                              disabled={selectedMenus.length >= MAX_MENU_ITEMS}
-                            >
-                              <Plus className="w-4 h-4 text-blue-600" />
-                            </Button>
-                          </div>
-                        </CommandItem>
-                      )
-                    })}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            {errors.menus && <p className="text-red-500 text-sm">{errors.menus.message}</p>}
-          </div>
-          {selectedMenus.length > 0 && (
-            <div className="bg-slate-50 p-3 rounded-md">
-              <Label className="mb-2 block">選択中のメニュー</Label>
-              <div className="flex flex-wrap gap-2">
-                {uniqMenuIds.map((menuId) => {
-                  const menu = menus.find((m) => m._id === menuId)
-                  return menu ? (
-                    <div
-                      key={menuId}
-                      className="bg-white px-3 py-1 rounded-md flex items-center gap-2 border"
-                    >
-                      <span className="text-xs">
-                        {menu.name}
-                        {(() => {
-                          const c = getMenuCount(menuId)
-                          return c > 1 ? ` ×${c}` : ''
-                        })()}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => removeMenuAll(menuId)}
-                        className="text-slate-700 hover:text-slate-600"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : null
-                })}
-              </div>
-            </div>
-          )}
-          {isLoadingStaff ? (
-            <div className="flex items-center justify-center p-4 bg-green-50 rounded-md">
-              <Loader2 className="h-5 w-5 animate-spin mr-2 text-green-500" />
-              <span className="text-green-500">スタッフを検索中...</span>
-            </div>
-          ) : selectedMenus.length > 0 && availableStaff.length > 0 ? (
-            <div className="flex flex-col gap-2 my-3">
+            <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
               <div className="flex items-center gap-2">
                 <p className="text-slate-500 text-lg font-bold">2</p>
-                <Label>施術するスタッフ</Label>
+                <Label className="text-slate-700 font-bold">予約するメニュー</Label>
               </div>
-              <Select
-                value={watch('staffId') ?? ''}
-                onValueChange={(value: string) => {
-                  setValue('staffId', value)
-                  setSelectedStaffId(value as Id<'staff'>)
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="スタッフを選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableStaff.map((staff) => (
-                    <SelectItem key={staff._id} value={staff._id}>
-                      <span>{staff.name}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.staffId && <p className="text-red-500 text-sm">{errors.staffId.message}</p>}
-              {selectedStaffId && (
-                <div className="flex flex-col bg-slate-50 p-3 rounded-md border border-slate-300 mt-3">
-                  <div className="flex items-center gap-2">
-                    {selectStaff?.imgPath ? (
-                      <Image
-                        src={selectStaff.imgPath}
-                        alt={selectStaff?.name ?? ''}
-                        className="w-10 h-10 rounded-full"
-                        width={40}
-                        height={40}
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
-                        {selectStaff?.name?.slice(0, 1) ?? '?'}
-                      </div>
-                    )}
-                    <div className="flex flex-col">
-                      <p className="text-slate-500 font-bold text-sm">{selectStaff?.name}</p>
-                      <p className="text-slate-500 text-sm">
-                        指名料 / ¥
-                        {selectStaff?.extraCharge ? selectStaff?.extraCharge.toLocaleString() : '0'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            selectedMenus.length > 0 && (
-              <div className="flex flex-col bg-red-50 w-fit p-3 rounded-md border border-red-300">
-                <p className="text-red-500 text-sm">
-                  選択したすべてのメニューに対応できるスタッフが見つかりません。メニューの組み合わせを変更してください。
-                </p>
-              </div>
-            )
-          )}
-          {selectedMenus.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-slate-500 text-lg font-bold">3</p>
-                <Label>オプション（複数選択可）</Label>
-              </div>
-              <Popover open={optionPopoverOpen} onOpenChange={setOptionPopoverOpen}>
+              <span className="text-slate-500 text-xs">※メニューは最大5件まで選択できます。</span>
+              <Popover open={menuPopoverOpen} onOpenChange={setMenuPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="mt-2 w-full justify-start h-fit">
-                    {selectedOptions.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {selectedOptions.map((selectedOption) => {
-                          const option = options.find((o) => o._id === selectedOption.optionId)
-                          return option ? (
-                            <Badge key={option._id} variant="outline" className="py-0.5 px-1.5">
-                              {option?.name}
+                    {selectedMenus.length > 0 ? (
+                      <span className="flex flex-wrap gap-1">
+                        {uniqMenuIds.map((id) => {
+                          const m = menus.find((m) => m._id === id)
+                          return m ? (
+                            <Badge key={id} variant="secondary" className="py-0.5 px-1.5">
+                              {m.name}
                             </Badge>
                           ) : null
                         })}
-                      </div>
+                      </span>
                     ) : (
-                      'オプションを選択'
+                      'メニューを選択'
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full min-w-[320px] p-2">
+                <PopoverContent className="w-full min-w-[350px] p-2 overflow-y-auto h-full">
                   <Command>
-                    <div className="flex justify-between items-center w-full border-b">
+                    <div className="flex items-center justify-between border-b">
                       <CommandInput
-                        placeholder="オプションを検索..."
-                        className=" border-0 focus:ring-0 w-full"
+                        placeholder="メニューを検索…"
+                        className="flex-1 border-0 focus:ring-0"
                       />
                       <button
                         type="button"
-                        onClick={() => setOptionPopoverOpen(false)}
-                        className="p-2 text-slate-400 hover:text-slate-600"
+                        onClick={() => setMenuPopoverOpen(false)}
+                        className="p-2 text-slate-700 hover:text-slate-600"
                       >
                         <X className="w-4 h-4" aria-hidden="true" />
                         <span className="sr-only">閉じる</span>
                       </button>
                     </div>
-                    <CommandList className="max-h-[300px] overflow-y-auto py-8">
-                      {options.map((option) => {
-                        const count = getOptionCount(option._id)
+                    <CommandList className="max-h-[300px] py-8 overflow-y-auto">
+                      {menus.map((menu) => {
+                        const count = getMenuCount(menu._id)
                         return (
-                          <CommandItem
-                            key={option._id}
-                            className="flex items-center justify-between"
-                          >
+                          <CommandItem key={menu._id} className="flex items-center justify-between">
+                            {menu.imgPath && (
+                              <Image
+                                src={menu.imgPath}
+                                alt={menu.name ?? ''}
+                                className="w-10 h-10 rounded-full"
+                                width={40}
+                                height={40}
+                              />
+                            )}
                             <div className="flex flex-col items-start gap-1 text-xs">
-                              <p className="text-sm">{option.name}</p>
-                              <div className="flex items-center gap-1">
-                                <p>{option.timeToMin}分</p>
-                                {option.ensureTimeToMin ? `/ ${option.ensureTimeToMin}分` : ''}
+                              <p className="text-sm">{menu.name}</p>
+                              <div>
+                                {menu.salePrice && menu.salePrice > 0 ? (
+                                  <>
+                                    <span className="line-through text-slate-400">
+                                      ￥{menu.unitPrice?.toLocaleString()}
+                                    </span>
+                                    <span className="font-semibold text-green-600">
+                                      ￥{menu.salePrice.toLocaleString()}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="">￥{menu.unitPrice?.toLocaleString()}</span>
+                                )}
+                                <div className="flex items-center gap-1">
+                                  <p>{menu.timeToMin}分</p>
+                                  {menu.ensureTimeToMin ? `/ ${menu.ensureTimeToMin}分` : ''}
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-1">
                               <Button
                                 size="icon"
                                 variant="outline"
-                                onClick={() => removeOption(option._id)}
+                                onClick={() => removeMenu(menu._id)}
                                 disabled={count === 0}
                                 className="p-1 disabled:opacity-30"
                               >
@@ -972,8 +802,8 @@ export default function ReservationForm() {
                               <Button
                                 size="icon"
                                 variant="outline"
-                                onClick={() => addOption(option._id)}
-                                disabled={count === 0 && selectedOptions.length >= MAX_OPTION_ITEMS}
+                                onClick={() => addMenu(menu._id)}
+                                disabled={selectedMenus.length >= MAX_MENU_ITEMS}
                               >
                                 <Plus className="w-4 h-4 text-blue-600" />
                               </Button>
@@ -985,156 +815,381 @@ export default function ReservationForm() {
                   </Command>
                 </PopoverContent>
               </Popover>
-              {errors.options && <p className="text-red-500 text-sm">{errors.options.message}</p>}
-            </div>
-          )}
-          {selectedMenus.length > 0 && (
-            <div className="bg-slate-50 p-3 rounded-md">
-              <Label className="mb-2 block">選択中のオプション</Label>
-              <div className="flex flex-wrap gap-2">
-                {selectedOptions.map((selectedOption) => {
-                  const option = options.find((o) => o._id === selectedOption.optionId)
-                  return option ? (
-                    <div
-                      key={selectedOption.optionId}
-                      className="bg-white px-3 py-1 rounded-md flex items-center gap-2 border"
-                    >
-                      <span className="text-xs">
-                        {option.name}
-                        {(() => {
-                          const c = getOptionCount(option._id)
-                          return c > 1 ? ` ×${c}` : ''
-                        })()}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeOption(option._id)}
-                        className="text-slate-500 hover:text-slate-700"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : null
-                })}
-              </div>
-            </div>
-          )}
-          {selectedMenus.length > 0 && (
-            <div className="flex flex-col gap-2 my-3">
-              <div className="flex items-center gap-2">
-                <p className="text-slate-500 text-lg font-bold">4</p>
-                <Label>予約日</Label>
-              </div>
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={'outline'}
-                    className={cn(
-                      'w-[240px] justify-start text-left font-normal',
-                      !selectdate && 'text-muted-foreground'
-                    )}
-                  >
-                    <CalendarIcon />
-                    {selectdate ? format(selectdate, 'yyyy/MM/dd') : <span>予約日を選択</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    fromDate={new Date()}
-                    toDate={toDate}
-                    disabled={[
-                      ...(salonExceptionSchedules?.map((day) => new Date(day.date)) ?? []),
-                      // サロンの営業曜日外を除外
-                      (date: Date) => {
-                        const dayKey = getDayOfWeek(date)
+              {errors.menus && <p className="text-red-500 text-sm">{errors.menus.message}</p>}
+              {selectedMenus.length > 0 && (
+                <div className="mt-2 bg-green-50 p-3 rounded-md border border-green-300">
+                  <Label className=" block text-green-700 font-bold mb-2">選択中のメニュー</Label>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {uniqMenuIds.map((menuId) => {
+                      const menu = menus.find((m) => m._id === menuId)
+                      return menu ? (
+                        <div
+                          key={menuId}
+                          className="bg-white px-3 py-1 rounded-md flex items-center gap-2 border"
+                        >
+                          <span className="text-xs">
+                            {menu.name}
+                            {(() => {
+                              const c = getMenuCount(menuId)
+                              return c > 1 ? ` ×${c}` : ''
+                            })()}
+                          </span>
 
-                        const weekSchedule = salonWeekSchedules?.find((s) => s.dayOfWeek === dayKey)
-                        // 営業スケジュールがあれば isOpen が false の日を無効化。見つからなければ無効化しない。
-                        return weekSchedule ? !weekSchedule.isOpen : false
-                      },
-                    ]}
-                    className="rounded-md"
-                    mode="single"
-                    locale={ja}
-                    selected={selectdate ?? undefined}
-                    onSelect={(day) => {
-                      setSelectDate(day as Date)
-                      setCalendarOpen(false)
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
+                          <button
+                            type="button"
+                            onClick={() => removeMenuAll(menuId)}
+                            className="text-slate-700 hover:text-slate-600"
+                          >
+                            <X className="h-4 w-4 text-red-500" />
+                          </button>
+                        </div>
+                      ) : null
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-          {selectdate && selectedStaffId && selectedMenus.length > 0 && (
-            <div className="mt-4">
-              <Label>予約可能時間</Label>
-              {availableTimeSlots.length > 0 ? (
-                <div className="grid grid-cols-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1 mt-2">
-                  {availableTimeSlots.map((slot, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className={`flex items-center justify-center py-2 px-4 text-sm font-medium rounded-md border  ${
-                        watch('startTime_unix') ===
-                        convertHourToUnixTimestamp(slot.startHour, formattedDate)
-                          ? 'bg-slate-600 text-white'
-                          : 'border-slate-300 '
-                      }`}
-                      onClick={() => {
-                        // 日付込みでタイムスタンプ生成
-                        const timestampStart = convertHourToUnixTimestamp(
-                          slot.startHour,
-                          formattedDate
-                        )!
-                        const timestampEnd = convertHourToUnixTimestamp(
-                          slot.endHour,
-                          formattedDate
-                        )!
-                        setValue('startTime_unix', timestampStart)
-                        setValue('endTime_unix', timestampEnd)
-                        setSelectTime({
-                          startTime_unix: timestampStart,
-                          endTime_unix: timestampEnd,
-                        })
-                      }}
-                    >
-                      <p className="text-xs text-balance">
-                        {slot.startHour && <span>{slot.startHour}</span>}
-                        {slot.endHour && <span> 〜 {slot.endHour}</span>}
-                      </p>
-                    </button>
-                  ))}
+          </div>
+
+          {selectedMenus.length > 0 && availableStaff.length > 0 && (
+            <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
+              {isLoadingStaff ? (
+                <div className="flex items-center justify-center p-4 bg-white rounded-md">
+                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-green-500" />
+                  <span className="text-green-500 text-sm">スタッフを検索中...</span>
+                </div>
+              ) : selectedMenus.length > 0 && availableStaff.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-slate-500 text-lg font-bold">3</p>
+                    <Label className="text-slate-700 font-bold">施術するスタッフ</Label>
+                  </div>
+                  <Select
+                    value={watch('staffId') ?? ''}
+                    onValueChange={(value: string) => {
+                      setValue('staffId', value)
+                      setSelectedStaffId(value as Id<'staff'>)
+                    }}
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="スタッフを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableStaff.map((staff) => (
+                        <SelectItem key={staff._id} value={staff._id}>
+                          <span>{staff.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.staffId && (
+                    <p className="text-red-500 text-sm">{errors.staffId.message}</p>
+                  )}
+                  {selectedStaffId && (
+                    <div className="flex flex-col bg-green-50 p-3 rounded-md border border-green-300 mt-3">
+                      <p className="text-green-700 text-sm font-bold mb-2">選択中のスタッフ</p>
+                      <div className="flex items-center gap-2">
+                        {selectStaff?.imgPath ? (
+                          <Image
+                            src={selectStaff.imgPath}
+                            alt={selectStaff?.name ?? ''}
+                            className="w-10 h-10 rounded-full"
+                            width={40}
+                            height={40}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
+                            {selectStaff?.name?.slice(0, 1) ?? '?'}
+                          </div>
+                        )}
+                        <div className="flex flex-col">
+                          <p className="text-slate-500 font-bold text-sm">{selectStaff?.name}</p>
+                          <p className="text-slate-500 text-sm">
+                            指名料 / ¥
+                            {selectStaff?.extraCharge
+                              ? selectStaff?.extraCharge.toLocaleString()
+                              : '0'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="bg-slate-50 p-4 rounded-md mt-2 text-center">
-                  <p className="text-slate-500">選択した日時に空き枠がありません</p>
+                selectedMenus.length > 0 && (
+                  <div className="flex flex-col bg-red-50 w-fit p-3 rounded-md border border-red-300">
+                    <p className="text-red-500 text-sm">
+                      選択したすべてのメニューに対応できるスタッフが見つかりません。メニューの組み合わせを変更してください。
+                    </p>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+
+          {selectedMenus.length > 0 && (
+            <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
+              {selectedMenus.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-slate-500 text-lg font-bold">4</p>
+                    <Label className="text-slate-700 font-bold">オプション(任意)</Label>
+                  </div>
+                  <Popover open={optionPopoverOpen} onOpenChange={setOptionPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="mt-2 w-full justify-start h-fit">
+                        {selectedOptions.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {selectedOptions.map((selectedOption) => {
+                              const option = options.find((o) => o._id === selectedOption.optionId)
+                              return option ? (
+                                <Badge key={option._id} variant="outline" className="py-0.5 px-1.5">
+                                  {option?.name}
+                                </Badge>
+                              ) : null
+                            })}
+                          </div>
+                        ) : (
+                          'オプションを選択'
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full min-w-[320px] p-2">
+                      <Command>
+                        <div className="flex justify-between items-center w-full border-b">
+                          <CommandInput
+                            placeholder="オプションを検索..."
+                            className=" border-0 focus:ring-0 w-full"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setOptionPopoverOpen(false)}
+                            className="p-2 text-slate-400 hover:text-slate-600"
+                          >
+                            <X className="w-4 h-4" aria-hidden="true" />
+                            <span className="sr-only">閉じる</span>
+                          </button>
+                        </div>
+                        <CommandList className="max-h-[300px] overflow-y-auto py-8">
+                          {options.map((option) => {
+                            const count = getOptionCount(option._id)
+                            return (
+                              <CommandItem
+                                key={option._id}
+                                className="flex items-center justify-between"
+                              >
+                                <div className="flex flex-col items-start gap-1 text-xs">
+                                  <p className="text-sm">{option.name}</p>
+                                  <div className="flex items-center gap-1">
+                                    <p>{option.timeToMin}分</p>
+                                    {option.ensureTimeToMin ? `/ ${option.ensureTimeToMin}分` : ''}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    size="icon"
+                                    variant="outline"
+                                    onClick={() => removeOption(option._id)}
+                                    disabled={count === 0}
+                                    className="p-1 disabled:opacity-30"
+                                  >
+                                    <Minus className="w-4 h-4 text-red-600" />
+                                  </Button>
+                                  <span className="w-5 text-center text-sm">{count}</span>
+                                  <Button
+                                    size="icon"
+                                    variant="outline"
+                                    onClick={() => addOption(option._id)}
+                                    disabled={
+                                      count === 0 && selectedOptions.length >= MAX_OPTION_ITEMS
+                                    }
+                                  >
+                                    <Plus className="w-4 h-4 text-blue-600" />
+                                  </Button>
+                                </div>
+                              </CommandItem>
+                            )
+                          })}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {errors.options && (
+                    <p className="text-red-500 text-sm">{errors.options.message}</p>
+                  )}
+                </div>
+              )}
+              {selectedOptions.length > 0 && (
+                <div className="bg-green-50 p-3 rounded-md border border-green-300 mt-2">
+                  <Label className="mb-2 block text-green-700 font-bold">選択中のオプション</Label>
+                  <div className="flex flex-wrap gap-2 pt-1 ">
+                    {selectedOptions.map((selectedOption) => {
+                      const option = options.find((o) => o._id === selectedOption.optionId)
+                      return option ? (
+                        <div
+                          key={selectedOption.optionId}
+                          className="bg-white px-3 py-1 rounded-md flex items-center gap-2 border"
+                        >
+                          <span className="text-xs">
+                            {option.name}
+                            {(() => {
+                              const c = getOptionCount(option._id)
+                              return c > 1 ? ` ×${c}` : ''
+                            })()}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeOption(option._id)}
+                            className="text-slate-500 hover:text-slate-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : null
+                    })}
+                  </div>
                 </div>
               )}
             </div>
           )}
-          <ZodTextField
-            ghost
-            register={register}
-            errors={errors}
-            name="startTime_unix"
-            type="number"
-            label="開始時間 UNIXタイム"
+
+          {selectedMenus.length > 0 && (
+            <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
+              {selectedMenus.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-slate-500 text-lg font-bold">5</p>
+                    <Label className="text-slate-700 font-bold">予約日</Label>
+                  </div>
+                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={'outline'}
+                        className={cn(
+                          'w-[240px] justify-start text-left font-normal',
+                          !selectdate && 'text-muted-foreground'
+                        )}
+                      >
+                        <CalendarIcon />
+                        {selectdate ? format(selectdate, 'yyyy/MM/dd') : <span>予約日を選択</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        fromDate={new Date()}
+                        toDate={toDate}
+                        disabled={[
+                          ...(salonExceptionSchedules?.map((day) => new Date(day.date)) ?? []),
+                          // サロンの営業曜日外を除外
+                          (date: Date) => {
+                            const dayKey = getDayOfWeek(date)
+
+                            const weekSchedule = salonWeekSchedules?.find(
+                              (s) => s.dayOfWeek === dayKey
+                            )
+                            // 営業スケジュールがあれば isOpen が false の日を無効化。見つからなければ無効化しない。
+                            return weekSchedule ? !weekSchedule.isOpen : false
+                          },
+                        ]}
+                        className="rounded-md"
+                        mode="single"
+                        locale={ja}
+                        selected={selectdate ?? undefined}
+                        onSelect={(day) => {
+                          setSelectDate(day as Date)
+                          setCalendarOpen(false)
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+              {selectdate && selectedStaffId && selectedMenus.length > 0 && (
+                <div className="mt-4">
+                  <Label className="mb-2 block text-green-700 font-bold">
+                    予約可能時間
+                    <span className="ml-3 text-slate-500 text-sm font-bold">
+                      {selectdate.toLocaleDateString('ja-JP', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </Label>
+
+                  {availableTimeSlots.length > 0 ? (
+                    <div className="grid grid-cols-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1 mt-2">
+                      {availableTimeSlots.map((slot, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          className={`flex items-center justify-center py-2 px-4 text-sm font-medium rounded-md border ${
+                            watch('startTime_unix') ===
+                            convertHourToUnixTimestamp(slot.startHour, formattedDate)
+                              ? 'bg-green-600 text-white'
+                              : 'border-slate-300 bg-white'
+                          }`}
+                          onClick={() => {
+                            // 日付込みでタイムスタンプ生成
+                            const timestampStart = convertHourToUnixTimestamp(
+                              slot.startHour,
+                              formattedDate
+                            )!
+                            const timestampEnd = convertHourToUnixTimestamp(
+                              slot.endHour,
+                              formattedDate
+                            )!
+                            setValue('startTime_unix', timestampStart)
+                            setValue('endTime_unix', timestampEnd)
+                            setSelectTime({
+                              startTime_unix: timestampStart,
+                              endTime_unix: timestampEnd,
+                            })
+                          }}
+                        >
+                          <p className="text-xs text-balance">
+                            {slot.startHour && <span>{slot.startHour}</span>}
+                            {slot.endHour && <span> 〜 {slot.endHour}</span>}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white p-4 rounded-md mt-2 text-center">
+                      <p className="text-slate-500">選択した日時に空き枠がありません</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              <ZodTextField
+                ghost
+                register={register}
+                errors={errors}
+                name="startTime_unix"
+                type="number"
+                label="開始時間 UNIXタイム"
+              />
+              <ZodTextField
+                ghost
+                register={register}
+                errors={errors}
+                name="endTime_unix"
+                type="number"
+                label="終了時間 UNIXタイム"
+              />
+            </div>
+          )}
+          <Textarea
+            {...register('notes')}
+            placeholder="例:くせ毛が強いので、扱いやすいスタイルにして欲しいとの事でした。"
+            className="resize-none"
+            rows={8}
           />
-          <ZodTextField
-            ghost
-            register={register}
-            errors={errors}
-            name="endTime_unix"
-            type="number"
-            label="終了時間 UNIXタイム"
-          />
-          <Textarea {...register('notes')} placeholder="備考" className="resize-none" rows={3} />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2 mt-12">
           <div>
-            <p className="mb-2 text-xs font-medium text-gray-600">メニュー</p>
+            <p className="mb-2 text-xs font-medium text-gray-600">選択したメニュー</p>
             <div className="flex flex-wrap gap-2">
               {uniqMenuIds.length > 0 ? (
                 uniqMenuIds.map((menuId) => {
@@ -1146,7 +1201,7 @@ export default function ReservationForm() {
                   return (
                     menu && (
                       <Badge key={menuId} variant="outline" className="px-2 py-1 text-xs">
-                        {menu.name} / {price.toLocaleString()}
+                        {menu.name} ¥{price.toLocaleString()}
                       </Badge>
                     )
                   )
@@ -1157,7 +1212,7 @@ export default function ReservationForm() {
             </div>
           </div>
           <div>
-            <p className="mb-2 text-xs font-medium text-gray-600">オプション</p>
+            <p className="mb-2 text-xs font-medium text-gray-600">選択したオプション</p>
             <div className="flex flex-wrap gap-2">
               {selectedOptions.length > 0 ? (
                 selectedOptions.map((selectedOption) => {
@@ -1169,7 +1224,10 @@ export default function ReservationForm() {
                         variant="secondary"
                         className="px-2 py-1 text-xs"
                       >
-                        {option.name}
+                        {option.name}{' '}
+                        {option.salePrice
+                          ? `¥${option.salePrice.toLocaleString()}`
+                          : `¥${option.unitPrice?.toLocaleString()}`}
                       </Badge>
                     )
                   )
@@ -1179,18 +1237,21 @@ export default function ReservationForm() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Avatar className="h-16 w-16">
-              {selectStaff?.imgPath ? (
-                <AvatarImage src={selectStaff.imgPath} alt={selectStaff.name} />
-              ) : (
-                <AvatarFallback>{selectStaff?.name.slice(0, 1)}</AvatarFallback>
-              )}
-            </Avatar>
+          <div className="flex items-end gap-2">
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-slate-500 text-xs">施術者</p>
+              <Avatar className="h-12 w-12">
+                {selectStaff?.imgPath ? (
+                  <AvatarImage src={selectStaff.imgPath} alt={selectStaff.name} />
+                ) : (
+                  <AvatarFallback>{selectStaff?.name.slice(0, 1)}</AvatarFallback>
+                )}
+              </Avatar>
+            </div>
             <div>
-              <p className="text-lg font-medium text-gray-800">{selectStaff?.name ?? '—'}</p>
-              <p className="text-sm text-gray-500">
-                指名料：¥
+              <p className="text-sm font-bold text-gray-800">{selectStaff?.name ?? '—'}</p>
+              <p className="text-sm text-gray-500 font-bold">
+                <span className="text-gray-500 font-light text-xs">指名料</span> ¥
                 {selectStaff?.extraCharge ? selectStaff?.extraCharge.toLocaleString() : '0'}
               </p>
             </div>

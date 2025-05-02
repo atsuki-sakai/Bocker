@@ -53,26 +53,31 @@ const salonScheduleFormSchema = z.object({
     .string()
     .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
     .optional(),
-});
+  todayFirstLaterMinutes: z
+    .string()
+    .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
+    .optional(),
+})
 
 // フォーム値の変更を監視
 const defaultSchedule = {
   reservationLimitDays: '30',
   availableCancelDays: '3',
-  reservationIntervalMinutes: '0',
+  reservationIntervalMinutes: '60',
   availableSheet: '1',
-};
+  todayFirstLaterMinutes: '60',
+}
 
 export default function SalonScheduleForm() {
-  const { salonId } = useSalon();
+  const { salonId } = useSalon()
 
   const salonScheduleConfig = useQuery(
     api.salon.schedule.query.findBySalonId,
     salonId ? { salonId } : 'skip'
-  );
+  )
 
-  const addSalonScheduleConfig = useMutation(api.salon.schedule.mutation.create);
-  const updateSalonScheduleConfig = useMutation(api.salon.schedule.mutation.update);
+  const addSalonScheduleConfig = useMutation(api.salon.schedule.mutation.create)
+  const updateSalonScheduleConfig = useMutation(api.salon.schedule.mutation.update)
 
   const {
     handleSubmit,
@@ -80,85 +85,97 @@ export default function SalonScheduleForm() {
     setValue,
     watch,
     formState: { errors, isSubmitting, isDirty },
-  } = useZodForm(salonScheduleFormSchema);
+  } = useZodForm(salonScheduleFormSchema)
 
-  const reservationLimitDaysValue = watch('reservationLimitDays');
-  const availableCancelDaysValue = watch('availableCancelDays');
-  const reservationIntervalMinutesValue = watch('reservationIntervalMinutes');
-  const availableSheetValue = watch('availableSheet');
+  const reservationLimitDaysValue = watch('reservationLimitDays')
+  const availableCancelDaysValue = watch('availableCancelDays')
+  const reservationIntervalMinutesValue = watch('reservationIntervalMinutes')
+  const availableSheetValue = watch('availableSheet')
+  const todayFirstLaterMinutesValue = watch('todayFirstLaterMinutes')
 
   // スケジュール設定が変更されたらフォームをリセット
   useEffect(() => {
     if (salonScheduleConfig) {
       // 受信データをサニタイズ
-      const scheduleLimitDays = salonScheduleConfig.reservationLimitDays;
-      const scheduleCancelDays = salonScheduleConfig.availableCancelDays;
-      const scheduleIntervalMinutes = salonScheduleConfig.reservationIntervalMinutes;
-      const scheduleAvailableSheet = salonScheduleConfig.availableSheet;
+      const scheduleLimitDays = salonScheduleConfig.reservationLimitDays
+      const scheduleCancelDays = salonScheduleConfig.availableCancelDays
+      const scheduleIntervalMinutes = salonScheduleConfig.reservationIntervalMinutes
+      const scheduleAvailableSheet = salonScheduleConfig.availableSheet
+      const scheduleTodayFirstLaterMinutes = salonScheduleConfig.todayFirstLaterMinutes
       // データ型の整合性を確保するために明示的に文字列型に変換
       const limitDays =
         scheduleLimitDays !== undefined && scheduleLimitDays !== null
           ? String(scheduleLimitDays)
-          : defaultSchedule.reservationLimitDays;
+          : defaultSchedule.reservationLimitDays
 
       const cancelDays =
         scheduleCancelDays !== undefined && scheduleCancelDays !== null
           ? String(scheduleCancelDays)
-          : defaultSchedule.availableCancelDays;
+          : defaultSchedule.availableCancelDays
 
       const intervalMinutes =
         scheduleIntervalMinutes !== undefined && scheduleIntervalMinutes !== null
           ? String(scheduleIntervalMinutes)
-          : defaultSchedule.reservationIntervalMinutes;
+          : defaultSchedule.reservationIntervalMinutes
 
       const availableSheet =
         scheduleAvailableSheet !== undefined && scheduleAvailableSheet !== null
           ? String(scheduleAvailableSheet)
-          : defaultSchedule.availableSheet;
+          : defaultSchedule.availableSheet
+
+      const todayFirstLaterMinutes =
+        scheduleTodayFirstLaterMinutes !== undefined && scheduleTodayFirstLaterMinutes !== null
+          ? String(scheduleTodayFirstLaterMinutes)
+          : defaultSchedule.todayFirstLaterMinutes
 
       // フォーム値をクリアしてから新しい値を設定
-      reset({}, { keepValues: false });
+      reset({}, { keepValues: false })
 
       // 少し遅延させてから値を設定
       setTimeout(() => {
         if (salonId) {
-          setValue('salonId', salonId);
+          setValue('salonId', salonId)
         }
-        setValue('salonScheduleConfigId', salonScheduleConfig._id);
-        setValue('reservationLimitDays', limitDays);
-        setValue('availableCancelDays', cancelDays);
-        setValue('reservationIntervalMinutes', intervalMinutes);
-        setValue('availableSheet', availableSheet);
-      }, 0);
+        setValue('salonScheduleConfigId', salonScheduleConfig._id)
+        setValue('reservationLimitDays', limitDays)
+        setValue('availableCancelDays', cancelDays)
+        setValue('reservationIntervalMinutes', intervalMinutes)
+        setValue('availableSheet', availableSheet)
+        setValue('todayFirstLaterMinutes', todayFirstLaterMinutes)
+      }, 0)
     } else if (salonId) {
       // 初期値設定
-      reset({}, { keepValues: false });
+      reset({}, { keepValues: false })
 
       // 少し遅延させてから値を設定
       setTimeout(() => {
-        setValue('salonId', salonId);
-        setValue('salonScheduleConfigId', undefined);
-        setValue('reservationLimitDays', defaultSchedule.reservationLimitDays);
-        setValue('availableCancelDays', defaultSchedule.availableCancelDays);
-        setValue('reservationIntervalMinutes', defaultSchedule.reservationIntervalMinutes);
-        setValue('availableSheet', defaultSchedule.availableSheet);
-      }, 0);
+        setValue('salonId', salonId)
+        setValue('salonScheduleConfigId', undefined)
+        setValue('reservationLimitDays', defaultSchedule.reservationLimitDays)
+        setValue('availableCancelDays', defaultSchedule.availableCancelDays)
+        setValue('reservationIntervalMinutes', defaultSchedule.reservationIntervalMinutes)
+        setValue('availableSheet', defaultSchedule.availableSheet)
+        setValue('todayFirstLaterMinutes', defaultSchedule.todayFirstLaterMinutes)
+      }, 0)
     }
-  }, [salonScheduleConfig, reset, setValue, salonId]);
+  }, [salonScheduleConfig, reset, setValue, salonId])
 
   // フォーム送信処理å
   const onSubmit = useCallback(
     async (data: z.infer<typeof salonScheduleFormSchema>) => {
-      if (!salonId) return;
+      if (!salonId) return
 
       try {
         // 送信データの整形
-        const limitDays = Number(data.reservationLimitDays || defaultSchedule.reservationLimitDays);
-        const cancelDays = Number(data.availableCancelDays || defaultSchedule.availableCancelDays);
+        const limitDays = Number(data.reservationLimitDays || defaultSchedule.reservationLimitDays)
+        const cancelDays = Number(data.availableCancelDays || defaultSchedule.availableCancelDays)
         const intervalMinutes = Number(
           data.reservationIntervalMinutes || defaultSchedule.reservationIntervalMinutes
-        ) as ReservationIntervalMinutes;
-        const availableSheet = Number(data.availableSheet || defaultSchedule.availableSheet);
+        ) as ReservationIntervalMinutes
+        const availableSheet = Number(data.availableSheet || defaultSchedule.availableSheet)
+        const todayFirstLaterMinutes = Number(
+          data.todayFirstLaterMinutes || defaultSchedule.todayFirstLaterMinutes
+        )
         if (salonScheduleConfig?._id) {
           // 既存のデータを更新する場合
           await updateSalonScheduleConfig({
@@ -167,7 +184,8 @@ export default function SalonScheduleForm() {
             reservationIntervalMinutes: intervalMinutes,
             reservationLimitDays: limitDays,
             availableSheet: availableSheet,
-          });
+            todayFirstLaterMinutes: todayFirstLaterMinutes,
+          })
         } else {
           // 新規作成の場合
           await addSalonScheduleConfig({
@@ -176,10 +194,11 @@ export default function SalonScheduleForm() {
             reservationIntervalMinutes: intervalMinutes,
             reservationLimitDays: limitDays,
             availableSheet: availableSheet,
-          });
+            todayFirstLaterMinutes: todayFirstLaterMinutes,
+          })
         }
 
-        toast.success('スケジュール設定を保存しました');
+        toast.success('スケジュール設定を保存しました')
 
         // フォームのdirty状態をリセット
         reset(
@@ -192,20 +211,20 @@ export default function SalonScheduleForm() {
             availableSheet: data.availableSheet,
           },
           { keepDirty: false }
-        );
+        )
       } catch (error) {
-        toast.error(handleErrorToMsg(error));
+        toast.error(handleErrorToMsg(error))
       }
     },
     [addSalonScheduleConfig, updateSalonScheduleConfig, salonId, salonScheduleConfig, reset]
-  );
+  )
 
   if (!salonId) {
-    return <Loading />;
+    return <Loading />
   }
 
   if (salonScheduleConfig === undefined) {
-    return <Loading />;
+    return <Loading />
   }
 
   return (
@@ -233,7 +252,7 @@ export default function SalonScheduleForm() {
                 label="予約受付最大日数"
                 icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
                 error={errors.reservationLimitDays?.message ?? ''}
-                tooltip="予約受付可能日数を設定します"
+                tooltip="予約受付可能日数を設定"
               >
                 <Select
                   value={reservationLimitDaysValue || defaultSchedule.reservationLimitDays}
@@ -262,7 +281,7 @@ export default function SalonScheduleForm() {
                 label="キャンセル可能日数"
                 icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
                 error={errors.availableCancelDays?.message ?? ''}
-                tooltip="予約日の何日前までキャンセル可能かを設定します"
+                tooltip="予約日の何日前までキャンセル可能かを設定"
               >
                 <Select
                   value={availableCancelDaysValue || defaultSchedule.availableCancelDays}
@@ -294,7 +313,7 @@ export default function SalonScheduleForm() {
                 label="予約間隔（分）"
                 icon={<Clock3 className="h-4 w-4 text-muted-foreground" />}
                 error={errors.reservationIntervalMinutes?.message ?? ''}
-                tooltip="予約の最小時間間隔を設定します。"
+                tooltip="予約の最小時間間隔を設定"
               >
                 <Select
                   value={
@@ -316,7 +335,7 @@ export default function SalonScheduleForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">予約枠を生成する間隔を設定します。</p>
+                <p className="text-xs text-muted-foreground">予約枠を生成する間隔を設定</p>
               </FormField>
             </div>
 
@@ -325,7 +344,7 @@ export default function SalonScheduleForm() {
                 label="予約可能席数"
                 icon={<PersonStanding className="h-4 w-4 text-muted-foreground" />}
                 error={errors.availableSheet?.message ?? ''}
-                tooltip="予約可能席数を設定します"
+                tooltip="予約可能席数を設定"
               >
                 <Select
                   value={availableSheetValue || defaultSchedule.availableSheet}
@@ -346,8 +365,38 @@ export default function SalonScheduleForm() {
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">同一時間帯に予約可能な席数を設定</p>
+              </FormField>
+            </div>
+          </div>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="w-full md:w-1/2">
+              <FormField
+                label="最短の予約開始時間"
+                icon={<Clock3 className="h-4 w-4 text-muted-foreground" />}
+                error={errors.todayFirstLaterMinutes?.message ?? ''}
+                tooltip="最短で何分後から予約可能にするかを設定"
+              >
+                <Select
+                  value={todayFirstLaterMinutesValue || defaultSchedule.todayFirstLaterMinutes}
+                  onValueChange={(value) => {
+                    const validValue = value || defaultSchedule.todayFirstLaterMinutes
+                    setValue('todayFirstLaterMinutes', validValue, { shouldDirty: true })
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="最短の予約開始時間を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RESERVATION_INTERVAL_MINUTES_VALUES.map((value) => (
+                      <SelectItem key={value} value={String(value)}>
+                        {value}分
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  同一時間帯に予約可能な席数を設定します
+                  当日予約でかつ現在空き枠がある場合に最短で何分後から予約を受け付けるかを設定
                 </p>
               </FormField>
             </div>
@@ -553,6 +602,34 @@ export default function SalonScheduleForm() {
                 </li>
               </ul>
             </section>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-5">
+          <AccordionTrigger>最短の予約開始時間の設定について</AccordionTrigger>
+          <AccordionContent className="text-sm text-slate-600 space-y-4">
+            <p className="font-bold text-base mb-2 text-slate-800">
+              最短の予約開始時間の設定について
+            </p>
+
+            <p>
+              「最短の予約開始時間」は、当日予約の際に現在時刻から何分後以降の予約を受け付けるかを設定するものです。
+              例えば <strong>{watch('todayFirstLaterMinutes')} 分</strong>{' '}
+              に設定されている場合、現在時刻からその時間が経過した以降の予約枠のみ表示されます。
+              急な来店による対応負荷を避けるために活用できます。
+            </p>
+            <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <li>
+                当日予約を受け付ける際に当日予約でかつ現在空き枠がある場合に
+                <strong>{watch('todayFirstLaterMinutes')} 分</strong>
+                後から予約を受け付ける設定です。
+                <br />
+                <span className="text-slate-500">
+                  （例：現在時刻が <strong>10:00</strong> で、設定が <strong>30分</strong> の場合、
+                  <strong>10:30 以降</strong> の空き枠のみ予約が可能になります。 10:00〜10:30
+                  の枠が空いていても、表示されず予約できません。）
+                </span>
+              </li>
+            </ul>
           </AccordionContent>
         </AccordionItem>
       </Accordion>

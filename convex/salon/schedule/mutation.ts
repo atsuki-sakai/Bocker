@@ -12,13 +12,14 @@ export const create = mutation({
     availableCancelDays: v.optional(v.number()), // 予約キャンセル可能日数
     reservationIntervalMinutes: v.optional(reservationIntervalMinutesType) || 0, // 予約時間間隔(分)
     availableSheet: v.optional(v.number()), // 予約可能席数
+    todayFirstLaterMinutes: v.optional(v.number()), // 本日の場合、何分後から予約可能か？
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateSalonScheduleConfig(args);
-    return await salonService.createScheduleConfig(ctx, args);
+    checkAuth(ctx)
+    validateSalonScheduleConfig(args)
+    return await salonService.createScheduleConfig(ctx, args)
   },
-});
+})
 
 export const update = mutation({
   args: {
@@ -27,10 +28,11 @@ export const update = mutation({
     availableCancelDays: v.optional(v.number()), // 予約キャンセル可能日数
     reservationIntervalMinutes: v.optional(reservationIntervalMinutesType) || 0, // 予約時間間隔(分)
     availableSheet: v.optional(v.number()), // 予約可能席数
+    todayFirstLaterMinutes: v.optional(v.number()), // 本日の場合、何分後から予約可能か？
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateSalonScheduleConfig(args);
-    return await salonService.updateScheduleConfig(ctx, args);
+    checkAuth(ctx)
+    validateSalonScheduleConfig(args)
+    return await salonService.updateScheduleConfig(ctx, args)
   },
-});
+})

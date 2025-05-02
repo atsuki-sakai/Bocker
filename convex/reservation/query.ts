@@ -278,6 +278,16 @@ export const findAvailableTimeSlots = query({
     // 共通日付バリデーション
     const targetDate = validateDateStrToDate(args.date, 'findAvailableTimeSlots')
     const dayOfWeek = getDayOfWeek(targetDate)
+    const dayOfWeekJa = getDayOfWeek(targetDate, true)
+
+    const salonScheduleConfig = await ctx.db
+      .query('salon_schedule_config')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId))
+      .first()
+
+    const todayFirstLaterMinutes = salonScheduleConfig?.todayFirstLaterMinutes
+      ? salonScheduleConfig.todayFirstLaterMinutes * 60 * 1000
+      : 30 * 60 * 1000 // 本日の場合、30分後から予約可能
 
     // 1. サロンの週間スケジュール取得
     const salonWeekSchedule = await ctx.db
@@ -302,8 +312,8 @@ export const findAvailableTimeSlots = query({
       .first()
     if (!salonWeekSchedule) {
       throw throwConvexError({
-        title: `サロンは${dayOfWeek}曜日は営業していません`,
-        message: `サロンは${dayOfWeek}曜日は営業していません`,
+        title: `サロンは${dayOfWeekJa}曜日は営業していません`,
+        message: `サロンは${dayOfWeekJa}曜日は営業していません`,
         severity: 'low',
         code: 'INVALID_ARGUMENT',
         callFunc: 'findAvailableTimeSlots',
@@ -313,8 +323,8 @@ export const findAvailableTimeSlots = query({
     }
     if (!salonWeekSchedule.startHour || !salonWeekSchedule.endHour) {
       throw throwConvexError({
-        title: `サロンの${dayOfWeek}曜日の営業時間が設定されていません`,
-        message: `サロンの${dayOfWeek}曜日の営業時間が設定されていません`,
+        title: `サロンの${dayOfWeekJa}曜日の営業時間が設定されていません`,
+        message: `サロンの${dayOfWeekJa}曜日の営業時間が設定されていません`,
         severity: 'low',
         code: 'INVALID_ARGUMENT',
         callFunc: 'findAvailableTimeSlots',
@@ -388,8 +398,8 @@ export const findAvailableTimeSlots = query({
     }
     if (!staffWeekSchedule.isOpen) {
       throw throwConvexError({
-        title: `${dayOfWeek}は出勤していません`,
-        message: `${dayOfWeek}は出勤していません`,
+        title: `${dayOfWeekJa}は出勤していません`,
+        message: `${dayOfWeekJa}は出勤していません`,
         severity: 'low',
         code: 'INVALID_ARGUMENT',
         callFunc: 'findAvailableTimeSlots',
@@ -413,7 +423,21 @@ export const findAvailableTimeSlots = query({
       : Number.MAX_SAFE_INTEGER
 
     // サロン開始時刻とスタッフ開始時刻のうち、遅い方を採用
-    const resultStart = Math.max(salonStart!, staffStart!)
+    let resultStart = Math.max(salonStart!, staffStart!)
+    // 現在時刻を日本時間にシフト
+    const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000)
+    // 本日かどうか判定（日本時間ベース）
+    if (
+      jstNow.getUTCFullYear() === targetDate.getFullYear() &&
+      jstNow.getUTCMonth() === targetDate.getMonth() &&
+      jstNow.getUTCDate() === targetDate.getDate()
+    ) {
+      // 現在時刻＋待機時間を10分刻みに丸め
+      const rawNextLater = Date.now() + todayFirstLaterMinutes
+      const stepMs = 10 * 60 * 1000
+      const alignedNextLater = Math.ceil(rawNextLater / stepMs) * stepMs
+      resultStart = Math.max(resultStart, alignedNextLater)
+    }
     // サロン終了時刻とスタッフ終了時刻のうち、早い方を採用
     const resultEnd = Math.min(salonEnd!, staffEnd!)
 

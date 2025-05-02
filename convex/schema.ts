@@ -137,6 +137,7 @@ export default defineSchema({
     availableSheet: v.optional(v.number()), // 同一時間内での最大予約数(席数が最大の施術数になるので席数と同じになる)
     reservationLimitDays: v.optional(v.number()), // 現在から何日先まで予約できるかの日数
     availableCancelDays: v.optional(v.number()), // 予約キャンセル可能日数
+    todayFirstLaterMinutes: v.optional(v.number()), // 本日の場合、何分後から予約可能か？
     reservationIntervalMinutes: v.optional(reservationIntervalMinutesType) || 0, // 予約時間間隔(分)
     ...CommonFields,
   }).index('by_salon_id', ['salonId', 'isArchive']),
