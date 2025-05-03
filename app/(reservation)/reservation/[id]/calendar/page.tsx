@@ -182,7 +182,10 @@ export default function CalendarPage() {
               ? { salon, config, apiConfig, scheduleConfig }
               : null
           )
-
+          if (cookieJson.customerId === undefined || cookieJson.salonId === undefined) {
+            deleteCookie(LINE_LOGIN_SESSION_KEY)
+            router.push(`/reservation/${salonId}`)
+          }
           const customerPointConfig = await fetchQuery(
             api.customer.points.query.findBySalonAndCustomerId,
             {
