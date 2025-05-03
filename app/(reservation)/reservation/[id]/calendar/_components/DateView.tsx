@@ -142,6 +142,8 @@ export const DateView = ({
     { dayOfWeek: uniqueClosedDayIndices },
   ]
 
+  console.log('disabledDates', disabledDates)
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[300px]">
