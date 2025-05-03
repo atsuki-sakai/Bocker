@@ -10,7 +10,7 @@ export const findBySalonAndCustomerId = query({
     customerId: v.id('customer'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true)
     validateCustomerPoints(args);
     return await ctx.db
       .query('customer_points')
