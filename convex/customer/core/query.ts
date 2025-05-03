@@ -344,6 +344,11 @@ export const findByAvailableStaffs = query({
         gender: staff.gender,
         description: staff.description,
         imgPath: staff.imgPath,
+        isActive: staff.isActive,
+        tags: staff.tags,
+        _creationTime: staff._creationTime,
+        instagramLink: staff.instagramLink,
+        featuredHairimgPath: staff.featuredHairimgPath,
         extraCharge: config?.extraCharge,
         priority: config?.priority,
       }
