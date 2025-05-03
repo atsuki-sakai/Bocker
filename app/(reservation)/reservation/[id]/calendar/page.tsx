@@ -98,9 +98,6 @@ export default function CalendarPage() {
   const [availablePoints, setAvailablePoints] = useState<number>(1000) // 仮の値、実際にはAPIから取得
   const [direction, setDirection] = useState(0) // アニメーションの方向を制御
 
-  // FUNCTIONS
-  const fetchSalonComplete = async () => {}
-
   // 次のステップに進む
   const goToNextStep = () => {
     setDirection(1) // 前進方向を設定
