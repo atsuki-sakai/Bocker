@@ -358,7 +358,7 @@ export default function SalonScheduleForm() {
                     <SelectValue placeholder="予約可能席数を選択" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Array.from({ length: 60 }, (_, i) => (
+                    {Array.from({ length: 20 }, (_, i) => (
                       <SelectItem key={i + 1} value={String(i + 1)}>
                         {i + 1}席
                       </SelectItem>

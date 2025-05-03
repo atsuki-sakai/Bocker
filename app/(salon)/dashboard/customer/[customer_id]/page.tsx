@@ -94,20 +94,27 @@ export default function CustomerDetailPage() {
     >
       <div>
         <div className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <h3 className="text-3xl font-bold text-primary">{completeCustomer.customer.fullName}</h3>
-          <Badge variant="default">
-            {!completeCustomer.customerPoints.totalPoints ? (
-              <>
-                <span className="text-sm font-medium text-muted-foreground">保有ポイント : </span>
-                <span className="text-base ml-1">
-                  {completeCustomer.customerPoints.totalPoints ?? 0}
-                </span>
-              </>
-            ) : (
-              'ポイント無し'
-            )}
+          <div>
+            <h3 className="text-3xl font-bold text-primary">
+              {completeCustomer.customer.lastName ?? '未登録'}{' '}
+              {completeCustomer.customer.firstName ?? '未登録'}
+              <span className="text-sm text-muted-foreground ml-1">様</span>
+            </h3>
+          </div>
+          <Badge variant="outline">
+            <div className="flex flex-col md:flex-row items-end justify-end space-x-2">
+              <span className="text-sm font-medium text-slate-500">保有ポイント</span>
+              <span className="text-base ml-1">
+                {completeCustomer.customerPoints.totalPoints ?? 0}
+              </span>
+            </div>
           </Badge>
         </div>
+        {completeCustomer.customer.lineUserName && (
+          <p className="w-fit text-sm mt-1 text-green-600 border-green-600 border rounded-md font-bold py-1 bg-green-50 px-3">
+            LINEユーザー名: {completeCustomer.customer.lineUserName}
+          </p>
+        )}
         <div className="space-y-6 pt-4">
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center">

@@ -548,8 +548,8 @@ export function validateCustomer(args: Partial<Doc<'customer'>>) {
   if (args.lastName) {
     validateStringLength(args.lastName, MAX_TEXT_LENGTH, '名前');
   }
-  if (args.fullName) {
-    validateStringLength(args.fullName, MAX_TEXT_LENGTH, '名前');
+  if (args.searchbleText) {
+    validateStringLength(args.searchbleText, MAX_TEXT_LENGTH, '検索用テキスト')
   }
   if (args.email) {
     validateEmail(args.email, 'メールアドレス');

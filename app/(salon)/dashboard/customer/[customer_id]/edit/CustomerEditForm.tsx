@@ -63,32 +63,31 @@ const customerEditFormSchema = z.object({
   lastName: z
     .string()
     .min(1, { message: '苗字は必須です' })
-    .max(MAX_TEXT_LENGTH, { message: `苗字は${MAX_TEXT_LENGTH}文字以内で入力してください` }),
+    .max(MAX_TEXT_LENGTH, { message: `苗字は${MAX_TEXT_LENGTH}文字以内で入力してください` })
+    .optional(),
   firstName: z
     .string()
     .min(1, { message: '名前は必須です' })
-    .max(MAX_TEXT_LENGTH, { message: `名前は${MAX_TEXT_LENGTH}文字以内で入力してください` }),
+    .max(MAX_TEXT_LENGTH, { message: `名前は${MAX_TEXT_LENGTH}文字以内で入力してください` })
+    .optional(),
   phone: z
     .string()
     .min(1, { message: '電話番号は必須です' })
-    .max(MAX_TEXT_LENGTH, { message: `電話番号は${MAX_TEXT_LENGTH}文字以内で入力してください` }),
+    .max(MAX_TEXT_LENGTH, { message: `電話番号は${MAX_TEXT_LENGTH}文字以内で入力してください` })
+    .optional(),
   email: z
     .string()
     .email({ message: 'メールアドレスが不正です' })
     .max(MAX_TEXT_LENGTH, {
       message: `メールアドレスは${MAX_TEXT_LENGTH}文字以内で入力してください`,
     })
-    .optional()
-    .or(z.literal('')),
-
+    .optional(),
   gender: z.enum(GENDER_VALUES).default('unselected'),
-  birthday: z.string().optional().or(z.literal('')),
-
+  birthday: z.string().optional(),
   notes: z
     .string()
     .max(MAX_NOTES_LENGTH, { message: `メモは${MAX_NOTES_LENGTH}文字以内で入力してください` })
-    .optional()
-    .or(z.literal('')),
+    .optional(),
   totalPoints: z.preprocess(
     (val) => {
       if (val === '' || val === null || val === undefined) return null
@@ -180,6 +179,11 @@ export default function CustomerEditForm() {
     try {
       const calculatedAge = calculateAge(data.birthday)
 
+      // 姓、名、Lineユーザー名をスペース区切りで結合（Lineユーザー名は省略可）
+      const parts = [data.lastName, data.firstName, completeCustomer.customer.lineUserName || '']
+      const searchbleText = parts.filter(Boolean).join(' ')
+      console.log('searchbleText:', searchbleText)
+
       const payload = {
         salonId: salonId,
         customerId: completeCustomer.customer._id,
@@ -199,8 +203,7 @@ export default function CustomerEditForm() {
         // Non-editable/Derived fields - use data from the original fetch
         lineId: completeCustomer.customer.lineId ?? '',
         lineUserName: completeCustomer.customer.lineUserName ?? '',
-        // Recalculate fullName based on submitted first/last name
-        fullName: `${data.lastName} ${data.firstName} ${completeCustomer.customer.lineUserName ? `(${completeCustomer.customer.lineUserName})` : ''}`,
+        // Recalculate <searchbleText> based on submitted first/last name
         useCount: completeCustomer.customer.useCount,
         lastReservationDate_unix: completeCustomer.customer.lastReservationDate_unix,
         lastTransactionDate_unix: completeCustomer.customerPoints?.lastTransactionDate_unix,
@@ -228,6 +231,15 @@ export default function CustomerEditForm() {
 
   return (
     <div className="container mx-auto py-4">
+      <h2 className="text-2xl font-bold text-slate-700 mb-4">顧客情報</h2>
+      {completeCustomer.customer.lineUserName && (
+        <p className="text-sm text-green-600 mb-4 p-2 border border-green-600 rounded-md w-fit">
+          <span className="font-bold">LINEユーザー名 </span>{' '}
+          <span className="text-slate-700 ml-2 tracking-wider font-bold">
+            {completeCustomer.customer.lineUserName}
+          </span>
+        </p>
+      )}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="grid grid-cols-2 gap-6 col-span-1">

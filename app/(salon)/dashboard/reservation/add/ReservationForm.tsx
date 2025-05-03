@@ -587,6 +587,7 @@ export default function ReservationForm() {
         totalPrice: data.totalPrice as number,
         options: data.options as { optionId: Id<'salon_option'>; quantity: number }[],
       })
+
       toast.success('予約が完了しました')
       router.push('/dashboard/reservation')
     } catch (error) {
@@ -653,7 +654,10 @@ export default function ReservationForm() {
                       <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
                         <PopoverTrigger asChild>
                           <Button variant="outline" className=" w-full justify-start h-fit">
-                            {customer.lastName} {customer.firstName}
+                            {customer.lastName ? customer.lastName + ' ' : '未登録'}
+                            {customer.firstName ? customer.firstName + ' ' : '未登録'}
+                            {customer.lineUserName ? customer.lineUserName + '　' : ''}
+                            {customer.phone ? 'tel:' + customer.phone : ''}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-full min-w-[350px] p-2 overflow-y-auto h-fit">
@@ -681,11 +685,10 @@ export default function ReservationForm() {
                                     }}
                                   >
                                     <div className="flex items-start gap-1 text-xs">
-                                      <p className="text-sm">
-                                        {customer.lastName} {customer.firstName}
-                                      </p>
-                                      <br />
-                                      <p className="text-sm">{customer.phone}</p>
+                                      {customer.lastName ? customer.lastName + ' ' : '未登録'}
+                                      {customer.firstName ? customer.firstName + ' ' : '未登録'}
+                                      {customer.lineUserName ? customer.lineUserName + '　' : ''}
+                                      {customer.phone ? 'tel:' + customer.phone : ''}
                                     </div>
                                   </CommandItem>
                                 )
@@ -697,18 +700,26 @@ export default function ReservationForm() {
                     </div>
                   )
                 })
-              ) : (
+              ) : searchName.length > 0 ? (
                 <p className="text-yellow-600 text-sm text-center bg-yellow-50 p-2 rounded-md">
                   顧客が見つかりません
+                </p>
+              ) : (
+                <p className="text-gray-600 text-sm text-center bg-white p-2 rounded-md">
+                  顧客を検索してください。
                 </p>
               )}
               {reservationCustomer && (
                 <div className="flex flex-col gap-2 mt-2 bg-green-50 p-3 rounded-md border border-green-300">
                   <p className="text-green-700 text-sm font-bold">予約する顧客</p>
                   <p className="text-slate-500 text-sm">
-                    {reservationCustomer.lastName} {reservationCustomer.firstName}
+                    {reservationCustomer.lastName ? reservationCustomer.lastName + ' ' : null}
+                    {reservationCustomer.firstName ? reservationCustomer.firstName + ' ' : null}
+                    {reservationCustomer.lineUserName
+                      ? reservationCustomer.lineUserName + '　'
+                      : null}
+                    {reservationCustomer.phone ? 'tel:' + reservationCustomer.phone : null}
                   </p>
-                  <span className="text-slate-500 text-xs -mt-2">{reservationCustomer.phone}</span>
                 </div>
               )}
             </div>

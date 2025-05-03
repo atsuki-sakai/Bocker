@@ -60,7 +60,14 @@ import { Loader2 } from 'lucide-react'
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
-  instagramLink: z.string().url({ message: 'URLが不正です' }).optional(),
+  instagramLink: z.preprocess(
+    (val) => {
+      // 空文字列の場合はnullを返す
+      if (val === '' || val === null || val === undefined) return null
+      return val
+    },
+    z.string().url({ message: 'URLが不正です' }).nullable().optional()
+  ),
   pinCode: z
     .string()
     .min(6, { message: 'ピンコードは6文字で入力してください' })

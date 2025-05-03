@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/common'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import { useSalon } from '@/hooks/useSalon'
 import { convertGender, Gender } from '@/services/convex/shared/types/common'
 import { Instagram } from 'lucide-react'
 import {
@@ -17,7 +16,10 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { useState } from 'react'
+import { useParams } from 'next/navigation'
+
 type StaffViewProps = {
+  selectedMenuIds: Id<'menu'>[]
   selectedStaff: Doc<'staff'> | null
   onChangeStaffAction: (staff: StaffDisplay | null) => void
 }
@@ -39,18 +41,25 @@ export type StaffDisplay = {
   featuredHairimgPath: string[] | undefined
 }
 
-export const StaffView = ({ selectedStaff, onChangeStaffAction }: StaffViewProps) => {
+export const StaffView = ({
+  selectedMenuIds,
+  selectedStaff,
+  onChangeStaffAction,
+}: StaffViewProps) => {
   const [infoStaff, setInfoStaff] = useState<StaffDisplay | null>(null)
-  const { salonId } = useSalon()
+  const params = useParams()
+  const salonId = typeof params.id === 'string' ? (params.id as Id<'salon'>) : undefined
   const staffsDisplayData = useQuery(
-    api.staff.core.query.listDisplayData,
+    api.staff.core.query.findByAvailableStaffs,
     salonId
       ? {
           salonId: salonId,
+          menuIds: selectedMenuIds,
         }
       : 'skip'
   )
 
+  console.log('staffsDisplayData', staffsDisplayData)
   if (!staffsDisplayData) {
     return <Loading />
   }

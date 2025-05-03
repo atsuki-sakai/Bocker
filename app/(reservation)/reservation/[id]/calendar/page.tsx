@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getCookie } from '@/lib/utils'
+import { useRouter, useParams } from 'next/navigation'
+import { getCookie, deleteCookie } from '@/lib/utils'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
@@ -10,8 +11,18 @@ import { Loading } from '@/components/common'
 import { MenuView, StaffView, OptionView, DateView, PaymentView, PointView } from './_components'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check } from 'lucide-react'
+import { Check, CheckCheck, LogOut } from 'lucide-react'
 import type { StaffDisplay } from './_components/StaffView.tsx'
+
+export type LoginSession = {
+  salonId: Id<'salon'>
+  customerId: Id<'customer'>
+  lineId?: string
+  email?: string
+  phone?: string
+  lineUserName?: string
+  tags?: string[]
+}
 
 // 予約ステップの定義
 type ReservationStep = 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'point'
@@ -55,7 +66,15 @@ const indicatorVariants = {
 }
 
 export default function CalendarPage() {
+  const router = useRouter()
+  const params = useParams()
+  const salonId = params.id as Id<'salon'>
+
   // STATES
+  const [sessionCustomer, setSessionCustomer] = useState<LoginSession | null>(null)
+  const [customerPointConfing, setCustomerPointConfing] = useState<Doc<'customer_points'> | null>(
+    null
+  )
   const [salonComplete, setSalonComplete] = useState<{
     salon: Partial<Doc<'salon'>>
     config: Partial<Doc<'salon_config'>>
@@ -78,9 +97,10 @@ export default function CalendarPage() {
   const [direction, setDirection] = useState(0) // アニメーションの方向を制御
 
   // FUNCTIONS
-  const fetchSalonComplete = () => {
+  const fetchSalonComplete = async () => {
     const cookie = getCookie(LINE_LOGIN_SESSION_KEY)
-    const cookieJson = cookie ? JSON.parse(cookie) : null
+    const cookieJson: LoginSession | null = cookie ? JSON.parse(cookie) : null
+    setSessionCustomer(cookieJson)
     if (cookieJson?.salonId) {
       const fetchSalon = async () => {
         try {
@@ -94,6 +114,15 @@ export default function CalendarPage() {
               ? { salon, config, apiConfig, scheduleConfig }
               : null
           )
+
+          const customerPointConfig = await fetchQuery(
+            api.customer.points.query.findBySalonAndCustomerId,
+            {
+              salonId: cookieJson.salonId as Id<'salon'>,
+              customerId: cookieJson.customerId as Id<'customer'>,
+            }
+          )
+          setCustomerPointConfing(customerPointConfig)
         } catch (error) {
           console.error('サロン情報の取得に失敗しました:', error)
           setSalonComplete(null)
@@ -103,9 +132,7 @@ export default function CalendarPage() {
       }
       fetchSalon()
     } else {
-      console.warn('セッションにsalonIdが見つかりません')
-      setSalonComplete(null)
-      setIsLoading(false)
+      router.push('/reservation/')
     }
   }
 
@@ -167,13 +194,27 @@ export default function CalendarPage() {
     }
   }
 
+  const handleLogout = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    deleteCookie(LINE_LOGIN_SESSION_KEY)
+    router.push(`/reservation/${salonId}`)
+  }
+
   // USE EFFECT
   useEffect(() => {
     fetchSalonComplete()
     setAvailablePoints(1000) // 仮の値、実際にはAPIから取得
-  }, [])
+  }, [fetchSalonComplete])
 
   if (isLoading) return <Loading />
+
+  if (!salonComplete) {
+    if (salonId) {
+      return router.push(`/reservation/${salonId}`)
+    } else {
+      return router.push('/reservation')
+    }
+  }
 
   // 合計金額の計算
   const calculateTotal = () => {
@@ -280,28 +321,17 @@ export default function CalendarPage() {
                       予約したいメニューを選択してください。複数選択可能です。
                     </motion.p>
 
-                    {salonComplete?.salon._id ? (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                      >
-                        <MenuView
-                          salonId={salonComplete.salon._id as Id<'salon'>}
-                          selectedMenuIds={selectedMenus.map((menu) => menu._id)}
-                          onChangeMenusAction={(menus) => setSelectedMenus(menus)}
-                        />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        className="p-4 bg-yellow-50 text-yellow-700 rounded-md"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.4 }}
-                      >
-                        サロン情報が取得できませんでした。ページを再読み込みするか、後ほど再度お試しください。
-                      </motion.div>
-                    )}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <MenuView
+                        salonId={salonComplete.salon._id as Id<'salon'>}
+                        selectedMenuIds={selectedMenus.map((menu) => menu._id)}
+                        onChangeMenusAction={(menus) => setSelectedMenus(menus)}
+                      />
+                    </motion.div>
 
                     <motion.div
                       className="mt-6 flex justify-center"
@@ -329,6 +359,7 @@ export default function CalendarPage() {
                     transition={{ delay: 0.2 }}
                   >
                     <StaffView
+                      selectedMenuIds={selectedMenus.map((menu) => menu._id)}
                       selectedStaff={selectedStaffCompleted?.staff as Doc<'staff'> | null}
                       onChangeStaffAction={(staff) => {
                         if (staff) {
@@ -477,10 +508,31 @@ export default function CalendarPage() {
     )
   }
 
+  console.log('customerPointConfing', customerPointConfing)
   return (
     <div className="container mx-auto px-4 py-6 pb-24">
       {renderStepIndicator()}
 
+      <div className="mb-2 overflow-hidden flex items-center justify-between gap-2">
+        {sessionCustomer?.lineUserName ? (
+          <p className="text-sm flex items-center gap-2">
+            <CheckCheck className="w-5 h-5 text-green-500 border border-green-500 rounded-full p-1" />
+            <span className="font-bold">{sessionCustomer?.lineUserName} 様</span>
+          </p>
+        ) : (
+          sessionCustomer?.email && (
+            <p className="text-sm flex items-center gap-2">
+              <CheckCheck className="w-4 h-4 text-green-500" />
+              <span className="font-bold">{sessionCustomer?.email}</span>
+            </p>
+          )
+        )}
+        <div className="flex flex-col items-center gap-2">
+          <Button size="icon" onClick={(e) => handleLogout(e)}>
+            <LogOut className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
       <div className="mb-6 overflow-hidden">{renderStepContent()}</div>
 
       {(selectedMenus.length > 0 || selectedStaffCompleted || selectedOptions.length > 0) && (

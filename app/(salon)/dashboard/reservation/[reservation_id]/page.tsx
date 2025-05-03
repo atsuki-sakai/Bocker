@@ -91,6 +91,7 @@ export default function ReservationPage() {
         reservationId: reservation._id,
         status: status,
       })
+
       toast.success('ステータスを変更しました')
       router.push('/dashboard/reservation')
     } catch (error) {
@@ -190,7 +191,13 @@ export default function ReservationPage() {
             <h2 className="text-xl font-semibold mb-3">お客様情報</h2>
             <div>
               <p className="text-gray-600">お客様名:</p>
-              <p className="font-medium text-lg">{customer.fullName || 'N/A'}</p>
+              <p className="font-medium text-lg">
+                {customer.lineUserName
+                  ? customer.lineUserName
+                  : customer.lastName && customer.firstName
+                    ? `${customer.lastName} ${customer.firstName}`
+                    : 'N/A'}
+              </p>
             </div>
           </div>
         )}

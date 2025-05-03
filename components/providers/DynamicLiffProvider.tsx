@@ -106,7 +106,7 @@ export function DynamicLiffProvider({ children, salonId }: DynamicLiffProviderPr
     return
   }, [dbLiffId, retryCount, salonId])
 
-  // エラー表示å
+  // エラー表示
   if (showError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">

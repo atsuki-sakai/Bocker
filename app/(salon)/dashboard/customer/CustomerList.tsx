@@ -80,13 +80,16 @@ export default function CustomerList() {
     if (!searchTerm) return true
 
     const searchLower = searchTerm.toLowerCase().trim()
-    const fullName = `${customer.firstName} ${customer.lastName}`.toLowerCase()
+    const searchbleText =
+      `${customer.firstName} ${customer.lastName} ${customer.email} ${customer.phone} ${customer.lineUserName}`.toLowerCase()
 
     return (
-      fullName.includes(searchLower) ||
+      searchbleText.includes(searchLower) ||
       (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
       (customer.phone && customer.phone.includes(searchLower)) ||
-      (customer.lineUserName && customer.lineUserName.toLowerCase().includes(searchLower))
+      (customer.lineUserName && customer.lineUserName.toLowerCase().includes(searchLower)) ||
+      (customer.lastName && customer.lastName.toLowerCase().includes(searchLower)) ||
+      (customer.firstName && customer.firstName.toLowerCase().includes(searchLower))
     )
   })
 
@@ -120,8 +123,7 @@ export default function CustomerList() {
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50 text-slate-700">
-              <TableHead className="w-[250px] px-2">顧客名</TableHead>
-              <TableHead className="px-2">LINEユーザー名</TableHead>
+              <TableHead className="w-[250px] px-2">顧客名/LINEユーザー名</TableHead>
               <TableHead className="px-2">連絡先</TableHead>
               <TableHead className="w-[100px] text-center px-2">来店回数</TableHead>
               <TableHead className="w-[150px] px-2">最終来店日</TableHead>
@@ -142,32 +144,37 @@ export default function CustomerList() {
               filteredCustomers.map((customer) => (
                 <TableRow key={customer._id} className="hover:bg-transparent">
                   <TableCell className="font-medium px-2">
-                    <div className="flex items-center gap-2 text-nowrap">
-                      {customer.lastName} {customer.firstName}
+                    <div className="flex items-center text-xs text-muted-foreground gap-2 text-nowrap">
+                      <span>
+                        {customer.lastName && customer.firstName
+                          ? `${customer.lastName} ${customer.firstName}`
+                          : '未登録'}
+                      </span>
+                      {customer.lineUserName && (
+                        <span className="text-xs text-muted-foreground">
+                          / {customer.lineUserName}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell className="px-2">
-                    {customer.lineUserName ? (
-                      <div className="flex items-center gap-2">
-                        <span>{customer.lineUserName}</span>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">未登録</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="px-2">
+
+                  <TableCell className="px-2 text-xs">
                     <div className="space-y-1">
-                      {customer.phone && (
-                        <div className="flex items-center gap-2 text-sm">
+                      {customer.phone ? (
+                        <div className="flex items-center gap-2">
                           <Phone size={14} className="text-muted-foreground" />
                           <span>{customer.phone}</span>
                         </div>
+                      ) : (
+                        <p className="text-muted-foreground">未登録</p>
                       )}
-                      {customer.email && (
-                        <div className="flex items-center gap-2 text-sm">
+                      {customer.email ? (
+                        <div className="flex items-center gap-2">
                           <Mail size={14} className="text-muted-foreground" />
                           <span>{customer.email}</span>
                         </div>
+                      ) : (
+                        <p className="text-muted-foreground">未登録</p>
                       )}
                     </div>
                   </TableCell>

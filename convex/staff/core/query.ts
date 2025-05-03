@@ -6,7 +6,7 @@ import { validateStaff } from '@/services/convex/shared/utils/validation'
 import { checkAuth } from '@/services/convex/shared/utils/auth'
 import { throwConvexError } from '@/lib/error'
 import { genderType } from '@/services/convex/shared/types/common'
-import { api } from '@/convex/_generated/api'
+import { validateRequired } from '@/services/convex/shared/utils/validation'
 // サロンIDとメールアドレスからスタッフを取得
 export const getById = query({
   args: {
@@ -362,11 +362,12 @@ export const listDisplayData = query({
         q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
       )
       .collect()
-
+    console.log('staffs', staffs)
     const staffConfigs = await ctx.db
       .query('staff_config')
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
       .collect()
+    console.log('staffConfigs', staffConfigs)
 
     return staffs.map((staff) => ({
       _id: staff._id,
@@ -384,5 +385,67 @@ export const listDisplayData = query({
       priority: staffConfigs.find((config) => config.staffId === staff._id)?.priority,
       featuredHairimgPath: staff.featuredHairimgPath,
     }))
+  },
+})
+
+export const findByAvailableStaffs = query({
+  args: {
+    salonId: v.id('salon'),
+    menuIds: v.array(v.id('menu')),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx, true)
+    validateRequired(args.salonId, 'salonId')
+
+    // 1. 全スタッフ取得（アクティブかつアーカイブされていない）
+    const allStaff = await ctx.db
+      .query('staff')
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
+      )
+      .collect()
+
+    // 2. 各メニューに対応しないスタッフ（除外スタッフ）を取得して集約
+    const excludedIds = new Set<string>()
+    for (const menuId of args.menuIds) {
+      const exclusions = await ctx.db
+        .query('menu_exclusion_staff')
+        .withIndex('by_salon_menu_id', (q) =>
+          q.eq('salonId', args.salonId).eq('menuId', menuId).eq('isArchive', false)
+        )
+        .collect()
+      exclusions.forEach((ex) => excludedIds.add(ex.staffId))
+    }
+
+    // 3. 除外されたスタッフを除去
+    const availableStaff = allStaff.filter((staff) => !excludedIds.has(staff._id))
+
+    // 4. スタッフ設定を取得してマッピング (指名料、優先度)
+    const configs = await ctx.db
+      .query('staff_config')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .collect()
+    const configMap = new Map(configs.map((config) => [config.staffId, config]))
+
+    // 5. 結果を整形して返却
+    return availableStaff.map((staff) => {
+      const config = configMap.get(staff._id)
+      return {
+        _id: staff._id,
+        name: staff.name,
+        age: staff.age,
+        email: staff.email,
+        gender: staff.gender,
+        description: staff.description,
+        imgPath: staff.imgPath,
+        isActive: staff.isActive,
+        tags: staff.tags,
+        _creationTime: staff._creationTime,
+        instagramLink: staff.instagramLink,
+        featuredHairimgPath: staff.featuredHairimgPath,
+        extraCharge: config?.extraCharge,
+        priority: config?.priority,
+      }
+    })
   },
 })

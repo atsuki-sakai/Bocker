@@ -243,9 +243,10 @@ export default defineSchema({
     lineUserName: v.optional(v.string()), // LINEユーザー名
     phone: v.optional(v.string()), // 電話番号
     email: v.optional(v.string()), // メールアドレス
+    password: v.optional(v.string()), // パスワード
     firstName: v.optional(v.string()), // 名前
     lastName: v.optional(v.string()), // 苗字
-    fullName: v.optional(v.string()), // 検索用フルネーム
+    searchbleText: v.optional(v.string()), // 検索用テキスト
     useCount: v.optional(v.number()), // 利用回数
     lastReservationDate_unix: v.optional(v.number()), // 最終予約日
     tags: v.optional(v.array(v.string())), // タグ
@@ -255,10 +256,10 @@ export default defineSchema({
     .index('by_salon_line_id', ['salonId', 'lineId', 'isArchive'])
     .index('by_salon_phone', ['salonId', 'phone', 'isArchive'])
     .index('by_salon_email', ['salonId', 'email', 'isArchive'])
-    .index('by_salon_id_full_name', ['salonId', 'fullName', 'isArchive'])
+    .index('by_salon_id_searchble_text', ['salonId', 'searchbleText', 'isArchive'])
     .index('by_salon_id_line_user_name', ['salonId', 'lineUserName', 'isArchive'])
-    .searchIndex('search_full_name', {
-      searchField: 'fullName',
+    .searchIndex('search_searchble_text', {
+      searchField: 'searchbleText',
       filterFields: ['salonId'],
     }),
 

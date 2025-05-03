@@ -398,8 +398,8 @@ export const findAvailableTimeSlots = query({
     }
     if (!staffWeekSchedule.isOpen) {
       throw throwConvexError({
-        title: `${dayOfWeekJa}は出勤していません`,
-        message: `${dayOfWeekJa}は出勤していません`,
+        title: `スタッフは${dayOfWeekJa}出勤していません。別の曜日を選択してください。`,
+        message: `スタッフは${dayOfWeekJa}出勤していません。別の曜日を選択してください。`,
         severity: 'low',
         code: 'INVALID_ARGUMENT',
         callFunc: 'findAvailableTimeSlots',

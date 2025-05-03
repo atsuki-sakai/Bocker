@@ -34,23 +34,20 @@ export default function ReserveRedirectPage() {
     async function initLiff() {
       if (!liff?.isLoggedIn()) {
         console.error('LIFF not logged in')
-        router.push('/reservation/error')
-        return
+        throw new Error('LIFF not logged in')
       }
 
       const profile = await liff?.getProfile()
       const sessionCookie = getCookie(LINE_LOGIN_SESSION_KEY)
       if (sessionCookie === null) {
         console.error('Session cookie not found')
-        router.push('/reservation/error')
-        return
+        throw new Error('Session cookie not found')
       }
 
       const { salonId } = JSON.parse(sessionCookie ?? '')
       if (!salonId) {
         console.error('storeId is missing in session cookie')
-        router.push('/reservation/error')
-        return
+        throw new Error('storeId is missing in session cookie')
       }
 
       const computedRedirectUrl = `/reservation/${salonId}/calendar`
@@ -60,7 +57,7 @@ export default function ReserveRedirectPage() {
       let newSession = JSON.stringify({
         salonId: salonId,
         lineId: profile?.userId,
-        displayName: profile?.displayName,
+        lineUserName: profile?.displayName,
       })
 
       try {
@@ -92,7 +89,7 @@ export default function ReserveRedirectPage() {
             phone: existingCustomer.phone || '',
           })
           newSession = JSON.stringify({
-            id: existingCustomer._id,
+            customerId: existingCustomer._id,
             salonId: salonId,
             lineId: profile?.userId,
             email: existingCustomer.email || userEmail,
