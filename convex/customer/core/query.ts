@@ -46,8 +46,8 @@ export const findBySalonId = query({
     // 名前での検索
     const nameResults = await ctx.db
       .query('customer')
-      .withIndex('by_salon_id_full_name', (q) =>
-        q.eq('salonId', args.salonId).eq('fullName', searchTerm)
+      .withSearchIndex('search_searchble_text', (q) =>
+        q.search('searchbleText', searchTerm).eq('salonId', args.salonId)
       )
       .collect()
 
@@ -141,7 +141,6 @@ export const findByPhone = query({
   },
 })
 
-
 // 名前での顧客検索（部分一致）
 export const findByName = query({
   args: {
@@ -154,10 +153,25 @@ export const findByName = query({
     validateRequired(args.salonId, 'salonId')
     return await ctx.db
       .query('customer')
-      .withSearchIndex('search_full_name', (q) =>
-        q.search('fullName', args.searchName).eq('salonId', args.salonId)
+      .withSearchIndex('search_searchble_text', (q) =>
+        q.search('searchbleText', args.searchName).eq('salonId', args.salonId)
       )
       .paginate(args.paginationOpts)
+  },
+})
+
+export const findByEmail = query({
+  args: {
+    salonId: v.id('salon'),
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx, true)
+    validateRequired(args.salonId, 'salonId')
+    return await ctx.db
+      .query('customer')
+      .withIndex('by_salon_email', (q) => q.eq('salonId', args.salonId).eq('email', args.email))
+      .first()
   },
 })
 
@@ -186,9 +200,9 @@ export const listBySalonId = query({
     // 検索語がある場合
     if (args.searchTerm && args.searchTerm.length > 0) {
       customerQuery = customerQuery.filter((q) => {
-        const fullName = q.field('fullName')
+        const searchbleText = q.field('searchbleText')
         // 文字列が存在し、検索語を含むかどうかをチェック
-        return q.neq(fullName, undefined)
+        return q.neq(searchbleText, undefined)
         // 注意: ここでは完全な検索機能を実装できません
         // 実際には全文検索インデックスの使用を検討してください
       })
@@ -277,3 +291,106 @@ export const completeCustomer = query({
     }
   },
 })
+
+export const findByAvailableStaffs = query({
+  args: {
+    salonId: v.id('salon'),
+    menuIds: v.array(v.id('menu')),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx)
+    validateRequired(args.salonId, 'salonId')
+
+    // 1. 全スタッフ取得（アクティブかつアーカイブされていない）
+    const allStaff = await ctx.db
+      .query('staff')
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
+      )
+      .collect()
+
+    // 2. 各メニューに対応しないスタッフ（除外スタッフ）を取得して集約
+    const excludedIds = new Set<string>()
+    for (const menuId of args.menuIds) {
+      const exclusions = await ctx.db
+        .query('menu_exclusion_staff')
+        .withIndex('by_salon_menu_id', (q) =>
+          q.eq('salonId', args.salonId).eq('menuId', menuId).eq('isArchive', false)
+        )
+        .collect()
+      exclusions.forEach((ex) => excludedIds.add(ex.staffId))
+    }
+
+    // 3. 除外されたスタッフを除去
+    const availableStaff = allStaff.filter((staff) => !excludedIds.has(staff._id))
+
+    // 4. スタッフ設定を取得してマッピング (指名料、優先度)
+    const configs = await ctx.db
+      .query('staff_config')
+      .withIndex('by_salon_id', (q) =>
+        q.eq('salonId', args.salonId).eq('isArchive', false)
+      )
+      .collect()
+    const configMap = new Map(configs.map((config) => [config.staffId, config]))
+
+    // 5. 結果を整形して返却
+    return availableStaff.map((staff) => {
+      const config = configMap.get(staff._id)
+      return {
+        _id: staff._id,
+        name: staff.name,
+        age: staff.age,
+        email: staff.email,
+        gender: staff.gender,
+        description: staff.description,
+        imgPath: staff.imgPath,
+        extraCharge: config?.extraCharge,
+        priority: config?.priority,
+      }
+    })
+  },
+})
+
+// const getAvailableStaffForAllMenus = async () => {
+//   setIsLoadingStaff(true)
+//   try {
+//     // 最初のメニューに対応するスタッフを取得
+//     const firstMenuStaffs = (await fetchQuery(api.staff.core.query.findAvailableStaffByMenu, {
+//       salonId: salonId,
+//       menuId: selectedMenus[0].menuId,
+//     })) as AvailableStaff[]
+
+//     if (selectedMenus.length === 1) {
+//       // 単一メニューの場合はそのまま設定
+//       setAvailableStaff(firstMenuStaffs)
+//     } else {
+//       // 複数メニューの場合は、各メニューに対応するスタッフを取得して共通するスタッフを抽出
+//       let eligibleStaff = [...firstMenuStaffs]
+
+//       // 2番目以降のメニューについてループ
+//       for (let i = 1; i < selectedMenus.length; i++) {
+//         const menuId = selectedMenus[i].menuId
+//         const menuStaffs = (await fetchQuery(api.staff.core.query.findAvailableStaffByMenu, {
+//           salonId: salonId,
+//           menuId: menuId,
+//         })) as AvailableStaff[]
+
+//         // 共通するスタッフのみをフィルタリング
+//         eligibleStaff = eligibleStaff.filter((staff) =>
+//           menuStaffs.some((menuStaff) => menuStaff._id === staff._id)
+//         )
+
+//         // 共通するスタッフがいない場合は早期リターン
+//         if (eligibleStaff.length === 0) break
+//       }
+
+//       setAvailableStaff(eligibleStaff)
+//     }
+//   } catch (error) {
+//     toast.error(handleErrorToMsg(error))
+//     setAvailableStaff([])
+//   } finally {
+//     setIsLoadingStaff(false)
+//   }
+// }
+
