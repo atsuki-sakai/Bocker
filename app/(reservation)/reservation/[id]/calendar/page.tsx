@@ -15,7 +15,6 @@ import { Check, CheckCheck, LogOut } from 'lucide-react'
 import type { StaffDisplay } from './_components/StaffView.tsx'
 import { Separator } from '@/components/ui/separator'
 import type { TimeRange } from '@/lib/type'
-import { toast } from 'sonner'
 
 export type LoginSession = {
   salonId: Id<'salon'>
@@ -100,44 +99,7 @@ export default function CalendarPage() {
   const [direction, setDirection] = useState(0) // アニメーションの方向を制御
 
   // FUNCTIONS
-  const fetchSalonComplete = async () => {
-    const cookie = getCookie(LINE_LOGIN_SESSION_KEY)
-    const cookieJson: LoginSession | null = cookie ? JSON.parse(cookie) : null
-    setSessionCustomer(cookieJson)
-    if (cookieJson?.salonId) {
-      const fetchSalon = async () => {
-        try {
-          setIsLoading(true)
-          const { salon, config, apiConfig, scheduleConfig } = await fetchQuery(
-            api.salon.core.query.getRelations,
-            { id: cookieJson.salonId as Id<'salon'> }
-          )
-          setSalonComplete(
-            config && apiConfig && scheduleConfig
-              ? { salon, config, apiConfig, scheduleConfig }
-              : null
-          )
-
-          const customerPointConfig = await fetchQuery(
-            api.customer.points.query.findBySalonAndCustomerId,
-            {
-              salonId: cookieJson.salonId as Id<'salon'>,
-              customerId: cookieJson.customerId as Id<'customer'>,
-            }
-          )
-          setAvailablePoints(customerPointConfig?.totalPoints || 0)
-        } catch (error) {
-          console.error('サロン情報の取得に失敗しました:', error)
-          setSalonComplete(null)
-        } finally {
-          setIsLoading(false)
-        }
-      }
-      fetchSalon()
-    } else {
-      router.push('/reservation/')
-    }
-  }
+  const fetchSalonComplete = async () => {}
 
   // 次のステップに進む
   const goToNextStep = () => {
@@ -207,7 +169,42 @@ export default function CalendarPage() {
 
   // USE EFFECT
   useEffect(() => {
-    fetchSalonComplete()
+    const cookie = getCookie(LINE_LOGIN_SESSION_KEY)
+    const cookieJson: LoginSession | null = cookie ? JSON.parse(cookie) : null
+    setSessionCustomer(cookieJson)
+    if (cookieJson?.salonId) {
+      const fetchSalon = async () => {
+        try {
+          setIsLoading(true)
+          const { salon, config, apiConfig, scheduleConfig } = await fetchQuery(
+            api.salon.core.query.getRelations,
+            { id: cookieJson.salonId as Id<'salon'> }
+          )
+          setSalonComplete(
+            config && apiConfig && scheduleConfig
+              ? { salon, config, apiConfig, scheduleConfig }
+              : null
+          )
+
+          const customerPointConfig = await fetchQuery(
+            api.customer.points.query.findBySalonAndCustomerId,
+            {
+              salonId: cookieJson.salonId as Id<'salon'>,
+              customerId: cookieJson.customerId as Id<'customer'>,
+            }
+          )
+          setAvailablePoints(customerPointConfig?.totalPoints || 0)
+        } catch (error) {
+          console.error('サロン情報の取得に失敗しました:', error)
+          setSalonComplete(null)
+        } finally {
+          setIsLoading(false)
+        }
+      }
+      fetchSalon()
+    } else {
+      router.push('/reservation/')
+    }
   }, [])
 
   if (isLoading) return <Loading />
