@@ -183,7 +183,7 @@ export const DateView = ({
                   key={index}
                   variant={'outline'}
                   onClick={() => handleTimeSelect(time)}
-                  className={`text-sm ${selectedTime?.startHour === time.startHour && selectedTime?.endHour === time.endHour ? 'bg-blue-600 text-white hover:bg-blue-500 hover:text-white' : ''}`}
+                  className={`text-sm ${selectedTime?.startHour === time.startHour && selectedTime?.endHour === time.endHour ? 'bg-blue-700 text-white hover:bg-blue-600 hover:text-white' : ''}`}
                 >
                   {time.startHour.toString()} ~ {time.endHour.toString()}
                 </Button>

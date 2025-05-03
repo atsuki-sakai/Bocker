@@ -7,44 +7,57 @@ import { Doc } from '@/convex/_generated/dataModel'
 import { Clock } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import type { StaffDisplay } from './StaffView'
-
-type PointViewProps = {
-  totalAmount: number
+import type { TimeRange } from '@/lib/type'
+type ConfirmViewProps = {
   availablePoints: number
   usePoints: number
   onChangePointsAction: (points: number) => void
   selectedMenus: Doc<'menu'>[]
   selectedOptions: Doc<'salon_option'>[]
   selectedStaff: StaffDisplay | null
+  selectedDate: Date | null
+  selectedTime: TimeRange | null
   // クーポン関連のpropsを追加
   onApplyCoupon?: (couponCode: string) => Promise<{ valid: boolean; discount: number } | null>
 }
 
-export const PointView = ({
-  totalAmount,
+export const ConfirmView = ({
   availablePoints,
   usePoints,
   onChangePointsAction,
   selectedMenus,
   selectedOptions,
   selectedStaff,
+  selectedDate,
+  selectedTime,
   onApplyCoupon,
-}: PointViewProps) => {
-  const maxUsablePoints = Math.min(availablePoints, totalAmount)
+}: ConfirmViewProps) => {
+  const menuTotalPrice = selectedMenus.reduce((total: number, menu: Doc<'menu'>) => {
+    return total + (menu.salePrice ? menu.salePrice : menu.unitPrice || 0)
+  }, 0)
 
-  const handlePointsChange = (value: number[]) => {
-    onChangePointsAction(value[0])
+  const optionTotalPrice = selectedOptions.reduce((total: number, option: Doc<'salon_option'>) => {
+    return total + (option.salePrice ? option.salePrice : option.unitPrice || 0)
+  }, 0)
+
+  const totalAmount = menuTotalPrice + optionTotalPrice
+
+  // const maxUsablePoints = totalAmount + (selectedStaff?.extraCharge ? selectedStaff.extraCharge : 0)
+  const maxUsablePoints = 2000 < availablePoints ? 2000 : availablePoints
+  const handlePointsChange = (points: number[]) => {
+    const value = Math.min(points[0], maxUsablePoints)
+    onChangePointsAction(value)
   }
 
   // 施術時間の計算
   const calculateTotalTime = () => {
     // メニューの施術時間を計算
-    const menuTime = selectedMenus.reduce((total, menu) => {
+    const menuTime = selectedMenus.reduce((total: number, menu: Doc<'menu'>) => {
       return total + (menu.ensureTimeToMin || menu.timeToMin || 0)
     }, 0)
 
     // オプションの施術時間を計算
-    const optionTime = selectedOptions.reduce((total, option) => {
+    const optionTime = selectedOptions.reduce((total: number, option: Doc<'salon_option'>) => {
       return total + (option.ensureTimeToMin || option.timeToMin || 0)
     }, 0)
 
@@ -131,8 +144,7 @@ export const PointView = ({
 
   return (
     <div>
-      <h2 className="text-xl">ポイントを使用</h2>
-      <p className="text-gray-600 mb-4">保有ポイントを使用して割引を受けることができます。</p>
+      <h2 className="text-xl font-bold mb-4">予約確認</h2>
 
       <div className="space-y-6">
         {/* 予約内容の概要 */}
@@ -140,6 +152,14 @@ export const PointView = ({
           <h3 className="font-medium mb-2">予約内容</h3>
           <div className="space-y-2">
             {/* 施術時間 */}
+            <div>
+              <p className="text-lg font-bold text-indigo-600">
+                <span className="">{selectedDate?.toLocaleDateString()}</span>
+                <span className=" ml-3">
+                  {selectedTime?.startHour} - {selectedTime?.endHour}
+                </span>
+              </p>
+            </div>
             <div className="flex items-center text-sm">
               <Clock className="h-4 w-4 mr-2 text-gray-500" />
               <span>
@@ -151,12 +171,12 @@ export const PointView = ({
             <div className="space-y-1">
               <p className="text-sm font-medium">メニュー:</p>
               <ul className="text-sm pl-5 space-y-1">
-                {selectedMenus.map((menu) => (
+                {selectedMenus.map((menu: Doc<'menu'>) => (
                   <li key={menu._id} className="flex justify-between">
                     <span>{menu.name}</span>
                     <span className="text-gray-500">
                       {menu.ensureTimeToMin || menu.timeToMin
-                        ? `${menu.ensureTimeToMin || menu.timeToMin}分`
+                        ? `¥${menu.salePrice ? menu.salePrice.toLocaleString() : menu.unitPrice ? menu.unitPrice.toLocaleString() : ''} / ${menu.ensureTimeToMin || menu.timeToMin}分`
                         : ''}
                     </span>
                   </li>
@@ -169,12 +189,12 @@ export const PointView = ({
               <div className="space-y-1">
                 <p className="text-sm font-medium">オプション:</p>
                 <ul className="text-sm pl-5 space-y-1">
-                  {selectedOptions.map((option) => (
+                  {selectedOptions.map((option: Doc<'salon_option'>) => (
                     <li key={option._id} className="flex justify-between">
                       <span>{option.name}</span>
                       <span className="text-gray-500">
                         {option.ensureTimeToMin || option.timeToMin
-                          ? `${option.ensureTimeToMin || option.timeToMin}分`
+                          ? `¥${option.salePrice ? option.salePrice.toLocaleString() : option.unitPrice ? option.unitPrice.toLocaleString() : ''} / ${option.ensureTimeToMin || option.timeToMin}分`
                           : ''}
                       </span>
                     </li>
@@ -190,7 +210,7 @@ export const PointView = ({
                 <p className="text-sm pl-5 flex justify-between">
                   <span>{selectedStaff.name}</span>
                   {extraCharge > 0 && (
-                    <span className="text-gray-500">指名料: ¥{extraCharge.toLocaleString()}</span>
+                    <span className="text-gray-500">指名料 / ¥{extraCharge.toLocaleString()}</span>
                   )}
                 </p>
               </div>
@@ -200,6 +220,9 @@ export const PointView = ({
 
         <div className="bg-blue-50 p-4 rounded-lg">
           <p className="text-sm text-blue-700">利用可能ポイント: {availablePoints}ポイント</p>
+          <p className="text-gray-600 text-xs mt-1">
+            保有ポイントを使用して割引を受けることができます。
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -208,7 +231,7 @@ export const PointView = ({
             <p className="text-sm text-gray-500">最大 {maxUsablePoints}ポイント</p>
           </div>
 
-          <div className="w-full px-4">
+          <div className="w-[90%] mx-auto">
             <Slider
               value={[usePoints]}
               max={maxUsablePoints}

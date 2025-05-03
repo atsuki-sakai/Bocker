@@ -8,7 +8,7 @@ import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
-import { MenuView, StaffView, OptionView, DateView, PaymentView, PointView } from './_components'
+import { MenuView, StaffView, OptionView, DateView, PaymentView, ConfirmView } from './_components'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, CheckCheck, LogOut } from 'lucide-react'
@@ -27,7 +27,7 @@ export type LoginSession = {
 }
 
 // 予約ステップの定義
-type ReservationStep = 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'point'
+type ReservationStep = 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'confirm'
 
 // アニメーションバリアント
 const pageVariants = {
@@ -118,9 +118,9 @@ export default function CalendarPage() {
         setCurrentStep('payment')
         break
       case 'payment':
-        setCurrentStep('point')
+        setCurrentStep('confirm')
         break
-      case 'point':
+      case 'confirm':
         // 予約完了処理
         console.log('予約完了')
         break
@@ -153,7 +153,7 @@ export default function CalendarPage() {
         setCurrentStep('date')
         setSelectedPaymentMethod(null)
         break
-      case 'point':
+      case 'confirm':
         setCurrentStep('payment')
         // ポイント使用をクリア
         setUsePoints(0)
@@ -246,7 +246,7 @@ export default function CalendarPage() {
       { key: 'option', label: 'オプション' },
       { key: 'date', label: '日時' },
       { key: 'payment', label: '決済' },
-      { key: 'point', label: 'ポイント' },
+      { key: 'confirm', label: '予約確認' },
     ]
 
     return (
@@ -264,7 +264,7 @@ export default function CalendarPage() {
                 animate={isActive ? 'active' : isCompleted ? 'completed' : 'inactive'}
                 variants={indicatorVariants}
                 style={{
-                  backgroundColor: isActive ? '#3b82f6' : isCompleted ? '#22c55e' : '#e5e7eb',
+                  backgroundColor: isActive ? '#2166D7FF' : isCompleted ? '#1DB354FF' : '#e5e7eb',
                 }}
               >
                 {isCompleted ? <Check size={18} /> : index + 1}
@@ -492,21 +492,22 @@ export default function CalendarPage() {
                     </motion.div>
                   </motion.div>
                 )
-              case 'point':
+              case 'confirm':
                 return (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <PointView
+                    <ConfirmView
                       selectedMenus={selectedMenus}
                       selectedOptions={selectedOptions}
                       selectedStaff={selectedStaffCompleted?.staff as StaffDisplay | null}
-                      totalAmount={calculateTotal()}
                       availablePoints={availablePoints ?? 1000}
                       usePoints={usePoints}
-                      onChangePointsAction={(points) => setUsePoints(points)}
+                      onChangePointsAction={(points: number) => setUsePoints(points)}
+                      selectedDate={selectedDate}
+                      selectedTime={selectedTime}
                     />
                     <motion.div
                       className="mt-6 flex justify-center"
@@ -610,7 +611,7 @@ export default function CalendarPage() {
             </div>
             <div className="flex flex-col items-end justify-between gap-2 w-1/3">
               <motion.p
-                className="text-xs mb-2 border border-green-600 text-green-600 rounded-full px-2 py-1"
+                className="text-xs mb-2 border border-green-600 text-green-600 rounded-full px-2 py-1 text-nowrap"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
@@ -635,7 +636,7 @@ export default function CalendarPage() {
                     </Button>
                   </motion.div>
                 )}
-                {currentStep !== 'point' && (
+                {currentStep !== 'confirm' && (
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
