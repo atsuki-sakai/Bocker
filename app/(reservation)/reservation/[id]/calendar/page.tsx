@@ -123,6 +123,7 @@ export default function CalendarPage() {
             }
           )
           setCustomerPointConfing(customerPointConfig)
+          setAvailablePoints(customerPointConfig?.totalPoints || 0)
         } catch (error) {
           console.error('サロン情報の取得に失敗しました:', error)
           setSalonComplete(null)
@@ -203,8 +204,7 @@ export default function CalendarPage() {
   // USE EFFECT
   useEffect(() => {
     fetchSalonComplete()
-    setAvailablePoints(1000) // 仮の値、実際にはAPIから取得
-  }, [fetchSalonComplete])
+  }, [])
 
   if (isLoading) return <Loading />
 
