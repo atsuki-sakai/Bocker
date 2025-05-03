@@ -208,12 +208,14 @@ export const PointView = ({
             <p className="text-sm text-gray-500">最大 {maxUsablePoints}ポイント</p>
           </div>
 
-          <Slider
-            value={[usePoints]}
-            max={maxUsablePoints}
-            step={100}
-            onValueChange={handlePointsChange}
-          />
+          <div className="w-full px-4">
+            <Slider
+              value={[usePoints]}
+              max={maxUsablePoints}
+              step={100}
+              onValueChange={handlePointsChange}
+            />
+          </div>
 
           <div className="flex justify-between text-xs text-gray-500">
             <span>0</span>

@@ -76,46 +76,59 @@ export const StaffView = ({
       <h2 className="text-base">スタッフを選択</h2>
       <p className="text-gray-600 mb-4 text-sm">担当してほしいスタッフを選択してください。</p>
       <div className="space-y-3">
-        {sortedStaffs.map((staff) => (
-          <div key={staff._id} className="flex items-center justify-between border rounded-lg p-4">
-            <div className="flex items-start gap-2">
-              {staff.imgPath && staff.imgPath !== '' && (
-                <Image
-                  src={staff.imgPath}
-                  alt={staff.name ? staff.name : 'Staff Image'}
-                  width={40}
-                  height={40}
-                  className="rounded-sm w-14 h-14"
-                />
-              )}
-              <div className="flex justify-start items-start flex-col">
-                <p className="font-medium">
-                  {staff.name}{' '}
-                  <span className="text-sm text-gray-500">
-                    {convertGender(staff.gender as Gender)}
-                  </span>
-                </p>
-                <div className="flex items-end gap-2 text-slate-500">
-                  <p className="text-xs">指名料</p>
-                  <span className="text-sm text-green-600">
-                    {staff.extraCharge ? `¥${staff.extraCharge.toLocaleString()}` : `無料`}
-                  </span>
-                </div>
-                <Button className="p-0 m-0" variant="ghost" onClick={() => setInfoStaff(staff)}>
-                  <span className="text-xs font-light underline text-blue-600">詳細を見る</span>
-                </Button>
-              </div>
-            </div>
-            <Button
-              variant={selectedStaff?._id === staff._id ? 'default' : 'outline'}
-              onClick={() => {
-                onChangeStaffAction(staff)
-              }}
+        {sortedStaffs.length > 0 ? (
+          sortedStaffs.map((staff) => (
+            <div
+              key={staff._id}
+              className="flex items-center justify-between border rounded-lg p-4"
             >
-              {selectedStaff?._id === staff._id ? '選択中' : '選択する'}
-            </Button>
+              <div className="flex items-start gap-2">
+                {staff.imgPath && staff.imgPath !== '' && (
+                  <Image
+                    src={staff.imgPath}
+                    alt={staff.name ? staff.name : 'Staff Image'}
+                    width={40}
+                    height={40}
+                    className="rounded-sm w-14 h-14"
+                  />
+                )}
+                <div className="flex justify-start items-start flex-col">
+                  <p className="font-medium">
+                    {staff.name}{' '}
+                    <span className="text-sm text-gray-500">
+                      {convertGender(staff.gender as Gender)}
+                    </span>
+                  </p>
+                  <div className="flex items-end gap-2 text-slate-500">
+                    <p className="text-xs">指名料</p>
+                    <span className="text-sm text-green-600">
+                      {staff.extraCharge ? `¥${staff.extraCharge.toLocaleString()}` : `無料`}
+                    </span>
+                  </div>
+                  <Button className="p-0 m-0" variant="ghost" onClick={() => setInfoStaff(staff)}>
+                    <span className="text-xs font-light underline text-blue-600">詳細を見る</span>
+                  </Button>
+                </div>
+              </div>
+              <Button
+                variant={selectedStaff?._id === staff._id ? 'default' : 'outline'}
+                onClick={() => {
+                  onChangeStaffAction(staff)
+                }}
+              >
+                {selectedStaff?._id === staff._id ? '選択中' : '選択する'}
+              </Button>
+            </div>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full border rounded-lg p-4 bg-slate-50">
+            <p className="text-gray-600  text-sm">対応可能なスタッフが見つかりません。</p>
+
+            <p className="text-gray-600 text-sm">
+              メニューの変更、組み合わせの変更をお願いします。
+            </p>
           </div>
-        ))}
+        )}
       </div>
       <Dialog open={!!infoStaff} onOpenChange={() => setInfoStaff(null)}>
         <DialogContent className="max-h-[90vh] w-[90vw] md:max-w-[500px] overflow-y-auto">

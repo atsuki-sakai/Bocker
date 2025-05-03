@@ -13,6 +13,9 @@ import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, CheckCheck, LogOut } from 'lucide-react'
 import type { StaffDisplay } from './_components/StaffView.tsx'
+import { Separator } from '@/components/ui/separator'
+import type { TimeRange } from '@/lib/type'
+import { toast } from 'sonner'
 
 export type LoginSession = {
   salonId: Id<'salon'>
@@ -72,9 +75,6 @@ export default function CalendarPage() {
 
   // STATES
   const [sessionCustomer, setSessionCustomer] = useState<LoginSession | null>(null)
-  const [customerPointConfing, setCustomerPointConfing] = useState<Doc<'customer_points'> | null>(
-    null
-  )
   const [salonComplete, setSalonComplete] = useState<{
     salon: Partial<Doc<'salon'>>
     config: Partial<Doc<'salon_config'>>
@@ -87,6 +87,9 @@ export default function CalendarPage() {
   } | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<Doc<'salon_option'>[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedTime, setSelectedTime] = useState<TimeRange | null>(null)
+  const [reservationStartDateTime, setReservationStartDateTime] = useState<Date | null>(null)
+  const [reservationEndDateTime, setReservationEndDateTime] = useState<Date | null>(null)
   const [currentStep, setCurrentStep] = useState<ReservationStep>('menu')
   const [isLoading, setIsLoading] = useState(true)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
@@ -122,7 +125,6 @@ export default function CalendarPage() {
               customerId: cookieJson.customerId as Id<'customer'>,
             }
           )
-          setCustomerPointConfing(customerPointConfig)
           setAvailablePoints(customerPointConfig?.totalPoints || 0)
         } catch (error) {
           console.error('サロン情報の取得に失敗しました:', error)
@@ -181,10 +183,12 @@ export default function CalendarPage() {
         setCurrentStep('option')
         // 日付の選択をクリア
         setSelectedDate(null)
+        setSelectedTime(null)
+        setReservationStartDateTime(null)
+        setReservationEndDateTime(null)
         break
       case 'payment':
         setCurrentStep('date')
-        // 決済方法の選択をクリア
         setSelectedPaymentMethod(null)
         break
       case 'point':
@@ -226,7 +230,8 @@ export default function CalendarPage() {
       (sum, option) => sum + (option.salePrice ?? option.unitPrice ?? 0),
       0
     )
-    return menuTotal + optionTotal
+    const extraChargeTotal = selectedStaffCompleted?.staff?.extraCharge || 0
+    return menuTotal + optionTotal + extraChargeTotal
   }
 
   const calculateTotalMinutes = () => {
@@ -419,7 +424,28 @@ export default function CalendarPage() {
                   >
                     <DateView
                       selectedDate={selectedDate}
-                      onChangeDateAction={(date) => setSelectedDate(date)}
+                      selectedStaff={selectedStaffCompleted?.staff as Doc<'staff'> | null}
+                      selectedTime={selectedTime}
+                      totalMinutes={calculateTotalMinutes()}
+                      onChangeDateAction={(date) => {
+                        setSelectedDate(date)
+                        setSelectedTime(null)
+                        setReservationStartDateTime(null)
+                        setReservationEndDateTime(null)
+                      }}
+                      onChangeTimeAction={(time) => {
+                        setSelectedTime(time)
+                        if (selectedDate) {
+                          const startDateTime = new Date(selectedDate)
+                          const [sh, sm] = time.startHour.split(':').map(Number)
+                          startDateTime.setHours(sh, sm, 0, 0)
+                          const endDateTime = new Date(selectedDate)
+                          const [eh, em] = time.endHour.split(':').map(Number)
+                          endDateTime.setHours(eh, em, 0, 0)
+                          setReservationStartDateTime(startDateTime)
+                          setReservationEndDateTime(endDateTime)
+                        }
+                      }}
                     />
                     <motion.div
                       className="mt-6 flex justify-center"
@@ -429,7 +455,7 @@ export default function CalendarPage() {
                     >
                       <Button
                         onClick={goToNextStep}
-                        disabled={!selectedDate}
+                        disabled={!reservationStartDateTime || !reservationEndDateTime}
                         className="relative overflow-hidden"
                       >
                         <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -447,6 +473,7 @@ export default function CalendarPage() {
                     transition={{ delay: 0.2 }}
                   >
                     <PaymentView
+                      selectedMenus={selectedMenus}
                       selectedPaymentMethod={selectedPaymentMethod}
                       onChangePaymentMethodAction={(method) => setSelectedPaymentMethod(method)}
                     />
@@ -508,53 +535,73 @@ export default function CalendarPage() {
     )
   }
 
-  console.log('customerPointConfing', customerPointConfing)
-  return (
-    <div className="container mx-auto px-4 py-6 pb-24">
-      {renderStepIndicator()}
+  console.log('reservationStartDateTime', reservationStartDateTime)
+  console.log('reservationEndDateTime', reservationEndDateTime)
+  console.log('selectedDate', selectedDate)
 
+  return (
+    <div className="container mx-auto px-4 py-6 pb-[40%]">
+      {renderStepIndicator()}
       <div className="mb-2 overflow-hidden flex items-center justify-between gap-2">
-        {sessionCustomer?.lineUserName ? (
-          <p className="text-sm flex items-center gap-2">
-            <CheckCheck className="w-5 h-5 text-green-500 border border-green-500 rounded-full p-1" />
-            <span className="font-bold">{sessionCustomer?.lineUserName} 様</span>
-          </p>
-        ) : (
-          sessionCustomer?.email && (
+        <div>
+          <p className="text-xs text-gray-500">ログイン中のユーザー</p>
+          {sessionCustomer?.lineUserName ? (
             <p className="text-sm flex items-center gap-2">
-              <CheckCheck className="w-4 h-4 text-green-500" />
-              <span className="font-bold">{sessionCustomer?.email}</span>
+              <CheckCheck className="w-5 h-5 text-green-500 border border-green-500 rounded-full p-1" />
+              <span className="font-bold">{sessionCustomer?.lineUserName} 様</span>
             </p>
-          )
-        )}
+          ) : (
+            sessionCustomer?.email && (
+              <p className="text-sm flex items-center gap-2">
+                <CheckCheck className="w-4 h-4 text-green-500" />
+                <span className="font-bold">{sessionCustomer?.email}</span>
+              </p>
+            )
+          )}
+        </div>
         <div className="flex flex-col items-center gap-2">
           <Button size="icon" onClick={(e) => handleLogout(e)}>
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
       </div>
+      <Separator className="my-3" />
       <div className="mb-6 overflow-hidden">{renderStepContent()}</div>
 
       {(selectedMenus.length > 0 || selectedStaffCompleted || selectedOptions.length > 0) && (
         <motion.div
-          className="fixed bottom-0 left-0 right-0 z-20 p-4 bg-white border-t shadow-md"
+          className="fixed bottom-0 left-0 right-0 z-20 px-4 py-2 bg-white border-t shadow-md"
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
           <div className="container mx-auto flex justify-between items-center">
-            <div>
-              <motion.p
-                className="text-sm text-gray-600"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                {selectedMenus.length > 0 && `メニュー: ${selectedMenus.length}点`}
-                {selectedStaffCompleted?.staff &&
-                  ` | スタッフ: ${selectedStaffCompleted.staff.name}`}
-                {selectedOptions.length > 0 && ` | オプション: ${selectedOptions.length}点`}
-              </motion.p>
+            <div className="flex flex-col items-start justify-between gap-2 w-2/3">
+              <motion.div className="text-xs text-gray-600">
+                {selectedMenus.length > 0 && (
+                  <div>
+                    <span className="font-bold">メニュー</span>
+                    <br />
+                    {selectedMenus.map((menu) => menu.name).join('、')}
+                  </div>
+                )}
+
+                {selectedStaffCompleted?.staff && (
+                  <div>
+                    <span className="font-bold">スタッフ</span>
+                    <br />
+                    {selectedStaffCompleted.staff.name}
+                  </div>
+                )}
+
+                {selectedOptions.length > 0 && (
+                  <div>
+                    <span className="font-bold">オプション</span>
+                    <br />
+                    {selectedOptions.map((option) => option.name).join('、')}
+                  </div>
+                )}
+              </motion.div>
               <motion.p
                 className="font-bold"
                 initial={{ opacity: 0 }}
@@ -563,47 +610,59 @@ export default function CalendarPage() {
               >
                 合計: ¥{calculateTotal().toLocaleString()} / {calculateTotalMinutes()}分
               </motion.p>
-
+            </div>
+            <div className="flex flex-col items-end justify-between gap-2 w-1/3">
               <motion.p
-                className="text-sm text-gray-600"
+                className="text-xs mb-2 border border-green-600 text-green-600 rounded-full px-2 py-1"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                利用可能ポイント: {availablePoints?.toLocaleString()}点
+                保有ポイント: {availablePoints?.toLocaleString()}
               </motion.p>
-            </div>
-            <div className="flex space-x-2">
-              {currentStep !== 'menu' && (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  <Button
-                    variant="outline"
-                    onClick={goToPreviousStep}
-                    className="relative overflow-hidden"
+              <div className="flex space-x-2">
+                {currentStep !== 'menu' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
                   >
-                    <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      戻る
-                    </motion.span>
-                  </Button>
-                </motion.div>
-              )}
-              {currentStep !== 'point' && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  <Button onClick={goToNextStep} className="relative overflow-hidden">
-                    <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      次へ
-                    </motion.span>
-                  </Button>
-                </motion.div>
-              )}
+                    <Button
+                      variant="outline"
+                      onClick={goToPreviousStep}
+                      className="relative overflow-hidden"
+                    >
+                      <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        戻る
+                      </motion.span>
+                    </Button>
+                  </motion.div>
+                )}
+                {currentStep !== 'point' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <Button
+                      onClick={goToNextStep}
+                      disabled={
+                        (currentStep === 'staff' && !selectedStaffCompleted) ||
+                        (currentStep === 'date' &&
+                          (!reservationStartDateTime ||
+                            !reservationEndDateTime ||
+                            !selectedDate)) ||
+                        (currentStep === 'payment' && !selectedPaymentMethod)
+                      }
+                      className="relative overflow-hidden"
+                    >
+                      <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        次へ
+                      </motion.span>
+                    </Button>
+                  </motion.div>
+                )}
+              </div>
             </div>
           </div>
         </motion.div>

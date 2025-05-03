@@ -23,3 +23,22 @@ export const list = query({
     return await optionService.listBySalonId(ctx, args);
   },
 });
+
+export const findAll = query({
+  args: {
+    salonId: v.id('salon'),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const options = await ctx.db
+        .query('salon_option')
+        .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+        .collect()
+      return options
+    } catch (error) {
+      console.error(error)
+      return []
+    }
+  },
+})
+

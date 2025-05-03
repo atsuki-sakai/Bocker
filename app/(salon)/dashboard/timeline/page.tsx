@@ -65,7 +65,7 @@ export default function TimelinePage() {
   )
 
   const { results: staffSchedules } = useStablePaginatedQuery(
-    api.schedule.staff_exception.query.paginateBySalonAndStaffId,
+    api.schedule.staff_exception.query.listBySalonAndStaffId,
     salonId && selectedStaffId
       ? {
           salonId,

@@ -25,23 +25,38 @@ export const getBySalonStaffAndDate = query({
   },
 });
 
-export const paginateBySalonAndStaffId = query({
+export const listBySalonAndStaffId = query({
   args: {
     salonId: v.id('salon'),
     staffId: v.id('staff'),
+    isAllDay: v.optional(v.boolean()),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx, true);
-    validateStaffScheduleException(args);
+    checkAuth(ctx, true)
+    validateStaffScheduleException(args)
     try {
-      return await ctx.db
-        .query('staff_schedule')
-        .withIndex('by_salon_staff_id', (q) =>
-          q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
-        )
-        .order('desc')
-        .paginate(args.paginationOpts);
+      if (args.isAllDay) {
+        return await ctx.db
+          .query('staff_schedule')
+          .withIndex('by_salon_staff_all_day', (q) =>
+            q
+              .eq('salonId', args.salonId)
+              .eq('staffId', args.staffId)
+              .eq('isAllDay', args.isAllDay)
+              .eq('isArchive', false)
+          )
+          .order('desc')
+          .paginate(args.paginationOpts)
+      } else {
+        return await ctx.db
+          .query('staff_schedule')
+          .withIndex('by_salon_staff_id', (q) =>
+            q.eq('salonId', args.salonId).eq('staffId', args.staffId).eq('isArchive', false)
+          )
+          .order('desc')
+          .paginate(args.paginationOpts)
+      }
     } catch (error) {
       throw new ConvexError({
         message: 'スタッフスケジュール例外の取得に失敗しました',
@@ -49,10 +64,10 @@ export const paginateBySalonAndStaffId = query({
         code: 'INTERNAL_ERROR',
         title: 'スタッフスケジュール例外の取得に失敗しました',
         details: { ...args },
-      });
+      })
     }
   },
-});
+})
 
 export const findBySalonAndStaffId = query({
   args: {

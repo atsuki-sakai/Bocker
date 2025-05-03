@@ -224,6 +224,7 @@ export default defineSchema({
     .index('by_salon_staff_date', ['salonId', 'staffId', 'date', 'isArchive'])
     .index('by_salon_staff_date_type', ['salonId', 'staffId', 'date', 'type', 'isArchive'])
     .index('by_staff_start_end', ['staffId', 'startTime_unix', 'endTime_unix', 'isArchive'])
+    .index('by_salon_staff_all_day', ['salonId', 'staffId', 'isAllDay', 'isArchive'])
     .index('by_salon_data_start_end', [
       'salonId',
       'date',
