@@ -12,7 +12,7 @@ export const displayExceptionSchedule = query({
     take: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true)
     return await ctx.db
       .query('salon_schedule_exception')
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId))

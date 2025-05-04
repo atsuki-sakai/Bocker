@@ -34,7 +34,7 @@ export const getBySalonAndStaffId = query({
     staffId: v.id('staff'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true)
     validateStaffWeekSchedule(args);
     try {
       return await ctx.db
