@@ -25,7 +25,7 @@ export const getAllBySalonId = query({
     salonId: v.id('salon'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true)
     validateRequired(args.salonId, 'salonId');
     return await ctx.db
       .query('salon_week_schedule')
