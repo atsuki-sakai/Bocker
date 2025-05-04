@@ -296,43 +296,47 @@ export const createCompleteFields = mutation({
     validateCustomer(args)
 
     try {
-      const existingCustomer = await ctx.db
-        .query('customer')
-        .withIndex('by_salon_email', (q) => q.eq('salonId', args.salonId).eq('email', args.email))
-        .first()
-      if (existingCustomer) {
-        throw throwConvexError({
-          message: '指定されたメールアドレスは既に登録されています',
-          status: 400,
-          code: 'DUPLICATE_RECORD',
-          title: '指定されたメールアドレスは既に登録されています',
-          callFunc: 'customer.createCompleteFields',
-          severity: 'low',
-          details: { ...args },
-        })
-      }
-      const existingLineCustomer = await ctx.db
-        .query('customer')
-        .withIndex('by_salon_line_id', (q) =>
-          q.eq('salonId', args.salonId).eq('lineId', args.lineId)
-        )
-        .first()
-      console.log('existingLineCustomer', existingLineCustomer?.lineId)
-      if (
-        existingLineCustomer &&
-        existingLineCustomer.lineId !== undefined &&
-        existingLineCustomer.lineId !== null &&
-        existingLineCustomer.lineId !== ''
-      ) {
-        throw throwConvexError({
-          message: '指定されたLINE IDは既に登録されています',
-          status: 400,
-          code: 'DUPLICATE_RECORD',
-          title: '指定されたLINE IDは既に登録されています',
-          callFunc: 'customer.createCompleteFields',
-          severity: 'low',
-          details: { ...args },
-        })
+      let existingEmailCustomer = null
+      if (args.email !== '') {
+        const existingCustomer = await ctx.db
+          .query('customer')
+          .withIndex('by_salon_email', (q) => q.eq('salonId', args.salonId).eq('email', args.email))
+          .first()
+        if (existingCustomer) {
+          throw throwConvexError({
+            message: '指定されたメールアドレスは既に登録されています',
+            status: 400,
+            code: 'DUPLICATE_RECORD',
+            title: '指定されたメールアドレスは既に登録されています',
+            callFunc: 'customer.createCompleteFields',
+            severity: 'low',
+            details: { ...args },
+          })
+        }
+      } else if (args.lineId !== '') {
+        const existingLineCustomer = await ctx.db
+          .query('customer')
+          .withIndex('by_salon_line_id', (q) =>
+            q.eq('salonId', args.salonId).eq('lineId', args.lineId)
+          )
+          .first()
+        console.log('existingLineCustomer', existingLineCustomer?.lineId)
+        if (
+          existingLineCustomer &&
+          existingLineCustomer.lineId !== undefined &&
+          existingLineCustomer.lineId !== null &&
+          existingLineCustomer.lineId !== ''
+        ) {
+          throw throwConvexError({
+            message: '指定されたLINE IDは既に登録されています',
+            status: 400,
+            code: 'DUPLICATE_RECORD',
+            title: '指定されたLINE IDは既に登録されています',
+            callFunc: 'customer.createCompleteFields',
+            severity: 'low',
+            details: { ...args },
+          })
+        }
       }
       const customerId = await ctx.db.insert('customer', {
         salonId: args.salonId, // サロンID
