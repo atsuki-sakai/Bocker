@@ -167,10 +167,10 @@ export default function WeekHourScheduleForm({ staffId }: { staffId: Id<'staff'>
       saturday: { isOpen: false, ...defaultScheduleHour },
       sunday: { isOpen: false, ...defaultScheduleHour },
     },
-    useCommonHours: true,
+    useCommonHours: false,
     commonStartHour: defaultScheduleHour.startHour,
     commonEndHour: defaultScheduleHour.endHour,
-  });
+  })
 
   // すでに登録されているデータを取得
   const staffWeekSchedules = useQuery(api.schedule.staff_week_schedule.query.getBySalonAndStaffId, {
