@@ -14,6 +14,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Check, CheckCheck, LogOut } from 'lucide-react'
 import type { StaffDisplay } from './_components/StaffView.tsx'
 import { Separator } from '@/components/ui/separator'
+import { Questionnaire } from './_components/Questionnaire'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { TimeRange } from '@/lib/type'
 
 export type LoginSession = {
@@ -94,9 +96,13 @@ export default function CalendarPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     'credit' | 'cash' | 'line_pay' | 'paypay' | null
   >(null)
+  const [appliedDiscount, setAppliedDiscount] = useState<number>(0)
   const [usePoints, setUsePoints] = useState<number>(0)
   const [availablePoints, setAvailablePoints] = useState<number>(1000) // 仮の値、実際にはAPIから取得
   const [direction, setDirection] = useState(0) // アニメーションの方向を制御
+  const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(false)
+  const [questionnaireStep, setQuestionnaireStep] = useState(1)
+  const totalSteps = 10 // Questionnaireと合わせる
 
   // 次のステップに進む
   const goToNextStep = () => {
@@ -158,6 +164,10 @@ export default function CalendarPage() {
     }
   }
 
+  const handleShowQuestionnaire = () => {
+    setIsQuestionnaireOpen(true)
+  }
+
   const handleLogout = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     deleteCookie(LINE_LOGIN_SESSION_KEY)
@@ -203,9 +213,9 @@ export default function CalendarPage() {
       }
       fetchSalon()
     } else {
-      router.push('/reservation/')
+      router.push('/reservation')
     }
-  }, [])
+  }, [router, salonId])
 
   if (isLoading) return <Loading />
 
@@ -228,7 +238,12 @@ export default function CalendarPage() {
       0
     )
     const extraChargeTotal = selectedStaffCompleted?.staff?.extraCharge || 0
-    return menuTotal + optionTotal + extraChargeTotal
+
+    const discount = appliedDiscount + usePoints
+    console.log('discount', discount)
+    console.log('usePoints', usePoints)
+    console.log('appliedDiscount', appliedDiscount)
+    return menuTotal + optionTotal + extraChargeTotal - discount
   }
 
   const calculateTotalMinutes = () => {
@@ -344,7 +359,7 @@ export default function CalendarPage() {
                       <Button
                         onClick={goToNextStep}
                         disabled={selectedMenus.length === 0}
-                        className="relative overflow-hidden"
+                        className="relative overflow-hidden w-full"
                       >
                         <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           次へ進む
@@ -378,7 +393,7 @@ export default function CalendarPage() {
                       <Button
                         onClick={goToNextStep}
                         disabled={!selectedStaffCompleted}
-                        className="relative overflow-hidden"
+                        className="relative overflow-hidden w-full"
                       >
                         <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           次へ進む
@@ -404,7 +419,7 @@ export default function CalendarPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
                     >
-                      <Button onClick={goToNextStep} className="relative overflow-hidden">
+                      <Button onClick={goToNextStep} className="relative overflow-hidden w-full">
                         <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           次へ進む
                         </motion.span>
@@ -453,7 +468,7 @@ export default function CalendarPage() {
                       <Button
                         onClick={goToNextStep}
                         disabled={!reservationStartDateTime || !reservationEndDateTime}
-                        className="relative overflow-hidden"
+                        className="relative overflow-hidden w-full"
                       >
                         <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           次へ進む
@@ -483,7 +498,7 @@ export default function CalendarPage() {
                       <Button
                         onClick={goToNextStep}
                         disabled={!selectedPaymentMethod}
-                        className="relative overflow-hidden"
+                        className="relative overflow-hidden w-full"
                       >
                         <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           次へ進む
@@ -500,27 +515,38 @@ export default function CalendarPage() {
                     transition={{ delay: 0.2 }}
                   >
                     <ConfirmView
+                      salonId={salonComplete.salon._id as Id<'salon'>}
                       selectedMenus={selectedMenus}
                       selectedOptions={selectedOptions}
                       selectedStaff={selectedStaffCompleted?.staff as StaffDisplay | null}
-                      availablePoints={availablePoints ?? 1000}
+                      availablePoints={availablePoints ?? 0}
                       usePoints={usePoints}
                       onChangePointsAction={(points: number) => setUsePoints(points)}
                       selectedDate={selectedDate}
                       selectedTime={selectedTime}
+                      onApplyCoupon={(discount: number) => setAppliedDiscount(discount)}
                     />
                     <motion.div
-                      className="mt-6 flex justify-center"
+                      className="mt-6 flex flex-col gap-4 justify-center items-center"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
                     >
                       <Button
                         onClick={() => console.log('予約完了')}
-                        className="relative overflow-hidden bg-green-500 hover:bg-green-600"
+                        className="relative overflow-hidden w-full bg-green-600 hover:bg-green-700"
                       >
                         <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           予約を確定する
+                        </motion.span>
+                      </Button>
+                      <Separator className="w-1/3 mx-auto my-1" />
+                      <Button
+                        onClick={handleShowQuestionnaire}
+                        className="relative overflow-hidden w-full bg-indigo-500 hover:bg-indigo-600"
+                      >
+                        <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          問診票に回答してから予約を確定する
                         </motion.span>
                       </Button>
                     </motion.div>
@@ -542,17 +568,16 @@ export default function CalendarPage() {
       {renderStepIndicator()}
       <div className="mb-2 overflow-hidden flex items-center justify-between gap-2">
         <div>
-          <p className="text-xs text-gray-500">ログイン中のユーザー</p>
           {sessionCustomer?.lineUserName ? (
             <p className="text-sm flex items-center gap-2">
               <CheckCheck className="w-5 h-5 text-green-500 border border-green-500 rounded-full p-1" />
-              <span className="font-bold">{sessionCustomer?.lineUserName} 様</span>
+              <span className="font-light">{sessionCustomer?.lineUserName} 様</span>
             </p>
           ) : (
             sessionCustomer?.email && (
               <p className="text-sm flex items-center gap-2">
                 <CheckCheck className="w-4 h-4 text-green-500" />
-                <span className="font-bold">{sessionCustomer?.email}</span>
+                <span className="font-light">{sessionCustomer?.email}</span>
               </p>
             )
           )}
@@ -564,7 +589,7 @@ export default function CalendarPage() {
         </div>
       </div>
       <Separator className="my-3" />
-      <div className="mb-6 overflow-hidden">{renderStepContent()}</div>
+      <div className="mb-6">{renderStepContent()}</div>
 
       {(selectedMenus.length > 0 || selectedStaffCompleted || selectedOptions.length > 0) && (
         <motion.div
@@ -574,7 +599,7 @@ export default function CalendarPage() {
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
           <div className="container mx-auto flex justify-between items-center">
-            <div className="flex flex-col items-start justify-between gap-2 w-2/3">
+            <div className="flex flex-col items-start justify-between gap-2 w-5/7">
               <motion.div className="text-xs text-gray-600">
                 {selectedMenus.length > 0 && (
                   <div>
@@ -609,14 +634,14 @@ export default function CalendarPage() {
                 合計: ¥{calculateTotal().toLocaleString()} / {calculateTotalMinutes()}分
               </motion.p>
             </div>
-            <div className="flex flex-col items-end justify-between gap-2 w-1/3">
+            <div className="flex flex-col items-end justify-between gap-2 w-2/7">
               <motion.p
                 className="text-xs mb-2 border border-green-600 text-green-600 rounded-full px-2 py-1 text-nowrap"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                保有ポイント: {availablePoints?.toLocaleString()}
+                保有ポイント {availablePoints?.toLocaleString()}
               </motion.p>
               <div className="flex space-x-2">
                 {currentStep !== 'menu' && (
@@ -665,6 +690,30 @@ export default function CalendarPage() {
           </div>
         </motion.div>
       )}
+      <Dialog open={isQuestionnaireOpen} onOpenChange={setIsQuestionnaireOpen}>
+        <DialogContent className="overflow-y-auto h-[90vh] flex flex-col justify-start items-start">
+          <DialogHeader>
+            <DialogTitle>問診票</DialogTitle>
+          </DialogHeader>
+          <Questionnaire
+            onComplete={(data) => {
+              console.log('data', data)
+            }}
+            onStepChange={setQuestionnaireStep}
+          />
+          {questionnaireStep === totalSteps && (
+            <Button
+              className="w-full"
+              onClick={() => {
+                setIsQuestionnaireOpen(false)
+                console.log('予約完了')
+              }}
+            >
+              予約を確定する
+            </Button>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
