@@ -515,6 +515,7 @@ export default defineSchema({
     endTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
     usePoints: v.optional(v.number()), // 使用ポイント数
     couponId: v.optional(v.id('coupon')), // クーポンID
+    couponDiscount: v.optional(v.number()), // クーポン割引額
     featuredHairimgPath: v.optional(v.string()), // 顧客が希望する髪型の画像ファイルパス
     notes: v.optional(v.string()), // 備考
     paymentMethod: v.optional(paymentMethodType), // 支払い方法
