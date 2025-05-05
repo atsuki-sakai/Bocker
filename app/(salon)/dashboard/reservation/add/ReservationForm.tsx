@@ -1,7 +1,7 @@
 // 予約作成画面
 // /app/(salon)/dashboard/reservation/add/ReservationForm.tsx
 
-'use client';
+'use client'
 import Link from 'next/link'
 import { convertHourToUnixTimestamp } from '@/lib/schedule'
 import { useRouter } from 'next/navigation'
@@ -195,6 +195,16 @@ export default function ReservationForm() {
       : 'skip'
   )
 
+  const staffWeekSchedules = useQuery(
+    api.schedule.staff_week_schedule.query.getBySalonAndStaffId,
+    salonId && selectedStaffId
+      ? {
+          salonId: salonId,
+          staffId: selectedStaffId,
+        }
+      : 'skip'
+  )
+
   const salonExceptionSchedules = useQuery(
     api.schedule.salon_exception.query.displayExceptionSchedule,
     salonId
@@ -368,12 +378,7 @@ export default function ReservationForm() {
 
   // 総合計金額をフォームの totalPrice にセット
   const totalPriceCalculated = menuTotalPrice + optionTotalPrice + extraChargePrice
-  // 差分時間（安全に NaN を防ぐ）
-  const diffMinutes = React.useMemo(() => {
-    const ensureMin = ensureTotalMinutes ? ensureTotalMinutes : totalTimeMinutes
-    const diff = ensureMin - totalTimeMinutes
-    return Number.isFinite(diff) ? diff : 0
-  }, [ensureTotalMinutes, totalTimeMinutes])
+
   useEffect(() => {
     setValue('totalPrice', totalPriceCalculated)
     setValue('unitPrice', menuTotalPrice)
@@ -619,7 +624,7 @@ export default function ReservationForm() {
         }}
       >
         <div className="flex flex-col gap-4 my-6">
-          <div>
+          <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
               <div className="flex flex-col items-start gap-2">
                 <div className="flex flex-col items-start gap-2">
@@ -654,9 +659,15 @@ export default function ReservationForm() {
                       <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
                         <PopoverTrigger asChild>
                           <Button variant="outline" className=" w-full justify-start h-fit">
-                            {customer.lastName ? customer.lastName + ' ' : '未登録'}
-                            {customer.firstName ? customer.firstName + ' ' : '未登録'}
-                            {customer.lineUserName ? customer.lineUserName + '　' : ''}
+                            {customer.lastName && customer.lastName !== '未登録'
+                              ? customer.lastName + ' '
+                              : ''}
+                            {customer.firstName && customer.firstName !== '未登録'
+                              ? customer.firstName + ' '
+                              : ''}
+                            {customer.lineUserName && customer.lineUserName !== '未登録'
+                              ? customer.lineUserName + '　'
+                              : ''}
                             {customer.phone ? 'tel:' + customer.phone : ''}
                           </Button>
                         </PopoverTrigger>
@@ -685,9 +696,16 @@ export default function ReservationForm() {
                                     }}
                                   >
                                     <div className="flex items-start gap-1 text-xs">
-                                      {customer.lastName ? customer.lastName + ' ' : '未登録'}
-                                      {customer.firstName ? customer.firstName + ' ' : '未登録'}
-                                      {customer.lineUserName ? customer.lineUserName + '　' : ''}
+                                      {customer.lastName && customer.lastName !== '未登録'
+                                        ? customer.lastName + ' '
+                                        : ''}
+                                      {customer.firstName && customer.firstName !== '未登録'
+                                        ? customer.firstName + ' '
+                                        : ''}
+                                      {customer.lineUserName && customer.lineUserName !== '未登録'
+                                        ? customer.lineUserName + '　'
+                                        : ''}
+                                      {customer.phone ? 'tel:' + customer.phone : ''}
                                       {customer.phone ? 'tel:' + customer.phone : ''}
                                     </div>
                                   </CommandItem>
@@ -748,7 +766,7 @@ export default function ReservationForm() {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full min-w-[350px] p-2 overflow-y-auto h-full">
+                <PopoverContent className="w-full min-w-[350px] max-w-[500px] py-2 px-4 overflow-y-auto h-full ">
                   <Command>
                     <div className="flex items-center justify-between border-b">
                       <CommandInput
@@ -764,21 +782,24 @@ export default function ReservationForm() {
                         <span className="sr-only">閉じる</span>
                       </button>
                     </div>
-                    <CommandList className="max-h-[300px] py-8 overflow-y-auto">
+                    <CommandList className="max-h-[calc(100vh-200px)] max-w-[calc(100vw-50px)] py-8 overflow-y-auto">
                       {menus.map((menu) => {
                         const count = getMenuCount(menu._id)
                         return (
-                          <CommandItem key={menu._id} className="flex items-center justify-between">
+                          <CommandItem
+                            key={menu._id}
+                            className="flex items-center justify-between w-full"
+                          >
                             {menu.imgPath && (
                               <Image
                                 src={menu.imgPath}
                                 alt={menu.name ?? ''}
-                                className="w-10 h-10 rounded-full"
+                                className="w-10 h-10 rounded-full max-w-[40px] max-h-[40px] min-w-[40px] min-h-[40px]"
                                 width={40}
                                 height={40}
                               />
                             )}
-                            <div className="flex flex-col items-start gap-1 text-xs">
+                            <div className="flex flex-col justify-start w-full items-start gap-1 text-xs">
                               <p className="text-sm">{menu.name}</p>
                               <div>
                                 {menu.salePrice && menu.salePrice > 0 ? (
@@ -861,7 +882,6 @@ export default function ReservationForm() {
               )}
             </div>
           </div>
-
           {selectedMenus.length > 0 && availableStaff.length > 0 && (
             <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
               {isLoadingStaff ? (
@@ -937,7 +957,6 @@ export default function ReservationForm() {
               )}
             </div>
           )}
-
           {selectedMenus.length > 0 && (
             <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
               {selectedMenus.length > 0 && (
@@ -1063,7 +1082,6 @@ export default function ReservationForm() {
               )}
             </div>
           )}
-
           {selectedMenus.length > 0 && (
             <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
               {selectedMenus.length > 0 && (
@@ -1095,11 +1113,18 @@ export default function ReservationForm() {
                           (date: Date) => {
                             const dayKey = getDayOfWeek(date)
 
-                            const weekSchedule = salonWeekSchedules?.find(
+                            const salonWeekSchedule = salonWeekSchedules?.find(
                               (s) => s.dayOfWeek === dayKey
                             )
+                            const staffWeekSchedule = staffWeekSchedules?.find(
+                              (s) => s.dayOfWeek === dayKey
+                            )
+
                             // 営業スケジュールがあれば isOpen が false の日を無効化。見つからなければ無効化しない。
-                            return weekSchedule ? !weekSchedule.isOpen : false
+                            return (
+                              (salonWeekSchedule ? !salonWeekSchedule.isOpen : false) ||
+                              (staffWeekSchedule ? !staffWeekSchedule.isOpen : false)
+                            )
                           },
                         ]}
                         className="rounded-md"
@@ -1201,7 +1226,7 @@ export default function ReservationForm() {
         <div className="grid gap-6 lg:grid-cols-2 mt-12">
           <div>
             <p className="mb-2 text-xs font-medium text-gray-600">選択したメニュー</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col">
               {uniqMenuIds.length > 0 ? (
                 uniqMenuIds.map((menuId) => {
                   const menu = menus.find((m) => m._id === menuId)
@@ -1211,9 +1236,16 @@ export default function ReservationForm() {
                       : (menu?.unitPrice ?? 0)
                   return (
                     menu && (
-                      <Badge key={menuId} variant="outline" className="px-2 py-1 text-xs">
-                        {menu.name} ¥{price.toLocaleString()}
-                      </Badge>
+                      <div
+                        key={menuId}
+                        className="w-full flex items-center justify-between gap-2 p-2 text-xs bg-gray-50  border-b border-gray-300"
+                      >
+                        <p className="text-gray-700 font-bold text-sm">{menu.name}</p>
+                        <p className="text-gray-700 font-bold text-sm">
+                          {' '}
+                          ¥{price.toLocaleString()}
+                        </p>
+                      </div>
                     )
                   )
                 })
@@ -1224,22 +1256,24 @@ export default function ReservationForm() {
           </div>
           <div>
             <p className="mb-2 text-xs font-medium text-gray-600">選択したオプション</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col">
               {selectedOptions.length > 0 ? (
                 selectedOptions.map((selectedOption) => {
                   const option = options.find((o) => o._id === selectedOption.optionId)
                   return (
                     option && (
-                      <Badge
+                      <div
                         key={selectedOption.optionId}
-                        variant="secondary"
-                        className="px-2 py-1 text-xs"
+                        className="w-full flex items-center justify-between gap-2 p-2 text-xs bg-gray-50  border-b border-gray-300"
                       >
-                        {option.name}{' '}
-                        {option.salePrice
-                          ? `¥${option.salePrice.toLocaleString()}`
-                          : `¥${option.unitPrice?.toLocaleString()}`}
-                      </Badge>
+                        <p className="text-gray-700 font-bold text-sm">{option.name}</p>
+                        <p className="text-gray-700 font-bold text-sm">
+                          {' '}
+                          {option.salePrice
+                            ? `¥${option.salePrice.toLocaleString()}`
+                            : `¥${option.unitPrice?.toLocaleString()}`}
+                        </p>
+                      </div>
                     )
                   )
                 })
@@ -1248,23 +1282,26 @@ export default function ReservationForm() {
               )}
             </div>
           </div>
-          <div className="flex items-end gap-2">
-            <div className="flex flex-col items-center gap-2">
-              <p className="text-slate-500 text-xs">施術者</p>
-              <Avatar className="h-12 w-12">
-                {selectStaff?.imgPath ? (
+
+          <div className="flex flex-col gap-2 mb-4">
+            <p className="text-slate-500 text-xs text-nowrap">施術者</p>
+            <div className="flex items-center gap-2 bg-gray-50 p-2 border-b border-gray-300">
+              {selectStaff?.imgPath ? (
+                <Avatar className="w-8 h-8">
                   <AvatarImage src={selectStaff.imgPath} alt={selectStaff.name} />
-                ) : (
+                </Avatar>
+              ) : (
+                <Avatar className="w-8 h-8">
                   <AvatarFallback>{selectStaff?.name.slice(0, 1)}</AvatarFallback>
-                )}
-              </Avatar>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-800">{selectStaff?.name ?? '—'}</p>
-              <p className="text-sm text-gray-500 font-bold">
-                <span className="text-gray-500 font-light text-xs">指名料</span> ¥
-                {selectStaff?.extraCharge ? selectStaff?.extraCharge.toLocaleString() : '0'}
-              </p>
+                </Avatar>
+              )}
+              <div className="flex items-center justify-between gap-2 w-full">
+                <p className="text-sm font-bold text-gray-800">{selectStaff?.name ?? '—'}</p>
+                <p className="text-sm text-gray-500 font-bold">
+                  <span className="text-gray-500 font-light text-xs">指名料</span> ¥
+                  {selectStaff?.extraCharge ? selectStaff?.extraCharge.toLocaleString() : '0'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -1289,12 +1326,6 @@ export default function ReservationForm() {
         <div className="relative flex flex-col md:flex-row w-full items-start md:items-center justify-between gap-4">
           <div className="flex flex-col md:flex-row justify-between w-full">
             <div className="w-full md:w-1/3 flex items-center md:items-start justify-between md:flex-col">
-              <div className="flex items-center gap-2">
-                <Label>合計金額</Label>
-                <p className="text-lg font-bold ml-2 md:ml-0">
-                  ¥{totalPriceCalculated.toLocaleString()}
-                </p>
-              </div>
               <div>
                 {selectdate && (
                   <div className="flex items-center gap-2 text-sm text-slate-500 md:ml-auto whitespace-nowrap">
@@ -1309,18 +1340,20 @@ export default function ReservationForm() {
                 )}
               </div>
             </div>
+            <div className="flex items-center justify-end gap-2">
+              <Label className="text-xs">合計金額</Label>
+              <p className="text-lg font-bold ml-2 md:ml-0">
+                ¥{totalPriceCalculated.toLocaleString()}
+              </p>
+            </div>
             <div className="flex flex-wrap justify-between md:justify-end gap-2 md:gap-4 text-xs mt-2 md:mt-0 w-full md:w-2/3">
-              <div className="border bg-white border-green-600 p-1.5 rounded-md text-green-600 flex flex-col md:flex-row items-center w-fit sm:w-auto">
-                <Label>実作業時間</Label>
-                <p className="text-xs font-bold">{totalTimeMinutes} 分</p>
+              <div className="border bg-white border-green-600 p-1.5 rounded-md text-green-600 flex  md:flex-row items-center w-fit sm:w-auto">
+                <Label className="text-xs">実作業時間 / </Label>{' '}
+                <p className=" font-bold">{totalTimeMinutes} 分</p>
               </div>
-              <div className="border bg-white border-green-600 p-1.5 rounded-md text-green-600 flex flex-col md:flex-row items-center w-fit sm:w-auto">
-                <Label>トータル時間</Label>
-                <p className="text-xs font-bold">{ensureTotalMinutes} 分</p>
-              </div>
-              <div className="border bg-white border-green-600 p-1.5 rounded-md text-green-600 flex flex-col md:flex-row items-center w-fit sm:w-auto">
-                <Label>差分時間</Label>
-                <p className="text-xs font-bold">{diffMinutes} 分</p>
+              <div className="border bg-white border-green-600 p-1.5 rounded-md text-green-600 flex  md:flex-row items-center w-fit sm:w-auto">
+                <Label className="text-xs">トータル時間 / </Label>{' '}
+                <p className=" font-bold">{ensureTotalMinutes} 分</p>
               </div>
             </div>
           </div>
