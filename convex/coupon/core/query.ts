@@ -26,7 +26,7 @@ export const findByCouponUid = query({
     activeOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true)
     validateCoupon(args);
     return await couponService.findByCouponUid(ctx, args);
   },
