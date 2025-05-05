@@ -25,125 +25,125 @@ export default function ImageDrop({
   onFileSelect,
   onPreviewChange,
   maxSizeMB = 4,
-  previewWidth = 256,
-  previewHeight = 256,
+  previewWidth = 2016,
+  previewHeight = 1512,
   className = '',
   placeholderText = '画像をドラッグするか、クリックして選択',
   accept = 'image/*',
   initialImageUrl,
 }: ImageDropProps) {
   // 内部状態の管理
-  const [isDragging, setIsDragging] = useState(false);
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(initialImageUrl || null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false)
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(initialImageUrl || null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 実際に使用するプレビュー画像（外部から渡されるか内部で管理されるか）
-  const displayImageUrl = previewImageUrl || initialImageUrl;
+  const displayImageUrl = previewImageUrl || initialImageUrl
 
   // ファイル変更時の処理
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
+      const file = e.target.files[0]
       if (file) {
-        processFile(file);
+        processFile(file)
       }
     }
-  };
+  }
 
   // ファイルの処理を統一する関数
   const processFile = async (file: File) => {
-    const maxSize = maxSizeMB * 1024 * 1024; // MBをバイトに変換
+    const maxSize = maxSizeMB * 1024 * 1024 // MBをバイトに変換
 
     // ファイルタイプチェック
     if (!file.type.startsWith('image/')) {
-      toast.error('画像ファイルのみアップロードできます。');
+      toast.error('画像ファイルのみアップロードできます。')
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = ''
       }
-      return;
+      return
     }
 
     // サイズチェック
     if (file.size > maxSize) {
       toast.error(
         `ファイルサイズが大きすぎます。${maxSizeMB}MB以下の画像をアップロードしてください。`
-      );
+      )
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = ''
       }
-      return;
+      return
     }
 
     // プレビュー画像を更新する
-    const previewUrl = URL.createObjectURL(file);
-    setPreviewImageUrl(previewUrl);
+    const previewUrl = URL.createObjectURL(file)
+    setPreviewImageUrl(previewUrl)
     if (onPreviewChange) {
-      onPreviewChange(previewUrl);
+      onPreviewChange(previewUrl)
     }
 
     // ファイルが有効な場合、onFileSelect コールバックを呼び出す
     if (onFileSelect) {
-      onFileSelect(file);
+      onFileSelect(file)
     }
-  };
+  }
 
   // ドラッグ＆ドロップ関連のイベントハンドラ
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isDragging) setIsDragging(true);
-  };
+    e.preventDefault()
+    e.stopPropagation()
+    if (!isDragging) setIsDragging(true)
+  }
 
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      if (!file) return alert('file is null');
-      processFile(file);
+      const file = e.dataTransfer.files[0]
+      if (!file) return alert('file is null')
+      processFile(file)
 
       // fileInputの値も更新（表示用）
       if (fileInputRef.current) {
         // Fileオブジェクトを直接代入できないため、DataTransferを使用
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
-        fileInputRef.current.files = dataTransfer.files;
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(file)
+        fileInputRef.current.files = dataTransfer.files
       }
     }
-  };
+  }
 
   // プレビューをクリアする関数
   const clearPreview = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = ''
     }
-    setPreviewImageUrl(initialImageUrl || null);
+    setPreviewImageUrl(initialImageUrl || null)
     if (onPreviewChange) {
-      onPreviewChange(initialImageUrl || null);
+      onPreviewChange(initialImageUrl || null)
     }
     if (onFileSelect) {
       // Pass null or a specific signal to indicate clearing
       // onFileSelect(null as unknown as File); // Example, adjust as needed
     }
-  };
+  }
 
   return (
     <div
-      className={`relative border-2 border-dashed rounded-lg p-4 transition-colors text-center h-[270px] ${
+      className={`relative border-2 border-dashed rounded-lg p-4 transition-colors text-center h-fit ${
         isDragging
           ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
           : 'border-indigo-100 hover:bg-indigo-50 dark:hover:bg-indigo-900/10'
@@ -160,7 +160,7 @@ export default function ImageDrop({
             alt="Preview"
             unoptimized
             loader={({ src }) => src}
-            className="mx-auto rounded-md object-contain max-h-[256px] max-w-[256px]"
+            className="mx-auto object-cover aspect-square"
             width={previewWidth}
             height={previewHeight}
           />
@@ -168,7 +168,7 @@ export default function ImageDrop({
             <Button
               type="button"
               size="sm"
-              className="absolute top-0 right-0 m-2"
+              className="absolute -top-3 -right-3 m-2 border-2 shadow-sm border-blue-100"
               onClick={() => fileInputRef.current?.click()}
             >
               画像を変更
@@ -224,5 +224,5 @@ export default function ImageDrop({
         }`}
       />
     </div>
-  );
+  )
 }
