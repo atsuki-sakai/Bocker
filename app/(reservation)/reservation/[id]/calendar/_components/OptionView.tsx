@@ -1,12 +1,19 @@
 'use client'
 
+import { useState } from 'react'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { api } from '@/convex/_generated/api'
 import { useQuery } from 'convex/react'
 import { useParams } from 'next/navigation'
 import { Loading } from '@/components/common'
-
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 type OptionViewProps = {
   selectedOptions: Doc<'salon_option'>[]
   onChangeOptionsAction: (options: Doc<'salon_option'>[]) => void
@@ -14,6 +21,8 @@ type OptionViewProps = {
 
 export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionViewProps) => {
   const params = useParams()
+  const [showOptionDetail, setShowOptionDetail] = useState(false)
+  const [selectedOption, setSelectedOption] = useState<Doc<'salon_option'> | null>(null)
   const salonId = params.id as Id<'salon'>
   const options = useQuery(api.option.query.findAll, {
     salonId: salonId,
@@ -26,6 +35,11 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
     } else {
       onChangeOptionsAction([...selectedOptions, option])
     }
+  }
+
+  const handleShowOptionDetail = (option: Doc<'salon_option'>) => {
+    setSelectedOption(option)
+    setShowOptionDetail(true)
   }
 
   if (!options) return <Loading />
@@ -62,7 +76,7 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
               </p>
               {option.description && option.description?.length > 50 && (
                 <p className="text-sm text-gray-500 break-words">
-                  {option.description?.slice(0, 50).concat('...')}
+                  {option.description?.slice(0, 25).concat('...')}
                 </p>
               )}
               {option.description && option.description?.length <= 50 && (
@@ -77,7 +91,10 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
                 {selectedOptions.some((o) => o._id === option._id) ? '選択中' : '選択する'}
               </Button>
               <div className="flex items-center justify-end gap-1 mt-4">
-                <button className="text-xs p-0 m-0 flex items-center gap-1">
+                <button
+                  className="text-xs p-0 m-0 flex items-center gap-1"
+                  onClick={() => handleShowOptionDetail(option)}
+                >
                   <span className="text-xs text-blue-600 underline">詳細を見る</span>
                 </button>
               </div>
@@ -85,6 +102,30 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
           </div>
         ))}
       </div>
+      <Dialog open={showOptionDetail} onOpenChange={setShowOptionDetail}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedOption?.name}</DialogTitle>
+            <p className="text-sm text-gray-500">
+              {selectedOption?.salePrice && selectedOption?.salePrice > 0 ? (
+                <>
+                  <span className="line-through text-slate-400 text-sm">
+                    ￥{selectedOption?.unitPrice?.toLocaleString()}
+                  </span>
+                  <span className="font-semibold text-green-600 text-sm">
+                    ￥{selectedOption?.salePrice.toLocaleString()}
+                  </span>
+                </>
+              ) : (
+                <span className="text-sm font-semibold text-slate-700">
+                  ￥{selectedOption?.unitPrice?.toLocaleString()}
+                </span>
+              )}
+            </p>
+          </DialogHeader>
+          <DialogDescription>{selectedOption?.description}</DialogDescription>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
