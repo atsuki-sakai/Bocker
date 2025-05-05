@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { api } from '@/convex/_generated/api'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
+import { Separator } from '@/components/ui/separator'
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   const [currentCategory, setCurrentCategory] = useState<MenuCategory | null>(null)
   const [showMenuDetails, setShowMenuDetails] = useState<boolean>(false)
   const [selectedMenu, setSelectedMenu] = useState<Doc<'menu'> | null>(null)
+  const [showMenuTab, setShowMenuTab] = useState<boolean>(false)
   // カテゴリごとに1つのメニューを管理するためのマップ
   const [selectedMenuMap, setSelectedMenuMap] = useState<
     Partial<Record<MenuCategory, Doc<'menu'>>>
@@ -173,7 +175,12 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
 
   const uniqueCategories = extractUniqueCategories(menus)
   return (
-    <div className="w-full">
+    <div className="w-full relative">
+      <div className="flex flex-row justify-end items-center mb-2">
+        <Button size="sm" onClick={() => setShowMenuTab(!showMenuTab)}>
+          {showMenuTab ? 'カテゴリを閉じる' : 'カテゴリを開く'}
+        </Button>
+      </div>
       {/* カテゴリタブ */}
       <Tabs
         className="flex gap-2"
@@ -181,30 +188,14 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
         value={currentCategory || undefined}
         onValueChange={(value) => handleCategoryChange(value as MenuCategory)}
       >
-        <TabsList className="flex flex-col h-full w-1/5  overflow-y-auto overflow-x-hidden  rounded-md overflow-hidden">
-          {uniqueCategories.map((category) => (
-            <TabsTrigger
-              key={category}
-              value={category}
-              className="px-2 py-2 text-xs w-[80px] md:w-full text-wrap"
-            >
-              {category}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {/* メニュー一覧 */}
+        {/* カテゴリ一覧 */}
         {uniqueCategories.map((category) => (
-          <TabsContent
-            key={category}
-            value={category}
-            className="w-4/5 h-full max-h-[360px] md:max-h-[500px] overflow-y-auto"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          <TabsContent key={category} value={category} className="w-full h-full overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
               {getMenusByCategory(category).map((menu) => (
                 <Card
                   key={menu._id}
-                  className={`cursor-pointer transition-all ${
+                  className={`cursor-pointer transition-all p-2 ${
                     selectedMenuMap[category]?._id === menu._id
                       ? 'border-2 border-blue-500 shadow-md'
                       : 'hover:shadow-md'
@@ -292,11 +283,27 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
             </div>
           </TabsContent>
         ))}
+        <div
+          className={`absolute top-10 z-50 right-0 transform transition-transform duration-300 ease-in-out ${showMenuTab ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        >
+          <TabsList className="flex flex-col h-full gap-2  overflow-y-auto overflow-x-hidden  rounded-md overflow-hidden">
+            {uniqueCategories.map((category) => (
+              <TabsTrigger
+                key={category}
+                value={category}
+                className="px-2 py-2 text-xs w-full md:w-full text-wrap data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+              >
+                {category}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
       </Tabs>
 
       {/* 選択済みメニュー表示 */}
       {selectedMenus.length > 0 && (
-        <div className="mt-4 border-t pt-2">
+        <div className="">
+          <Separator className="w-2/3 mx-auto my-8" />
           <h3 className="text-sm font-medium mb-2">選択中のメニュー {selectedMenus.length}点</h3>
           <div className="space-y-2">
             {selectedMenus.map((menu) => (
@@ -336,7 +343,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
           setShowMenuDetails(open)
         }}
       >
-        <DialogContent className="max-h-[90vh] w-[90vw] md:max-w-[500px] overflow-y-auto">
+        <DialogContent className=" overflow-y-auto">
           {selectedMenu && (
             <>
               <DialogHeader>
