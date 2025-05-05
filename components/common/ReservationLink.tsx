@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useSalon } from '@/hooks/useSalon'
 import { Loading } from '@/components/common'
 import { useQuery } from 'convex/react'
@@ -7,9 +8,33 @@ import { api } from '@/convex/_generated/api'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { CopyIcon } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+const trackingType = {
+  LINE: '?tracking=line',
+  Web: '?tracking=web',
+  Instagram: '?tracking=instagram',
+  X: '?tracking=x',
+  Facebook: '?tracking=facebook',
+  Youtube: '?tracking=youtube',
+  Tiktok: '?tracking=tiktok',
+  GoogleMap: '?tracking=googleMap',
+}
+
 export default function ReservationLink() {
   const { salon } = useSalon()
-
+  const [selectedTrackingType, setSelectedTrackingType] = useState<keyof typeof trackingType>('Web')
   const apiConfig = useQuery(
     api.salon.api_config.query.findBySalonId,
     salon?._id ? { salonId: salon?._id } : 'skip'
@@ -30,22 +55,88 @@ export default function ReservationLink() {
       apiConfig?.lineChannelSecret &&
       apiConfig?.lineAccessToken ? (
         <div className="flex flex-col">
-          <p className="text-base font-bold text-slate-700">予約ページのURLは以下になります。</p>
-          <div className="flex items-center gap-2">
-            <a
-              className="text-sm text-slate-500 truncate mr-2"
-              href={`${baseUrl}/reservation/${salon._id}`}
-            >{`${baseUrl}/reservation/${salon._id}`}</a>
+          <div className="flex items-center gap-2 mb-4">
+            <Select
+              value={selectedTrackingType}
+              onValueChange={(value) => setSelectedTrackingType(value as keyof typeof trackingType)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="リンクの設置先を選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.keys(trackingType).map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {key}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               variant="outline"
               size="icon"
               onClick={() => {
-                navigator.clipboard.writeText(`${baseUrl}/reservation/${salon._id}`)
+                navigator.clipboard.writeText(
+                  `${baseUrl}/reservation/${salon._id}${trackingType[selectedTrackingType]}`
+                )
               }}
             >
               <CopyIcon className="h-4 w-4" />
             </Button>
           </div>
+
+          <a
+            className="text-sm text-blue-500 truncate"
+            href={`${baseUrl}/reservation/${salon._id}${trackingType[selectedTrackingType]}`}
+          >{`${baseUrl}/reservation/${salon._id}${trackingType[selectedTrackingType]}`}</a>
+          <Accordion type="single" collapsible>
+            <AccordionItem value="item-1">
+              <AccordionTrigger>
+                <p>予約受付リンクについて</p>
+              </AccordionTrigger>
+              <AccordionContent>
+                <p className="mb-2">
+                  予約受付リンクにトラッキングパラメータを付与することで、どのチャネルからの流入を計測に使用します。
+                </p>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>
+                    <strong>LINE</strong>:
+                    公式LINEのリッチメニューなどLINEからの流入を計測するのに使用します。
+                  </li>
+                  <li>
+                    <strong>Web</strong>:
+                    ブログやHPに埋め込んでWebからの流入を計測するのに使用します。
+                  </li>
+                  <li>
+                    <strong>Instagram</strong>:
+                    Instagramのプロフィールリンクやストーリーズ、投稿に設定しInstagramからの流入を計測するのに使用します。
+                  </li>
+                  <li>
+                    <strong>X (Twitter)</strong>:
+                    ツイートやプロフィールに貼り付けXからの流入を計測するのに使用します。
+                  </li>
+                  <li>
+                    <strong>Facebook</strong>:
+                    Facebookページの投稿やプロフィールに設定Facebookからの流入を計測するのに使用します。
+                  </li>
+                  <li>
+                    <strong>YouTube</strong>:
+                    動画説明欄やコミュニティタブに設定YouTubeからの流入を計測するのに使用します。
+                  </li>
+                  <li>
+                    <strong>Tiktok</strong>:
+                    プロフィールリンクや動画説明欄に設定Tiktokからの流入を計測するのに使用します。
+                  </li>
+                  <li>
+                    <strong>GoogleMap</strong>: Google
+                    マップのビジネス情報に設定GoogleMapからの流入を計測するのに使用します。
+                  </li>
+                </ul>
+                <p className="mt-2">
+                  コピーアイコンでリンクをクリップボードに保存し、各チャネルへ貼り付けてご活用ください。
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
