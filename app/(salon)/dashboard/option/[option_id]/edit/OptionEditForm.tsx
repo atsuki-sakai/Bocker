@@ -236,8 +236,7 @@ export default function OptionEditForm() {
       await updateOption(updateData)
 
       toast.success('オプションを更新しました')
-      console.log(updateData)
-      // router.push('/dashboard/option')
+      router.push('/dashboard/option')
     } catch (error) {
       toast.error(handleErrorToMsg(error))
     }
