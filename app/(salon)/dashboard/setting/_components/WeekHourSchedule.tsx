@@ -151,10 +151,10 @@ export default function WeekHourSchedule() {
       saturday: { isOpen: false, ...defaultScheduleHour },
       sunday: { isOpen: false, ...defaultScheduleHour },
     },
-    useCommonHours: true,
+    useCommonHours: false,
     commonStartHour: defaultScheduleHour.startHour,
     commonEndHour: defaultScheduleHour.endHour,
-  });
+  })
 
   // すでに登録されているデータを取得
   const salonWeekSchedules = useQuery(
