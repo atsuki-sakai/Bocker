@@ -3,12 +3,16 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { Doc } from '@/convex/_generated/dataModel'
+import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Clock } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { fetchQuery } from 'convex/nextjs'
+import { api } from '@/convex/_generated/api'
 import type { StaffDisplay } from './StaffView'
 import type { TimeRange } from '@/lib/type'
+
 type ConfirmViewProps = {
+  salonId: Id<'salon'>
   availablePoints: number
   usePoints: number
   onChangePointsAction: (points: number) => void
@@ -18,10 +22,11 @@ type ConfirmViewProps = {
   selectedDate: Date | null
   selectedTime: TimeRange | null
   // クーポン関連のpropsを追加
-  onApplyCoupon?: (couponCode: string) => Promise<{ valid: boolean; discount: number } | null>
+  onApplyCoupon?: (discount: number) => void
 }
 
 export const ConfirmView = ({
+  salonId,
   availablePoints,
   usePoints,
   onChangePointsAction,
@@ -42,8 +47,7 @@ export const ConfirmView = ({
 
   const totalAmount = menuTotalPrice + optionTotalPrice
 
-  // const maxUsablePoints = totalAmount + (selectedStaff?.extraCharge ? selectedStaff.extraCharge : 0)
-  const maxUsablePoints = 2000 < availablePoints ? 2000 : availablePoints
+  const maxUsablePoints = 1000 < availablePoints ? 1000 : availablePoints
   const handlePointsChange = (points: number[]) => {
     const value = Math.min(points[0], maxUsablePoints)
     onChangePointsAction(value)
@@ -68,6 +72,19 @@ export const ConfirmView = ({
   const calculateExtraCharge = () => {
     return selectedStaff?.extraCharge || 0
   }
+  // 合計金額の計算
+  const calculateTotal = () => {
+    const menuTotal = selectedMenus.reduce(
+      (sum, menu) => sum + (menu.salePrice || menu.unitPrice || 0),
+      0
+    )
+    const optionTotal = selectedOptions.reduce(
+      (sum, option) => sum + (option.salePrice ?? option.unitPrice ?? 0),
+      0
+    )
+    const extraChargeTotal = selectedStaff?.extraCharge || 0
+    return menuTotal + optionTotal + extraChargeTotal
+  }
 
   // 合計施術時間（分）
   const totalTime = calculateTotalTime()
@@ -81,9 +98,11 @@ export const ConfirmView = ({
 
   // クーポン関連の状態
   const [couponCode, setCouponCode] = useState<string>('')
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(
-    null
-  )
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string
+    discount: number
+    name: string
+  } | null>(null)
   const [couponError, setCouponError] = useState<string | null>(null)
   const [isValidatingCoupon, setIsValidatingCoupon] = useState<boolean>(false)
 
@@ -102,28 +121,59 @@ export const ConfirmView = ({
     try {
       setIsValidatingCoupon(true)
       setCouponError(null)
+      const coupon = await fetchQuery(api.coupon.core.query.findByCouponUid, {
+        salonId: salonId,
+        couponUid: couponCode,
+        activeOnly: true,
+      })
 
-      const result = await onApplyCoupon(couponCode)
-
-      if (!result) {
-        setCouponError('クーポンの検証中にエラーが発生しました')
+      if (!coupon) {
+        setCouponError('クーポンが見つかりません。')
         setAppliedCoupon(null)
         return
       }
 
-      if (!result.valid) {
-        setCouponError('無効なクーポンコードです')
+      if (!coupon.fixedDiscountValue || !coupon.percentageDiscountValue) {
+        setCouponError('クーポンが見つかりません。')
+        setAppliedCoupon(null)
+        return
+      }
+
+      const formattedDiscount =
+        coupon.discountType === 'percentage'
+          ? coupon.percentageDiscountValue + '%'
+          : '¥' + coupon.fixedDiscountValue
+
+      const discount =
+        coupon.discountType === 'percentage'
+          ? coupon.percentageDiscountValue
+          : coupon.fixedDiscountValue
+
+      const resultDiscount =
+        calculateTotal() -
+        (coupon.discountType === 'percentage'
+          ? coupon.percentageDiscountValue
+            ? calculateTotal() - calculateTotal() * (discount / 100)
+            : 0
+          : coupon.fixedDiscountValue
+            ? calculateTotal() - coupon.fixedDiscountValue
+            : 0)
+
+      if (resultDiscount > calculateTotal()) {
+        setCouponError('割引金額が合計金額を超えています。')
         setAppliedCoupon(null)
         return
       }
 
       setAppliedCoupon({
         code: couponCode,
-        discount: result.discount,
+        discount: resultDiscount,
+        name: coupon.name + formattedDiscount,
       })
+      onApplyCoupon(resultDiscount)
       setCouponError(null)
     } catch (error) {
-      console.error('クーポン適用エラー:', error)
+      console.log(error)
       setCouponError('クーポンの適用中にエラーが発生しました')
       setAppliedCoupon(null)
     } finally {
@@ -217,14 +267,12 @@ export const ConfirmView = ({
             )}
           </div>
         </div>
-
         <div className="bg-blue-50 p-4 rounded-lg">
           <p className="text-sm text-blue-700">利用可能ポイント: {availablePoints}ポイント</p>
           <p className="text-gray-600 text-xs mt-1">
             保有ポイントを使用して割引を受けることができます。
           </p>
         </div>
-
         <div className="space-y-2">
           <div className="flex justify-between">
             <p className="text-sm font-medium">使用ポイント: {usePoints}ポイント</p>
@@ -288,7 +336,7 @@ export const ConfirmView = ({
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  クーポン「{appliedCoupon.code}」が適用されました（
+                  クーポン「{appliedCoupon.name}」が適用されました（
                   {appliedCoupon.discount.toLocaleString()}円割引）
                 </p>
               </div>
@@ -296,7 +344,7 @@ export const ConfirmView = ({
           </div>
         </div>
 
-        <div className="space-y-2 border-t pt-4">
+        <div className="space-y-2 pt-4">
           <div className="flex justify-between">
             <p>商品金額</p>
             <p>¥{totalAmount.toLocaleString()}</p>
