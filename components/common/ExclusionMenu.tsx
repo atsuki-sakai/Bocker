@@ -152,7 +152,7 @@ export default function ExclusionMenu({
           </div>
 
           {/* メニューリスト */}
-          <ScrollArea className="max-h-[80vh] rounded-md border p-2 bg-white">
+          <ScrollArea className="max-h-full rounded-md border p-2 bg-white">
             <div className="space-y-1">
               {filteredMenus.map((menu: Doc<'menu'>) => (
                 <div
@@ -207,5 +207,5 @@ export default function ExclusionMenu({
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }
