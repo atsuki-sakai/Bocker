@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useLiff } from '@/hooks/useLiff'
-
 import { getCookie, setCookie, deleteCookie } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
 import { handleErrorToMsg } from '@/lib/error'
+import { toast } from 'sonner'
 
 import {
   Card,
@@ -32,9 +32,23 @@ export default function ReserveRedirectPage() {
 
   useEffect(() => {
     async function initLiff() {
-      if (!liff?.isLoggedIn()) {
-        console.error('LIFF not logged in')
-        throw new Error('LIFF not logged in')
+      let lineUserId: string | null = null
+      if (liff?.isLoggedIn()) {
+        const profile = await liff?.getProfile()
+        if (profile) {
+          lineUserId = profile.userId
+        } else {
+          toast.error('プロフィールの取得に失敗しました。ページを閉じて再度ログインしてください。')
+        }
+      } else {
+        const session = getCookie(LINE_LOGIN_SESSION_KEY)
+        if (session) {
+          const { salonId } = JSON.parse(session)
+          console.log('salonId', salonId)
+          router.push(`/reservation/${salonId}/calendar`)
+        } else {
+          return router.push('/reservation/unknow-error')
+        }
       }
 
       const profile = await liff?.getProfile()
@@ -56,13 +70,13 @@ export default function ReserveRedirectPage() {
 
       let newSession = JSON.stringify({
         salonId: salonId,
-        lineId: profile?.userId,
+        lineId: lineUserId,
         lineUserName: profile?.displayName,
       })
 
       try {
         const existingCustomer = await fetchQuery(api.customer.core.query.findByLineId, {
-          lineId: profile?.userId ?? '',
+          lineId: lineUserId ?? '',
           salonId: salonId,
         })
 
