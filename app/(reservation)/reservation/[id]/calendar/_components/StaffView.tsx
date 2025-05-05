@@ -131,7 +131,7 @@ export const StaffView = ({
         )}
       </div>
       <Dialog open={!!infoStaff} onOpenChange={() => setInfoStaff(null)}>
-        <DialogContent className="max-h-[90vh] w-[90vw] md:max-w-[500px] overflow-y-auto">
+        <DialogContent className="overflow-y-auto">
           <DialogHeader className="mt-4">
             {infoStaff?.imgPath && infoStaff.imgPath !== '' && (
               <div className="flex justify-center mb-4">
@@ -187,34 +187,32 @@ export const StaffView = ({
             <DialogDescription asChild>
               <div className="space-y-2 text-sm text-muted-foreground">
                 {infoStaff?.description && (
-                  <p className="text-start text-clip bg-slate-50 rounded-md p-1 my-2">
-                    {infoStaff.description}
-                  </p>
+                  <p className="text-start text-clip  my-2">{infoStaff.description}</p>
                 )}
 
-                <p className="text-sm font-medium text-start pt-4 text-slate-700">得意なスタイル</p>
                 {infoStaff?.featuredHairimgPath && infoStaff.featuredHairimgPath.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {infoStaff.featuredHairimgPath.map((imgPath, idx) => (
-                      <div
-                        key={`featured-hair-img-${idx}`}
-                        className="relative w-full aspect-square rounded-md overflow-hidden"
-                      >
-                        <Image
-                          src={imgPath}
-                          alt={infoStaff.name ?? ''}
-                          fill
-                          sizes="(max-width: 42rem) 100vw, 42rem"
-                          className="object-cover"
-                        />
-                      </div>
-                    ))}
+                  <div>
+                    <p className="text-sm font-medium text-start pt-4 text-slate-700">
+                      得意なスタイル
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {infoStaff.featuredHairimgPath.map((imgPath, idx) => (
+                        <div
+                          key={`featured-hair-img-${idx}`}
+                          className="relative w-full aspect-square rounded-md overflow-hidden"
+                        >
+                          <Image
+                            src={imgPath}
+                            alt={infoStaff.name ?? ''}
+                            fill
+                            sizes="(max-width: 42rem) 100vw, 42rem"
+                            className="object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground bg-slate-50 rounded-md p-1 my-2">
-                    過去のスタイル理歴はありません。
-                  </p>
-                )}
+                ) : null}
               </div>
             </DialogDescription>
           </DialogHeader>
