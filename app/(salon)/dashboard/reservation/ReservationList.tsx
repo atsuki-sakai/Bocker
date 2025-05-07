@@ -92,23 +92,23 @@ interface StatusConfig {
 // ステータスマッピング
 const statusMap: Record<ReservationStatus, StatusConfig> = {
   pending: {
-    color: 'bg-yellow-600 hover:bg-yellow-600',
-    text: '未確認',
+    color: 'bg-warning-foreground text-warning ',
+    text: '保留',
   },
   confirmed: {
-    color: 'bg-green-600 hover:bg-green-600',
+    color: 'bg-palette-2-foreground text-palette-2 ',
     text: '予約確定',
   },
   cancelled: {
-    color: 'bg-red-600 hover:bg-red-600',
+    color: 'bg-palette-4-foreground text-palette-4 ',
     text: 'キャンセル',
   },
   completed: {
-    color: 'bg-blue-600 hover:bg-blue-600',
+    color: 'bg-palette-5-foreground text-palette-5 ',
     text: '完了',
   },
   refunded: {
-    color: 'bg-gray-600 hover:bg-gray-600',
+    color: 'bg-palette-3-foreground text-palette-3 ',
     text: '返金',
   },
 }
@@ -143,28 +143,28 @@ const ReservationCard: React.FC<ReservationCardProps> = memo(({ reservation }) =
   return (
     <Link href={`/dashboard/reservation/${reservation._id}`} className="block w-full">
       <Card
-        className="mb-3 hover:shadow-md transition-shadow duration-300"
+        className="mb-4 bg-muted hover:shadow-md transition-shadow duration-300"
         style={{ borderLeftColor: statusMap[status].color.split(' ')[0] }}
       >
         <CardContent className="p-4">
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center gap-2">
-              <Badge variant={'default'}>{statusMap[status].text}</Badge>
+              <Badge className={statusMap[status].color}>{statusMap[status].text}</Badge>
               <span className="text-sm font-medium flex items-center gap-1">
                 <User className="h-3 w-3" />
                 {reservation.customerName ? reservation.customerName : '顧客名なし'}
               </span>
             </div>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+          <div className="flex items-center gap-2 text-sm text-primary mb-1">
             <Calendar className="h-3.5 w-3.5" />
             <span>{convertUnixTimeToDateString(reservation.startTime_unix!)}</span>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-indigo-600 font-medium">
-            <Clock className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2 text-base text-link-foreground font-semibold">
+            <Clock className="h-4 w-4" />
             <span>
               {reservation.startTime_unix ? formatJpTime(reservation.startTime_unix) : '--:--'}
               {' 〜 '}
@@ -173,7 +173,7 @@ const ReservationCard: React.FC<ReservationCardProps> = memo(({ reservation }) =
           </div>
 
           <div className="mt-2 flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm text-gray-500">
+            <div className="flex items-center gap-1 text-sm text-primary">
               <ClipboardCheck className="h-3.5 w-3.5" />
               <span>{reservation.staffName || 'スタッフ未設定'}</span>
             </div>
@@ -210,7 +210,7 @@ const GroupTab: React.FC<GroupTabProps> = memo(({ id, label, count, icon: Icon }
       <span>{label}</span>
     </div>
     {count > 0 && (
-      <span className="absolute -top-1 -right-1 h-6 w-6 text-xs flex items-center justify-center bg-white border border-slate-300 text-green-600 rounded-full">
+      <span className="absolute -top-1 -right-1 h-6 w-6 text-xs flex items-center justify-center bg-background border border-border text-active rounded-full">
         {count}
       </span>
     )}
@@ -409,93 +409,85 @@ export default function ReservationList() {
   }
 
   return (
-    <div className="w-full my-4">
-      <Card className="border-0 shadow-none">
-        <CardContent className="p-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex justify-end mb-2">
-              <div className="w-fit min-w-[180px]">
-                <Label className="mb-2 text-xs">予約ステータス</Label>
-                <Select
-                  value={currentStatus}
-                  onValueChange={(value) => setCurrentStatus(value as ReservationStatus)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="予約ステータス" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RESERVATION_STATUS_VALUES.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {convertReservationStatus(status)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+    <div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="flex justify-end mb-2">
+          <div className="w-fit min-w-[180px]">
+            <Label className="mb-2 text-xs">予約ステータス</Label>
+            <Select
+              value={currentStatus}
+              onValueChange={(value) => setCurrentStatus(value as ReservationStatus)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="予約ステータス" />
+              </SelectTrigger>
+              <SelectContent>
+                {RESERVATION_STATUS_VALUES.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {convertReservationStatus(status)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="mb-4 overflow-x-auto pb-1">
+          <TabsList className="flex justify-start bg-muted w-fit gap-2 p-1">
+            {groupConfigs.map((group) => (
+              <GroupTab
+                key={group.id}
+                id={group.id}
+                label={group.label}
+                count={group.count}
+                icon={group.icon}
+              />
+            ))}
+          </TabsList>
+        </div>
+
+        {groupConfigs.map((group) => (
+          <TabsContent key={group.id} value={group.id} className="mt-0">
+            <div className="py-2 px-4">
+              <div className="text-xl text-primary flex items-center gap-2">
+                <h5 className="font-semibold">
+                  {getGroupDisplayName(group.id as ReservationGroup)} (
+                  {groupedReservations[group.id]?.length || 0}件)
+                </h5>
               </div>
             </div>
-            <div className="mb-4 overflow-x-auto pb-1">
-              <TabsList className="w-full justify-start bg-muted/50 p-1">
-                {groupConfigs.map((group) => (
-                  <GroupTab
-                    key={group.id}
-                    id={group.id}
-                    label={group.label}
-                    count={group.count}
-                    icon={group.icon}
-                  />
-                ))}
-              </TabsList>
-            </div>
 
-            {groupConfigs.map((group) => (
-              <TabsContent key={group.id} value={group.id} className="mt-0">
-                <Card>
-                  <div className="py-2 px-4">
-                    <div className="text-lg flex items-center gap-2">
-                      <group.icon className="h-4 w-4 text-indigo-500" />
-                      <h5 className="text-sm font-semibold">
-                        {getGroupDisplayName(group.id as ReservationGroup)} (
-                        {groupedReservations[group.id]?.length || 0}件)
-                      </h5>
+            <div className="h-full px-4">
+              {groupedReservations[group.id]?.length === 0 ? (
+                <div className="text-center py-8 bg-muted text-muted-foreground rounded-md p-4 mb-4">
+                  予約はありません。
+                </div>
+              ) : (
+                Object.entries(
+                  groupedReservations[group.id]!.reduce<Record<string, Reservation[]>>((acc, r) => {
+                    // 日付 (YYYY/MM/DD) ごとにグループ化
+                    const dateKey = convertUnixTimeToDateString(r.startTime_unix!)
+                    if (!acc[dateKey]) acc[dateKey] = []
+                    acc[dateKey].push(r)
+                    return acc
+                  }, {})
+                ).map(([dateKey, resArray]) => (
+                  <div key={dateKey} className="mb-2">
+                    {/* sticky 日付ヘッダー */}
+                    <div className="sticky top-0 z-10 backdrop-blur-sm py-1 px-1 text-base mt-4 font-semibold text-primary  mb-2 ">
+                      {dateKey}
                     </div>
-                  </div>
 
-                  <div className="h-full px-4">
-                    {groupedReservations[group.id]?.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">予約はありません</div>
-                    ) : (
-                      Object.entries(
-                        groupedReservations[group.id]!.reduce<Record<string, Reservation[]>>(
-                          (acc, r) => {
-                            // 日付 (YYYY/MM/DD) ごとにグループ化
-                            const dateKey = convertUnixTimeToDateString(r.startTime_unix!)
-                            if (!acc[dateKey]) acc[dateKey] = []
-                            acc[dateKey].push(r)
-                            return acc
-                          },
-                          {}
-                        )
-                      ).map(([dateKey, resArray]) => (
-                        <div key={dateKey} className="mb-2">
-                          {/* sticky 日付ヘッダー */}
-                          <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm py-1 px-1 text-base font-semibold text-slate-700 border-b mb-2 ">
-                            {dateKey}
-                          </div>
-
-                          {/* その日の予約カード */}
-                          {resArray.map((reservation) => (
-                            <ReservationCard key={reservation._id} reservation={reservation} />
-                          ))}
-                        </div>
-                      ))
-                    )}
+                    {/* その日の予約カード */}
+                    {resArray.map((reservation) => (
+                      <ReservationCard key={reservation._id} reservation={reservation} />
+                    ))}
                   </div>
-                </Card>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </CardContent>
-      </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   )
 }
