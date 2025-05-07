@@ -143,10 +143,7 @@ export default function ImageDrop({
 
   return (
     <div
-      className={`relative border-2 border-dashed rounded-lg p-4 transition-colors text-center h-fit ${
-        isDragging
-          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-          : 'border-indigo-100 hover:bg-indigo-50 dark:hover:bg-indigo-900/10'
+      className={`relative border border-dashed h-full rounded-lg p-4 transition-colors text-center overflow-hidden border-border bg-secondary hover:bg-muted
       } ${className}`}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
@@ -160,7 +157,7 @@ export default function ImageDrop({
             alt="Preview"
             unoptimized
             loader={({ src }) => src}
-            className="mx-auto object-cover aspect-square"
+            className="mx-auto object-cover aspect-square rounded-md overflow-hidden"
             width={previewWidth}
             height={previewHeight}
           />
@@ -168,7 +165,7 @@ export default function ImageDrop({
             <Button
               type="button"
               size="sm"
-              className="absolute -top-3 -right-3 m-2 border-2 shadow-sm border-blue-100"
+              className="absolute -top-3 -right-3 m-2 border-2 shadow-sm border-accent hover:opacity-100 hover:bg-accent"
               onClick={() => fileInputRef.current?.click()}
             >
               画像を変更
@@ -178,20 +175,20 @@ export default function ImageDrop({
               type="button"
               variant="ghost"
               size="icon"
-              className="absolute top-0 right-0 rounded-full bg-blue-600 hover:bg-blue-600 text-white shadow-md"
+              className="absolute top-0 right-0 rounded-full bg-popover-foreground text-popover shadow-md"
               onClick={clearPreview}
             >
               <X className="h-4 w-4" />
             </Button>
           )}
           {fileInputRef.current?.files?.[0] && (
-            <div className="text-xs text-gray-500 mt-2 text-start">
+            <div className="flex  gap-4 text-xs text-muted-foreground mt-2 text-start">
               <p>
                 <span className="font-bold">ファイル名</span>{' '}
                 {fileInputRef.current?.files?.[0].name}
               </p>
               <p>
-                <span className="font-bold">サイズ</span>{' '}
+                <span className="font-bold">Size</span>{' '}
                 {(fileInputRef.current?.files?.[0].size / 1024).toFixed(1)} KB
               </p>
             </div>
@@ -201,17 +198,17 @@ export default function ImageDrop({
         <div className="flex flex-col items-center justify-center h-full">
           <FileImage
             className={`h-12 w-12 mx-auto mb-2 transition-colors ${
-              isDragging ? 'text-indigo-500' : 'text-indigo-300'
+              isDragging ? 'text-active' : 'text-muted-foreground'
             }`}
           />
           <p
             className={`text-sm mb-2 transition-colors ${
-              isDragging ? 'text-indigo-600' : 'text-gray-500'
+              isDragging ? 'text-active' : 'text-muted-foreground'
             }`}
           >
             {isDragging ? 'ここにファイルをドロップ' : placeholderText}
           </p>
-          <p className="text-xs text-gray-400">JPG、PNG / 最大{maxSizeMB}MB</p>
+          <p className="text-xs text-muted-foreground">JPG、PNG / 最大{maxSizeMB}MB</p>
         </div>
       )}
       <Input
