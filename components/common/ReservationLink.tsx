@@ -72,7 +72,6 @@ export default function ReservationLink() {
               </SelectContent>
             </Select>
             <Button
-              variant="outline"
               size="icon"
               onClick={() => {
                 navigator.clipboard.writeText(
@@ -85,15 +84,15 @@ export default function ReservationLink() {
           </div>
 
           <a
-            className="text-sm text-link truncate"
+            className="text-sm text-link-foreground truncate"
             href={`${baseUrl}/reservation/${salon._id}${trackingType[selectedTrackingType]}`}
           >{`${baseUrl}/reservation/${salon._id}${trackingType[selectedTrackingType]}`}</a>
           <Accordion type="single" collapsible>
             <AccordionItem value="item-1">
               <AccordionTrigger>
-                <p className="text-secondary-foreground">予約受付リンクについて</p>
+                <p className="text-primary">予約受付リンクについて</p>
               </AccordionTrigger>
-              <AccordionContent className="text-secondary-foreground text-sm tracking-normal leading-7 bg-secondary rounded-md p-2">
+              <AccordionContent className="text-muted-foreground text-sm tracking-normal leading-7 bg-muted rounded-md p-2">
                 <p className="mb-2">
                   予約受付リンクにトラッキングパラメータを付与することで、どのチャネルからの流入を計測に使用します。
                 </p>
@@ -140,8 +139,8 @@ export default function ReservationLink() {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <p className="text-base font-bold text-slate-700">Lineとの連携を完了させてください。</p>
-          <span className="text-sm text-gray-500">
+          <p className="text-base font-bold text-primary">Lineとの連携を完了させてください。</p>
+          <span className="text-sm text-muted-foreground">
             外部サービス連携からLineの連携に必要な情報を入力してください。
             取得方法は画面下部のヘルプを参照してください。
           </span>
