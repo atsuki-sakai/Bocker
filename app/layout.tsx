@@ -1,18 +1,15 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { ConvexClientProvider } from "@/components/providers";
-import { ClerkProvider } from "@clerk/nextjs";
-import { Toaster } from "sonner";
+import type { Metadata } from 'next'
+import './globals.css'
+import { ConvexClientProvider } from '@/components/providers'
+import { ClerkProvider } from '@clerk/nextjs'
+import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
+import { Klee_One } from 'next/font/google'
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+const kleeOne = Klee_One({
+  weight: ['400'],
+  subsets: ['latin', 'greek-ext', 'latin-ext', 'cyrillic'],
+  variable: '--font-klee-one',
 })
 
 export const metadata: Metadata = {
@@ -33,7 +30,7 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={` ${kleeOne.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
