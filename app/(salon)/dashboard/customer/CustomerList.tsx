@@ -123,11 +123,11 @@ export default function CustomerList() {
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50 text-slate-700">
-              <TableHead className="w-[250px] px-2">顧客名/LINEユーザー名</TableHead>
-              <TableHead className="px-2">連絡先</TableHead>
-              <TableHead className="w-[100px] text-center px-2">来店回数</TableHead>
-              <TableHead className="w-[150px] px-2">最終来店日</TableHead>
-              <TableHead className="px-2">タグ</TableHead>
+              <TableHead className="px-2 text-nowrap w-fit">顧客名/LINEユーザー名</TableHead>
+              <TableHead className="px-2 text-nowrap w-fit">連絡先</TableHead>
+              <TableHead className="px-2 text-nowrap w-fit">来店回数</TableHead>
+              <TableHead className="px-2 text-nowrap w-fit">最終来店日</TableHead>
+              <TableHead className="px-2 w-fit">タグ</TableHead>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[50px]"></TableHead>
