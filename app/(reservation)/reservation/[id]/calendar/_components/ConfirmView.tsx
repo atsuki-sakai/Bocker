@@ -194,16 +194,14 @@ export const ConfirmView = ({
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">予約確認</h2>
-
       <div className="space-y-6">
         {/* 予約内容の概要 */}
         <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-medium mb-2">予約内容</h3>
+          <h3 className="text-lg font-medium text-center tracking-wide mb-4">予約内容の確認</h3>
           <div className="space-y-2">
             {/* 施術時間 */}
             <div>
-              <p className="text-lg font-bold text-indigo-600">
+              <p className="text-base font-bold text-indigo-500">
                 <span className="">{selectedDate?.toLocaleDateString()}</span>
                 <span className=" ml-3">
                   {selectedTime?.startHour} - {selectedTime?.endHour}
