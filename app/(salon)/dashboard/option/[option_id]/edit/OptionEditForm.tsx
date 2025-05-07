@@ -263,24 +263,24 @@ export default function OptionEditForm() {
               <ZodTextField
                 name="name"
                 label="オプション名"
-                icon={<Tag className="text-gray-500" />}
+                icon={<Tag className="text-primary" />}
                 placeholder="オプション名を入力してください"
                 register={register}
                 errors={errors}
                 required
-                className="border-gray-200 focus-within:border-blue-500 transition-colors w-full"
+                className="border-border w-full"
               />
 
               <ZodTextField
                 name="orderLimit"
                 label="最大注文数"
-                icon={<Boxes className="text-gray-500" />}
+                icon={<Boxes className="text-primary" />}
                 type="number"
                 placeholder="例: 5"
                 register={register}
                 errors={errors}
                 required
-                className="border-gray-200 focus-within:border-blue-500 transition-colors"
+                className="border-border w-full"
               />
             </div>
 
@@ -288,31 +288,31 @@ export default function OptionEditForm() {
               <ZodTextField
                 name="unitPrice"
                 label="単価"
-                icon={<DollarSign className="text-gray-500" />}
+                icon={<DollarSign className="text-primary" />}
                 type="number"
                 placeholder="例: 1000"
                 register={register}
                 errors={errors}
                 required
-                className="border-gray-200 focus-within:border-blue-500 transition-colors"
+                className="border-border w-full"
               />
 
               <ZodTextField
                 name="salePrice"
                 label="セール価格"
                 type="number"
-                icon={<ShoppingBag className="text-gray-500" />}
+                icon={<ShoppingBag className="text-primary" />}
                 placeholder="例: 800"
                 register={register}
                 errors={errors}
-                className="border-gray-200 focus-within:border-blue-500 transition-colors"
+                className="border-border w-full"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="w-full">
                 <Label className="text-sm flex items-center gap-2">
-                  <Clock size={16} className="text-gray-500" />
+                  <Clock size={16} className="text-primary" />
                   実際にスタッフが稼働する施術時間
                 </Label>
 
@@ -325,7 +325,7 @@ export default function OptionEditForm() {
                     console.log('実際にスタッフが稼働する施術時間を選択:', { value, numValue }) // デバッグ用
                   }}
                 >
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
+                  <SelectTrigger className="border-border transition-colors">
                     <SelectValue placeholder="実際にスタッフが稼働する施術時間を選択" />
                   </SelectTrigger>
                   <SelectContent>
@@ -336,14 +336,14 @@ export default function OptionEditForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   スタッフが手を動かして施術に集中している正味の作業時間を指します。
                 </span>
                 {errors.timeToMin && <ErrorMessage message={errors.timeToMin.message} />}
               </div>
               <div className="w-full">
                 <Label className="text-sm flex items-center gap-2">
-                  <Clock size={16} className="text-gray-500" />
+                  <Clock size={16} className="text-primary" />
                   待機時間なども含めたトータルの施術時間
                 </Label>
                 <Select
@@ -355,7 +355,7 @@ export default function OptionEditForm() {
                     console.log('待機時間を含めたトータルの施術時間を選択:', { value, numValue }) // デバッグ用
                   }}
                 >
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
+                  <SelectTrigger className="border-border transition-colors">
                     <SelectValue placeholder="待機時間を含めたトータルの施術時間を選択" />
                   </SelectTrigger>
                   <SelectContent>
@@ -366,7 +366,7 @@ export default function OptionEditForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   施術席を専有する必要はあるものの、スタッフが別の作業に移れる待機時間を指します。
                 </span>
                 {errors.ensureTimeToMin && (
@@ -388,7 +388,7 @@ export default function OptionEditForm() {
 
         {/* 説明セクション */}
         <Label className="flex items-center gap-2 text-sm mb-2 mt-4">
-          <Info size={16} className="text-gray-500" />
+          <Info size={16} className="text-primary" />
           オプション説明
         </Label>
         <Textarea
@@ -396,16 +396,16 @@ export default function OptionEditForm() {
           placeholder="オプションの詳細説明を入力してください（任意）"
           {...register('description')}
           onChange={(e) => setValue('description', e.target.value, { shouldValidate: true })}
-          rows={5}
-          className="border-gray-200 focus-visible:ring-blue-500 resize-none"
+          rows={10}
+          className="border-border"
         />
         {errors.description && <ErrorMessage message={errors.description?.message} />}
 
         {/* 公開/非公開スイッチ */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md mb-6 mt-6">
+        <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-6">
           <div>
             <p className="text-sm font-medium">オプションを公開する</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               オフにすると、このオプションはお客様に表示されません
             </p>
           </div>
@@ -413,7 +413,7 @@ export default function OptionEditForm() {
             id="isActive"
             checked={isActive}
             onCheckedChange={(checked) => setValue('isActive', checked)}
-            className="data-[state=checked]:bg-green-600"
+            className="data-[state=checked]:bg-active"
           />
         </div>
 
@@ -423,7 +423,7 @@ export default function OptionEditForm() {
               type="button"
               variant="outline"
               onClick={() => router.push('/dashboard/option')}
-              className="min-w-28"
+              className="min-w-28 border-border"
             >
               戻る
             </Button>
@@ -451,8 +451,8 @@ export default function OptionEditForm() {
           <AccordionTrigger>
             実際の稼働時間と待機時間を含めたトータルの施術時間の違いについて
           </AccordionTrigger>
-          <AccordionContent className="space-y-2 text-sm text-slate-600">
-            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+          <AccordionContent className="space-y-2 text-sm text-muted-foreground leading-6">
+            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 <strong>実際の稼働時間 :</strong>
                 スタッフが手を動かして施術に集中している正味の作業時間を指します。
@@ -472,7 +472,7 @@ export default function OptionEditForm() {
               </li>
             </ol>
 
-            <p className="text-xs text-slate-500 space-y-1">
+            <p className="text-xs text-muted-foreground space-y-1">
               * 両時間とも必須入力です。
               <br />* <strong>入力例：</strong> パーマ 90 分（実際の稼働 45 分 ＋ 確保 45
               分）の場合、スタッフは途中 45 分間ほかの顧客を担当できます。
