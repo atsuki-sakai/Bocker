@@ -446,7 +446,7 @@ export default function StaffEditForm() {
             <TabsTrigger value="exclusion">対応外メニュー</TabsTrigger>
           </TabsList>
           <TabsContent value="basic">
-            <Card className="shadow-md border-gray-100">
+            <Card className="shadow-md border-border">
               <CardContent className="space-y-8 pt-6">
                 {/* 基本情報セクション */}
                 <div>
@@ -455,8 +455,10 @@ export default function StaffEditForm() {
                       {staffAllData?.imgPath && (
                         <div className="flex justify-between gap-2">
                           <div className="mb-2 flex items-center">
-                            <ImageIcon className="h-4 w-4 mr-2 text-gray-500" />
-                            <span className="text-sm font-medium text-gray-700">スタッフ画像</span>
+                            <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <span className="text-sm font-medium text-muted-foreground">
+                              スタッフ画像
+                            </span>
                           </div>
                           <Button
                             variant="destructive"
@@ -465,27 +467,7 @@ export default function StaffEditForm() {
                             onClick={handleShowDeleteDialog}
                           >
                             {isDeletingImage ? (
-                              <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                              >
-                                <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                    fill="none"
-                                  />
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  />
-                                </svg>
-                              </motion.div>
+                              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
                             ) : (
                               <Trash className="h-3 w-3 mr-2" />
                             )}
@@ -496,11 +478,10 @@ export default function StaffEditForm() {
 
                       <div className="w-full flex flex-col md:flex-row items-end justify-center gap-4">
                         <div className="w-full flex flex-col">
-                          <p className="text-sm text-gray-500">スタッフ画像</p>
+                          <p className="text-sm text-muted-foreground">スタッフ画像</p>
                           <ImageDrop
                             initialImageUrl={staffAllData?.imgPath}
                             onFileSelect={(file) => setSelectedFile(file)}
-                            className="transition-all duration-200 hover:opacity-90"
                           />
                         </div>
                       </div>
@@ -511,7 +492,7 @@ export default function StaffEditForm() {
                         <ZodTextField
                           name="name"
                           label="名前"
-                          icon={<User className="h-4 w-4 mr-2 text-gray-500" />}
+                          icon={<User className="h-4 w-4 mr-2 text-muted-foreground" />}
                           register={register}
                           errors={errors}
                           placeholder="名前を入力してください"
@@ -521,8 +502,8 @@ export default function StaffEditForm() {
 
                       <div className="flex items-center gap-4">
                         <div className="w-1/2">
-                          <Label className="flex items-center mb-2 font-medium text-gray-700">
-                            <User className="h-4 w-4 mr-2 text-gray-500" />
+                          <Label className="flex items-center mb-2 font-medium">
+                            <User className="h-4 w-4 mr-2 text-muted-foreground" />
                             性別
                           </Label>
                           <Select
@@ -552,7 +533,7 @@ export default function StaffEditForm() {
                           <ZodTextField
                             name="age"
                             label="年齢"
-                            icon={<Calendar className="h-4 w-4 mr-2 text-gray-500" />}
+                            icon={<Calendar className="h-4 w-4 mr-2 text-muted-foreground" />}
                             type="number"
                             register={register}
                             errors={errors}
@@ -575,7 +556,6 @@ export default function StaffEditForm() {
                         <div className="flex items-center gap-2">
                           <Switch
                             id="isActive"
-                            className="data-[state=checked]:bg-green-500"
                             checked={watch('isActive')}
                             onCheckedChange={(checked) =>
                               setValue('isActive', checked, { shouldDirty: true })
@@ -583,9 +563,13 @@ export default function StaffEditForm() {
                           />
                           <Label htmlFor="isActive" className="text-sm cursor-pointer">
                             {watch('isActive') ? (
-                              <span className="text-green-600 font-medium">有効</span>
+                              <span className="text-active font-medium bg-active-foreground px-2 py-1 rounded-md">
+                                有効
+                              </span>
                             ) : (
-                              <span className="text-red-500 font-medium">無効</span>
+                              <span className="text-destructive font-medium bg-destructive-foreground px-2 py-1 rounded-md">
+                                無効
+                              </span>
                             )}
                           </Label>
                         </div>
@@ -597,11 +581,8 @@ export default function StaffEditForm() {
                   </div>
 
                   <div className="mt-4">
-                    <div className="flex items-center mb-2">
-                      <Instagram className="h-4 w-4 mr-2 text-gray-500" />
-                      <Label className="font-medium text-gray-700">SNS連携</Label>
-                    </div>
                     <ZodTextField
+                      icon={<Instagram className="h-4 w-4 mr-2 text-muted-foreground" />}
                       name="instagramLink"
                       label="Instagramリンク"
                       register={register}
@@ -612,8 +593,8 @@ export default function StaffEditForm() {
 
                   <div className="mt-4">
                     <div className="flex items-center mb-2">
-                      <Clipboard className="h-4 w-4 mr-2 text-gray-500" />
-                      <Label className="font-medium text-gray-700">スタッフ紹介</Label>
+                      <Clipboard className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <Label className="font-medium text-primary">スタッフ紹介</Label>
                     </div>
                     <Textarea
                       value={watch('description')}
@@ -626,7 +607,7 @@ export default function StaffEditForm() {
                       <motion.p
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-sm text-red-500 mt-1"
+                        className="text-sm text-destructive mt-1"
                       >
                         {errors.description.message}
                       </motion.p>
@@ -639,12 +620,12 @@ export default function StaffEditForm() {
                 {/* 認証情報セクション */}
                 <div>
                   <div className="flex items-center mb-4">
-                    <Shield className="h-5 w-5 mr-2 text-blue-500" />
+                    <Shield className="h-5 w-5 mr-2 text-muted-foreground" />
                     <h3 className="font-semibold text-lg">認証情報</h3>
                   </div>
 
-                  <Alert className="bg-blue-50 border-blue-100 mb-4">
-                    <AlertDescription className="text-blue-700 text-sm">
+                  <Alert className="bg-muted border-border mb-4">
+                    <AlertDescription className="text-muted-foreground text-sm">
                       スタッフがログインする際に使用する認証情報です。スタッフはメールアドレスとピンコードを使用してログインできます。
                     </AlertDescription>
                   </Alert>
@@ -654,7 +635,7 @@ export default function StaffEditForm() {
                       <div>
                         <ZodTextField
                           name="email"
-                          icon={<Mail className="h-4 w-4 mr-2 text-gray-500" />}
+                          icon={<Mail className="h-4 w-4 mr-2 text-muted-foreground" />}
                           label="メールアドレス"
                           register={register}
                           errors={errors}
@@ -666,7 +647,7 @@ export default function StaffEditForm() {
                           <ZodTextField
                             readOnly={true}
                             name="pinCode"
-                            icon={<Lock className="h-4 w-4 mr-2 text-gray-500" />}
+                            icon={<Lock className="h-4 w-4 mr-2 text-muted-foreground" />}
                             label="ピンコード"
                             register={register}
                             errors={errors}
@@ -676,13 +657,17 @@ export default function StaffEditForm() {
                         <div className="flex flex-col items-center justify-center gap-1 ml-4">
                           <div className="w-fit flex items-center justify-center">
                             <div>
-                              <span className="text-xs text-nowrap text-gray-500">再生成</span>
+                              <span className="text-xs text-nowrap text-muted-foreground">
+                                再生成
+                              </span>
                               <Button size={'icon'} onClick={handleGeneratePinCode}>
                                 <Shuffle className="h-8 w-8 block" />
                               </Button>
                             </div>
                             <div>
-                              <span className="text-xs text-nowrap text-gray-500">コピー</span>
+                              <span className="text-xs text-nowrap text-muted-foreground">
+                                コピー
+                              </span>
                               <Button size={'icon'} onClick={handleCopyPinCode}>
                                 <Copy className="h-8 w-8 block" />
                               </Button>
@@ -693,8 +678,8 @@ export default function StaffEditForm() {
                     </div>
                     <div>
                       <div className="flex items-center mb-2">
-                        <Shield className="h-4 w-4 mr-2 text-gray-500" />
-                        <Label className="font-medium text-gray-700">権限</Label>
+                        <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <Label className="font-medium text-primary">権限</Label>
                       </div>
                       <div className="mt-1">
                         <div className="grid grid-cols-3 gap-3">
@@ -719,8 +704,8 @@ export default function StaffEditForm() {
                               key={item.role}
                               className={`border rounded-md p-3 cursor-pointer transition-all ${
                                 watch('role') === item.role
-                                  ? 'border-blue-500 bg-blue-50'
-                                  : 'border-gray-200'
+                                  ? 'border-active bg-active-foreground text-active'
+                                  : 'border-border bg-muted text-muted-foreground'
                               }`}
                               onClick={() =>
                                 setValue('role', item.role as Role, { shouldDirty: true })
