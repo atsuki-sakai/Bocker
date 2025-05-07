@@ -11,26 +11,27 @@ import {
   LoaderCircleIcon,
   SendIcon,
   RefreshCwIcon,
-} from 'lucide-react';
-import { Dialog } from '@/components/common';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
-import type { ClerkEmailAddress } from '@/lib/type';
+  Trash2,
+} from 'lucide-react'
+import { Dialog } from '@/components/common'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
+import type { ClerkEmailAddress } from '@/lib/type'
 
 export default function EmailPreferencesPage() {
-  const { user, isLoaded } = useUser();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [emailToDelete, setEmailToDelete] = useState<string | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [resendingEmailId, setResendingEmailId] = useState<string | null>(null);
+  const { user, isLoaded } = useUser()
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [emailToDelete, setEmailToDelete] = useState<string | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [resendingEmailId, setResendingEmailId] = useState<string | null>(null)
 
   if (!isLoaded) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <LoaderCircleIcon className="h-8 w-8 animate-spin text-primary" />
       </div>
-    );
+    )
   }
 
   if (!user) {
@@ -40,7 +41,7 @@ export default function EmailPreferencesPage() {
         <h2 className="text-xl font-semibold">認証エラー</h2>
         <p className="text-muted-foreground">ユーザー情報が読み込めません</p>
       </div>
-    );
+    )
   }
 
   // Clerkのメールアドレスをマッピング
@@ -49,39 +50,39 @@ export default function EmailPreferencesPage() {
     emailAddress: email.emailAddress,
     verification: email.verification,
     primary: email.id === user.primaryEmailAddressId,
-  }));
+  }))
 
   const setPrimaryEmail = async (emailId: string) => {
     try {
-      setIsProcessing(true);
-      const emailToSet = user.emailAddresses.find((email) => email.id === emailId);
+      setIsProcessing(true)
+      const emailToSet = user.emailAddresses.find((email) => email.id === emailId)
 
       if (emailToSet) {
         // プライマリーメールアドレスを変更
         await user.update({
           primaryEmailAddressId: emailId,
-        });
+        })
 
         toast.success('プライマリーメールアドレスを変更しました', {
           description: 'ログイン情報が更新されました',
-          icon: <CheckCircleIcon className="h-4 w-4 text-green-500" />,
-        });
+          icon: <CheckCircleIcon className="h-4 w-4 text-active" />,
+        })
       }
     } catch (error) {
-      console.error('Error setting primary email:', error);
+      console.error('Error setting primary email:', error)
       toast.error('メールアドレスの更新に失敗しました', {
         description: 'もう一度お試しください',
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
-      });
+      })
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
 
   const deleteEmail = async (emailId: string) => {
     try {
-      setIsProcessing(true);
-      const emailToDelete = user.emailAddresses.find((email) => email.id === emailId);
+      setIsProcessing(true)
+      const emailToDelete = user.emailAddresses.find((email) => email.id === emailId)
 
       if (emailToDelete) {
         // プライマリーメールアドレスは削除できない
@@ -89,66 +90,74 @@ export default function EmailPreferencesPage() {
           toast.error('プライマリーメールアドレスは削除できません', {
             description: '別のメールアドレスをプライマリーに設定してから削除してください',
             icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
-          });
-          return;
+          })
+          return
+        }
+        // 認証済みのメールアドレスのみ削除可能
+        if (emailToDelete.verification?.status !== 'verified') {
+          toast.error('認証済みのメールアドレスのみ削除できます', {
+            description: 'まずはメールを認証してから削除してください',
+            icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
+          })
+          return
         }
 
         // メールアドレスを削除
-        await emailToDelete.destroy();
+        await emailToDelete.destroy()
         toast.success('メールアドレスを削除しました', {
-          icon: <CheckCircleIcon className="h-4 w-4 text-green-500" />,
-        });
+          icon: <CheckCircleIcon className="h-4 w-4 text-active" />,
+        })
       }
     } catch (error) {
-      console.error('Error deleting email:', error);
+      console.error('Error deleting email:', error)
       toast.error('メールアドレスの削除に失敗しました', {
         description: 'もう一度お試しください',
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
-      });
+      })
     } finally {
-      setIsProcessing(false);
-      setShowDeleteDialog(false);
+      setIsProcessing(false)
+      setShowDeleteDialog(false)
     }
-  };
+  }
 
   const resendVerificationEmail = async (emailId: string) => {
     try {
-      setResendingEmailId(emailId);
-      const emailToVerify = user.emailAddresses.find((email) => email.id === emailId);
+      setResendingEmailId(emailId)
+      const emailToVerify = user.emailAddresses.find((email) => email.id === emailId)
 
       if (emailToVerify) {
         // 認証メールを再送信
         await emailToVerify.prepareVerification({
           strategy: 'email_link',
           redirectUrl: window.location.origin + `/dashboard/setting/email-preferences`,
-        });
+        })
 
         toast.success('認証メールを送信しました', {
           description: 'メールを確認して認証を完了してください',
-          icon: <SendIcon className="h-4 w-4 text-green-500" />,
-        });
+          icon: <SendIcon className="h-4 w-4 text-active" />,
+        })
       }
     } catch (error) {
-      console.error('Error resending verification email:', error);
+      console.error('Error resending verification email:', error)
       toast.error('認証メールの送信に失敗しました', {
         description: 'もう一度お試しください',
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
-      });
+      })
     } finally {
-      setResendingEmailId(null);
+      setResendingEmailId(null)
     }
-  };
+  }
 
   return (
     <>
       <div className="space-y-4 grid grid-cols-1 md:grid-cols-2">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-xl font-bold">
             <MailIcon className="h-4 w-4 text-primary" />
             登録済みメールアドレス
           </div>
           <div className="text-sm text-muted-foreground">
-            <p className="my-2 text-xs">
+            <p className="my-2 text-sm">
               プライマリーに設定されたメールアドレスがログインとシステム通知に使用されます。
             </p>
           </div>
@@ -165,9 +174,25 @@ export default function EmailPreferencesPage() {
                 <div
                   key={email.id}
                   className={`p-4 border rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 
-                                ${email.primary ? 'bg-slate-50 border-slate-200' : ''}`}
+                                ${email.primary ? 'bg-muted border-border' : ''}`}
                 >
                   <div className="flex items-center gap-2 flex-1">
+                    {!email.primary && email.verification?.status === 'verified' && (
+                      <div className="mr-2">
+                        <Button
+                          onClick={() => {
+                            setEmailToDelete(email.id)
+                            setShowDeleteDialog(true)
+                          }}
+                          variant="outline"
+                          size="icon"
+                          className="p-0 border border-secondary hover:bg-muted hover:text-secondary-foreground"
+                          disabled={isProcessing}
+                        >
+                          <Trash2 className="h-5 w-5 flex-shrink-0" />
+                        </Button>
+                      </div>
+                    )}
                     <MailIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     <div className="space-y-1 min-w-0">
                       <div className="flex flex-wrap gap-2 items-center">
@@ -184,7 +209,7 @@ export default function EmailPreferencesPage() {
                           {email.verification?.status === 'verified' ? (
                             <Badge
                               variant="outline"
-                              className="text-green-600 border-green-300 bg-green-50"
+                              className="text-active-foreground border-active-foreground bg-active"
                             >
                               <CheckCircleIcon className="h-3 w-3 mr-1" />
                               認証済み
@@ -192,7 +217,7 @@ export default function EmailPreferencesPage() {
                           ) : (
                             <Badge
                               variant="outline"
-                              className="text-amber-600 border-amber-300 bg-amber-50"
+                              className="text-warning-foreground border-warning-foreground bg-warning"
                             >
                               <AlertCircleIcon className="h-3 w-3 mr-1" />
                               未認証
@@ -207,8 +232,7 @@ export default function EmailPreferencesPage() {
                     {email.verification?.status !== 'verified' && (
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="flex-1 sm:flex-initial text-amber-600"
+                        className="flex-1 sm:flex-initial border-border border "
                         onClick={() => resendVerificationEmail(email.id)}
                         disabled={isProcessing || resendingEmailId === email.id}
                       >
@@ -239,17 +263,15 @@ export default function EmailPreferencesPage() {
                       </Button>
                     )}
 
-                    {!email.primary && (
+                    {!email.primary && email.verification?.status === 'verified' && (
                       <Dialog
                         title="メールアドレスを削除しますか？"
-                        description={`このメールアドレスでのログインができなくなります。
-                        ${email.emailAddress}
-                        `}
+                        description={`このメールアドレスでのログインができなくなります。\n                        ${email.emailAddress}\n                        `}
                         onConfirmAction={() => deleteEmail(email.id)}
                         open={showDeleteDialog && emailToDelete === email.id}
                         onOpenChange={(open) => {
-                          if (!open) setShowDeleteDialog(false);
-                          if (open) setEmailToDelete(email.id);
+                          if (!open) setShowDeleteDialog(false)
+                          if (open) setEmailToDelete(email.id)
                         }}
                       />
                     )}
@@ -261,5 +283,5 @@ export default function EmailPreferencesPage() {
         </div>
       </div>
     </>
-  );
+  )
 } 
