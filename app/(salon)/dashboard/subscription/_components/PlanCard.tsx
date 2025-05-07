@@ -110,7 +110,7 @@ interface PlanCardProps {
       >
         {isPopular && (
           <div className="absolute -top-4 left-0 right-0 z-10 flex justify-center">
-            <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-md">
+            <Badge className="bg-warning border-warning-foreground text-warning-foreground px-4 py-2 rounded-full text-sm font-semibold shadow-md">
               <Star className="w-4 h-4 mr-1" />
               人気プラン
             </Badge>
@@ -135,7 +135,10 @@ interface PlanCardProps {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
                 >
-                  <Badge variant="default" className="bg-active text-primary">
+                  <Badge
+                    variant="default"
+                    className="bg-active  text-active-foreground px-3 py-1 animate-pulse"
+                  >
                     現在のプラン
                   </Badge>
                 </motion.div>
