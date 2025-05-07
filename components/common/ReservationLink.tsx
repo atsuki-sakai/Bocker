@@ -85,15 +85,15 @@ export default function ReservationLink() {
           </div>
 
           <a
-            className="text-sm text-blue-500 truncate"
+            className="text-sm text-link truncate"
             href={`${baseUrl}/reservation/${salon._id}${trackingType[selectedTrackingType]}`}
           >{`${baseUrl}/reservation/${salon._id}${trackingType[selectedTrackingType]}`}</a>
           <Accordion type="single" collapsible>
             <AccordionItem value="item-1">
               <AccordionTrigger>
-                <p>予約受付リンクについて</p>
+                <p className="text-secondary-foreground">予約受付リンクについて</p>
               </AccordionTrigger>
-              <AccordionContent>
+              <AccordionContent className="text-secondary-foreground text-sm tracking-normal leading-7 bg-secondary rounded-md p-2">
                 <p className="mb-2">
                   予約受付リンクにトラッキングパラメータを付与することで、どのチャネルからの流入を計測に使用します。
                 </p>
