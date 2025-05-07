@@ -176,7 +176,14 @@ export default function TimelinePage() {
               gridRow: `2 / span 576`,
             }}
           >
-            <div className="absolute inset-1 bg-red-200 opacity-75 rounded-md" />
+            <div className="absolute inset-1 bg-palette-4 opacity-75 rounded-md">
+              <p className="text-xs p-2 font-bold text-center text-palette-4-foreground">
+                {schedule.isAllDay ? '終日' : 'スケジュール'}
+              </p>
+              <p className="text-xs p-2 text-center text-palette-4-foreground">
+                {schedule.notes ? `(${schedule.notes})` : ''}
+              </p>
+            </div>
           </li>
         )
       }
@@ -195,8 +202,8 @@ export default function TimelinePage() {
             gridColumn: `${colStart} / span 1`,
           }}
         >
-          <div className="absolute inset-1 bg-red-200 opacity-75 rounded-md flex items-start justify-center p-2 overflow-scroll">
-            <p className="text-xs text-start text-red-700">
+          <div className="absolute inset-1 bg-palette-4 opacity-75 rounded-md flex items-start justify-center p-2 overflow-scroll">
+            <p className="text-xs text-start text-palette-4-foreground">
               {schedule.isAllDay ? '全日' : 'スケジュール'}
               {schedule.isAllDay
                 ? '00:00 - 24:00'
@@ -251,15 +258,19 @@ export default function TimelinePage() {
         >
           <Link
             href={`/dashboard/reservation/${reservation._id}`}
-            className="group absolute inset-1 flex flex-col overflow-y-auto rounded-md bg-indigo-50 p-2 text-xs/5 hover:bg-indigo-100"
+            className="group absolute z-0 inset-1 flex flex-col overflow-y-auto rounded-md bg-palette-5 p-2 text-xs/5 hover:opacity-80 transition-opacity duration-200"
           >
-            <p className="order-1 font-semibold text-indigo-700">{reservation.staffName}</p>
-            <p className="text-indigo-500 group-hover:text-indigo-700">
+            <p className="order-1 font-semibold text-palette-5-foreground">
+              {reservation.staffName}
+            </p>
+            <p className="text-palette-5-foreground group-hover:text-palette-5-foreground">
               <time dateTime={startTime.toISOString()}>
                 {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}
               </time>
             </p>
-            <p className="mt-1 text-indigo-700">¥{reservation.totalPrice?.toLocaleString()}</p>
+            <p className="mt-1 text-palette-5-foreground">
+              ¥{reservation.totalPrice?.toLocaleString()}
+            </p>
           </Link>
         </li>
       )
@@ -336,9 +347,9 @@ export default function TimelinePage() {
   return (
     <DashboardSection backLink="/dashboard/timeline" backLinkTitle="タイムラインに戻る">
       <div className="flex h-full flex-col">
-        <div className="sticky bg-white z-10 md:pt-5">
-          <header className="flex flex-none items-center justify-between border-b border-gray-200 md:px-6 pb-2">
-            <h1 className="text-sm md:text-lg font-semibold text-gray-900">
+        <div className="sticky bg-background z-10 md:pt-5">
+          <header className="flex flex-none items-center justify-between border-b border-border md:px-6 pb-2">
+            <h1 className="text-sm md:text-lg font-semibold text-primary">
               {viewMode === 'week' ? (
                 <time
                   className="flex flex-col md:flex-row items-center justify-center gap-1"
@@ -347,7 +358,7 @@ export default function TimelinePage() {
                   <span className="font-bold text-base md:text-xl">
                     {format(startOfWeek, 'yyyy年MM月dd日', { locale: ja })}
                   </span>
-                  <div className=" text-gray-500 text-xs">から</div>
+                  <div className=" text-muted-foreground text-xs">から</div>
                   <span className="font-bold text-base md:text-xl">
                     {format(endOfWeek, 'yyyy年MM月dd日', { locale: ja })}
                   </span>
@@ -355,7 +366,7 @@ export default function TimelinePage() {
               ) : (
                 <time dateTime={format(selectedDate, 'yyyy-MM-dd')}>
                   {format(selectedDate, 'yyyy年MM月dd日', { locale: ja })}
-                  <div className="md:hidden ml-2 inline-block text-gray-500 text-xs">
+                  <div className="md:hidden ml-2 inline-block text-muted-foreground text-xs">
                     ({weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]})
                   </div>
                 </time>
@@ -382,10 +393,10 @@ export default function TimelinePage() {
                 </div>
               </div>
               <div className="flex items-center">
-                <div className="relative flex items-center rounded-md bg-white shadow-xs md:items-stretch">
+                <div className="relative flex items-center rounded-md bg-background shadow-xs md:items-stretch">
                   <button
                     type="button"
-                    className="flex h-9 w-12 items-center justify-center rounded-l-md border-y border-l border-gray-300 pr-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pr-0 md:hover:bg-gray-50"
+                    className="flex h-9 w-12 items-center justify-center rounded-l-md border-y border-l border-border pr-1 text-muted-foreground hover:text-primary focus:relative md:w-9 md:pr-0 md:hover:bg-muted"
                     onClick={moveToPrevious}
                   >
                     <span className="sr-only">{viewMode === 'week' ? '前週' : '前日'}</span>
@@ -393,15 +404,15 @@ export default function TimelinePage() {
                   </button>
                   <button
                     type="button"
-                    className="hidden border-y border-gray-300 px-3.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:relative md:block"
+                    className="hidden border-y border-border px-3.5 text-sm font-semibold text-primary hover:bg-muted focus:relative md:block"
                     onClick={moveToToday}
                   >
                     今日
                   </button>
-                  <span className="relative -mx-px h-5 w-px bg-gray-300 md:hidden" />
+                  <span className="relative -mx-px h-5 w-px bg-border md:hidden" />
                   <button
                     type="button"
-                    className="flex h-9 w-12 items-center justify-center rounded-r-md border-y border-r border-gray-300 pl-1 text-gray-400 hover:text-gray-500 focus:relative md:w-9 md:pl-0 md:hover:bg-gray-50"
+                    className="flex h-9 w-12 items-center justify-center rounded-r-md border-y border-r border-border pl-1 text-primary hover:text-primary focus:relative md:w-9 md:pl-0 md:hover:bg-muted"
                     onClick={moveToNext}
                   >
                     <span className="sr-only">{viewMode === 'week' ? '次週' : '翌日'}</span>
@@ -412,7 +423,7 @@ export default function TimelinePage() {
                 <button
                   type="button"
                   onClick={toggleViewMode}
-                  className="ml-4 hidden md:inline-flex items-center rounded-md border border-gray-300 bg-white px-3.5 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-50"
+                  className="ml-4 hidden md:inline-flex items-center rounded-md border border-border bg-background px-3.5 py-2 text-sm font-semibold text-primary shadow-sm hover:bg-muted"
                 >
                   {viewMode === 'day' ? '週表示' : '日表示'}
                 </button>
@@ -434,20 +445,20 @@ export default function TimelinePage() {
                   </Select>
                 </div>
                 <Menu as="div" className="relative ml-6 md:hidden">
-                  <MenuButton className="-mx-2 flex items-center rounded-full border border-transparent p-2 text-gray-400 hover:text-gray-500">
+                  <MenuButton className="-mx-2 flex items-center rounded-full border border-transparent p-2 text-muted-foreground hover:text-primary">
                     <span className="sr-only">メニューを開く</span>
                     <Ellipsis className="size-5" aria-hidden="true" />
                   </MenuButton>
 
                   <MenuItems
                     transition
-                    className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-hidden data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
+                    className="absolute right-0 z-20 mt-3 w-36 origin-top-right divide-y divide-border overflow-hidden rounded-md bg-background shadow-lg ring-1 ring-black/5 focus:outline-hidden data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
                   >
                     <div className="py-1">
                       <MenuItem>
                         <a
                           href="#"
-                          className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
+                          className="block px-4 py-2 text-sm text-muted-foreground data-focus:bg-muted data-focus:text-primary data-focus:outline-hidden"
                           onClick={moveToToday}
                         >
                           今日へ移動
@@ -456,7 +467,7 @@ export default function TimelinePage() {
                       <MenuItem>
                         <Link
                           href="#"
-                          className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
+                          className="block px-4 py-2 text-sm text-muted-foreground data-focus:bg-muted data-focus:text-primary data-focus:outline-hidden"
                           onClick={toggleViewMode}
                         >
                           {viewMode === 'day' ? '週表示に切り替え' : '日表示に切り替え'}
@@ -474,7 +485,7 @@ export default function TimelinePage() {
             {/* 日付ヘッダー部分（モバイル） - 日本語化 */}
             {viewMode === 'week' && (
               <div
-                className={`grid  ${gridColsClass} z-10 bg-white`}
+                className={`grid h-20 border-b border-border ${gridColsClass}  bg-background`}
                 style={{ gridTemplateRows: '1.75rem repeat(576, minmax(0, 1fr)) auto' }}
               >
                 <div className="min-w-[56px]"></div>
@@ -486,7 +497,7 @@ export default function TimelinePage() {
                     <button
                       key={index}
                       type="button"
-                      className="flex flex-col items-center pt-2 pb-3 bg-white"
+                      className="flex flex-col items-center pt-2 pb-3 bg-background"
                       onClick={() => {
                         setSelectedDate(date)
                         setViewMode('day')
@@ -495,18 +506,18 @@ export default function TimelinePage() {
                       <div className="flex items-center justify-center">
                         {weekDays[index]}{' '}
                         {hasReservations && (
-                          <span className="ml-1 w-1.5 h-1.5 bg-indigo-500  text-white rounded-full" />
+                          <span className="ml-1 w-1.5 h-1.5 bg-active  text-active-foreground rounded-full" />
                         )}
                       </div>
                       <span
                         className={`mt-1 flex size-8 items-center justify-center py-3  ${
                           dateIsToday
-                            ? 'rounded-full bg-indigo-600 font-semibold text-white'
+                            ? 'rounded-full bg-active font-semibold text-active-foreground'
                             : isSelected
-                              ? 'rounded-full bg-indigo-100 font-semibold text-indigo-600'
+                              ? 'rounded-full bg-active font-semibold text-active-foreground'
                               : hasReservations
-                                ? 'font-semibold text-indigo-600 ring-1 ring-indigo-500 bg-white rounded-full'
-                                : 'font-semibold text-gray-900'
+                                ? 'font-semibold text-active ring-1 ring-active bg-active-foreground rounded-full'
+                                : 'font-semibold text-active'
                         }`}
                       >
                         {date.getDate()}
@@ -517,13 +528,13 @@ export default function TimelinePage() {
               </div>
             )}
             {viewMode === 'day' && (
-              <div className="grid grid-cols-1 text-sm/6 text-gray-500 sm:hidden">
+              <div className="grid grid-cols-1 text-sm/6 text-muted-foreground sm:hidden">
                 <div className="flex justify-center items-center pt-2 pb-3">
                   <span className="font-medium">
                     {weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]}
                   </span>
                   {hasReservationsOnDate(selectedDate) && (
-                    <span className="ml-2 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                    <span className="ml-2 bg-active text-active-foreground px-2 py-0.5 rounded-full text-xs font-medium">
                       予約あり
                     </span>
                   )}
@@ -539,7 +550,7 @@ export default function TimelinePage() {
                     <div className="grid flex-auto grid-cols-1 grid-rows-1">
                       {/* 時間の行 - 24時間分に修正 */}
                       <div
-                        className={`col-start-1 col-end-2 row-start-1 grid divide-y divide-gray-100`}
+                        className={`col-start-1 col-end-2 row-start-1 grid divide-y divide-border`}
                         style={{ gridTemplateRows: 'repeat(48, minmax(3.5rem, 1fr))' }}
                       >
                         <div ref={containerOffset} className="row-end-1 h-7"></div>
@@ -550,21 +561,21 @@ export default function TimelinePage() {
                       <div
                         className={`col-start-1 col-end-2 row-start-1 ${
                           viewMode === 'week' ? 'grid' : 'hidden'
-                        } grid-rows-1 divide-x divide-gray-100 ${gridColsClass}`}
+                        } grid-rows-1 divide-x divide-border ${gridColsClass}`}
                       >
                         {viewMode === 'week' ? (
                           <>
-                            <div className="col-start-1 row-span-full border-r border-gray-100" />
-                            <div className="col-start-2 row-span-full border-r border-gray-100" />
-                            <div className="col-start-3 row-span-full border-r border-gray-100" />
-                            <div className="col-start-4 row-span-full border-r border-gray-100" />
-                            <div className="col-start-5 row-span-full border-r border-gray-100" />
-                            <div className="col-start-6 row-span-full border-r border-gray-100" />
-                            <div className="col-start-7 row-span-full border-r border-gray-100" />
+                            <div className="col-start-1 row-span-full border-r border-border" />
+                            <div className="col-start-2 row-span-full border-r border-border" />
+                            <div className="col-start-3 row-span-full border-r border-border" />
+                            <div className="col-start-4 row-span-full border-r border-border" />
+                            <div className="col-start-5 row-span-full border-r border-border" />
+                            <div className="col-start-6 row-span-full border-r border-border" />
+                            <div className="col-start-7 row-span-full border-r border-border" />
                             <div className="col-start-8 row-span-full w-8 hidden sm:block" />
                           </>
                         ) : (
-                          <div className="col-start-1 row-span-full border-r border-gray-100" />
+                          <div className="col-start-1 row-span-full border-r border-border" />
                         )}
                       </div>
 
@@ -586,19 +597,19 @@ export default function TimelinePage() {
         ) : isReservationsLoading && selectedStaffId ? (
           <div className="flex-1 overflow-y-auto">
             <div className="flex items-center justify-center h-full pt-24 py-12 px-4 sm:px-6 lg:px-8">
-              <Loader2 className="h-5 w-5 animate-spin mr-2 text-indigo-500" />
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
             </div>
           </div>
         ) : reservations.length === 0 && selectedStaffId ? (
-          <div className="flex-1 overflow-y-auto bg-slate-50 rounded-md mt-4">
+          <div className="flex-1 overflow-y-auto bg-muted rounded-md mt-4">
             <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
-              <p className="text-slate-700 text-sm">予約がありません。</p>
+              <p className="text-muted-foreground text-sm">予約がありません。</p>
             </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto bg-slate-50 rounded-md mt-4">
+          <div className="flex-1 overflow-y-auto bg-muted rounded-md mt-4">
             <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
-              <p className="text-slate-700 text-sm">
+              <p className="text-muted-foreground text-sm">
                 右上のプルダウンからスタッフを選択して予約を表示してください。
               </p>
             </div>
