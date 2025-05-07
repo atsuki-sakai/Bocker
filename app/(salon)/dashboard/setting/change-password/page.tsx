@@ -91,14 +91,14 @@ const PasswordInput = memo(
     togglePassword,
     error,
   }: {
-    id: string;
-    label: string;
-    icon: React.ReactNode;
-    placeholder: string;
-    register: UseFormRegister<z.infer<typeof changePasswordSchema>>;
-    showPassword: boolean;
-    togglePassword: () => void;
-    error: FieldError | undefined;
+    id: string
+    label: string
+    icon: React.ReactNode
+    placeholder: string
+    register: UseFormRegister<z.infer<typeof changePasswordSchema>>
+    showPassword: boolean
+    togglePassword: () => void
+    error: FieldError | undefined
   }) => (
     <div className="space-y-2">
       <Label htmlFor={id} className="flex items-center text-sm font-medium">
@@ -110,7 +110,7 @@ const PasswordInput = memo(
           id={id}
           type={showPassword ? 'text' : 'password'}
           placeholder={placeholder}
-          className="pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/50"
+          className="pr-10 transition-all duration-200"
           {...register(id as keyof z.infer<typeof changePasswordSchema>)}
         />
         <PasswordToggleButton show={showPassword} onToggle={togglePassword} />
@@ -123,13 +123,13 @@ const PasswordInput = memo(
       )}
     </div>
   )
-);
-PasswordInput.displayName = 'PasswordInput';
+)
+PasswordInput.displayName = 'PasswordInput'
 
 // パスワード強度インジケーター
 const PasswordStrengthIndicator = memo(({ password }: { password: string }) => {
-  const strength = calculatePasswordStrength(password);
-  const { label, color } = getStrengthLabel(strength);
+  const strength = calculatePasswordStrength(password)
+  const { label, color } = getStrengthLabel(strength)
 
   return (
     <div className="mt-3 space-y-1">
@@ -148,7 +148,7 @@ const PasswordStrengthIndicator = memo(({ password }: { password: string }) => {
         ].map((criteria, index) => (
           <div key={index} className="flex items-center text-xs">
             {criteria.match.test(password) ? (
-              <CheckCircle2Icon className="h-3 w-3 mr-1 text-green-500" />
+              <CheckCircle2Icon className="h-3 w-3 mr-1 text-active" />
             ) : (
               <AlertCircleIcon className="h-3 w-3 mr-1 text-muted-foreground" />
             )}
@@ -157,76 +157,76 @@ const PasswordStrengthIndicator = memo(({ password }: { password: string }) => {
         ))}
       </div>
     </div>
-  );
-});
-PasswordStrengthIndicator.displayName = 'PasswordStrengthIndicator';
+  )
+})
+PasswordStrengthIndicator.displayName = 'PasswordStrengthIndicator'
 
 export default function ChangePasswordPage() {
-  const { user, isLoaded } = useUser();
-  const router = useRouter();
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [newPasswordValue, setNewPasswordValue] = useState('');
+  const { user, isLoaded } = useUser()
+  const router = useRouter()
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [newPasswordValue, setNewPasswordValue] = useState('')
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     watch,
-  } = useZodForm(changePasswordSchema);
+  } = useZodForm(changePasswordSchema)
 
   // パスワード値を監視して状態を更新
-  const newPassword = watch('newPassword');
+  const newPassword = watch('newPassword')
 
   // useEffectを使って状態更新を行う（無限ループを防止）
   useEffect(() => {
     if (newPassword !== newPasswordValue) {
-      setNewPasswordValue(newPassword || '');
+      setNewPasswordValue(newPassword || '')
     }
-  }, [newPassword, newPasswordValue]);
+  }, [newPassword, newPasswordValue])
 
   const toggleCurrentPassword = useCallback(() => {
-    setShowCurrentPassword((prev) => !prev);
-  }, []);
+    setShowCurrentPassword((prev) => !prev)
+  }, [])
 
   const toggleNewPassword = useCallback(() => {
-    setShowNewPassword((prev) => !prev);
-  }, []);
+    setShowNewPassword((prev) => !prev)
+  }, [])
 
   const toggleConfirmPassword = useCallback(() => {
-    setShowConfirmPassword((prev) => !prev);
-  }, []);
+    setShowConfirmPassword((prev) => !prev)
+  }, [])
 
   const onSubmit = async (data: z.infer<typeof changePasswordSchema>) => {
     if (!isLoaded) {
-      return;
+      return
     }
 
     try {
       // 送信アニメーションのために少し遅延
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
       // Clerk の update 関数を利用してパスワード変更を実行
       await user?.updatePassword({
         newPassword: data.newPassword,
         currentPassword: data.currentPassword,
-      });
+      })
 
       toast.success('パスワードが更新されました', {
         description: 'セキュリティが強化されました',
-        icon: <CheckCircle2Icon className="h-4 w-4 text-green-500" />,
-      });
+        icon: <CheckCircle2Icon className="h-4 w-4 text-active" />,
+      })
 
-      router.push(`/dashboard`);
+      router.push(`/dashboard`)
     } catch (error) {
-      console.error(error);
+      console.error(error)
       toast.error('パスワードの更新に失敗しました', {
         description: 'もう一度お試しください',
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
-      });
+      })
     }
-  };
+  }
 
   return (
     <div className="max-w-md mx-auto py-4">
@@ -236,8 +236,8 @@ export default function ChangePasswordPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="p-3 rounded-full bg-green-100">
-                    <ShieldCheckIcon className="h-8 w-8 text-green-500" />
+                  <div className="p-3 rounded-full bg-muted">
+                    <ShieldCheckIcon className="h-8 w-8 text-muted-foreground" />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -259,7 +259,7 @@ export default function ChangePasswordPage() {
           className="space-y-5"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-              e.preventDefault();
+              e.preventDefault()
             }
           }}
         >
@@ -320,5 +320,5 @@ export default function ChangePasswordPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
