@@ -23,30 +23,24 @@ import {
   PiggyBank,
   Tag,
   Calendar as CalendarFull,
+  Loader2,
   Hash,
   AlertCircle,
   Save,
-} from 'lucide-react';
+} from 'lucide-react'
 
-import { Switch } from '@/components/ui/switch';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch'
+import { Calendar as CalendarComponent } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 
-import type { Id } from '@/convex/_generated/dataModel';
-import { handleErrorToMsg, throwConvexError } from '@/lib/error';
-import { toast } from 'sonner';
-import { ZodTextField } from '@/components/common';
+import type { Id } from '@/convex/_generated/dataModel'
+import { handleErrorToMsg, throwConvexError } from '@/lib/error'
+import { toast } from 'sonner'
+import { ZodTextField } from '@/components/common'
 
 const couponSchema = z.object({
   name: z.string().min(1, 'クーポン名を入力してください'),
@@ -58,9 +52,9 @@ const couponSchema = z.object({
   discountType: z.enum(['percentage', 'fixed']),
   percentageDiscountValue: z.preprocess(
     (val) => {
-      if (val === '' || val === null || val === undefined) return 0;
-      const num = Number(val);
-      return isNaN(num) ? 0 : num;
+      if (val === '' || val === null || val === undefined) return 0
+      const num = Number(val)
+      return isNaN(num) ? 0 : num
     },
     z
       .number()
@@ -70,9 +64,9 @@ const couponSchema = z.object({
   ),
   fixedDiscountValue: z.preprocess(
     (val) => {
-      if (val === '' || val === null || val === undefined) return 0;
-      const num = Number(val);
-      return isNaN(num) ? 0 : num;
+      if (val === '' || val === null || val === undefined) return 0
+      const num = Number(val)
+      return isNaN(num) ? 0 : num
     },
     z
       .number()
@@ -88,22 +82,22 @@ const couponSchema = z.object({
   maxUseCount: z.number().min(0, '0以上の値を入力してください'),
   numberOfUse: z.number().min(0, '0以上の値を入力してください'),
   selectedMenus: z.array(z.string()).optional(),
-});
+})
 
 // アニメーション定義
 const fadeIn = {
   hidden: { opacity: 0, y: 10 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
   exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
-};
+}
 
 interface PageProps {
-  params: Promise<{ coupon_id: Id<'coupon'> }>;
+  params: Promise<{ coupon_id: Id<'coupon'> }>
 }
 // ページコンポーネント
 export default function Page({ params }: PageProps) {
-  const unwrappedParams = React.use(params);
-  const { coupon_id } = unwrappedParams;
+  const unwrappedParams = React.use(params)
+  const { coupon_id } = unwrappedParams
   return (
     <DashboardSection
       title="クーポンを編集"
@@ -112,46 +106,49 @@ export default function Page({ params }: PageProps) {
     >
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
-          <p className="text-sm text-gray-500">クーポン情報を編集して内容を変更できます。</p>
+          <p className="text-sm text-muted-foreground">
+            クーポン情報を編集して内容を変更できます。
+          </p>
           <Separator className="my-2" />
         </div>
 
         <CouponForm couponId={coupon_id} />
       </div>
     </DashboardSection>
-  );
+  )
 }
 
 // クーポンプレビューコンポーネント
 function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
   const formatDate = (date: Date | undefined) => {
-    if (!date) return '未設定';
+    if (!date) return '未設定'
     try {
-      return format(date, 'yyyy/MM/dd', { locale: ja });
+      return format(date, 'yyyy/MM/dd', { locale: ja })
     } catch {
-      return '無効な日付';
+      return '無効な日付'
     }
-  };
+  }
 
   return (
     <div className="w-full">
       <Card className="shadow-md overflow-hidden">
-        <CardHeader className="pb-2 bg-slate-700">
-          <CardTitle className="text-white flex items-center gap-2">
+        <CardHeader className="pb-2 bg-muted text-primary text-xl">
+          <CardTitle className="flex items-center gap-2">
             <Tag size={18} />
             {data.name || 'クーポン名'}
           </CardTitle>
-          <span className="text-xs text-blue-100">{data.couponUid}</span>
-          <CardDescription className="text-blue-100">
-            {data.isActive ? '有効なクーポン' : '無効なクーポン'}
-          </CardDescription>
+          <span className="text-sm tracking-wide text-muted-foreground">{data.couponUid}</span>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="flex flex-col justify-start items-start gap-3">
             <div className="text-center">
               <Badge
                 variant="outline"
-                className="px-3 py-1 text-lg font-bold bg-white border-green-600 text-green-600 "
+                className={`px-3 py-1 text-lg font-bold  ${
+                  data.discountType === 'percentage'
+                    ? 'bg-link text-link-foreground'
+                    : 'bg-active text-active-foreground'
+                }`}
               >
                 {data.discountType === 'percentage'
                   ? `${data.percentageDiscountValue || 0}% OFF`
@@ -160,19 +157,19 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-sm mt-2">
-              <div className="flex items-center gap-1 text-gray-600">
+              <div className="flex items-center gap-1 text-muted-foreground">
                 <CalendarFull size={14} />
                 <span>開始日:</span>
               </div>
               <div className="text-right">{formatDate(data.startDate)}</div>
 
-              <div className="flex items-center gap-1 text-gray-600">
+              <div className="flex items-center gap-1 text-muted-foreground">
                 <CalendarFull size={14} />
                 <span>終了日:</span>
               </div>
               <div className="text-right">{formatDate(data.endDate)}</div>
 
-              <div className="flex items-center gap-1 text-gray-600">
+              <div className="flex items-center gap-1 text-muted-foreground">
                 <Hash size={14} />
                 <span>利用回数:</span>
               </div>
@@ -180,38 +177,38 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
                 <span className="text-sm">
                   {isNaN(data.numberOfUse) ? 0 : data.numberOfUse || 0}
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   / {isNaN(data.maxUseCount) ? '無制限' : data.maxUseCount || '無制限'}
                 </span>
               </div>
             </div>
           </div>
         </CardContent>
-        <CardFooter className="bg-gray-50 pt-2 pb-2 flex justify-between">
-          <div className="text-xs text-gray-500">
+        <CardFooter className="bg-muted pt-2 pb-2 flex justify-between">
+          <div className="text-xs text-muted-foreground">
             クーポン適用外メニュー: {data.selectedMenus?.length || 0}件
           </div>
           <Badge
             variant={data.isActive ? 'default' : 'destructive'}
-            className={`h-6 ${data.isActive ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}
+            className={`h-6 ${data.isActive ? 'bg-active text-active-foreground' : 'bg-destructive text-destructive-foreground'}`}
           >
             {data.isActive ? '有効' : '無効'}
           </Badge>
         </CardFooter>
       </Card>
     </div>
-  );
+  )
 }
 
 // メインのフォームコンポーネント
 function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
-  const router = useRouter();
-  const { salon } = useSalon();
+  const router = useRouter()
+  const { salon } = useSalon()
   // 状態管理
-  const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([]);
-  const [initialSelectedMenuIds, setInitialSelectedMenuIds] = useState<Id<'menu'>[]>([]);
+  const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([])
+  const [initialSelectedMenuIds, setInitialSelectedMenuIds] = useState<Id<'menu'>[]>([])
   // Convex
-  const updateCouponComplete = useMutation(api.coupon.core.mutation.updateCouponRelatedTables);
+  const updateCouponComplete = useMutation(api.coupon.core.mutation.updateCouponRelatedTables)
   const couponCompleteData = useQuery(
     api.coupon.core.query.findCouponComplete,
     salon?._id
@@ -220,9 +217,9 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
           salonId: salon?._id as Id<'salon'>,
         }
       : 'skip'
-  );
+  )
 
-  const { coupon, couponConfig, couponExclusionMenus } = couponCompleteData ?? {};
+  const { coupon, couponConfig, couponExclusionMenus } = couponCompleteData ?? {}
   // フォーム管理
   const {
     register,
@@ -231,23 +228,23 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     reset,
     watch,
     formState: { isSubmitting, errors, isDirty },
-  } = useZodForm(couponSchema, { shouldUnregister: false });
+  } = useZodForm(couponSchema, { shouldUnregister: false })
 
   // フォームの値を監視
-  const formValues = watch();
-  const discountType = watch('discountType');
+  const formValues = watch()
+  const discountType = watch('discountType')
 
   // フォーム送信ハンドラー
   const onSubmit = async (data: z.infer<typeof couponSchema>) => {
     // 選択されたメニューIDsを追加
     const submitData = {
       ...data,
-    };
+    }
 
     try {
       if (!salon) {
-        toast.error('サロンが存在しません');
-        return;
+        toast.error('サロンが存在しません')
+        return
       }
       if (!couponConfig) {
         throw throwConvexError({
@@ -261,7 +258,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
             couponId: couponId,
             salonId: salon._id,
           },
-        });
+        })
       }
       await updateCouponComplete({
         salonId: salon._id as Id<'salon'>,
@@ -280,13 +277,13 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         maxUseCount: submitData.maxUseCount,
         numberOfUse: submitData.numberOfUse,
         selectedMenuIds: selectedMenuIds,
-      });
-      toast.success('クーポンを更新しました');
-      router.push(`/dashboard/coupon`);
+      })
+      toast.success('クーポンを更新しました')
+      router.push(`/dashboard/coupon`)
     } catch (e) {
-      toast.error(handleErrorToMsg(e));
+      toast.error(handleErrorToMsg(e))
     }
-  };
+  }
 
   // 初期データの設定
   useEffect(() => {
@@ -302,25 +299,25 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         endDate: new Date(couponConfig.endDate_unix ?? Date.now()),
         maxUseCount: couponConfig.maxUseCount ?? 0,
         numberOfUse: couponConfig.numberOfUse ?? 0,
-      });
+      })
     }
-    const initialIds = couponExclusionMenus?.map((menu) => menu.menuId) ?? [];
-    setSelectedMenuIds(initialIds);
-    setInitialSelectedMenuIds(initialIds);
-  }, [reset, coupon, couponConfig, couponExclusionMenus]);
+    const initialIds = couponExclusionMenus?.map((menu) => menu.menuId) ?? []
+    setSelectedMenuIds(initialIds)
+    setInitialSelectedMenuIds(initialIds)
+  }, [reset, coupon, couponConfig, couponExclusionMenus])
 
   // 表示用のプレビューデータ
   const previewData = {
     ...formValues,
     selectedMenus: selectedMenuIds,
-  };
+  }
 
   // 配列の内容が変更されたか比較
   const menuIdsChanged =
-    JSON.stringify(selectedMenuIds.sort()) !== JSON.stringify(initialSelectedMenuIds.sort());
+    JSON.stringify(selectedMenuIds.sort()) !== JSON.stringify(initialSelectedMenuIds.sort())
 
   if (!salon || coupon === undefined || couponConfig === undefined) {
-    return <Loading />;
+    return <Loading />
   }
 
   return (
@@ -328,7 +325,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
       onSubmit={handleSubmit(onSubmit)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-          e.preventDefault();
+          e.preventDefault()
         }
       }}
       className="space-y-8"
@@ -337,12 +334,12 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         <Tabs defaultValue="preview" className="md:col-span-2">
           <TabsList>
             <TabsTrigger value="preview">基本設定</TabsTrigger>
-            <TabsTrigger value="detail">除外メニュー設定</TabsTrigger>
+            <TabsTrigger value="detail">クーポン適用外メニュー設定</TabsTrigger>
           </TabsList>
           <TabsContent value="preview">
             {/* フォーム入力部分 */}
             <div className="md:col-span-3 space-y-6">
-              <div className="flex flex-col gap-6 bg-white rounded-lg p-4 shadow-sm border">
+              <div className="flex flex-col gap-6 bg-background rounded-lg p-4 shadow-sm border">
                 <div className="space-y-4">
                   <ZodTextField
                     register={register}
@@ -360,22 +357,22 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                     icon={<Hash size={16} />}
                     placeholder="例: COUPON-00123"
                   />
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     こちらのコードをクーポンコードとして入力する事で割引が適応されます。
                   </span>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 justify-end items-end">
-                    <div className="flex flex-col gap-2">
-                      <Label className="flex items-center gap-2 text-gray-700">
+                    <div className="flex flex-col gap-2 ">
+                      <Label className="flex items-center gap-2 text-primary">
                         <Percent size={16} />
                         割引タイプ
                       </Label>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         利用額に対する割引率と固定割引額を選択できます。
                       </span>
-                      <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-md">
+                      <div className="flex items-center gap-3 bg-muted p-2 rounded-md">
                         <div
-                          className={`flex-1 text-center text-sm p-2 rounded-md ${discountType === 'percentage' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-500'}`}
+                          className={`flex-1 text-center text-sm p-2 rounded-md ${discountType === 'percentage' ? 'bg-link text-link-foreground font-medium' : 'text-muted-foreground'}`}
                         >
                           割引率
                         </div>
@@ -386,14 +383,14 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                             <Switch
                               checked={field.value === 'fixed'}
                               onCheckedChange={(checked) => {
-                                field.onChange(checked ? 'fixed' : 'percentage');
+                                field.onChange(checked ? 'fixed' : 'percentage')
                               }}
-                              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-blue-600"
+                              className="data-[state=checked]:bg-active data-[state=unchecked]:bg-link"
                             />
                           )}
                         />
                         <div
-                          className={`flex-1 text-center text-sm  p-2 rounded-md ${discountType === 'fixed' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500'}`}
+                          className={`flex-1 text-center text-sm  p-2 rounded-md ${discountType === 'fixed' ? 'bg-active text-active-foreground font-medium' : 'text-muted-foreground'}`}
                         >
                           固定金額
                         </div>
@@ -429,7 +426,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                 <div className="space-y-4 py-2">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
-                      <Label className="flex items-center gap-2 text-gray-700">
+                      <Label className="flex items-center gap-2 text-primary">
                         <CalendarIcon size={16} />
                         開始日
                       </Label>
@@ -441,8 +438,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                             <PopoverTrigger asChild>
                               <Button
                                 variant="outline"
-                                className={`w-full justify-start text-left font-normal ${
-                                  errors.startDate ? 'border-red-500' : ''
+                                className={`w-full border-border justify-start text-left font-normal bg-input ${
+                                  errors.startDate ? 'border-destructive' : ''
                                 }`}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -471,7 +468,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                           animate="visible"
                           exit="exit"
                           variants={fadeIn}
-                          className="mt-1 text-sm text-red-500 flex items-center gap-1"
+                          className="mt-1 text-sm text-destructive flex items-center gap-1"
                         >
                           <AlertCircle size={14} />
                           {errors.startDate?.message}
@@ -480,7 +477,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <Label className="flex items-center gap-2 text-gray-700">
+                      <Label className="flex items-center gap-2 text-primary">
                         <CalendarIcon size={16} />
                         終了日
                       </Label>
@@ -492,8 +489,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                             <PopoverTrigger asChild>
                               <Button
                                 variant="outline"
-                                className={`w-full justify-start text-left font-normal ${
-                                  errors.endDate ? 'border-red-500' : ''
+                                className={`w-full border-border justify-start text-left font-normal bg-input ${
+                                  errors.endDate ? 'border-destructive' : ''
                                 }`}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -522,7 +519,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                           animate="visible"
                           exit="exit"
                           variants={fadeIn}
-                          className="mt-1 text-sm text-red-500 flex items-center gap-1"
+                          className="mt-1 text-sm text-destructive flex items-center gap-1"
                         >
                           <AlertCircle size={14} />
                           {errors.endDate?.message}
@@ -530,7 +527,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     クーポンの有効期間は開始日から終了日までになります。
                     <br />
                     期間が過ぎた場合クーポンは自動的に利用できなくなります。
@@ -538,15 +535,13 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                     <div className="flex flex-col gap-2">
-                      <Label className="flex items-center gap-2 text-gray-700">
-                        現在の利用回数
-                      </Label>
+                      <Label className="flex items-center gap-2 text-primary">現在の利用回数</Label>
                       <p className="text-sm">
                         <span className="text-sm">
                           {isNaN(formValues.numberOfUse) ? 0 : formValues.numberOfUse || 0}
                         </span>{' '}
                         /
-                        <span className="text-sm ml-1 text-gray-500">
+                        <span className="text-sm ml-1 text-muted-foreground">
                           {isNaN(formValues.maxUseCount)
                             ? '無制限'
                             : formValues.maxUseCount || '無制限'}
@@ -575,21 +570,25 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                           <div className="flex flex-col gap-2">
                             <Label
                               htmlFor="isActive"
-                              className="flex items-center gap-2 text-gray-700 cursor-pointer"
+                              className="flex items-center gap-2 text-primary cursor-pointer"
                             >
                               クーポンの有効/無効
                             </Label>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-muted-foreground">
                               無効にするとクーポンは利用できなくなります。
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm">{field.value ? '有効' : '無効'}</span>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-md font-bold ${field.value ? 'bg-active text-active-foreground' : 'bg-destructive text-destructive-foreground'}`}
+                            >
+                              {field.value ? '有効' : '無効'}
+                            </span>
                             <Switch
                               id="isActive"
                               checked={field.value}
                               onCheckedChange={field.onChange}
-                              className="data-[state=checked]:bg-green-600"
+                              className="data-[state=checked]:bg-active"
                             />
                           </div>
                         </div>
@@ -622,24 +621,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
               >
                 {isSubmitting ? (
                   <>
-                    <motion.div className="animate-spin">
-                      <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                    </motion.div>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     追加中...
                   </>
                 ) : (
@@ -651,7 +633,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
               </Button>
 
               {isDirty && (
-                <p className="text-xs text-center mt-2 text-gray-500">
+                <p className="text-xs text-center mt-2 text-muted-foreground">
                   変更があります。保存を忘れずに。
                 </p>
               )}
@@ -660,5 +642,5 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         </div>
       </div>
     </form>
-  );
+  )
 }
