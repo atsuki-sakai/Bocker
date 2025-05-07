@@ -50,18 +50,15 @@ export default function CurrentPlanBanner({
   if (!isActive) return null;
 
   return (
-    <div className="w-full max-w-xl mb-8 border border-green-500 p-4 rounded-lg">
+    <div className="w-full max-w-xl mb-8 border border-active p-4 rounded-lg">
       <div className="flex items-center justify-between">
         <div className="flex items-center  gap-3">
-          <div className="bg-white dark:bg-green-800/30 border border-green-500 rounded-full p-1 shadow-md">
-            <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+          <div className="bg-background border border-active rounded-full p-1 shadow-md">
+            <Check className="w-5 h-5 text-active dark:text-active" />
           </div>
           <div>
-            <p className="font-semibold text-slate-600 dark:text-slate-300">
-              現在のプラン{' '}
-              <span className="font-bold text-blue-700 dark:text-blue-200 text-2xl ml-1">
-                {planName}
-              </span>
+            <p className="font-semibold text-primary">
+              現在のプラン <span className="font-bold text-active text-2xl ml-1">{planName}</span>
             </p>
           </div>
         </div>
@@ -73,5 +70,5 @@ export default function CurrentPlanBanner({
         サブスクリプション契約は有効です。
       </p>
     </div>
-  );
+  )
 }
