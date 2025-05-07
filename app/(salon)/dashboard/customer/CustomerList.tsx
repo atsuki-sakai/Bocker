@@ -122,7 +122,7 @@ export default function CustomerList() {
       <div className="rounded-md border overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50 text-slate-700">
+            <TableRow className="bg-muted text-muted-foreground">
               <TableHead className="px-2 text-nowrap w-fit">顧客名/LINEユーザー名</TableHead>
               <TableHead className="px-2 text-nowrap w-fit">連絡先</TableHead>
               <TableHead className="px-2 text-nowrap w-fit">来店回数</TableHead>
@@ -179,7 +179,7 @@ export default function CustomerList() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="outline">{customer.useCount ?? 0}回</Badge>
+                    <Badge>{customer.useCount ?? 0}回</Badge>
                   </TableCell>
                   <TableCell className="px-2">
                     <div className="flex items-center gap-2">
@@ -191,11 +191,7 @@ export default function CustomerList() {
                     {customer.tags && customer.tags.length > 0 ? (
                       <div className="flex flex-wrap gap-1 w-full min-w-[140px]">
                         {customer.tags.map((tag: string, index: number) => (
-                          <Badge
-                            key={index}
-                            variant="secondary"
-                            className="text-xs py-1 px-1 font-light"
-                          >
+                          <Badge key={index} className="text-xs py-1 px-1 font-light">
                             {tag}
                           </Badge>
                         ))}
@@ -205,31 +201,23 @@ export default function CustomerList() {
                     )}
                   </TableCell>
                   <TableCell className="px-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-xs text-purple-600 hover:text-purple-800"
-                    >
+                    <Button variant="ghost" size="icon" className="text-xs">
                       <Link href={`/dashboard/customer/${customer._id}`}>詳細</Link>
                     </Button>
                   </TableCell>
                   <TableCell className="px-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-xs text-blue-600 hover:text-blue-800"
-                    >
+                    <Button variant="ghost" size="icon" className="text-xs">
                       <Link href={`/dashboard/customer/${customer._id}/edit`}>編集</Link>
                     </Button>
                   </TableCell>
                   <TableCell className="px-2">
                     <Button
-                      variant="ghost"
+                      variant="destructive"
                       size="icon"
                       onClick={(e) => {
                         handleShowDeleteModal(e, customer._id)
                       }}
-                      className="text-xs text-red-600 hover:text-red-800"
+                      className="text-xs hover:opacity-50 transition-opacity duration-300"
                     >
                       削除
                     </Button>
