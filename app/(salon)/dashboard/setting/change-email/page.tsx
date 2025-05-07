@@ -67,14 +67,14 @@ const PasswordInput = memo(
     togglePassword,
     error,
   }: {
-    id: string;
-    label: string;
-    icon: React.ReactNode;
-    placeholder: string;
-    register: UseFormRegister<z.infer<typeof changeEmailSchema>>;
-    showPassword: boolean;
-    togglePassword: () => void;
-    error: FieldError | undefined;
+    id: string
+    label: string
+    icon: React.ReactNode
+    placeholder: string
+    register: UseFormRegister<z.infer<typeof changeEmailSchema>>
+    showPassword: boolean
+    togglePassword: () => void
+    error: FieldError | undefined
   }) => (
     <motion.div
       className="space-y-2"
@@ -91,7 +91,7 @@ const PasswordInput = memo(
           id={id}
           type={showPassword ? 'text' : 'password'}
           placeholder={placeholder}
-          className="pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/50"
+          className="pr-10 transition-all duration-200"
           {...register(id as keyof z.infer<typeof changeEmailSchema>)}
         />
         <PasswordToggleButton show={showPassword} onToggle={togglePassword} />
@@ -111,8 +111,8 @@ const PasswordInput = memo(
       </AnimatePresence>
     </motion.div>
   )
-);
-PasswordInput.displayName = 'PasswordInput';
+)
+PasswordInput.displayName = 'PasswordInput'
 
 // メール入力フィールドコンポーネント
 const EmailInput = memo(
@@ -124,12 +124,12 @@ const EmailInput = memo(
     register,
     error,
   }: {
-    id: string;
-    label: string;
-    icon: React.ReactNode;
-    placeholder: string;
-    register: UseFormRegister<z.infer<typeof changeEmailSchema>>;
-    error: FieldError | undefined;
+    id: string
+    label: string
+    icon: React.ReactNode
+    placeholder: string
+    register: UseFormRegister<z.infer<typeof changeEmailSchema>>
+    error: FieldError | undefined
   }) => (
     <div className="space-y-2">
       <Label htmlFor={id} className="flex items-center text-sm font-medium">
@@ -141,7 +141,7 @@ const EmailInput = memo(
           id={id}
           type="email"
           placeholder={placeholder}
-          className="transition-all duration-200 focus:ring-2 focus:ring-primary/50"
+          className="transition-all duration-200 "
           {...register(id as keyof z.infer<typeof changeEmailSchema>)}
         />
       </div>
@@ -153,85 +153,85 @@ const EmailInput = memo(
       )}
     </div>
   )
-);
-EmailInput.displayName = 'EmailInput';
+)
+EmailInput.displayName = 'EmailInput'
 
 export default function ChangeEmailPage() {
-  const { user, isLoaded, isSignedIn } = useUser();
-  const router = useRouter();
+  const { user, isLoaded, isSignedIn } = useUser()
+  const router = useRouter()
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useZodForm(changeEmailSchema);
+  } = useZodForm(changeEmailSchema)
 
   const onSubmit = async (data: z.infer<typeof changeEmailSchema>) => {
     if (!isLoaded || !isSignedIn || !user) {
-      toast.error('ユーザー情報の読み込みに失敗しました');
-      return;
+      toast.error('ユーザー情報の読み込みに失敗しました')
+      return
     }
 
     try {
       // 送信アニメーションのために少し遅延
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500))
       // 新しいメールアドレスを作成
       try {
         // 新しいメールアドレスを作成
         const emailAddress = await user.createEmailAddress({
           email: data.newEmail,
-        });
+        })
 
         // 確認メールを送信
         await emailAddress.prepareVerification({
           strategy: 'email_link',
           redirectUrl: window.location.origin + `/dashboard`,
-        });
+        })
 
         toast.success('確認メールを送信しました', {
           description: 'メールを確認して認証を完了してください',
-          icon: <MailIcon className="h-4 w-4 text-green-500" />,
+          icon: <MailIcon className="h-4 w-4 text-active" />,
           duration: 6000,
-        });
+        })
 
         // 成功メッセージの後に詳細情報を表示
         setTimeout(() => {
           toast.info('メールアドレス管理について', {
             description:
               '新しいメールアドレスの確認後、設定画面から古いメールアドレスを削除するか、新しいアドレスをプライマリーに設定できます',
-            icon: <InfoIcon className="h-4 w-4 text-blue-500" />,
+            icon: <InfoIcon className="h-4 w-4 text-link" />,
             duration: 8000,
-          });
-          router.push(`/dashboard/setting/email-preferences`);
-        }, 4000);
+          })
+          router.push(`/dashboard/setting/email-preferences`)
+        }, 4000)
       } catch (error) {
-        console.error('Email creation error:', error);
-        let errorMessage = 'もう一度お試しください';
+        console.error('Email creation error:', error)
+        let errorMessage = 'もう一度お試しください'
 
         // エラーメッセージの詳細を取得
-        console.log(error);
+        console.log(error)
         if (error instanceof Error) {
           // すでに使用されているメールアドレスの場合のエラー処理
           if (error.message.includes('That email address is taken. Please try another.')) {
-            errorMessage = 'このメールアドレスはすでに使用されています';
+            errorMessage = 'このメールアドレスはすでに使用されています'
           } else {
-            errorMessage = error.message;
+            errorMessage = error.message
           }
         }
 
         toast.error('メールアドレスの追加に失敗しました', {
           description: errorMessage,
           icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
-        });
+        })
       }
     } catch (error) {
-      console.error('Overall error:', error);
+      console.error('Overall error:', error)
       toast.error('メールアドレスの更新に失敗しました', {
         description: 'もう一度お試しください',
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
-      });
+      })
     }
-  };
+  }
 
   return (
     <div className="max-w-md mx-auto py-4">
@@ -241,8 +241,8 @@ export default function ChangeEmailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="p-3 rounded-full bg-blue-100">
-                    <MailIcon className="h-8 w-8 text-blue-500" />
+                  <div className="p-3 rounded-full bg-secondary">
+                    <MailIcon className="h-8 w-8 text-secondary-foreground" />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -264,7 +264,7 @@ export default function ChangeEmailPage() {
           className="space-y-5"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-              e.preventDefault();
+              e.preventDefault()
             }
           }}
         >
@@ -308,5 +308,5 @@ export default function ChangeEmailPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
