@@ -1,23 +1,22 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useMemo } from 'react';
-import { UseFormRegister, FieldErrors, Controller } from 'react-hook-form';
-import { z } from 'zod';
-import { useZodForm } from '@/hooks/useZodForm';
-import { motion, AnimatePresence } from 'framer-motion';
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { useSalon } from '@/hooks/useSalon';
-import { handleErrorToMsg } from '@/lib/error';
-import { Loading } from '@/components/common';
-import { toast } from 'sonner';
+import { useState, useEffect, useMemo } from 'react'
+import { z } from 'zod'
+import { motion } from 'framer-motion'
+import { Controller } from 'react-hook-form'
+import { useZodForm } from '@/hooks/useZodForm'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import { useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { useSalon } from '@/hooks/useSalon'
+import { handleErrorToMsg } from '@/lib/error'
+import { Loading } from '@/components/common'
+import { toast } from 'sonner'
 // コンポーネントのインポート
-import { DashboardSection } from '@/components/common';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { DashboardSection } from '@/components/common'
+import { Label } from '@/components/ui/label'
 import {
   CalendarIcon,
   Percent,
@@ -29,11 +28,13 @@ import {
   Gift,
   Ticket,
   Save,
-} from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
+  Loader2,
+} from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Calendar as CalendarComponent } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Button } from '@/components/ui/button'
+import { ZodTextField } from '@/components/common'
 import {
   Card,
   CardContent,
@@ -41,14 +42,14 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+} from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MAX_COUPON_UID_LENGTH } from '@/services/convex/constants';
-import { ExclusionMenu } from '@/components/common';
-import { Id } from '@/convex/_generated/dataModel';
+import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { MAX_COUPON_UID_LENGTH } from '@/services/convex/constants'
+import { ExclusionMenu } from '@/components/common'
+import { Id } from '@/convex/_generated/dataModel'
 // スキーマとタイプ定義
 
 const couponSchema = z.object({
@@ -61,10 +62,10 @@ const couponSchema = z.object({
   percentageDiscountValue: z.preprocess(
     (val) => {
       // 空文字列・NaN は null 扱い
-      if (val === '' || val === null || val === undefined) return null;
-      if (typeof val === 'number' && isNaN(val)) return null; // 空の場合はnull扱い
-      const num = Number(val);
-      return isNaN(num) ? null : num;
+      if (val === '' || val === null || val === undefined) return null
+      if (typeof val === 'number' && isNaN(val)) return null // 空の場合はnull扱い
+      const num = Number(val)
+      return isNaN(num) ? null : num
     },
     z
       .number()
@@ -76,10 +77,10 @@ const couponSchema = z.object({
   fixedDiscountValue: z.preprocess(
     (val) => {
       // 空文字列・NaN は null 扱い
-      if (val === '' || val === null || val === undefined) return null;
-      if (typeof val === 'number' && isNaN(val)) return null; // 空の場合はnull扱い
-      const num = Number(val);
-      return isNaN(num) ? null : num;
+      if (val === '' || val === null || val === undefined) return null
+      if (typeof val === 'number' && isNaN(val)) return null // 空の場合はnull扱い
+      const num = Number(val)
+      return isNaN(num) ? null : num
     },
     z
       .number()
@@ -93,13 +94,13 @@ const couponSchema = z.object({
   endDate: z.date().refine(
     (date) => {
       // 日付の比較時に時刻部分を無視して日付のみで比較
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
 
-      const compareDate = new Date(date);
-      compareDate.setHours(0, 0, 0, 0);
+      const compareDate = new Date(date)
+      compareDate.setHours(0, 0, 0, 0)
 
-      return compareDate >= today;
+      return compareDate >= today
     },
     { message: '終了日は現在以降の日付を選択してください' }
   ),
@@ -114,91 +115,36 @@ const couponSchema = z.object({
     .max(99999, '99999以下の値を入力してください')
     .optional(),
   selectedMenus: z.array(z.string()).optional(),
-});
+})
 
 // アニメーション定義
 const fadeIn = {
   hidden: { opacity: 0, y: 10 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
   exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
-};
-
-// ZodTextField コンポーネント - 再利用可能なフォームフィールド
-function ZodTextField({
-  register,
-  errors,
-  name,
-  label,
-  type = 'text',
-  icon,
-  placeholder,
-  className,
-}: {
-  register: UseFormRegister<z.infer<typeof couponSchema>>;
-  errors: FieldErrors<z.infer<typeof couponSchema>>;
-  name: keyof z.infer<typeof couponSchema>;
-  label: string;
-  type?: string;
-  icon?: React.ReactNode;
-  placeholder?: string;
-  className?: string;
-}) {
-  return (
-    <div className={`flex flex-col gap-2 ${className}`}>
-      <Label htmlFor={name} className="flex items-center gap-2 text-gray-700">
-        {icon}
-        {label}
-      </Label>
-      <div className="relative">
-        <Input
-          id={name}
-          type={type}
-          {...register(name, {
-            valueAsNumber: type === 'number',
-          })}
-          placeholder={placeholder}
-          className={`${errors[name] ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-        />
-      </div>
-      <AnimatePresence>
-        {errors[name] && (
-          <motion.p
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            variants={fadeIn}
-            className="mt-1 text-sm text-red-500 flex items-center gap-1"
-          >
-            <AlertCircle size={14} />
-            {errors[name]?.message}
-          </motion.p>
-        )}
-      </AnimatePresence>
-    </div>
-  );
 }
 
 // クーポンプレビューコンポーネント
 function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
   const formatDate = (date: Date | undefined) => {
-    if (!date) return '未設定';
+    if (!date) return '未設定'
     try {
-      return format(date, 'yyyy/MM/dd', { locale: ja });
+      return format(date, 'yyyy/MM/dd', { locale: ja })
     } catch {
-      return '無効な日付';
+      return '無効な日付'
     }
-  };
+  }
 
   return (
     <div className="w-full">
       <Card className="shadow-md overflow-hidden">
-        <CardHeader className="pb-2 bg-slate-700">
-          <CardTitle className="text-white flex items-center gap-2">
+        <CardHeader className="pb-2 bg-muted">
+          <CardTitle className="text-primary flex items-center gap-2 text-xl">
             <Gift size={18} />
             {data.name || 'クーポン名'}
           </CardTitle>
-          <span className="text-xs text-blue-100">{data.couponUid}</span>
-          <CardDescription className="text-white">
+          <span className="text-xs text-muted-foreground">{data.couponUid}</span>
+          <CardDescription className="text-muted-foreground">
             {data.isActive ? '有効なクーポン' : '無効なクーポン'}
           </CardDescription>
         </CardHeader>
@@ -207,7 +153,7 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
             <div className="text-center">
               <Badge
                 variant="outline"
-                className="px-3 py-1 text-lg font-bold border-green-500 bg-green-50 text-green-700"
+                className={`flex-1 text-center p-2 rounded-md text-sm ${data.discountType === 'percentage' ? 'bg-link text-link-foreground font-medium' : 'bg-active text-active-foreground font-medium'}`}
               >
                 {data.discountType === 'percentage'
                   ? `${data.percentageDiscountValue || 0}% OFF`
@@ -216,19 +162,19 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-sm mt-2">
-              <div className="flex items-center gap-1 text-gray-600">
+              <div className="flex items-center gap-1 text-muted-foreground">
                 <CalendarFull size={14} />
                 <span>開始日:</span>
               </div>
               <div className="text-right">{formatDate(data.startDate)}</div>
 
-              <div className="flex items-center gap-1 text-gray-600">
+              <div className="flex items-center gap-1 text-muted-foreground">
                 <CalendarFull size={14} />
                 <span>終了日:</span>
               </div>
               <div className="text-right">{formatDate(data.endDate)}</div>
 
-              <div className="flex items-center gap-1 text-gray-600">
+              <div className="flex items-center gap-1 text-muted-foreground">
                 <Hash size={14} />
                 <span>利用回数:</span>
               </div>
@@ -238,13 +184,13 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="bg-slate-50 pt-2 pb-2 flex justify-between">
-          <div className="text-xs text-gray-500">
+        <CardFooter className="bg-muted pt-2 pb-2 flex justify-between">
+          <div className="text-xs text-muted-foreground">
             対象メニュー: {data.selectedMenus?.length || 0}件
           </div>
           <Badge
             variant={data.isActive ? 'default' : 'destructive'}
-            className={`h-6 ${data.isActive ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
+            className={`h-6 ${data.isActive ? 'bg-active text-active-foreground' : 'bg-destructive text-destructive-foreground'}`}
           >
             {data.isActive ? '有効' : '無効'}
           </Badge>
@@ -256,13 +202,13 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
 
 // メインのフォームコンポーネント
 function CouponForm() {
-  const router = useRouter();
+  const router = useRouter()
   // 状態管理
-  const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { salon } = useSalon();
+  const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { salon } = useSalon()
 
-  const createCouponRelatedTables = useMutation(api.coupon.core.mutation.createCouponRelatedTables);
+  const createCouponRelatedTables = useMutation(api.coupon.core.mutation.createCouponRelatedTables)
 
   // フォーム管理
   const {
@@ -272,24 +218,24 @@ function CouponForm() {
     reset,
     watch,
     formState: { errors },
-  } = useZodForm(couponSchema);
+  } = useZodForm(couponSchema)
 
   // フォームの値を監視
-  const formValues = watch();
-  const discountType = watch('discountType');
+  const formValues = watch()
+  const discountType = watch('discountType')
 
   // フォーム送信ハンドラー
   const onSubmit = async (data: z.infer<typeof couponSchema>) => {
-    setIsSubmitting(true);
+    setIsSubmitting(true)
 
     try {
       if (!salon) {
-        toast.error('サロンが見つかりません');
-        return;
+        toast.error('サロンが見つかりません')
+        return
       }
       // 日付をUNIXタイムスタンプに変換（ミリ秒）
-      const startDate_unix = data.startDate.getTime();
-      const endDate_unix = data.endDate.getTime();
+      const startDate_unix = data.startDate.getTime()
+      const endDate_unix = data.endDate.getTime()
 
       await createCouponRelatedTables({
         salonId: salon!._id,
@@ -303,31 +249,31 @@ function CouponForm() {
         endDate_unix,
         maxUseCount: data.maxUseCount ?? 0,
         numberOfUse: 0,
-      });
+      })
 
-      toast.success('クーポンを作成しました');
-      router.push(`/dashboard/coupon`);
+      toast.success('クーポンを作成しました')
+      router.push(`/dashboard/coupon`)
     } catch (error) {
-      toast.error(handleErrorToMsg(error));
+      toast.error(handleErrorToMsg(error))
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   // フォームのエラーをデバッグ用に監視
   useEffect(() => {
     if (Object.keys(errors).length > 0) {
-      console.log('フォームエラー:', errors);
-      toast.error('入力内容に誤りがあります。各項目を確認してください。');
+      console.log('フォームエラー:', errors)
+      toast.error('入力内容に誤りがあります。各項目を確認してください。')
     }
-  }, [errors]);
+  }, [errors])
 
   // 初期データの設定
   useEffect(() => {
     // 新規作成用の初期値設定
-    const today = new Date();
-    const oneMonthLater = new Date();
-    oneMonthLater.setMonth(today.getMonth() + 1);
+    const today = new Date()
+    const oneMonthLater = new Date()
+    oneMonthLater.setMonth(today.getMonth() + 1)
 
     reset({
       name: '',
@@ -341,8 +287,8 @@ function CouponForm() {
       maxUseCount: 100,
       numberOfUse: 0,
       selectedMenus: [],
-    });
-  }, [reset]);
+    })
+  }, [reset])
 
   // 表示用のプレビューデータ
   const previewData = useMemo(
@@ -351,10 +297,10 @@ function CouponForm() {
       selectedMenus: selectedMenuIds,
     }),
     [formValues, selectedMenuIds]
-  );
+  )
 
   if (!salon) {
-    return <Loading />;
+    return <Loading />
   }
 
   return (
@@ -371,19 +317,19 @@ function CouponForm() {
         <Tabs defaultValue="setting" className="md:col-span-2">
           <TabsList>
             <TabsTrigger value="setting">基本設定</TabsTrigger>
-            <TabsTrigger value="exclusion">除外メニュー</TabsTrigger>
+            <TabsTrigger value="exclusion">クーポン適用外メニュー</TabsTrigger>
           </TabsList>
           <TabsContent value="setting">
             <div className=" space-y-8">
-              <div className="bg-white rounded-lg p-6 shadow-sm border">
-                <div className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                  <div className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full font-bold">
+              <div className="bg-card rounded-lg p-6 shadow-sm border">
+                <div className="flex items-center gap-3 text-xl font-bold text-primary">
+                  <div className="flex items-center justify-center w-6 h-6 bg-primary text-primary-foreground rounded-full font-bold">
                     1
                   </div>
                   基本情報
                 </div>
 
-                <div className="space-y-4 py-3">
+                <div className="space-y-4 py-3 mt-4">
                   <div>
                     <ZodTextField
                       register={register}
@@ -403,22 +349,22 @@ function CouponForm() {
                       icon={<Ticket size={16} />}
                       placeholder="例: CODE12345"
                     />
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       顧客はこちらのコードを予約時に使用する事で決済からクーポンを利用できます。
                     </span>
                   </div>
                   <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 justify-end items-end">
                     <div className="flex flex-col gap-2">
-                      <Label className="flex items-center gap-2 text-gray-700">
+                      <Label className="flex items-center gap-2 text-muted-foreground">
                         <Percent size={16} />
                         割引タイプ
                       </Label>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         固定割引と利用額に対する割引率を設定できます。
                       </span>
-                      <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-md">
+                      <div className="flex items-center gap-3 bg-muted p-3 rounded-md">
                         <div
-                          className={`flex-1 text-center p-2 rounded-md text-sm ${discountType === 'percentage' ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-500'}`}
+                          className={`flex-1 text-center p-2 rounded-md text-sm ${discountType === 'percentage' ? 'bg-link text-link-foreground font-medium' : 'text-muted-foreground'}`}
                         >
                           割引率
                         </div>
@@ -431,12 +377,12 @@ function CouponForm() {
                               onCheckedChange={(checked) => {
                                 field.onChange(checked ? 'fixed' : 'percentage')
                               }}
-                              className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-blue-500"
+                              className="data-[state=checked]:bg-active data-[state=unchecked]:bg-link"
                             />
                           )}
                         />
                         <div
-                          className={`flex-1 text-center p-2 rounded-md text-sm ${discountType === 'fixed' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500'}`}
+                          className={`flex-1 text-center p-2 rounded-md text-sm ${discountType === 'fixed' ? 'bg-active text-active-foreground font-medium' : 'text-muted-foreground'}`}
                         >
                           固定金額
                         </div>
@@ -467,17 +413,19 @@ function CouponForm() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-sm font-bold text-slate-700 mt-6">
-                  <div className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full font-bold">
+                <Separator className="my-10 w-2/3 mx-auto" />
+
+                <div className="flex items-center gap-3 text-xl font-bold text-primary mt-6">
+                  <div className="flex items-center justify-center w-6 h-6 bg-primary text-primary-foreground rounded-full font-bold">
                     2
                   </div>
                   有効期間と利用回数
                 </div>
 
-                <div className="space-y-4 py-2">
+                <div className="space-y-4 py-2 mt-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 justify-end items-end">
                     <div className="flex flex-col gap-2">
-                      <Label className="flex items-center gap-2 text-gray-700">
+                      <Label className="flex items-center gap-2 text-primary">
                         <CalendarIcon size={16} />
                         開始日
                       </Label>
@@ -490,8 +438,8 @@ function CouponForm() {
                             <PopoverTrigger asChild>
                               <Button
                                 variant="outline"
-                                className={`w-full justify-start text-left font-normal ${
-                                  errors.startDate ? 'border-red-500' : ''
+                                className={`w-full justify-start text-left font-normal border-border bg-input ${
+                                  errors.startDate ? 'border-destructive' : ''
                                 }`}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -520,7 +468,7 @@ function CouponForm() {
                           animate="visible"
                           exit="exit"
                           variants={fadeIn}
-                          className="mt-1 text-sm text-red-500 flex items-center gap-1"
+                          className="mt-1 text-sm text-destructive flex items-center gap-1"
                         >
                           <AlertCircle size={14} />
                           {errors.startDate?.message}
@@ -529,7 +477,7 @@ function CouponForm() {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <Label className="flex items-center gap-2 text-gray-700">
+                      <Label className="flex items-center gap-2 text-primary">
                         <CalendarIcon size={16} />
                         終了日
                       </Label>
@@ -541,8 +489,8 @@ function CouponForm() {
                             <PopoverTrigger asChild>
                               <Button
                                 variant="outline"
-                                className={`w-full justify-start text-left font-normal ${
-                                  errors.endDate ? 'border-red-500' : ''
+                                className={`w-full justify-start text-left font-normal border-border bg-input ${
+                                  errors.endDate ? 'border-destructive' : ''
                                 }`}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -571,7 +519,7 @@ function CouponForm() {
                           animate="visible"
                           exit="exit"
                           variants={fadeIn}
-                          className="mt-1 text-sm text-red-500 flex items-center gap-1"
+                          className="mt-1 text-sm text-destructive flex items-center gap-1"
                         >
                           <AlertCircle size={14} />
                           {errors.endDate?.message}
@@ -579,7 +527,7 @@ function CouponForm() {
                       )}
                     </div>
                   </div>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     クーポンの有効期間は開始日から終了日までになります。
                     期間が過ぎた場合クーポンは自動的に利用できなくなります。
                   </span>
@@ -593,13 +541,13 @@ function CouponForm() {
                     icon={<Hash size={16} />}
                     placeholder="例: 100"
                   />
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     最大利用回数を超えた場合はクーポンは自動的に利用できなくなります。
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3 text-sm font-bold text-slate-700 mt-4">
-                  <div className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full font-bold">
+                <div className="flex items-center gap-3 text-xl font-bold text-primary mt-4">
+                  <div className="flex items-center justify-center w-6 h-6 bg-primary text-primary-foreground rounded-full font-bold">
                     3
                   </div>
                   対象メニューと有効設定
@@ -614,14 +562,14 @@ function CouponForm() {
                         <div className="flex items-center justify-between">
                           <Label
                             htmlFor="isActive"
-                            className="flex items-center gap-2 text-gray-700 cursor-pointer"
+                            className="flex items-center gap-2 text-primary cursor-pointer"
                           >
                             クーポンを有効/無効にする
                           </Label>
                           <div className="flex items-center gap-2">
                             <Badge
                               variant={field.value ? 'default' : 'destructive'}
-                              className={`px-2 py-0.5 ${field.value ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
+                              className={`px-2 py-0.5 ${field.value ? 'bg-active text-active-foreground' : 'bg-destructive text-destructive-foreground'}`}
                             >
                               {field.value ? '有効' : '無効'}
                             </Badge>
@@ -629,14 +577,13 @@ function CouponForm() {
                               id="isActive"
                               checked={field.value}
                               onCheckedChange={field.onChange}
-                              className="data-[state=checked]:bg-green-600"
                             />
                           </div>
                         </div>
                       )}
                     />
                   </div>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     無効にするとクーポンは利用できなくなります。利用を停止したい場合は
                     こちらを選択してください。
                   </span>
@@ -646,7 +593,7 @@ function CouponForm() {
           </TabsContent>
           <TabsContent value="exclusion">
             <ExclusionMenu
-              title="適用しないメニュー"
+              title="クーポンを利用させないメニュー"
               selectedMenuIds={selectedMenuIds}
               setSelectedMenuIdsAction={setSelectedMenuIds}
             />
@@ -662,24 +609,7 @@ function CouponForm() {
               <Button type="submit" disabled={isSubmitting} className="w-full " size="lg">
                 {isSubmitting ? (
                   <>
-                    <div className="animate-spin">
-                      <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                    </div>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     追加中...
                   </>
                 ) : (
