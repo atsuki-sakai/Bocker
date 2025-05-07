@@ -109,8 +109,7 @@ const ApiSettingsCard = () => {
     <div className="">
       <div className="">
         <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-blue-500" />
-          <p className="text-lg font-bold">外部サービス連携</p>
+          <p className="text-2xl font-bold">外部サービス連携</p>
         </div>
 
         <p className="flex items-center mt-1 text-sm text-muted-foreground">
@@ -124,7 +123,7 @@ const ApiSettingsCard = () => {
         onSubmit={handleSubmit(onApiSubmit)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-            e.preventDefault();
+            e.preventDefault()
           }
         }}
         autoComplete="off"
@@ -135,7 +134,7 @@ const ApiSettingsCard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <FormField
                 label="LINE アクセストークン"
-                icon={<Key className="h-4 w-4 text-blue-500" />}
+                icon={<Key className="h-4 w-4 text-primary" />}
                 error={errors.lineAccessToken?.message}
                 tooltip="LINE Developers から取得したアクセストークンを入力してください"
               >
@@ -145,11 +144,11 @@ const ApiSettingsCard = () => {
                     autoComplete="new-password"
                     {...register('lineAccessToken')}
                     placeholder="LINE アクセストークン"
-                    className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                    className="transition-all pr-10 duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
                   />
                   <Button
                     className="absolute right-0"
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     onClick={(e) => handleShowFields(e, 'lineAccessToken')}
                   >
@@ -164,7 +163,7 @@ const ApiSettingsCard = () => {
 
               <FormField
                 label="LINE チャンネルシークレット"
-                icon={<Lock className="h-4 w-4 text-blue-500" />}
+                icon={<Lock className="h-4 w-4 text-primary" />}
                 error={errors.lineChannelSecret?.message}
                 tooltip="LINE Developers から取得したチャネルシークレットを入力してください"
               >
@@ -174,11 +173,11 @@ const ApiSettingsCard = () => {
                     type={showFields.lineChannelSecret ? 'text' : 'password'}
                     {...register('lineChannelSecret')}
                     placeholder="LINE チャンネルシークレット"
-                    className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                    className="transition-all pr-10 duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
                   />
                   <Button
                     className="absolute right-0"
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     onClick={(e) => handleShowFields(e, 'lineChannelSecret')}
                   >
@@ -193,7 +192,7 @@ const ApiSettingsCard = () => {
 
               <FormField
                 label="LIFF ID"
-                icon={<Shield className="h-4 w-4 text-blue-500" />}
+                icon={<Shield className="h-4 w-4 text-primary" />}
                 error={errors.liffId?.message}
                 tooltip="LIFF（LINE Front-end Framework）のIDを入力してください"
               >
@@ -203,12 +202,12 @@ const ApiSettingsCard = () => {
                     autoComplete="new-password"
                     {...register('liffId')}
                     placeholder="LIFF ID"
-                    className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                    className="transition-all pr-10 duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
                   />
 
                   <Button
                     className="absolute right-0"
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     onClick={(e) => handleShowFields(e, 'liffId')}
                   >
@@ -227,7 +226,7 @@ const ApiSettingsCard = () => {
                 </p>
                 <FormField
                   label="LINE公式アカウント識別子"
-                  icon={<MessageSquare className="h-4 w-4 text-blue-500" />}
+                  icon={<MessageSquare className="h-4 w-4 text-primary" />}
                   error={errors.destinationId?.message}
                   tooltip="LINE公式アカウントの識別子を入力してください"
                 >
@@ -285,9 +284,9 @@ const ApiSettingsCard = () => {
         {/* LINE Access Token */}
         <AccordionItem value="line-access-token">
           <AccordionTrigger>LINE アクセストークンの取得方法</AccordionTrigger>
-          <AccordionContent className="space-y-2 text-sm text-slate-600">
+          <AccordionContent className="space-y-2 text-sm text-muted-foreground">
             <p className="font-semibold">取得手順</p>
-            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 <Link
                   href="https://developers.line.biz/console/"
@@ -308,7 +307,7 @@ const ApiSettingsCard = () => {
                 「LINE&nbsp;アクセストークン」欄へ貼り付けます。
               </li>
             </ol>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-secondary-foreground">
               ※ トークンは一度しか表示されません。安全な場所へ保管してください。
             </p>
           </AccordionContent>
@@ -317,9 +316,9 @@ const ApiSettingsCard = () => {
         {/* LINE Channel Secret */}
         <AccordionItem value="line-channel-secret">
           <AccordionTrigger>LINE チャンネルシークレットの取得方法</AccordionTrigger>
-          <AccordionContent className="space-y-2 text-sm text-slate-600">
+          <AccordionContent className="space-y-2 text-sm text-muted-foreground">
             <p className="font-semibold">取得手順</p>
-            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 <Link
                   href="https://developers.line.biz/console/"
@@ -345,9 +344,9 @@ const ApiSettingsCard = () => {
         {/* LIFF ID */}
         <AccordionItem value="liff-id">
           <AccordionTrigger>LIFF ID の取得方法</AccordionTrigger>
-          <AccordionContent className="space-y-2 text-sm text-slate-600">
+          <AccordionContent className="space-y-2 text-sm text-muted-foreground">
             <p className="font-semibold">取得手順</p>
-            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 <Link
                   href="https://developers.line.biz/console/"
@@ -373,26 +372,9 @@ const ApiSettingsCard = () => {
             </ol>
           </AccordionContent>
         </AccordionItem>
-
-        {/* Destination ID */}
-        <AccordionItem value="destination-id" className="hidden">
-          <AccordionTrigger>LINE公式アカウント識別子の取得方法</AccordionTrigger>
-          <AccordionContent className="space-y-2 text-sm text-slate-600">
-            <p className="bg-yellow-50 border border-yellow-400 rounded-md p-3 text-yellow-700">
-              ※ この項目は近日実装予定です。現在は入力・変更できません。
-            </p>
-            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md opacity-50 pointer-events-none">
-              <li>LINE Official Account Manager からアカウント設定を開きます。</li>
-              <li>
-                「詳細設定」&gt;「基本設定」内の<strong>LINE ID</strong> を取得します。
-              </li>
-              <li>取得した ID を貼り付けると、Webhook で destinationId の照合が可能になります。</li>
-            </ol>
-          </AccordionContent>
-        </AccordionItem>
       </Accordion>
     </div>
-  );
+  )
 };
 
 export default ApiSettingsCard;
