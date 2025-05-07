@@ -164,7 +164,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full bg-gray-50 text-gray-400">
+              <div className="flex items-center justify-center h-full bg-muted text-muted-foreground">
                 <Info className="w-8 h-8 mr-2 opacity-30" />
                 <span>画像がありません</span>
               </div>
@@ -173,7 +173,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
           <CardFooter className="p-4 flex flex-wrap gap-2">
             <Badge
               variant={menu.isActive ? 'default' : 'secondary'}
-              className={`transition-all ${menu.isActive ? 'bg-green-50 border-green-500 text-green-500' : 'bg-gray-50 border border-gray-500 text-gray-500'}`}
+              className={`transition-all ${menu.isActive ? 'bg-active border-active text-active-foreground' : 'bg-muted border-border text-muted-foreground'}`}
             >
               {menu.isActive ? (
                 <>
@@ -202,7 +202,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                 <p>{menu.category}</p>
               </Badge>
             )}
-            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent py-1">
+            <CardTitle className="text-2xl font-bold text-primary bg-clip-text py-1">
               {menu.name}
             </CardTitle>
           </CardHeader>
@@ -217,38 +217,40 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
               <TabsContent value="basic" className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* 料金情報 */}
-                  <div className="flex items-start p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
-                    <CreditCard className="w-5 h-5 mt-1 mr-3 text-blue-500" />
+                  <div className="flex items-start p-3 rounded-lg  border border-border">
+                    <CreditCard className="w-5 h-5 mt-1 mr-3 text-primary" />
                     <div>
-                      <p className="text-sm font-medium text-gray-600">料金</p>
+                      <p className="text-sm font-medium text-muted-foreground">料金</p>
                       <div className="flex items-baseline">
                         {formattedSalePrice ? (
                           <div className="flex flex-col">
-                            <span className="text-lg font-bold text-blue-600">
+                            <span className="text-lg font-bold text-primary">
                               {formattedSalePrice}
                             </span>
-                            <span className="text-sm text-gray-500 line-through">
+                            <span className="text-sm text-muted-foreground line-through">
                               {formattedPrice}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-lg font-bold text-gray-900">{formattedPrice}</span>
+                          <span className="text-lg font-bold text-primary">{formattedPrice}</span>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* 所要時間 */}
-                  <div className="flex items-start p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
-                    <Clock className="w-5 h-5 mt-1 mr-3 text-indigo-500" />
+                  <div className="flex items-start p-3 rounded-lg border border-border">
+                    <Clock className="w-5 h-5 mt-1 mr-3 text-primary" />
                     <div className="flex flex-row gap-6">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">実作業時間</p>
-                        <p className="text-lg font-medium text-gray-900">{menu.timeToMin || 0}分</p>
+                        <p className="text-sm font-medium text-muted-foreground">実作業時間</p>
+                        <p className="text-lg font-medium text-primary">{menu.timeToMin || 0}分</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-600">トータル施術時間</p>
-                        <p className="text-lg font-medium text-gray-900">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          トータル施術時間
+                        </p>
+                        <p className="text-lg font-medium text-primary">
                           {menu.ensureTimeToMin || 0}分
                         </p>
                       </div>
@@ -256,12 +258,12 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   </div>
 
                   {/* 対象性別 */}
-                  <div className="flex items-start p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
-                    <Users className="w-5 h-5 mt-1 mr-3 text-purple-500" />
+                  <div className="flex items-start p-3 rounded-lg border border-border">
+                    <Users className="w-5 h-5 mt-1 mr-3 text-primary" />
                     <div>
-                      <p className="text-sm font-medium text-gray-600">対象</p>
+                      <p className="text-sm font-medium text-muted-foreground">対象</p>
 
-                      <p className="text-base text-gray-900">
+                      <p className="text-base text-primary">
                         {menu.targetGender && menu.targetGender !== 'unselected'
                           ? convertGender(menu.targetGender as 'unselected' | 'male' | 'female')
                           : '全ての性別'}
@@ -270,22 +272,22 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   </div>
 
                   {/* ターゲット */}
-                  <div className="flex items-start p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
-                    <Repeat className="w-5 h-5 mt-1 mr-3 text-green-500" />
+                  <div className="flex items-start p-3 rounded-lg border border-border">
+                    <Repeat className="w-5 h-5 mt-1 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-gray-600">ターゲット</p>
-                      <p className="text-base text-gray-900">
+                      <p className="text-sm font-medium text-muted-foreground">ターゲット</p>
+                      <p className="text-base text-primary">
                         {getTargetTypeLabel(menu.targetType || '')}
                       </p>
                     </div>
                   </div>
 
                   {/* 支払い方法 */}
-                  <div className="flex items-start p-3 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
-                    <CreditCard className="w-5 h-5 mt-1 mr-3 text-amber-500" />
+                  <div className="flex items-start p-3 rounded-lg border border-border">
+                    <CreditCard className="w-5 h-5 mt-1 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-gray-600">支払い方法</p>
-                      <p className="text-base text-gray-900">
+                      <p className="text-sm font-medium text-muted-foreground">支払い方法</p>
+                      <p className="text-base text-primary">
                         {getPaymentMethodLabel(menu.paymentMethod || '')}
                       </p>
                     </div>
@@ -296,18 +298,18 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
               <TabsContent value="details" className="space-y-6">
                 {/* 説明文 */}
                 <div className="space-y-2">
-                  <h3 className="text-md font-medium text-gray-700 flex items-center">
-                    <Info className="w-4 h-4 mr-2 text-blue-500" />
+                  <h3 className="text-md font-medium text-muted-foreground flex items-center">
+                    <Info className="w-4 h-4 mr-2 text-primary" />
                     説明
                   </h3>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <div className="bg-muted p-4 rounded-lg border border-border">
                     <AnimatePresence mode="wait">
                       <motion.p
                         key={showFullDescription ? 'full' : 'short'}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="text-gray-700 leading-relaxed"
+                        className="text-primary leading-relaxed"
                       >
                         {shortenedDescription}
                       </motion.p>
@@ -317,7 +319,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="mt-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                        className="mt-2 text-link-foreground "
                         onClick={toggleDescription}
                       >
                         {showFullDescription ? (
@@ -336,34 +338,26 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
 
                 {/* タグ */}
                 <div className="space-y-2">
-                  <h3 className="text-md text-gray-700 flex items-center">
-                    <Tag className="w-4 h-4 mr-2 text-blue-500" />
+                  <h3 className="text-md text-muted-foreground flex items-center">
+                    <Tag className="w-4 h-4 mr-2 text-primary" />
                     タグ
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {menu.tags && menu.tags.length > 0 ? (
-                      menu.tags.map((tag, index) => (
-                        <Badge
-                          key={index}
-                          variant="outline"
-                          className="bg-green-50 text-green-500 border-green-500 font-light hover:bg-green-50 hover:border-green-200 transition-colors py-1 px-3"
-                        >
-                          {tag}
-                        </Badge>
-                      ))
+                      menu.tags.map((tag, index) => <Badge key={index}>{tag}</Badge>)
                     ) : (
-                      <p className="text-gray-500 text-sm italic">タグはありません</p>
+                      <p className="text-muted-foreground text-sm italic">タグはありません</p>
                     )}
                   </div>
                 </div>
 
                 {/* システム情報 */}
-                <div className="space-y-2 pt-2 border-t border-gray-100">
-                  <h3 className="text-md font-medium text-gray-700 flex items-center">
-                    <Info className="w-4 h-4 mr-2 text-gray-500" />
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <h3 className="text-md font-medium text-muted-foreground flex items-center">
+                    <Info className="w-4 h-4 mr-2 text-primary" />
                     システム情報
                   </h3>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-muted-foreground">
                     <p>作成日時: {new Date(menu._creationTime).toLocaleString('ja-JP')}</p>
                   </div>
                 </div>
