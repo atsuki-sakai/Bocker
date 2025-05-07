@@ -31,18 +31,18 @@ export default function DashboardSection({
           <div className=" flex flex-col w-full mb-6 z-10">
             <div className="flex justify-between items-center mb-4">
               <Link href={backLink} className="group">
-                <span className="text-xs md:text-sm text-slate-600 flex items-center gap-2 hover:text-slate-800 hover:underline">
+                <span className="text-xs md:text-sm text-muted-foreground flex items-center gap-2 hover:underline">
                   <span>{backLinkTitle}</span>
                   <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </span>
               </Link>
             </div>
-            <h1 className="text-xl md:text-3xl font-bold">{title}</h1>
+            <h1 className="text-xl md:text-3xl font-bold text-primary">{title}</h1>
           </div>
         ) : (
           <div className="flex flex-col w-full mb-2 z-10">
             <Link href={backLink} className="group">
-              <span className="text-xs md:text-sm text-slate-600 flex items-center gap-2 hover:text-slate-800 hover:underline">
+              <span className="text-xs md:text-sm text-muted-foreground flex items-center gap-2 hover:underline">
                 <span>{backLinkTitle}</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </span>
