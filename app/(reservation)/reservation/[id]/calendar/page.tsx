@@ -16,6 +16,7 @@ import type { StaffDisplay } from './_components/StaffView.tsx'
 import { Separator } from '@/components/ui/separator'
 import { Questionnaire } from './_components/Questionnaire'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useLiff } from '@/hooks/useLiff'
 import type { TimeRange } from '@/lib/type'
 
 export type LoginSession = {
@@ -73,7 +74,7 @@ export default function CalendarPage() {
   const router = useRouter()
   const params = useParams()
   const salonId = params.id as Id<'salon'>
-
+  const { liff } = useLiff()
   // STATES
   const [sessionCustomer, setSessionCustomer] = useState<LoginSession | null>(null)
   const [salonComplete, setSalonComplete] = useState<{
@@ -171,6 +172,9 @@ export default function CalendarPage() {
   const handleLogout = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     deleteCookie(LINE_LOGIN_SESSION_KEY)
+    if (liff?.isLoggedIn()) {
+      liff.logout()
+    }
     router.push(`/reservation/${salonId}`)
   }
 
