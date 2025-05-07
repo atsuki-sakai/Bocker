@@ -33,14 +33,12 @@ import { useSalon } from '@/hooks/useSalon';
 import { compressAndConvertToWebP, fileToBase64, encryptString } from '@/lib/utils';
 import { Id } from '@/convex/_generated/dataModel';
 import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator';
 import { ConvexError } from 'convex/values';
 import {
   Save,
   ArrowLeft,
-  Info,
   Calendar,
   Shield,
   Sparkles,
@@ -55,14 +53,25 @@ import {
   Shuffle,
   Copy,
 } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExclusionMenu } from '@/components/common'
 
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
   email: z.string().email({ message: 'メールアドレスが不正です' }).optional(),
-  instagramLink: z.string().url({ message: 'URLが不正です' }).optional(),
+  instagramLink: z
+    .preprocess(
+      (val) => {
+        // val が文字列以外なら undefined
+        if (typeof val !== 'string') return undefined
+        // トリムして空文字なら undefined、それ以外はトリム済み文字列
+        const str = val.trim()
+        return str === '' ? undefined : str
+      },
+      // undefined が渡れば optional でスキップ、文字列なら URL バリデーション
+      z.string().url({ message: 'URLが不正です' }).optional()
+    )
+    .nullable(), // null も許容したい場合のみ残します
   pinCode: z
     .string()
     .min(6, { message: 'ピンコードは6文字以上で入力してください' })
@@ -243,7 +252,7 @@ export default function StaffAddPage() {
         })
 
         toast.success('スタッフを追加しました', {
-          icon: <Check className="h-4 w-4 text-green-500" />,
+          icon: <Check className="h-4 w-4 text-active" />,
         })
         router.push('/dashboard/staff')
       } catch (configAuthError) {
@@ -306,12 +315,12 @@ export default function StaffAddPage() {
           }
         }
         toast.error(handleErrorToMsg(error), {
-          icon: <X className="h-4 w-4 text-red-500" />,
+          icon: <X className="h-4 w-4 text-destructive" />,
         })
         return
       }
       toast.error(handleErrorToMsg(error), {
-        icon: <X className="h-4 w-4 text-red-500" />,
+        icon: <X className="h-4 w-4 text-destructive" />,
       })
     } finally {
       setIsLoading(false)
@@ -354,37 +363,23 @@ export default function StaffAddPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="shadow-md border-gray-100">
+              <Card className="shadow-md border-border">
                 <CardContent className="space-y-8 pt-6">
                   {/* 基本情報セクション */}
                   <div>
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid md:grid-cols-2 gap-6 pb-4">
                       <div>
                         <div className="mb-2 flex items-center">
-                          <ImageIcon className="h-4 w-4 mr-2 text-gray-500" />
-                          <span className="text-sm font-medium text-gray-700">スタッフ画像</span>
+                          <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span className="text-sm font-medium text-muted-foreground">
+                            スタッフ画像
+                          </span>
                         </div>
 
                         <ImageDrop
                           onFileSelect={(file) => setSelectedFile(file)}
                           className="transition-all duration-200 hover:opacity-90"
                         />
-
-                        {selectedFile && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="mt-2"
-                          >
-                            <Badge
-                              variant="outline"
-                              className="flex items-center text-green-600 bg-green-50"
-                            >
-                              <Check className="h-3 w-3 mr-1" />
-                              {selectedFile.name}
-                            </Badge>
-                          </motion.div>
-                        )}
                       </div>
 
                       <div className="space-y-4">
@@ -392,7 +387,7 @@ export default function StaffAddPage() {
                           <ZodTextField
                             name="name"
                             label="名前"
-                            icon={<User className="h-4 w-4 mr-2 text-gray-500" />}
+                            icon={<User className="h-4 w-4 mr-2 text-muted-foreground" />}
                             register={register}
                             errors={errors}
                             placeholder="名前を入力してください"
@@ -402,8 +397,8 @@ export default function StaffAddPage() {
 
                         <div className="flex items-center gap-2">
                           <div className="w-1/2">
-                            <Label className="flex items-center mb-2 font-medium text-gray-700">
-                              <User className="h-4 w-4 mr-2 text-gray-500" />
+                            <Label className="flex items-center mb-2 font-medium text-muted-foreground">
+                              <User className="h-4 w-4 mr-2 text-muted-foreground" />
                               性別
                             </Label>
                             <Select
@@ -431,7 +426,7 @@ export default function StaffAddPage() {
                             <ZodTextField
                               name="age"
                               label="年齢"
-                              icon={<Calendar className="h-4 w-4 mr-2 text-gray-500" />}
+                              icon={<Calendar className="h-4 w-4 mr-2 text-muted-foreground" />}
                               type="number"
                               register={register}
                               errors={errors}
@@ -456,15 +451,14 @@ export default function StaffAddPage() {
                         <div className="flex items-center space-x-2 pt-1">
                           <Switch
                             id="isActive"
-                            className="data-[state=checked]:bg-green-600"
                             checked={watch('isActive')}
                             onCheckedChange={(checked) => setValue('isActive', checked)}
                           />
                           <Label htmlFor="isActive" className="text-xs cursor-pointer">
                             {watch('isActive') ? (
-                              <span className="text-green-600 font-medium">有効</span>
+                              <span className="text-active font-medium">有効</span>
                             ) : (
-                              <span className="text-red-500 font-medium">無効</span>
+                              <span className="text-destructive font-medium">無効</span>
                             )}
                           </Label>
                         </div>
@@ -474,12 +468,9 @@ export default function StaffAddPage() {
                       </div>
                     </div>
 
-                    <div className="mt-4">
-                      <div className="flex items-center mb-2">
-                        <Instagram className="h-4 w-4 mr-2 text-gray-500" />
-                        <Label className="font-medium text-gray-700">SNS登録</Label>
-                      </div>
+                    <div className="mt-10">
                       <ZodTextField
+                        icon={<Instagram className="h-4 w-4 mr-2 text-muted-foreground" />}
                         name="instagramLink"
                         label="Instagramリンク"
                         register={register}
@@ -489,15 +480,15 @@ export default function StaffAddPage() {
                     </div>
                     <div className="mt-4">
                       <div className="flex items-center mb-2">
-                        <Clipboard className="h-4 w-4 mr-2 text-gray-500" />
-                        <Label className="font-medium text-gray-700">スタッフ紹介</Label>
+                        <Clipboard className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <Label className="font-medium text-muted-foreground">スタッフ紹介</Label>
                       </div>
                       <Textarea
                         value={watch('description')}
-                        rows={5}
+                        rows={10}
                         {...register('description')}
                         placeholder="スタッフの紹介を入力してください"
-                        className="resize-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                        className="resize-none focus:ring-2 focus:ring-border transition-all duration-200"
                       />
                       {errors.description && (
                         <motion.p
@@ -516,23 +507,15 @@ export default function StaffAddPage() {
                   {/* 権限設定セクション */}
                   <div>
                     <div className="flex items-center mb-4">
-                      <Shield className="h-5 w-5 mr-2 text-green-500" />
+                      <Shield className="h-5 w-5 mr-2 text-active" />
                       <h3 className="font-semibold text-lg">権限設定</h3>
                     </div>
-
-                    <Alert className="bg-blue-50 border-blue-100 mb-4">
-                      <Info className="h-4 w-4 text-blue-500" />
-                      <AlertDescription className="text-blue-700 text-sm">
-                        スタッフが管理画面にログインする際に必要な情報やアクセスできる機能の設定
-                      </AlertDescription>
-                    </Alert>
-
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="flex flex-col space-y-4 items-center gap-2 w-full">
                         <div className="w-full">
                           <ZodTextField
                             name="email"
-                            icon={<Mail className="h-4 w-4 mr-2 text-gray-500" />}
+                            icon={<Mail className="h-4 w-4 mr-2 text-muted-foreground" />}
                             label="メールアドレス"
                             register={register}
                             errors={errors}
@@ -546,7 +529,7 @@ export default function StaffAddPage() {
                                 <ZodTextField
                                   readOnly={true}
                                   name="pinCode"
-                                  icon={<Lock className="h-4 w-4 mr-2 text-gray-500" />}
+                                  icon={<Lock className="h-4 w-4 mr-2 text-muted-foreground" />}
                                   label="ピンコード"
                                   register={register}
                                   errors={errors}
@@ -556,7 +539,7 @@ export default function StaffAddPage() {
                               <div className="flex flex-col items-center justify-center gap-1 ml-4">
                                 <div className="w-fit flex items-center justify-center">
                                   <div>
-                                    <span className="text-xs text-nowrap text-gray-500">
+                                    <span className="text-xs text-nowrap text-muted-foreground">
                                       再生成
                                     </span>
                                     <Button size={'icon'} onClick={handleGeneratePinCode}>
@@ -564,7 +547,7 @@ export default function StaffAddPage() {
                                     </Button>
                                   </div>
                                   <div>
-                                    <span className="text-xs text-nowrap text-gray-500">
+                                    <span className="text-xs text-nowrap text-muted-foreground">
                                       コピー
                                     </span>
                                     <Button size={'icon'} onClick={handleCopyPinCode}>
@@ -580,8 +563,8 @@ export default function StaffAddPage() {
 
                       <div>
                         <div className="flex items-center mb-2">
-                          <Shield className="h-4 w-4 mr-2 text-gray-500" />
-                          <Label className="font-medium text-gray-700">権限</Label>
+                          <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <Label className="font-medium text-muted-foreground">権限</Label>
                         </div>
                         <div className="mt-1">
                           <div className="grid grid-cols-3 gap-3">
@@ -607,13 +590,13 @@ export default function StaffAddPage() {
                                 whileHover={{ scale: 1.02 }}
                                 className={`border rounded-md p-3 cursor-pointer transition-all ${
                                   watch('role') === item.role
-                                    ? 'border-blue-500 bg-blue-50'
-                                    : 'border-gray-200'
+                                    ? 'border-active bg-active-foreground text-active'
+                                    : 'border-border bg-muted text-muted-foreground'
                                 }`}
                                 onClick={() => setValue('role', item.role as Role)}
                               >
-                                <div className="font-medium text-sm mb-1">{item.label}</div>
-                                <div className="text-xs text-gray-500">{item.desc}</div>
+                                <div className="text-sm mb-1 font-bold">{item.label}</div>
+                                <div className="text-xs text-muted-foreground">{item.desc}</div>
                               </motion.div>
                             ))}
                           </div>
@@ -687,7 +670,7 @@ export default function StaffAddPage() {
             type="button"
             variant="outline"
             onClick={() => router.push('/dashboard/staff')}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 border-border"
           >
             <ArrowLeft className="h-4 w-4" />
             戻る
