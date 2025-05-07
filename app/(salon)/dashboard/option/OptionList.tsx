@@ -55,7 +55,7 @@ export default function OptionList() {
   };
 
   if (isLoading) {
-    return <Loading />;
+    return <Loading />
   }
 
   return (
