@@ -129,7 +129,7 @@ function CalendarMultiSelect({
   return (
     <div className="flex flex-col sm:flex-row gap-5">
       {/* カレンダーコンポーネント */}
-      <div className="bg-background rounded-lg p-1 border border-border">
+      <div className="h-fit bg-background rounded-lg p-1 border border-border">
         {/* Shadcn標準のカレンダーコンポーネントを使用 - カスタムDayコンポーネントは不要 */}
         <Calendar
           disabled={disabled}
@@ -138,17 +138,15 @@ function CalendarMultiSelect({
           onSelect={handleDatesSelect}
           fromDate={fromDate}
           locale={ja}
-          className="rounded-md"
+          className="rounded-md "
         />
       </div>
 
       {/* 選択された日付一覧 */}
       <div className="border rounded-md p-4 w-full bg-background border-border">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-medium text-xs sm:text-sm text-primary flex items-center gap-2">
-            <Badge className="ml-1 text-nowrap bg-muted text-muted-foreground border-muted">
-              {selectedDates.length}件
-            </Badge>{' '}
+          <h3 className="text-base font-bold text-primary flex items-center gap-2">
+            <Badge className="ml-1 text-nowrap text-base">{selectedDates.length}件</Badge>{' '}
             選択済みの日
           </h3>
 
@@ -173,7 +171,7 @@ function CalendarMultiSelect({
           )}
         </div>
 
-        <ScrollArea className="h-60 pr-4">
+        <ScrollArea className="h-full pr-4">
           {hasSelectedDates ? (
             <motion.div
               variants={containerVariants}
@@ -184,7 +182,7 @@ function CalendarMultiSelect({
               {/* 月ごとのグループ表示 */}
               {groupedByMonth.map(([month, dates]) => (
                 <div key={month} className="space-y-2">
-                  <h4 className="text-xs font-medium text-primary border-b border-border pb-1 mb-2">
+                  <h4 className="text-xs font-bold pt-4 text-primary border-b border-border pb-1 mb-2">
                     {month}
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -206,7 +204,7 @@ function CalendarMultiSelect({
                               ${
                                 isToday(date)
                                   ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700/70'
-                                  : 'bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-800/70'
+                                  : 'bg-indigo-50 dark:bg-indigo-700/30 border-indigo-200 dark:border-indigo-700/70'
                               }
                               group-hover:shadow-sm
                             `}
@@ -234,7 +232,7 @@ function CalendarMultiSelect({
                             <button
                               type="button"
                               onClick={() => removeDate(date)}
-                              className="ml-2 text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 w-5 h-5 flex items-center justify-center rounded-full transition-colors hover:bg-rose-50 dark:hover:bg-rose-900/30"
+                              className="ml-2 text-muted-foreground hover:text-destructive w-5 h-5 flex items-center justify-center rounded-full transition-colors hover:bg-rose-50 dark:hover:bg-rose-900/30"
                             >
                               <X className="w-3 h-3" />
                             </button>
