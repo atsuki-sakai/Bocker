@@ -233,7 +233,7 @@ export default function SalonExceptionScheduleForm() {
         </div>
       </div>
 
-      <div className="bg-background border-t p-3 sm:p-4 flex justify-between items-center flex-wrap gap-2">
+      <div className="bg-background border-t p-3 sm:p-4 flex justify-end items-center flex-wrap gap-2">
         <Button
           onClick={handleSave}
           disabled={!isDirty || isSaving}
