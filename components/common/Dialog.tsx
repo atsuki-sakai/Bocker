@@ -45,7 +45,7 @@ export default function Dialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelTitle}</AlertDialogCancel>
+          <AlertDialogCancel className="border border-border">{cancelTitle}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirmAction}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -55,5 +55,5 @@ export default function Dialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }
