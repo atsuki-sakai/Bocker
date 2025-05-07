@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Loading } from '@/components/common';
 import { format, startOfToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { CalendarX2, Save } from 'lucide-react';
+import { Save } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Accordion,
@@ -199,11 +199,10 @@ export default function SalonExceptionScheduleForm() {
     <div className="w-full px-2 sm:px-4 md:px-0">
       <div className="mb-4">
         <div className="flex items-center gap-2">
-          <CalendarX2 className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
-          <h4 className="text-lg font-bold">休業日設定</h4>
+          <h4 className="text-2xl font-bold text-primary">休業日設定</h4>
         </div>
         <div>
-          <p className="text-xs sm:text-sm mt-1 text-gray-500">
+          <p className="text-xs sm:text-sm mt-1 text-muted-foreground">
             カレンダーから予約を受け付けない日を選択してください。選択された日は休業日として設定されます。
           </p>
         </div>
@@ -212,14 +211,14 @@ export default function SalonExceptionScheduleForm() {
       <div className=" space-y-4 sm:space-y-6">
         {/* カレンダーとリスト表示のグリッドレイアウト */}
         <div className="w-full">
-          <div className="bg-white dark:bg-slate-800 rounded-lg border shadow-sm p-3 sm:p-4">
-            <h3 className="text-sm sm:text-base font-semibold flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4 text-slate-800 dark:text-slate-200">
+          <div className="bg-background rounded-lg border shadow-sm p-3 sm:p-4">
+            <h3 className="text-sm sm:text-base font-semibold flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4 text-primary">
               休業日を選択
             </h3>
 
             {isLoading ? (
               <div className="space-y-4">
-                <Skeleton className="h-64 sm:h-72 w-full bg-slate-200 dark:bg-slate-700" />
+                <Skeleton className="h-64 sm:h-72 w-full bg-muted" />
               </div>
             ) : (
               <div className="max-w-full overflow-x-auto">
@@ -234,7 +233,7 @@ export default function SalonExceptionScheduleForm() {
         </div>
       </div>
 
-      <div className="bg-gray-50 dark:bg-slate-900/50 border-t p-3 sm:p-4 flex justify-between items-center flex-wrap gap-2">
+      <div className="bg-background border-t p-3 sm:p-4 flex justify-between items-center flex-wrap gap-2">
         <Button
           onClick={handleSave}
           disabled={!isDirty || isSaving}
@@ -262,7 +261,7 @@ export default function SalonExceptionScheduleForm() {
       <Accordion type="multiple">
         <AccordionItem value="business-days">
           <AccordionTrigger>休業日設定について</AccordionTrigger>
-          <AccordionContent className="text-sm text-slate-600 space-y-4">
+          <AccordionContent className="text-sm text-muted-foreground space-y-4">
             <p>
               休業日に設定した日は、カレンダーに表示されず予約を受け付けなくなります。
               定休日とは別に、臨時休業やイベント日、長期休暇などを設定でき、臨時の休業日を設定できます。
@@ -274,5 +273,5 @@ export default function SalonExceptionScheduleForm() {
         </AccordionItem>
       </Accordion>
     </div>
-  );
+  )
 }
