@@ -1,25 +1,25 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
-import { Menu, Search, Plus, Minus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Id, Doc } from '@/convex/_generated/dataModel';
-import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
-import { api } from '@/convex/_generated/api';
-import { useSalon } from '@/hooks/useSalon';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardContent } from '@/components/ui/card';
-import Loading from './Loading';
+import { useState, useMemo, useEffect } from 'react'
+import { Menu, Search, Plus, Minus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Id, Doc } from '@/convex/_generated/dataModel'
+import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
+import { api } from '@/convex/_generated/api'
+import { useSalon } from '@/hooks/useSalon'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Card, CardContent } from '@/components/ui/card'
+import Loading from './Loading'
 
-const numberOfMenus = 10;
+const numberOfMenus = 10
 
 interface ExclusionMenuProps {
-  title?: string;
-  selectedMenuIds: Id<'menu'>[];
-  setSelectedMenuIdsAction: (menuIds: Id<'menu'>[]) => void;
+  title?: string
+  selectedMenuIds: Id<'menu'>[]
+  setSelectedMenuIdsAction: (menuIds: Id<'menu'>[]) => void
 }
 
 export default function ExclusionMenu({
@@ -27,9 +27,9 @@ export default function ExclusionMenu({
   selectedMenuIds,
   setSelectedMenuIdsAction,
 }: ExclusionMenuProps) {
-  const { salon } = useSalon();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [localSelectedIds, setLocalSelectedIds] = useState<Id<'menu'>[]>(selectedMenuIds);
+  const { salon } = useSalon()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [localSelectedIds, setLocalSelectedIds] = useState<Id<'menu'>[]>(selectedMenuIds)
 
   const {
     results: menus,
@@ -40,89 +40,89 @@ export default function ExclusionMenu({
     api.menu.core.query.listBySalonId,
     salon ? { salonId: salon._id as Id<'salon'> } : 'skip',
     { initialNumItems: numberOfMenus }
-  );
+  )
 
   useEffect(() => {
-    setLocalSelectedIds(selectedMenuIds);
-  }, [selectedMenuIds]);
+    setLocalSelectedIds(selectedMenuIds)
+  }, [selectedMenuIds])
 
   const updateSelectedIds = (newIds: Id<'menu'>[]) => {
-    setLocalSelectedIds(newIds);
-    setSelectedMenuIdsAction(newIds);
-  };
+    setLocalSelectedIds(newIds)
+    setSelectedMenuIdsAction(newIds)
+  }
 
   function handleToggleMenu(menuId: Id<'menu'>) {
-    const isCurrentlySelected = localSelectedIds.includes(menuId);
+    const isCurrentlySelected = localSelectedIds.includes(menuId)
     const newSelectedIds = isCurrentlySelected
       ? localSelectedIds.filter((id) => id !== menuId)
-      : [...localSelectedIds, menuId];
+      : [...localSelectedIds, menuId]
     console.log('トグル:', {
       menuId,
       isCurrentlySelected,
       beforeIds: localSelectedIds,
       afterIds: newSelectedIds,
-    });
-    updateSelectedIds(newSelectedIds);
+    })
+    updateSelectedIds(newSelectedIds)
   }
 
   function handleToggleAll() {
-    if (!filteredMenus || filteredMenus.length === 0) return;
-    const visibleMenuIds = filteredMenus.map((m) => m._id);
-    const allVisibleSelected = visibleMenuIds.every((id) => localSelectedIds.includes(id));
-    let newSelectedIds: Id<'menu'>[];
+    if (!filteredMenus || filteredMenus.length === 0) return
+    const visibleMenuIds = filteredMenus.map((m) => m._id)
+    const allVisibleSelected = visibleMenuIds.every((id) => localSelectedIds.includes(id))
+    let newSelectedIds: Id<'menu'>[]
     if (allVisibleSelected) {
-      newSelectedIds = localSelectedIds.filter((id) => !visibleMenuIds.includes(id));
+      newSelectedIds = localSelectedIds.filter((id) => !visibleMenuIds.includes(id))
     } else {
-      newSelectedIds = Array.from(new Set([...localSelectedIds, ...visibleMenuIds]));
+      newSelectedIds = Array.from(new Set([...localSelectedIds, ...visibleMenuIds]))
     }
-    updateSelectedIds(newSelectedIds);
+    updateSelectedIds(newSelectedIds)
   }
 
   const filteredMenus = useMemo(() => {
-    if (!menus) return [];
-    if (!searchTerm.trim()) return menus;
+    if (!menus) return []
+    if (!searchTerm.trim()) return menus
 
     return menus.filter(
       (menu: Doc<'menu'>) =>
         (menu.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (menu.unitPrice?.toString() || '').includes(searchTerm)
-    );
-  }, [menus, searchTerm]);
+    )
+  }, [menus, searchTerm])
 
-  const selectedMenusCount = localSelectedIds.length;
+  const selectedMenusCount = localSelectedIds.length
   // 表示中のメニュー数に応じて全選択状態を判断する
-  const totalMenusCount = filteredMenus.length;
+  const totalMenusCount = filteredMenus.length
   const selectionText =
     selectedMenusCount === 0
       ? '選択なし'
       : selectedMenusCount === totalMenusCount
         ? 'すべて選択'
-        : `${selectedMenusCount}件選択`;
+        : `${selectedMenusCount}件選択`
 
   const allVisibleSelected =
-    filteredMenus.length > 0 && filteredMenus.every((menu) => localSelectedIds.includes(menu._id));
+    filteredMenus.length > 0 && filteredMenus.every((menu) => localSelectedIds.includes(menu._id))
 
-  if (filteredMenus === undefined || isLoading) return <Loading />;
+  if (filteredMenus === undefined || isLoading) return <Loading />
 
   if (filteredMenus.length === 0)
     return (
       <div className="text-center py-12 text-gray-500 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700 rounded-md border border-slate-200">
         登録されているメニューがありません。
       </div>
-    );
+    )
 
   return (
-    <Card className="w-full bg-slate-50">
+    <Card className="w-full bg-background">
       <CardContent className="p-4">
         <div className="flex flex-col gap-4">
           {/* ヘッダー */}
           <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-2 text-gray-700 font-medium text-sm">
+            <Label className="flex items-center gap-2 text-primary font-medium text-sm">
               <Menu size={16} />
               {title ?? '除外するメニュー'}
             </Label>
             <div className="flex flex-col md:flex-row gap-2 items-center">
-              <span className="text-sm text-gray-500">{selectionText}</span>
+              <span className="text-sm text-muted-foreground">{selectionText}</span>
               <Button size="sm" onClick={handleToggleAll} className="text-sm h-8" type="button">
                 {totalMenusCount > 0 && allVisibleSelected ? (
                   <span className="flex items-center gap-1">
@@ -140,8 +140,8 @@ export default function ExclusionMenu({
           </div>
 
           {/* 検索フィールド */}
-          <div className="relative bg-white rounded-md">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+          <div className="relative bg-background rounded-md">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="メニューを検索..."
               value={searchTerm}
@@ -152,21 +152,21 @@ export default function ExclusionMenu({
           </div>
 
           {/* メニューリスト */}
-          <ScrollArea className="max-h-full rounded-md border p-2 bg-white">
+          <ScrollArea className="max-h-full rounded-md border p-2 bg-background">
             <div className="space-y-1">
               {filteredMenus.map((menu: Doc<'menu'>) => (
                 <div
                   key={menu._id}
-                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"
+                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted"
                 >
                   <Checkbox
                     id={menu._id}
                     checked={localSelectedIds.includes(menu._id)}
                     onCheckedChange={() => handleToggleMenu(menu._id)}
                   />
-                  <label
+                  <Label
                     htmlFor={menu._id}
-                    className="flex flex-1 justify-between items-center cursor-pointer text-sm py-1"
+                    className="flex flex-1 justify-between items-center cursor-pointer text-sm  py-1"
                   >
                     <span className="font-medium">{menu.name}</span>
                     <div className="flex items-center gap-1">
@@ -178,7 +178,7 @@ export default function ExclusionMenu({
                       )}
 
                       {/* 表示する価格 */}
-                      <span className="text-gray-800">
+                      <span className="text-active">
                         ¥
                         {(typeof menu.salePrice === 'number' && menu.salePrice > 0
                           ? menu.salePrice
@@ -186,7 +186,7 @@ export default function ExclusionMenu({
                         )?.toLocaleString()}
                       </span>
                     </div>
-                  </label>
+                  </Label>
                 </div>
               ))}
 
