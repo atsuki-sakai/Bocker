@@ -385,7 +385,6 @@ export default function MenuEditForm() {
                   setCurrentFile(file)
                   setValue('imgFilePath', file.name, { shouldValidate: true })
                 }}
-                className="h-60 md:h-80 rounded-md"
               />
 
               <CardFooter className="pt-0">
