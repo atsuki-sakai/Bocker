@@ -41,22 +41,16 @@ export default function CancelSubscriptionPage() {
         animate="visible"
         variants={containerVariants}
       >
-        <Card className="border-0 shadow-lg overflow-hidden">
-          <div className="h-2 bg-gradient-to-r from-red-400 to-rose-500"></div>
+        <Card className="border-0 overflow-hidden ">
+          <div className="h-2 bg-destructive"></div>
           <CardContent className="pt-10 pb-6 px-8">
-            <motion.div
-              className="text-center space-y-6"
-              variants={containerVariants}
-            >
-              <motion.div
-                variants={itemVariants}
-                className="inline-flex p-4 rounded-full bg-red-100 dark:bg-red-900/30"
-              >
-                <XCircle className="w-16 h-16 text-red-500 dark:text-red-400" />
+            <motion.div className="text-center space-y-4" variants={containerVariants}>
+              <motion.div variants={itemVariants} className="inline-flex p-4 rounded-full ">
+                <XCircle className="w-16 h-16 text-destructive" />
               </motion.div>
 
               <motion.div variants={itemVariants}>
-                <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
+                <h2 className="text-2xl font-bold tracking-tight text-primary">
                   サブスクリプションの購入に失敗しました
                 </h2>
               </motion.div>
@@ -64,27 +58,23 @@ export default function CancelSubscriptionPage() {
               <Separator className="my-6" />
 
               <motion.div variants={itemVariants} className="space-y-4">
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-lg">
+                <div className="bg-background p-6 rounded-lg">
                   <div className="space-y-6">
                     <div className="flex flex-col sm:flex-row items-center gap-3 text-left">
                       <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                         <CreditCard className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-800 dark:text-gray-200">
-                          再度サブスクリプションを購入する
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="font-medium text-primary">再度サブスクリプションを購入する</p>
+                        <p className="text-sm text-muted-foreground mt-1">
                           以下のリンクから再度サブスクリプションを購入できます。
                         </p>
                         <Button
                           asChild
                           variant="link"
-                          className="p-0 h-auto mt-1 text-blue-500 hover:text-blue-600 font-medium"
+                          className="p-0 h-auto mt-1 text-link  font-medium"
                         >
-                          <Link
-                            href={`/dashboard/subscription`}
-                          >
+                          <Link href={`/dashboard/subscription`}>
                             <span className="flex items-center">
                               サブスクリプションページへ
                               <ArrowRight className="w-4 h-4 ml-1" />
@@ -101,21 +91,16 @@ export default function CancelSubscriptionPage() {
                         <HelpCircle className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-800 dark:text-gray-200">
-                          サポートに問い合わせる
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="font-medium text-primary">サポートに問い合わせる</p>
+                        <p className="text-sm text-muted-foreground mt-1">
                           何かご不明な点がありましたら、お気軽にお問い合わせください。
                         </p>
                         <Button
                           asChild
                           variant="link"
-                          className="p-0 h-auto mt-1 text-blue-500 hover:text-blue-600 font-medium"
+                          className="p-0 h-auto mt-1 text-link font-medium"
                         >
-                          <a
-                            href="mailto:atk721@icloud.com"
-                            className="flex items-center"
-                          >
+                          <a href="mailto:atk721@icloud.com" className="flex items-center">
                             <Mail className="w-4 h-4 mr-1" />
                             atk721@icloud.com
                           </a>
@@ -129,18 +114,12 @@ export default function CancelSubscriptionPage() {
           </CardContent>
 
           <CardFooter className="flex justify-center pb-8">
-            <Button
-              asChild
-              variant="default"
-              className="mt-4 bg-blue-600 hover:bg-blue-700"
-            >
-              <Link href={`/dashboard`}>
-                ダッシュボードに戻る
-              </Link>
+            <Button asChild variant="default" className="mt-4 bg-blue-600 hover:bg-blue-700">
+              <Link href={`/dashboard`}>ダッシュボードに戻る</Link>
             </Button>
           </CardFooter>
         </Card>
       </motion.div>
     </div>
-  );
+  )
 }
