@@ -124,7 +124,7 @@ export default function ReservationPage() {
       backLink="/dashboard/reservation"
       backLinkTitle="予約一覧に戻る"
     >
-      <div className="flex flex-col gap-8 bg-white">
+      <div className="flex flex-col gap-8 bg-background">
         <div className="border-b pb-4">
           <div className="flex justify-end w-full">
             <div className="flex gap-4">
@@ -161,26 +161,26 @@ export default function ReservationPage() {
               </p>
             </div>
             <div>
-              <p className="text-gray-600">日時:</p>
+              <p className="text-muted-foreground">日時:</p>
               <p className="font-medium text-lg">
                 {formatUnixTimestamp(reservation.startTime_unix ?? 0)} -{' '}
                 {format(new Date(reservation.endTime_unix ?? 0), 'HH:mm')}
               </p>
             </div>
             <div>
-              <p className="text-gray-600">合計金額:</p>
+              <p className="text-muted-foreground">合計金額:</p>
               <p className="font-medium text-lg">¥{reservation.totalPrice?.toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-gray-600">支払い方法:</p>
+              <p className="text-muted-foreground">支払い方法:</p>
               <p className="font-medium text-lg">
                 {convertPaymentMethod(reservation.paymentMethod as PaymentMethod)}
               </p>
             </div>
             {reservation.notes && reservation.notes.trim() !== '' && (
-              <div className="text-gray-600 text-sm">
+              <div className="text-muted-foreground text-sm">
                 <p className="font-medium text-lg">備考:</p>
-                <p className="text-gray-700 text-sm">{reservation.notes}</p>
+                <p className="text-muted-foreground text-sm">{reservation.notes}</p>
               </div>
             )}
           </div>
@@ -190,7 +190,7 @@ export default function ReservationPage() {
           <div className="border-b pb-4">
             <h2 className="text-xl font-semibold mb-3">お客様情報</h2>
             <div>
-              <p className="text-gray-600">お客様名:</p>
+              <p className="text-muted-foreground">お客様名:</p>
               <p className="font-medium text-lg">
                 {customer.lineUserName
                   ? customer.lineUserName
@@ -204,13 +204,15 @@ export default function ReservationPage() {
         {!customer && reservation?.customerId && (
           <div className="border-b pb-4">
             <h2 className="text-xl font-semibold mb-3">お客様情報</h2>
-            <p className="text-gray-600">お客様情報は見つかりませんでした。</p>
+            <p className="text-muted-foreground">お客様情報は見つかりませんでした。</p>
           </div>
         )}
         {!reservation?.customerId && (
           <div className="border-b pb-4">
             <h2 className="text-xl font-semibold mb-3">お客様情報</h2>
-            <p className="text-gray-600">この予約にはお客様情報が関連付けられていません。</p>
+            <p className="text-muted-foreground">
+              この予約にはお客様情報が関連付けられていません。
+            </p>
           </div>
         )}
         <div className="border-b pb-4">
@@ -230,14 +232,14 @@ export default function ReservationPage() {
             <div>
               <p className="font-medium text-lg">{staff.name}</p>
               {staff.description && (
-                <p className="text-gray-700 text-sm mt-1">{staff.description}</p>
+                <p className="text-muted-foreground text-sm mt-1">{staff.description}</p>
               )}
               {staff.tags && staff.tags.length > 0 && (
                 <div className="mt-2">
                   {staff.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2"
+                      className="inline-block bg-muted rounded-full px-3 py-1 text-sm font-semibold text-muted-foreground mr-2 mb-2"
                     >
                       {tag}
                     </span>
@@ -261,8 +263,10 @@ export default function ReservationPage() {
                 return (
                   <div key={index} className="border rounded-lg p-3">
                     <p className="font-medium text-lg">{menuDetail.name}</p>
-                    <p className="text-gray-700 text-sm">数量: {reservationMenuItem.quantity}</p>
-                    <p className="text-gray-700 text-sm">時間: {menuDetail.timeToMin} 分</p>
+                    <p className="text-muted-foreground text-sm">
+                      数量: {reservationMenuItem.quantity}
+                    </p>
+                    <p className="text-muted-foreground text-sm">時間: {menuDetail.timeToMin} 分</p>
                     <p className="font-semibold text-md mt-1">
                       価格: ¥{(menuDetail.salePrice ?? menuDetail.unitPrice ?? 0).toLocaleString()}
                     </p>
@@ -277,7 +281,7 @@ export default function ReservationPage() {
               <h3 className="text-lg font-semibold mb-2">オプション</h3>
               <ul className="list-disc list-inside">
                 {reservationMenuDetails.options.map((option, index) => (
-                  <li key={index} className="text-gray-700">
+                  <li key={index} className="text-muted-foreground">
                     {option.name} - ¥{option.unitPrice?.toLocaleString()}
                   </li>
                 ))}
@@ -285,13 +289,13 @@ export default function ReservationPage() {
             </div>
           )}
           {reservationMenuDetails?.menus?.length === 0 && (
-            <p className="text-gray-600">予約されたメニューはありません。</p>
+            <p className="text-muted-foreground">予約されたメニューはありません。</p>
           )}
         </div>
         {reservation.notes && reservation.notes.trim() !== '' && (
           <div>
             <h2 className="text-xl font-semibold mb-3">備考</h2>
-            <div className="bg-gray-100 p-3 rounded-lg text-gray-800">{reservation.notes}</div>
+            <div className="bg-muted p-3 rounded-lg text-muted-foreground">{reservation.notes}</div>
           </div>
         )}
       </div>
