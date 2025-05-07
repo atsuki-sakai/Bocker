@@ -42,7 +42,7 @@ export default function CouponList() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           予約時にクーポンコードを入力することでメニュー毎に独自の割引を適用できるようになります。
           <br />
           リピート率を上げる効果的な方法としてご活用ください。
@@ -51,32 +51,32 @@ export default function CouponList() {
       <div className="pt-2 flow-root">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8 px-4 md:px-0">
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden border border-gray-200 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50 text-nowrap px-2">
+            <div className="overflow-hidden border border-border rounded-lg">
+              <table className="min-w-full divide-y divide-border">
+                <thead className="bg-muted text-nowrap px-2">
                   <tr>
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left  text-xs  font-semibold text-gray-900 sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-primary sm:pl-6"
                     >
                       ステータス
                     </th>
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left  text-xs  font-semibold text-gray-900 sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-primary sm:pl-6"
                     >
                       クーポン名
                     </th>
 
                     <th
                       scope="col"
-                      className="px-3 py-3.5 text-left  text-xs  font-semibold text-gray-900"
+                      className="px-3 py-3.5 text-left  text-sm  font-semibold text-primary"
                     >
                       割引タイプ
                     </th>
                     <th
                       scope="col"
-                      className="px-3 py-3.5 text-left  text-xs  font-semibold text-gray-900"
+                      className="px-3 py-3.5 text-left  text-sm  font-semibold text-primary"
                     >
                       割引額
                     </th>
@@ -89,29 +89,29 @@ export default function CouponList() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white text-nowrap">
+                <tbody className="divide-y divide-border bg-background text-nowrap">
                   {results.length > 0 ? (
                     results?.map((coupon: Doc<'coupon'>, index: number) => (
                       <tr key={`${coupon._id.slice(0, 4)}-${index}`}>
                         <td
-                          className={`py-4 pr-3 pl-4  text-sm  font-medium whitespace-nowrap text-gray-900 sm:pl-6 `}
+                          className={`py-4 pr-3 pl-4  text-sm  font-medium whitespace-nowrap text-muted-foreground sm:pl-6 `}
                         >
                           <span
-                            className={`font-bold text-xs ${coupon.isActive ? 'bg-green-600' : 'bg-gray-400'} text-white px-2 py-1 rounded-md`}
+                            className={`font-bold text-xs ${coupon.isActive ? 'bg-active text-white' : 'bg-muted-foreground text-white'} px-2 py-1 rounded-md`}
                           >
                             {coupon.isActive ? '有効' : '無効'}
                           </span>
                         </td>
-                        <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-6">
+                        <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-muted-foreground sm:pl-6">
                           {coupon.name?.slice(0, 20)}
                           <br />
-                          <span className="text-xs text-gray-500">{coupon.couponUid}</span>
+                          <span className="text-xs text-muted-foreground">{coupon.couponUid}</span>
                         </td>
 
-                        <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                        <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                           {coupon.discountType === 'percentage' ? '割引' : '固定割引'}
                         </td>
-                        <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                        <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                           {coupon.discountType === 'percentage'
                             ? `${coupon.percentageDiscountValue}%`
                             : `${coupon.fixedDiscountValue}円`}
@@ -120,7 +120,7 @@ export default function CouponList() {
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                           <Link
                             href={`/dashboard/coupon/edit/${coupon._id}`}
-                            className="text-indigo-600 hover:text-indigo-800"
+                            className="text-link hover:text-link-foreground"
                           >
                             <Button variant="ghost" size="sm">
                               編集<span className="sr-only">, {coupon.name}</span>
@@ -130,7 +130,7 @@ export default function CouponList() {
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                           <Button
                             variant="ghost"
-                            className="text-red-600 hover:text-red-800"
+                            className="text-destructive hover:text-destructive-foreground"
                             size="sm"
                             onClick={() => showDialog(coupon._id)}
                           >
@@ -141,7 +141,7 @@ export default function CouponList() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={10} className="text-gray-400 text-sm text-center py-6">
+                      <td colSpan={10} className="text-muted-foreground text-sm text-center py-6">
                         クーポンがまだありません。
                       </td>
                     </tr>
@@ -167,5 +167,5 @@ export default function CouponList() {
         onConfirmAction={() => selectedCouponId && handleDelete(selectedCouponId)}
       />
     </div>
-  );
+  )
 }
