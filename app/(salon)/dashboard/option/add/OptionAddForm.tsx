@@ -248,7 +248,7 @@ function OptionAddForm() {
             register={register}
             errors={errors}
             required
-            className="border-gray-200 focus-within:border-blue-500 transition-colors"
+            className="border-border focus-within:border-active transition-colors"
           />
         </div>
 
@@ -256,39 +256,39 @@ function OptionAddForm() {
           <ZodTextField
             name="unitPrice"
             label="通常価格"
-            icon={<DollarSign className="text-gray-500" />}
+            icon={<DollarSign className="text-primary" />}
             type="number"
             placeholder="例: 5000"
             register={register}
             errors={errors}
             required
-            className="border-gray-200 focus-within:border-blue-500 transition-colors"
+            className="border-border focus-within:border-active transition-colors"
           />
 
           <ZodTextField
             name="salePrice"
             label="セール価格"
             type="number"
-            icon={<ShoppingBag className="text-gray-500" />}
+            icon={<ShoppingBag className="text-primary" />}
             placeholder="例: 4000"
             register={register}
             errors={errors}
-            className="border-gray-200 focus-within:border-blue-500 transition-colors"
+            className="border-border focus-within:border-active transition-colors"
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="w-full">
             <Label className="text-sm flex items-center gap-2 mb-2">
-              <Clock size={16} className="text-gray-500" />
-              実際にスタッフが稼働する施術時間 <span className="text-red-500 ml-1">*</span>
+              <Clock size={16} className="text-primary" />
+              実際にスタッフが稼働する施術時間 <span className="text-destructive ml-1">*</span>
             </Label>
             <Select
               onValueChange={(value) => {
                 setValue('timeToMin', value, { shouldValidate: true })
               }}
             >
-              <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
+              <SelectTrigger className="border-border transition-colors">
                 <SelectValue placeholder="施術時間を選択" />
               </SelectTrigger>
               <SelectContent>
@@ -299,17 +299,17 @@ function OptionAddForm() {
                 ))}
               </SelectContent>
             </Select>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               スタッフが手を動かして施術に集中している正味の作業時間を指します。
             </span>
             {errors.timeToMin && (
-              <p className="text-red-500 text-sm mt-1">{errors.timeToMin.message}</p>
+              <p className="text-destructive text-sm mt-1">{errors.timeToMin.message}</p>
             )}
           </div>
 
           <div className="w-full">
             <Label className="text-sm flex items-center gap-2 mb-2">
-              <Clock size={16} className="text-gray-500" />
+              <Clock size={16} className="text-primary" />
               待ち時間なども含めたトータルの施術時間
             </Label>
             <Select
@@ -317,7 +317,7 @@ function OptionAddForm() {
                 setValue('ensureTimeToMin', value, { shouldValidate: true })
               }}
             >
-              <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
+              <SelectTrigger className="border-border transition-colors">
                 <SelectValue placeholder="席を確保しておく時間を選択" />
               </SelectTrigger>
               <SelectContent>
@@ -328,11 +328,11 @@ function OptionAddForm() {
                 ))}
               </SelectContent>
             </Select>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               施術席を専有する必要はあるものの、スタッフが別の作業に移れる待機時間を指します。
             </span>
             {errors.ensureTimeToMin && (
-              <p className="text-red-500 text-sm mt-1">{errors.ensureTimeToMin.message}</p>
+              <p className="text-destructive text-sm mt-1">{errors.ensureTimeToMin.message}</p>
             )}
           </div>
         </div>
@@ -345,8 +345,8 @@ function OptionAddForm() {
         />
 
         <Label className="flex items-center gap-2 text-sm mt-4">
-          <Info size={16} className="text-gray-500" />
-          オプションメニュー説明 <span className="text-red-500 ml-1">*</span>
+          <Info size={16} className="text-primary" />
+          オプションメニュー説明 <span className="text-destructive ml-1">*</span>
         </Label>
         <Textarea
           id="description"
@@ -354,16 +354,16 @@ function OptionAddForm() {
           {...register('description')}
           onChange={(e) => setValue('description', e.target.value, { shouldValidate: true })}
           rows={8}
-          className="border-gray-200 focus-visible:ring-blue-500 resize-none"
+          className="border-border focus-visible:ring-active"
         />
         {errors.description && (
-          <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
+          <p className="text-destructive text-sm mt-1">{errors.description.message}</p>
         )}
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md mb-6 mt-4">
+        <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-4">
           <div>
             <p className="text-sm font-bold">オプションメニューを公開する</p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               オフにすると、このオプションメニューはお客様に表示されません
             </p>
           </div>
@@ -371,7 +371,7 @@ function OptionAddForm() {
             id="isActive"
             checked={isActive}
             onCheckedChange={() => setValue('isActive', !isActive)}
-            className="data-[state=checked]:bg-green-600"
+            className="data-[state=checked]:bg-active"
           />
         </div>
 
@@ -405,8 +405,8 @@ function OptionAddForm() {
           <AccordionTrigger>
             実際の稼働時間と待機時間を含めたトータルの施術時間の違いについて
           </AccordionTrigger>
-          <AccordionContent className="space-y-2 text-sm text-slate-600">
-            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+          <AccordionContent className="space-y-2 text-sm text-muted-foreground leading-6">
+            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 <strong>実際の稼働時間 :</strong>
                 スタッフが手を動かして施術に集中している正味の作業時間を指します。
