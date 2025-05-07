@@ -143,7 +143,7 @@ export default function ImageDrop({
 
   return (
     <div
-      className={`relative border border-dashed h-full rounded-lg p-4 transition-colors text-center overflow-hidden border-border bg-secondary hover:bg-muted
+      className={`relative border border-dashed h-full rounded-lg p-4 transition-colors bg-background text-center overflow-hidden border-border hover:bg-muted
       } ${className}`}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
@@ -157,7 +157,7 @@ export default function ImageDrop({
             alt="Preview"
             unoptimized
             loader={({ src }) => src}
-            className="mx-auto object-cover aspect-square rounded-md overflow-hidden"
+            className="mx-auto object-cover h-full rounded-md overflow-hidden"
             width={previewWidth}
             height={previewHeight}
           />
@@ -165,7 +165,7 @@ export default function ImageDrop({
             <Button
               type="button"
               size="sm"
-              className="absolute -top-3 -right-3 m-2 border-2 shadow-sm border-accent hover:opacity-100 hover:bg-accent"
+              className="absolute -top-3 -right-3 m-2 border-2 shadow-sm hover:opacity-100 hover:bg-accent"
               onClick={() => fileInputRef.current?.click()}
             >
               画像を変更
@@ -175,20 +175,20 @@ export default function ImageDrop({
               type="button"
               variant="ghost"
               size="icon"
-              className="absolute top-0 right-0 rounded-full bg-popover-foreground text-popover shadow-md"
+              className="absolute top-0 right-0 rounded-full bg-gradient-to-r from-green-800 to-green-600 text-white shadow-md"
               onClick={clearPreview}
             >
               <X className="h-4 w-4" />
             </Button>
           )}
           {fileInputRef.current?.files?.[0] && (
-            <div className="flex  gap-4 text-xs text-muted-foreground mt-2 text-start">
+            <div className="flex items-center justify-start  w-full gap-4 text-xs text-muted-foreground mt-2 text-start">
               <p>
-                <span className="font-bold">ファイル名</span>{' '}
+                <span className="font-bold">ファイル名: </span>{' '}
                 {fileInputRef.current?.files?.[0].name}
               </p>
               <p>
-                <span className="font-bold">Size</span>{' '}
+                <span className="font-bold">サイズ: </span>{' '}
                 {(fileInputRef.current?.files?.[0].size / 1024).toFixed(1)} KB
               </p>
             </div>
