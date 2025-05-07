@@ -101,9 +101,9 @@ export default function CustomerDetailPage() {
               <span className="text-sm text-muted-foreground ml-1">様</span>
             </h3>
           </div>
-          <Badge variant="outline">
-            <div className="flex flex-col md:flex-row items-end justify-end space-x-2">
-              <span className="text-sm font-medium text-slate-500">保有ポイント</span>
+          <Badge>
+            <div className="flex flex-col md:flex-row items-center justify-end space-x-2">
+              <span className="text-sm font-medium">保有ポイント</span>
               <span className="text-base ml-1">
                 {completeCustomer.customerPoints.totalPoints ?? 0}
               </span>
