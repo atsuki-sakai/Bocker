@@ -153,7 +153,7 @@ export default function ReservePage() {
   }, [router, salonId, reset])
 
   return (
-    <div className="w-full  mx-auto bg-gradient-to-b from-gray-50 to-white min-h-screen">
+    <div className="w-full  mx-auto bg-gradient-to-b from-gray-50 to-white min-h-screen flex items-center justify-center">
       <motion.div
         className="flex items-center justify-center px-4 pb-8"
         initial={{ opacity: 0, y: 20 }}
