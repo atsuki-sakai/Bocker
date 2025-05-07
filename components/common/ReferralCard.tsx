@@ -80,7 +80,7 @@ export default function ReferralCard() {
     toast.success('招待リンクをコピーしました', {
       description: 'クリップボードに招待リンクがコピーされました',
       action: (
-        <Button variant="outline" size="sm" onClick={() => window.open(url, '_blank')}>
+        <Button variant="default" size="sm" onClick={() => window.open(url, '_blank')}>
           リンクを開く
         </Button>
       ),
@@ -132,18 +132,13 @@ export default function ReferralCard() {
                       </TooltipProvider>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={shareReferralLink}
-                    className="gap-1 text-link border-link hover:bg-link/20"
-                  >
+                  <Button size="sm" onClick={shareReferralLink}>
                     <Share2 size={14} />
                     <span className="hidden md:block">紹介リンクを共有する</span>
                   </Button>
                 </div>
 
-                <div className="flex flex-col gap-2 p-3 bg-muted rounded-lg border border-border">
+                <div className="flex flex-col gap-2 p-3 bg-secondary rounded-lg border border-border">
                   <div className="flex flex-col gap-2 md:flex-row justify-between items-start mb-1">
                     <p className="text-sm font-semibold text-primary">紹介特典 🎁</p>
                     <p className="text-sm font-bold text-primary">
@@ -155,7 +150,7 @@ export default function ReferralCard() {
                     1人紹介するごとに、翌月(25日)のサブスクリプション料金から 5,000円
                     割引されます（最大6回まで）。 特典の適用状況は、
                     <Link
-                      className="text-link font-medium underline"
+                      className="text-link-foreground font-medium underline"
                       href="/dashboard/subscription"
                     >
                       サブスクリプション管理ページ
