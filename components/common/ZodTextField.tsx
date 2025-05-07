@@ -41,10 +41,13 @@ export default function ZodTextField({
 }: ZodTextFieldProps<z.ZodType>) {
   return (
     <div className={`flex flex-col gap-2 ${className} ${ghost ? 'sr-only' : ''}`}>
-      <Label htmlFor={name} className="flex items-center gap-2 text-gray-700">
+      <Label htmlFor={name} className="flex items-center gap-2">
         <div className="scale-75">{icon}</div>
         {label}
-        {required && <span className="text-red-500">*</span>}
+        {required && <span className="text-destructive">*</span>}
+        {readOnly && (
+          <span className="text-xs  text-destructive text-nowrap tracking-wider ">※編集不可</span>
+        )}
       </Label>
       <div className="relative">
         <Input
@@ -62,20 +65,17 @@ export default function ZodTextField({
                       value === 0 ||
                       isNaN(Number(value))
                     ) {
-                      return null;
+                      return null
                     }
-                    return Number(value);
+                    return Number(value)
                   }
                 : undefined,
           })}
           placeholder={placeholder}
-          className={`${errors[name] ? ` border-red-500 focus-visible:ring-red-500 ` : ''} ${
-            readOnly ? 'focus-visible:ring-0 bg-gray-100 text-gray-500' : ''
+          className={`${errors[name] ? ` border-destructive focus-visible:ring-destructive ` : ''} ${
+            readOnly ? 'focus-visible:ring-0 bg-secondary text-secondary-foreground opacity-50' : ''
           }`}
         />
-        {readOnly && (
-          <span className="text-xs text-red-500 text-nowrap tracking-wider ">※直接編集不可</span>
-        )}
       </div>
       <AnimatePresence>
         {errors[name] && (
@@ -84,7 +84,7 @@ export default function ZodTextField({
             animate="visible"
             exit="exit"
             variants={fadeIn}
-            className="mt-1 text-sm text-red-500 flex items-center gap-1"
+            className="mt-1 text-sm text-destructive flex items-center gap-1"
           >
             <AlertCircle size={14} />
             {errors[name]?.message as string}
@@ -92,5 +92,5 @@ export default function ZodTextField({
         )}
       </AnimatePresence>
     </div>
-  );
+  )
 }
