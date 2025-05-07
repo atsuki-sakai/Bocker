@@ -4,14 +4,11 @@ import { ConvexClientProvider } from '@/components/providers'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
-import { Klee_One, Noto_Sans_JP } from 'next/font/google'
+import { Noto_Sans_JP } from 'next/font/google'
 
-
-// Noto Sans JP（日本語用）
 const notoJP = Noto_Sans_JP({
-  weight: ['400', '700'],
+  weight: ['400', '500', '700'],
   subsets: ['latin'],
-  display: 'swap',
   variable: '--font-noto-sans-jp',
 })
 
@@ -33,7 +30,7 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
-      <body className={` ${notoJP.variable} antialiased`}>
+      <body className={`${notoJP.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

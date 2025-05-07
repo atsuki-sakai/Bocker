@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 
-html {
-  font-family: var(--font-klee-one);
+body {
+  font-family: var(--font-noto-sans-jp);
 }
 
 
@@ -62,8 +62,7 @@ html {
     --palette-4-foreground: oklch(0.4 0.1658 29.23);
     --palette-5: oklch(0.91 0.0449 273.05);
     --palette-5-foreground: oklch(0.31 0.1794 263.97);
-    --font-noto-sans-jp: var(--font-noto-sans-jp);
-    --font-klee-one: var(--font-klee-one);
+   
   }
   
   .dark {
@@ -117,6 +116,7 @@ html {
     --palette-4-foreground: oklch(0.95 0.0274 17.65);
     --palette-5: oklch(0.42 0.126 286.6);
     --palette-5-foreground: oklch(0.95 0.0242 293.59);
+    
   }
   
   
