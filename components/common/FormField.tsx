@@ -37,7 +37,7 @@ export default function FormField({ label, icon, error, children, tooltip }: For
       <AnimatePresence>
         {error && (
           <motion.p
-            className="text-red-500 text-sm flex items-center gap-1"
+            className="text-destructive text-sm flex items-center gap-1"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
@@ -47,5 +47,5 @@ export default function FormField({ label, icon, error, children, tooltip }: For
         )}
       </AnimatePresence>
     </div>
-  );
+  )
 }
