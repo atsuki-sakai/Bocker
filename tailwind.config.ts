@@ -66,6 +66,18 @@ export default {
           '4': 'var(--chart-4)',
           '5': 'var(--chart-5)',
         },
+        palette: {
+          '1': 'var(--palette-1)',
+          '1-foreground': 'var(--palette-1-foreground)',
+          '2': 'var(--palette-2)',
+          '2-foreground': 'var(--palette-2-foreground)',
+          '3': 'var(--palette-3)',
+          '3-foreground': 'var(--palette-3-foreground)',
+          '4': 'var(--palette-4)',
+          '4-foreground': 'var(--palette-4-foreground)',
+          '5': 'var(--palette-5)',
+          '5-foreground': 'var(--palette-5-foreground)',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
