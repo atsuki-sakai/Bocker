@@ -26,66 +26,65 @@ import { CalendarMultiSelect } from '@/components/common';
 import { fetchQuery } from 'convex/nextjs';
 import { format, compareAsc } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trash2 } from 'lucide-react';
-import { handleErrorToMsg } from '@/lib/error';
+import { AlertCircle, Trash2 } from 'lucide-react'
+import { handleErrorToMsg } from '@/lib/error'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
+} from '@/components/ui/accordion'
 // 開始時間と終了時間を含む日付の型定義
 type DateWithTimes = {
-  date: Date;
-  startTime?: string;
-  endTime?: string;
-  notes?: string;
-};
+  date: Date
+  startTime?: string
+  endTime?: string
+  notes?: string
+}
 
 // 全時刻の配列 (10分刻み)
 const timeOptions = Array.from({ length: 24 }).flatMap((_, hour) =>
   [0, 10, 20, 30, 40, 50].map((minute) => {
-    const hh = String(hour).padStart(2, '0');
-    const mm = String(minute).padStart(2, '0');
-    return `${hh}:${mm}`;
+    const hh = String(hour).padStart(2, '0')
+    const mm = String(minute).padStart(2, '0')
+    return `${hh}:${mm}`
   })
-);
+)
 
 // "HH:mm" 形式を分に変換
 const timeToMinutes = (time: string): number => {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-};
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m
+}
 
-const pageSize: number = 20;
+const pageSize: number = 20
 
 export default function StaffSchedulePage() {
-  const { salonId } = useSalon();
-  const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null);
-  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
-  const [isAllDay, setIsAllDay] = useState<{ [key: string]: boolean }>({});
+  const { salonId } = useSalon()
+  const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null)
+  const [selectedDates, setSelectedDates] = useState<Date[]>([])
+  const [isAllDay, setIsAllDay] = useState<{ [key: string]: boolean }>({})
   // 日付と時間情報を保持する状態
-  const [dateTimeSettings, setDateTimeSettings] = useState<DateWithTimes[]>([]);
+  const [dateTimeSettings, setDateTimeSettings] = useState<DateWithTimes[]>([])
 
   const { results: staffs } = usePaginatedQuery(
     api.staff.core.query.getStaffListBySalonId,
     salonId ? { salonId } : 'skip',
     { initialNumItems: pageSize }
-  );
+  )
   // 追加：週間設定用 state
 
-  const upsertSchedules = useMutation(api.schedule.staff_exception.mutation.upsertSchedules);
+  const upsertSchedules = useMutation(api.schedule.staff_exception.mutation.upsertSchedules)
 
   // 時間設定を含めたスケジュール保存処理
   const handleUpsertSchedules = async (): Promise<void> => {
     // 終日でない場合、開始時間と終了時間の設定を必須にする
     for (const item of dateTimeSettings) {
-      const allDay = isAllDay[item.date.toISOString()];
+      const allDay = isAllDay[item.date.toISOString()]
       if (!allDay && (!item.startTime || !item.endTime)) {
-        toast.error('終日の予定ではない場合は開始時間と終了時間を設定してください');
-        return;
+        toast.error('終日の予定ではない場合は開始時間と終了時間を設定してください')
+        return
       }
     }
     try {
@@ -108,64 +107,64 @@ export default function StaffSchedulePage() {
           isAllDay: isAllDay[item.date.toISOString()] ? true : false,
         })),
         type: 'holiday',
-      });
-      toast.success('スタッフの予定を保存しました');
+      })
+      toast.success('スタッフの予定を保存しました')
     } catch (error) {
-      toast.error(handleErrorToMsg(error));
+      toast.error(handleErrorToMsg(error))
     }
-  };
+  }
 
   const handleNoteChange = (index: number, value: string): void => {
-    const newSettings = [...dateTimeSettings];
-    newSettings[index].notes = value;
-    setDateTimeSettings(newSettings);
-  };
+    const newSettings = [...dateTimeSettings]
+    newSettings[index].notes = value
+    setDateTimeSettings(newSettings)
+  }
 
   // 選択済みスケジュールを削除
   const handleDelete = (index: number): void => {
     // 日付・詳細設定両方から該当行を削除
-    const newDateTimeSettings = [...dateTimeSettings];
-    newDateTimeSettings.splice(index, 1);
-    setDateTimeSettings(newDateTimeSettings);
+    const newDateTimeSettings = [...dateTimeSettings]
+    newDateTimeSettings.splice(index, 1)
+    setDateTimeSettings(newDateTimeSettings)
 
-    const newSelectedDates = [...selectedDates];
-    newSelectedDates.splice(index, 1);
-    setSelectedDates(newSelectedDates);
-  };
+    const newSelectedDates = [...selectedDates]
+    newSelectedDates.splice(index, 1)
+    setSelectedDates(newSelectedDates)
+  }
 
   // 日付選択ごとに追加・削除を差分で反映する
   useEffect(() => {
     setIsAllDay((prev) => {
-      const next = { ...prev };
+      const next = { ...prev }
       // 新しく追加された日付には false をセット
       selectedDates.forEach((date) => {
-        const iso = date.toISOString();
+        const iso = date.toISOString()
         if (!(iso in next)) {
-          next[iso] = false;
+          next[iso] = false
         }
-      });
+      })
       // 選択解除された日付のキーを削除
       Object.keys(next).forEach((key) => {
         if (!selectedDates.find((d) => d.toISOString() === key)) {
-          delete next[key];
+          delete next[key]
         }
-      });
-      return next;
-    });
+      })
+      return next
+    })
 
     setDateTimeSettings((prev) => {
-      const prevMap = new Map(prev.map((s) => [format(s.date, 'yyyy-MM-dd'), s]));
+      const prevMap = new Map(prev.map((s) => [format(s.date, 'yyyy-MM-dd'), s]))
       const nextSettings: DateWithTimes[] = selectedDates.map((date) => {
-        const key = format(date, 'yyyy-MM-dd');
+        const key = format(date, 'yyyy-MM-dd')
         if (prevMap.has(key)) {
-          return prevMap.get(key)!;
+          return prevMap.get(key)!
         }
         // 新規日付は時間未設定で追加
-        return { date, startTime: undefined, endTime: undefined, notes: undefined };
-      });
-      return nextSettings;
-    });
-  }, [selectedDates]);
+        return { date, startTime: undefined, endTime: undefined, notes: undefined }
+      })
+      return nextSettings
+    })
+  }, [selectedDates])
 
   // スタッフ選択時の既存スケジュール取得処理
   useEffect(() => {
@@ -177,57 +176,57 @@ export default function StaffSchedulePage() {
             salonId: salonId as Id<'salon'>,
             staffId: selectedStaffId as Id<'staff'>,
           }
-        );
+        )
 
         // 重複する日付を排除した設定を作成
-        const map = new Map<string, DateWithTimes>();
+        const map = new Map<string, DateWithTimes>()
         staffSchedule.forEach((schedule) => {
-          const startDate = new Date(schedule.startTime_unix!);
-          const endDate = new Date(schedule.endTime_unix!);
-          const iso = startDate.toISOString();
+          const startDate = new Date(schedule.startTime_unix!)
+          const endDate = new Date(schedule.endTime_unix!)
+          const iso = startDate.toISOString()
           if (!map.has(iso)) {
             map.set(iso, {
               date: startDate,
               startTime: format(startDate, 'HH:mm'),
               endTime: format(endDate, 'HH:mm'),
               notes: schedule.notes,
-            });
+            })
           }
-        });
-        const uniqueSettings = Array.from(map.values()).sort((a, b) => compareAsc(a.date, b.date));
+        })
+        const uniqueSettings = Array.from(map.values()).sort((a, b) => compareAsc(a.date, b.date))
         // fetched schedules include isAllDay, so initialize the all-day map
-        const allDayMap: { [key: string]: boolean } = {};
+        const allDayMap: { [key: string]: boolean } = {}
         staffSchedule.forEach((schedule) => {
-          const iso = new Date(schedule.startTime_unix!).toISOString();
-          allDayMap[iso] = !!schedule.isAllDay;
-        });
+          const iso = new Date(schedule.startTime_unix!).toISOString()
+          allDayMap[iso] = !!schedule.isAllDay
+        })
 
-        console.log('staffSchedule: ', staffSchedule);
-        setIsAllDay(allDayMap);
-        setSelectedDates(uniqueSettings.map((s) => s.date));
-        setDateTimeSettings(uniqueSettings);
-      };
+        console.log('staffSchedule: ', staffSchedule)
+        setIsAllDay(allDayMap)
+        setSelectedDates(uniqueSettings.map((s) => s.date))
+        setDateTimeSettings(uniqueSettings)
+      }
 
-      fetchStaffSchedule();
+      fetchStaffSchedule()
     } else {
-      setSelectedDates([]);
-      setDateTimeSettings([]);
+      setSelectedDates([])
+      setDateTimeSettings([])
     }
-  }, [selectedStaffId, salonId, staffs]);
+  }, [selectedStaffId, salonId, staffs])
 
   // 時間設定ハンドラ（開始時刻選択時は終了時刻を調整）
   const handleTimeChange = (index: number, field: 'startTime' | 'endTime', value: string): void => {
-    const newSettings = [...dateTimeSettings];
+    const newSettings = [...dateTimeSettings]
     if (field === 'startTime') {
-      newSettings[index].startTime = value;
+      newSettings[index].startTime = value
       // 開始時刻以降の最初の時刻を終了時刻に設定
-      const nextOption = timeOptions.find((t) => timeToMinutes(t) > timeToMinutes(value));
-      newSettings[index].endTime = nextOption || value;
+      const nextOption = timeOptions.find((t) => timeToMinutes(t) > timeToMinutes(value))
+      newSettings[index].endTime = nextOption || value
     } else {
-      newSettings[index].endTime = value;
+      newSettings[index].endTime = value
     }
-    setDateTimeSettings(newSettings);
-  };
+    setDateTimeSettings(newSettings)
+  }
 
   return (
     <DashboardSection
@@ -243,7 +242,7 @@ export default function StaffSchedulePage() {
               value={selectedStaffId ?? ''}
               onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-secondary">
                 <SelectValue placeholder="スタッフを選択" />
               </SelectTrigger>
               <SelectContent>
@@ -271,16 +270,14 @@ export default function StaffSchedulePage() {
               {selectedStaffId ? (
                 <WeekScheduleForm staffId={selectedStaffId} />
               ) : (
-                <div className="flex justify-start items-center h-32 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-gray-500 text-sm">先にスタッフを選択してください。</p>
+                <div className="flex justify-start items-center h-32 p-4 bg-muted rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-muted-foreground mr-2" />
+                  <p className="text-muted-foreground text-sm">先にスタッフを選択してください。</p>
                 </div>
               )}
             </TabsContent>
             <TabsContent value="holiday">
               <div className="flex flex-col gap-4">
-                <h4 className="text-sm font-semibold">
-                  休日や予定を追加します。スケジュールの範囲内での予約の受付を停止します。
-                </h4>
                 <div>
                   <CalendarMultiSelect
                     fromDate={new Date()}
@@ -288,8 +285,8 @@ export default function StaffSchedulePage() {
                     selectedDates={selectedDates}
                     onDatesChangeAction={(dates) => {
                       // 日付選択時に日付をソートしておく
-                      const sortedDates = [...dates].sort(compareAsc);
-                      setSelectedDates(sortedDates);
+                      const sortedDates = [...dates].sort(compareAsc)
+                      setSelectedDates(sortedDates)
                     }}
                   />
                 </div>
@@ -299,123 +296,123 @@ export default function StaffSchedulePage() {
                   <Card>
                     <CardContent className="pt-6">
                       <h3 className="text-base font-semibold mb-4">作成されたスケジュール</h3>
-                      <ScrollArea className="max-h-[400px] overflow-y-auto pr-4">
-                        <div className="space-y-4">
-                          {dateTimeSettings.map((setting, index) => (
-                            <div
-                              key={index}
-                              className="grid grid-cols-1 md:grid-cols-[1fr,2fr,2fr] gap-4 items-center border-b pb-4"
-                            >
-                              <div className="flex gap-2 items-center">
-                                <span className="text-base font-bold">
-                                  {format(setting.date, 'M月d日(EEE)', { locale: ja })}
-                                </span>
+
+                      <div className="space-y-4">
+                        {dateTimeSettings.map((setting, index) => (
+                          <div
+                            key={index}
+                            className="grid grid-cols-1 md:grid-cols-[1fr,2fr,2fr] gap-4 items-center border-b pb-4"
+                          >
+                            <div className="flex gap-2 items-center">
+                              <span className="text-base font-bold">
+                                {format(setting.date, 'M月d日(EEE)', { locale: ja })}
+                              </span>
+                            </div>
+                            <div className="flex flex-col gap-2 items-start">
+                              <div className="flex gap-2 items-center mb-2">
+                                <Label className="text-xs font-bold">終日</Label>
+                                <Switch
+                                  checked={isAllDay[setting.date.toISOString()]}
+                                  onCheckedChange={() =>
+                                    setIsAllDay({
+                                      ...isAllDay,
+                                      [setting.date.toISOString()]:
+                                        !isAllDay[setting.date.toISOString()],
+                                    })
+                                  }
+                                />
                               </div>
-                              <div className="flex flex-col gap-2 items-start">
-                                <div className="flex gap-2 items-center">
-                                  <Label className="text-xs">終日</Label>
-                                  <Switch
-                                    checked={isAllDay[setting.date.toISOString()]}
-                                    onCheckedChange={() =>
-                                      setIsAllDay({
-                                        ...isAllDay,
-                                        [setting.date.toISOString()]:
-                                          !isAllDay[setting.date.toISOString()],
-                                      })
+
+                              <div
+                                className={`flex gap-2 w-full ${
+                                  isAllDay[setting.date.toISOString()]
+                                    ? 'opacity-50 pointer-events-none'
+                                    : ''
+                                }`}
+                              >
+                                <div className="w-full">
+                                  <Label
+                                    htmlFor={`start-time-${index}`}
+                                    className="mb-1 block text-xs"
+                                  >
+                                    開始時間
+                                  </Label>
+
+                                  <Select
+                                    value={setting.startTime ?? undefined}
+                                    onValueChange={(value) =>
+                                      handleTimeChange(index, 'startTime', value)
                                     }
-                                  />
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="開始時間" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {timeOptions.map((time) => (
+                                        <SelectItem key={time} value={time}>
+                                          {time}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 </div>
-
-                                <div
-                                  className={`flex gap-2 w-full ${
-                                    isAllDay[setting.date.toISOString()]
-                                      ? 'opacity-50 pointer-events-none'
-                                      : ''
-                                  }`}
-                                >
-                                  <div className="w-full">
-                                    <Label
-                                      htmlFor={`start-time-${index}`}
-                                      className="mb-1 block text-xs"
-                                    >
-                                      開始時間
-                                    </Label>
-
-                                    <Select
-                                      value={setting.startTime ?? undefined}
-                                      onValueChange={(value) =>
-                                        handleTimeChange(index, 'startTime', value)
-                                      }
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="開始時間" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {timeOptions.map((time) => (
+                                <div className="w-full">
+                                  <Label
+                                    htmlFor={`end-time-${index}`}
+                                    className="mb-1 block text-xs"
+                                  >
+                                    終了時間
+                                  </Label>
+                                  <Select
+                                    value={setting.endTime}
+                                    onValueChange={(value) =>
+                                      handleTimeChange(index, 'endTime', value)
+                                    }
+                                    disabled={!setting.startTime}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="終了時間" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {timeOptions
+                                        .filter(
+                                          (t) =>
+                                            timeToMinutes(t) >
+                                            timeToMinutes(setting.startTime ?? '')
+                                        )
+                                        .map((time) => (
                                           <SelectItem key={time} value={time}>
                                             {time}
                                           </SelectItem>
                                         ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="w-full">
-                                    <Label
-                                      htmlFor={`end-time-${index}`}
-                                      className="mb-1 block text-xs"
-                                    >
-                                      終了時間
-                                    </Label>
-                                    <Select
-                                      value={setting.endTime}
-                                      onValueChange={(value) =>
-                                        handleTimeChange(index, 'endTime', value)
-                                      }
-                                      disabled={!setting.startTime}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="終了時間" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {timeOptions
-                                          .filter(
-                                            (t) =>
-                                              timeToMinutes(t) >
-                                              timeToMinutes(setting.startTime ?? '')
-                                          )
-                                          .map((time) => (
-                                            <SelectItem key={time} value={time}>
-                                              {time}
-                                            </SelectItem>
-                                          ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
-                              </div>
-                              <div className="w-full p-1">
-                                <div className="flex justify-between items-center">
-                                  <p className="text-sm font-medium">備考</p>
-                                  <Button
-                                    variant="destructive"
-                                    size="icon"
-                                    className="scale-75"
-                                    onClick={() => handleDelete(index)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                                <Textarea
-                                  id={`note-${index}`}
-                                  className="w-full"
-                                  value={setting.notes}
-                                  onChange={(e) => handleNoteChange(index, e.target.value)}
-                                />
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
+                            <div className="w-full p-1">
+                              <div className="flex justify-between items-center">
+                                <p className="text-sm font-medium">備考</p>
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  className="scale-75"
+                                  onClick={() => handleDelete(index)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              <Textarea
+                                rows={2}
+                                id={`note-${index}`}
+                                className="w-full"
+                                value={setting.notes}
+                                onChange={(e) => handleNoteChange(index, e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -437,33 +434,33 @@ export default function StaffSchedulePage() {
             <AccordionItem value="common">
               <AccordionTrigger>スタッフの週間スケジュールについて</AccordionTrigger>
               <AccordionContent className="space-y-4 text-sm leading-relaxed">
-                <ol className="list-none space-y-2 text-slate-700">
-                  <strong className="text-yellow-700">前提：サロンの営業日を確認</strong>
-                  <li className="bg-yellow-50 p-2 text-yellow-700 rounded-md">
+                <ol className="list-none space-y-2 text-muted-foreground">
+                  <strong className="text-warning-foreground">前提：サロンの営業日を確認</strong>
+                  <li className="bg-warning border border-warning-foreground p-2 text-warning-foreground rounded-md">
                     先に「サロン営業日」を登録しておくと、スタッフ側では営業日だけが選択肢として表示されます。
                     <br />
                     スタッフの勤務日は <em>サロンが休業の日には設定できません</em>。
                   </li>
-                  <li className="bg-slate-50 p-2 rounded-md">
+                  <li className="bg-muted text-muted-foreground p-2 rounded-md">
                     <strong>勤務日にしたい曜日をクリック</strong>
                     <br />
                     グレー（休日）→ カラー（勤務日）に切り替わります。
                     <br />
                     勤務日が ON になった曜日だけが予約時のスタッフの選択肢に表示されます。
                   </li>
-                  <li className="bg-slate-50 p-2 rounded-md">
+                  <li className="bg-muted text-muted-foreground p-2 rounded-md">
                     <strong>共通勤務時間の有無を決める</strong>
                     <br />
                     「共通設定」を <em>ON</em> にすると、全勤務日に同じ時間帯を適用します。
                     <br />
                     OFF にすると曜日ごとに個別設定が可能です。
                   </li>
-                  <li className="bg-slate-50 p-2 rounded-md">
+                  <li className="bg-muted text-muted-foreground p-2 rounded-md">
                     <strong>時間を入力／選択</strong>
                     <br />
                     開始時刻を選ぶと、その時刻より後だけが終了時刻の候補に残ります。
                   </li>
-                  <li className="bg-slate-50 p-2 rounded-md">
+                  <li className="bg-muted text-muted-foreground p-2 rounded-md">
                     <strong>サロン営業時間との衝突ルール</strong>
                     <br />
                     開始時刻は <em>遅い方</em>、終了時刻は <em>早い方</em> が採用されます。
@@ -473,8 +470,8 @@ export default function StaffSchedulePage() {
                   </li>
                 </ol>
 
-                <h4 className="font-semibold pt-2 text-slate-700">よくある質問</h4>
-                <ul className="space-y-2 pl-4 list-disc text-slate-700">
+                <h4 className="font-semibold pt-2 text-muted-foreground">よくある質問</h4>
+                <ul className="space-y-2 pl-4 list-disc text-muted-foreground">
                   <li>
                     <strong>勤務日を後から変更すると時間はどうなる？</strong>
                     <br />
@@ -497,37 +494,37 @@ export default function StaffSchedulePage() {
             <AccordionItem value="guide">
               <AccordionTrigger>スケジュール設定の使い方</AccordionTrigger>
               <AccordionContent className="space-y-4 text-sm leading-relaxed">
-                <ol className="list-decimal list-inside space-y-2 text-slate-700">
-                  <li className="bg-slate-50 p-2 rounded-md">
+                <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
+                  <li className="bg-muted text-muted-foreground p-2 rounded-md">
                     <strong>スタッフを選択</strong>
                     <br />
                     上部のプルダウンから予定を登録したいスタッフを選びます。
                   </li>
-                  <li className="bg-slate-50 p-2 rounded-md">
+                  <li className="bg-muted text-muted-foreground p-2 rounded-md">
                     <strong>日付をカレンダーで選択</strong>
                     <br />
                     クリックするだけで複数日をまとめて指定できます。もう一度クリックすると解除されます。
                   </li>
-                  <li className="bg-slate-50 p-2 rounded-md">
+                  <li className="bg-muted text-muted-foreground p-2 rounded-md">
                     <strong>終日 or 時間帯を設定</strong>
                     <br />
                     「終日」スイッチを ON にするとその日は 24 時間受付停止、OFF
                     の場合は開始・終了時刻を 10 分刻みで入力します。
                   </li>
-                  <li className="bg-slate-50 p-2 rounded-md">
+                  <li className="bg-muted text-muted-foreground p-2 rounded-md">
                     <strong>備考を入力（任意）</strong>
                     <br />
                     理由やメモを残すとチーム内で共有できます。
                   </li>
-                  <li className="bg-slate-50 p-2 rounded-md">
+                  <li className="bg-muted text-muted-foreground p-2 rounded-md">
                     <strong>保存</strong>
                     <br />
                     「予定を保存」を押すと即時反映。予約カレンダーから該当枠が非表示になります。
                   </li>
                 </ol>
 
-                <h4 className="font-semibold pt-2 text-slate-700">よくある質問</h4>
-                <ul className="space-y-2 pl-4  text-slate-700 bg-slate-50 p-2 rounded-md">
+                <h4 className="font-semibold pt-2 text-muted-foreground">よくある質問</h4>
+                <ul className="space-y-2 pl-4  text-muted-foreground bg-muted p-2 rounded-md">
                   <li>
                     <strong>1日に複数のスケジュールを登録したい</strong>
                     <br />
@@ -545,5 +542,5 @@ export default function StaffSchedulePage() {
         </div>
       </div>
     </DashboardSection>
-  );
+  )
 }
