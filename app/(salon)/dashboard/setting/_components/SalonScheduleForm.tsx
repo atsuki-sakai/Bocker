@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { handleErrorToMsg } from '@/lib/error';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/common';
-import { Clock, Save, Calendar, Clock3, PersonStanding } from 'lucide-react';
+import { Save, Calendar, Clock3, PersonStanding } from 'lucide-react'
 import { SALON_RESERVATION_LIMIT_DAYS, SALON_RESERVATION_CANCEL_LIMIT_DAYS } from '@/lib/constants';
 import { RESERVATION_INTERVAL_MINUTES_VALUES } from '@/services/convex/shared/types/common';
 import type { ReservationIntervalMinutes } from '@/services/convex/shared/types/common';
@@ -230,10 +230,9 @@ export default function SalonScheduleForm() {
   return (
     <div>
       <div className="flex items-center gap-2">
-        <Clock className="h-5 w-5 text-blue-500" />
-        <h4 className="text-lg font-bold">予約受付設定</h4>
+        <h4 className="text-2xl font-bold">予約受付設定</h4>
       </div>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground mt-1">
         予約受付設定は、サロンの予約の受け付け時間の設定を変更する編集できます。
       </p>
       <form
@@ -413,7 +412,7 @@ export default function SalonScheduleForm() {
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                営業時間を保存
+                予約受付設定を保存
               </>
             )}
           </Button>
@@ -424,13 +423,13 @@ export default function SalonScheduleForm() {
         <Accordion type="single" collapsible>
           <AccordionItem value="max-days">
             <AccordionTrigger>予約受付最大日数の設定とは？</AccordionTrigger>
-            <AccordionContent className="text-sm text-slate-600 space-y-4">
+            <AccordionContent className="text-sm text-muted-foreground space-y-4 leading-6">
               <section>
-                <p className="font-bold text-base text-slate-800 mb-2">
+                <p className="font-bold text-base text-primary mb-2">
                   予約受付最大日数の設定について
                 </p>
 
-                <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+                <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
                   <li>
                     今日を含めて
                     <span className="font-semibold"> {watch('reservationLimitDays')} 日先</span>
@@ -446,7 +445,7 @@ export default function SalonScheduleForm() {
                   </li>
                 </ul>
 
-                <p className="font-bold text-slate-800 mt-2">注意点</p>
+                <p className="font-bold text-primary mt-2">注意点</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>短すぎるとリピート客が次回予約を取りづらくなり、機会損失につながります。</li>
                   <li>長すぎると遠い将来の仮予約が増え、キャンセル率が高まる傾向があります。</li>
@@ -462,13 +461,13 @@ export default function SalonScheduleForm() {
         </Accordion>
         <AccordionItem value="item-2">
           <AccordionTrigger>キャンセル可能日数の設定について</AccordionTrigger>
-          <AccordionContent className="text-sm text-slate-600 space-y-4">
+          <AccordionContent className="text-sm text-muted-foreground space-y-4 leading-6">
             <section>
-              <p className="font-bold text-base mb-2 text-slate-800">
+              <p className="font-bold text-base mb-2 text-primary">
                 キャンセル可能日数の設定について
               </p>
 
-              <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
                 <li>
                   予約日の{' '}
                   <span className="font-semibold">{watch('availableCancelDays')} 日前</span>{' '}
@@ -485,7 +484,7 @@ export default function SalonScheduleForm() {
                 </li>
               </ul>
 
-              <p className="font-bold text-slate-800 mt-2">注意点</p>
+              <p className="font-bold text-primary mt-2">注意点</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>
                   設定値が短いと<strong>直前キャンセル</strong>
@@ -505,11 +504,11 @@ export default function SalonScheduleForm() {
         </AccordionItem>
         <AccordionItem value="item-3">
           <AccordionTrigger>予約間隔の設定でどの様な変化がありますか？</AccordionTrigger>
-          <AccordionContent className="text-sm text-slate-600 space-y-4">
+          <AccordionContent className="text-sm text-muted-foreground space-y-4 leading-6">
             <section>
-              <p className="font-bold text-base mb-2 text-slate-800">予約間隔の設定について</p>
+              <p className="font-bold text-base mb-2 text-primary">予約間隔の設定について</p>
 
-              <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
                 <li>
                   生成される予約枠の間隔は施術時間との時間か予約間隔のどちらか大きい方になります。
                   現在、予約間隔は
@@ -549,7 +548,7 @@ export default function SalonScheduleForm() {
                 </li>
               </ul>
 
-              <p className="font-bold text-slate-800 mt-2">注意点</p>
+              <p className="font-bold text-primary mt-2">注意点</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>間隔が長すぎると空席があっても予約候補に表示されず稼働率が低下します。</li>
                 <li>間隔が短すぎると候補が多くなり、顧客が選びづらくなる場合があります。</li>
@@ -568,11 +567,11 @@ export default function SalonScheduleForm() {
         </AccordionItem>
         <AccordionItem value="item-4">
           <AccordionTrigger>予約可能席数の設定について</AccordionTrigger>
-          <AccordionContent className="text-sm text-slate-600 space-y-4">
+          <AccordionContent className="text-sm text-muted-foreground space-y-4 leading-6">
             <section>
-              <p className="font-bold text-base mb-2 text-slate-800">予約可能席数の設定について</p>
+              <p className="font-bold text-base mb-2 text-primary">予約可能席数の設定について</p>
 
-              <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+              <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
                 <li>
                   現在、同一時間帯に<strong>{watch('availableSheet')} 席</strong>
                   まで予約を受け付ける設定です。
@@ -590,7 +589,7 @@ export default function SalonScheduleForm() {
                 </li>
               </ul>
 
-              <p className="font-bold text-slate-800 mt-2">注意点</p>
+              <p className="font-bold text-primary mt-2">注意点</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>
                   席数を過大に設定すると<strong>オーバーブッキング</strong>
@@ -606,8 +605,8 @@ export default function SalonScheduleForm() {
         </AccordionItem>
         <AccordionItem value="item-5">
           <AccordionTrigger>最短の予約開始時間の設定について</AccordionTrigger>
-          <AccordionContent className="text-sm text-slate-600 space-y-4">
-            <p className="font-bold text-base mb-2 text-slate-800">
+          <AccordionContent className="text-sm text-muted-foreground space-y-4 leading-6">
+            <p className="font-bold text-base mb-2 text-primary">
               最短の予約開始時間の設定について
             </p>
 
@@ -617,13 +616,13 @@ export default function SalonScheduleForm() {
               に設定されている場合、現在時刻からその時間が経過した以降の予約枠のみ表示されます。
               急な来店による対応負荷を避けるために活用できます。
             </p>
-            <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+            <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 当日予約を受け付ける際に当日予約でかつ現在空き枠がある場合に
                 <strong>{watch('todayFirstLaterMinutes')} 分</strong>
                 後から予約を受け付ける設定です。
                 <br />
-                <span className="text-slate-500">
+                <span className="text-muted-foreground">
                   （例：現在時刻が <strong>10:00</strong> で、設定が <strong>30分</strong> の場合、
                   <strong>10:30 以降</strong> の空き枠のみ予約が可能になります。 10:00〜10:30
                   の枠が空いていても、表示されず予約できません。）
