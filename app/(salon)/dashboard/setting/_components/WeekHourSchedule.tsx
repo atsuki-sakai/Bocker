@@ -22,17 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import {
-  Clock,
-  Calendar,
-  Save,
-  Clock3,
-  Coffee,
-  Settings2,
-  X,
-  Check,
-  CalendarClock,
-} from 'lucide-react';
+import { Calendar, Save, Coffee, Settings2, X, Check } from 'lucide-react'
 import { api } from '@/convex/_generated/api';
 import { useQuery, useMutation } from 'convex/react';
 import { useSalon } from '@/hooks/useSalon';
@@ -65,45 +55,45 @@ const DAYS_OF_WEEK = [
     id: 'monday',
     week: '月曜日',
     shortWeek: '月',
-    color: 'bg-green-50 border-green-200 text-green-700',
+    color: 'bg-active-foreground border-active text-active',
   },
   {
     id: 'tuesday',
     week: '火曜日',
     shortWeek: '火',
-    color: 'bg-green-50 border-green-200 text-green-700',
+    color: 'bg-active-foreground border-active text-active',
   },
   {
     id: 'wednesday',
     week: '水曜日',
     shortWeek: '水',
-    color: 'bg-green-50 border-green-200 text-green-700',
+    color: 'bg-active-foreground border-active text-active',
   },
   {
     id: 'thursday',
     week: '木曜日',
     shortWeek: '木',
-    color: 'bg-green-50 border-green-200 text-green-700',
+    color: 'bg-active-foreground border-active text-active',
   },
   {
     id: 'friday',
     week: '金曜日',
     shortWeek: '金',
-    color: 'bg-green-50 border-green-200 text-green-700',
+    color: 'bg-active-foreground border-active text-active',
   },
   {
     id: 'saturday',
     week: '土曜日',
     shortWeek: '土',
-    color: 'bg-blue-50 border-blue-200 text-blue-700',
+    color: 'bg-link-foreground border-link text-link',
   },
   {
     id: 'sunday',
     week: '日曜日',
     shortWeek: '日',
-    color: 'bg-blue-50 border-blue-200 text-blue-700',
+    color: 'bg-link-foreground border-link text-link',
   },
-];
+]
 
 // サロン曜日スケジュールの型定義
 export type DayOfWeek =
@@ -113,32 +103,32 @@ export type DayOfWeek =
   | 'thursday'
   | 'friday'
   | 'saturday'
-  | 'sunday';
+  | 'sunday'
 
 // 各曜日の営業時間設定
 export interface DaySchedule {
-  isOpen: boolean;
-  startHour: string;
-  endHour: string;
-  scheduleId?: string; // 既存レコードのID
+  isOpen: boolean
+  startHour: string
+  endHour: string
+  scheduleId?: string // 既存レコードのID
 }
 
 // 曜日スケジュールデータ
 export interface WeekScheduleData {
   // 各曜日の設定
-  scheduleSettings: Record<DayOfWeek, DaySchedule>;
+  scheduleSettings: Record<DayOfWeek, DaySchedule>
   // 共通設定
-  useCommonHours: boolean;
-  commonStartHour: string;
-  commonEndHour: string;
+  useCommonHours: boolean
+  commonStartHour: string
+  commonEndHour: string
 }
 
-const defaultScheduleHour = { startHour: '08:00', endHour: '19:00' };
+const defaultScheduleHour = { startHour: '08:00', endHour: '19:00' }
 
 export default function WeekHourSchedule() {
-  const { salonId } = useSalon();
-  const [isSaving, setIsSaving] = useState(false);
-  const [scheduleTab, setScheduleTab] = useState('common');
+  const { salonId } = useSalon()
+  const [isSaving, setIsSaving] = useState(false)
+  const [scheduleTab, setScheduleTab] = useState('common')
 
   // スケジュールデータの状態
   const [weekScheduleData, setWeekScheduleData] = useState<WeekScheduleData>({
@@ -160,41 +150,41 @@ export default function WeekHourSchedule() {
   const salonWeekSchedules = useQuery(
     api.schedule.salon_week_schedule.query.getAllBySalonId,
     salonId ? { salonId } : 'skip'
-  );
+  )
 
   const updateWeekSchedule = useMutation(
     api.schedule.salon_week_schedule.mutation.updateWeekSchedule
-  );
+  )
 
-  const { handleSubmit } = useZodForm(salonScheduleConfigSchema);
+  const { handleSubmit } = useZodForm(salonScheduleConfigSchema)
 
   // 時間の選択肢を生成（メモ化で最適化）
   const timeOptions = useMemo(() => {
-    const options: string[] = [];
+    const options: string[] = []
     for (let hour = 0; hour < 24; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
-        const h = hour.toString().padStart(2, '0');
-        const m = minute.toString().padStart(2, '0');
-        options.push(`${h}:${m}`);
+        const h = hour.toString().padStart(2, '0')
+        const m = minute.toString().padStart(2, '0')
+        options.push(`${h}:${m}`)
       }
     }
-    options.push('24:00');
-    return options;
-  }, []);
+    options.push('24:00')
+    return options
+  }, [])
 
   // 開始時間より後の時間オプションをフィルタリングする関数（メモ化）
   const getEndHourOptions = useCallback(
     (startHour: string) => {
-      return timeOptions.filter((time) => time > startHour);
+      return timeOptions.filter((time) => time > startHour)
     },
     [timeOptions]
-  );
+  )
 
   // 共通設定用の終了時間オプション（メモ化）
   const commonEndHourOptions = useMemo(
     () => getEndHourOptions(weekScheduleData.commonStartHour),
     [weekScheduleData.commonStartHour, getEndHourOptions]
-  );
+  )
 
   // DBから取得したスケジュールデータを初期表示に反映
   useEffect(() => {
@@ -202,64 +192,64 @@ export default function WeekHourSchedule() {
       // 初期データロード時のみ反映するために、scheduleIdが設定されていない場合のみ更新する
       const shouldUpdateSchedule = Object.values(weekScheduleData.scheduleSettings).some(
         (setting) => !setting.scheduleId
-      );
+      )
 
       if (shouldUpdateSchedule) {
-        const newScheduleSettings = { ...weekScheduleData.scheduleSettings };
-        let earliestStartHour = '24:00'; // 最も早い開始時間を追跡
-        let latestEndHour = '00:00'; // 最も遅い終了時間を追跡
-        let hasOpenDay = false; // 営業日があるかどうかを追跡
+        const newScheduleSettings = { ...weekScheduleData.scheduleSettings }
+        let earliestStartHour = '24:00' // 最も早い開始時間を追跡
+        let latestEndHour = '00:00' // 最も遅い終了時間を追跡
+        let hasOpenDay = false // 営業日があるかどうかを追跡
 
         salonWeekSchedules.forEach((schedule) => {
           if (schedule.dayOfWeek && typeof schedule.dayOfWeek === 'string') {
-            const dayOfWeek = schedule.dayOfWeek as DayOfWeek;
-            const isOpen = schedule.isOpen ?? false;
-            const startHour = schedule.startHour || defaultScheduleHour.startHour;
-            const endHour = schedule.endHour || defaultScheduleHour.endHour;
+            const dayOfWeek = schedule.dayOfWeek as DayOfWeek
+            const isOpen = schedule.isOpen ?? false
+            const startHour = schedule.startHour || defaultScheduleHour.startHour
+            const endHour = schedule.endHour || defaultScheduleHour.endHour
 
             newScheduleSettings[dayOfWeek] = {
               isOpen,
               startHour,
               endHour,
               scheduleId: schedule._id,
-            };
+            }
 
             // 営業日の場合、最も早い開始時間と最も遅い終了時間を更新
             if (isOpen) {
-              hasOpenDay = true;
+              hasOpenDay = true
               if (startHour < earliestStartHour) {
-                earliestStartHour = startHour;
+                earliestStartHour = startHour
               }
               if (endHour > latestEndHour) {
-                latestEndHour = endHour;
+                latestEndHour = endHour
               }
             }
           }
-        });
+        })
 
         // 共通時間を更新（営業日がある場合のみ）
         const updatedCommonHours = {
           commonStartHour: hasOpenDay ? earliestStartHour : defaultScheduleHour.startHour,
           commonEndHour: hasOpenDay ? latestEndHour : defaultScheduleHour.endHour,
-        };
+        }
 
         setWeekScheduleData((prev) => ({
           ...prev,
           ...updatedCommonHours,
           scheduleSettings: newScheduleSettings,
-        }));
+        }))
       }
     }
-  }, [salonWeekSchedules]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [salonWeekSchedules]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 営業日変更時の処理
   const handleDayToggle = useCallback((day: DayOfWeek) => {
     setWeekScheduleData((prev) => {
-      const newScheduleSettings = { ...prev.scheduleSettings };
-      const dayId = day as DayOfWeek;
+      const newScheduleSettings = { ...prev.scheduleSettings }
+      const dayId = day as DayOfWeek
 
       // 営業状態を切り替え
-      const newIsOpen = !newScheduleSettings[dayId].isOpen;
+      const newIsOpen = !newScheduleSettings[dayId].isOpen
 
       // 営業状態がONになるとき
       if (newIsOpen) {
@@ -272,7 +262,7 @@ export default function WeekHourSchedule() {
             ...(newScheduleSettings[dayId].scheduleId
               ? { scheduleId: newScheduleSettings[dayId].scheduleId }
               : {}),
-          };
+          }
         } else {
           newScheduleSettings[dayId] = {
             isOpen: true,
@@ -281,7 +271,7 @@ export default function WeekHourSchedule() {
             ...(newScheduleSettings[dayId].scheduleId
               ? { scheduleId: newScheduleSettings[dayId].scheduleId }
               : {}),
-          };
+          }
         }
       } else {
         // 営業状態をOFFに
@@ -291,64 +281,64 @@ export default function WeekHourSchedule() {
           ...(newScheduleSettings[dayId].scheduleId
             ? { scheduleId: newScheduleSettings[dayId].scheduleId }
             : {}),
-        };
+        }
       }
 
       return {
         ...prev,
         scheduleSettings: newScheduleSettings,
-      };
-    });
-  }, []);
+      }
+    })
+  }, [])
 
   // 共通営業時間設定の切り替え
   const handleUseCommonHoursChange = useCallback((checked: boolean) => {
     setWeekScheduleData((prev) => {
-      const newScheduleSettings = { ...prev.scheduleSettings };
+      const newScheduleSettings = { ...prev.scheduleSettings }
       if (checked) {
         // 共通設定がONになるタイミングで、営業日の時間を一括で共通にそろえる
         Object.keys(newScheduleSettings).forEach((day) => {
-          const dayId = day as DayOfWeek;
+          const dayId = day as DayOfWeek
           if (newScheduleSettings[dayId].isOpen) {
-            newScheduleSettings[dayId].startHour = prev.commonStartHour;
-            newScheduleSettings[dayId].endHour = prev.commonEndHour;
+            newScheduleSettings[dayId].startHour = prev.commonStartHour
+            newScheduleSettings[dayId].endHour = prev.commonEndHour
           }
-        });
+        })
       }
 
       return {
         ...prev,
         useCommonHours: checked,
         scheduleSettings: newScheduleSettings,
-      };
-    });
-  }, []);
+      }
+    })
+  }, [])
 
   // 共通開始時間の変更
   const handleCommonStartHourChange = useCallback(
     (value: string) => {
       setWeekScheduleData((prev) => {
-        const newScheduleSettings = { ...prev.scheduleSettings };
+        const newScheduleSettings = { ...prev.scheduleSettings }
 
         // 終了時間が開始時間より前になる場合、終了時間を調整
-        let newEndHour = prev.commonEndHour;
+        let newEndHour = prev.commonEndHour
         if (newEndHour <= value) {
           // 開始時間の次の時間帯を終了時間に設定
-          const endHourOptions = getEndHourOptions(value);
-          newEndHour = endHourOptions.length > 0 ? endHourOptions[0] : '24:00';
+          const endHourOptions = getEndHourOptions(value)
+          newEndHour = endHourOptions.length > 0 ? endHourOptions[0] : '24:00'
         }
 
         if (prev.useCommonHours) {
           Object.keys(newScheduleSettings).forEach((day) => {
-            const dayId = day as DayOfWeek;
+            const dayId = day as DayOfWeek
             if (newScheduleSettings[dayId].isOpen) {
-              newScheduleSettings[dayId].startHour = value;
+              newScheduleSettings[dayId].startHour = value
               // 終了時間も調整
               if (newScheduleSettings[dayId].endHour <= value) {
-                newScheduleSettings[dayId].endHour = newEndHour;
+                newScheduleSettings[dayId].endHour = newEndHour
               }
             }
-          });
+          })
         }
 
         return {
@@ -356,72 +346,72 @@ export default function WeekHourSchedule() {
           commonStartHour: value,
           commonEndHour: newEndHour,
           scheduleSettings: newScheduleSettings,
-        };
-      });
+        }
+      })
     },
     [getEndHourOptions]
-  );
+  )
 
   // 共通終了時間の変更
   const handleCommonEndHourChange = useCallback((value: string) => {
     setWeekScheduleData((prev) => {
-      const newScheduleSettings = { ...prev.scheduleSettings };
+      const newScheduleSettings = { ...prev.scheduleSettings }
       if (prev.useCommonHours) {
         Object.keys(newScheduleSettings).forEach((day) => {
-          const dayId = day as DayOfWeek;
+          const dayId = day as DayOfWeek
           if (newScheduleSettings[dayId].isOpen) {
-            newScheduleSettings[dayId].endHour = value;
+            newScheduleSettings[dayId].endHour = value
           }
-        });
+        })
       }
 
       return {
         ...prev,
         commonEndHour: value,
         scheduleSettings: newScheduleSettings,
-      };
-    });
-  }, []);
+      }
+    })
+  }, [])
 
   // 個別の曜日設定の更新
   const updateDaySchedule = useCallback(
     (day: DayOfWeek, field: 'startHour' | 'endHour', value: string) => {
       setWeekScheduleData((prev) => {
-        const newScheduleSettings = { ...prev.scheduleSettings };
+        const newScheduleSettings = { ...prev.scheduleSettings }
 
         if (field === 'startHour') {
           // 開始時間を変更した場合、終了時間が開始時間より前になる場合は終了時間も調整
-          const currentEndHour = newScheduleSettings[day].endHour;
+          const currentEndHour = newScheduleSettings[day].endHour
           if (currentEndHour <= value) {
-            const endHourOptions = getEndHourOptions(value);
-            const newEndHour = endHourOptions.length > 0 ? endHourOptions[0] : '24:00';
+            const endHourOptions = getEndHourOptions(value)
+            const newEndHour = endHourOptions.length > 0 ? endHourOptions[0] : '24:00'
             newScheduleSettings[day] = {
               ...newScheduleSettings[day],
               startHour: value,
               endHour: newEndHour,
-            };
+            }
           } else {
             newScheduleSettings[day] = {
               ...newScheduleSettings[day],
               startHour: value,
-            };
+            }
           }
         } else {
           // 終了時間の変更
           newScheduleSettings[day] = {
             ...newScheduleSettings[day],
             endHour: value,
-          };
+          }
         }
 
         return {
           ...prev,
           scheduleSettings: newScheduleSettings,
-        };
-      });
+        }
+      })
     },
     [getEndHourOptions]
-  );
+  )
 
   // 営業中の曜日を取得（メモ化）
   const activeDays = useMemo(
@@ -430,18 +420,18 @@ export default function WeekHourSchedule() {
         .filter(([, setting]) => setting.isOpen)
         .map(([day]) => day),
     [weekScheduleData.scheduleSettings]
-  );
+  )
 
   // フォーム送信で Mutation 呼び出し
   const onSubmit = useCallback(async () => {
     // 送信中状態を設定
-    setIsSaving(true);
+    setIsSaving(true)
 
     // 送信前にscheduleIdを除外した新しいオブジェクトを作成
     const cleanedScheduleSettings: Record<
       string,
       { isOpen: boolean; startHour: string; endHour: string }
-    > = {};
+    > = {}
 
     // 各曜日のデータからscheduleIdを除外
     Object.entries(weekScheduleData.scheduleSettings).forEach(([day, settings]) => {
@@ -449,37 +439,36 @@ export default function WeekHourSchedule() {
         isOpen: settings.isOpen,
         startHour: settings.startHour,
         endHour: settings.endHour,
-      };
-    });
+      }
+    })
 
     try {
       await updateWeekSchedule({
         salonId: salonId as Id<'salon'>,
         scheduleSettings: cleanedScheduleSettings,
-      });
+      })
 
       // 成功メッセージ
-      toast.success('営業時間を更新しました');
+      toast.success('営業時間を更新しました')
     } catch (err) {
-      toast.error(handleErrorToMsg(err));
+      toast.error(handleErrorToMsg(err))
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  }, [weekScheduleData, salonId, updateWeekSchedule]);
+  }, [weekScheduleData, salonId, updateWeekSchedule])
 
   // ローディング状態
   if (salonWeekSchedules === undefined) {
-    return <Loading />;
+    return <Loading />
   }
 
   return (
     <div>
       <div className="">
         <div className="flex items-center gap-2">
-          <CalendarClock className="h-5 w-5 text-blue-500" />
-          <p className="text-lg font-semibold">営業日・営業時間設定</p>
+          <p className="text-2xl font-bold text-primary">営業日・営業時間設定</p>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mt-1">
           サロンの営業日と営業時間を設定します。定休日には予約を受け付けません。
         </p>
 
@@ -488,23 +477,23 @@ export default function WeekHourSchedule() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-3">
             {DAYS_OF_WEEK.map((day) => {
-              const dayId = day.id as DayOfWeek;
-              const isOpen = weekScheduleData.scheduleSettings[dayId].isOpen;
+              const dayId = day.id as DayOfWeek
+              const isOpen = weekScheduleData.scheduleSettings[dayId].isOpen
 
               return (
                 <div
                   key={day.id}
                   onClick={() => handleDayToggle(dayId)}
                   className={`
-                          cursor-pointer p-2 md:p-3 rounded-lg border-2 transition-all
+                          cursor-pointer p-2 md:p-3 rounded-lg border border-border transition-all
                           ${
                             isOpen
                               ? `${day.color} border-current shadow-sm`
-                              : 'bg-gray-100 border-gray-200 text-gray-500'
+                              : 'bg-muted border-border text-muted-foreground'
                           }
                         `}
                 >
-                  <div className="flex flex-col items-start justify-between">
+                  <div className="flex items-center justify-between">
                     <span className="font-semibold mb-1">{day.week}</span>
                     {isOpen ? (
                       <div className="flex items-center gap-1 text-xs">
@@ -520,20 +509,19 @@ export default function WeekHourSchedule() {
                   </div>
 
                   {isOpen && (
-                    <div className="mt-1 md:mt-2 text-sm md:text-base font-bold">
+                    <div className="mt-1 text-sm md:text-base font-bold w-full text-center">
                       {weekScheduleData.scheduleSettings[dayId].startHour} ~{' '}
                       {weekScheduleData.scheduleSettings[dayId].endHour}
                     </div>
                   )}
                 </div>
-              );
+              )
             })}
           </div>
 
           <div className="pt-6">
             <div className="flex items-center gap-2 mb-3">
-              <Clock className="h-5 w-5 text-blue-600" />
-              <h3 className="text-lg font-semibold">営業時間設定</h3>
+              <h3 className="text-lg font-semibold text-primary">営業時間設定</h3>
             </div>
 
             <Tabs value={scheduleTab} onValueChange={setScheduleTab} className="w-full">
@@ -553,7 +541,6 @@ export default function WeekHourSchedule() {
                   <Switch
                     checked={weekScheduleData.useCommonHours}
                     onCheckedChange={handleUseCommonHoursChange}
-                    className="data-[state=checked]:bg-blue-600"
                   />
                   <Label className="font-medium cursor-pointer">
                     すべての営業日に共通の営業時間を設定する
@@ -564,8 +551,7 @@ export default function WeekHourSchedule() {
                   <div>
                     <div className="flex flex-wrap items-center gap-4">
                       <div className="flex items-center">
-                        <Clock3 className="mr-2 h-5 w-5 text-blue-600" />
-                        <span className="font-medium">営業時間</span>
+                        <span className="font-bold text-primary text-sm">共通の営業時間</span>
                       </div>
 
                       <div className="flex items-center gap-3 flex-wrap">
@@ -625,10 +611,10 @@ export default function WeekHourSchedule() {
                       {DAYS_OF_WEEK.filter(
                         (day) => weekScheduleData.scheduleSettings[day.id as DayOfWeek].isOpen
                       ).map((day) => {
-                        const dayId = day.id as DayOfWeek;
-                        const daySetting = weekScheduleData.scheduleSettings[dayId];
+                        const dayId = day.id as DayOfWeek
+                        const daySetting = weekScheduleData.scheduleSettings[dayId]
                         // 各曜日ごとに、開始時間より後の終了時間オプションを取得
-                        const endHourOptions = getEndHourOptions(daySetting.startHour);
+                        const endHourOptions = getEndHourOptions(daySetting.startHour)
 
                         return (
                           <div
@@ -689,16 +675,16 @@ export default function WeekHourSchedule() {
                               </div>
                             </div>
                           </div>
-                        );
+                        )
                       })}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center p-8 border rounded-lg bg-gray-50 text-center">
-                      <Coffee className="h-12 w-12 text-gray-400 mb-3" />
-                      <p className="text-gray-500 mb-2">営業日が設定されていません</p>
-                      <p className="text-sm text-gray-400">
-                        営業日を選択すると、時間設定が表示されます;
+                    <div className="flex flex-col items-center justify-center p-8 border border-border rounded-lg bg-muted text-center">
+                      <Coffee className="h-12 w-12  mb-3 text-muted-foreground" />
+                      <p className="text-muted-foreground font-semibold mb-2">
+                        営業日が設定されていません
                       </p>
+                      <p className="text-sm text-muted-foreground">営業日を選択してください。</p>
                     </div>
                   )}
                 </div>
@@ -723,7 +709,7 @@ export default function WeekHourSchedule() {
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                営業時間を保存
+                営業日・営業時間を保存
               </>
             )}
           </Button>
@@ -733,11 +719,11 @@ export default function WeekHourSchedule() {
         <Accordion type="multiple" className="mt-8">
           <AccordionItem value="business-days">
             <AccordionTrigger>営業日設定とは？</AccordionTrigger>
-            <AccordionContent className="text-sm text-slate-600 space-y-4">
+            <AccordionContent className="text-sm text-muted-foreground space-y-4 leading-6">
               <section>
-                <p className="font-bold text-base text-slate-800 mb-2">営業日設定について</p>
+                <p className="font-bold text-base text-primary mb-2">営業日設定について</p>
 
-                <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+                <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
                   <li>
                     カレンダーに予約を受付ける<strong>曜日毎の営業時間</strong>を指定する機能です。
                   </li>
@@ -747,7 +733,7 @@ export default function WeekHourSchedule() {
                   </li>
                 </ul>
 
-                <p className="font-bold text-slate-800 mt-2">例</p>
+                <p className="font-bold text-primary mt-2">例</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>
                     火曜を定休日にした場合、火曜日の予約枠は表示されず予約を受け付けられなくなります。
@@ -780,5 +766,5 @@ export default function WeekHourSchedule() {
         </Accordion>
       </div>
     </div>
-  );
+  )
 }
