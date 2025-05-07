@@ -8,18 +8,18 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/common';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ArrowRight, RefreshCw, ExternalLink } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
-import { motion } from 'framer-motion';
-import { handleErrorToMsg } from '@/lib/error';
-import { Loader2 } from 'lucide-react';
+import { ArrowRight, RefreshCw, ChevronRight } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { toast } from 'sonner'
+import { motion } from 'framer-motion'
+import { handleErrorToMsg } from '@/lib/error'
+import { Loader2 } from 'lucide-react'
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from '@/components/ui/accordion';
+} from '@/components/ui/accordion'
 
 // ステータスの日本語表記
 const statusNameMap: Record<string, string> = {
@@ -29,15 +29,15 @@ const statusNameMap: Record<string, string> = {
   restricted: '一部制限あり',
   active: '有効',
   deauthorized: '連携解除済み',
-};
+}
 
 const statusColorMap: Record<string, string> = {
-  not_connected: 'border border-gray-600 text-gray-600 bg-gray-50',
-  pending: 'border border-yellow-600 text-yellow-600 bg-yellow-50',
-  incomplete: 'border border-red-600 text-red-600 bg-red-50',
-  restricted: 'border border-orange-600 text-orange-600 bg-orange-50',
-  active: 'border border-green-600 text-green-600 bg-green-50',
-};
+  not_connected: 'border border-gray-700 text-gray-700 bg-gray-100',
+  pending: 'border border-yellow-700 text-yellow-700 bg-yellow-100',
+  incomplete: 'border border-red-700 text-red-700 bg-red-100',
+  restricted: 'border border-orange-700 text-orange-700 bg-orange-100',
+  active: 'border border-green-700 text-green-700 bg-green-100',
+}
 
 // ステータスの説明
 const statusDescriptionMap: Record<string, string> = {
@@ -53,86 +53,86 @@ const statusDescriptionMap: Record<string, string> = {
     'Stripeアカウント連携が完了し、決済と振込機能をすべて利用できます。ダッシュボードで取引状況や残高を確認できます。',
   deauthorized:
     'Stripeとの連携が解除されています。売上を受け取るには「Stripeと連携する」ボタンから再接続を行ってください。',
-};
+}
 
 export default function StripeConnectStatus() {
-  const { salonId } = useSalon();
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const { salonId } = useSalon()
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
   // Stripe Connect アカウント情報を取得
   const connectAccount = useQuery(
     api.salon.core.query.getConnectAccountDetails,
     salonId ? { salonId } : 'skip'
-  );
+  )
 
   // API呼び出しの共通処理
   const fetchApi = async <T,>(
     url: string,
     data: Record<string, unknown>
   ): Promise<{ data?: T; error?: string }> => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      });
+      })
 
-      const responseData = await response.json();
+      const responseData = await response.json()
 
       if (!response.ok) {
-        const errorMessage = responseData.error || `エラーが発生しました (${response.status})`;
-        toast.error(errorMessage);
-        return { error: errorMessage };
+        const errorMessage = responseData.error || `エラーが発生しました (${response.status})`
+        toast.error(errorMessage)
+        return { error: errorMessage }
       }
 
-      return { data: responseData };
+      return { data: responseData }
     } catch (error) {
-      return { error: handleErrorToMsg(error) };
+      return { error: handleErrorToMsg(error) }
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   // URLからクエリパラメータを取得
   useEffect(() => {
-    const query = new URLSearchParams(window.location.search);
-    const success = query.get('success');
-    const refresh = query.get('refresh');
+    const query = new URLSearchParams(window.location.search)
+    const success = query.get('success')
+    const refresh = query.get('refresh')
 
     if (success === 'true') {
-      toast.success('Stripeアカウントの連携が完了しました');
+      toast.success('Stripeアカウントの連携が完了しました')
       // クエリパラメータを削除
-      window.history.replaceState({}, document.title, window.location.pathname);
+      window.history.replaceState({}, document.title, window.location.pathname)
     } else if (refresh === 'true') {
-      toast.info('Stripeアカウントの設定を続けてください');
+      toast.info('Stripeアカウントの設定を続けてください')
       // クエリパラメータを削除
-      window.history.replaceState({}, document.title, window.location.pathname);
+      window.history.replaceState({}, document.title, window.location.pathname)
     }
-  }, []);
+  }, [])
 
   // Stripe Connectアカウントを作成する処理
   const handleConnectStripe = async () => {
-    if (!salonId) return;
+    if (!salonId) return
     try {
       const { data } = await fetchApi<{ account: string; accountLink: string }>(
         '/api/stripe/connect',
         { salonId }
-      );
+      )
 
       if (data && data.account && data.accountLink) {
-        window.location.href = data.accountLink;
+        window.location.href = data.accountLink
       }
     } catch (error) {
-      toast.error(handleErrorToMsg(error));
+      toast.error(handleErrorToMsg(error))
     }
-  };
+  }
 
   // Stripe Dashboardへのリンクを生成
   const handleViewDashboard = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    if (!salonId || !connectAccount?.accountId) return;
+    e.preventDefault()
+    setIsLoading(true)
+    if (!salonId || !connectAccount?.accountId) return
 
     try {
       const { data } = await fetchApi<{ url: string; isOnboarding: boolean }>(
@@ -141,31 +141,31 @@ export default function StripeConnectStatus() {
           salonId,
           accountId: connectAccount.accountId,
         }
-      );
+      )
 
       if (data?.url) {
         if (data.isOnboarding) {
-          toast.info('Stripeアカウントの設定を完了してください');
+          toast.info('Stripeアカウントの設定を完了してください')
         }
-        router.push(data.url);
+        router.push(data.url)
       }
     } catch (error) {
-      toast.error(handleErrorToMsg(error));
+      toast.error(handleErrorToMsg(error))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   if (!salonId) {
-    return <Skeleton className="h-60 w-full" />;
+    return <Skeleton className="h-60 w-full" />
   }
 
   if (connectAccount === undefined) {
-    return <Loading />;
+    return <Loading />
   }
 
-  const status = connectAccount?.status || 'not_connected';
-  const isConnected = status !== 'not_connected' && status !== 'deauthorized';
+  const status = connectAccount?.status || 'not_connected'
+  const isConnected = status !== 'not_connected' && status !== 'deauthorized'
 
   return (
     <div>
@@ -178,7 +178,7 @@ export default function StripeConnectStatus() {
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-start items-start md:items-center gap-2 my-6">
+      {/* <div className="flex flex-col md:flex-row justify-start items-start md:items-center gap-2 my-6">
         {isConnected && (
           <Button
             onClick={handleViewDashboard}
@@ -202,7 +202,7 @@ export default function StripeConnectStatus() {
             )}
           </Button>
         )}
-      </div>
+      </div> */}
 
       <Alert className={`${statusColorMap[status]} mb-4`}>
         <AlertTitle className=" text-sm font-medium mb-2">
@@ -217,13 +217,13 @@ export default function StripeConnectStatus() {
 
       {(status === 'pending' || status === 'incomplete' || status === 'restricted') && (
         <motion.div
-          className="mt-4 rounded-lg bg-muted p-4"
+          className="mt-4 rounded-lg bg-secondary p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <h3 className="mb-2 font-medium flex items-center">
-            <RefreshCw className="mr-2 h-4 w-4 text-link" />
+          <h3 className="mb-2 font-bold flex items-center">
+            <RefreshCw className="mr-2 h-4 w-4 text-active" />
             {status === 'pending'
               ? 'Stripeアカウント設定の完了が必要です'
               : status === 'incomplete'
@@ -234,7 +234,7 @@ export default function StripeConnectStatus() {
           {status === 'pending' && (
             <div className="space-y-3 mt-3 leading-6">
               <div className="flex items-start gap-2">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-link text-xs font-medium text-link">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-link-foreground text-xs font-medium text-link-foreground">
                   1
                 </div>
                 <div>
@@ -245,7 +245,7 @@ export default function StripeConnectStatus() {
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-link text-xs font-medium text-link">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-link-foreground text-xs font-medium text-link-foreground">
                   2
                 </div>
                 <div>
@@ -256,7 +256,7 @@ export default function StripeConnectStatus() {
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-link text-xs font-medium text-link">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-link-foreground text-xs font-medium text-link-foreground">
                   3
                 </div>
                 <div>
@@ -294,18 +294,20 @@ export default function StripeConnectStatus() {
           )}
 
           <div className="mt-4">
-            <Button variant="outline" size="sm" className="text-xs" onClick={handleViewDashboard}>
-              <ArrowRight className="mr-1 h-3 w-3" />
+            <Button size="sm" className="text-xs" onClick={handleViewDashboard}>
               Stripeで設定を続ける
+              <ChevronRight className="mr-1 h-3 w-3" />
             </Button>
           </div>
         </motion.div>
       )}
 
-      <div className="bg-muted px-6 py-4 rounded-md">
+      <div className="bg-muted px-6 py-4 rounded-md mt-6">
         <div className="w-full flex flex-col-reverse sm:flex-row justify-between gap-3">
           <div className="text-xs text-muted-foreground">
-            <p className="text-sm font-bold">決済手数料: 4% + 40円/件</p>
+            <p className="text-sm font-semibold mb-1 text-muted-foreground">
+              決済手数料: 4% + 40円/件
+            </p>
             <div className="flex items-center gap-2 mt-1">
               <p className="text-xs">※ 売り上げは毎月25日に設定した銀行口座へ振込まれます。</p>
             </div>
@@ -321,7 +323,7 @@ export default function StripeConnectStatus() {
                     handleConnectStripe()
                   }
                 }}
-                className="block mt-2 text-xs text-link hover:underline"
+                className="block mt-2 text-xs text-link-foreground underline"
               >
                 アカウントを再作成する
               </button>
@@ -335,7 +337,7 @@ export default function StripeConnectStatus() {
               className={`${
                 isConnected && status !== 'deauthorized'
                   ? 'bg-muted hover:bg-muted'
-                  : 'bg-link hover:bg-link'
+                  : 'bg-button hover:bg-button-foreground'
               }`}
             >
               {isLoading ? (
