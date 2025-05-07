@@ -116,7 +116,7 @@ onConfirmAction,
 
   // 請求書の品目をメモ化
   const invoiceLines = useMemo(() => {
-    if (!previewData) return [];
+    if (!previewData) return []
 
     return previewData.previewInvoice.lines.data.map((item, index) => (
       <div key={index} className="flex justify-between text-sm">
@@ -124,47 +124,47 @@ onConfirmAction,
         <span
           className={cn(
             'text-right ml-2',
-            item.amount < 0 ? 'text-green-600' : item.amount === 0 ? 'text-slate-500' : ''
+            item.amount < 0 ? 'text-active' : item.amount === 0 ? 'text-muted-foreground' : ''
           )}
         >
           {item.amount < 0 ? '-' : ''}
           {item.amount === 0 ? '¥0' : `¥${Math.abs(item.amount).toLocaleString()}`}
         </span>
       </div>
-    ));
-  }, [previewData]);
+    ))
+  }, [previewData])
 
   // 合計金額をメモ化
   const totalAmount = useMemo(() => {
-    if (!previewData) return '0';
+    if (!previewData) return '0'
 
     return previewData.status && previewData.status === 'trialing'
       ? 0
-      : previewData.previewInvoice.total.toLocaleString();
-  }, [previewData]);
+      : previewData.previewInvoice.total.toLocaleString()
+  }, [previewData])
 
   // 次回の支払い情報をメモ化
   const nextPaymentInfo = useMemo(() => {
-    if (!previewData) return null;
+    if (!previewData) return null
 
     if (!previewData.previewInvoice.lines.data.some((item) => item.type === 'subscription')) {
-      return null;
+      return null
     }
 
     // 次回のサブスクリプション料金を取得
     const subItem = previewData.previewInvoice.lines.data.find(
       (item) => !item.proration && item.type === 'subscription'
-    );
+    )
 
     // ユーザーのJSONデータ構造に合わせて、金額を取得する方法
-    let amount = 0;
+    let amount = 0
     if (subItem?.plan) {
       // @ts-expect-error 年の払いの場合planのamountに価格が入っているので
-      amount = subItem?.plan?.amount || 0;
+      amount = subItem?.plan?.amount || 0
     }
 
-    return `次回の定期支払い: ¥${amount.toLocaleString()}/${billingPeriod === 'monthly' ? '月' : '年'}`;
-  }, [previewData, billingPeriod]);
+    return `次回の定期支払い: ¥${amount.toLocaleString()}/${billingPeriod === 'monthly' ? '月' : '年'}`
+  }, [previewData, billingPeriod])
 
   // ボタンのコンテンツをメモ化
   const confirmButtonContent = useMemo(() => {
@@ -174,36 +174,34 @@ onConfirmAction,
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           処理中...
         </>
-      );
+      )
     }
-    return '変更を確定する';
-  }, [isSubmitting]);
+    return '変更を確定する'
+  }, [isSubmitting])
 
-  if (!previewData || !salon) return null;
-
-  console.log(JSON.stringify(previewData));
+  if (!previewData || !salon) return null
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl font-bold bg-primary bg-clip-text text-transparent">
             プラン変更の確認
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 my-4">
           {/* プラン変更の概要 */}
-          <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
-            <h3 className="font-medium mb-2">サブスクリプション変更内容</h3>
+          <div className="p-4 rounded-lg bg-muted">
+            <h3 className="font-medium text-xs  mb-2">サブスクリプション変更内容</h3>
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-sm text-slate-500">現在のプラン</div>
+                <div className="text-sm text-muted-foreground">現在のプラン</div>
                 <div className="font-medium">{currentPlanStr}</div>
               </div>
-              <div className="text-slate-400">→</div>
+              <div className="text-muted-foreground">→</div>
               <div>
-                <div className="text-sm text-slate-500">新しいプラン</div>
+                <div className="text-sm text-muted-foreground">新しいプラン</div>
                 <div className="font-medium">{updatePlanIdStr}</div>
               </div>
             </div>
@@ -211,7 +209,7 @@ onConfirmAction,
 
           {/* 料金変更の詳細 */}
           <div className="border rounded-lg overflow-hidden">
-            <div className="bg-slate-100 dark:bg-slate-700 p-3 font-medium">料金の詳細</div>
+            <div className="bg-background p-3 font-medium">料金の詳細</div>
             <div className="p-4 space-y-3">
               {invoiceLines}
 
@@ -221,16 +219,18 @@ onConfirmAction,
               </div>
 
               {/* 次回のお支払い情報 */}
-              {nextPaymentInfo && <div className="text-xs text-slate-500">{nextPaymentInfo}</div>}
+              {nextPaymentInfo && (
+                <div className="text-xs text-muted-foreground">{nextPaymentInfo}</div>
+              )}
             </div>
           </div>
 
           {/* 注意事項 */}
-          <div className="text-sm text-slate-600 dark:text-slate-400">
+          <div className="text-sm text-muted-foreground">
             <p>※ 日割り計算により、既に支払い済みの金額から調整されます。</p>
             <p>※ プラン変更は即時に適用されます。</p>
             {previewData.status === 'trialing' && (
-              <p className="text-green-600 font-semibold mt-1">
+              <p className="text-active font-semibold mt-1">
                 ※ 現在トライアル期間中のため、プラン変更による追加料金は発生しません。
               </p>
             )}
@@ -241,15 +241,11 @@ onConfirmAction,
           <Button variant="outline" className="flex-1" onClick={handleCancel}>
             キャンセル
           </Button>
-          <Button
-            className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-            onClick={handleConfirm}
-            disabled={isSubmitting}
-          >
+          <Button className="flex-1 " onClick={handleConfirm} disabled={isSubmitting}>
             {confirmButtonContent}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
