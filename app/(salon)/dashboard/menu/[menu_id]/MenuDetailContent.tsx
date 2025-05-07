@@ -33,6 +33,7 @@ import { toast } from 'sonner';
 import { handleErrorToMsg } from '@/lib/error';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { convertGender } from '@/services/convex/shared/types/common'
 
 // ラベル定義をコンポーネント外に移動し、再レンダリングの影響を受けないようにする
 const labels = {
@@ -51,72 +52,68 @@ const labels = {
     cash: '店舗決済',
     all: '店舗決済・オンライン決済',
   },
-};
+}
 
 interface MenuDetailContentProps {
-  menu: Doc<'menu'> | null;
+  menu: Doc<'menu'> | null
 }
 
 export function MenuDetailContent({ menu }: MenuDetailContentProps) {
-  const router = useRouter();
-  const [showFullDescription, setShowFullDescription] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const deleteMenu = useMutation(api.menu.core.mutation.kill);
+  const router = useRouter()
+  const [showFullDescription, setShowFullDescription] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const deleteMenu = useMutation(api.menu.core.mutation.kill)
 
   // メモ化によるパフォーマンス最適化
   const formattedPrice = useMemo(() => {
-    if (!menu) return '';
+    if (!menu) return ''
     return new Intl.NumberFormat('ja-JP', {
       style: 'currency',
       currency: 'JPY',
-    }).format(menu.unitPrice || 0);
-  }, [menu]);
+    }).format(menu.unitPrice || 0)
+  }, [menu])
 
   const formattedSalePrice = useMemo(() => {
-    if (!menu || !menu.salePrice) return null;
+    if (!menu || !menu.salePrice) return null
     return new Intl.NumberFormat('ja-JP', {
       style: 'currency',
       currency: 'JPY',
-    }).format(menu.salePrice || 0);
-  }, [menu]);
-
-  const getGenderLabel = (gender: string): string => {
-    return labels.gender[gender as keyof typeof labels.gender] || gender;
-  };
+    }).format(menu.salePrice || 0)
+  }, [menu])
 
   const getTargetTypeLabel = (type: string): string => {
-    return labels.targetType[type as keyof typeof labels.targetType] || type;
-  };
+    return labels.targetType[type as keyof typeof labels.targetType] || type
+  }
 
   const getPaymentMethodLabel = (method: string): string => {
-    return labels.paymentMethod[method as keyof typeof labels.paymentMethod] || method;
-  };
+    return labels.paymentMethod[method as keyof typeof labels.paymentMethod] || method
+  }
 
   // 説明文の処理
   const shortenedDescription = useMemo(() => {
-    if (!menu?.description) return '';
-    if (menu.description.length <= 150 || showFullDescription) return menu.description;
-    return `${menu.description.substring(0, 150)}...`;
-  }, [menu, showFullDescription]);
+    if (!menu?.description) return ''
+    if (menu.description.length <= 150 || showFullDescription) return menu.description
+    return `${menu.description.substring(0, 150)}...`
+  }, [menu, showFullDescription])
 
   const toggleDescription = () => {
-    setShowFullDescription(!showFullDescription);
-  };
+    setShowFullDescription(!showFullDescription)
+  }
 
   const handleDeleteMenu = async () => {
     if (!menu) {
-      toast.error('メニューが見つかりません');
-      return;
+      toast.error('メニューが見つかりません')
+      return
     }
 
     try {
-      await deleteMenu({ menuId: menu._id });
-      router.push('/dashboard/menu');
-      toast.success('メニューを削除しました');
+      await deleteMenu({ menuId: menu._id })
+      router.push('/dashboard/menu')
+      toast.success('メニューを削除しました')
     } catch (error) {
-      toast.error(handleErrorToMsg(error));
+      toast.error(handleErrorToMsg(error))
     }
-  };
+  }
 
   if (!menu) {
     return (
@@ -131,7 +128,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
   return (
@@ -263,8 +260,11 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                     <Users className="w-5 h-5 mt-1 mr-3 text-purple-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">対象</p>
+
                       <p className="text-base text-gray-900">
-                        {getGenderLabel(menu.targetGender || '')}
+                        {menu.targetGender && menu.targetGender !== 'unselected'
+                          ? convertGender(menu.targetGender as 'unselected' | 'male' | 'female')
+                          : '全ての性別'}
                       </p>
                     </div>
                   </div>
@@ -384,5 +384,5 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
         onOpenChange={setIsDeleteDialogOpen}
       />
     </div>
-  );
+  )
 }
