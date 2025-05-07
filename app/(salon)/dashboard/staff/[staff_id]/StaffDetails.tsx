@@ -145,15 +145,15 @@ export default function StaffDetails() {
           <div className="p-0">
             <div className="flex flex-col md:flex-row">
               {/* サムネイル部分 - スタイル改良 */}
-              <div className="relative bg-slate-50 rounded-lg p-6 flex items-center justify-center md:w-1/3">
-                <div className="aspect-square flex items-center justify-center w-48 h-48 mx-auto overflow-hidden">
+              <div className="relative bg-muted rounded-lg p-6 flex items-center justify-center md:w-1/3">
+                <div className="flex items-center justify-center mx-auto overflow-hidden">
                   {staffAllData.imgPath ? (
                     <Image
                       src={staffAllData.imgPath}
                       alt={staffAllData.name || ''}
                       width={280}
                       height={280}
-                      className="object-cover w-full h-full"
+                      className="object-cover rounded-md"
                     />
                   ) : (
                     <div className="text-3xl font-semibold text-primary/70 flex items-center justify-center h-full w-full">
@@ -167,14 +167,14 @@ export default function StaffDetails() {
               <div className="p-6 md:w-2/3">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-800">{staffAllData.name}</h2>
+                    <h2 className="text-2xl font-bold text-primary">{staffAllData.name}</h2>
                     <div className="flex items-center gap-4 mt-2">
                       <Badge
                         variant={staffAllData.isActive ? 'outline' : 'destructive'}
                         className={`transition-all duration-300 ${
                           staffAllData.isActive
-                            ? 'border-green-500 text-green-600 hover:border-green-700'
-                            : 'border-red-500 text-red-600 hover:border-red-700'
+                            ? 'border-active text-active hover:border-active-foreground'
+                            : 'border-destructive text-destructive hover:border-destructive-foreground'
                         }`}
                       >
                         {staffAllData.isActive ? 'アクティブ' : '非アクティブ'}
@@ -185,14 +185,18 @@ export default function StaffDetails() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 text-sm text-slate-700">
+                  <div className="flex flex-col gap-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-slate-500" />
-                      <span>{getGenderText(staffAllData.gender || '未選択')}</span>
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-primary">
+                        {getGenderText(staffAllData.gender || '未選択')}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-slate-500" />
-                      <span>{staffAllData.age ? `${staffAllData.age}歳` : '年齢未設定'}</span>
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-primary">
+                        {staffAllData.age ? `${staffAllData.age}歳` : '年齢未設定'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -209,8 +213,8 @@ export default function StaffDetails() {
                   </div>
                 )}
 
-                <span className="text-xs text-slate-500">スタッフ紹介</span>
-                <p className=" text-slate-600  mb-5  border-slate-100">
+                <span className="text-xs text-muted-foreground">スタッフ紹介</span>
+                <p className=" text-primary tracking-wide leading-6  mb-5  border-border">
                   {staffAllData.description || '説明がありません'}
                 </p>
 
@@ -224,52 +228,54 @@ export default function StaffDetails() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
                   {/* 指名料金 */}
-                  <div className="flex justify-between bg-gradient-to-br from-purple-50 to-white p-3 rounded-lg border border-purple-100 transition-shadow">
+                  <div className="flex justify-between  p-3 rounded-lg border border-palette-1-foreground bg-palette-1 transition-shadow">
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-purple-700">
+                      <div className="flex items-center gap-2 text-palette-1-foreground">
                         <Tag className="h-4 w-4" />
-                        <p className="text-xs font-medium">指名料金</p>
+                        <p className="text-xs font-bold">指名料金</p>
                       </div>
-                      <p className="font-bold text-lg text-purple-900">
+                      <p className="font-bold text-lg text-palette-1-foreground">
                         ¥{staffAllData.extraCharge || 0}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500 max-w-xs">
+                      <p className="mt-1 text-xs text-palette-1-foreground max-w-xs">
                         指名料金は予約時のサービス料金に影響します。
                       </p>
                     </div>
                   </div>
 
                   {/* 優先度 */}
-                  <div className="flex justify-between bg-gradient-to-br from-amber-50 to-white p-3 rounded-lg border border-amber-100 transition-shadow">
+                  <div className="flex justify-between  p-3 rounded-lg border border-palette-2-foreground bg-palette-2 transition-shadow">
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-amber-700">
+                      <div className="flex items-center gap-2 text-palette-2-foreground">
                         <Star className="h-4 w-4" />
-                        <p className="text-xs font-medium">優先度</p>
+                        <p className="text-xs font-bold">優先度</p>
                       </div>
-                      <p className="font-bold text-lg text-amber-900">
+                      <p className="font-bold text-lg text-palette-2-foreground">
                         {staffAllData.priority || 0}
-                        <span className="text-xs text-muted-foreground">/{MAX_PRIORITY}</span>
+                        <span className="text-xs text-palette-2-foreground">/{MAX_PRIORITY}</span>
                       </p>
-                      <p className="mt-1 text-xs text-slate-500 max-w-xs">
+                      <p className="mt-1 text-xs text-palette-2-foreground max-w-xs">
                         数値が大きいほど予約画面などで上位に表示されます。
                       </p>
                     </div>
                   </div>
 
                   {/* メールアドレス */}
-                  <div className="flex justify-between bg-gradient-to-br from-blue-50 to-white p-3 rounded-lg border border-blue-100 transition-shadow">
+                  <div className="flex justify-between  p-3 rounded-lg border border-palette-3-foreground bg-palette-3 transition-shadow">
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-blue-700">
+                      <div className="flex items-center gap-2 text-palette-3-foreground">
                         <Mail className="h-4 w-4" />
-                        <p className="text-xs font-medium">メールアドレス</p>
+                        <p className="text-xs font-bold">メールアドレス</p>
                       </div>
-                      <p className="font-bold text-sm text-blue-900 truncate max-w-[180px]">
+                      <p className="font-bold text-sm text-palette-3-foreground truncate max-w-[180px]">
                         {staffAllData.email || '未設定'}
                       </p>
                       <div className="flex flex-col gap-1">
-                        <p className="text-xs scale-75 -ml-6 text-slate-500">ピンコード</p>
+                        <p className="text-xs scale-75 -ml-6 text-palette-3-foreground">
+                          ピンコード
+                        </p>
                         <div className="flex items-center -mt-3">
-                          <p className="text-slate-500 text-sm w-20 tracking-wider font-bold">
+                          <p className="text-palette-3-foreground text-sm w-20 tracking-wider font-bold">
                             {showPinCode ? decryptedPinCode : '*** ***'}
                           </p>
 
@@ -301,7 +307,7 @@ export default function StaffDetails() {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="h-4 w-4 text-blue-400 self-start cursor-help" />
+                          <Info className="h-4 w-4 text-link-foreground self-start cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent side="bottom">
                           <p className="text-xs max-w-xs">
@@ -315,8 +321,8 @@ export default function StaffDetails() {
 
                 {/* 対応外メニュー表示 */}
                 {exclusionMenus && exclusionMenus.length > 0 && (
-                  <div className="mt-4 p-3 bg-orange-50 rounded-md border border-orange-100">
-                    <h3 className="text-sm font-semibold text-orange-800 mb-2 flex items-center gap-2">
+                  <div className="mt-4 p-3 bg-muted rounded-md border border-border">
+                    <h3 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
                       <Tag className="h-4 w-4" />
                       対応外メニュー
                     </h3>
@@ -324,7 +330,7 @@ export default function StaffDetails() {
                       {exclusionMenus.map((menu) => (
                         <li
                           key={menu.menuId.slice(0, 12)}
-                          className="bg-white border border-orange-200 p-1 px-2 text-xs text-orange-700 rounded-md shadow-sm"
+                          className="bg-background border border-border p-1 px-2 text-xs text-muted-foreground rounded-md shadow-sm"
                         >
                           {menu.name}
                         </li>
@@ -337,7 +343,7 @@ export default function StaffDetails() {
           </div>
 
           <div className=" py-3 flex justify-between">
-            <div className="text-xs text-slate-500 tracking-wider">
+            <div className="text-xs text-muted-foreground tracking-wider">
               <span>作成日: </span>
               {new Date(staffAllData._creationTime).toLocaleDateString()}
             </div>
