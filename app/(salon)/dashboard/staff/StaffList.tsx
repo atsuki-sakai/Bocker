@@ -34,49 +34,49 @@ export default function StaffList() {
     <div className="mt-2 flow-root">
       <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8 px-4 md:px-0">
         <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-          <div className="overflow-hidden border border-gray-200 rounded-lg">
-            <table className="min-w-full divide-y divide-gray-300">
-              <thead className="bg-gray-50 text-nowrap px-2">
+          <div className="overflow-hidden border border-border rounded-lg">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted text-nowrap px-2">
                 <tr>
                   <th
                     scope="col"
-                    className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                    className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
                   >
                     ステータス
                   </th>
                   <th
                     scope="col"
-                    className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                    className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
                   >
                     画像
                   </th>
                   <th
                     scope="col"
-                    className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                    className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
                   >
                     名前
                   </th>
                   <th
                     scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    className="px-3 py-3.5 text-left text-sm font-semibold text-muted-foreground"
                   >
                     年齢
                   </th>
                   <th
                     scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    className="px-3 py-3.5 text-left text-sm font-semibold text-muted-foreground"
                   >
                     メールアドレス
                   </th>
                   <th
                     scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    className="px-3 py-3.5 text-left text-sm font-semibold text-muted-foreground"
                   >
                     性別
                   </th>
                   <th
                     scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    className="px-3 py-3.5 text-left text-sm font-semibold text-muted-foreground"
                   >
                     タグ
                   </th>
@@ -88,24 +88,27 @@ export default function StaffList() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 bg-white text-nowrap">
+              <tbody className="divide-y divide-border bg-background text-nowrap">
                 {staffs && staffs.length > 0 ? (
                   staffs.map((staff: Doc<'staff'>, index: number) => (
                     <tr key={index}>
-                      <td className="py-4 pr-3 pl-4 text-xs font-medium whitespace-nowrap text-gray-900 sm:pl-6">
+                      <td className="py-4 pr-3 pl-4 text-xs font-medium whitespace-nowrap text-muted-foreground sm:pl-6">
                         {staff.isActive ? (
-                          <Badge variant="outline" className="bg-green-600 text-white">
+                          <Badge variant="outline" className="bg-active text-active-foreground">
                             有効
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-red-500 text-white">
+                          <Badge
+                            variant="outline"
+                            className="bg-destructive text-destructive-foreground"
+                          >
                             無効
                           </Badge>
                         )}
                       </td>
-                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                         {staff.imgPath ? (
-                          <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden">
+                          <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center overflow-hidden">
                             <Image
                               src={staff.imgPath}
                               alt={staff.name ?? ''}
@@ -114,30 +117,30 @@ export default function StaffList() {
                             />
                           </div>
                         ) : (
-                          <div className="w-10 h-10  bg-gray-200 rounded-full text-center flex items-center justify-center ">
-                            <span className="uppercase font-bold text-gray-500">
+                          <div className="w-10 h-10  bg-muted rounded-full text-center flex items-center justify-center ">
+                            <span className="uppercase font-bold text-muted-foreground">
                               {staff.name?.charAt(0)}
                             </span>
                           </div>
                         )}
                       </td>
-                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                         {staff.name ?? '未設定'}
                       </td>
-                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                         {staff.age ? `${staff.age}歳` : '未設定 '}
                       </td>
-                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                         {staff.email ?? '未設定'}
                       </td>
-                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                         {staff.gender === 'unselected'
                           ? '未選択'
                           : staff.gender === 'male'
                             ? '男性'
                             : '女性'}
                       </td>
-                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500 flex flex-wrap gap-2">
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground flex flex-wrap gap-2">
                         {staff.tags?.map((tag: string, index: number) => (
                           <Badge variant="default" key={index}>
                             {tag}
@@ -186,5 +189,5 @@ export default function StaffList() {
         </div>
       </div>
     </div>
-  );
+  )
 }
