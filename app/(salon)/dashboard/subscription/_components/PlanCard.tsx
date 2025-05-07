@@ -135,10 +135,7 @@ interface PlanCardProps {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
                 >
-                  <Badge
-                    variant="default"
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white"
-                  >
+                  <Badge variant="default" className="bg-active text-primary">
                     現在のプラン
                   </Badge>
                 </motion.div>
@@ -151,17 +148,19 @@ interface PlanCardProps {
             <div className="mb-4">
               <div className="flex items-baseline">
                 <span className="text-3xl font-bold">¥{price.toLocaleString()}</span>
-                <span className="text-sm text-slate-500 ml-1">
+                <span className="text-sm text-muted-foreground ml-1">
                   /{billingPeriod === 'monthly' ? '月' : '年'}
                 </span>
               </div>
               {billingPeriod === 'yearly' && savingPercent && (
-                <div className="text-xs text-green-500 font-medium mt-1">
+                <div className="text-xs text-active font-medium mt-1">
                   年間契約で{savingPercent}%お得
                 </div>
               )}
               {billingPeriod === 'yearly' && (
-                <div className="text-xs text-slate-500 mt-1">(月あたり ¥{monthlyEquivalent})</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  (月あたり ¥{monthlyEquivalent})
+                </div>
               )}
             </div>
 
@@ -179,7 +178,7 @@ interface PlanCardProps {
                   variants={itemVariants}
                   className="flex items-start gap-2 text-sm"
                 >
-                  <span className="mt-0.5 text-green-500 flex-shrink-0">
+                  <span className="mt-0.5 text-active flex-shrink-0">
                     <Check className="h-4 w-4" />
                   </span>
                   <span>{feature}</span>
@@ -202,12 +201,12 @@ interface PlanCardProps {
             />
           </CardContent>
 
-          <CardFooter className="pt-2 pb-4 px-6 text-xs text-slate-500 text-center">
+          <CardFooter className="pt-2 pb-4 px-6 text-xs  text-center">
             <p>※30日間の無料トライアル付き</p>
           </CardFooter>
         </Card>
       </motion.div>
-    );
+    )
   }
 
 
