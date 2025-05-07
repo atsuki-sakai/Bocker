@@ -106,7 +106,7 @@ export default function ExclusionMenu({
 
   if (filteredMenus.length === 0)
     return (
-      <div className="text-center py-12 text-gray-500 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700 rounded-md border border-slate-200">
+      <div className="text-center py-12 bg-muted text-muted-foreground rounded-md border">
         登録されているメニューがありません。
       </div>
     )
