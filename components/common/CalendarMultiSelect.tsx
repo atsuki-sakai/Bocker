@@ -129,7 +129,7 @@ function CalendarMultiSelect({
   return (
     <div className="flex flex-col sm:flex-row gap-5">
       {/* カレンダーコンポーネント */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg p-1 border dark:border-slate-700">
+      <div className="bg-background rounded-lg p-1 border border-border">
         {/* Shadcn標準のカレンダーコンポーネントを使用 - カスタムDayコンポーネントは不要 */}
         <Calendar
           disabled={disabled}
@@ -143,10 +143,10 @@ function CalendarMultiSelect({
       </div>
 
       {/* 選択された日付一覧 */}
-      <div className="border rounded-md p-4 w-full bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800/50">
+      <div className="border rounded-md p-4 w-full bg-background border-border">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-medium text-xs sm:text-sm text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
-            <Badge className="ml-1 text-nowrap bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700">
+          <h3 className="font-medium text-xs sm:text-sm text-primary flex items-center gap-2">
+            <Badge className="ml-1 text-nowrap bg-muted text-muted-foreground border-muted">
               {selectedDates.length}件
             </Badge>{' '}
             選択済みの日
@@ -159,7 +159,7 @@ function CalendarMultiSelect({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 text-xs text-indigo-600 dark:text-indigo-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                    className="h-7 text-xs text-destructive hover:bg-destructive hover:text-white"
                     onClick={clearAllDates}
                   >
                     全て削除
@@ -184,7 +184,7 @@ function CalendarMultiSelect({
               {/* 月ごとのグループ表示 */}
               {groupedByMonth.map(([month, dates]) => (
                 <div key={month} className="space-y-2">
-                  <h4 className="text-xs font-medium text-indigo-500 dark:text-indigo-400 border-b border-indigo-200 dark:border-indigo-800/70 pb-1 mb-2">
+                  <h4 className="text-xs font-medium text-primary border-b border-border pb-1 mb-2">
                     {month}
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -251,9 +251,9 @@ function CalendarMultiSelect({
               variants={emptyStateVariants}
               initial="hidden"
               animate="visible"
-              className="flex flex-col items-center justify-center h-full py-8 text-center text-gray-500 dark:text-gray-400"
+              className="flex flex-col items-center justify-center h-full py-8 text-center text-muted-foreground"
             >
-              <CalendarCheck className="w-12 h-12 mb-3 text-indigo-300 dark:text-indigo-700" />
+              <CalendarCheck className="w-12 h-12 mb-3 text-muted-foreground" />
               <p className="text-sm font-medium mb-1">まだ休業日が選択されていません</p>
               <p className="text-xs max-w-xs">
                 左側のカレンダーから休業日として設定したい日付を選択してください
@@ -263,7 +263,7 @@ function CalendarMultiSelect({
         </ScrollArea>
       </div>
     </div>
-  );
+  )
 }
 
 // パフォーマンス最適化のためメモ化しエクスポート
