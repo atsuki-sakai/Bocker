@@ -85,13 +85,13 @@ const DAYS_OF_WEEK = [
     id: 'saturday',
     week: '土曜日',
     shortWeek: '土',
-    color: 'bg-link-foreground border-link text-link',
+    color: 'bg-link border-link-foreground text-link-foreground',
   },
   {
     id: 'sunday',
     week: '日曜日',
     shortWeek: '日',
-    color: 'bg-link-foreground border-link text-link',
+    color: 'bg-link border-link-foreground text-link-foreground',
   },
 ]
 
