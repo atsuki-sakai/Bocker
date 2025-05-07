@@ -213,7 +213,7 @@ export default function PointTabs() {
                     <div
                       className={`flex items-center justify-between p-3 rounded-md ${
                         watchedIsFixedPoint
-                          ? 'bg-link-foreground text-link'
+                          ? 'bg-link text-link-foreground'
                           : 'bg-active-foreground text-active'
                       }`}
                     >
@@ -349,13 +349,19 @@ export default function PointTabs() {
                         <p className="text-sm pt-4 w-full text-primary text-end">
                           本日付与された場合、有効期限は{' '}
                           <span className="font-bold">
-                            {new Date(
-                              Date.now() + watchedExpirationDays * 24 * 60 * 60 * 1000
-                            ).toLocaleDateString('ja-JP', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                            })}
+                            {watchedExpirationDays
+                              ? new Date(
+                                  Date.now() + watchedExpirationDays * 24 * 60 * 60 * 1000
+                                ).toLocaleDateString('ja-JP', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                })
+                              : new Date().toLocaleDateString('ja-JP', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                })}
                           </span>
                           です。
                         </p>
