@@ -62,6 +62,8 @@ html {
     --palette-4-foreground: oklch(0.4 0.1658 29.23);
     --palette-5: oklch(0.91 0.0449 273.05);
     --palette-5-foreground: oklch(0.31 0.1794 263.97);
+    --font-noto-sans-jp: var(--font-noto-sans-jp);
+    --font-klee-one: var(--font-klee-one);
   }
   
   .dark {

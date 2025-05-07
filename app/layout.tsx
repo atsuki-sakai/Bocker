@@ -6,12 +6,6 @@ import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { Klee_One, Noto_Sans_JP } from 'next/font/google'
 
-const kleeOne = Klee_One({
-  weight: ['400'],
-  subsets: ['latin', 'greek-ext', 'latin-ext', 'cyrillic'],
-  display: 'swap',
-  variable: '--font-klee-one',
-})
 
 // Noto Sans JP（日本語用）
 const notoJP = Noto_Sans_JP({
@@ -39,7 +33,7 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
-      <body className={` ${kleeOne.variable} ${notoJP.variable} antialiased`}>
+      <body className={` ${notoJP.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
