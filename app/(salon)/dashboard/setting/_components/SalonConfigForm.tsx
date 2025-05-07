@@ -10,25 +10,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { fileToBase64 } from '@/lib/utils';
 import { useZodForm } from '@/hooks/useZodForm';
-import { z } from 'zod';
-import { toast } from 'sonner';
-import { handleErrorToMsg } from '@/lib/error';
-import { FormField } from '@/components/common';
-import { compressAndConvertToWebP } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
-import {
-  Mail,
-  Phone,
-  MapPin,
-  FileText,
-  Info,
-  Save,
-  Image as ImageIcon,
-  Upload,
-  Building,
-  Settings,
-} from 'lucide-react';
-import { ZodTextField } from '@/components/common';
+import { Separator } from '@/components/ui/separator'
+import { z } from 'zod'
+import { toast } from 'sonner'
+import { handleErrorToMsg } from '@/lib/error'
+import { FormField } from '@/components/common'
+import { compressAndConvertToWebP } from '@/lib/utils'
+import { Loader2 } from 'lucide-react'
+import { Mail, Phone, MapPin, FileText, Info, Save, Upload, Building } from 'lucide-react'
+import { ZodTextField } from '@/components/common'
 
 const salonConfigFormSchema = z.object({
   salonId: z.string(),
@@ -50,19 +40,16 @@ const salonConfigFormSchema = z.object({
   address: z.string().max(200, '住所は200文字以内で入力してください').optional(), // 住所（入力された場合は最低1文字必要）
   reservationRules: z.string().max(2000, '予約ルールは2000文字以内で入力してください').optional(), // 予約ルール（入力された場合は最大500文字）
   description: z.string().max(2000, '説明は2000文字以内で入力してください').optional(), // 説明（入力された場合は最大500文字）
-});
+})
 
 export default function SalonConfigForm() {
-  const { salonId } = useSalon();
-  const [currentFile, setCurrentFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const salonConfig = useQuery(
-    api.salon.config.query.findBySalonId,
-    salonId ? { salonId } : 'skip'
-  );
-  const updateSalonConfig = useMutation(api.salon.config.mutation.upsert);
-  const deleteImage = useAction(api.storage.action.kill);
-  const uploadImage = useAction(api.storage.action.upload);
+  const { salonId } = useSalon()
+  const [currentFile, setCurrentFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const salonConfig = useQuery(api.salon.config.query.findBySalonId, salonId ? { salonId } : 'skip')
+  const updateSalonConfig = useMutation(api.salon.config.mutation.upsert)
+  const deleteImage = useAction(api.storage.action.kill)
+  const uploadImage = useAction(api.storage.action.upload)
 
   const {
     register,
@@ -71,93 +58,93 @@ export default function SalonConfigForm() {
     setValue,
     watch,
     formState: { errors, isSubmitting, isDirty },
-  } = useZodForm(salonConfigFormSchema);
+  } = useZodForm(salonConfigFormSchema)
 
-  const postalCode = watch('postalCode');
+  const postalCode = watch('postalCode')
 
   // 郵便番号から住所を取得する関数（useCallbackでメモ化）
   const fetchAddressByPostalCode = useCallback(
     async (code: string) => {
-      const digits = code.replace(/-/g, '');
-      if (!digits || digits.length !== 7) return;
+      const digits = code.replace(/-/g, '')
+      if (!digits || digits.length !== 7) return
 
       try {
-        const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${digits}`);
-        const data = await response.json();
+        const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${digits}`)
+        const data = await response.json()
 
         if (data.results && data.results.length > 0) {
-          const result = data.results[0];
-          const fullAddress = `${result.address1}${result.address2}${result.address3}`;
-          setValue('address', fullAddress, { shouldDirty: true });
+          const result = data.results[0]
+          const fullAddress = `${result.address1}${result.address2}${result.address3}`
+          setValue('address', fullAddress, { shouldDirty: true })
         } else if (data.message) {
-          toast.error(data.message);
+          toast.error(data.message)
         } else {
-          toast.error('住所が見つかりませんでした');
+          toast.error('住所が見つかりませんでした')
         }
       } catch (error) {
-        toast.error(handleErrorToMsg(error));
+        toast.error(handleErrorToMsg(error))
       }
     },
     [setValue]
-  );
+  )
 
   // 郵便番号が7桁になったら自動的に住所を検索する
   useEffect(() => {
     if (postalCode) {
-      fetchAddressByPostalCode(postalCode);
+      fetchAddressByPostalCode(postalCode)
     }
-  }, [postalCode, fetchAddressByPostalCode]);
+  }, [postalCode, fetchAddressByPostalCode])
 
   // 画像アップロード処理（useCallbackでメモ化）
   const handleSaveImg = useCallback(
     async (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      if (!currentFile || !salonId) return;
+      e.preventDefault()
+      if (!currentFile || !salonId) return
 
       try {
-        setIsUploading(true);
+        setIsUploading(true)
 
         if (salonConfig?.imgPath) {
-          await deleteImage({ imgUrl: salonConfig.imgPath });
+          await deleteImage({ imgUrl: salonConfig.imgPath })
         }
 
         // 画像を圧縮してWebP形式に変換
-        const processedFile = await compressAndConvertToWebP(currentFile);
+        const processedFile = await compressAndConvertToWebP(currentFile)
 
-        const base64Data = await fileToBase64(processedFile);
-        const filePath = `${Date.now()}-${processedFile.name}`;
+        const base64Data = await fileToBase64(processedFile)
+        const filePath = `${Date.now()}-${processedFile.name}`
 
         const data = await uploadImage({
           directory: 'salon',
           base64Data,
           filePath,
           contentType: processedFile.type,
-        });
+        })
 
         if (data && 'publicUrl' in data) {
           // サロン設定の画像パスを更新
           await updateSalonConfig({
             salonId,
             imgPath: data.publicUrl,
-          });
+          })
 
           // アップロード完了したらファイル選択をクリア
-          setCurrentFile(null);
-          toast.success('画像を保存しました');
+          setCurrentFile(null)
+          toast.success('画像を保存しました')
         }
       } catch (error) {
-        toast.error(handleErrorToMsg(error));
+        toast.error(handleErrorToMsg(error))
       } finally {
-        setIsUploading(false);
+        setIsUploading(false)
       }
     },
     [currentFile, salonConfig, deleteImage, uploadImage, updateSalonConfig, salonId]
-  );
+  )
 
   // フォーム送信処理（useCallbackでメモ化）
   const onSubmit = useCallback(
     async (data: z.infer<typeof salonConfigFormSchema>) => {
-      if (!salonId) return;
+      if (!salonId) return
 
       try {
         await updateSalonConfig({
@@ -169,27 +156,27 @@ export default function SalonConfigForm() {
           address: data.address,
           reservationRules: data.reservationRules,
           description: data.description,
-        });
+        })
 
-        toast.success('サロン設定を保存しました');
+        toast.success('サロン設定を保存しました')
       } catch (error) {
-        toast.error(handleErrorToMsg(error));
+        toast.error(handleErrorToMsg(error))
       }
     },
     [updateSalonConfig, salonId]
-  );
+  )
   // salonConfigが変更されたらフォームをリセット
   useEffect(() => {
     if (salonConfig) {
-      reset(salonConfig);
+      reset(salonConfig)
     }
-  }, [salonConfig, reset]);
+  }, [salonConfig, reset])
 
   if (!salonId) {
-    return <Loading />;
+    return <Loading />
   }
   if (salonConfig === undefined) {
-    return <Loading />;
+    return <Loading />
   }
 
   return (
@@ -198,15 +185,14 @@ export default function SalonConfigForm() {
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-            e.preventDefault();
+            e.preventDefault()
           }
         }}
       >
         <div className="flex items-center gap-2">
-          <Settings className="h-5 w-5 text-blue-500" />
-          <h4 className="text-lg font-bold">基本設定</h4>
+          <h4 className="text-2xl font-bold">基本設定</h4>
         </div>
-        <p className="text-sm text-muted-foreground">こちらの情報は顧客に公開されます。</p>
+        <p className="text-sm text-muted-foreground mt-1">こちらの情報は顧客に公開されます。</p>
         <div className="pt-4">
           <div className="flex flex-col gap-3 space-y-2">
             <ZodTextField
@@ -267,23 +253,17 @@ export default function SalonConfigForm() {
             </div>
           </div>
         </div>
+        <Separator className="my-10 w-2/3 mx-auto" />
         <div className="flex flex-col md:flex-row gap-6 items-start my-4 mt-12">
           <div className="w-full md:w-1/2 flex flex-col gap-4">
-            <h2 className="flex items-center gap-2 font-bold">
-              <ImageIcon className="h-5 w-5 text-blue-500" />
-              イメージ画像
-            </h2>
-            <span className="text-sm text-slate-600 dark:text-slate-300">
-              サロンの雰囲気が伝わる画像を設定してください
-            </span>
+            <h4 className="text-2xl font-bold">店舗画像</h4>
             <ImageDrop
               initialImageUrl={salonConfig?.imgPath}
               maxSizeMB={4}
               onFileSelect={(file) => {
-                setCurrentFile(file);
+                setCurrentFile(file)
               }}
             />
-
             <Button
               onClick={handleSaveImg}
               disabled={!currentFile || isUploading}
@@ -293,7 +273,7 @@ export default function SalonConfigForm() {
               {isUploading ? (
                 <>
                   <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-active"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -331,8 +311,7 @@ export default function SalonConfigForm() {
               <Textarea
                 {...register('description')}
                 placeholder="サロンの特徴や魅力を記入してください"
-                rows={6}
-                className="resize-y min-h-[150px] transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                rows={12}
               />
             </FormField>
             <FormField
@@ -343,8 +322,7 @@ export default function SalonConfigForm() {
               <Textarea
                 {...register('reservationRules')}
                 placeholder="予約時のルールやご注意点を入力してください"
-                rows={6}
-                className="resize-y min-h-[150px] transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                rows={12}
               />
             </FormField>
           </div>
@@ -366,5 +344,5 @@ export default function SalonConfigForm() {
         </div>
       </form>
     </>
-  );
+  )
 }
