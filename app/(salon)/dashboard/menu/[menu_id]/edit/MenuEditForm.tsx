@@ -17,7 +17,7 @@ import { useZodForm } from '@/hooks/useZodForm';
 import { useSalon } from '@/hooks/useSalon';
 import { ImageDrop } from '@/components/common';
 import { TagInput } from '@/components/common';
-import { compressAndConvertToWebP, fileToBase64, cn } from '@/lib/utils';
+import { compressAndConvertToWebP, fileToBase64 } from '@/lib/utils'
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
@@ -41,14 +41,15 @@ import {
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '@/components/ui/select';
-import { CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+} from '@/components/ui/select'
+import { CardHeader, CardTitle } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import { motion } from 'framer-motion'
@@ -250,16 +251,6 @@ export default function MenuEditForm() {
     }
   }, [menuData, reset, setValue, isInitialized])
 
-  // 支払い方法の選択ロジック
-  const handlePaymentMethod = (
-    e: React.MouseEvent<HTMLButtonElement>,
-    method: MenuPaymentMethod
-  ) => {
-    e.preventDefault()
-    setPaymentMethod(method)
-    setValue('paymentMethod', method, { shouldValidate: true })
-  }
-
   // フォーム送信処理
   const onSubmit = async (data: Partial<z.infer<typeof schemaMenu>>) => {
     let uploadImagePath: string | undefined
@@ -373,7 +364,7 @@ export default function MenuEditForm() {
             <div className="h-full flex flex-col">
               <CardHeader className="pb-0">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <ImageIcon size={18} className="text-gray-600" />
+                  <ImageIcon size={18} className="text-muted-foreground" />
                   メニュー画像
                 </CardTitle>
               </CardHeader>
@@ -386,11 +377,6 @@ export default function MenuEditForm() {
                   setValue('imgFilePath', file.name, { shouldValidate: true })
                 }}
               />
-
-              <CardFooter className="pt-0">
-                {errors.imgFilePath && <ErrorMessage message={errors.imgFilePath.message} />}
-                <p className="text-xs text-gray-500 mt-1">推奨サイズ: 1200 x 1200px (最大6MB)</p>
-              </CardFooter>
             </div>
           </div>
 
@@ -399,17 +385,17 @@ export default function MenuEditForm() {
               <ZodTextField
                 name="name"
                 label="メニュー名"
-                icon={<Tag className="text-gray-500" />}
+                icon={<Tag className="text-muted-foreground" />}
                 placeholder="メニュー名を入力してください"
                 register={register}
                 errors={errors}
                 required
-                className="border-gray-200 focus-within:border-blue-500 transition-colors"
+                className="border-border focus-within:border-border transition-colors"
               />
               <div>
                 <div className="text-sm flex items-start gap-2 mb-2">
                   <Label className="text-sm flex items-center gap-2">カテゴリー</Label>
-                  <span className="text-red-500">*</span>
+                  <span className="text-destructive">*</span>
                 </div>
                 <Select
                   value={watch('category') ?? renderCategory}
@@ -417,7 +403,7 @@ export default function MenuEditForm() {
                     setValue('category', value as MenuCategory, { shouldValidate: true })
                   }
                 >
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
+                  <SelectTrigger className="border-border focus:border-border transition-colors">
                     <SelectValue placeholder="メニューのカテゴリを選択してください" />
                   </SelectTrigger>
                   <SelectContent>
@@ -428,9 +414,9 @@ export default function MenuEditForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   もしカテゴリがない場合は
-                  <a href="mailto:atk721@icloud.com" className="text-blue-500 underline">
+                  <a href="mailto:atk721@icloud.com" className="text-link underline">
                     こちら
                   </a>
                   から追加申請いただけます。
@@ -442,32 +428,32 @@ export default function MenuEditForm() {
               <ZodTextField
                 name="unitPrice"
                 label="通常価格"
-                icon={<DollarSign className="text-gray-500" />}
+                icon={<DollarSign className="text-muted-foreground" />}
                 type="number"
                 placeholder="例: 5000"
                 register={register}
                 errors={errors}
                 required
-                className="border-gray-200 focus-within:border-blue-500 transition-colors"
+                className="border-border focus-within:border-border transition-colors"
               />
 
               <ZodTextField
                 name="salePrice"
                 label="セール価格"
                 type="number"
-                icon={<ShoppingBag className="text-gray-500" />}
+                icon={<ShoppingBag className="text-muted-foreground" />}
                 placeholder="例: 4000"
                 register={register}
                 errors={errors}
-                className="border-gray-200 focus-within:border-blue-500 transition-colors"
+                className="border-border focus-within:border-border transition-colors"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="max-w-full">
                 <Label className="text-sm flex items-center gap-2">
-                  <Clock size={16} className="text-gray-500" />
-                  実際にスタッフが稼働する施術時間 <span className="text-red-500 ml-1">*</span>
+                  <Clock size={16} className="text-muted-foreground" />
+                  実際にスタッフが稼働する施術時間 <span className="text-destructive ml-1">*</span>
                 </Label>
                 <Select
                   value={watch('timeToMin')?.toString() ?? renderTimeToMin?.toString()}
@@ -483,7 +469,7 @@ export default function MenuEditForm() {
                     }
                   }}
                 >
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
+                  <SelectTrigger className="border-border focus:border-border transition-colors">
                     <SelectValue placeholder="実際にスタッフが稼働する施術時間を選択" />
                   </SelectTrigger>
                   <SelectContent>
@@ -494,7 +480,7 @@ export default function MenuEditForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   スタッフが手を動かして施術に集中している正味の作業時間を指します。
                 </span>
                 {errors.timeToMin && <ErrorMessage message={errors.timeToMin.message} />}
@@ -502,7 +488,7 @@ export default function MenuEditForm() {
 
               <div className="max-w-full">
                 <Label className="text-sm flex items-center gap-2">
-                  <Clock size={16} className="text-gray-500" />
+                  <Clock size={16} className="text-muted-foreground" />
                   待機時間を含めたトータルの施術時間
                 </Label>
                 <Select
@@ -518,7 +504,7 @@ export default function MenuEditForm() {
                     }
                   }}
                 >
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
+                  <SelectTrigger className="border-border focus:border-border transition-colors">
                     <SelectValue placeholder="待機時間を含めたトータルの施術時間を選択" />
                   </SelectTrigger>
                   <SelectContent>
@@ -529,7 +515,7 @@ export default function MenuEditForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   施術席を専有する必要はあるものの、スタッフが別の作業に移れる待機時間を指します。
                 </span>
                 {errors.ensureTimeToMin && (
@@ -541,10 +527,10 @@ export default function MenuEditForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="flex items-center gap-2 text-sm">
-                  <Repeat size={16} className="text-gray-500" />
+                  <Repeat size={16} className="text-muted-foreground" />
                   対象
                 </Label>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   メニューを利用できる顧客属性を選択できます。
                 </span>
                 <Select
@@ -556,7 +542,7 @@ export default function MenuEditForm() {
                     setValue('targetType', typedValue, { shouldValidate: true })
                   }}
                 >
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
+                  <SelectTrigger className="border-border focus:border-border transition-colors">
                     <SelectValue placeholder="対象を選択" />
                   </SelectTrigger>
                   <SelectContent>
@@ -569,10 +555,12 @@ export default function MenuEditForm() {
 
               <div>
                 <Label className="flex items-center gap-2 text-sm">
-                  <Users size={16} className="text-gray-500" />
+                  <Users size={16} className="text-muted-foreground" />
                   性別
                 </Label>
-                <span className="text-xs text-gray-500">メニュー対象の性別を選択してください</span>
+                <span className="text-xs text-muted-foreground">
+                  メニュー対象の性別を選択してください
+                </span>
                 <Select
                   value={renderTargetGender}
                   onValueChange={(value: Gender) => {
@@ -582,7 +570,7 @@ export default function MenuEditForm() {
                     setValue('targetGender', typedValue, { shouldValidate: true })
                   }}
                 >
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 transition-colors">
+                  <SelectTrigger className="border-border focus:border-border transition-colors">
                     <SelectValue placeholder="性別を選択" />
                   </SelectTrigger>
                   <SelectContent>
@@ -610,65 +598,46 @@ export default function MenuEditForm() {
 
             <div className="flex flex-col w-full gap-2">
               <Label className="flex items-center gap-2 text-sm mb-3 mt-4">
-                <CreditCard size={16} className="text-gray-500" />
+                <CreditCard size={16} className="text-muted-foreground" />
                 支払い方法
               </Label>
               {salon?.stripeConnectStatus === 'active' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.97 }}
-                    className={cn(
-                      'flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm font-medium',
-                      paymentMethod === 'cash'
-                        ? 'border-green-600 bg-green-50 text-green-700'
-                        : 'border-gray-200 hover:bg-gray-50'
-                    )}
-                    onClick={(e) => handlePaymentMethod(e, 'cash')}
+                <ToggleGroup
+                  type="single"
+                  className="w-full flex flex-wrap justify-start items-center gap-6"
+                  value={paymentMethod}
+                  onValueChange={(value) => setPaymentMethod(value as MenuPaymentMethod)}
+                >
+                  <ToggleGroupItem
+                    className="text-sm shadow-sm bg-muted hover:bg-muted-foreground hover:text-active-foreground p-4 data-[state=on]:bg-active data-[state=on]:text-active-foreground"
+                    value="cash"
                   >
-                    <Wallet size={18} />
                     店舗決済のみ
-                  </motion.button>
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.97 }}
-                    className={cn(
-                      'flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm font-medium',
-                      paymentMethod === 'credit_card'
-                        ? 'border-green-600 bg-green-50 text-green-700'
-                        : 'border-gray-200 hover:bg-gray-50'
-                    )}
-                    onClick={(e) => handlePaymentMethod(e, 'credit_card')}
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    className="text-sm shadow-sm bg-muted hover:bg-muted-foreground hover:text-active-foreground p-4 data-[state=on]:bg-active data-[state=on]:text-active-foreground"
+                    value="credit_card"
                   >
-                    <CreditCard size={18} />
                     オンライン決済のみ
-                  </motion.button>
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.97 }}
-                    className={cn(
-                      'flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm font-medium',
-                      paymentMethod === 'all'
-                        ? 'border-green-600 bg-green-50 text-green-700'
-                        : 'border-gray-200 hover:bg-gray-50'
-                    )}
-                    onClick={(e) => handlePaymentMethod(e, 'all')}
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    className="text-sm shadow-sm bg-muted hover:bg-muted-foreground hover:text-active-foreground p-4 data-[state=on]:bg-active data-[state=on]:text-active-foreground"
+                    value="all"
                   >
-                    <ShoppingBag size={18} />
                     両方対応
-                  </motion.button>
-                </div>
+                  </ToggleGroupItem>
+                </ToggleGroup>
               ) : (
-                <div className="bg-blue-50 border border-blue-100 rounded-md p-4">
-                  <p className="text-base font-medium text-blue-700 mb-2 flex items-center gap-2">
+                <div className="bg-warning border border-warning-foreground rounded-md p-4">
+                  <p className="text-base font-medium text-warning-foreground mb-2 flex items-center gap-2">
                     <Wallet size={18} />
                     現在は店舗決済のみ利用可能
                   </p>
-                  <p className="text-sm text-gray-600">
-                    オンライン決済を利用するには、
+                  <p className="text-sm text-warning-foreground">
+                    オンライン決済を利用する場合には、
                     <Link
                       href="/dashboard/setting"
-                      className="text-blue-600 underline px-1 font-medium"
+                      className="text-link-foreground underline font-medium"
                     >
                       決済設定
                     </Link>
@@ -680,12 +649,12 @@ export default function MenuEditForm() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <p className="text-xs text-gray-500 mt-2 flex items-center gap-1 cursor-help">
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1 cursor-help">
                     <AlertCircle size={14} />
                     オンライン決済には手数料が発生します
                   </p>
                 </TooltipTrigger>
-                <TooltipContent className="bg-white p-3 shadow-lg border border-gray-200 text-gray-700 text-xs">
+                <TooltipContent className="bg-background p-3 shadow-lg border border-border text-muted-foreground text-xs">
                   <p>オンライン決済手数料: 4% + 40円/件</p>
                 </TooltipContent>
               </Tooltip>
@@ -696,8 +665,8 @@ export default function MenuEditForm() {
         <Separator className="my-8" />
 
         <Label className="flex items-center gap-2 text-sm mb-2 mt-4">
-          <Info size={16} className="text-gray-500" />
-          メニュー説明 <span className="text-red-500 ml-1">*</span>
+          <Info size={16} className="text-muted-foreground" />
+          メニュー説明 <span className="text-destructive ml-1">*</span>
         </Label>
         <Textarea
           id="description"
@@ -705,14 +674,14 @@ export default function MenuEditForm() {
           {...register('description')}
           onChange={(e) => setValue('description', e.target.value, { shouldValidate: true })}
           rows={8}
-          className="border-gray-200 focus-visible:ring-blue-500 resize-none"
+          className="border-border focus-visible:ring-border resize-none"
         />
         {errors.description && <ErrorMessage message={errors.description?.message} />}
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md mb-6 mt-4">
+        <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-4">
           <div>
             <p className="text-sm font-bold">メニューを公開する</p>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               オフにすると、このメニューはお客様に表示されません
             </p>
           </div>
@@ -720,7 +689,6 @@ export default function MenuEditForm() {
             id="isActive"
             checked={watch('isActive')}
             onCheckedChange={(checked) => setValue('isActive', checked)} // onCheckedChangeの引数を直接渡す
-            className="data-[state=checked]:bg-green-600"
           />
         </div>
 
@@ -730,7 +698,7 @@ export default function MenuEditForm() {
               type="button"
               variant="outline"
               onClick={() => router.push('/dashboard/menu')}
-              className="min-w-28"
+              className="min-w-28 border-border"
             >
               戻る
             </Button>
@@ -755,8 +723,8 @@ export default function MenuEditForm() {
           <AccordionTrigger>
             実際の稼働時間と待機時間を含めたトータルの施術時間の違いについて
           </AccordionTrigger>
-          <AccordionContent className="space-y-2 text-sm text-slate-600">
-            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+          <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 <strong>実際の稼働時間 :</strong>
                 スタッフが手を動かして施術に集中している正味の作業時間を指します。
@@ -776,7 +744,7 @@ export default function MenuEditForm() {
               </li>
             </ol>
 
-            <p className="text-xs text-slate-500 space-y-1">
+            <p className="text-xs text-muted-foreground space-y-1">
               * 両時間とも必須入力です。
               <br />* <strong>入力例：</strong> パーマ 90 分（実際の稼働 45 分 ＋ 確保 45
               分）の場合、スタッフは途中 45 分間ほかの顧客を担当できます。
