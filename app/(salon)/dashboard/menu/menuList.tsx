@@ -54,29 +54,21 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
           {menu.imgPath ? (
             <Image src={menu.imgPath} alt={menu.name || ''} fill className="object-cover" />
           ) : (
-            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-              <p className="text-gray-500 text-base font-bold uppercase">
+            <div className="absolute inset-0 bg-muted flex items-center justify-center">
+              <p className="text-muted-foreground text-base font-bold uppercase">
                 {menu.name?.slice(0, 1)}
               </p>
             </div>
           )}
           <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
-            {menu.tags?.map((tag: string, idx: number) => (
-              <Badge
-                key={idx}
-                variant="secondary"
-                className="bg-white border border-green-500 text-green-500 text-xs font-light"
-              >
-                {tag}
-              </Badge>
-            ))}
+            {menu.tags?.map((tag: string, idx: number) => <Badge key={idx}>{tag}</Badge>)}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/50 backdrop-blur-sm"
+                className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background backdrop-blur-sm"
               >
                 <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">メニューを開く</span>
@@ -143,13 +135,13 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
 // メニューリスト表示コンポーネント
 interface MenuListContentProps {
-  menus: Doc<'menu'>[];
-  onDelete: (menuId: Id<'menu'>, imgPath: string) => void;
+  menus: Doc<'menu'>[]
+  onDelete: (menuId: Id<'menu'>, imgPath: string) => void
 }
 
 const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
@@ -161,13 +153,13 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
         staggerChildren: 0.05,
       },
     },
-  };
+  }
 
   const listItemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
     exit: { opacity: 0, x: -20 },
-  };
+  }
 
   return (
     <motion.div
@@ -187,11 +179,11 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
             >
               <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4 border-b border-gray-200 pb-4 mb-4">
                 {menu.isActive ? (
-                  <Badge variant="default" className=" bg-green-600 text-white">
+                  <Badge variant="default" className=" bg-active text-active-foreground">
                     公開中
                   </Badge>
                 ) : (
-                  <Badge variant="secondary" className=" bg-gray-400 text-white">
+                  <Badge variant="secondary" className=" bg-muted text-muted-foreground">
                     非公開
                   </Badge>
                 )}
@@ -205,8 +197,8 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                         className="object-cover"
                       />
                     ) : (
-                      <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                        <p className="text-gray-500 text-base font-bold uppercase">
+                      <div className="absolute inset-0 bg-muted flex items-center justify-center">
+                        <p className="text-muted-foreground text-base font-bold uppercase">
                           {menu.name?.slice(0, 1)}
                         </p>
                       </div>
@@ -214,7 +206,7 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                   </div>
                   <div className="flex-1 min-w-0 md:pl-2">
                     {menu.category && (
-                      <Badge variant="default" className="text-xs mb-1">
+                      <Badge variant="outline" className="text-xs mb-1">
                         {menu.category}
                       </Badge>
                     )}
@@ -251,15 +243,7 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                     </div>
 
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {menu.tags?.map((tag: string, idx: number) => (
-                        <Badge
-                          key={idx}
-                          variant="outline"
-                          className="text-xs font-light border border-green-600 text-green-600"
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
+                      {menu.tags?.map((tag: string, idx: number) => <Badge key={idx}>{tag}</Badge>)}
                     </div>
                   </div>
                 </div>
@@ -290,12 +274,12 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                 </div>
               </div>
             </motion.div>
-          );
+          )
         })}
       </AnimatePresence>
     </motion.div>
-  );
-};
+  )
+}
 
 // メインコンポーネント
 export default function MenuList() {
