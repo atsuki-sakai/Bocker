@@ -623,29 +623,28 @@ export default function ReservationForm() {
           }
         }}
       >
-        <div className="flex flex-col gap-4 my-6">
+        <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
+            <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
               <div className="flex flex-col items-start gap-2">
                 <div className="flex flex-col items-start gap-2">
-                  <div className="flex items-center gap-2">
-                    <p className="text-slate-700 text-lg font-bold">1</p>
-                    <Label className="text-slate-700 text-sm font-bold">顧客検索</Label>
+                  <div className="flex items-center text-xl gap-2">
+                    <p className="text-primary font-bold">顧客検索</p>
                   </div>
-                  <p className="text-slate-500 text-xs">
+                  <p className="text-muted-foreground text-xs">
                     既存顧客の予約を作成する場合はこちらから
                     <strong>顧客無しでも予約は作成できます。</strong>
                   </p>
-                  <span className="text-slate-500 text-xs font-bold">
+                  <span className="text-muted-foreground text-xs font-bold">
                     新規顧客の場合は先に
-                    <Link className="text-blue-500 underline" href="/dashboard/customer/add">
+                    <Link className="text-link-foreground underline" href="/dashboard/customer/add">
                       こちら
                     </Link>
                     から顧客を作成してください。
                   </span>
                 </div>
                 <Input
-                  className="bg-white"
+                  className="w-full my-3"
                   placeholder="顧客を検索"
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
@@ -655,10 +654,13 @@ export default function ReservationForm() {
                 customers.results.map((customer) => {
                   return (
                     <div key={customer._id}>
-                      <p className="text-slate-500 text-xs">検索結果</p>
+                      <p className="text-primary text-sm font-bold mb-1">検索結果</p>
                       <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className=" w-full justify-start h-fit">
+                          <Button
+                            variant={'outline'}
+                            className="w-full justify-start h-fit border border-border"
+                          >
                             {customer.lastName && customer.lastName !== '未登録'
                               ? customer.lastName + ' '
                               : ''}
@@ -674,11 +676,11 @@ export default function ReservationForm() {
                         <PopoverContent className="w-full min-w-[350px] p-2 overflow-y-auto h-fit">
                           <Command>
                             <div className="flex items-center justify-between border-b">
-                              <p>検索結果</p>
+                              <p className="text-muted-foreground text-sm">検索結果</p>
                               <button
                                 type="button"
                                 onClick={() => setCustomerPopoverOpen(false)}
-                                className="p-2 text-slate-700 hover:text-slate-600"
+                                className="p-2 text-muted-foreground "
                               >
                                 <X className="w-4 h-4" aria-hidden="true" />
                                 <span className="sr-only">閉じる</span>
@@ -689,7 +691,7 @@ export default function ReservationForm() {
                                 return (
                                   <CommandItem
                                     key={customer._id}
-                                    className="flex items-center justify-between"
+                                    className="flex items-center justify-between cursor-pointer"
                                     onSelect={() => {
                                       setReservationCustomer(customer)
                                       setCustomerPopoverOpen(false)
@@ -719,18 +721,18 @@ export default function ReservationForm() {
                   )
                 })
               ) : searchName.length > 0 ? (
-                <p className="text-yellow-600 text-sm text-center bg-yellow-50 p-2 rounded-md">
+                <p className="text-warning-foreground text-sm text-center bg-warning border border-warning-foreground p-4 rounded-md">
                   顧客が見つかりません
                 </p>
               ) : (
-                <p className="text-gray-600 text-sm text-center bg-white p-2 rounded-md">
+                <p className="text-muted-foreground text-sm text-center bg-muted border border-border p-4 rounded-md">
                   顧客を検索してください。
                 </p>
               )}
               {reservationCustomer && (
-                <div className="flex flex-col gap-2 mt-2 bg-green-50 p-3 rounded-md border border-green-300">
-                  <p className="text-green-700 text-sm font-bold">予約する顧客</p>
-                  <p className="text-slate-500 text-sm">
+                <div className="flex flex-col gap-2 mt-2 bg-active-foreground border border-active p-3 rounded-md">
+                  <p className="text-active text-sm font-bold">予約する顧客</p>
+                  <p className="text-active text-sm">
                     {reservationCustomer.lastName ? reservationCustomer.lastName + ' ' : null}
                     {reservationCustomer.firstName ? reservationCustomer.firstName + ' ' : null}
                     {reservationCustomer.lineUserName
@@ -741,21 +743,26 @@ export default function ReservationForm() {
                 </div>
               )}
             </div>
-            <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
+            <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
               <div className="flex items-center gap-2">
-                <p className="text-slate-500 text-lg font-bold">2</p>
-                <Label className="text-slate-700 font-bold">予約するメニュー</Label>
+                <p className="text-primary font-bold text-xl">予約するメニュー</p>
               </div>
-              <span className="text-slate-500 text-xs">※メニューは最大5件まで選択できます。</span>
+              <span className="text-muted-foreground text-xs">
+                ※メニューは最大5件まで選択できます。
+              </span>
+
               <Popover open={menuPopoverOpen} onOpenChange={setMenuPopoverOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="mt-2 w-full justify-start h-fit">
+                  <Button
+                    variant="outline"
+                    className="mt-2 w-full justify-start h-fit border border-border"
+                  >
                     {selectedMenus.length > 0 ? (
                       <span className="flex flex-wrap gap-1">
                         {uniqMenuIds.map((id) => {
                           const m = menus.find((m) => m._id === id)
                           return m ? (
-                            <Badge key={id} variant="secondary" className="py-0.5 px-1.5">
+                            <Badge key={id} className="py-1 px-2">
                               {m.name}
                             </Badge>
                           ) : null
@@ -776,13 +783,13 @@ export default function ReservationForm() {
                       <button
                         type="button"
                         onClick={() => setMenuPopoverOpen(false)}
-                        className="p-2 text-slate-700 hover:text-slate-600"
+                        className="p-2"
                       >
                         <X className="w-4 h-4" aria-hidden="true" />
                         <span className="sr-only">閉じる</span>
                       </button>
                     </div>
-                    <CommandList className="max-h-[calc(100vh-200px)] max-w-[calc(100vw-50px)] py-8 overflow-y-auto">
+                    <CommandList className=" max-h-[calc(100vh-200px)] max-w-[calc(100vw-50px)] py-8 overflow-y-auto">
                       {menus.map((menu) => {
                         const count = getMenuCount(menu._id)
                         return (
@@ -804,10 +811,10 @@ export default function ReservationForm() {
                               <div>
                                 {menu.salePrice && menu.salePrice > 0 ? (
                                   <>
-                                    <span className="line-through text-slate-400">
+                                    <span className="line-through text-muted-foreground">
                                       ￥{menu.unitPrice?.toLocaleString()}
                                     </span>
-                                    <span className="font-semibold text-green-600">
+                                    <span className="font-semibold text-active">
                                       ￥{menu.salePrice.toLocaleString()}
                                     </span>
                                   </>
@@ -826,9 +833,9 @@ export default function ReservationForm() {
                                 variant="outline"
                                 onClick={() => removeMenu(menu._id)}
                                 disabled={count === 0}
-                                className="p-1 disabled:opacity-30"
+                                className="p-1 disabled:opacity-30 border border-destructive hover:bg-destructive-foreground"
                               >
-                                <Minus className="w-4 h-4 text-red-600" />
+                                <Minus className="w-4 h-4 text-destructive" />
                               </Button>
                               <span className="w-5 text-center text-sm">{count}</span>
                               <Button
@@ -836,8 +843,9 @@ export default function ReservationForm() {
                                 variant="outline"
                                 onClick={() => addMenu(menu._id)}
                                 disabled={selectedMenus.length >= MAX_MENU_ITEMS}
+                                className="border border-active hover:bg-active-foreground"
                               >
-                                <Plus className="w-4 h-4 text-blue-600" />
+                                <Plus className="w-4 h-4 text-active" />
                               </Button>
                             </div>
                           </CommandItem>
@@ -847,17 +855,17 @@ export default function ReservationForm() {
                   </Command>
                 </PopoverContent>
               </Popover>
-              {errors.menus && <p className="text-red-500 text-sm">{errors.menus.message}</p>}
+              {errors.menus && <p className="text-destructive text-sm">{errors.menus.message}</p>}
               {selectedMenus.length > 0 && (
-                <div className="mt-2 bg-green-50 p-3 rounded-md border border-green-300">
-                  <Label className=" block text-green-700 font-bold mb-2">選択中のメニュー</Label>
+                <div className="mt-2 bg-active-foreground p-3 rounded-md border border-active">
+                  <Label className=" block text-active font-bold mb-2">選択中のメニュー</Label>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {uniqMenuIds.map((menuId) => {
                       const menu = menus.find((m) => m._id === menuId)
                       return menu ? (
                         <div
                           key={menuId}
-                          className="bg-white px-3 py-1 rounded-md flex items-center gap-2 border"
+                          className="bg-background px-3 py-1 rounded-md flex items-center gap-2 border border-border"
                         >
                           <span className="text-xs">
                             {menu.name}
@@ -870,9 +878,9 @@ export default function ReservationForm() {
                           <button
                             type="button"
                             onClick={() => removeMenuAll(menuId)}
-                            className="text-slate-700 hover:text-slate-600"
+                            className="text-destructive hover:text-destructive"
                           >
-                            <X className="h-4 w-4 text-red-500" />
+                            <X className="h-4 w-4 text-destructive" />
                           </button>
                         </div>
                       ) : null
@@ -883,17 +891,16 @@ export default function ReservationForm() {
             </div>
           </div>
           {selectedMenus.length > 0 && availableStaff.length > 0 && (
-            <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
+            <div className="flex flex-col gap-2 mb-4 p-3 rounded-md border border-border">
               {isLoadingStaff ? (
-                <div className="flex items-center justify-center p-4 bg-white rounded-md">
-                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-green-500" />
-                  <span className="text-green-500 text-sm">スタッフを検索中...</span>
+                <div className="flex items-center justify-center p-4 rounded-md">
+                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-active" />
+                  <span className="text-active text-sm">スタッフを検索中...</span>
                 </div>
               ) : selectedMenus.length > 0 && availableStaff.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <p className="text-slate-500 text-lg font-bold">3</p>
-                    <Label className="text-slate-700 font-bold">施術するスタッフ</Label>
+                    <Label className="text-primary text-xl font-bold">施術するスタッフ</Label>
                   </div>
                   <Select
                     value={watch('staffId') ?? ''}
@@ -902,7 +909,7 @@ export default function ReservationForm() {
                       setSelectedStaffId(value as Id<'staff'>)
                     }}
                   >
-                    <SelectTrigger className="bg-white">
+                    <SelectTrigger>
                       <SelectValue placeholder="スタッフを選択" />
                     </SelectTrigger>
                     <SelectContent>
@@ -914,11 +921,11 @@ export default function ReservationForm() {
                     </SelectContent>
                   </Select>
                   {errors.staffId && (
-                    <p className="text-red-500 text-sm">{errors.staffId.message}</p>
+                    <p className="text-destructive text-sm">{errors.staffId.message}</p>
                   )}
                   {selectedStaffId && (
-                    <div className="flex flex-col bg-green-50 p-3 rounded-md border border-green-300 mt-3">
-                      <p className="text-green-700 text-sm font-bold mb-2">選択中のスタッフ</p>
+                    <div className="flex flex-col bg-active-foreground p-3 rounded-md border border-active mt-3">
+                      <p className="text-active text-sm font-bold mb-2">選択中のスタッフ</p>
                       <div className="flex items-center gap-2">
                         {selectStaff?.imgPath ? (
                           <Image
@@ -929,13 +936,13 @@ export default function ReservationForm() {
                             height={40}
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                             {selectStaff?.name?.slice(0, 1) ?? '?'}
                           </div>
                         )}
                         <div className="flex flex-col">
-                          <p className="text-slate-500 font-bold text-sm">{selectStaff?.name}</p>
-                          <p className="text-slate-500 text-sm">
+                          <p className="text-active font-bold text-sm">{selectStaff?.name}</p>
+                          <p className="text-active text-sm">
                             指名料 / ¥
                             {selectStaff?.extraCharge
                               ? selectStaff?.extraCharge.toLocaleString()
@@ -948,8 +955,8 @@ export default function ReservationForm() {
                 </div>
               ) : (
                 selectedMenus.length > 0 && (
-                  <div className="flex flex-col bg-red-50 w-fit p-3 rounded-md border border-red-300">
-                    <p className="text-red-500 text-sm">
+                  <div className="flex flex-col bg-destructive-foreground w-fit p-3 rounded-md border border-destructive">
+                    <p className="text-destructive text-sm">
                       選択したすべてのメニューに対応できるスタッフが見つかりません。メニューの組み合わせを変更してください。
                     </p>
                   </div>
@@ -958,22 +965,24 @@ export default function ReservationForm() {
             </div>
           )}
           {selectedMenus.length > 0 && (
-            <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
+            <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
               {selectedMenus.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-slate-500 text-lg font-bold">4</p>
-                    <Label className="text-slate-700 font-bold">オプション(任意)</Label>
+                    <Label className="text-primary text-xl font-bold">オプション(任意)</Label>
                   </div>
                   <Popover open={optionPopoverOpen} onOpenChange={setOptionPopoverOpen}>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="mt-2 w-full justify-start h-fit">
+                      <Button
+                        variant="outline"
+                        className="mt-2 w-full justify-start h-fit border border-border"
+                      >
                         {selectedOptions.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {selectedOptions.map((selectedOption) => {
                               const option = options.find((o) => o._id === selectedOption.optionId)
                               return option ? (
-                                <Badge key={option._id} variant="outline" className="py-0.5 px-1.5">
+                                <Badge key={option._id} className="py-1 px-2">
                                   {option?.name}
                                 </Badge>
                               ) : null
@@ -994,7 +1003,7 @@ export default function ReservationForm() {
                           <button
                             type="button"
                             onClick={() => setOptionPopoverOpen(false)}
-                            className="p-2 text-slate-400 hover:text-slate-600"
+                            className="p-2 text-muted-foreground hover:text-muted-foreground"
                           >
                             <X className="w-4 h-4" aria-hidden="true" />
                             <span className="sr-only">閉じる</span>
@@ -1021,9 +1030,9 @@ export default function ReservationForm() {
                                     variant="outline"
                                     onClick={() => removeOption(option._id)}
                                     disabled={count === 0}
-                                    className="p-1 disabled:opacity-30"
+                                    className="p-1  border border-destructive hover:bg-destructive-foreground"
                                   >
-                                    <Minus className="w-4 h-4 text-red-600" />
+                                    <Minus className="w-4 h-4 text-destructive" />
                                   </Button>
                                   <span className="w-5 text-center text-sm">{count}</span>
                                   <Button
@@ -1033,8 +1042,9 @@ export default function ReservationForm() {
                                     disabled={
                                       count === 0 && selectedOptions.length >= MAX_OPTION_ITEMS
                                     }
+                                    className="border border-active hover:bg-active-foreground"
                                   >
-                                    <Plus className="w-4 h-4 text-blue-600" />
+                                    <Plus className="w-4 h-4 text-active" />
                                   </Button>
                                 </div>
                               </CommandItem>
@@ -1045,20 +1055,20 @@ export default function ReservationForm() {
                     </PopoverContent>
                   </Popover>
                   {errors.options && (
-                    <p className="text-red-500 text-sm">{errors.options.message}</p>
+                    <p className="text-destructive text-sm">{errors.options.message}</p>
                   )}
                 </div>
               )}
               {selectedOptions.length > 0 && (
-                <div className="bg-green-50 p-3 rounded-md border border-green-300 mt-2">
-                  <Label className="mb-2 block text-green-700 font-bold">選択中のオプション</Label>
+                <div className="bg-active-foreground p-3 rounded-md border border-active mt-2">
+                  <Label className="mb-2 block text-active font-bold">選択中のオプション</Label>
                   <div className="flex flex-wrap gap-2 pt-1 ">
                     {selectedOptions.map((selectedOption) => {
                       const option = options.find((o) => o._id === selectedOption.optionId)
                       return option ? (
                         <div
                           key={selectedOption.optionId}
-                          className="bg-white px-3 py-1 rounded-md flex items-center gap-2 border"
+                          className="bg-background px-3 py-1 rounded-md flex items-center gap-2 border border-border"
                         >
                           <span className="text-xs">
                             {option.name}
@@ -1070,9 +1080,9 @@ export default function ReservationForm() {
                           <button
                             type="button"
                             onClick={() => removeOption(option._id)}
-                            className="text-slate-500 hover:text-slate-700"
+                            className="text-muted-foreground hover:text-muted-foreground"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-4 w-4 text-destructive" />
                           </button>
                         </div>
                       ) : null
@@ -1083,19 +1093,18 @@ export default function ReservationForm() {
             </div>
           )}
           {selectedMenus.length > 0 && (
-            <div className="flex flex-col gap-2 mb-4 bg-slate-50 p-3 rounded-md border border-slate-300">
+            <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
               {selectedMenus.length > 0 && (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <p className="text-slate-500 text-lg font-bold">5</p>
-                    <Label className="text-slate-700 font-bold">予約日</Label>
+                    <Label className="text-primary text-xl font-bold">予約日</Label>
                   </div>
                   <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant={'outline'}
                         className={cn(
-                          'w-[240px] justify-start text-left font-normal',
+                          'w-[240px] justify-start text-left font-normal border border-border',
                           !selectdate && 'text-muted-foreground'
                         )}
                       >
@@ -1142,9 +1151,9 @@ export default function ReservationForm() {
               )}
               {selectdate && selectedStaffId && selectedMenus.length > 0 && (
                 <div className="mt-4">
-                  <Label className="mb-2 block text-green-700 font-bold">
+                  <Label className="mb-2 block text-primary font-bold">
                     予約可能時間
-                    <span className="ml-3 text-slate-500 text-sm font-bold">
+                    <span className="ml-3 text-muted-foreground text-sm font-bold">
                       {selectdate.toLocaleDateString('ja-JP', {
                         year: 'numeric',
                         month: 'long',
@@ -1162,8 +1171,8 @@ export default function ReservationForm() {
                           className={`flex items-center justify-center py-2 px-4 text-sm font-medium rounded-md border ${
                             watch('startTime_unix') ===
                             convertHourToUnixTimestamp(slot.startHour, formattedDate)
-                              ? 'bg-green-600 text-white'
-                              : 'border-slate-300 bg-white'
+                              ? 'bg-active-foreground text-active border-active'
+                              : 'border-border bg-background hover:bg-muted hover:text-muted-foreground'
                           }`}
                           onClick={() => {
                             // 日付込みでタイムスタンプ生成
@@ -1191,8 +1200,8 @@ export default function ReservationForm() {
                       ))}
                     </div>
                   ) : (
-                    <div className="bg-white p-4 rounded-md mt-2 text-center">
-                      <p className="text-slate-500">選択した日時に空き枠がありません</p>
+                    <div className="bg-background p-4 rounded-md mt-2 text-center">
+                      <p className="text-muted-foreground">選択した日時に空き枠がありません</p>
                     </div>
                   )}
                 </div>
@@ -1218,14 +1227,14 @@ export default function ReservationForm() {
           <Textarea
             {...register('notes')}
             placeholder="例:くせ毛が強いので、扱いやすいスタイルにして欲しいとの事でした。"
-            className="resize-none"
+            className="resize-none mt-4"
             rows={8}
           />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2 mt-12">
           <div>
-            <p className="mb-2 text-xs font-medium text-gray-600">選択したメニュー</p>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">選択したメニュー</p>
             <div className="flex flex-col">
               {uniqMenuIds.length > 0 ? (
                 uniqMenuIds.map((menuId) => {
@@ -1238,24 +1247,21 @@ export default function ReservationForm() {
                     menu && (
                       <div
                         key={menuId}
-                        className="w-full flex items-center justify-between gap-2 p-2 text-xs bg-gray-50  border-b border-gray-300"
+                        className="w-full flex items-center justify-between gap-2 p-2 text-xs bg-background  border-b border-border"
                       >
-                        <p className="text-gray-700 font-bold text-sm">{menu.name}</p>
-                        <p className="text-gray-700 font-bold text-sm">
-                          {' '}
-                          ¥{price.toLocaleString()}
-                        </p>
+                        <p className="text-primary font-bold text-sm">{menu.name}</p>
+                        <p className="text-primary font-bold text-sm"> ¥{price.toLocaleString()}</p>
                       </div>
                     )
                   )
                 })
               ) : (
-                <p className="text-slate-500 text-sm">メニューを選択してください</p>
+                <p className="text-muted-foreground text-sm">メニューを選択してください</p>
               )}
             </div>
           </div>
           <div>
-            <p className="mb-2 text-xs font-medium text-gray-600">選択したオプション</p>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">選択したオプション</p>
             <div className="flex flex-col">
               {selectedOptions.length > 0 ? (
                 selectedOptions.map((selectedOption) => {
@@ -1264,10 +1270,10 @@ export default function ReservationForm() {
                     option && (
                       <div
                         key={selectedOption.optionId}
-                        className="w-full flex items-center justify-between gap-2 p-2 text-xs bg-gray-50  border-b border-gray-300"
+                        className="w-full flex items-center justify-between gap-2 p-2 text-xs bg-background  border-b border-border"
                       >
-                        <p className="text-gray-700 font-bold text-sm">{option.name}</p>
-                        <p className="text-gray-700 font-bold text-sm">
+                        <p className="text-primary font-bold text-sm">{option.name}</p>
+                        <p className="text-primary font-bold text-sm">
                           {' '}
                           {option.salePrice
                             ? `¥${option.salePrice.toLocaleString()}`
@@ -1278,14 +1284,14 @@ export default function ReservationForm() {
                   )
                 })
               ) : (
-                <p className="text-slate-500 text-sm">オプションは選択されていません</p>
+                <p className="text-muted-foreground text-sm">オプションは選択されていません</p>
               )}
             </div>
           </div>
 
           <div className="flex flex-col gap-2 mb-4">
-            <p className="text-slate-500 text-xs text-nowrap">施術者</p>
-            <div className="flex items-center gap-2 bg-gray-50 p-2 border-b border-gray-300">
+            <p className="text-muted-foreground text-xs text-nowrap">施術者</p>
+            <div className="flex items-center gap-2 bg-background p-2 border-b border-border">
               {selectStaff?.imgPath ? (
                 <Avatar className="w-8 h-8">
                   <AvatarImage src={selectStaff.imgPath} alt={selectStaff.name} />
@@ -1296,9 +1302,9 @@ export default function ReservationForm() {
                 </Avatar>
               )}
               <div className="flex items-center justify-between gap-2 w-full">
-                <p className="text-sm font-bold text-gray-800">{selectStaff?.name ?? '—'}</p>
-                <p className="text-sm text-gray-500 font-bold">
-                  <span className="text-gray-500 font-light text-xs">指名料</span> ¥
+                <p className="text-sm font-bold text-primary">{selectStaff?.name ?? '—'}</p>
+                <p className="text-sm text-primary font-bold">
+                  <span className="text-primary font-light text-xs">指名料</span> ¥
                   {selectStaff?.extraCharge ? selectStaff?.extraCharge.toLocaleString() : '0'}
                 </p>
               </div>
@@ -1322,13 +1328,13 @@ export default function ReservationForm() {
           </Button>
         </div>
       </form>
-      <div className="sticky bottom-0 left-0 right-0 z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 px-6 py-4 bg-slate-50/90 backdrop-blur rounded-md border">
+      <div className="sticky bottom-0 left-0 right-0 z-10 bg-background text-primary flex flex-col md:flex-row items-start md:items-center justify-between gap-4 px-6 py-4 backdrop-blur rounded-md border">
         <div className="relative flex flex-col md:flex-row w-full items-start md:items-center justify-between gap-4">
           <div className="flex flex-col md:flex-row justify-between w-full">
-            <div className="w-full md:w-1/3 flex items-center md:items-start justify-between md:flex-col">
+            <div className="w-full md:w-1/3 flex flex-col items-start justify-between gap-2">
               <div>
                 {selectdate && (
-                  <div className="flex items-center gap-2 text-sm text-slate-500 md:ml-auto whitespace-nowrap">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground md:ml-auto whitespace-nowrap">
                     <span className="font-semibold">{format(selectdate, 'yyyy年MM月dd日')}</span>
                     {selectTime && (
                       <span>
@@ -1339,20 +1345,20 @@ export default function ReservationForm() {
                   </div>
                 )}
               </div>
-            </div>
-            <div className="flex items-center justify-end gap-2">
-              <Label className="text-xs">合計金額</Label>
-              <p className="text-lg font-bold ml-2 md:ml-0">
-                ¥{totalPriceCalculated.toLocaleString()}
-              </p>
+              <div className="flex items-center justify-end gap-2">
+                <Label className="text-xs">合計金額</Label>
+                <p className="text-lg font-bold ml-2 md:ml-0">
+                  ¥{totalPriceCalculated.toLocaleString()}
+                </p>
+              </div>
             </div>
             <div className="flex flex-wrap justify-between md:justify-end gap-2 md:gap-4 text-xs mt-2 md:mt-0 w-full md:w-2/3">
-              <div className="border bg-white border-green-600 p-1.5 rounded-md text-green-600 flex  md:flex-row items-center w-fit sm:w-auto">
-                <Label className="text-xs">実作業時間 / </Label>{' '}
+              <div className="border bg-background border-active p-1.5 rounded-md text-active flex  md:flex-row items-center w-fit sm:w-auto">
+                <Label className="text-xs text-active">実作業時間 / </Label>{' '}
                 <p className=" font-bold">{totalTimeMinutes} 分</p>
               </div>
-              <div className="border bg-white border-green-600 p-1.5 rounded-md text-green-600 flex  md:flex-row items-center w-fit sm:w-auto">
-                <Label className="text-xs">トータル時間 / </Label>{' '}
+              <div className="border bg-background border-active p-1.5 rounded-md text-active flex  md:flex-row items-center w-fit sm:w-auto">
+                <Label className="text-xs text-active">トータル時間 / </Label>{' '}
                 <p className=" font-bold">{ensureTotalMinutes} 分</p>
               </div>
             </div>
