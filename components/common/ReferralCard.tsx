@@ -10,13 +10,13 @@ import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Skeleton } from '../ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { toast } from '../ui/use-toast';
-import { Progress } from '../ui/progress';
-import Link from 'next/link';
+import { toast } from 'sonner'
+import { Progress } from '../ui/progress'
+import Link from 'next/link'
 
 export default function ReferralCard() {
-  const { salonId } = useSalon();
-  const [copied, setCopied] = useState<boolean>(false);
+  const { salonId } = useSalon()
+  const [copied, setCopied] = useState<boolean>(false)
 
   const referral = useQuery(
     api.salon.referral.query.findBySalonId,
@@ -25,35 +25,34 @@ export default function ReferralCard() {
           salonId: salonId,
         }
       : 'skip'
-  );
+  )
 
   // コピー状態をリセットするタイマー
   useEffect(() => {
     if (copied) {
-      const timer = setTimeout(() => setCopied(false), 2000);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => setCopied(false), 2000)
+      return () => clearTimeout(timer)
     }
-  }, [copied]);
+  }, [copied])
 
   // 紹介コードをクリップボードにコピーする関数
   const copyToClipboard = (): void => {
     if (referral?.referralCode) {
-      navigator.clipboard.writeText(referral.referralCode);
-      setCopied(true);
-      toast({
-        title: 'コピーしました',
+      navigator.clipboard.writeText(referral.referralCode)
+      setCopied(true)
+      toast.success('コピーしました', {
         description: '紹介コードがクリップボードにコピーされました',
         duration: 1500,
-      });
+      })
     }
-  };
+  }
 
   // 紹介リンクを共有する関数
   const shareReferralLink = (): void => {
     if (referral?.referralCode) {
       // アプリのベースURLを設定（環境に応じて変更が必要）
-      const baseUrl = window.location.origin;
-      const signupUrl = `${baseUrl}/sign-up?referral_code=${referral.referralCode}`;
+      const baseUrl = window.location.origin
+      const signupUrl = `${baseUrl}/sign-up?referral_code=${referral.referralCode}`
 
       // Web Share APIがサポートされている場合
       if (navigator.share) {
@@ -64,22 +63,21 @@ export default function ReferralCard() {
             url: signupUrl,
           })
           .catch((error) => {
-            console.error('共有に失敗しました:', error);
+            console.error('共有に失敗しました:', error)
             // フォールバック: URLをクリップボードにコピー
-            copySignupLink(signupUrl);
-          });
+            copySignupLink(signupUrl)
+          })
       } else {
         // Web Share APIがサポートされていない場合、URLをクリップボードにコピー
-        copySignupLink(signupUrl);
+        copySignupLink(signupUrl)
       }
     }
-  };
+  }
 
   // 招待リンクをクリップボードにコピーし、オプションで新しいタブで開く
   const copySignupLink = (url: string): void => {
-    navigator.clipboard.writeText(url);
-    toast({
-      title: '招待リンクをコピーしました',
+    navigator.clipboard.writeText(url)
+    toast.success('招待リンクをコピーしました', {
       description: 'クリップボードに招待リンクがコピーされました',
       action: (
         <Button variant="outline" size="sm" onClick={() => window.open(url, '_blank')}>
@@ -87,26 +85,26 @@ export default function ReferralCard() {
         </Button>
       ),
       duration: 5000,
-    });
-  };
+    })
+  }
 
   // 紹介プログレス計算
   const calculateProgress = (): number => {
-    if (!referral?.totalReferralCount) return 0;
-    const count = Math.min(referral.totalReferralCount, 6);
-    return (count / 6) * 100;
-  };
+    if (!referral?.totalReferralCount) return 0
+    const count = Math.min(referral.totalReferralCount, 6)
+    return (count / 6) * 100
+  }
 
   return (
     <AnimatePresence>
       {referral ? (
         referral.totalReferralCount! < 6 ? (
-          <Card className="overflow-hidden border-indigo-200 shadow-none">
+          <Card className="overflow-hidden border-border shadow-none">
             <CardContent className="p-5">
               <div className="flex flex-col gap-4">
                 <div className="flex justify-between items-center">
                   <div className="flex flex-col">
-                    <p className="text-sm text-gray-500 mb-1">あなたの紹介コード</p>
+                    <p className="text-xs text-muted-foreground mb-1">あなたの紹介コード</p>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-base tracking-wide uppercase">
                         {referral.referralCode}
@@ -121,7 +119,7 @@ export default function ReferralCard() {
                               onClick={copyToClipboard}
                             >
                               {copied ? (
-                                <Check size={16} className="text-green-500" />
+                                <Check size={16} className="text-active" />
                               ) : (
                                 <Copy size={16} />
                               )}
@@ -138,50 +136,50 @@ export default function ReferralCard() {
                     variant="outline"
                     size="sm"
                     onClick={shareReferralLink}
-                    className="gap-1 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                    className="gap-1 text-link border-link hover:bg-link/20"
                   >
                     <Share2 size={14} />
                     <span className="hidden md:block">紹介リンクを共有する</span>
                   </Button>
                 </div>
 
-                <div className="flex flex-col gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex flex-col gap-2 p-3 bg-muted rounded-lg border border-border">
                   <div className="flex flex-col gap-2 md:flex-row justify-between items-start mb-1">
-                    <p className="text-sm font-semibold text-gray-800">紹介特典 🎁</p>
-                    <p className="text-sm font-bold text-slate-600">
-                      最大<span className="text-green-600 text-xl px-1">30,000</span>
+                    <p className="text-sm font-semibold text-primary">紹介特典 🎁</p>
+                    <p className="text-sm font-bold text-primary">
+                      最大<span className="text-active text-xl px-1">30,000</span>
                       円分の割引を受け取る
                     </p>
                   </div>
-                  <p className="text-xs tracking-wide leading-4 text-gray-700">
+                  <p className="text-xs tracking-wide leading-4 text-primary">
                     1人紹介するごとに、翌月(25日)のサブスクリプション料金から 5,000円
                     割引されます（最大6回まで）。 特典の適用状況は、
                     <Link
-                      className="text-indigo-600 font-medium underline"
+                      className="text-link font-medium underline"
                       href="/dashboard/subscription"
                     >
                       サブスクリプション管理ページ
                     </Link>
                     でいつでもご確認いただけます。
                   </p>
-                  <p className="text-xs tracking-wide leading-4 text-gray-700">
+                  <p className="text-xs tracking-wide leading-4 text-primary">
                     紹介を受けた方お客様と紹介者のお客様の両方に月5,000円の割引を一回受けられます。毎月一回分の紹介料を割引き、余剰分は最大６回まで翌月に繰り越します。
                   </p>
-                  <p className="text-xs tracking-wide leading-4 text-gray-700 mt-2">
+                  <p className="text-xs tracking-wide leading-4 text-primary mt-2">
                     割引は、毎月(25日)に契約中のサブスクリプションに適用されます。
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <p className="text-xs font-bold tracking-tighter text-slate-600">
+                    <p className="text-xs font-bold tracking-tighter text-primary">
                       獲得した割引は
-                      <span className="text-green-600 text-2xl px-1">
+                      <span className="text-active text-2xl px-1">
                         {(referral.totalReferralCount! * 5000).toLocaleString()}
                       </span>
                       円です。
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-primary">
                       {referral.totalReferralCount && referral.totalReferralCount > 6
                         ? '6/6'
                         : `${referral.totalReferralCount ?? 0}/6`}
@@ -201,5 +199,5 @@ export default function ReferralCard() {
         <Skeleton className="h-52 w-full rounded-lg" />
       )}
     </AnimatePresence>
-  );
+  )
 }
