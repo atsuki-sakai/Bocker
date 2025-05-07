@@ -1,43 +1,43 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Coins, Gift } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Id } from '@/convex/_generated/dataModel';
-import { useZodForm } from '@/hooks/useZodForm';
-import { ExclusionMenu } from '@/components/common';
-import { z } from 'zod';
-import { POINT_EXPIRATION_DAYS } from '@/lib/constants';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Loading } from '@/components/common';
-import { useRouter } from 'next/navigation';
+import { Separator } from '@/components/ui/separator'
+import { Coins, Gift, Loader2 } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Id } from '@/convex/_generated/dataModel'
+import { useZodForm } from '@/hooks/useZodForm'
+import { ExclusionMenu } from '@/components/common'
+import { z } from 'zod'
+import { POINT_EXPIRATION_DAYS } from '@/lib/constants'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Loading } from '@/components/common'
+import { useRouter } from 'next/navigation'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
+} from '@/components/ui/accordion'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { AlertCircle } from 'lucide-react';
-import { DollarSign, Percent } from 'lucide-react';
-import { ZodTextField } from '@/components/common';
-import { Save } from 'lucide-react';
-import { useMutation, useQuery } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { handleErrorToMsg } from '@/lib/error';
-import { useSalon } from '@/hooks/useSalon';
-import xor from 'lodash-es/xor';
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { AlertCircle } from 'lucide-react'
+import { DollarSign, Percent } from 'lucide-react'
+import { ZodTextField } from '@/components/common'
+import { Save } from 'lucide-react'
+import { useMutation, useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { handleErrorToMsg } from '@/lib/error'
+import { useSalon } from '@/hooks/useSalon'
+import xor from 'lodash-es/xor'
 
 const pointConfigSchema = z.object({
   id: z.string().optional(),
@@ -45,10 +45,10 @@ const pointConfigSchema = z.object({
   pointRate: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null;
+      if (val === '' || val === null || val === undefined) return null
       // 数値に変換できない場合もnullを返す
-      const num = Number(val);
-      return isNaN(num) ? null : num;
+      const num = Number(val)
+      return isNaN(num) ? null : num
     },
     z
       .number()
@@ -59,10 +59,10 @@ const pointConfigSchema = z.object({
   fixedPoint: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null;
+      if (val === '' || val === null || val === undefined) return null
       // 数値に変換できない場合もnullを返す
-      const num = Number(val);
-      return isNaN(num) ? null : num;
+      const num = Number(val)
+      return isNaN(num) ? null : num
     },
     z
       .number()
@@ -71,25 +71,25 @@ const pointConfigSchema = z.object({
       .optional()
   ),
   pointExpirationDays: z.number().min(1).optional().default(POINT_EXPIRATION_DAYS[0].value),
-});
+})
 
 export default function PointTabs() {
-  const { salon } = useSalon();
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState('basic');
-  const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([]);
-  const [initialExclusionMenuIds, setInitialExclusionMenuIds] = useState<Id<'menu'>[]>([]);
+  const { salon } = useSalon()
+  const router = useRouter()
+  const [activeTab, setActiveTab] = useState('basic')
+  const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([])
+  const [initialExclusionMenuIds, setInitialExclusionMenuIds] = useState<Id<'menu'>[]>([])
 
   const pointConfig = useQuery(
     api.point.config.query.findBySalonId,
     salon ? { salonId: salon._id } : 'skip'
-  );
+  )
   const initialExclusionIds = useQuery(
     api.point.exclusion_menu.query.list,
     pointConfig?._id ? { salonId: salon!._id, pointConfigId: pointConfig._id } : 'skip'
-  );
-  const upsertExclusionMenu = useMutation(api.point.exclusion_menu.mutation.upsert);
-  const upsertPointConfig = useMutation(api.point.config.mutation.upsert);
+  )
+  const upsertExclusionMenu = useMutation(api.point.exclusion_menu.mutation.upsert)
+  const upsertPointConfig = useMutation(api.point.config.mutation.upsert)
   const {
     register,
     handleSubmit,
@@ -97,14 +97,14 @@ export default function PointTabs() {
     setValue,
     reset,
     formState: { isSubmitting, errors, isDirty },
-  } = useZodForm(pointConfigSchema);
+  } = useZodForm(pointConfigSchema)
 
   const handleExpirationChange = (value: string) => {
     setValue('pointExpirationDays', parseInt(value), {
       shouldValidate: true,
       shouldDirty: true,
-    });
-  };
+    })
+  }
 
   useEffect(() => {
     if (pointConfig) {
@@ -113,24 +113,24 @@ export default function PointTabs() {
         fixedPoint: pointConfig.fixedPoint,
         pointExpirationDays: pointConfig.pointExpirationDays ?? POINT_EXPIRATION_DAYS[0].value,
         isFixedPoint: pointConfig.isFixedPoint,
-      });
+      })
       if (initialExclusionIds) {
-        setInitialExclusionMenuIds(initialExclusionIds);
-        setSelectedMenuIds(initialExclusionIds);
+        setInitialExclusionMenuIds(initialExclusionIds)
+        setSelectedMenuIds(initialExclusionIds)
       }
     }
-  }, [pointConfig, initialExclusionIds, reset]);
+  }, [pointConfig, initialExclusionIds, reset])
 
   const isExclusionDirty = useMemo(() => {
-    return xor(initialExclusionMenuIds, selectedMenuIds).length > 0;
-  }, [initialExclusionMenuIds, selectedMenuIds]);
+    return xor(initialExclusionMenuIds, selectedMenuIds).length > 0
+  }, [initialExclusionMenuIds, selectedMenuIds])
 
   const onSubmit = async (data: z.infer<typeof pointConfigSchema>) => {
-    console.log(data);
+    console.log(data)
     try {
       if (!salon) {
-        toast.error('サロンが見つかりません');
-        return;
+        toast.error('サロンが見つかりません')
+        return
       }
       const pointConfigId = await upsertPointConfig({
         salonId: salon._id,
@@ -138,35 +138,35 @@ export default function PointTabs() {
         fixedPoint: data.fixedPoint ?? undefined,
         pointExpirationDays: data.pointExpirationDays ?? undefined,
         isFixedPoint: data.isFixedPoint ?? undefined,
-      });
+      })
       await upsertExclusionMenu({
         salonId: salon._id,
         pointConfigId: pointConfigId as Id<'point_config'>,
         selectedMenuIds: selectedMenuIds,
-      });
-      toast.success('設定を保存しました');
-      router.refresh();
+      })
+      toast.success('設定を保存しました')
+      router.refresh()
     } catch (error) {
-      toast.error(handleErrorToMsg(error));
+      toast.error(handleErrorToMsg(error))
     }
-  };
+  }
 
   if (!salon) {
-    return <Loading />;
+    return <Loading />
   }
   if (pointConfig === undefined && initialExclusionIds === undefined) {
     return <Loading />
   }
 
-  const watchedExpirationDays = watch('pointExpirationDays');
-  const watchedIsFixedPoint = watch('isFixedPoint');
+  const watchedExpirationDays = watch('pointExpirationDays')
+  const watchedIsFixedPoint = watch('isFixedPoint')
 
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-          e.preventDefault();
+          e.preventDefault()
         }
       }}
     >
@@ -185,13 +185,13 @@ export default function PointTabs() {
         <TabsContent value="basic" key="basic-tab">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-5">
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
-                <div className="p-3 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700">
-                  <h5 className="flex items-center font-bold gap-2">
-                    <Coins className="h-5 w-5 text-blue-600" />
+              <div className="border border-border rounded-lg overflow-hidden">
+                <div className="p-3 bg-muted">
+                  <h5 className="flex items-center text-xl font-bold gap-2">
+                    <Coins className="h-5 w-5 text-primary" />
                     ポイント基本設定
                   </h5>
-                  <p className="text-sm text-slate-500 py-2 mb-2">
+                  <p className="text-sm text-muted-foreground py-2 mb-2">
                     サロンを利用した顧客へのポイント付与方法を設定します。
                     <br />
                     ポイントは
@@ -199,7 +199,7 @@ export default function PointTabs() {
                     で付与されます。
                   </p>
 
-                  <span className="text-xs border-yellow-500 border bg-yellow-50 text-yellow-700 rounded-md p-2">
+                  <span className="text-xs border-warning border bg-warning text-warning-foreground rounded-md p-2">
                     ※ポイントを還元しない場合は0を設定してください。
                   </span>
                 </div>
@@ -207,14 +207,14 @@ export default function PointTabs() {
                 <div className="space-y-6 p-3 my-3">
                   <div className="flex flex-col space-y-2">
                     <Label htmlFor="point-type">ポイント付与タイプ</Label>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-muted-foreground">
                       利用額に対してポイント付与するか、固定ポイントを付与するかを選択します。
                     </span>
                     <div
                       className={`flex items-center justify-between p-3 rounded-md ${
                         watchedIsFixedPoint
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'bg-green-50 text-green-700'
+                          ? 'bg-link-foreground text-link'
+                          : 'bg-active-foreground text-active'
                       }`}
                     >
                       <span className="text-sm font-bold">
@@ -225,13 +225,12 @@ export default function PointTabs() {
                         id="point-type"
                         checked={watchedIsFixedPoint}
                         onCheckedChange={(checked) => {
-                          setValue('isFixedPoint', checked, { shouldDirty: true });
+                          setValue('isFixedPoint', checked, { shouldDirty: true })
                         }}
                         className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-green-600"
                       />
                     </div>
                   </div>
-
                   {watchedIsFixedPoint ? (
                     <ZodTextField
                       register={register}
@@ -257,17 +256,17 @@ export default function PointTabs() {
                         max="100"
                         value={watch('pointRate') !== undefined ? watch('pointRate') || 0 : ''}
                         onChange={(e) => {
-                          const percentValue = parseFloat(e.target.value);
+                          const percentValue = parseFloat(e.target.value)
                           if (!isNaN(percentValue)) {
                             setValue('pointRate', percentValue, {
                               shouldValidate: true,
                               shouldDirty: true,
-                            });
+                            })
                           } else {
                             setValue('pointRate', undefined, {
                               shouldValidate: true,
                               shouldDirty: true,
-                            });
+                            })
                           }
                         }}
                       />
@@ -279,7 +278,6 @@ export default function PointTabs() {
                       )}
                     </div>
                   )}
-
                   <div className="space-y-2">
                     <Label htmlFor="expiration" className=" font-medium">
                       ポイント有効期限
@@ -316,45 +314,39 @@ export default function PointTabs() {
             <div className="lg:col-span-7">
               <div>
                 <div className="h-full shadow-md hover:shadow-lg transition-shadow duration-300 border border-slate-200 rounded-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700 p-4">
-                    <h5 className="flex items-center font-bold gap-2">
-                      <Gift className="h-5 w-5 text-blue-500" />
+                  <div className="bg-muted p-3">
+                    <h5 className="flex items-center text-xl font-bold gap-2">
+                      <Gift className="h-5 w-5 text-primary" />
                       ポイント設定概要
                     </h5>
-                    <div className="text-sm text-slate-500 mt-2">
+                    <p className="text-sm text-muted-foreground mt-2">
                       現在の設定内容が適用されるとどのように適応されるのかを確認できます。
-                      <br />
-                      <p className="text-sm font-bold mt-2">1ポイント = 1円</p>
-                    </div>
+                    </p>
                   </div>
                   <div className="p-3">
                     <div className="space-y-5">
                       <div className="space-y-2 text-sm">
                         {watchedIsFixedPoint ? (
                           <p className="flex justify-between items-end text-sm font-bold">
-                            <span className="text-xs dark:text-slate-400">固定ポイント:</span>
+                            <span className="text-xs text-primary">固定ポイント:</span>
                             <span className="font-medium">{watch('fixedPoint') || 0} ポイント</span>
                           </p>
                         ) : (
                           <p className="flex justify-between items-end text-sm font-bold">
-                            <span className="text-slate-600 dark:text-slate-400">
-                              ポイント付与率:
-                            </span>
+                            <span className="text-primary">ポイント付与率:</span>
                             <span className="text-base font-bold tracking-wide">
                               {watch('pointRate') || 0}%
                             </span>
                           </p>
                         )}
                         <p className="flex justify-between items-end text-sm font-bold">
-                          <span className="text-slate-600 dark:text-slate-400">
-                            ポイント有効期限:
-                          </span>
+                          <span className="text-primary">ポイント有効期限:</span>
                           <span className="text-base font-bold tracking-wide">
                             {POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)
                               ?.label || POINT_EXPIRATION_DAYS[0].label}
                           </span>
                         </p>
-                        <p className="text-sm pt-4 w-full text-slate-700 ">
+                        <p className="text-sm pt-4 w-full text-primary text-end">
                           本日付与された場合、有効期限は{' '}
                           <span className="font-bold">
                             {new Date(
@@ -368,12 +360,10 @@ export default function PointTabs() {
                           です。
                         </p>
                       </div>
-
-                      <div className="space-y-2 py-3">
-                        <div className=" bg-white dark:bg-slate-700 rounded shadow-sm">
-                          <p className="text-sm text-slate-500 dark:text-slate-400">
-                            1,000円の決済に対して
-                          </p>
+                      <Separator className="" />
+                      <div className="space-y-4 py-4">
+                        <div className=" bg-background  rounded shadow-sm">
+                          <p className="text-sm text-muted-foreground">1,000円の決済に対して</p>
                           <p className="text-lg font-bold">
                             {watchedIsFixedPoint
                               ? watch('fixedPoint') || 0
@@ -381,10 +371,8 @@ export default function PointTabs() {
                             <span className="text-xs">ポイント付与</span>
                           </p>
                         </div>
-                        <div className=" bg-white dark:bg-slate-700 rounded shadow-sm">
-                          <p className="text-sm text-slate-500 dark:text-slate-400">
-                            5,000円の決済に対して
-                          </p>
+                        <div className=" bg-background  rounded shadow-sm">
+                          <p className="text-sm text-muted-foreground">5,000円の決済に対して</p>
                           <p className="text-lg font-bold">
                             {watchedIsFixedPoint
                               ? watch('fixedPoint') || 0
@@ -417,27 +405,7 @@ export default function PointTabs() {
         >
           {isSubmitting ? (
             <>
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              >
-                <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-              </motion.div>
+              <Loader2 className="h-4 w-4 animate-spin" />
               追加中...
             </>
           ) : (
@@ -452,7 +420,7 @@ export default function PointTabs() {
         {/* ① 付与の仕組み */}
         <AccordionItem value="point-scheme">
           <AccordionTrigger>ポイント付与の仕組み</AccordionTrigger>
-          <AccordionContent className="space-y-2 text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-lg mb-4">
+          <AccordionContent className="space-y-2 text-muted-foreground text-sm leading-relaxed bg-muted p-4 rounded-lg mb-4">
             <p>
               <strong>付与日:</strong> 施術が完了した予約をまとめて計算し、
               <span className="font-bold">利用月の翌月15日</span>に自動でポイントを付与します。
@@ -478,7 +446,7 @@ export default function PointTabs() {
         {/* ② 失効タイミング */}
         <AccordionItem value="point-expiration">
           <AccordionTrigger>ポイント失効のタイミング</AccordionTrigger>
-          <AccordionContent className="space-y-2 text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-lg mb-4">
+          <AccordionContent className="space-y-2 text-muted-foreground text-sm leading-relaxed bg-muted p-4 rounded-lg mb-4">
             <p>
               ポイントの有効期限はサロンを利用した最終日から
               <span className="font-bold">
@@ -496,7 +464,7 @@ export default function PointTabs() {
         {/* ③ 注意点 */}
         <AccordionItem value="point-caution">
           <AccordionTrigger>ポイント利用・付与の注意点</AccordionTrigger>
-          <AccordionContent className="space-y-2 text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-lg mb-4">
+          <AccordionContent className="space-y-2 text-muted-foreground text-sm leading-relaxed bg-muted p-4 rounded-lg mb-4">
             <ul className="list-disc list-inside space-y-1">
               <li>
                 ポイントを利用した決済額部分には新たなポイントは付与されません（二重付与防止）。
@@ -536,5 +504,5 @@ export default function PointTabs() {
         </AccordionItem>
       </Accordion>
     </form>
-  );
+  )
 }
