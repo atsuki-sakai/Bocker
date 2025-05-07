@@ -171,24 +171,9 @@ export default function StripeConnectStatus() {
     <div>
       <div className="mb-4">
         <div className="flex items-center gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-blue-500"
-          >
-            <path d="M4 9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
-            <path d="M10 13h4" />
-          </svg>
-          <h4 className="text-lg font-bold">Stripe決済連携</h4>
+          <h4 className="text-2xl font-bold mb-1">Stripe決済連携</h4>
         </div>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           Stripeアカウントを連携して、お客様からのクレジットカード決済を受け付けることができます。
         </p>
       </div>
@@ -196,12 +181,10 @@ export default function StripeConnectStatus() {
       <div className="flex flex-col md:flex-row justify-start items-start md:items-center gap-2 my-6">
         {isConnected && (
           <Button
-            size="sm"
             onClick={handleViewDashboard}
             disabled={isLoading}
             className={`text-sm ${status === 'active' ? '' : 'opacity-50 pointer-events-none'}`}
           >
-            <ExternalLink className="mr-1 h-4 w-4" />
             {isLoading ? (
               <>
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
@@ -209,6 +192,7 @@ export default function StripeConnectStatus() {
               </>
             ) : (
               <>
+                <ExternalLink className="mr-1 h-4 w-4" />
                 {status === 'incomplete' || status === 'pending'
                   ? '設定を完了する'
                   : status === 'restricted'
@@ -221,27 +205,25 @@ export default function StripeConnectStatus() {
       </div>
 
       <Alert className={`${statusColorMap[status]} mb-4`}>
-        <AlertTitle className=" text-sm font-medium">
+        <AlertTitle className=" text-sm font-medium mb-2">
           <span
             className={`text-xs tracking-widest font-bold px-3 py-1 rounded-md ${statusColorMap[status]}`}
           >
             {statusNameMap[status]}
           </span>
         </AlertTitle>
-        <AlertDescription className=" mt-1 text-sm">
-          {statusDescriptionMap[status]}
-        </AlertDescription>
+        <AlertDescription className="mt-1 text-sm">{statusDescriptionMap[status]}</AlertDescription>
       </Alert>
 
       {(status === 'pending' || status === 'incomplete' || status === 'restricted') && (
         <motion.div
-          className="mt-4 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/30"
+          className="mt-4 rounded-lg bg-muted p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
           <h3 className="mb-2 font-medium flex items-center">
-            <RefreshCw className="mr-2 h-4 w-4 text-blue-500" />
+            <RefreshCw className="mr-2 h-4 w-4 text-link" />
             {status === 'pending'
               ? 'Stripeアカウント設定の完了が必要です'
               : status === 'incomplete'
@@ -250,36 +232,36 @@ export default function StripeConnectStatus() {
           </h3>
 
           {status === 'pending' && (
-            <div className="space-y-3 mt-3">
+            <div className="space-y-3 mt-3 leading-6">
               <div className="flex items-start gap-2">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-blue-500 text-xs font-medium text-blue-500">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-link text-xs font-medium text-link">
                   1
                 </div>
                 <div>
                   <p className="font-medium">基本情報の入力</p>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     ビジネス名、住所、事業形態などの基本情報を入力してください
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-blue-500 text-xs font-medium text-blue-500">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-link text-xs font-medium text-link">
                   2
                 </div>
                 <div>
                   <p className="font-medium">銀行口座の登録</p>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     売上金の振込先となる銀行口座情報を登録してください
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-blue-500 text-xs font-medium text-blue-500">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-link text-xs font-medium text-link">
                   3
                 </div>
                 <div>
                   <p className="font-medium">本人確認の完了</p>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     本人確認書類をアップロードして、身元確認を完了してください
                   </p>
                 </div>
@@ -288,8 +270,8 @@ export default function StripeConnectStatus() {
           )}
 
           {status === 'incomplete' && (
-            <div className="space-y-3 mt-3">
-              <p className="text-sm text-gray-700">
+            <div className="space-y-3 mt-3 leading-6">
+              <p className="text-sm text-muted-foreground">
                 以下の情報が不足しています。「設定を完了する」ボタンをクリックして、残りの手続きを完了してください。
               </p>
               <ul className="ml-6 list-disc space-y-1 text-sm">
@@ -301,7 +283,7 @@ export default function StripeConnectStatus() {
 
           {status === 'restricted' && (
             <div className="space-y-3 mt-3">
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-muted-foreground">
                 決済処理は可能ですが、引き出し機能に制限があります。
               </p>
               <ul className="ml-6 list-disc space-y-1 text-sm">
@@ -320,11 +302,11 @@ export default function StripeConnectStatus() {
         </motion.div>
       )}
 
-      <div className="bg-gray-50 px-6 py-4 dark:bg-gray-800/50">
+      <div className="bg-muted px-6 py-4 rounded-md">
         <div className="w-full flex flex-col-reverse sm:flex-row justify-between gap-3">
-          <div className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="text-xs text-muted-foreground">
             <p className="text-sm font-bold">決済手数料: 4% + 40円/件</p>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-1">
               <p className="text-xs">※ 売り上げは毎月25日に設定した銀行口座へ振込まれます。</p>
             </div>
 
@@ -339,7 +321,7 @@ export default function StripeConnectStatus() {
                     handleConnectStripe()
                   }
                 }}
-                className="block mt-2 text-xs text-blue-500 hover:underline"
+                className="block mt-2 text-xs text-link hover:underline"
               >
                 アカウントを再作成する
               </button>
@@ -352,8 +334,8 @@ export default function StripeConnectStatus() {
               disabled={isLoading || (isConnected && status !== 'deauthorized')}
               className={`${
                 isConnected && status !== 'deauthorized'
-                  ? 'bg-gray-400 hover:bg-gray-400'
-                  : 'bg-[#635bff] hover:bg-[#8780fa]'
+                  ? 'bg-muted hover:bg-muted'
+                  : 'bg-link hover:bg-link'
               }`}
             >
               {isLoading ? (
@@ -374,7 +356,7 @@ export default function StripeConnectStatus() {
         {/* What is Stripe */}
         <AccordionItem value="stripe-overview">
           <AccordionTrigger>Stripe とは？</AccordionTrigger>
-          <AccordionContent className="space-y-3 text-sm text-slate-600">
+          <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <p>
               <strong>Stripe（ストライプ）</strong> は、米国発のオンライン決済サービスで、 世界 120
               か国以上・数百万社以上のビジネスで利用されています。Bcker は<strong>Stripe</strong>{' '}
@@ -387,7 +369,7 @@ export default function StripeConnectStatus() {
               で完結。サロン様は「売上を見る」「いつ入金されるか確認する」
               だけのシンプルな運用で済みます。
             </p>
-            <p className="bg-slate-100 p-3 rounded-md">
+            <p className="bg-muted p-3 rounded-md">
               <strong>ポイント</strong>
               <br />
               ・Bcker もサロン様もカード番号を保持しないため情報漏えいリスクを最小化
@@ -402,9 +384,9 @@ export default function StripeConnectStatus() {
         {/* Requirements & Flow */}
         <AccordionItem value="stripe-signup">
           <AccordionTrigger>登録に必要なもの・手続きの流れ</AccordionTrigger>
-          <AccordionContent className="space-y-3 text-sm text-slate-600">
+          <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <p className="font-medium">登録に必要なもの</p>
-            <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+            <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>サロンの正式名称・所在地・電話番号</li>
               <li>運営責任者（代表者）の氏名・生年月日・住所</li>
               <li>本人確認書類（運転免許証・パスポート等）の画像</li>
@@ -413,7 +395,7 @@ export default function StripeConnectStatus() {
             </ul>
 
             <p className="font-medium">手続きの流れ（所要時間 10〜15 分）</p>
-            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 Bcker で <strong>「Stripeと連携する」</strong> をクリック
               </li>
@@ -426,7 +408,7 @@ export default function StripeConnectStatus() {
               </li>
               <li>審査完了のメールを受信後、カード決済が利用可能に</li>
             </ol>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               情報に不備がある場合は Stripe から追加提出のメールが届きます。
             </p>
           </AccordionContent>
@@ -435,8 +417,8 @@ export default function StripeConnectStatus() {
         {/* Safety & Security */}
         <AccordionItem value="stripe-safety">
           <AccordionTrigger>安全性・セキュリティ</AccordionTrigger>
-          <AccordionContent className="space-y-3 text-sm text-slate-600">
-            <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+          <AccordionContent className="space-y-3 text-sm text-muted-foreground">
+            <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 国際基準 <strong>PCI‑DSS レベル&nbsp;1</strong>（最高位）を取得
               </li>
@@ -458,13 +440,13 @@ export default function StripeConnectStatus() {
         {/* Liability & Risk */}
         <AccordionItem value="stripe-liability">
           <AccordionTrigger>責任分担とリスクのない理由</AccordionTrigger>
-          <AccordionContent className="space-y-3 text-sm text-slate-600">
+          <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <p>
               Bcker とサロン様は <strong>決済代行業務</strong> を Stripe に委託しています。
               そのため、カード情報の保管・不正監視・チャージバック対応など、
               高度なセキュリティ管理は Stripe が担います。
             </p>
-            <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+            <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 カード番号は <strong>Bcker / サロン様のサーバーに一切保存されません</strong>
               </li>
@@ -488,8 +470,8 @@ export default function StripeConnectStatus() {
         {/* Payout flow */}
         <AccordionItem value="stripe-payout">
           <AccordionTrigger>売上の入金サイクル</AccordionTrigger>
-          <AccordionContent className="space-y-3 text-sm text-slate-600">
-            <ol className="list-decimal list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+          <AccordionContent className="space-y-3 text-sm text-muted-foreground">
+            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>お客様が Bcker でカード決済</li>
               <li>決済額は Stripe 上の残高に即時反映</li>
               <li>
@@ -510,8 +492,8 @@ export default function StripeConnectStatus() {
         {/* Fees */}
         <AccordionItem value="stripe-fee">
           <AccordionTrigger>手数料について</AccordionTrigger>
-          <AccordionContent className="space-y-3 text-sm text-slate-600">
-            <ul className="list-disc list-inside space-y-1 bg-slate-100 p-4 rounded-md">
+          <AccordionContent className="space-y-3 text-sm text-muted-foreground">
+            <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 <strong>決済手数料:</strong> 売上の <strong>4%</strong> + <strong>40円</strong> / 件
               </li>
@@ -526,7 +508,7 @@ export default function StripeConnectStatus() {
               例）10,000 円のお会計の場合：10,000 × 4% + 40 = <strong>440 円</strong>
               のみが手数料として引かれ、<strong>9,560&nbsp;円</strong> が振込対象額となります。
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               ※ 一部ブランドの海外発行カードは追加 1.5% が発生する場合があります。
             </p>
           </AccordionContent>
@@ -535,7 +517,7 @@ export default function StripeConnectStatus() {
         {/* FAQ */}
         <AccordionItem value="stripe-faq">
           <AccordionTrigger>よくある質問</AccordionTrigger>
-          <AccordionContent className="space-y-4 text-sm text-slate-600">
+          <AccordionContent className="space-y-4 text-sm text-muted-foreground">
             <div>
               <p className="font-semibold">カード決済が失敗した場合は？</p>
               <p>
