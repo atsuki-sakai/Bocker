@@ -63,44 +63,44 @@ interface PlanCardProps {
     isSubmitting,
     isPopular = false,
     highlightColor,
-    delay
+    delay,
   }: PlanCardProps) {
     // 現在のプランかどうかのチェックをメモ化
     const isCurrentPlan = useMemo(() => {
-      return currentPlanStr === planId && (!isActive || (currentBillingPeriod === billingPeriod));
-    }, [currentPlanStr, planId, isActive, currentBillingPeriod, billingPeriod]);
+      return currentPlanStr === planId && (!isActive || currentBillingPeriod === billingPeriod)
+    }, [currentPlanStr, planId, isActive, currentBillingPeriod, billingPeriod])
 
     // 支払い期間が変更されているかのチェックをメモ化
     const isBillingPeriodChange = useMemo(() => {
-      return currentPlanStr === planId && currentBillingPeriod !== billingPeriod;
-    }, [currentPlanStr, planId, currentBillingPeriod, billingPeriod]);
+      return currentPlanStr === planId && currentBillingPeriod !== billingPeriod
+    }, [currentPlanStr, planId, currentBillingPeriod, billingPeriod])
 
     // 月額換算価格をメモ化
     const monthlyEquivalent = useMemo(() => {
-      if (billingPeriod === "yearly") {
-        return Math.floor(price / 12).toLocaleString();
+      if (billingPeriod === 'yearly') {
+        return Math.floor(price / 12).toLocaleString()
       }
-      return null;
-    }, [billingPeriod, price]);
+      return null
+    }, [billingPeriod, price])
 
     // サブスクリプションアクションのハンドラーをメモ化
     const handleSubscribe = useCallback(() => {
-      onSubscribeAction();
-    }, [onSubscribeAction]);
+      onSubscribeAction()
+    }, [onSubscribeAction])
 
     // ポータルアクションのハンドラーをメモ化
     const handlePortal = useCallback(() => {
-      onPortalAction();
-    }, [onPortalAction]);
+      onPortalAction()
+    }, [onPortalAction])
 
     // カードのスタイリングをメモ化
     const cardStyle = useMemo(() => {
       return cn(
-        "h-full shadow-xl border-0 overflow-hidden bg-white dark:bg-slate-800 relative", 
+        'h-full shadow-xl border-0 overflow-hidden bg-white dark:bg-slate-800 relative',
         isPopular ? 'border-2 border-purple-400' : ''
-      );
-    }, [isPopular]);
-  
+      )
+    }, [isPopular])
+
     return (
       <motion.div
         initial={{ y: 30, opacity: 0 }}
@@ -135,10 +135,7 @@ interface PlanCardProps {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
                 >
-                  <Badge
-                    variant="default"
-                    className="bg-active  text-active-foreground px-3 py-1 animate-pulse"
-                  >
+                  <Badge variant="default" className="bg-active text-white px-3 py-1 animate-pulse">
                     現在のプラン
                   </Badge>
                 </motion.div>
@@ -204,7 +201,7 @@ interface PlanCardProps {
             />
           </CardContent>
 
-          <CardFooter className="pt-2 pb-4 px-6 text-xs  text-center">
+          <CardFooter className="pt-2 pb-4 px-6 text-xs text-muted-foreground text-center">
             <p>※30日間の無料トライアル付き</p>
           </CardFooter>
         </Card>
@@ -212,111 +209,118 @@ interface PlanCardProps {
     )
   }
 
-
-interface PlanActionButtonProps {
-    isActive: boolean;
-    isCurrentPlan: boolean;
-    isBillingPeriodChange: boolean;
-    currentPlanStr: string | null;
-    planId: string;
-    currentBillingPeriod?: BillingPeriod;
-    billingPeriod: BillingPeriod;
-    onSubscribeAction: () => void;
-    onPortalAction: () => void;
-    isSubmitting: boolean;
-    highlightColor: string;
-}
-
-function PlanActionButton({
-isActive,
-isCurrentPlan,
-isBillingPeriodChange,
-currentPlanStr,
-planId,
-currentBillingPeriod,
-billingPeriod,
-onSubscribeAction,
-onPortalAction,
-isSubmitting,
-highlightColor
-}: PlanActionButtonProps) {
-  // ローディングボタンをメモ化
-  const loadingButton = useMemo(() => (
-    <Button disabled className="w-full">
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      処理中...
-    </Button>
-  ), []);
-
-  // サブスクリプションアクションハンドラをメモ化
-  const handleSubscribe = useCallback(() => {
-    onSubscribeAction();
-  }, [onSubscribeAction]);
-
-  // ポータルアクションハンドラをメモ化
-  const handlePortal = useCallback(() => {
-    onPortalAction();
-  }, [onPortalAction]);
-
-  // ボタンの表示テキストをメモ化
-  const buttonText = useMemo(() => {
-    if (isBillingPeriodChange) {
-      return <span className="flex items-center gap-1">
-        {billingPeriod === "yearly" ? "年払いに変更" : "月払いに変更"}
-      </span>;
-    } else if (currentPlanStr?.toLowerCase() === planId.toLowerCase()) {
-      return <span className="flex items-center gap-1">現在のプラン</span>;
-    } else {
-      return <span className="flex items-center gap-1">プランを変更</span>;
-    }
-  }, [isBillingPeriodChange, billingPeriod, currentPlanStr, planId]);
-
-  // ボタンが無効かどうかをメモ化
-  const isButtonDisabled = useMemo(() => {
-    return currentPlanStr?.toLowerCase() === planId.toLowerCase() && currentBillingPeriod === billingPeriod;
-  }, [currentPlanStr, planId, currentBillingPeriod, billingPeriod]);
-
-  if (isSubmitting) return loadingButton;
-
-  if (isActive) {
-    if (isCurrentPlan) {
-      return (
-        <Button
-          onClick={handlePortal}
-          className="w-full bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white"
-        >
-          プランを管理する
-        </Button>
-      );
-    } else if (isBillingPeriodChange) {
-      return (
-        <Button
-          onClick={handleSubscribe}
-          className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
-        >
-          {buttonText}
-        </Button>
-      );
-    } else {
-      return (
-        <Button
-          onClick={handleSubscribe}
-          className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
-          disabled={isButtonDisabled}
-        >
-          {buttonText}
-        </Button>
-      );
-    }
+  interface PlanActionButtonProps {
+    isActive: boolean
+    isCurrentPlan: boolean
+    isBillingPeriodChange: boolean
+    currentPlanStr: string | null
+    planId: string
+    currentBillingPeriod?: BillingPeriod
+    billingPeriod: BillingPeriod
+    onSubscribeAction: () => void
+    onPortalAction: () => void
+    isSubmitting: boolean
+    highlightColor: string
   }
 
-  return (
-    <Button
-      onClick={handleSubscribe}
-      className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
-    >
-      今すぐ始める
-      <ArrowRight className="ml-1.5 h-4 w-4" />
-    </Button>
-  );
-}
+  function PlanActionButton({
+    isActive,
+    isCurrentPlan,
+    isBillingPeriodChange,
+    currentPlanStr,
+    planId,
+    currentBillingPeriod,
+    billingPeriod,
+    onSubscribeAction,
+    onPortalAction,
+    isSubmitting,
+    highlightColor,
+  }: PlanActionButtonProps) {
+    // ローディングボタンをメモ化
+    const loadingButton = useMemo(
+      () => (
+        <Button disabled className="w-full">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          処理中...
+        </Button>
+      ),
+      []
+    )
+
+    // サブスクリプションアクションハンドラをメモ化
+    const handleSubscribe = useCallback(() => {
+      onSubscribeAction()
+    }, [onSubscribeAction])
+
+    // ポータルアクションハンドラをメモ化
+    const handlePortal = useCallback(() => {
+      onPortalAction()
+    }, [onPortalAction])
+
+    // ボタンの表示テキストをメモ化
+    const buttonText = useMemo(() => {
+      if (isBillingPeriodChange) {
+        return (
+          <span className="flex items-center gap-1">
+            {billingPeriod === 'yearly' ? '年払いに変更' : '月払いに変更'}
+          </span>
+        )
+      } else if (currentPlanStr?.toLowerCase() === planId.toLowerCase()) {
+        return <span className="flex items-center gap-1">現在のプラン</span>
+      } else {
+        return <span className="flex items-center gap-1">プランを変更</span>
+      }
+    }, [isBillingPeriodChange, billingPeriod, currentPlanStr, planId])
+
+    // ボタンが無効かどうかをメモ化
+    const isButtonDisabled = useMemo(() => {
+      return (
+        currentPlanStr?.toLowerCase() === planId.toLowerCase() &&
+        currentBillingPeriod === billingPeriod
+      )
+    }, [currentPlanStr, planId, currentBillingPeriod, billingPeriod])
+
+    if (isSubmitting) return loadingButton
+
+    if (isActive) {
+      if (isCurrentPlan) {
+        return (
+          <Button
+            onClick={handlePortal}
+            className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
+          >
+            プランを管理する
+          </Button>
+        )
+      } else if (isBillingPeriodChange) {
+        return (
+          <Button
+            onClick={handleSubscribe}
+            className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
+          >
+            {buttonText}
+          </Button>
+        )
+      } else {
+        return (
+          <Button
+            onClick={handleSubscribe}
+            className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
+            disabled={isButtonDisabled}
+          >
+            {buttonText}
+          </Button>
+        )
+      }
+    }
+
+    return (
+      <Button
+        onClick={handleSubscribe}
+        className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
+      >
+        今すぐ始める
+        <ArrowRight className="ml-1.5 h-4 w-4" />
+      </Button>
+    )
+  }

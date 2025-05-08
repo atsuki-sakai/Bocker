@@ -3,7 +3,6 @@ import './globals.css'
 import { ConvexClientProvider } from '@/components/providers'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Toaster } from 'sonner'
-import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { Noto_Sans_JP } from 'next/font/google'
 
 const notoJP = Noto_Sans_JP({
@@ -31,19 +30,12 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={`${notoJP.variable} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <ClerkProvider dynamic>
-            <ConvexClientProvider>
-              {children}
-              <Toaster position="top-right" richColors />
-            </ConvexClientProvider>
-          </ClerkProvider>
-        </ThemeProvider>
+        <ClerkProvider dynamic>
+          <ConvexClientProvider>
+            {children}
+            <Toaster position="top-right" richColors />
+          </ConvexClientProvider>
+        </ClerkProvider>
       </body>
     </html>
   )

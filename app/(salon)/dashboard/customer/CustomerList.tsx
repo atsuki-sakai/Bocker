@@ -123,10 +123,10 @@ export default function CustomerList() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted text-muted-foreground">
-              <TableHead className="px-2 text-nowrap w-fit">顧客名/LINEユーザー名</TableHead>
-              <TableHead className="px-2 text-nowrap w-fit">連絡先</TableHead>
-              <TableHead className="px-2 text-nowrap w-fit">来店回数</TableHead>
-              <TableHead className="px-2 text-nowrap w-fit">最終来店日</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">顧客名/LINEユーザー名</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">連絡先</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">来店回数</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">最終来店日</TableHead>
               <TableHead className="px-2 w-fit">タグ</TableHead>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[50px]"></TableHead>
@@ -143,8 +143,8 @@ export default function CustomerList() {
             ) : (
               filteredCustomers.map((customer) => (
                 <TableRow key={customer._id} className="hover:bg-transparent">
-                  <TableCell className="font-medium px-2">
-                    <div className="flex items-center text-xs text-muted-foreground gap-2 text-nowrap">
+                  <TableCell className="font-medium px-4">
+                    <div className="flex items-center text-xs text-muted-foreground gap-4 text-nowrap">
                       <span>
                         {customer.lastName && customer.firstName
                           ? `${customer.lastName} ${customer.firstName}`
@@ -158,10 +158,10 @@ export default function CustomerList() {
                     </div>
                   </TableCell>
 
-                  <TableCell className="px-2 text-xs">
+                  <TableCell className="px-4 text-xs">
                     <div className="space-y-1">
                       {customer.phone ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-4">
                           <Phone size={14} className="text-muted-foreground" />
                           <span>{customer.phone}</span>
                         </div>
@@ -169,7 +169,7 @@ export default function CustomerList() {
                         <p className="text-muted-foreground">未登録</p>
                       )}
                       {customer.email ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-4">
                           <Mail size={14} className="text-muted-foreground" />
                           <span>{customer.email}</span>
                         </div>
@@ -179,12 +179,14 @@ export default function CustomerList() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge>{customer.useCount ?? 0}回</Badge>
+                    <Badge>{customer.useCount ?? 0} 回</Badge>
                   </TableCell>
-                  <TableCell className="px-2">
-                    <div className="flex items-center gap-2">
+                  <TableCell className="px-4">
+                    <div className="flex items-center gap-4">
                       <Calendar size={16} className="text-muted-foreground" />
-                      {formatDate(customer.lastReservationDate_unix)}
+                      <span className="text-nowrap">
+                        {formatDate(customer.lastReservationDate_unix)}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="w-full">
@@ -200,17 +202,17 @@ export default function CustomerList() {
                       <span className="text-muted-foreground text-sm">タグなし</span>
                     )}
                   </TableCell>
-                  <TableCell className="px-2">
+                  <TableCell className="px-4">
                     <Button variant="ghost" size="icon" className="text-xs">
                       <Link href={`/dashboard/customer/${customer._id}`}>詳細</Link>
                     </Button>
                   </TableCell>
-                  <TableCell className="px-2">
+                  <TableCell className="px-4">
                     <Button variant="ghost" size="icon" className="text-xs">
                       <Link href={`/dashboard/customer/${customer._id}/edit`}>編集</Link>
                     </Button>
                   </TableCell>
-                  <TableCell className="px-2">
+                  <TableCell className="px-4">
                     <Button
                       variant="destructive"
                       size="icon"

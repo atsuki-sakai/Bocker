@@ -29,7 +29,7 @@ export default function BillingPeriodToggle({ billingPeriod, setBillingPeriodAct
         'px-4 py-2 rounded-full text-sm font-bold transition-all duration-200',
         billingPeriod === 'monthly'
           ? 'bg-button shadow-sm text-button-foreground'
-          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          : 'text-secondary-foreground hover:text-secondary-foreground'
       ),
     [billingPeriod]
   )
@@ -40,18 +40,18 @@ export default function BillingPeriodToggle({ billingPeriod, setBillingPeriodAct
         'px-4 py-2 rounded-full text-sm font-bold transition-all duration-200',
         billingPeriod === 'yearly'
           ? 'bg-button shadow-sm text-button-foreground'
-          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          : 'text-secondary-foreground hover:text-secondary-foreground'
       ),
     [billingPeriod]
   )
 
   return (
-    <div className="inline-flex items-center bg-muted p-1 rounded-full shadow-sm mb-4">
+    <div className="inline-flex items-center bg-secondary p-1 rounded-full shadow-sm mb-4">
       <button onClick={monthlyClickHandler} className={monthlyButtonClasses}>
         月払い
       </button>
       <button onClick={yearlyClickHandler} className={yearlyButtonClasses}>
-        年払い <span className="text-xs text-active font-bold">17%~20%お得</span>
+        年払い <span className="text-xs text-neon-foreground font-bold">17%~20%お得</span>
       </button>
     </div>
   )

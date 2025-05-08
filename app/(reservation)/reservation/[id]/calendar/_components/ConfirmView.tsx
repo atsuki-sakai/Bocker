@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Doc, Id } from '@/convex/_generated/dataModel'
-import { Clock } from 'lucide-react'
+import { Clock, CheckCircle } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
@@ -196,12 +196,12 @@ export const ConfirmView = ({
     <div>
       <div className="space-y-6">
         {/* 予約内容の概要 */}
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="text-lg font-medium text-center tracking-wide mb-4">予約内容の確認</h3>
+        <div className="bg-muted p-4 rounded-lg">
+          <h3 className="text-lg font-bold text-center tracking-wide mb-4">予約内容の確認</h3>
           <div className="space-y-2">
             {/* 施術時間 */}
             <div>
-              <p className="text-base font-bold text-indigo-500">
+              <p className="text-base font-bold text-active">
                 <span className="">{selectedDate?.toLocaleDateString()}</span>
                 <span className=" ml-3">
                   {selectedTime?.startHour} - {selectedTime?.endHour}
@@ -209,7 +209,7 @@ export const ConfirmView = ({
               </p>
             </div>
             <div className="flex items-center text-sm">
-              <Clock className="h-4 w-4 mr-2 text-gray-500" />
+              <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
               <span>
                 施術時間: {hours > 0 ? `${hours}時間` : ''} {minutes > 0 ? `${minutes}分` : ''}
               </span>
@@ -217,12 +217,12 @@ export const ConfirmView = ({
 
             {/* メニュー一覧 */}
             <div className="space-y-1">
-              <p className="text-sm font-medium">メニュー:</p>
+              <p className="text-sm font-bold">メニュー</p>
               <ul className="text-sm pl-5 space-y-1">
                 {selectedMenus.map((menu: Doc<'menu'>) => (
                   <li key={menu._id} className="flex justify-between">
                     <span>{menu.name}</span>
-                    <span className="text-gray-500">
+                    <span className="text-muted-foreground text-nowrap">
                       {menu.ensureTimeToMin || menu.timeToMin
                         ? `¥${menu.salePrice ? menu.salePrice.toLocaleString() : menu.unitPrice ? menu.unitPrice.toLocaleString() : ''} / ${menu.ensureTimeToMin || menu.timeToMin}分`
                         : ''}
@@ -235,12 +235,12 @@ export const ConfirmView = ({
             {/* オプション一覧 */}
             {selectedOptions.length > 0 && (
               <div className="space-y-1">
-                <p className="text-sm font-medium">オプション:</p>
+                <p className="text-sm font-bold">オプション</p>
                 <ul className="text-sm pl-5 space-y-1">
                   {selectedOptions.map((option: Doc<'salon_option'>) => (
                     <li key={option._id} className="flex justify-between">
                       <span>{option.name}</span>
-                      <span className="text-gray-500">
+                      <span className="text-muted-foreground text-nowrap">
                         {option.ensureTimeToMin || option.timeToMin
                           ? `¥${option.salePrice ? option.salePrice.toLocaleString() : option.unitPrice ? option.unitPrice.toLocaleString() : ''} / ${option.ensureTimeToMin || option.timeToMin}分`
                           : ''}
@@ -254,27 +254,24 @@ export const ConfirmView = ({
             {/* スタッフ情報 */}
             {selectedStaff && (
               <div className="space-y-1">
-                <p className="text-sm font-medium">スタッフ:</p>
+                <p className="text-sm font-bold">スタッフ</p>
                 <p className="text-sm pl-5 flex justify-between">
                   <span>{selectedStaff.name}</span>
                   {extraCharge > 0 && (
-                    <span className="text-gray-500">指名料 / ¥{extraCharge.toLocaleString()}</span>
+                    <span className="text-muted-foreground">
+                      指名料 / ¥{extraCharge.toLocaleString()}
+                    </span>
                   )}
                 </p>
               </div>
             )}
           </div>
         </div>
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <p className="text-sm text-blue-700">利用可能ポイント: {availablePoints}ポイント</p>
-          <p className="text-gray-600 text-xs mt-1">
-            保有ポイントを使用して割引を受けることができます。
-          </p>
-        </div>
+
         <div className="space-y-2">
-          <div className="flex justify-between">
-            <p className="text-sm font-medium">使用ポイント: {usePoints}ポイント</p>
-            <p className="text-sm text-gray-500">最大 {maxUsablePoints}ポイント</p>
+          <div className="flex justify-between items-center">
+            <p className="text-base font-bold">使用ポイント: {usePoints}ポイント</p>
+            <p className="text-xs text-muted-foreground">最大 {maxUsablePoints}ポイント</p>
           </div>
 
           <div className="w-[90%] mx-auto">
@@ -286,21 +283,21 @@ export const ConfirmView = ({
             />
           </div>
 
-          <div className="flex justify-between text-xs text-gray-500">
+          <div className="flex justify-between text-sm text-muted-foreground">
             <span>0</span>
             <span>{maxUsablePoints}</span>
           </div>
         </div>
         <div className="space-y-2 border-t pt-4">
           <div>
-            <p className="font-medium mb-2">クーポンコードを使用する</p>
+            <p className="font-bold mb-2">クーポンコードを使用する</p>
             <div className="flex space-x-2">
               <Input
                 placeholder="クーポンコード"
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value)}
                 disabled={!!appliedCoupon || isValidatingCoupon}
-                className={couponError ? 'border-red-500' : ''}
+                className={couponError ? 'border-destructive' : ''}
               />
               {!appliedCoupon ? (
                 <Button
@@ -316,24 +313,11 @@ export const ConfirmView = ({
                 </Button>
               )}
             </div>
-            {couponError && <p className="text-red-500 text-sm mt-1">{couponError}</p>}
+            {couponError && <p className="text-destructive text-sm mt-1">{couponError}</p>}
             {appliedCoupon && (
-              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-green-700 text-sm flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+              <div className="mt-2 p-2 bg-active-foreground border border-active rounded-md">
+                <p className="text-active text-sm flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-1" />
                   クーポン「{appliedCoupon.name}」が適用されました（
                   {appliedCoupon.discount.toLocaleString()}円割引）
                 </p>
@@ -353,12 +337,12 @@ export const ConfirmView = ({
               <p>¥{extraCharge.toLocaleString()}</p>
             </div>
           )}
-          <div className="flex justify-between text-green-600">
+          <div className="flex justify-between text-active">
             <p>ポイント割引</p>
             <p>-¥{usePoints.toLocaleString()}</p>
           </div>
           {appliedCoupon && (
-            <div className="flex justify-between text-green-600">
+            <div className="flex justify-between text-active">
               <p>クーポン割引</p>
               <p>-¥{appliedCoupon.discount.toLocaleString()}</p>
             </div>

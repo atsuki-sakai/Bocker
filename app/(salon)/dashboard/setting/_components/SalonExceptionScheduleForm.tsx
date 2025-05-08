@@ -221,7 +221,7 @@ export default function SalonExceptionScheduleForm() {
                 <Skeleton className="h-64 sm:h-72 w-full bg-muted" />
               </div>
             ) : (
-              <div className="max-w-full overflow-x-auto">
+              <div className="max-w-full">
                 <CalendarMultiSelect
                   selectedDates={selectedDates}
                   onDatesChangeAction={handleDatesChange}

@@ -321,7 +321,7 @@ export default function SubscriptionForm({
           onSubscribeAction={handleLiteSubscribe}
           onPortalAction={handleBillingPortal}
           isSubmitting={isSubmitting}
-          highlightColor="from-blue-800 to-cyan-800"
+          highlightColor="from-palette-2-foreground to-palette-2-foreground"
           delay={0}
         />
 
@@ -347,7 +347,7 @@ export default function SubscriptionForm({
           onPortalAction={handleBillingPortal}
           isSubmitting={isSubmitting}
           isPopular={false}
-          highlightColor="from-purple-800 to-indigo-800"
+          highlightColor="from-palette-3-foreground to-palette-3-foreground"
           delay={0.1}
         />
 

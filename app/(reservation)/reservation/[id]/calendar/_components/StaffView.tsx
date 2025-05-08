@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/common'
@@ -8,12 +9,14 @@ import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { convertGender, Gender } from '@/services/convex/shared/types/common'
 import { Instagram } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
@@ -74,7 +77,9 @@ export const StaffView = ({
   return (
     <div>
       <h2 className="text-base">スタッフを選択</h2>
-      <p className="text-gray-600 mb-4 text-sm">担当してほしいスタッフを選択してください。</p>
+      <p className="text-muted-foreground mb-4 text-sm">
+        担当してほしいスタッフを選択してください。
+      </p>
       <div className="space-y-3">
         {sortedStaffs.length > 0 ? (
           sortedStaffs.map((staff) => (
@@ -95,18 +100,20 @@ export const StaffView = ({
                 <div className="flex justify-start items-start flex-col">
                   <p className="font-medium">
                     {staff.name}{' '}
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-muted-foreground">
                       {convertGender(staff.gender as Gender)}
                     </span>
                   </p>
-                  <div className="flex items-end gap-2 text-slate-500">
+                  <div className="flex items-end gap-2 text-muted-foreground">
                     <p className="text-xs">指名料</p>
-                    <span className="text-sm text-green-600">
+                    <span className="text-sm text-active">
                       {staff.extraCharge ? `¥${staff.extraCharge.toLocaleString()}` : `無料`}
                     </span>
                   </div>
                   <Button className="p-0 m-0" variant="ghost" onClick={() => setInfoStaff(staff)}>
-                    <span className="text-xs font-light underline text-blue-600">詳細を見る</span>
+                    <span className="text-xs font-light underline text-link-foreground">
+                      詳細を見る
+                    </span>
                   </Button>
                 </div>
               </div>
@@ -121,10 +128,10 @@ export const StaffView = ({
             </div>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center h-full border rounded-lg p-4 bg-slate-50">
-            <p className="text-gray-600  text-sm">対応可能なスタッフが見つかりません。</p>
+          <div className="flex flex-col items-center justify-center h-full border rounded-lg p-4 bg-muted">
+            <p className="text-muted-foreground  text-sm">対応可能なスタッフが見つかりません。</p>
 
-            <p className="text-gray-600 text-sm">
+            <p className="text-muted-foreground text-sm">
               メニューの変更、組み合わせの変更をお願いします。
             </p>
           </div>
@@ -150,37 +157,34 @@ export const StaffView = ({
             <DialogTitle className="text-start pt-2 flex items-center justify-between gap-2">
               <div>
                 {infoStaff?.name}{' '}
-                <span className="text-xs text-slate-500 text-nowrap">
+                <span className="text-xs text-muted-foreground text-nowrap">
                   {infoStaff?.gender != null && `| ${convertGender(infoStaff?.gender as Gender)}`}
                   {infoStaff?.age != null && ` | ${infoStaff.age}歳`}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-700">指名料</span>
+                <span className="text-xs text-muted-foreground">指名料</span>
                 {infoStaff?.extraCharge ? (
-                  <span className="text-sm text-green-600">
+                  <span className="text-sm text-active">
                     {`¥${infoStaff.extraCharge.toLocaleString()}`}
                   </span>
                 ) : (
-                  <span className="text-sm text-green-600">無料</span>
+                  <span className="text-sm text-muted-foreground">無料</span>
                 )}
               </div>
               {infoStaff?.instagramLink && (
-                <a href={infoStaff.instagramLink} target="_blank" rel="noopener noreferrer">
+                <Link href={infoStaff.instagramLink} target="_blank" rel="noopener noreferrer">
                   <Instagram className="w-5 h-5 text-pink-500" />
-                </a>
+                </Link>
               )}
             </DialogTitle>
 
             {infoStaff?.tags && infoStaff.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {infoStaff.tags.map((tag, index) => (
-                  <div
-                    key={`tag-${index}`}
-                    className=" bg-slate-50 border border-slate-500 rounded-md px-1.5"
-                  >
-                    <span className="text-xs text-slate-500">{tag}</span>
-                  </div>
+                  <Badge key={`tag-${index}`} variant="outline">
+                    {tag}
+                  </Badge>
                 ))}
               </div>
             )}
@@ -192,7 +196,7 @@ export const StaffView = ({
 
                 {infoStaff?.featuredHairimgPath && infoStaff.featuredHairimgPath.length > 0 ? (
                   <div>
-                    <p className="text-sm font-medium text-start pt-4 text-slate-700">
+                    <p className="text-sm font-medium text-start pt-4 text-muted-foreground">
                       得意なスタイル
                     </p>
                     <div className="grid grid-cols-2 gap-2">
@@ -215,6 +219,21 @@ export const StaffView = ({
                 ) : null}
               </div>
             </DialogDescription>
+            <DialogFooter>
+              <div className="flex items-center justify-between w-full gap-2">
+                <Button variant="outline" onClick={() => setInfoStaff(null)}>
+                  閉じる
+                </Button>
+                <Button
+                  onClick={() => {
+                    onChangeStaffAction(infoStaff)
+                    setInfoStaff(null)
+                  }}
+                >
+                  選択する
+                </Button>
+              </div>
+            </DialogFooter>
           </DialogHeader>
         </DialogContent>
       </Dialog>

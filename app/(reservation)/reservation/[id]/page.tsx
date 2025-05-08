@@ -153,7 +153,7 @@ export default function ReservePage() {
   }, [router, salonId, reset])
 
   return (
-    <div className="w-full  mx-auto bg-gradient-to-b from-gray-50 to-white min-h-screen flex items-center justify-center">
+    <div className="w-full  mx-auto bg-background min-h-screen flex items-center justify-center">
       <motion.div
         className="flex items-center justify-center px-4 pb-8"
         initial={{ opacity: 0, y: 20 }}
@@ -163,10 +163,8 @@ export default function ReservePage() {
         <Card className="w-full max-w-md shadow-lg border-none mt-4">
           <CardHeader className="py-5">
             <div className="flex flex-col items-start">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-700 to-purple-700 text-transparent bg-clip-text">
-                Bcker
-              </h1>
-              <span className="text-xs scale-75 -ml-5 -mt-1.5 text-gray-600">
+              <h1 className="text-2xl font-bold text-primary bg-clip-text">Bcker</h1>
+              <span className="text-xs scale-75 -ml-3 -mt-1.5 text-muted-foreground">
                 予約を簡単・便利に
               </span>
             </div>
@@ -209,7 +207,7 @@ export default function ReservePage() {
 
               <Button
                 type="submit"
-                className="w-full text-base font-bold mt-2"
+                className="w-full text-base font-bold mt-6"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -218,14 +216,17 @@ export default function ReservePage() {
                     <span>ログイン中...</span>
                   </div>
                 ) : (
-                  'ログイン'
+                  <div className="flex items-center justify-center space-x-4">
+                    <span>ログイン</span>
+                    <ChevronRight className="h-5 w-5 text-primary" />
+                  </div>
                 )}
               </Button>
             </form>
             {isFirstLogin && (
-              <p className="text-xs text-center text-gray-600 mb-4 px-4 mt-4">
+              <p className="text-xs text-center text-muted-foreground mb-4 px-4 mt-4">
                 パスワードを忘れましたか？
-                <span className="underline text-blue-600 cursor-pointer mx-1">こちら</span>
+                <span className="underline text-link-foreground cursor-pointer mx-1">こちら</span>
                 から再設定できます。
               </p>
             )}
@@ -233,23 +234,20 @@ export default function ReservePage() {
 
           <Separator className="mb-5 w-1/3 mx-auto" />
           <CardFooter className="flex justify-center pb-6">
-            <motion.div className="w-full" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                className="bg-green-500 hover:bg-green-500 px-8 py-5 w-full"
-                onClick={handleLineLogin}
-              >
+            <div className="w-full">
+              <Button className="px-8 py-5 w-full" onClick={handleLineLogin}>
                 <div className="flex items-center justify-center space-x-2">
-                  <span className="text-white font-bold text-base">LINEでログイン</span>
-                  <ChevronRight className="h-5 w-5 text-white" />
+                  <span className="text-primary font-bold text-base">LINEでログイン</span>
+                  <ChevronRight className="h-5 w-5 text-primary" />
                 </div>
               </Button>
-            </motion.div>
+            </div>
           </CardFooter>
-          <p className="text-xs text-center text-gray-600 mb-4 px-4">
+          <p className="text-xs text-center text-muted-foreground mb-4 px-4">
             ログインすることで、当サービスの
-            <span className="underline text-blue-600 cursor-pointer mx-1">利用規約</span>
+            <span className="underline text-link-foreground cursor-pointer mx-1">利用規約</span>
             および
-            <span className="underline text-blue-600 cursor-pointer mx-1">
+            <span className="underline text-link-foreground cursor-pointer mx-1">
               プライバシーポリシー
             </span>
             に同意したものとします。

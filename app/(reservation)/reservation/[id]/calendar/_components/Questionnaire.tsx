@@ -22,6 +22,7 @@ import { Progress } from '@/components/ui/progress'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ImageDrop } from '@/components/common'
 import Image from 'next/image'
+import { Badge } from '@/components/ui/badge'
 
 // ステップ1（基本情報）とステップ2（サマリー）の実装
 const totalSteps = 10
@@ -803,51 +804,56 @@ export const Questionnaire = ({
             <div className="flex flex-col gap-6 mt-4">
               {/* 希望スタイル */}
               <div className="">
-                <div className="text-gray-400 text-xs mb-2">希望スタイル</div>
+                <div className="text-muted-foreground text-xs mb-2">希望スタイル</div>
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">ご希望</span>
+                    <span className="text-muted-foreground font-medium w-24 text-sm">ご希望</span>
                     <span className="flex flex-wrap gap-1 justify-end">
                       {form.getValues().styleWishType.length > 0 ? (
-                        form.getValues().styleWishType.map((v: string) => (
-                          <span
-                            key={v}
-                            className="inline-block bg-slate-200 border border-slate-300 text-slate-700 rounded px-2 py-1 text-xs mr-1"
-                          >
-                            {v === 'omakase'
-                              ? 'おまかせ'
-                              : v === 'image'
-                                ? 'イメージ画像有り'
-                                : '希望のスタイルを具体的に'}
-                          </span>
-                        ))
+                        form
+                          .getValues()
+                          .styleWishType.map((v: string) => (
+                            <Badge key={v}>
+                              {v === 'omakase'
+                                ? 'おまかせ'
+                                : v === 'image'
+                                  ? 'イメージ画像有り'
+                                  : '希望のスタイルを具体的に'}
+                            </Badge>
+                          ))
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   {form.getValues().styleWishType.includes('specific') && (
                     <div className="flex justify-between items-center w-full">
-                      <span className="text-slate-500 font-medium w-1/3 text-sm">具体的な希望</span>
-                      <span className="text-black w-2/3 text-end">
+                      <span className="text-muted-foreground font-medium w-1/3 text-sm">
+                        具体的な希望
+                      </span>
+                      <span className="w-2/3 text-end">
                         {form.getValues().specificStyle || (
-                          <span className="text-gray-400 text-sm">未入力</span>
+                          <span className="text-muted-foreground text-sm">未入力</span>
                         )}
                       </span>
                     </div>
                   )}
                   {form.getValues().styleWishType.includes('image') && (
                     <div className="flex justify-between items-center w-full">
-                      <span className="text-slate-500 font-medium w-1/3 text-sm">
+                      <span className="text-muted-foreground font-medium w-1/3 text-sm">
                         理想のイメージ
                       </span>
 
-                      <Image
-                        src={hairImgPreviewUrl ?? ''}
-                        alt="理想のイメージ"
-                        width={100}
-                        height={100}
-                      />
+                      {hairImgPreviewUrl ? (
+                        <Image
+                          src={hairImgPreviewUrl}
+                          alt="理想のイメージ"
+                          width={100}
+                          height={100}
+                        />
+                      ) : (
+                        <span className="text-muted-foreground text-sm">未入力</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -855,16 +861,16 @@ export const Questionnaire = ({
               <Separator />
               {/* 目的 */}
               <div className="">
-                <div className="text-gray-400 text-xs mb-2">今回の目的</div>
+                <div className="text-muted-foreground text-xs mb-2">今回の目的</div>
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">目的</span>
+                    <span className="text-muted-foreground font-medium w-24 text-sm">目的</span>
                     <span className="flex flex-wrap gap-1 justify-end">
                       {form.getValues().purpose.length > 0 ? (
                         form.getValues().purpose.map((v: string) => (
                           <span
                             key={v}
-                            className="inline-block bg-slate-200 border border-slate-300 text-slate-700 rounded px-2 py-1 text-xs mr-1"
+                            className="inline-block bg-muted border border-border text-muted-foreground rounded px-2 py-1 text-xs mr-1"
                           >
                             {v === 'change'
                               ? 'イメチェン'
@@ -878,16 +884,18 @@ export const Questionnaire = ({
                           </span>
                         ))
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   {form.getValues().purpose.includes('other') && (
                     <div className="flex justify-between items-center w-full">
-                      <span className="text-slate-500 font-medium w-1/3 text-sm">その他の内容</span>
-                      <span className="text-black w-2/3 text-end">
+                      <span className="text-muted-foreground font-medium w-1/3 text-sm">
+                        その他の内容
+                      </span>
+                      <span className="w-2/3 text-end">
                         {form.getValues().purposeOther || (
-                          <span className="text-gray-400 text-sm">未入力</span>
+                          <span className="text-muted-foreground text-sm">未入力</span>
                         )}
                       </span>
                     </div>
@@ -897,11 +905,11 @@ export const Questionnaire = ({
               <Separator />
               {/* 満足度・髪型 */}
               <div className="">
-                <div className="text-gray-400 text-xs mb-2">現在の髪型</div>
+                <div className="text-muted-foreground text-xs mb-2">現在の髪型</div>
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">満足度</span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">満足度</span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().satisfaction === 'good' ? (
                         '満足'
                       ) : form.getValues().satisfaction === 'neutral' ? (
@@ -909,27 +917,29 @@ export const Questionnaire = ({
                       ) : form.getValues().satisfaction === 'bad' ? (
                         '不満'
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   {form.getValues().satisfaction === 'bad' && (
                     <div className="flex justify-between items-center w-full">
-                      <span className="text-slate-500 font-medium w-1/3 text-sm">不満の理由</span>
-                      <span className="text-black w-2/3 text-end">
+                      <span className="text-muted-foreground font-medium w-1/3 text-sm">
+                        不満の理由
+                      </span>
+                      <span className="w-2/3 text-end">
                         {form.getValues().satisfactionOther || (
-                          <span className="text-gray-400 text-sm">未入力</span>
+                          <span className="text-muted-foreground text-sm">未入力</span>
                         )}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center w-full">
-                    <span className="text-slate-500 font-medium w-1/3 text-sm">
+                    <span className="text-muted-foreground font-medium w-1/3 text-sm">
                       気に入っている点・嫌いな点
                     </span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="w-2/3 text-end">
                       {form.getValues().likePoint || (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
@@ -938,11 +948,11 @@ export const Questionnaire = ({
               <Separator />
               {/* 髪の長さ・前髪・重さ */}
               <div className="">
-                <div className="text-gray-400 text-xs mb-2">髪の長さ・前髪・重さ</div>
+                <div className="text-muted-foreground text-xs mb-2">髪の長さ・前髪・重さ</div>
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">長さ</span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">長さ</span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().currentLength === 'short' ? (
                         '短め'
                       ) : form.getValues().currentLength === 'bob' ? (
@@ -952,13 +962,13 @@ export const Questionnaire = ({
                       ) : form.getValues().currentLength === 'long' ? (
                         '長め'
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">前髪</span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">前髪</span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().frontHair === 'make' ? (
                         '作る'
                       ) : form.getValues().frontHair === 'nothing' ? (
@@ -968,23 +978,25 @@ export const Questionnaire = ({
                       ) : form.getValues().frontHair === 'adjustment' ? (
                         '長さ調整'
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   {form.getValues().frontHair === 'make' && (
                     <div className="flex justify-between items-center w-full">
-                      <span className="text-slate-500 font-medium w-1/3 text-sm">前髪の長さ</span>
-                      <span className="text-black w-2/3 text-end">
+                      <span className="text-muted-foreground font-medium w-1/3 text-sm">
+                        前髪の長さ
+                      </span>
+                      <span className="w-2/3 text-end">
                         {form.getValues().frontHairLength || (
-                          <span className="text-gray-400 text-sm">未入力</span>
+                          <span className="text-muted-foreground text-sm">未入力</span>
                         )}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">量・重さ</span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">量・重さ</span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().hairWeight === 'light' ? (
                         '軽め'
                       ) : form.getValues().hairWeight === 'medium' ? (
@@ -992,7 +1004,7 @@ export const Questionnaire = ({
                       ) : form.getValues().hairWeight === 'heavy' ? (
                         '重め'
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
@@ -1001,16 +1013,16 @@ export const Questionnaire = ({
               <Separator />
               {/* 髪質・ボリューム・頭皮 */}
               <div className="">
-                <div className="text-gray-400 text-xs mb-2">髪質・ボリューム・頭皮</div>
+                <div className="text-muted-foreground text-xs mb-2">髪質・ボリューム・頭皮</div>
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">髪質</span>
+                    <span className="text-muted-foreground font-medium w-24 text-sm">髪質</span>
                     <span className="flex flex-wrap gap-1 justify-end w-2/3">
                       {form.getValues().hairType.length > 0 ? (
                         form.getValues().hairType.map((v: string) => (
                           <span
                             key={v}
-                            className="inline-block bg-slate-200 border border-slate-300 text-slate-700 rounded px-2 py-1 text-xs mr-1"
+                            className="inline-block bg-muted border border-border text-muted-foreground rounded px-2 py-1 text-xs mr-1"
                           >
                             {v === 'straight'
                               ? '直毛'
@@ -1024,13 +1036,15 @@ export const Questionnaire = ({
                           </span>
                         ))
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">ボリューム感</span>
-                    <span className="text-black　w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
+                      ボリューム感
+                    </span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().volume === 'spread' ? (
                         '広がりやすい'
                       ) : form.getValues().volume === 'flat' ? (
@@ -1038,18 +1052,20 @@ export const Questionnaire = ({
                       ) : form.getValues().volume === 'normal' ? (
                         'ちょうど良い'
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">頭皮の状態</span>
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
+                      頭皮の状態
+                    </span>
                     <span className="flex flex-wrap gap-1 justify-end w-2/3">
                       {form.getValues().scalp.length > 0 ? (
                         form.getValues().scalp.map((v: string) => (
                           <span
                             key={v}
-                            className="inline-block bg-slate-200 border border-slate-300 text-slate-700 rounded px-2 py-1 text-xs mr-1"
+                            className="inline-block bg-muted border border-border text-muted-foreground rounded px-2 py-1 text-xs mr-1"
                           >
                             {v === 'sensitive'
                               ? '敏感'
@@ -1061,7 +1077,7 @@ export const Questionnaire = ({
                           </span>
                         ))
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
@@ -1070,10 +1086,12 @@ export const Questionnaire = ({
               <Separator />
               {/* スタイリング */}
               <div className="">
-                <div className="text-gray-400 text-xs mb-2">スタイリング</div>
+                <div className="text-muted-foreground text-xs mb-2">スタイリング</div>
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">普段の方法</span>
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
+                      普段の方法
+                    </span>
                     <span className="flex flex-wrap gap-1 justify-end w-2/3">
                       {form.getValues().stylingMethod.length > 0 ? (
                         form.getValues().stylingMethod.map((v: string) => (
@@ -1089,15 +1107,15 @@ export const Questionnaire = ({
                           </span>
                         ))
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
                       スタイリング時間
                     </span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="w-2/3 text-end">
                       {form.getValues().stylingTime === 'none' ? (
                         '0分（何もしない）'
                       ) : form.getValues().stylingTime === 'short' ? (
@@ -1105,39 +1123,47 @@ export const Questionnaire = ({
                       ) : form.getValues().stylingTime === 'long' ? (
                         '10分以上'
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">シャンプー</span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
+                      シャンプー
+                    </span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().careShampoo || (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">トリートメント</span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
+                      トリートメント
+                    </span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().careTreatment || (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">スタイリング剤</span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
+                      スタイリング剤
+                    </span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().careStyling || (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">困っていること</span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
+                      困っていること
+                    </span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().stylingTrouble || (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
@@ -1146,11 +1172,11 @@ export const Questionnaire = ({
               <Separator />
               {/* 職場や学校の規定・ライフスタイル */}
               <div className="">
-                <div className="text-gray-400 text-xs mb-2">職場・ライフスタイル</div>
+                <div className="text-muted-foreground text-xs mb-2">職場・ライフスタイル</div>
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 w-24 text-sm">職場や学校の規定</span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="text-muted-foreground w-24 text-sm">職場や学校の規定</span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().workRule === 'none' ? (
                         '特になし'
                       ) : form.getValues().workRule === 'haircolor_ng' ? (
@@ -1158,17 +1184,19 @@ export const Questionnaire = ({
                       ) : form.getValues().workRule === 'length_limit' ? (
                         '長さの制限あり'
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
 
                   {form.getValues().lifestyle.includes('other') && (
                     <div className="flex justify-between items-center w-full">
-                      <span className="text-slate-500 font-medium w-1/3 text-sm">その他の内容</span>
-                      <span className="text-black w-2/3 text-end">
+                      <span className="text-muted-foreground font-medium w-1/3 text-sm">
+                        その他の内容
+                      </span>
+                      <span className="w-2/3 text-end">
                         {form.getValues().lifestyleOther || (
-                          <span className="text-gray-400 text-sm">未入力</span>
+                          <span className="text-muted-foreground text-sm">未入力</span>
                         )}
                       </span>
                     </div>
@@ -1178,47 +1206,53 @@ export const Questionnaire = ({
               <Separator />
               {/* カラー・パーマ・ブリーチ・ダメージ */}
               <div className="">
-                <div className="text-gray-400 text-xs mb-2">カラー・パーマ・ブリーチ・ダメージ</div>
+                <div className="text-muted-foreground text-xs mb-2">
+                  カラー・パーマ・ブリーチ・ダメージ
+                </div>
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">カラー履歴</span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
+                      カラー履歴
+                    </span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().colorHistory === 'none' ? (
                         'なし'
                       ) : form.getValues().colorHistory === 'yes' ? (
                         'あり'
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   {form.getValues().colorHistory === 'yes' && (
                     <>
                       <div className="flex justify-between items-center w-full">
-                        <span className="text-slate-500 font-medium w-1/3 text-sm">
+                        <span className="text-muted-foreground font-medium w-1/3 text-sm">
                           最終カラー時期
                         </span>
-                        <span className="text-black w-2/3 text-end">
+                        <span className="w-2/3 text-end">
                           {form.getValues().colorLastMonth || (
-                            <span className="text-gray-400 text-sm">未入力</span>
+                            <span className="text-muted-foreground text-sm">未入力</span>
                           )}
                         </span>
                       </div>
                       <div className="flex justify-between items-center w-full">
-                        <span className="text-slate-500 font-medium w-1/3 text-sm">カラーの色</span>
-                        <span className="text-black w-2/3 text-end">
+                        <span className="text-muted-foreground font-medium w-1/3 text-sm">
+                          カラーの色
+                        </span>
+                        <span className="w-2/3 text-end">
                           {form.getValues().colorType || (
-                            <span className="text-gray-400 text-sm">未入力</span>
+                            <span className="text-muted-foreground text-sm">未入力</span>
                           )}
                         </span>
                       </div>
                     </>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
                       パーマ／縮毛矯正履歴
                     </span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="w-2/3 text-end">
                       {form.getValues().permHistory === 'none' ? (
                         'なし'
                       ) : form.getValues().permHistory === 'perm' ? (
@@ -1226,65 +1260,67 @@ export const Questionnaire = ({
                       ) : form.getValues().permHistory === 'straight' ? (
                         '縮毛矯正'
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   {['perm', 'straight'].includes(form.getValues().permHistory) && (
                     <div className="flex justify-between items-center w-full">
-                      <span className="text-slate-500 font-medium w-1/3 text-sm">
+                      <span className="text-muted-foreground font-medium w-1/3 text-sm">
                         最終パーマ時期
                       </span>
-                      <span className="text-black w-2/3 text-end">
+                      <span className="w-2/3 text-end">
                         {form.getValues().permLastMonth || (
-                          <span className="text-gray-400 text-sm">未入力</span>
+                          <span className="text-muted-foreground text-sm">未入力</span>
                         )}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">ブリーチ履歴</span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
+                      ブリーチ履歴
+                    </span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().bleachHistory === 'none' ? (
                         'なし'
                       ) : form.getValues().bleachHistory === 'yes' ? (
                         'あり'
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
                   {form.getValues().bleachHistory === 'yes' && (
                     <>
                       <div className="flex justify-between items-center w-full">
-                        <span className="text-slate-500 font-medium w-1/3 text-sm">
+                        <span className="text-muted-foreground font-medium w-1/3 text-sm">
                           ブリーチ回数
                         </span>
-                        <span className="text-black  w-2/3 text-end">
+                        <span className="w-2/3 text-end">
                           {form.getValues().bleachCount || (
-                            <span className="text-gray-400 text-sm">未入力</span>
+                            <span className="text-muted-foreground text-sm">未入力</span>
                           )}
                         </span>
                       </div>
                       <div className="flex justify-between items-center w-full">
-                        <span className="text-slate-500 w-1/3 text-sm">ブリーチ部分</span>
-                        <span className="text-black font-semibold w-2/3 text-end">
+                        <span className="text-muted-foreground w-1/3 text-sm">ブリーチ部分</span>
+                        <span className="font-semibold w-2/3 text-end">
                           {form.getValues().bleachPart === 'part' ? (
                             '部分'
                           ) : form.getValues().bleachPart === 'all' ? (
                             '全体'
                           ) : (
-                            <span className="text-gray-400 text-sm">未入力</span>
+                            <span className="text-muted-foreground text-sm">未入力</span>
                           )}
                         </span>
                       </div>
                     </>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
                       傷みの気になる箇所
                     </span>
-                    <span className="text-black w-2/3 text-end">
+                    <span className="w-2/3 text-end">
                       {form.getValues().damagePart === 'tip' ? (
                         '毛先'
                       ) : form.getValues().damagePart === 'all' ? (
@@ -1292,7 +1328,7 @@ export const Questionnaire = ({
                       ) : form.getValues().damagePart === 'none' ? (
                         '特にない'
                       ) : (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
@@ -1301,13 +1337,15 @@ export const Questionnaire = ({
               <Separator />
               {/* その他ご希望・ご質問 */}
               <div className="">
-                <div className="text-gray-400 text-xs mb-2">その他ご希望・ご質問</div>
+                <div className="text-muted-foreground text-xs mb-2">その他ご希望・ご質問</div>
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-medium w-24 text-sm">ご希望・ご質問</span>
-                    <span className="text-black  w-2/3 text-end">
+                    <span className="text-muted-foreground font-medium w-24 text-sm">
+                      ご希望・ご質問
+                    </span>
+                    <span className="w-2/3 text-end">
                       {form.getValues().otherRequest || (
-                        <span className="text-gray-400 text-sm">未入力</span>
+                        <span className="text-muted-foreground text-sm">未入力</span>
                       )}
                     </span>
                   </div>
@@ -1317,7 +1355,7 @@ export const Questionnaire = ({
           )}
           <div className="flex justify-end gap-10 pt-4 w-full">
             {step > 1 && (
-              <Button variant="outline" className="w-full bg-gray-100" onClick={back}>
+              <Button variant="outline" className="w-full " onClick={back}>
                 戻る
               </Button>
             )}

@@ -29,61 +29,61 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { handleErrorToMsg } from '@/lib/error'
 
 const signInSchema = z.object({
   email: z.string().email({ message: 'メールアドレスが無効です' }),
   password: z.string().min(8, { message: 'パスワードは8文字以上で入力してください' }),
-});
+})
 
 export default function SignInForm() {
-  const { isLoaded, signIn, setActive } = useSignIn();
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
+  const { isLoaded, signIn, setActive } = useSignIn()
+  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const router = useRouter()
 
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useZodForm(signInSchema);
+  } = useZodForm(signInSchema)
 
-  const email = watch("email");
+  const email = watch('email')
 
   const onSubmit = async (data: z.infer<typeof signInSchema>) => {
-    if (!isLoaded) return;
+    if (!isLoaded) return
 
     try {
       // まず既存のサインインセッションを作成
       const signInAttempt = await signIn.create({
         identifier: data.email,
-      });
+      })
 
       // 次にパスワードで認証
       const result = await signInAttempt.attemptFirstFactor({
-        strategy: "password",
+        strategy: 'password',
         password: data.password,
-      });
+      })
 
-      if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
-        router.push(`/dashboard`);
-        toast.success("ログインに成功しました");
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId })
+        router.push(`/dashboard`)
+        toast.success('ログインに成功しました')
       } else {
-        toast.error("ログインに失敗しました");
+        toast.error(handleErrorToMsg(result))
       }
     } catch (err: unknown) {
-      console.log(err);
-      toast.error("ログインに失敗しました");
+      toast.error(handleErrorToMsg(err))
     } finally {
-      setIsSubmitted(true);
+      setIsSubmitted(true)
     }
-  };
+  }
 
   // パスワード表示/非表示の切り替え
   const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+    setShowPassword(!showPassword)
+  }
 
   // アニメーションのバリアント
   const containerVariants = {
@@ -95,16 +95,16 @@ export default function SignInForm() {
         delayChildren: 0.2,
       },
     },
-  };
+  }
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring", stiffness: 100 },
+      transition: { type: 'spring', stiffness: 100 },
     },
-  };
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
@@ -138,15 +138,13 @@ export default function SignInForm() {
                   <Input
                     id="email"
                     type="email"
-                    {...register("email")}
+                    {...register('email')}
                     placeholder="メールアドレスを入力"
                     className="pl-10"
                     required
                   />
                 </div>
-                {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email.message}</p>
-                )}
+                {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
               </motion.div>
 
               <motion.div variants={itemVariants} className="space-y-2">
@@ -157,8 +155,8 @@ export default function SignInForm() {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
-                    {...register("password")}
+                    type={showPassword ? 'text' : 'password'}
+                    {...register('password')}
                     placeholder="パスワードを入力"
                     className="pl-10 pr-10"
                     required
@@ -167,31 +165,19 @@ export default function SignInForm() {
                     type="button"
                     onClick={togglePasswordVisibility}
                     className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
-                    aria-label={
-                      showPassword ? "パスワードを隠す" : "パスワードを表示"
-                    }
+                    aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-sm text-red-500">
-                    {errors.password.message}
-                  </p>
+                  <p className="text-sm text-red-500">{errors.password.message}</p>
                 )}
               </motion.div>
 
               <motion.div variants={itemVariants}>
-                <Button
-                  type="submit"
-                  className="w-full "
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "ログイン中..." : "ログイン"}
+                <Button type="submit" className="w-full " disabled={isSubmitting}>
+                  {isSubmitting ? 'ログイン中...' : 'ログイン'}
                   {isSubmitting ? (
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                   ) : (
@@ -231,10 +217,7 @@ export default function SignInForm() {
                 スタッフの方はこちら
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Link>
-              <Link
-                href="/sign-up"
-                className="inline-flex items-center text-xs text-blue-500"
-              >
+              <Link href="/sign-up" className="inline-flex items-center text-xs text-blue-500">
                 新規登録はこちら
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Link>
@@ -243,5 +226,5 @@ export default function SignInForm() {
         </Card>
       </motion.div>
     </div>
-  );
+  )
 }

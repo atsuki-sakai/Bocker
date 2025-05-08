@@ -25,12 +25,32 @@ import { RESERVATION_STATUS_VALUES } from '@/services/convex/shared/types/common
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
 
+// pending: {
+//   color: 'bg-warning-foreground text-warning ',
+//   text: '保留',
+// },
+// confirmed: {
+//   color: 'bg-palette-2-foreground text-palette-2 ',
+//   text: '予約確定',
+// },
+// cancelled: {
+//   color: 'bg-palette-4-foreground text-palette-4 ',
+//   text: 'キャンセル',
+// },
+// completed: {
+//   color: 'bg-palette-5-foreground text-palette-5 ',
+//   text: '完了',
+// },
+// refunded: {
+//   color: 'bg-palette-3-foreground text-palette-3 ',
+//   text: '返金',
+// },
 const statusColorMap = {
-  confirmed: 'bg-white border border-green-600 text-green-600',
-  cancelled: 'bg-white border border-red-600 text-red-600',
-  pending: 'bg-white border border-yellow-600 text-yellow-600',
-  completed: 'bg-white border border-blue-600 text-blue-600',
-  refunded: 'bg-white border border-gray-600 text-gray-600',
+  confirmed: 'bg-palette-2-foreground border border-palette-2 text-palette-2',
+  cancelled: 'bg-palette-4-foreground border border-palette-4 text-palette-4',
+  pending: 'bg-warning-foreground border border-warning text-warning',
+  completed: 'bg-palette-5-foreground border border-palette-5 text-palette-5',
+  refunded: 'bg-palette-3-foreground border border-palette-3 text-palette-3',
 }
 export default function ReservationPage() {
   const { reservation_id } = useParams()

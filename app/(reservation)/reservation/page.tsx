@@ -11,14 +11,7 @@ import { fetchQuery } from 'convex/nextjs'
 import { handleErrorToMsg } from '@/lib/error'
 import { toast } from 'sonner'
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, ExternalLink } from 'lucide-react'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
@@ -47,7 +40,7 @@ export default function ReserveRedirectPage() {
           console.log('salonId', salonId)
           router.push(`/reservation/${salonId}/calendar`)
         } else {
-          return router.push('/reservation/unknow-error')
+          return router.push('/reservation')
         }
       }
 
@@ -144,35 +137,27 @@ export default function ReserveRedirectPage() {
   }, [liff, router, createCompleteFields, updateCustomer])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-50 to-white p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md shadow-lg border-none">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
-            Bcker
-          </CardTitle>
-          <CardDescription className="text-center text-gray-600">
-            ログイン中のユーザー情報を処理しています。
-          </CardDescription>
-        </CardHeader>
         <CardContent className="flex flex-col items-center justify-center space-y-6 py-6">
           <div className="relative">
-            <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
+            <Loader2 className="h-12 w-12 text-active animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-6 w-6 rounded-full bg-white"></div>
+              <div className="h-6 w-6 rounded-full bg-active-foreground animate-pulse"></div>
             </div>
           </div>
-          <p className="text-center text-gray-700 font-medium animate-pulse">リダイレクト中...</p>
-          <p className="text-center text-sm text-gray-500 max-w-xs">
+          <p className="text-center text-primary font-medium animate-pulse">リダイレクト中...</p>
+          <p className="text-center text-sm text-muted-foreground max-w-xs">
             お客様の情報を確認し、予約ページへ移動しています。しばらくお待ちください。
           </p>
         </CardContent>
         <CardFooter className="flex flex-col space-y-3 pt-0">
-          <div className="text-xs text-gray-500 text-center">
+          <div className="text-xs text-muted-foreground text-center">
             画面が切り替わらない場合は下のボタンをクリックしてください
           </div>
           <Button
             variant="default"
-            className="w-full flex items-center justify-center gap-2 transition-all bg-blue-600 hover:bg-blue-500"
+            className="w-full flex items-center justify-center gap-2 transition-all"
             asChild
           >
             <Link href={redirectUrl ?? '#'}>

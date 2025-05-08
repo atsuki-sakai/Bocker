@@ -129,8 +129,8 @@ export default function CouponList() {
                         </td>
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                           <Button
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive-foreground"
+                            variant="destructive"
+                            className="text-destructive-foreground hover:opacity-80"
                             size="sm"
                             onClick={() => showDialog(coupon._id)}
                           >

@@ -442,7 +442,7 @@ export default function SignUpPage() {
           email: email,
         },
       });
-      toast.error('認証コードの検証に失敗しました');
+      toast.error(handleErrorToMsg(err))
     } finally {
       setIsVerifying(false);
     }

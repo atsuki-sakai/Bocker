@@ -432,7 +432,7 @@ export default function ReservationList() {
           </div>
         </div>
         <div className="mb-4 overflow-x-auto pb-1">
-          <TabsList className="flex justify-start bg-muted w-fit gap-2 p-1">
+          <TabsList className="flex justify-start w-fit gap-2 p-1">
             {groupConfigs.map((group) => (
               <GroupTab
                 key={group.id}

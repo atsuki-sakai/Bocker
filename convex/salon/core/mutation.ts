@@ -39,18 +39,15 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     try {
-      // 1. 認証チェック
-      checkAuth(ctx);
-
       // 2. バリデーション
-      validateSalon(args);
-      validateRequired(args.id, 'id');
+      validateSalon(args)
+      validateRequired(args.id, 'id')
 
       // 3. サービス層に処理委譲
-      return await salonService.updateSalon(ctx, args.id, args);
+      return await salonService.updateSalon(ctx, args.id, args)
     } catch (error) {
       // エラーハンドリング
-      throw error;
+      throw error
     }
   },
 });

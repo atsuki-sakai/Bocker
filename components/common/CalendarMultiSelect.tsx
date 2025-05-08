@@ -6,8 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { format, isSameDay, isToday } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { CalendarIcon, X, CalendarCheck } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -170,8 +169,7 @@ function CalendarMultiSelect({
             </TooltipProvider>
           )}
         </div>
-
-        <ScrollArea className="h-full pr-4">
+        <div className="h-full pr-4">
           {hasSelectedDates ? (
             <motion.div
               variants={containerVariants}
@@ -258,7 +256,7 @@ function CalendarMultiSelect({
               </p>
             </motion.div>
           )}
-        </ScrollArea>
+        </div>
       </div>
     </div>
   )

@@ -42,7 +42,7 @@ export const getById = query({
     reservationId: v.id('reservation'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true)
 
     return await ctx.db.get(args.reservationId);
   },

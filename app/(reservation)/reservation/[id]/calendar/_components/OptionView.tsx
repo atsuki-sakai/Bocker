@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog'
 type OptionViewProps = {
   selectedOptions: Doc<'salon_option'>[]
@@ -47,7 +48,7 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
   return (
     <div>
       <h2 className="text-base">オプションを選択</h2>
-      <p className="text-gray-600 mb-4 text-sm">
+      <p className="text-muted-foreground mb-4 text-sm">
         追加オプションがあれば選択してください。複数選択可能です。
       </p>
       <div className="space-y-3">
@@ -61,29 +62,29 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
               <p className="">
                 {option.salePrice && option.salePrice > 0 ? (
                   <>
-                    <span className="line-through text-slate-400 text-sm">
+                    <span className="line-through text-muted-foreground text-sm">
                       ￥{option.unitPrice?.toLocaleString()}
                     </span>
-                    <span className="font-semibold text-green-600 text-sm">
+                    <span className="font-semibold text-active text-sm">
                       ￥{option.salePrice.toLocaleString()}
                     </span>
                   </>
                 ) : (
-                  <span className="text-sm font-semibold text-slate-700">
+                  <span className="text-sm font-semibold text-muted-foreground">
                     ￥{option.unitPrice?.toLocaleString()}
                   </span>
                 )}
               </p>
               {option.description && option.description?.length > 50 && (
-                <p className="text-sm text-gray-500 break-words">
+                <p className="text-sm text-muted-foreground break-words">
                   {option.description?.slice(0, 25).concat('...')}
                 </p>
               )}
               {option.description && option.description?.length <= 50 && (
-                <p className="text-sm text-gray-500 break-words">{option.description}</p>
+                <p className="text-sm text-muted-foreground break-words">{option.description}</p>
               )}
             </div>
-            <div className="flex flex-col items-center w-1/3">
+            <div className="flex flex-col items-end w-1/3">
               <Button
                 variant={selectedOptions.some((o) => o._id === option._id) ? 'default' : 'outline'}
                 onClick={() => toggleOption(option)}
@@ -95,7 +96,7 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
                   className="text-xs p-0 m-0 flex items-center gap-1"
                   onClick={() => handleShowOptionDetail(option)}
                 >
-                  <span className="text-xs text-blue-600 underline">詳細を見る</span>
+                  <span className="text-xs text-link-foreground underline">詳細を見る</span>
                 </button>
               </div>
             </div>
@@ -106,24 +107,41 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{selectedOption?.name}</DialogTitle>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {selectedOption?.salePrice && selectedOption?.salePrice > 0 ? (
                 <>
-                  <span className="line-through text-slate-400 text-sm">
+                  <span className="line-through text-muted-foreground text-sm">
                     ￥{selectedOption?.unitPrice?.toLocaleString()}
                   </span>
-                  <span className="font-semibold text-green-600 text-sm">
+                  <span className="font-semibold text-active text-sm">
                     ￥{selectedOption?.salePrice.toLocaleString()}
                   </span>
                 </>
               ) : (
-                <span className="text-sm font-semibold text-slate-700">
+                <span className="text-sm font-semibold text-muted-foreground">
                   ￥{selectedOption?.unitPrice?.toLocaleString()}
                 </span>
               )}
             </p>
           </DialogHeader>
           <DialogDescription>{selectedOption?.description}</DialogDescription>
+          <DialogFooter>
+            <div className="flex items-center justify-between w-full gap-2">
+              <Button variant="outline" onClick={() => setShowOptionDetail(false)}>
+                閉じる
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedOption) {
+                    onChangeOptionsAction([...selectedOptions, selectedOption])
+                    setShowOptionDetail(false)
+                  }
+                }}
+              >
+                選択する
+              </Button>
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

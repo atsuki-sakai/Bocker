@@ -24,6 +24,10 @@ export default {
           DEFAULT: 'var(--active)',
           foreground: 'var(--active-foreground)',
         },
+        neon: {
+          DEFAULT: 'var(--neon)',
+          foreground: 'var(--neon-foreground)',
+        },
         primary: {
           DEFAULT: 'var(--primary)',
           foreground: 'var(--primary-foreground)',

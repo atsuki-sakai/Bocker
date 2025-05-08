@@ -147,8 +147,8 @@ export const DateView = ({
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[300px]">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
-        <p className="text-xs text-gray-600 mt-2">予約可能時間を取得中...</p>
+        <Loader2 className="w-10 h-10 animate-spin text-neon" />
+        <p className="text-xs text-muted-foreground mt-2">予約可能時間を取得中...</p>
       </div>
     )
   }
@@ -159,7 +159,7 @@ export const DateView = ({
   return (
     <div>
       <h2 className="text-base">日時を選択</h2>
-      <p className="text-gray-600 mb-4 text-sm">ご希望の日付と時間を選択してください。</p>
+      <p className="text-muted-foreground mb-4 text-sm">ご希望の日付と時間を選択してください。</p>
 
       <div className="flex flex-col md:flex-row gap-6">
         <div className="md:w-1/2 flex flex-col justify-center items-center">
@@ -183,7 +183,7 @@ export const DateView = ({
                   key={index}
                   variant={'outline'}
                   onClick={() => handleTimeSelect(time)}
-                  className={`text-sm ${selectedTime?.startHour === time.startHour && selectedTime?.endHour === time.endHour ? 'bg-blue-700 text-white hover:bg-blue-600 hover:text-white' : ''}`}
+                  className={`text-sm bg-muted ${selectedTime?.startHour === time.startHour && selectedTime?.endHour === time.endHour ? 'bg-neon text-neon-foreground hover:bg-neon hover:text-neon-foreground focus:bg-neon focus:text-neon-foreground' : ''}`}
                 >
                   {time.startHour.toString()} ~ {time.endHour.toString()}
                 </Button>

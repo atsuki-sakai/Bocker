@@ -328,7 +328,7 @@ export default function PointTabs() {
                       <div className="space-y-2 text-sm">
                         {watchedIsFixedPoint ? (
                           <p className="flex justify-between items-end text-sm font-bold">
-                            <span className="text-xs text-primary">固定ポイント:</span>
+                            <span className="text-primary">固定ポイント:</span>
                             <span className="font-medium">{watch('fixedPoint') || 0} ポイント</span>
                           </p>
                         ) : (

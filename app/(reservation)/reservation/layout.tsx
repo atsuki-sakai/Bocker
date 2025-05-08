@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Noto_Sans_JP } from 'next/font/google'
 import { ClientLayout } from './ClientLayout'
+import { ThemeProvider } from 'next-themes'
 
 const notoSansJP = Noto_Sans_JP({
   variable: '--font-noto-sans-jp',
@@ -14,5 +15,14 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <ClientLayout fontVariables={[notoSansJP]}>{children}</ClientLayout>
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      storageKey="reservation-theme"
+      enableSystem
+    >
+      <ClientLayout fontVariables={[notoSansJP]}>{children}</ClientLayout>
+    </ThemeProvider>
+  )
 }
