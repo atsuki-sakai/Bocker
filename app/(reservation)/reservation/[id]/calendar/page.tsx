@@ -100,6 +100,7 @@ export default function CalendarPage() {
   const [direction, setDirection] = useState(0) // アニメーションの方向を制御
   const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(false)
   const [questionnaireStep, setQuestionnaireStep] = useState(1)
+  const [isLogout, setIsLogout] = useState(false)
   const totalSteps = 10 // Questionnaireと合わせる
 
   // bottomBar高さ測定用のrefとstate
@@ -184,11 +185,13 @@ export default function CalendarPage() {
 
   const handleLogout = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
+    setIsLogout(true)
     deleteCookie(LINE_LOGIN_SESSION_KEY)
     if (liff?.isLoggedIn()) {
       liff.logout()
     }
     router.push(`/reservation/${salonId}`)
+    setIsLogout(false)
   }
 
   // USE EFFECT
@@ -602,6 +605,10 @@ export default function CalendarPage() {
         </motion.div>
       </AnimatePresence>
     )
+  }
+
+  if (isLogout) {
+    return <Loading />
   }
 
   return (

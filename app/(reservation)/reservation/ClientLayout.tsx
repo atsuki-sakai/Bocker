@@ -95,23 +95,21 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="fixed inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center p-4"
+        className="fixed inset-0 bg-background backdrop-blur-sm flex items-center justify-center p-4"
       >
-        <Alert variant="destructive" className="max-w-md w-full space-y-4 bg-red-50">
-          <AlertTitle className="text-2xl font-bold text-red-600">エラーが発生しました</AlertTitle>
+        <Alert variant="destructive" className="max-w-md w-full space-y-4 bg-background">
+          <AlertTitle className="text-2xl font-bold text-destructive">
+            エラーが発生しました
+          </AlertTitle>
           <AlertDescription>
-            <ul className="list-none list-inside space-y-1 text-red-700">
+            <ul className="list-none list-inside space-y-1 text-destructive">
               {errors.map((e, i) => (
                 <li key={i}>{e}</li>
               ))}
             </ul>
           </AlertDescription>
           <div className="flex justify-end space-x-2 text-sm">
-            <Button
-              variant="outline"
-              className="text-slate-700"
-              onClick={() => window.location.reload()}
-            >
+            <Button variant="outline" onClick={() => window.location.reload()}>
               再読み込み
             </Button>
             <Button

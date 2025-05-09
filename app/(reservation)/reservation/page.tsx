@@ -161,7 +161,7 @@ export default function ReserveRedirectPage() {
             asChild
           >
             <Link href={redirectUrl ?? '#'}>
-              <span className="text-white font-bold">予約ページへ移動</span>
+              <span className="text-primary font-bold">予約ページへ移動</span>
               <ExternalLink className="h-4 w-4" />
             </Link>
           </Button>

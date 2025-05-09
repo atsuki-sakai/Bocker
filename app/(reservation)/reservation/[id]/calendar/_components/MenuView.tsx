@@ -199,7 +199,10 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
             </div>
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-[240px] p-2">
+        <PopoverContent
+          className="w-[240px] p-2"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
           <Command>
             <div className="flex justify-between items-center">
               <CommandInput placeholder="カテゴリを検索…" />

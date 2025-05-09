@@ -34,7 +34,7 @@ export const PaymentView = ({
       <div className="space-y-3">
         {(displayMode === 'cash' || displayMode === 'all') && (
           <div
-            className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer ${selectedPaymentMethod === 'cash' ? 'border-neon-foreground bg-neon' : ''}`}
+            className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer ${selectedPaymentMethod === 'cash' ? 'border-active bg-active-foreground' : ''}`}
             onClick={() => onChangePaymentMethodAction('cash')}
           >
             <div className="flex items-center gap-3">
@@ -54,7 +54,7 @@ export const PaymentView = ({
 
         {(displayMode === 'credit' || displayMode === 'all') && (
           <div
-            className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer ${selectedPaymentMethod === 'credit' ? 'border-neon bg-neon-foreground' : ''}`}
+            className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer ${selectedPaymentMethod === 'credit' ? 'border-active bg-active-foreground' : ''}`}
             onClick={() => onChangePaymentMethodAction('credit')}
           >
             <div className="flex items-center gap-3">

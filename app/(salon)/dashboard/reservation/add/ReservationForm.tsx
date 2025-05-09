@@ -521,38 +521,38 @@ export default function ReservationForm() {
   }
 
   // スマホでポップオーバー開時に自動でキーボードが表示されるのを防ぐ
-  useEffect(() => {
-    if (menuPopoverOpen) {
-      setTimeout(() => {
-        const input = document.querySelector(
-          '[cmdk-input-wrapper] input'
-        ) as HTMLInputElement | null
-        input?.blur()
-      }, 0)
-    }
-  }, [menuPopoverOpen])
+  // useEffect(() => {
+  //   if (menuPopoverOpen) {
+  //     setTimeout(() => {
+  //       const input = document.querySelector(
+  //         '[cmdk-input-wrapper] input'
+  //       ) as HTMLInputElement | null
+  //       input?.blur()
+  //     }, 0)
+  //   }
+  // }, [menuPopoverOpen])
 
-  useEffect(() => {
-    if (optionPopoverOpen) {
-      setTimeout(() => {
-        const input = document.querySelector(
-          '[cmdk-input-wrapper] input'
-        ) as HTMLInputElement | null
-        input?.blur()
-      }, 0)
-    }
-  }, [optionPopoverOpen])
+  // useEffect(() => {
+  //   if (optionPopoverOpen) {
+  //     setTimeout(() => {
+  //       const input = document.querySelector(
+  //         '[cmdk-input-wrapper] input'
+  //       ) as HTMLInputElement | null
+  //       input?.blur()
+  //     }, 0)
+  //   }
+  // }, [optionPopoverOpen])
 
-  useEffect(() => {
-    if (customerPopoverOpen) {
-      setTimeout(() => {
-        const input = document.querySelector(
-          '[cmdk-input-wrapper] input'
-        ) as HTMLInputElement | null
-        input?.blur()
-      }, 0)
-    }
-  }, [customerPopoverOpen])
+  // useEffect(() => {
+  //   if (customerPopoverOpen) {
+  //     setTimeout(() => {
+  //       const input = document.querySelector(
+  //         '[cmdk-input-wrapper] input'
+  //       ) as HTMLInputElement | null
+  //       input?.blur()
+  //     }, 0)
+  //   }
+  // }, [customerPopoverOpen])
 
   const onSubmit = async (data: z.infer<typeof schemaReservation>) => {
     if (!salonId) return
@@ -673,7 +673,10 @@ export default function ReservationForm() {
                             {customer.phone ? 'tel:' + customer.phone : ''}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-full min-w-[350px] p-2 overflow-y-auto h-fit">
+                        <PopoverContent
+                          className="w-full min-w-[350px] p-2 overflow-y-auto h-fit"
+                          onOpenAutoFocus={(event) => event.preventDefault()}
+                        >
                           <Command>
                             <div className="flex items-center justify-between border-b">
                               <p className="text-muted-foreground text-sm">検索結果</p>
@@ -773,7 +776,10 @@ export default function ReservationForm() {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full min-w-[350px] max-w-[500px] py-2 px-4 overflow-y-auto h-full ">
+                <PopoverContent
+                  className="w-full min-w-[350px] max-w-[500px] py-2 px-4 overflow-y-auto h-full "
+                  onOpenAutoFocus={(event) => event.preventDefault()}
+                >
                   <Command>
                     <div className="flex items-center justify-between border-b">
                       <CommandInput
@@ -993,7 +999,10 @@ export default function ReservationForm() {
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full min-w-[320px] p-2">
+                    <PopoverContent
+                      className="w-full min-w-[320px] p-2"
+                      onOpenAutoFocus={(event) => event.preventDefault()}
+                    >
                       <Command>
                         <div className="flex justify-between items-center w-full border-b">
                           <CommandInput

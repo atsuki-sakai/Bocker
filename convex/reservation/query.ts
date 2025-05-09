@@ -669,7 +669,7 @@ function generateTimeSlotsWithAlignment(
   // === 2. 前回スロット開始から durationMin 以上空けて、
   //        かつ minSlotSize 分単位に「良い感じ」で揃った次の開始時刻を探す ===
   while (true) {
-    const minNext = lastStart + durationMin // 次スロットが始められる最短分
+    const minNext = lastStart + minSlotSize // 次スロットが始められる最短分
     // minSlotSize 分単位の「揃った」時刻を算出（helper）
     const aligned = computeNextAlignedStart(
       minNext,

@@ -133,12 +133,20 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
               <Button
                 onClick={() => {
                   if (selectedOption) {
-                    onChangeOptionsAction([...selectedOptions, selectedOption])
+                    const isAlreadySelected = selectedOptions.some(
+                      (o) => o._id === selectedOption._id
+                    )
+                    if (!isAlreadySelected) {
+                      onChangeOptionsAction([...selectedOptions, selectedOption])
+                    }
                     setShowOptionDetail(false)
                   }
                 }}
+                disabled={selectedOptions.some((o) => o._id === selectedOption?._id)}
               >
-                選択する
+                {selectedOptions.some((o) => o._id === selectedOption?._id)
+                  ? '選択済み'
+                  : '選択する'}
               </Button>
             </div>
           </DialogFooter>
