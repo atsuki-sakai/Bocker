@@ -55,15 +55,15 @@ body {
     --sidebar-border: oklch(0.923 0.003 48.717);
     --sidebar-ring: oklch(0.709 0.01 56.259);
     --palette-1: oklch(0.99 0.0199 97.52);
-    --palette-1-foreground: oklch(0.62 0.1378 113.25);
+    --palette-1-foreground: oklch(0.7 0.1288 98.75);
     --palette-2: oklch(0.98 0.0295 161.13);
-    --palette-2-foreground: oklch(0.61 0.1747 144.32);
+    --palette-2-foreground: oklch(0.66 0.1904 144.32);
     --palette-3: oklch(0.97 0.0235 319.45);
-    --palette-3-foreground: oklch(0.38 0.1901 312.79);
+    --palette-3-foreground: oklch(0.52 0.2237 314.8);
     --palette-4: oklch(0.91 0.046 18.03);
-    --palette-4-foreground: oklch(0.4 0.1658 29.23);
+    --palette-4-foreground: oklch(0.52 0.1825 26.36);
     --palette-5: oklch(0.91 0.0449 273.05);
-    --palette-5-foreground: oklch(0.31 0.1794 263.97);
+    --palette-5-foreground: oklch(0.44 0.2082 266.74);
    
   }
   

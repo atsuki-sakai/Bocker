@@ -150,7 +150,7 @@ export const Questionnaire = ({
       <div>
         <div className="flex justify-between items-center w-full">
           <CardTitle>
-            問診票 {step}/{totalSteps}
+            STEP {step}/{totalSteps}
           </CardTitle>
           <div className="w-1/2">
             <Progress value={(step / totalSteps) * 100} />

@@ -747,7 +747,7 @@ export default function CalendarPage() {
       <Dialog open={isQuestionnaireOpen} onOpenChange={setIsQuestionnaireOpen}>
         <DialogContent className="overflow-y-auto h-[90vh] flex flex-col justify-start items-start">
           <DialogHeader>
-            <DialogTitle>問診票</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">問診票</DialogTitle>
           </DialogHeader>
           <Questionnaire
             onComplete={(data) => {

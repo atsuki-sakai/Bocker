@@ -89,9 +89,10 @@ export const update = mutation({
       });
     }
 
-    const updateData = excludeFields(args, ['menuId']);
-
-    const newMenuId = await ctx.db.patch(args.menuId, updateData);
+    const newMenuId = await ctx.db.patch(args.menuId, {
+      ...args,
+      isArchive: false,
+    })
     return newMenuId;
   },
 });

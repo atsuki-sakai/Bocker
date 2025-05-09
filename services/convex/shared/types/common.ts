@@ -97,7 +97,7 @@ export const convertReservationStatus = (status: ReservationStatus): string => {
 
 // 予約間隔の型定義
 export const RESERVATION_INTERVAL_MINUTES_VALUES = [
-  0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120,
+  10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120,
 ] as const
 export const reservationIntervalMinutesType = v.union(
   ...RESERVATION_INTERVAL_MINUTES_VALUES.map((minutes) => v.literal(minutes))

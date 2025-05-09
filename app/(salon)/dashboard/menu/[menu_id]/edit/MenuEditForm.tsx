@@ -294,8 +294,8 @@ export default function MenuEditForm() {
         ...data,
         imgPath: uploadImagePath || existingImageUrl,
         tags: currentTags,
+        paymentMethod: paymentMethod,
       }
-
       // priceフィールドをunitPriceに変換
       if (updateData.unitPrice) {
         updateData.unitPrice = updateData.unitPrice
@@ -312,7 +312,6 @@ export default function MenuEditForm() {
         salePrice: updateData.salePrice ?? undefined,
         menuId,
       })
-
       toast.success('メニューを更新しました')
       router.push('/dashboard/menu')
     } catch (error) {
@@ -606,7 +605,13 @@ export default function MenuEditForm() {
                   type="single"
                   className="w-full flex flex-wrap justify-start items-center gap-6"
                   value={paymentMethod}
-                  onValueChange={(value) => setPaymentMethod(value as MenuPaymentMethod)}
+                  onValueChange={(value) => {
+                    if (value) {
+                      const typedValue = value as MenuPaymentMethod
+                      setPaymentMethod(typedValue)
+                      setValue('paymentMethod', typedValue, { shouldValidate: true })
+                    }
+                  }}
                 >
                   <ToggleGroupItem
                     className="text-sm shadow-sm bg-muted hover:bg-muted-foreground hover:text-active-foreground p-4 data-[state=on]:bg-active data-[state=on]:text-active-foreground"

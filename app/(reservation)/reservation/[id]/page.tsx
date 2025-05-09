@@ -218,7 +218,7 @@ export default function ReservePage() {
                 ) : (
                   <div className="flex items-center justify-center space-x-4">
                     <span>ログイン</span>
-                    <ChevronRight className="h-5 w-5 text-primary" />
+                    <ChevronRight className="h-5 w-5" />
                   </div>
                 )}
               </Button>
@@ -237,8 +237,8 @@ export default function ReservePage() {
             <div className="w-full">
               <Button className="px-8 py-5 w-full" onClick={handleLineLogin}>
                 <div className="flex items-center justify-center space-x-2">
-                  <span className="text-primary font-bold text-base">LINEでログイン</span>
-                  <ChevronRight className="h-5 w-5 text-primary" />
+                  <span className="font-bold text-base">LINEでログイン</span>
+                  <ChevronRight className="h-5 w-5" />
                 </div>
               </Button>
             </div>
