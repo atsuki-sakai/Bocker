@@ -49,6 +49,7 @@ interface SidebarProps {
 
 export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isLinkClicked, setIsLinkClicked] = useState(false)
   const { signOut } = useClerk()
   const { isSignedIn } = useAuth()
   const salon = usePreloadedQuery(
@@ -178,6 +179,13 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
     }
   }, [salon, timeOut, signOut])
 
+  useEffect(() => {
+    if (isLinkClicked) {
+      setSidebarOpen(false)
+      setIsLinkClicked(false)
+    }
+  }, [pathname, isLinkClicked, setSidebarOpen])
+
   if (!salon) {
     return <Loading />
   }
@@ -240,37 +248,33 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                   <ul role="list" className="flex flex-1 flex-col gap-y-1">
                     {
                       navigation.map((item) => {
-                        // 現在のページかどうかを pathname と比較して判定
                         const isCurrent = pathname === item.href
 
                         const linkContent = (
-                          <li>
-                            <Link
-                              href={item.href}
+                          <Link
+                            href={item.href}
+                            onClick={() => setIsLinkClicked(true)}
+                            className={classNames(
+                              isCurrent
+                                ? 'text-accent-foreground bg-accent'
+                                : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                              'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                            )}
+                          >
+                            <item.icon
+                              aria-hidden="true"
                               className={classNames(
-                                isCurrent
-                                  ? 'bg-accent text-accent-foreground'
-                                  : 'text-primary  font-light',
-                                'group border-border flex items-center gap-x-3 rounded-md p-2 text-sm'
+                                isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
+                                'size-4 shrink-0'
                               )}
-                            >
-                              <item.icon
-                                aria-hidden="true"
-                                className={classNames(
-                                  isCurrent
-                                    ? 'text-accent-foreground font-semibold'
-                                    : 'text-primary font-light',
-                                  'size-3 shrink-0'
-                                )}
-                              />
-                              <p className="w-full text-nowrap">{item.name}</p>
-                              {isCurrent && (
-                                <div className="w-full flex justify-end items-center pr-2">
-                                  <div className="h-3 w-3 bg-active border-active border-2 rounded-full" />
-                                </div>
-                              )}
-                            </Link>
-                          </li>
+                            />
+                            <p className="w-full text-nowrap">{item.name}</p>
+                            {isCurrent && (
+                              <div className="w-full flex justify-end items-center pr-2">
+                                <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                              </div>
+                            )}
+                          </Link>
                         )
 
                         // 権限に基づいた表示（オーナーの場合は常に表示）
@@ -282,7 +286,9 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                                 (salon?.planName === 'Lite' || salon?.planName === 'Pro')) ||
                               (item.requiredPlan === 'Pro' && salon?.planName === 'Pro')
 
-                            return hasPlanAccess ? <li key={item.name}>{linkContent}</li> : null
+                            return hasPlanAccess && salon?.subscriptionStatus === 'active' ? (
+                              <li key={item.name}>{linkContent}</li>
+                            ) : null
                           }
                           return <li key={item.name}>{linkContent}</li>
                         } else if (item.requiredRole) {
@@ -316,6 +322,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                             <li key={item.name}>
                               <Link
                                 href={item.href}
+                                onClick={() => setIsLinkClicked(true)}
                                 className={classNames(
                                   isCurrent
                                     ? 'bg-accent text-accent-foreground'
@@ -348,6 +355,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                       <li>
                         <Link
                           href={`/dashboard/setting`}
+                          onClick={() => setIsLinkClicked(true)}
                           className={classNames(
                             pathname === '/dashboard/setting'
                               ? 'bg-accent text-accent-foreground'
@@ -396,100 +404,108 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
                 <li>
                   <ul role="list" className="-mx-2 space-y-1">
-                    {navigation.map((item) => {
-                      const isCurrent = pathname === item.href
-
-                      const linkContent = (
-                        <Link
-                          href={item.href}
-                          className={classNames(
-                            isCurrent
-                              ? 'text-accent-foreground bg-accent'
-                              : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                            'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
-                          )}
-                        >
-                          <item.icon
-                            aria-hidden="true"
-                            className={classNames(
-                              isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
-                              'size-4 shrink-0'
-                            )}
-                          />
-                          <p className="w-full text-nowrap">{item.name}</p>
-                          {isCurrent && (
-                            <div className="w-full flex justify-end items-center pr-2">
-                              <div className="h-3 w-3 bg-active border-ring border rounded-full" />
-                            </div>
-                          )}
-                        </Link>
-                      )
-
-                      // 権限に基づいた表示（オーナーの場合は常に表示）
-                      if (isOwner) {
-                        // オーナーの場合でもプランに基づいた表示制御
-                        if (item.requiredPlan) {
-                          const hasPlanAccess =
-                            (item.requiredPlan === 'Lite' &&
-                              (salon?.planName === 'Lite' || salon?.planName === 'Pro')) ||
-                            (item.requiredPlan === 'Pro' && salon?.planName === 'Pro')
-
-                          return hasPlanAccess && salon?.subscriptionStatus === 'active' ? (
-                            <li key={item.name}>{linkContent}</li>
-                          ) : null
-                        }
-                        return <li key={item.name}>{linkContent}</li>
-                      } else if (item.requiredRole) {
-                        return (
-                          <li key={item.name}>
-                            <RoleBasedView
-                              requiredRole={
-                                item.requiredRole as 'staff' | 'admin' | 'manager' | 'owner'
-                              }
-                              requiredPlan={item.requiredPlan as 'Lite' | 'Pro' | undefined}
-                              currentPlan={salon?.planName}
-                            >
-                              {linkContent}
-                            </RoleBasedView>
-                          </li>
-                        )
-                      }
-
-                      return null
-                    })}
-
-                    {/* オーナーにのみ表示する項目 */}
-                    {isOwner &&
-                      ownerOnlyNavigation.map((item) => {
+                    {
+                      navigation.map((item) => {
                         const isCurrent = pathname === item.href
-                        return (
-                          <li key={item.name}>
-                            <Link
-                              href={item.href}
+
+                        const linkContent = (
+                          <Link
+                            href={item.href}
+                            onClick={() => setIsLinkClicked(true)}
+                            className={classNames(
+                              isCurrent
+                                ? 'text-accent-foreground bg-accent'
+                                : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                              'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                            )}
+                          >
+                            <item.icon
+                              aria-hidden="true"
                               className={classNames(
-                                isCurrent
-                                  ? 'text-accent-foreground bg-accent'
-                                  : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                                'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                                isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
+                                'size-4 shrink-0'
                               )}
-                            >
-                              <item.icon
-                                aria-hidden="true"
-                                className={classNames(
-                                  isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
-                                  'size-4 shrink-0'
-                                )}
-                              />
-                              <p className="w-full text-nowrap">{item.name}</p>
-                              {isCurrent && (
-                                <div className="w-full flex justify-end items-center pr-2">
-                                  <div className="h-3 w-3 bg-active border-ring border rounded-full" />
-                                </div>
-                              )}
-                            </Link>
-                          </li>
+                            />
+                            <p className="w-full text-nowrap">{item.name}</p>
+                            {isCurrent && (
+                              <div className="w-full flex justify-end items-center pr-2">
+                                <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                              </div>
+                            )}
+                          </Link>
                         )
-                      })}
+
+                        // 権限に基づいた表示（オーナーの場合は常に表示）
+                        if (isOwner) {
+                          // オーナーの場合でもプランに基づいた表示制御
+                          if (item.requiredPlan) {
+                            const hasPlanAccess =
+                              (item.requiredPlan === 'Lite' &&
+                                (salon?.planName === 'Lite' || salon?.planName === 'Pro')) ||
+                              (item.requiredPlan === 'Pro' && salon?.planName === 'Pro')
+
+                            return hasPlanAccess && salon?.subscriptionStatus === 'active' ? (
+                              <li key={item.name}>{linkContent}</li>
+                            ) : null
+                          }
+                          return <li key={item.name}>{linkContent}</li>
+                        } else if (item.requiredRole) {
+                          return (
+                            <li key={item.name}>
+                              <RoleBasedView
+                                requiredRole={
+                                  item.requiredRole as 'staff' | 'admin' | 'manager' | 'owner'
+                                }
+                                requiredPlan={item.requiredPlan as 'Lite' | 'Pro' | undefined}
+                                currentPlan={salon?.planName}
+                              >
+                                {linkContent}
+                              </RoleBasedView>
+                            </li>
+                          )
+                        }
+
+                        return null
+                      })
+                    }
+
+                    {
+                      /* オーナーにのみ表示する項目 */
+                    }
+                    {
+                      isOwner &&
+                        ownerOnlyNavigation.map((item) => {
+                          const isCurrent = pathname === item.href
+                          return (
+                            <li key={item.name}>
+                              <Link
+                                href={item.href}
+                                onClick={() => setIsLinkClicked(true)}
+                                className={classNames(
+                                  isCurrent
+                                    ? 'text-accent-foreground bg-accent'
+                                    : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                                  'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                                )}
+                              >
+                                <item.icon
+                                  aria-hidden="true"
+                                  className={classNames(
+                                    isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
+                                    'size-4 shrink-0'
+                                  )}
+                                />
+                                <p className="w-full text-nowrap">{item.name}</p>
+                                {isCurrent && (
+                                  <div className="w-full flex justify-end items-center pr-2">
+                                    <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                                  </div>
+                                )}
+                              </Link>
+                            </li>
+                          )
+                        })
+                    }
                   </ul>
                 </li>
 
@@ -497,6 +513,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                   <li className="mt-auto">
                     <Link
                       href={`/dashboard/setting`}
+                      onClick={() => setIsLinkClicked(true)}
                       className={classNames(
                         pathname === '/dashboard/setting'
                           ? 'text-accent-foreground bg-accent'

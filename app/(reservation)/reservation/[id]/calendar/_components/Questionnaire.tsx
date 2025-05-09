@@ -1304,7 +1304,7 @@ export const Questionnaire = ({
                       </div>
                       <div className="flex justify-between items-center w-full">
                         <span className="text-muted-foreground w-1/3 text-sm">ブリーチ部分</span>
-                        <span className="font-semibold w-2/3 text-end">
+                        <span className="w-2/3 text-end">
                           {form.getValues().bleachPart === 'part' ? (
                             '部分'
                           ) : form.getValues().bleachPart === 'all' ? (
