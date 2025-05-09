@@ -53,9 +53,10 @@ export type ListCouponInput = {
 
 // COUPON CONFIG
 export type FindByCouponUidInput = {
-  salonId: Id<'salon'>;
-  couponUid: string;
-};
+  salonId: Id<'salon'>
+  couponUid: string
+  activeOnly?: boolean
+}
 
 export type CreateCouponConfigInput = {
   salonId: Id<'salon'>;

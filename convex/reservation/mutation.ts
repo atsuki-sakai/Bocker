@@ -44,7 +44,7 @@ export const create = mutation({
     paymentMethod: v.optional(paymentMethodType),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx)
+    checkAuth(ctx, true)
     validateReservation(args)
 
     // 必須フィールドの存在確認

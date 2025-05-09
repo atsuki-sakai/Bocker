@@ -2,10 +2,12 @@
 
 import { CreditCard, Banknote } from 'lucide-react'
 import { Doc } from '@/convex/_generated/dataModel'
+import { PaymentMethod } from '@/services/convex/shared/types/common'
+
 type PaymentViewProps = {
   selectedMenus: Doc<'menu'>[]
-  selectedPaymentMethod: 'credit' | 'cash' | 'line_pay' | 'paypay' | null
-  onChangePaymentMethodAction: (method: 'credit' | 'cash' | 'line_pay' | 'paypay') => void
+  selectedPaymentMethod: PaymentMethod | null
+  onChangePaymentMethodAction: (method: PaymentMethod) => void
 }
 
 export const PaymentView = ({
@@ -54,8 +56,8 @@ export const PaymentView = ({
 
         {(displayMode === 'credit' || displayMode === 'all') && (
           <div
-            className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer ${selectedPaymentMethod === 'credit' ? 'border-active bg-active-foreground' : ''}`}
-            onClick={() => onChangePaymentMethodAction('credit')}
+            className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer ${selectedPaymentMethod === 'credit_card' ? 'border-active bg-active-foreground' : ''}`}
+            onClick={() => onChangePaymentMethodAction('credit_card')}
           >
             <div className="flex items-center gap-3">
               <CreditCard className="h-6 w-6 text-muted-foreground" />
@@ -65,7 +67,7 @@ export const PaymentView = ({
               </div>
             </div>
             <div className="w-6 h-6 rounded-full border border-border flex items-center justify-center">
-              {selectedPaymentMethod === 'credit' && (
+              {selectedPaymentMethod === 'credit_card' && (
                 <div className="w-4 h-4 rounded-full bg-active"></div>
               )}
             </div>

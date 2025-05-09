@@ -10,7 +10,7 @@ export const list = query({
     couponId: v.id('coupon'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    checkAuth(ctx, true)
     validateCouponExclusionMenu(args);
     return await couponService.listCouponExclusionMenu(ctx, args);
   },

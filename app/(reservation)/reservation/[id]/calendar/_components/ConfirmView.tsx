@@ -22,7 +22,7 @@ type ConfirmViewProps = {
   selectedDate: Date | null
   selectedTime: TimeRange | null
   // クーポン関連のpropsを追加
-  onApplyCoupon?: (discount: number) => void
+  onApplyCoupon?: (discount: number, couponId: Id<'coupon'>) => void
 }
 
 export const ConfirmView = ({
@@ -46,7 +46,6 @@ export const ConfirmView = ({
   }, 0)
 
   const totalAmount = menuTotalPrice + optionTotalPrice
-
   const maxUsablePoints = 1000 < availablePoints ? 1000 : availablePoints
   const handlePointsChange = (points: number[]) => {
     const value = Math.min(points[0], maxUsablePoints)
@@ -139,6 +138,28 @@ export const ConfirmView = ({
         return
       }
 
+      const couponExclutionMenus = await fetchQuery(api.coupon.exclusion_menu.query.list, {
+        salonId: salonId,
+        couponId: coupon._id,
+      })
+
+      const hasExclusionMenu = selectedMenus.some((menu) => {
+        if (
+          couponExclutionMenus.some(
+            (couponExclutionMenu) => couponExclutionMenu.menuId === menu._id
+          )
+        ) {
+          setCouponError(menu.name + 'にはクーポンが適用できません。')
+          setAppliedCoupon(null)
+          return true // 除外メニューが見つかった
+        }
+        return false
+      })
+
+      if (hasExclusionMenu) {
+        return // クーポン適用処理を中断
+      }
+
       const formattedDiscount =
         coupon.discountType === 'percentage'
           ? coupon.percentageDiscountValue + '%'
@@ -170,7 +191,7 @@ export const ConfirmView = ({
         discount: resultDiscount,
         name: coupon.name + formattedDiscount,
       })
-      onApplyCoupon(resultDiscount)
+      onApplyCoupon(resultDiscount, coupon._id)
       setCouponError(null)
     } catch (error) {
       console.log(error)

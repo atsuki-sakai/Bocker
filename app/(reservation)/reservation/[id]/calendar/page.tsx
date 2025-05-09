@@ -8,9 +8,13 @@ import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
+import { Label } from '@/components/ui/label'
 import { MenuView, StaffView, OptionView, DateView, PaymentView, ConfirmView } from './_components'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
+import { generatePinCode } from '@/lib/utils'
+import { reservationFlexMessageTemplate } from '@/services/line/message_template/reservation_flex'
+
 import {
   Check,
   CheckCheck,
@@ -28,7 +32,13 @@ import { Questionnaire } from './_components/Questionnaire'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useLiff } from '@/hooks/useLiff'
 import { ModeToggle } from '@/components/common'
+import { PaymentMethod } from '@/services/convex/shared/types/common'
 import type { TimeRange } from '@/lib/type'
+import { useMutation } from 'convex/react'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
+import { handleErrorToMsg } from '@/lib/error'
 
 export type LoginSession = {
   salonId: Id<'salon'>
@@ -67,6 +77,21 @@ const pageVariants = {
   }),
 }
 
+// 電話番号バリデーション関数
+const isValidPhoneNumber = (phone: string | null): boolean => {
+  if (!phone) return false
+  // ハイフンあり・なし両対応の簡易的なバリデーション
+  const phoneRegex = /^\d{2,4}-?\d{2,4}-?\d{3,4}$/
+  return phoneRegex.test(phone)
+}
+
+interface SalonCompleteData {
+  salon: Doc<'salon'>
+  config: Doc<'salon_config'>
+  scheduleConfig: Doc<'salon_schedule_config'>
+  apiConfig: Doc<'salon_api_config'>
+}
+
 export default function CalendarPage() {
   const router = useRouter()
   const params = useParams()
@@ -74,12 +99,11 @@ export default function CalendarPage() {
   const { liff } = useLiff()
   // STATES
   const [sessionCustomer, setSessionCustomer] = useState<LoginSession | null>(null)
-  const [salonComplete, setSalonComplete] = useState<{
-    salon: Partial<Doc<'salon'>>
-    config: Partial<Doc<'salon_config'>>
-    scheduleConfig: Partial<Doc<'salon_schedule_config'>>
-    apiConfig: Partial<Doc<'salon_api_config'>>
-  } | null>(null)
+  const [customer, setCustomer] = useState<Doc<'customer'> | null>(null)
+  const [customerPhone, setCustomerPhone] = useState<string | null>(null)
+  const [notes, setNotes] = useState<string>('')
+  const [isPhoneValid, setIsPhoneValid] = useState(false) // 電話番号の有効性ステート
+  const [salonComplete, setSalonComplete] = useState<SalonCompleteData | null>(null)
   const [selectedMenus, setSelectedMenus] = useState<Doc<'menu'>[]>([])
   const [selectedStaffCompleted, setSelectedStaffCompleted] = useState<{
     staff: StaffDisplay | null
@@ -91,10 +115,11 @@ export default function CalendarPage() {
   const [reservationEndDateTime, setReservationEndDateTime] = useState<Date | null>(null)
   const [currentStep, setCurrentStep] = useState<ReservationStep>('menu')
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
-    'credit' | 'cash' | 'line_pay' | 'paypay' | null
-  >(null)
-  const [appliedDiscount, setAppliedDiscount] = useState<number>(0)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null)
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    discount: number
+    couponId: Id<'coupon'> | null
+  }>({ discount: 0, couponId: null })
   const [usePoints, setUsePoints] = useState<number>(0)
   const [availablePoints, setAvailablePoints] = useState<number>(1000) // 仮の値、実際にはAPIから取得
   const [direction, setDirection] = useState(0) // アニメーションの方向を制御
@@ -102,10 +127,16 @@ export default function CalendarPage() {
   const [questionnaireStep, setQuestionnaireStep] = useState(1)
   const [isLogout, setIsLogout] = useState(false)
   const totalSteps = 10 // Questionnaireと合わせる
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
 
   // bottomBar高さ測定用のrefとstate
   const bottomBarRef = useRef<HTMLDivElement>(null)
   const [bottomBarHeight, setBottomBarHeight] = useState<number>(0)
+
+  // Convex mutations
+  const createReservationMutation = useMutation(api.reservation.mutation.create)
+  const updateCustomerMutation = useMutation(api.customer.core.mutation.update)
+  const createPointAuthMutation = useMutation(api.point.auth.mutation.create)
 
   // ステップ変更時に画面トップへ自動スクロール
   useEffect(() => {
@@ -194,11 +225,238 @@ export default function CalendarPage() {
     setIsLogout(false)
   }
 
+  const handleConfirmReservation = async () => {
+    if (
+      !sessionCustomer ||
+      !salonComplete?.salon?._id ||
+      !selectedStaffCompleted?.staff ||
+      !reservationStartDateTime ||
+      !reservationEndDateTime ||
+      !selectedPaymentMethod
+    ) {
+      console.error('予約に必要な情報が不足しています。')
+      // TODO: ユーザーにエラーメッセージを表示 (例: トースト通知)
+      alert('予約に必要な情報が不足しています。選択内容をご確認ください。')
+      return
+    }
+
+    setIsProcessingPayment(true)
+
+    try {
+      if (customer && customerPhone && customerPhone !== customer.phone) {
+        await updateCustomerMutation({
+          customerId: customer._id,
+          phone: customerPhone,
+        })
+      }
+      // 予約データを準備
+      const reservationData = {
+        salonId: salonComplete.salon._id as Id<'salon'>,
+        customerId: sessionCustomer.customerId as Id<'customer'>,
+        customerName: sessionCustomer.email ? sessionCustomer.email : sessionCustomer.lineUserName,
+        staffId: selectedStaffCompleted.staff._id as Id<'staff'>,
+        staffName: selectedStaffCompleted.staff.name,
+        menus: selectedMenus.map((menu) => ({ menuId: menu._id, quantity: 1 })), // quantityは現状1で固定
+        options: selectedOptions.map((option) => ({
+          optionId: option._id,
+          quantity: 1, // quantityは現状1で固定
+        })),
+        totalPrice: calculateTotal(),
+        unitPrice:
+          calculateTotal() +
+          (usePoints && usePoints > 0 ? usePoints : 0) +
+          (appliedDiscount.discount && appliedDiscount.discount > 0 ? appliedDiscount.discount : 0),
+        status: 'pending' as const, // Stripe決済の場合はまずpendingで作成
+        startTime_unix: reservationStartDateTime.getTime(),
+        endTime_unix: reservationEndDateTime.getTime(),
+        usePoints: usePoints,
+        couponId: appliedDiscount.couponId || undefined, // クーポン機能実装時に追加
+        couponDiscount: appliedDiscount.discount || undefined, // ポイント割引とは別の純粋なクーポン割引額を想定
+        paymentMethod: selectedPaymentMethod,
+        notes: notes, // 問診票の内容などを将来的に結合
+      }
+
+      // 1. Convexに予約データを'pending'ステータスで作成
+      const reservationId = await createReservationMutation(reservationData)
+
+      if (selectedPaymentMethod === 'credit_card') {
+        // 2. クレジットカード決済の場合、バックエンドAPIを呼び出してStripe Checkoutセッションを作成
+        const lineItems = [
+          ...selectedMenus.map((menu) => ({
+            price_data: {
+              currency: 'jpy',
+              product_data: { name: menu.name },
+              unit_amount: menu.salePrice || menu.unitPrice || 0,
+            },
+            quantity: 1,
+          })),
+          ...selectedOptions.map((option) => ({
+            price_data: {
+              currency: 'jpy',
+              product_data: { name: option.name },
+              unit_amount: option.salePrice ?? option.unitPrice ?? 0,
+            },
+            quantity: 1,
+          })),
+        ]
+        if (
+          selectedStaffCompleted.staff.extraCharge &&
+          selectedStaffCompleted.staff.extraCharge > 0
+        ) {
+          lineItems.push({
+            price_data: {
+              currency: 'jpy',
+              product_data: { name: `${selectedStaffCompleted.staff.name} 指名料` },
+              unit_amount: selectedStaffCompleted.staff.extraCharge,
+            },
+            quantity: 1,
+          })
+        }
+        // 割引やポイントを反映した最終的なラインアイテムを作成（ここでは簡略化のため合計金額を単一アイテムとして扱う）
+        // API側で手数料を差し引くため、ここでは顧客が支払う総額をStripeに渡すのが適切
+        const checkoutLineItems = [
+          {
+            price_data: {
+              currency: 'jpy',
+              product_data: {
+                name: `予約合計金額（${selectedMenus.map((m) => m.name).join(', ')} 他）`,
+                description: `メニュー、オプション、指名料、割引、ポイント利用を含む最終支払額`,
+              },
+              unit_amount: calculateTotal(), // 割引およびポイント適用後の最終合計金額
+            },
+            quantity: 1,
+          },
+        ]
+
+        const response = await fetch('/api/stripe/connect/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reservationId: reservationId,
+            salonId: salonComplete.salon._id,
+            customerEmail: sessionCustomer.email, // Stripe customer_email用
+            lineItems: checkoutLineItems, // サーバー側でこれに基づいてCheckoutSessionを作成
+            // success_url, cancel_url はサーバーサイドで環境変数等から生成
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Stripe Checkoutセッションの作成に失敗しました。')
+        }
+
+        const { checkoutUrl } = await response.json()
+        if (checkoutUrl) {
+          router.push(checkoutUrl) // Stripe Checkoutページへリダイレクト
+          // リダイレクト後はこのページの操作は不要なため、isProcessingPaymentの解除はしない
+        } else {
+          throw new Error('Checkout URLが取得できませんでした。')
+        }
+      } else if (selectedPaymentMethod === 'cash') {
+        setIsProcessingPayment(false)
+
+        // ポイントを利用していればauthPinCodeを送信してポイントを店舗で利用できるように
+        let pinCode = null
+        if (usePoints && usePoints > 0) {
+          // ポイントauthの作成
+          pinCode = generatePinCode()
+          const pointAuth = await createPointAuthMutation({
+            reservationId: reservationId,
+            customerId: sessionCustomer.customerId,
+            authCode: pinCode,
+            expirationTime_unix: Date.now() + 1000 * 60 * 60 * 24 * 30, // 30日後
+          })
+          console.log(pointAuth)
+        }
+
+        if (sessionCustomer.lineId) {
+          // Lineにメッセージ予約の確認用Flexメッセージを作成
+          const flexMessages = reservationFlexMessageTemplate(
+            salonComplete.config,
+            customer!,
+            selectedStaffCompleted.staff,
+            selectedDate!,
+            selectedTime!,
+            selectedMenus,
+            calculateTotal(),
+            reservationId,
+            pinCode ?? undefined
+          )
+          // Lineにメッセージ送信
+          const response = await fetch('/api/line/flex-message', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              lineId: sessionCustomer?.lineId,
+              messages: flexMessages,
+              accessToken: salonComplete.apiConfig.lineAccessToken,
+            }),
+          })
+
+          if (!response.ok) {
+            let errorData
+            try {
+              errorData = await response.json()
+            } catch (e) {
+              console.log(e)
+              try {
+                errorData = await response.text()
+              } catch (textError) {
+                console.log(textError)
+                errorData = `Status: ${response.status}, StatusText: ${response.statusText}`
+              }
+            }
+            console.error('LINEメッセージ送信APIエラー:', response.status, errorData)
+            const errorMessage =
+              typeof errorData === 'object' && errorData !== null && errorData.message
+                ? errorData.message
+                : typeof errorData === 'string' && errorData
+                  ? errorData
+                  : `サーバーエラー: ${response.status}`
+            throw new Error(`LINEメッセージ送信に失敗しました: ${errorMessage}`)
+          }
+
+          try {
+            const result = await response.json()
+            if (result.success) {
+              router.push(
+                `/reservation/${salonId}/calendar/complete?reservationId=${reservationId}`
+              )
+            } else {
+              throw new Error(result.error || result.message || 'メッセージ送信処理に失敗しました')
+            }
+          } catch (e) {
+            console.error('LINEメッセージ送信APIからのレスポンス処理エラー:', e)
+            throw new Error(
+              'LINEメッセージ送信APIからの応答の処理中にエラーが発生しました。詳細はコンソールネットワークタブを確認してください。'
+            )
+          }
+        } else if (sessionCustomer.email) {
+          // FIXME:  メールアドレスへ確認メールの送信
+          // ドメインを取得してから実装
+        } else {
+          toast.error('LINEにもメールにも通知できませんでしたが、予約は受け付けました。')
+          router.push(`/reservation/${salonId}/calendar/complete?reservationId=${reservationId}`)
+        }
+
+        console.log(pinCode)
+
+        toast.success('予約を受け付けしました。')
+      }
+    } catch (error) {
+      toast.error(handleErrorToMsg(error))
+      setIsProcessingPayment(false)
+    }
+  }
+
   // USE EFFECT
   useEffect(() => {
     const cookie = getCookie(LINE_LOGIN_SESSION_KEY)
     const cookieJson: LoginSession | null = cookie ? JSON.parse(cookie) : null
     setSessionCustomer(cookieJson)
+    console.log('cookieJson', cookieJson)
     if (cookieJson?.salonId) {
       const fetchSalon = async () => {
         try {
@@ -208,8 +466,13 @@ export default function CalendarPage() {
             { id: cookieJson.salonId as Id<'salon'> }
           )
           setSalonComplete(
-            config && apiConfig && scheduleConfig
-              ? { salon, config, apiConfig, scheduleConfig }
+            salon && config && apiConfig && scheduleConfig
+              ? {
+                  salon: salon as Doc<'salon'>,
+                  config: config as Doc<'salon_config'>,
+                  apiConfig: apiConfig as Doc<'salon_api_config'>,
+                  scheduleConfig: scheduleConfig as Doc<'salon_schedule_config'>,
+                }
               : null
           )
           if (cookieJson.customerId === undefined || cookieJson.salonId === undefined) {
@@ -224,6 +487,12 @@ export default function CalendarPage() {
             }
           )
           setAvailablePoints(customerPointConfig?.totalPoints || 0)
+          const customer = await fetchQuery(api.customer.core.query.getById, {
+            customerId: cookieJson.customerId as Id<'customer'>,
+          })
+          setCustomer(customer)
+          setCustomerPhone(customer?.phone || null)
+          setIsPhoneValid(isValidPhoneNumber(customer?.phone || null)) // 初期値のバリデーション
         } catch (error) {
           console.error('サロン情報の取得に失敗しました:', error)
           setSalonComplete(null)
@@ -259,7 +528,7 @@ export default function CalendarPage() {
     )
     const extraChargeTotal = selectedStaffCompleted?.staff?.extraCharge || 0
 
-    const discount = appliedDiscount + usePoints
+    const discount = appliedDiscount.discount + usePoints
     console.log('discount', discount)
     console.log('usePoints', usePoints)
     console.log('appliedDiscount', appliedDiscount)
@@ -534,7 +803,7 @@ export default function CalendarPage() {
                   >
                     <PaymentView
                       selectedMenus={selectedMenus}
-                      selectedPaymentMethod={selectedPaymentMethod}
+                      selectedPaymentMethod={selectedPaymentMethod as PaymentMethod}
                       onChangePaymentMethodAction={(method) => setSelectedPaymentMethod(method)}
                     />
                     <motion.div
@@ -572,16 +841,55 @@ export default function CalendarPage() {
                       onChangePointsAction={(points: number) => setUsePoints(points)}
                       selectedDate={selectedDate}
                       selectedTime={selectedTime}
-                      onApplyCoupon={(discount: number) => setAppliedDiscount(discount)}
+                      onApplyCoupon={(discount: number, couponId: Id<'coupon'>) =>
+                        setAppliedDiscount({ discount, couponId })
+                      }
                     />
+                    <Separator className="my-6" />
+                    <div className="flex flex-col gap-2 my-4">
+                      <Label className="text-primary">ご予約者様のお電話番号</Label>
+                      <Input
+                        type="tel"
+                        placeholder="電話番号を入力してください (例: 090-1234-5678)"
+                        value={customerPhone || ''}
+                        className="w-full"
+                        onChange={(e) => {
+                          const phone = e.target.value
+                          setCustomerPhone(phone)
+                          setIsPhoneValid(isValidPhoneNumber(phone))
+                        }}
+                      />
+                      {!isPhoneValid && customerPhone !== null && customerPhone !== '' && (
+                        <p className="text-xs text-destructive">
+                          有効な電話番号の形式で入力してください。
+                        </p>
+                      )}
+                      {(!customerPhone || customerPhone === '') && (
+                        <p className="text-xs text-destructive">
+                          ご予約をされるお客様のお電話番号を入力してください
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2 my-4">
+                      <Label className="text-primary">備考</Label>
+                      <Textarea
+                        rows={8}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        className="w-full"
+                        placeholder="ご要望などあればご記入ください。"
+                      />
+                    </div>
+
                     <motion.div
-                      className="mt-6 flex flex-col gap-4 justify-center items-center"
+                      className="mt-8 flex flex-col gap-4 justify-center items-center"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
                     >
                       <Button
-                        onClick={() => console.log('予約完了')}
+                        onClick={handleConfirmReservation}
+                        disabled={isProcessingPayment || !isPhoneValid}
                         className="relative overflow-hidden w-full"
                       >
                         <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -592,6 +900,7 @@ export default function CalendarPage() {
                       <Button
                         onClick={handleShowQuestionnaire}
                         className="relative overflow-hidden w-full"
+                        disabled={isProcessingPayment || !isPhoneValid}
                       >
                         <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           問診票に回答してから予約を確定する

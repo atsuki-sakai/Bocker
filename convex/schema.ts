@@ -444,7 +444,8 @@ export default defineSchema({
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
     .index('by_name', ['name', 'isArchive'])
-    .index('by_salon_coupon_uid', ['salonId', 'couponUid', 'isArchive']),
+    .index('by_salon_coupon_uid', ['salonId', 'couponUid', 'isArchive'])
+    .index('by_salon_coupon_uid_active', ['salonId', 'couponUid', 'isActive', 'isArchive']),
 
   coupon_exclusion_menu: defineTable({
     salonId: v.id('salon'), // サロンID

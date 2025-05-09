@@ -99,9 +99,13 @@ export class CouponRepository extends BaseRepository<'coupon'> {
   async findByCouponUid(ctx: QueryCtx, args: FindByCouponUidInput) {
     return await ctx.db
       .query('coupon')
-      .withIndex('by_salon_coupon_uid', (q) =>
-        q.eq('salonId', args.salonId).eq('couponUid', args.couponUid).eq('isArchive', false)
+      .withIndex('by_salon_coupon_uid_active', (q) =>
+        q
+          .eq('salonId', args.salonId)
+          .eq('couponUid', args.couponUid)
+          .eq('isActive', args.activeOnly || true)
+          .eq('isArchive', false)
       )
-      .first();
+      .first()
   }
 }

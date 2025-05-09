@@ -21,13 +21,13 @@ import { throwConvexError } from '@/lib/error';
  */
 export async function checkAuth(
   ctx: MutationCtx | QueryCtx | ActionCtx,
-  skipCheck: boolean = false
+  skipCheck: boolean = true
 ): Promise<UserIdentity | null> {
   if (skipCheck) {
-    return null;
+    return null
   }
 
-  const identity = await ctx.auth.getUserIdentity();
+  const identity = await ctx.auth.getUserIdentity()
   if (!identity) {
     throw throwConvexError({
       message: '認証されていないユーザーです',
@@ -39,10 +39,10 @@ export async function checkAuth(
       details: {
         identity,
       },
-    });
+    })
   }
 
-  return identity;
+  return identity
 }
 
 /**
