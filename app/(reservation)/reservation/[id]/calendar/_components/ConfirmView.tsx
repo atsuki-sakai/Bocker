@@ -10,7 +10,7 @@ import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import type { StaffDisplay } from './StaffView'
 import type { TimeRange } from '@/lib/type'
-
+import { Card } from '@/components/ui/card'
 type ConfirmViewProps = {
   salonId: Id<'salon'>
   availablePoints: number
@@ -221,20 +221,25 @@ export const ConfirmView = ({
           <h3 className="text-lg font-bold text-center tracking-wide mb-4">予約内容の確認</h3>
           <div className="space-y-2">
             {/* 施術時間 */}
-            <div>
-              <p className="text-base font-bold text-active">
-                <span className="">{selectedDate?.toLocaleDateString()}</span>
-                <span className=" ml-3">
-                  {selectedTime?.startHour} - {selectedTime?.endHour}
-                </span>
-              </p>
-            </div>
-            <div className="flex items-center text-sm">
-              <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-              <span>
-                施術時間: {hours > 0 ? `${hours}時間` : ''} {minutes > 0 ? `${minutes}分` : ''}
-              </span>
-            </div>
+            <Card className="p-4">
+              <div>
+                <p className="text-base font-bold text-active">
+                  <span className="">{selectedDate?.toLocaleDateString()}</span>
+                  <span className=" ml-3">
+                    {selectedTime?.startHour} - {selectedTime?.endHour}
+                  </span>
+                </p>
+              </div>
+              <div className="flex items-center text-sm mt-2">
+                <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                <p>
+                  施術時間{' '}
+                  <span className="font-bold">
+                    {hours > 0 ? `${hours}時間` : ''} {minutes > 0 ? `${minutes}分` : ''}
+                  </span>
+                </p>
+              </div>
+            </Card>
 
             {/* メニュー一覧 */}
             <div className="space-y-1">
@@ -345,32 +350,35 @@ export const ConfirmView = ({
               </div>
             )}
           </div>
-        </div>
-
-        <div className="space-y-2 pt-4">
-          <div className="flex justify-between">
-            <p>商品金額</p>
-            <p>¥{totalAmount.toLocaleString()}</p>
-          </div>
-          {extraCharge > 0 && (
+          <div className="space-y-2 pt-6">
             <div className="flex justify-between">
-              <p>指名料</p>
-              <p>¥{extraCharge.toLocaleString()}</p>
+              <p>商品金額</p>
+              <p>¥{totalAmount.toLocaleString()}</p>
             </div>
-          )}
-          <div className="flex justify-between text-active">
-            <p>ポイント割引</p>
-            <p>-¥{usePoints.toLocaleString()}</p>
-          </div>
-          {appliedCoupon && (
+            {extraCharge > 0 && (
+              <div className="flex justify-between">
+                <p>指名料</p>
+                <p>¥{extraCharge.toLocaleString()}</p>
+              </div>
+            )}
             <div className="flex justify-between text-active">
-              <p>クーポン割引</p>
-              <p>-¥{appliedCoupon.discount.toLocaleString()}</p>
+              <p>ポイント割引</p>
+              <p>-¥{usePoints.toLocaleString()}</p>
             </div>
-          )}
-          <div className="flex justify-between font-bold text-lg">
-            <p>お支払い金額</p>
-            <p>¥{finalAmount.toLocaleString()}</p>
+            {appliedCoupon && (
+              <div className="flex justify-between text-active">
+                <p>クーポン割引</p>
+                <p>-¥{appliedCoupon.discount.toLocaleString()}</p>
+              </div>
+            )}
+            <div className="flex justify-between text-lg text-muted-foreground">
+              <p>小計</p>
+              <p>¥{menuTotalPrice + optionTotalPrice + extraCharge}</p>
+            </div>
+            <div className="flex justify-between font-bold text-lg">
+              <p>お支払い金額</p>
+              <p>¥{finalAmount.toLocaleString()}</p>
+            </div>
           </div>
         </div>
       </div>

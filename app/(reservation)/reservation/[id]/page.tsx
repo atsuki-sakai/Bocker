@@ -163,7 +163,7 @@ export default function ReservePage() {
         <Card className="w-full max-w-md shadow-lg border-none mt-4">
           <CardHeader className="py-5">
             <div className="flex flex-col items-start">
-              <h1 className="text-2xl font-bold text-primary bg-clip-text">Bcker</h1>
+              <h1 className="text-2xl font-bold text-primary bg-clip-text">Bocker</h1>
               <span className="text-xs scale-75 -ml-3 -mt-1.5 text-muted-foreground">
                 予約を簡単・便利に
               </span>

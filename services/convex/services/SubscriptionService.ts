@@ -191,7 +191,7 @@ class SubscriptionService {
       const baseUrl =
         process.env.NEXT_PUBLIC_NODE_ENV === 'development'
           ? process.env.NEXT_PUBLIC_DEVELOP_URL || 'http://localhost:3000'
-          : process.env.NEXT_PUBLIC_DEPLOY_URL || 'https://bcker-project.vercel.app';
+          : process.env.NEXT_PUBLIC_DEPLOY_URL || 'https://b'
 
       const successUrl = `${baseUrl}/dashboard/subscription/success`;
       const cancelUrl = `${baseUrl}/dashboard/subscription/cancel`;

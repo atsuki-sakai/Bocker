@@ -182,23 +182,30 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   return (
     <div className="w-full relative">
       {/* カテゴリタブ */}
+
       <Popover open={showPopover} onOpenChange={setShowPopover}>
-        <PopoverTrigger asChild>
+        <div className="flex justify-between items-end">
           <div className="flex justify-between items-end">
             {selectedCategories.length > 0 ? (
-              <p className="text-xs px-4 py-1 bg-secondary font-bold border border-border text-muted-foreground rounded-md">
-                表示中のカテゴリ
+              <p className="text-base font-bold text-muted-foreground rounded-md">
+                <span className="mr-0.5">{selectedCategories.length}</span>
+                <span className="text-xs">件選択中</span>
               </p>
             ) : (
               <p className="text-xs px-3 py-1 bg-secondary font-bold border border-border text-muted-foreground rounded-md">
                 全カテゴリを表示中
               </p>
             )}
-            <div className="flex justify-end items-center">
-              <Button size="sm">{'カテゴリを絞り込む'}</Button>
-            </div>
           </div>
-        </PopoverTrigger>
+
+          <div className="flex justify-end items-center gap-4">
+            <PopoverTrigger asChild>
+              <Button size="sm" onClick={() => setShowPopover(true)}>
+                {'カテゴリを絞り込む'}
+              </Button>
+            </PopoverTrigger>
+          </div>
+        </div>
         <PopoverContent
           className="w-[240px] p-2"
           onOpenAutoFocus={(event) => event.preventDefault()}
@@ -210,7 +217,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                 <X className="w-4 h-4" />
               </Button>
             </div>
-            <CommandList className="max-h-[300px] overflow-y-auto">
+            <CommandList className="max-h-[400px] overflow-y-auto">
               {uniqueCategories.map((category) => (
                 <CommandItem
                   key={category}
@@ -218,9 +225,11 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                   onSelect={() => toggleCategory(category)}
                 >
                   <div className="flex justify-between items-center w-full">
-                    <span>{category}</span>
+                    <span className={`${selectedCategories.includes(category) ? 'font-bold' : ''}`}>
+                      {category}
+                    </span>
                     {selectedCategories.includes(category) && (
-                      <Check className="w-4 h-4 text-active" />
+                      <Check className="w-4 h-4 font-bold text-active" />
                     )}
                   </div>
                 </CommandItem>
@@ -234,60 +243,21 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
         <div className="flex flex-wrap mt-2 gap-1 bg-muted p-2 rounded-md ">
           {selectedCategories.map((category, index) => {
             return (
-              <span
+              <div
                 key={index}
-                className="text-xs px-2 py-0.5 bg-background border border-border text-muted-foreground rounded-md"
+                className="flex justify-between items-center gap-1 px-2 py-0.5 bg-background border border-border text-muted-foreground rounded-md"
               >
-                {category}
-              </span>
+                <span className="text-xs">{category}</span>
+                <button
+                  onClick={() => {
+                    setSelectedCategories(selectedCategories.filter((_, i) => i !== index))
+                  }}
+                >
+                  <X className="w-4 h-4 ml-1 text-destructive bg-destructive-foreground rounded-full p-0.5" />
+                </button>
+              </div>
             )
           })}
-        </div>
-      )}
-
-      {/* 選択済みメニュー表示 */}
-      {selectedMenus.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-base font-medium mb-2">選択中のメニュー {selectedMenus.length}点</h3>
-          <div className="space-y-2">
-            {selectedMenus.map((menu) => (
-              <div
-                key={menu._id}
-                className="flex justify-between items-center p-2 bg-secondary rounded-md"
-              >
-                <div>
-                  <span className="text-xs text-muted-foreground">
-                    {menu.category || 'その他'} / {menu.ensureTimeToMin ?? menu.timeToMin}分
-                  </span>
-                  <span className="block text-sm font-bold">{menu.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-active font-bold">
-                    {menu.salePrice ? (
-                      <div className="flex items-center gap-1">
-                        <span className="line-through text-xs text-muted-foreground">
-                          ¥{menu.unitPrice?.toLocaleString()}
-                        </span>
-                        <span className="font-bold text-active">
-                          ¥{menu.salePrice.toLocaleString()}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="font-medium">¥{menu.unitPrice?.toLocaleString()}</span>
-                    )}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive border bg-destructive-foreground h-8 w-8 p-0"
-                    onClick={() => handleMenuSelect(menu)}
-                  >
-                    ×
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
@@ -506,6 +476,52 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
           )
         )}
       </div>
+
+      {/* 選択済みメニュー表示 */}
+      {selectedMenus.length > 0 && (
+        <div className="my-8">
+          <h3 className="text-base font-medium mb-2">選択中のメニュー {selectedMenus.length}点</h3>
+          <div className="space-y-2">
+            {selectedMenus.map((menu) => (
+              <div
+                key={menu._id}
+                className="flex justify-between items-center p-2 bg-secondary rounded-md"
+              >
+                <div>
+                  <span className="text-xs text-muted-foreground">
+                    {menu.category || 'その他'} / {menu.ensureTimeToMin ?? menu.timeToMin}分
+                  </span>
+                  <span className="block text-sm font-bold">{menu.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-active font-bold">
+                    {menu.salePrice ? (
+                      <div className="flex items-center gap-1">
+                        <span className="line-through text-xs text-muted-foreground">
+                          ¥{menu.unitPrice?.toLocaleString()}
+                        </span>
+                        <span className="font-bold text-active">
+                          ¥{menu.salePrice.toLocaleString()}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="font-medium">¥{menu.unitPrice?.toLocaleString()}</span>
+                    )}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive-foreground border-destructive-foreground bg-destructive h-8 w-8 p-0"
+                    onClick={() => handleMenuSelect(menu)}
+                  >
+                    ×
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

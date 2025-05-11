@@ -100,9 +100,9 @@ export default function CancelSubscriptionPage() {
                           variant="link"
                           className="p-0 h-auto mt-1 text-link font-medium"
                         >
-                          <a href="mailto:atk721@icloud.com" className="flex items-center">
+                          <a href="mailto:bocker.help@gmail.com" className="flex items-center">
                             <Mail className="w-4 h-4 mr-1" />
-                            atk721@icloud.com
+                            bocker.help@gmail.com
                           </a>
                         </Button>
                       </div>

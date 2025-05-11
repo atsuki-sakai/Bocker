@@ -58,7 +58,7 @@ export default function ReferralCard() {
       if (navigator.share) {
         navigator
           .share({
-            title: 'Bckerをお友達を紹介して最大30,000円お得に！',
+            title: 'Bockerをお友達を紹介して最大30,000円お得に！',
             text: '今なら紹介コードを入力して登録すると、あなたとお友達に１ヶ月¥5,000円の割引が適用されます。ぜひご利用ください！紹介はおひとり様で最大6回まで受けられます。',
             url: signupUrl,
           })

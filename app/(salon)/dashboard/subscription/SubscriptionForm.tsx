@@ -263,7 +263,7 @@ export default function SubscriptionForm({
       {/* ヘッダー部分 */}
       <div className="mb-4 text-center">
         <h1 className="text-3xl font-thin bg-primary bg-clip-text text-transparent mb-2">
-          Bcker <span className="text-base text-muted-foreground">サブスクリプション</span>
+          Bocker <span className="text-base text-muted-foreground">サブスクリプション</span>
         </h1>
         <p className="text-muted-foreground max-w-md mx-auto text-sm mb-6">
           あなたのサロンに最適なプランをお選びください

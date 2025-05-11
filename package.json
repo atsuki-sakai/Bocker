@@ -58,6 +58,7 @@
     "convex-helpers": "^0.1.76",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
+    "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.5.0",
     "import-in-the-middle": "^1.13.1",
     "jose": "^6.0.10",

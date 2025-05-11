@@ -354,7 +354,7 @@ export default function MenuAddForm() {
                 </Select>
                 <span className="text-xs text-muted-foreground">
                   カテゴリがない場合は
-                  <a href="mailto:atk721@icloud.com" className="text-link-foreground underline">
+                  <a href="mailto:bocker.help@gmail.com" className="text-link-foreground underline">
                     こちら
                   </a>
                   から追加申請いただけます。

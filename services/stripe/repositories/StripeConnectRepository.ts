@@ -200,13 +200,13 @@ export class StripeConnectRepository {
               interval: 'monthly',
               monthly_anchor: 25,
             },
-            statement_descriptor: 'BCKER PAYMENT',
+            statement_descriptor: 'BOCKER PAYMENT',
           },
         },
         metadata: {
           salonId,
         },
-      });
+      })
 
       // Convexに接続情報を保存
       await this.convex.mutation(api.salon.core.mutation.createConnectAccount, {

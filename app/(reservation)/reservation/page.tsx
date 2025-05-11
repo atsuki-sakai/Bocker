@@ -47,8 +47,8 @@ export default function ReserveRedirectPage() {
       const profile = await liff?.getProfile()
       const sessionCookie = getCookie(LINE_LOGIN_SESSION_KEY)
       if (sessionCookie === null) {
-        console.error('Session cookie not found')
-        throw new Error('Session cookie not found')
+        console.log('Session cookie not found')
+        return
       }
 
       const { salonId } = JSON.parse(sessionCookie ?? '')

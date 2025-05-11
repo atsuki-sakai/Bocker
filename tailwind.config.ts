@@ -28,6 +28,10 @@ export default {
           DEFAULT: 'var(--neon)',
           foreground: 'var(--neon-foreground)',
         },
+        pop: {
+          DEFAULT: 'var(--pop)',
+          foreground: 'var(--pop-foreground)',
+        },
         primary: {
           DEFAULT: 'var(--primary)',
           foreground: 'var(--primary-foreground)',

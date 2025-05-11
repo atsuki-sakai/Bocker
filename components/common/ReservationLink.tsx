@@ -44,9 +44,7 @@ export default function ReservationLink() {
     return <Loading />
   }
   const baseUrl =
-    process.env.NODE_ENV === 'production'
-      ? 'https://bcker-project.vercel.app'
-      : 'http://localhost:3000'
+    process.env.NODE_ENV === 'production' ? 'https://bocker.jp' : 'http://localhost:3000'
 
   return (
     <div>

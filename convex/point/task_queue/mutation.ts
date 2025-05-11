@@ -7,16 +7,17 @@ import { throwConvexError } from '@/lib/error';
 // ポイントキューの追加
 export const create = mutation({
   args: {
+    salonId: v.id('salon'),
     reservationId: v.id('reservation'),
     customerId: v.id('customer'),
     points: v.optional(v.number()),
     scheduledFor_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validatePointQueue(args);
+    checkAuth(ctx)
+    validatePointQueue(args)
     // 予約の存在確認
-    const reservation = await ctx.db.get(args.reservationId);
+    const reservation = await ctx.db.get(args.reservationId)
     if (!reservation) {
       throw throwConvexError({
         message: '指定された予約が存在しません',
@@ -26,10 +27,10 @@ export const create = mutation({
         callFunc: 'point.task_queue.create',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
     // 顧客の存在確認
-    const customer = await ctx.db.get(args.customerId);
+    const customer = await ctx.db.get(args.customerId)
     if (!customer) {
       throw throwConvexError({
         message: '指定された顧客が存在しません',
@@ -39,16 +40,16 @@ export const create = mutation({
         callFunc: 'point.task_queue.create',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
 
     const pointQueueId = await ctx.db.insert('point_task_queue', {
       ...args,
       isArchive: false,
-    });
-    return pointQueueId;
+    })
+    return pointQueueId
   },
-});
+})
 
 // ポイントキュー情報の更新
 export const update = mutation({
@@ -96,6 +97,7 @@ export const archive = mutation({
 
 export const upsert = mutation({
   args: {
+    salonId: v.id('salon'),
     pointQueueId: v.id('point_task_queue'),
     reservationId: v.id('reservation'),
     customerId: v.id('customer'),
@@ -103,23 +105,23 @@ export const upsert = mutation({
     scheduledFor_unix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validatePointQueue(args);
-    const existingPointQueue = await ctx.db.get(args.pointQueueId);
+    checkAuth(ctx)
+    validatePointQueue(args)
+    const existingPointQueue = await ctx.db.get(args.pointQueueId)
 
     if (!existingPointQueue || existingPointQueue.isArchive) {
-      validatePointQueue(args);
+      validatePointQueue(args)
       return await ctx.db.insert('point_task_queue', {
         ...args,
         isArchive: false,
-      });
+      })
     } else {
-      validatePointQueue(args);
-      const updateData = excludeFields(args, ['pointQueueId']);
-      return await ctx.db.patch(existingPointQueue._id, updateData);
+      validatePointQueue(args)
+      const updateData = excludeFields(args, ['pointQueueId'])
+      return await ctx.db.patch(existingPointQueue._id, updateData)
     }
   },
-});
+})
 
 export const kill = mutation({
   args: {

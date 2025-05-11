@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label'
 import { MenuView, StaffView, OptionView, DateView, PaymentView, ConfirmView } from './_components'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
-import { generatePinCode } from '@/lib/utils'
 import { reservationFlexMessageTemplate } from '@/services/line/message_template/reservation_flex'
 
 import {
@@ -32,13 +31,14 @@ import { Questionnaire } from './_components/Questionnaire'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useLiff } from '@/hooks/useLiff'
 import { ModeToggle } from '@/components/common'
-import { PaymentMethod } from '@/services/convex/shared/types/common'
+import { PaymentMethod, ReservationStatus } from '@/services/convex/shared/types/common'
 import type { TimeRange } from '@/lib/type'
 import { useMutation } from 'convex/react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
+import { useQuery } from 'convex/react'
 
 export type LoginSession = {
   salonId: Id<'salon'>
@@ -133,10 +133,21 @@ export default function CalendarPage() {
   const bottomBarRef = useRef<HTMLDivElement>(null)
   const [bottomBarHeight, setBottomBarHeight] = useState<number>(0)
 
+  // Convex queries
+  const pointConfig = useQuery(api.point.config.query.findBySalonId, {
+    salonId: salonId,
+  })
+  const customerPoints = useQuery(api.customer.points.query.findBySalonAndCustomerId, {
+    salonId: salonId,
+    customerId: sessionCustomer?.customerId as Id<'customer'>,
+  })
+
   // Convex mutations
   const createReservationMutation = useMutation(api.reservation.mutation.create)
   const updateCustomerMutation = useMutation(api.customer.core.mutation.update)
-  const createPointAuthMutation = useMutation(api.point.auth.mutation.create)
+  const createPointQueueMutation = useMutation(api.point.task_queue.mutation.create)
+  const createPointTransactionMutation = useMutation(api.point.transaction.mutation.create)
+  const updateCustomerPointsMutation = useMutation(api.customer.points.mutation.update)
 
   // ステップ変更時に画面トップへ自動スクロール
   useEffect(() => {
@@ -266,7 +277,7 @@ export default function CalendarPage() {
           calculateTotal() +
           (usePoints && usePoints > 0 ? usePoints : 0) +
           (appliedDiscount.discount && appliedDiscount.discount > 0 ? appliedDiscount.discount : 0),
-        status: 'pending' as const, // Stripe決済の場合はまずpendingで作成
+        status: 'pending' as ReservationStatus, // Stripe決済の場合はまずpendingで作成
         startTime_unix: reservationStartDateTime.getTime(),
         endTime_unix: reservationEndDateTime.getTime(),
         usePoints: usePoints,
@@ -276,10 +287,10 @@ export default function CalendarPage() {
         notes: notes, // 問診票の内容などを将来的に結合
       }
 
-      // 1. Convexに予約データを'pending'ステータスで作成
-      const reservationId = await createReservationMutation(reservationData)
-
       if (selectedPaymentMethod === 'credit_card') {
+        // 1. Convexに予約データを'pending'ステータスで作成
+        const reservationId = await createReservationMutation(reservationData)
+
         // 2. クレジットカード決済の場合、バックエンドAPIを呼び出してStripe Checkoutセッションを作成
         const lineItems = [
           ...selectedMenus.map((menu) => ({
@@ -353,20 +364,30 @@ export default function CalendarPage() {
           throw new Error('Checkout URLが取得できませんでした。')
         }
       } else if (selectedPaymentMethod === 'cash') {
+        // 1. Convexに予約データを'pending'ステータスで作成
+        reservationData.status = 'confirmed' as ReservationStatus
+        const reservationId = await createReservationMutation(reservationData)
+
         setIsProcessingPayment(false)
 
         // ポイントを利用していればauthPinCodeを送信してポイントを店舗で利用できるように
-        let pinCode = null
+
         if (usePoints && usePoints > 0) {
-          // ポイントauthの作成
-          pinCode = generatePinCode()
-          const pointAuth = await createPointAuthMutation({
+          const pointTransaction = await createPointTransactionMutation({
+            salonId: salonComplete.salon._id,
             reservationId: reservationId,
             customerId: sessionCustomer.customerId,
-            authCode: pinCode,
-            expirationTime_unix: Date.now() + 1000 * 60 * 60 * 24 * 30, // 30日後
+            points: usePoints,
+            transactionType: 'used', // 獲得、使用、調整、期限切れ
+            transactionDate_unix: new Date().getTime(),
           })
-          console.log(pointAuth)
+          console.log(pointTransaction)
+
+          await updateCustomerPointsMutation({
+            lastTransactionDate_unix: new Date().getTime(),
+            customerPointsId: customerPoints?._id as Id<'customer_points'>,
+            totalPoints: customerPoints?.totalPoints ? customerPoints.totalPoints - usePoints : 0,
+          })
         }
 
         if (sessionCustomer.lineId) {
@@ -378,9 +399,13 @@ export default function CalendarPage() {
             selectedDate!,
             selectedTime!,
             selectedMenus,
-            calculateTotal(),
+            selectedOptions,
+            reservationData.unitPrice, // 小計（割引前）
+            usePoints, // 使用ポイント
+            appliedDiscount.discount || 0, // クーポン割引額
+            calculateTotal(), // 最終合計料金
             reservationId,
-            pinCode ?? undefined
+            salonComplete.scheduleConfig.availableCancelDays ?? 3
           )
           // Lineにメッセージ送信
           const response = await fetch('/api/line/flex-message', {
@@ -441,7 +466,23 @@ export default function CalendarPage() {
           router.push(`/reservation/${salonId}/calendar/complete?reservationId=${reservationId}`)
         }
 
-        console.log(pinCode)
+        // ポイントを付与するqueueを作成
+        const earnPoints = Math.floor(
+          pointConfig?.isFixedPoint
+            ? (pointConfig.fixedPoint ?? 0)
+            : calculateTotal() * ((pointConfig?.pointRate ?? 0) / 100)
+        )
+
+        const scheduledFor_unix = reservationStartDateTime.getTime() + 1000 * 60 * 60 * 24 * 30 // 予約日の30日後
+
+        const pointQueue = await createPointQueueMutation({
+          salonId: salonComplete.salon._id,
+          reservationId: reservationId,
+          customerId: sessionCustomer.customerId,
+          points: earnPoints,
+          scheduledFor_unix: scheduledFor_unix,
+        })
+        console.log(pointQueue)
 
         toast.success('予約を受け付けしました。')
       }
@@ -1004,7 +1045,15 @@ export default function CalendarPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                保有ポイント {availablePoints?.toLocaleString()}
+                獲得予定のポイント:{' '}
+                <span className="font-bold">
+                  {Math.floor(
+                    pointConfig?.isFixedPoint
+                      ? (pointConfig.fixedPoint ?? 0)
+                      : calculateTotal() * ((pointConfig?.pointRate ?? 0) / 100)
+                  )}
+                </span>
+                P
               </motion.p>
               <div className="flex space-x-2">
                 {currentStep !== 'menu' && (

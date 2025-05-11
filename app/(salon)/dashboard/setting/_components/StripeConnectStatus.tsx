@@ -32,11 +32,11 @@ const statusNameMap: Record<string, string> = {
 }
 
 const statusColorMap: Record<string, string> = {
-  not_connected: 'border border-gray-700 text-gray-700 bg-gray-100',
-  pending: 'border border-yellow-700 text-yellow-700 bg-yellow-100',
-  incomplete: 'border border-red-700 text-red-700 bg-red-100',
-  restricted: 'border border-orange-700 text-orange-700 bg-orange-100',
-  active: 'border border-green-700 text-green-700 bg-green-100',
+  not_connected: 'border border-palette-1-foreground text-palette-1-foreground bg-palette-1',
+  pending: 'border border-palette-2-foreground text-palette-2-foreground bg-palette-2',
+  incomplete: 'border border-palette-3-foreground text-palette-3-foreground bg-palette-3',
+  restricted: 'border border-palette-4-foreground text-palette-4-foreground bg-palette-4',
+  active: 'border border-palette-5-foreground text-palette-5-foreground bg-palette-5',
 }
 
 // ステータスの説明
@@ -361,7 +361,7 @@ export default function StripeConnectStatus() {
           <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <p>
               <strong>Stripe（ストライプ）</strong> は、米国発のオンライン決済サービスで、 世界 120
-              か国以上・数百万社以上のビジネスで利用されています。Bcker は<strong>Stripe</strong>{' '}
+              か国以上・数百万社以上のビジネスで利用されています。Bocker は<strong>Stripe</strong>{' '}
               を採用することで、
               サロン様が複雑な契約やシステム開発を行うことなく、クレジットカード決済を
               すぐに導入できる環境を提供しています。
@@ -374,7 +374,7 @@ export default function StripeConnectStatus() {
             <p className="bg-muted p-3 rounded-md">
               <strong>ポイント</strong>
               <br />
-              ・Bcker もサロン様もカード番号を保持しないため情報漏えいリスクを最小化
+              ・Bocker もサロン様もカード番号を保持しないため情報漏えいリスクを最小化
               <br />
               ・国内外の主要カードブランド（Visa/Mastercard/JCB 等）に標準対応
               <br />
@@ -399,7 +399,7 @@ export default function StripeConnectStatus() {
             <p className="font-medium">手続きの流れ（所要時間 10〜15 分）</p>
             <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
-                Bcker で <strong>「Stripeと連携する」</strong> をクリック
+                Bocker で <strong>「Stripeと連携する」</strong> をクリック
               </li>
               <li>Stripe のオンボーディング画面が開く</li>
               <li>ビジネス情報の入力（名称・所在地・業種など）</li>
@@ -432,7 +432,7 @@ export default function StripeConnectStatus() {
               </li>
             </ul>
             <p>
-              これらの仕組みにより、カード情報の盗難・不正利用リスクを大幅に低減できます。 Bcker /
+              これらの仕組みにより、カード情報の盗難・不正利用リスクを大幅に低減できます。 Bocker /
               サロン様は決済データに直接触れないため、追加で高額な
               セキュリティ認証を取得する必要もありません。
             </p>
@@ -444,16 +444,16 @@ export default function StripeConnectStatus() {
           <AccordionTrigger>責任分担とリスクのない理由</AccordionTrigger>
           <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <p>
-              Bcker とサロン様は <strong>決済代行業務</strong> を Stripe に委託しています。
+              Bocker とサロン様は <strong>決済代行業務</strong> を Stripe に委託しています。
               そのため、カード情報の保管・不正監視・チャージバック対応など、
               高度なセキュリティ管理は Stripe が担います。
             </p>
             <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
-                カード番号は <strong>Bcker / サロン様のサーバーに一切保存されません</strong>
+                カード番号は <strong>Bocker / サロン様のサーバーに一切保存されません</strong>
               </li>
               <li>
-                チャージバック発生時のカード会社対応は Stripe が一次窓口となり、 必要に応じて Bcker
+                チャージバック発生時のカード会社対応は Stripe が一次窓口となり、 必要に応じて Bocker
                 が仲介します
               </li>
               <li>
@@ -474,7 +474,7 @@ export default function StripeConnectStatus() {
           <AccordionTrigger>売上の入金サイクル</AccordionTrigger>
           <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
-              <li>お客様が Bcker でカード決済</li>
+              <li>お客様が Bocker でカード決済</li>
               <li>決済額は Stripe 上の残高に即時反映</li>
               <li>
                 毎月 <strong>25&nbsp;日</strong> に前月 1〜末日の総売上をまとめて振込
@@ -500,10 +500,10 @@ export default function StripeConnectStatus() {
                 <strong>決済手数料:</strong> 売上の <strong>4%</strong> + <strong>40円</strong> / 件
               </li>
               <li>
-                <strong>振込手数料:</strong> 0円（Bcker が負担）
+                <strong>振込手数料:</strong> 0円（Bocker が負担）
               </li>
               <li>
-                <strong>月額固定費:</strong> 0円（Bcker が負担）
+                <strong>月額固定費:</strong> 0円（Bocker が負担）
               </li>
             </ul>
             <p className="text-sm">
@@ -523,7 +523,7 @@ export default function StripeConnectStatus() {
             <div>
               <p className="font-semibold">カード決済が失敗した場合は？</p>
               <p>
-                Stripe が自動で再試行し、それでも失敗した場合は Bcker からお客様へメールで
+                Stripe が自動で再試行し、それでも失敗した場合は Bocker からお客様へメールで
                 お知らせします。サロン側での個別請求も可能です。
               </p>
             </div>

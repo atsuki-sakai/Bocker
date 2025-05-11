@@ -564,6 +564,7 @@ export default defineSchema({
 
   // ポイント付与キュー (定期処理で実行後に削除)
   point_task_queue: defineTable({
+    salonId: v.id('salon'), // サロンID
     reservationId: v.id('reservation'), // 予約ID
     customerId: v.id('customer'), // 顧客ID
     points: v.optional(v.number()), // 加算ポイント
@@ -572,7 +573,8 @@ export default defineSchema({
   })
     .index('by_reservation_id', ['reservationId', 'isArchive'])
     .index('by_customer_id', ['customerId', 'isArchive'])
-    .index('by_scheduled_for', ['scheduledFor_unix', 'isArchive']),
+    .index('by_scheduled_for', ['scheduledFor_unix', 'isArchive'])
+    .index('by_salon_id', ['salonId', 'isArchive']),
 
   // 予約ポイント利用時の認証 予約完了時に生成しauthCodeを顧客のLineに送付する
   point_auth: defineTable({
@@ -593,7 +595,6 @@ export default defineSchema({
     reservationId: v.id('reservation'), // 予約ID
     customerId: v.id('customer'), // 顧客ID
     points: v.optional(v.number()), // ポイント数 (加算減算したポイント)
-    menuId: v.optional(v.id('menu')), // メニューID
     transactionType: v.optional(pointTransactionType), // トランザクションタイプ
     transactionDate_unix: v.optional(v.number()), // 取引日時 UNIXタイム
     ...CommonFields,
