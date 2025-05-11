@@ -185,7 +185,7 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="w-full py-20 md:py-32 relative">
+      <section className="w-full py-20 md:py-32 relative overflow-x-hidden">
         <motion.div
           initial="hidden"
           whileInView="visible"
