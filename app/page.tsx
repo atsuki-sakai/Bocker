@@ -69,7 +69,7 @@ export default function Home() {
   useEffect(() => setMounted(true), [])
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-primary">
+    <div className="flex flex-col min-h-screen bg-background text-primary w-screen overflow-x-hidden">
       {/* ナビゲーション */}
       <header className="w-full py-4 px-4 sticky top-0 bg-background backdrop-blur-md z-50 border-b">
         <div className="container mx-auto flex justify-between items-center">
@@ -95,7 +95,8 @@ export default function Home() {
           </motion.div>
 
           {/* モバイルメニューボタン */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center space-x-2">
+            <ModeToggle />
             <Button variant="ghost" size="icon" onClick={() => setMenuOpen(!menuOpen)}>
               {menuOpen ? <XIcon /> : <MenuIcon />}
             </Button>
@@ -487,7 +488,7 @@ export default function Home() {
                 variants={slideIn}
                 className="flex flex-col items-center text-center"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground text-2xl font-bold mb-6 shadow-lg">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pop text-pop-foreground text-2xl font-bold mb-6 shadow-lg">
                   {step.step}
                 </div>
                 <h3 className="text-2xl font-bold text-foreground mb-3">{step.title}</h3>
@@ -526,7 +527,7 @@ export default function Home() {
               <Card className="overflow-hidden border-0 shadow-2xl hover:shadow-3xl transition-all duration-300">
                 <motion.div>
                   <div className="bg-palette-5-foreground px-6 py-4">
-                    <h3 className="text-xl font-bold text-primary text-center">LITE</h3>
+                    <h3 className="text-xl font-bold text-white text-center">LITE</h3>
                   </div>
                   <CardHeader className="pb-0">
                     <div className="text-center flex items-center justify-center text-base">
@@ -568,7 +569,7 @@ export default function Home() {
                   <CardFooter>
                     <Button
                       size="lg"
-                      className="bg-palette-5-foreground text-primary hover:opacity-80 w-full"
+                      className="bg-palette-5-foreground text-white hover:opacity-80 w-full"
                     >
                       今すぐ始める
                     </Button>
@@ -578,7 +579,7 @@ export default function Home() {
               <Card className="overflow-hidden border-0 shadow-2xl hover:shadow-3xl transition-all duration-300">
                 <motion.div>
                   <div className="bg-palette-3-foreground px-6 py-4">
-                    <h3 className="text-xl font-bold text-foreground text-center">PRO</h3>
+                    <h3 className="text-xl font-bold text-white text-center">PRO</h3>
                   </div>
                   <CardHeader className="pb-0">
                     <div className="text-center flex items-center justify-center text-base">
@@ -615,7 +616,7 @@ export default function Home() {
                   <CardFooter>
                     <Button
                       size="lg"
-                      className="bg-palette-3-foreground text-foreground hover:opacity-80 w-full"
+                      className="bg-palette-3-foreground text-white hover:opacity-80 w-full"
                     >
                       今すぐ始める
                     </Button>
@@ -659,18 +660,32 @@ export default function Home() {
           >
             {[
               {
-                name: '田中 健太',
+                name: '佐藤 大輝',
                 role: '美容院オーナー',
                 content:
                   '導入前は電話予約の管理に追われていましたが、今ではスタッフの負担が大幅に減り、お客様の満足度も向上しました。特にメニュー管理機能が便利です。',
-                initials: 'TK',
+                initials: 'ST',
               },
               {
-                name: '山田 美子',
+                name: '鈴木 結菜',
                 role: 'ネイルサロンオーナー',
                 content:
                   '顧客データ分析機能で常連のお客様の好みを把握できるようになり、よりパーソナライズされたサービスを提供できるようになりました。売上も20%アップしています。',
-                initials: 'YM',
+                initials: 'SY',
+              },
+              {
+                name: '高橋 陽葵',
+                role: 'エステサロン オーナー',
+                content:
+                  '操作が直感的で、ITに不慣れなスタッフもすぐに使いこなせました。サポート体制も充実しており、安心して導入できました。',
+                initials: 'TH',
+              },
+              {
+                name: '伊藤 蓮',
+                role: 'ヘアサロン マネージャー',
+                content:
+                  '予約管理だけでなく、顧客情報も一元管理できるので、お客様への提案がスムーズになりました。リピート率も上がってきています。',
+                initials: 'IR',
               },
             ].map((testimonial, index) => (
               <motion.div key={index} variants={fadeIn}>
@@ -810,7 +825,7 @@ export default function Home() {
         </motion.div>
       </section>
       {/* CTA セクション */}
-      <section className="w-full py-20 md:py-32 bg-accent text-accent-foreground relative overflow-hidden">
+      <section className="w-full py-20 md:py-32 bg-pop text-pop-foreground relative overflow-hidden">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -824,7 +839,7 @@ export default function Home() {
               <br />
               今日から変えませんか？
             </motion.h2>
-            <motion.p variants={fadeIn} className="text-xl text-ring">
+            <motion.p variants={fadeIn} className="text-xl text-secondary-foreground">
               月額15,000円で、予約管理の悩みから解放されましょう
             </motion.p>
             <motion.div
@@ -836,7 +851,7 @@ export default function Home() {
                 30日間無料トライアル
               </Button>
             </motion.div>
-            <motion.p variants={fadeIn} className="text-ring">
+            <motion.p variants={fadeIn} className="text-secondary-foreground">
               クレジットカードのみで簡単登録・いつでもキャンセル可能
             </motion.p>
           </div>
