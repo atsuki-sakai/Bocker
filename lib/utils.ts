@@ -264,6 +264,54 @@ export async function fileToBase64(file: File): Promise<string> {
   return base64Promise
 }
 
+/**
+ * 画像ファイルからオリジナル画像とサムネイル画像を同時に生成する
+ * @param file アップロードする画像ファイル
+ * @returns オリジナル画像とサムネイル画像のFileオブジェクト
+ */
+export async function createImageWithThumbnail(
+  file: File
+): Promise<{ original: File; thumbnail: File }> {
+  // 画像ファイルの形式を確認
+  if (!file.type.startsWith('image/')) {
+    throw new Error('画像ファイルのみ対応しています')
+  }
+
+  try {
+    // オリジナル画像の生成（最適化）
+    const originalOptions = {
+      maxSizeMB: 2,
+      maxWidthOrHeight: 1200,
+      webpQuality: 90,
+      useWebWorker: true
+    }
+    const originalFile = await compressAndConvertToWebP(file, originalOptions)
+
+    // サムネイル画像の生成
+    const thumbnailOptions = {
+      maxSizeMB: 0.5,
+      maxWidthOrHeight: 250,
+      webpQuality: 80,
+      useWebWorker: true
+    }
+    const thumbnailFile = await compressAndConvertToWebP(file, thumbnailOptions)
+
+    // ファイル名にサフィックスを追加（サムネイル）
+    const thumbnailFileName = file.name.replace(/(\.[^.]+)$/, '-thumbnail$1')
+    const renamedThumbnail = new File([thumbnailFile], thumbnailFileName, {
+      type: thumbnailFile.type
+    })
+
+    return {
+      original: originalFile,
+      thumbnail: renamedThumbnail
+    }
+  } catch (error) {
+    console.error('画像処理エラー:', error)
+    throw new Error('画像の処理中にエラーが発生しました')
+  }
+}
+
 // 画像圧縮とWebP変換の関数を追加
 export async function compressAndConvertToWebP(
   file: File,

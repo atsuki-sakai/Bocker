@@ -75,7 +75,6 @@ export default defineSchema({
     salePrice: v.optional(v.number()), // セール価格
     orderLimit: v.optional(v.number()), // 注文制限
     timeToMin: v.optional(v.number()), // 時間(分)
-    ensureTimeToMin: v.optional(v.number()), // 座席を確保する時間(分): パーマなどの場合作業時間と確保する時間の差分の待ち時間が発生する為、予約枠の計算はtimeToMinを使用して効率的に予約できるようにするため
     tags: v.optional(v.array(v.string())), // タグ
     description: v.optional(v.string()), // 説明
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
@@ -383,12 +382,12 @@ export default defineSchema({
     unitPrice: v.optional(v.number()), // 単価
     salePrice: v.optional(v.number()), // セール価格
     timeToMin: v.optional(v.number()), // 時間(分): 実質の作業時間
-    ensureTimeToMin: v.optional(v.number()), // 座席を確保する時間(分): パーマなどの場合作業時間と確保する時間の差分の待ち時間が発生する為、予約枠の計算はtimeToMinを使用して効率的に予約できるようにするため
     imgPath: v.optional(v.string()), // 画像ファイルパス
+    thumbnailPath: v.optional(v.string()), // サムネイル画像ファイルパス
     description: v.optional(v.string()), // 説明
     targetGender: v.optional(genderType), // 対象性別
     targetType: v.optional(targetType), // 対象タイプ
-    category: v.optional(menuCategoryType), // カテゴリ
+    categories: v.optional(v.array(menuCategoryType)), // カテゴリ
     tags: v.optional(v.array(v.string())), // タグ
     paymentMethod: v.optional(menuPaymentMethodType), // 許可する支払い方法
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
@@ -398,7 +397,7 @@ export default defineSchema({
     .index('by_salon_id_name', ['salonId', 'name', 'isArchive'])
     .index('by_salon_id_gender', ['salonId', 'targetGender', 'isArchive'])
     .index('by_salon_id_type', ['salonId', 'targetType', 'isArchive'])
-    .index('by_salon_id_category', ['salonId', 'category', 'isArchive']),
+    .index('by_salon_id_category', ['salonId', 'categories', 'isArchive']),
 
   menu_exclusion_staff: defineTable({
     salonId: v.id('salon'), // サロンID

@@ -9,21 +9,21 @@ import { z } from 'zod';
 import { useZodForm } from '@/hooks/useZodForm';
 import { useSalon } from '@/hooks/useSalon';
 import { ImageDrop } from '@/components/common';
-import { compressAndConvertToWebP, fileToBase64 } from '@/lib/utils'
-import { useAction, useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { toast } from 'sonner';
-import { handleErrorToMsg } from '@/lib/error';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { TagInput } from '@/components/common';
-import { getMinuteMultiples } from '@/lib/schedule';
+import { compressAndConvertToWebP, fileToBase64, createImageWithThumbnail } from '@/lib/utils'
+import { useAction, useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { toast } from 'sonner'
+import { handleErrorToMsg } from '@/lib/error'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { TagInput } from '@/components/common'
+import { getMinuteMultiples } from '@/lib/schedule'
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from '@/components/ui/accordion';
+} from '@/components/ui/accordion'
 import {
   ImageIcon,
   DollarSign,
@@ -38,22 +38,32 @@ import {
   Info,
   Save,
   Loader2,
-} from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
+  X,
+} from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '@/components/ui/select';
+} from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Separator } from '@/components/ui/separator';
-import { motion } from 'framer-motion';
-import { Gender, Target, MenuPaymentMethod } from '@/services/convex/shared/types/common';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Separator } from '@/components/ui/separator'
+import { motion } from 'framer-motion'
+import { Gender, Target, MenuPaymentMethod } from '@/services/convex/shared/types/common'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command'
+import { Check, ChevronDown } from 'lucide-react'
 
 const GenderList = ['unselected', 'male', 'female'] as const
 const TargetList = ['all', 'first', 'repeat'] as const
@@ -65,9 +75,7 @@ const schemaMenu = z
       .string()
       .min(1, { message: 'メニュー名は必須です' })
       .max(100, { message: 'メニュー名は100文字以内で入力してください' }),
-    category: z
-      .enum(MENU_CATEGORY_VALUES, { message: 'カテゴリは必須です' })
-      .refine((val) => val !== undefined, { message: 'カテゴリは必須です' }),
+    categories: z.array(z.enum(MENU_CATEGORY_VALUES)).min(1, { message: 'カテゴリは必須です' }),
     unitPrice: z
       .number()
       .min(1, { message: '価格は必須です' })
@@ -89,11 +97,14 @@ const schemaMenu = z
         .nullable()
         .optional()
     ),
-    timeToMin: z.number().refine((val) => val !== 0 && val !== null && val !== undefined, {
-      message: '時間は必須です',
-    }),
-    ensureTimeToMin: z.number().optional(),
+    timeToMin: z
+      .number({ message: '施術時間は必須です' })
+      .refine((val) => val !== 0 && val !== null && val !== undefined, {
+        message: '時間は必須です',
+      }),
     imgFilePath: z.string().max(512).optional(),
+    imgPath: z.string().max(512).optional(),
+    thumbnailPath: z.string().max(512).optional(),
     description: z
       .string()
       .min(1, { message: '説明は必須です' })
@@ -135,25 +146,6 @@ const schemaMenu = z
       path: ['salePrice'], // エラーメッセージをsalePriceフィールドに表示
     }
   )
-  .refine(
-    (data) => {
-      console.log('data', data)
-      // 両方のフィールドが存在する場合のみ比較を行う
-      if (data.timeToMin !== undefined && data.ensureTimeToMin !== undefined) {
-        // 検証失敗条件: 確保する時間(ensureTimeToMin)が実際の稼働時間(timeToMin)より大きい場合
-        if (data.ensureTimeToMin < data.timeToMin) {
-          return false // 検証失敗
-        }
-      }
-      // 上記以外のケース（比較しない場合、または ensureTimeToMin <= timeToMin の場合）は検証成功
-      return true
-    },
-    {
-      message: '確保する時間は実際の稼働時間以下に設定してください', // メッセージも少し調整するとより適切かもしれません
-      path: ['ensureTimeToMin'], // エラーメッセージをensureTimeToMinフィールドに表示
-    }
-  )
-
 // エラーメッセージコンポーネント
 const ErrorMessage = ({ message }: { message: string | undefined }) => (
   <motion.p
@@ -169,15 +161,19 @@ const ErrorMessage = ({ message }: { message: string | undefined }) => (
 export default function MenuAddForm() {
   const router = useRouter()
   const { salon } = useSalon()
+  const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false)
   const [currentFile, setCurrentFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [targetType, setTargetType] = useState<Target>('all')
   const [targetGender, setTargetGender] = useState<Gender>('unselected')
   const [paymentMethod, setPaymentMethod] = useState<MenuPaymentMethod>('cash')
   const [currentTags, setCurrentTags] = useState<string[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const uploadImage = useAction(api.storage.action.upload)
+  const uploadImageWithThumbnail = useAction(api.storage.action.uploadWithThumbnail)
   const deleteImage = useAction(api.storage.action.kill)
+  const deleteImageWithThumbnail = useAction(api.storage.action.killWithThumbnail)
   const createMenu = useMutation(api.menu.core.mutation.create)
 
   const {
@@ -186,7 +182,7 @@ export default function MenuAddForm() {
     setValue,
     reset,
     watch,
-    formState: { isSubmitting, errors },
+    formState: { errors },
   } = useZodForm(schemaMenu)
 
   // 支払い方法の選択ロジック
@@ -195,66 +191,79 @@ export default function MenuAddForm() {
     setValue('paymentMethod', method, { shouldValidate: true })
   }
 
+  const handleImageUpload = async (file: File | null) => {
+    if (!file) return
+
+    try {
+      setCurrentFile(file)
+      setIsUploading(true)
+
+      // クライアント側で画像処理を行う
+      const { original, thumbnail } = await createImageWithThumbnail(file)
+
+      // オリジナル画像をアップロード
+      const originalBase64 = await fileToBase64(original)
+      const originalResult = await uploadImage({
+        base64Data: originalBase64,
+        filePath: original.name,
+        contentType: original.type,
+        directory: 'menu',
+      })
+
+      // サムネイル画像をアップロード
+      const thumbnailBase64 = await fileToBase64(thumbnail)
+      const thumbnailResult = await uploadImage({
+        base64Data: thumbnailBase64,
+        filePath: thumbnail.name,
+        contentType: thumbnail.type,
+        directory: 'menu',
+      })
+
+      // フォームの値を更新
+      setValue('imgPath', originalResult.publicUrl)
+      setValue('thumbnailPath', thumbnailResult.publicUrl)
+      setValue('imgFilePath', file.name)
+
+      setIsUploading(false)
+      toast.success('画像のアップロードに成功しました')
+    } catch (err) {
+      console.error('Image upload error:', err)
+      toast.error(handleErrorToMsg(err) || '画像のアップロードに失敗しました')
+      setIsUploading(false)
+    }
+  }
+
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
-    let uploadImagePath: string | undefined
     try {
       if (!salon?._id) {
         toast.error('サロン情報が必要です')
         return
       }
 
-      if (currentFile) {
-        setIsUploading(true)
-
-        // 画像処理
-        const processedFile = await compressAndConvertToWebP(currentFile)
-        const base64Data = await fileToBase64(processedFile)
-        const filePath = `${Date.now()}-${processedFile.name}`
-
-        // 画像アップロード
-        const uploadResult = await uploadImage({
-          directory: 'menu',
-          base64Data,
-          filePath,
-          contentType: processedFile.type,
-        })
-        uploadImagePath = uploadResult?.publicUrl
-      }
-
-      // APIに送信するデータを作成
-      const createData = {
+      setIsSubmitting(true)
+      const menuId = await createMenu({
+        salonId: salon._id,
         name: data.name,
-        category: data.category,
+        categories: data.categories,
         unitPrice: data.unitPrice,
+        salePrice: data.salePrice,
         timeToMin: data.timeToMin,
-        ensureTimeToMin: data.ensureTimeToMin,
+        imgPath: data.imgPath,
+        thumbnailPath: data.thumbnailPath,
         description: data.description,
         targetGender: data.targetGender,
         targetType: data.targetType,
         tags: data.tags,
         paymentMethod: data.paymentMethod,
         isActive: data.isActive,
-        imgPath: uploadImagePath || '',
-        salePrice: data.salePrice || undefined,
-      }
-
-      await createMenu({
-        ...createData,
-        salonId: salon._id,
       })
 
       toast.success('メニューを登録しました')
-      router.push('/dashboard/menu')
-    } catch (error) {
-      if (uploadImagePath) {
-        await deleteImage({
-          imgUrl: uploadImagePath,
-        })
-      }
-      toast.error(handleErrorToMsg(error))
-    } finally {
-      setIsUploading(false)
+      router.push(`/dashboard/menu/${menuId}`)
+    } catch (err) {
+      setIsSubmitting(false)
+      toast.error(handleErrorToMsg(err) || 'メニュー登録に失敗しました')
     }
   }
 
@@ -263,11 +272,10 @@ export default function MenuAddForm() {
     if (salon?._id) {
       reset({
         name: undefined as unknown as string,
-        category: undefined as unknown as MenuCategory,
+        categories: [] as MenuCategory[],
         unitPrice: undefined as unknown as number,
         salePrice: undefined as unknown as number,
         timeToMin: undefined as unknown as number,
-        ensureTimeToMin: undefined as unknown as number,
         imgFilePath: undefined as unknown as string,
         description: undefined as unknown as string,
         targetGender: 'unselected',
@@ -308,8 +316,7 @@ export default function MenuAddForm() {
                   <ImageDrop
                     maxSizeMB={5}
                     onFileSelect={(file) => {
-                      setCurrentFile(file)
-                      setValue('imgFilePath', file.name, { shouldValidate: true })
+                      handleImageUpload(file)
                     }}
                     className="rounded-md"
                   />
@@ -335,23 +342,83 @@ export default function MenuAddForm() {
                   <Label className="text-sm flex items-center gap-2">カテゴリー</Label>
                   <span className="text-destructive">*</span>
                 </div>
-                <Select
-                  value={watch('category')}
-                  onValueChange={(value) => {
-                    setValue('category', value as MenuCategory, { shouldValidate: true })
-                  }}
-                >
-                  <SelectTrigger className="transition-colors">
-                    <SelectValue placeholder="メニューのカテゴリを選択してください" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MENU_CATEGORY_VALUES.map((category, index) => (
-                      <SelectItem key={index} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={isCategoryPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      onClick={() => setIsCategoryPopoverOpen(true)}
+                      className="w-full h-fit justify-between border border-border"
+                    >
+                      <p className="text-wrap w-full">
+                        {watch('categories') && watch('categories').length > 0
+                          ? watch('categories')
+                              .map((cat: string) => cat)
+                              .join(', ')
+                          : 'メニューのカテゴリを選択してください'}
+                      </p>
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    onOpenAutoFocus={(event) => event.preventDefault()}
+                    onInteractOutside={() => setIsCategoryPopoverOpen(false)}
+                    className="w-[300px] p-0"
+                  >
+                    <Command>
+                      <div className="flex items-center justify-between gap-2">
+                        <CommandInput className="w-full" placeholder="カテゴリを検索..." />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setIsCategoryPopoverOpen(false)
+                          }}
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                      <CommandEmpty>カテゴリが見つかりません</CommandEmpty>
+                      <CommandGroup>
+                        {MENU_CATEGORY_VALUES.map((category) => (
+                          <CommandItem
+                            key={category}
+                            onSelect={() => {
+                              const current = watch('categories') || []
+                              if (current.includes(category)) {
+                                // If the category exists, remove it
+                                setValue(
+                                  'categories',
+                                  current.filter((c: string) => c !== category),
+                                  { shouldValidate: true }
+                                )
+                              } else {
+                                // If the category doesn't exist, check if we can add it
+                                if (current.length >= 5) {
+                                  toast.error('カテゴリは最大5つまでです')
+                                  return
+                                } else {
+                                  setValue('categories', [...current, category], {
+                                    shouldValidate: true,
+                                  })
+                                }
+                              }
+                            }}
+                          >
+                            <Check
+                              className={
+                                (watch('categories') || []).includes(category)
+                                  ? 'mr-2 h-4 w-4 opacity-100'
+                                  : 'mr-2 h-4 w-4 opacity-0'
+                              }
+                            />
+                            {category}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <span className="text-xs text-muted-foreground">
                   カテゴリがない場合は
                   <a href="mailto:bocker.help@gmail.com" className="text-link-foreground underline">
@@ -359,7 +426,7 @@ export default function MenuAddForm() {
                   </a>
                   から追加申請いただけます。
                 </span>
-                {errors.category && <ErrorMessage message={errors.category.message} />}
+                {errors.categories && <ErrorMessage message={errors.categories.message} />}
               </div>
             </div>
 
@@ -391,7 +458,7 @@ export default function MenuAddForm() {
               <div className="max-w-full">
                 <Label className="text-sm flex items-center gap-2">
                   <Clock size={16} className="text-muted-foreground" />
-                  実際にスタッフが稼働する施術時間 <span className="text-destructive ml-1">*</span>
+                  施術時間 <span className="text-destructive ml-1">*</span>
                 </Label>
                 <Select
                   onValueChange={(value) => {
@@ -399,7 +466,7 @@ export default function MenuAddForm() {
                   }}
                 >
                   <SelectTrigger className="transition-colors">
-                    <SelectValue placeholder="実際にスタッフが稼働する施術時間を選択" />
+                    <SelectValue placeholder="施術時間を選択" />
                   </SelectTrigger>
                   <SelectContent>
                     {getMinuteMultiples(5, 360).map((time) => (
@@ -409,38 +476,10 @@ export default function MenuAddForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-muted-foreground">
-                  スタッフが手を動かして施術に集中している正味の作業時間を指します。
-                </span>
                 {errors.timeToMin && <ErrorMessage message={errors.timeToMin.message} />}
-              </div>
-              <div className="max-w-full">
-                <Label className="text-sm flex items-center gap-2">
-                  <Clock size={16} className="text-muted-foreground" />
-                  待機時間を含めたトータルの施術時間
-                </Label>
-                <Select
-                  onValueChange={(value) => {
-                    setValue('ensureTimeToMin', parseInt(value), { shouldValidate: true })
-                  }}
-                >
-                  <SelectTrigger className="transition-colors">
-                    <SelectValue placeholder="待機時間を含めたトータルの施術時間を選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getMinuteMultiples(5, 360).map((time) => (
-                      <SelectItem key={time} value={time.toString()}>
-                        {time}分
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <span className="text-xs text-muted-foreground">
-                  施術席を専有する必要はあるものの、スタッフが別の作業に移れる待機時間を指します。
+                  メニューのトータルの施術時間を設定します。
                 </span>
-                {errors.ensureTimeToMin && (
-                  <ErrorMessage message={errors.ensureTimeToMin.message} />
-                )}
               </div>
             </div>
 
