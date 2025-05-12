@@ -1,23 +1,23 @@
 import { Storage } from '@google-cloud/storage';
-import { UploadResult } from './types';
-import { STORAGE_URL } from './constants';
-import { throwConvexError } from '@/lib/error';
+import { UploadResult } from './types'
+import { STORAGE_URL } from './constants'
+import { throwConvexError } from '@/lib/error'
 
 /**
  * GCSクライアントとバケット設定を管理するクラス
  */
 class GoogleStorageService {
-  private storage: Storage | null = null;
-  private bucketName: string | null = null;
+  private storage: Storage | null = null
+  private bucketName: string | null = null
 
   /**
    * 必要な環境変数を取得し、存在しない場合はエラーを投げる
    */
   private getEnvConfig() {
-    const projectId = process.env.GCP_PROJECT;
-    const clientEmail = process.env.GCP_CLIENT_EMAIL;
-    const privateKey = process.env.GCP_PRIVATE_KEY;
-    const bucketName = process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME;
+    const projectId = process.env.GCP_PROJECT
+    const clientEmail = process.env.GCP_CLIENT_EMAIL
+    const privateKey = process.env.GCP_PRIVATE_KEY
+    const bucketName = process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME
     if (!projectId || !clientEmail || !privateKey || !bucketName) {
       throw throwConvexError({
         message: '必要な環境変数が不足しています',
@@ -31,9 +31,9 @@ class GoogleStorageService {
           clientEmail: Boolean(clientEmail),
           privateKey: Boolean(privateKey),
         },
-      });
+      })
     }
-    return { projectId, clientEmail, privateKey, bucketName };
+    return { projectId, clientEmail, privateKey, bucketName }
   }
 
   /**
@@ -41,14 +41,14 @@ class GoogleStorageService {
    */
   private initializeIfNeeded() {
     if (this.storage !== null) {
-      return;
+      return
     }
 
     // 必要な環境変数をまとめて取得
-    const { projectId, clientEmail, privateKey, bucketName } = this.getEnvConfig();
+    const { projectId, clientEmail, privateKey, bucketName } = this.getEnvConfig()
     try {
       // 改行のエスケープ解除（もし \n で設定している場合）
-      const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
+      const formattedPrivateKey = privateKey.replace(/\\n/g, '\n')
 
       // Storage クライアントの初期化
       this.storage = new Storage({
@@ -57,9 +57,9 @@ class GoogleStorageService {
           client_email: clientEmail,
           private_key: formattedPrivateKey,
         },
-      });
+      })
 
-      this.bucketName = bucketName;
+      this.bucketName = bucketName
     } catch (error) {
       throw throwConvexError({
         message: 'GCPストレージクライアントの初期化に失敗しました',
@@ -69,7 +69,7 @@ class GoogleStorageService {
         callFunc: 'GoogleStorageService.initializeIfNeeded',
         severity: 'low',
         details: { error: this.formatErrorDetails(error) },
-      });
+      })
     }
   }
 
@@ -77,27 +77,35 @@ class GoogleStorageService {
    * エラー詳細を抽出するユーティリティメソッド
    */
   private formatErrorDetails(error: unknown): Record<string, any> {
-    const errorDetails: Record<string, any> = { type: typeof error };
+    const errorDetails: Record<string, any> = { type: typeof error }
     if (error instanceof Error) {
-      errorDetails.name = error.name;
-      errorDetails.message = error.message;
-      errorDetails.stack = error.stack;
+      errorDetails.name = error.name
+      errorDetails.message = error.message
+      errorDetails.stack = error.stack
       Object.keys(error).forEach((key) => {
         try {
-          const value = (error as any)[key];
+          const value = (error as any)[key]
           if (typeof value !== 'function') {
-            errorDetails[key] = value;
+            errorDetails[key] = value
           }
         } catch (e) {}
-      });
+      })
     } else {
       try {
-        errorDetails.stringified = JSON.stringify(error);
+        errorDetails.stringified = JSON.stringify(error)
       } catch (e) {
-        errorDetails.stringifyFailed = true;
+        errorDetails.stringifyFailed = true
       }
     }
-    return errorDetails;
+    return errorDetails
+  }
+
+  /**
+   * ファイルパスを生成する
+   */
+  private generateFilePath(fileName: string, directory: string): string {
+    const timestamp = Date.now()
+    return `${directory}/${timestamp}-${fileName}`
   }
 
   /**
@@ -109,13 +117,13 @@ class GoogleStorageService {
     contentType: string,
     directory: string
   ): Promise<UploadResult> {
-    this.initializeIfNeeded();
+    this.initializeIfNeeded()
 
     try {
-      const bucket = this.storage!.bucket(this.bucketName!);
-      const timestamp = Date.now();
-      const filePath = `${directory}/${timestamp}-${fileName}`;
-      const blob = bucket.file(filePath);
+      const bucket = this.storage!.bucket(this.bucketName!)
+      const timestamp = Date.now()
+      const filePath = `${directory}/${timestamp}-${fileName}`
+      const blob = bucket.file(filePath)
 
       // バッファから直接アップロード
       await blob.save(buffer, {
@@ -123,22 +131,22 @@ class GoogleStorageService {
         metadata: {
           cacheControl: 'public, max-age=31536000',
         },
-      });
+      })
 
       // ファイルを公開状態に設定
       try {
-        await blob.makePublic();
+        await blob.makePublic()
       } catch (publicError) {}
 
-      // encode path segments so spaces etc. become %20 – keeps DB key “raw” but URL safe
-      const publicUrl = `${STORAGE_URL}/${this.bucketName}/${encodeURI(filePath)}`;
+      // encode path segments so spaces etc. become %20 – keeps DB key "raw" but URL safe
+      const publicUrl = `${STORAGE_URL}/${this.bucketName}/${encodeURI(filePath)}`
 
       return {
         publicUrl,
         filePath,
-      };
+      }
     } catch (error) {
-      const errorDetails = this.formatErrorDetails(error);
+      const errorDetails = this.formatErrorDetails(error)
       throw throwConvexError({
         message: 'バッファからのアップロードに失敗しました',
         status: 500,
@@ -153,7 +161,7 @@ class GoogleStorageService {
           directory,
           error: errorDetails,
         },
-      });
+      })
     }
   }
 
@@ -162,15 +170,15 @@ class GoogleStorageService {
    */
   private extractFilePath(imgUrl: string): string {
     try {
-      const url = new URL(imgUrl);
+      const url = new URL(imgUrl)
       // URL.pathname is "/bucketName/path/to/file"
-      const segments = url.pathname.split('/');
+      const segments = url.pathname.split('/')
       // Remove the leading empty segment and bucket name
-      const fileSegments = segments.slice(2);
-      return fileSegments.join('/');
+      const fileSegments = segments.slice(2)
+      return fileSegments.join('/')
     } catch {
       // If imgUrl isn't a full URL, assume it's already the object path
-      return imgUrl;
+      return imgUrl
     }
   }
 
@@ -178,26 +186,26 @@ class GoogleStorageService {
    * ファイルを削除する
    */
   async deleteImage(imgUrl: string): Promise<void> {
-    this.initializeIfNeeded();
+    this.initializeIfNeeded()
 
     // decode in case imgUrl or stored key is URL‑encoded
-    const filePath = decodeURIComponent(this.extractFilePath(imgUrl));
-    console.log('Deleting GCS object path:', filePath);
+    const filePath = decodeURIComponent(this.extractFilePath(imgUrl))
+    console.log('Deleting GCS object path:', filePath)
 
     try {
-      const bucket = this.storage!.bucket(this.bucketName!);
-      const file = bucket.file(filePath);
-      await file.delete();
+      const bucket = this.storage!.bucket(this.bucketName!)
+      const file = bucket.file(filePath)
+      await file.delete()
     } catch (error) {
-      const errorDetails = this.formatErrorDetails(error);
-      const errAny = error as any;
+      const errorDetails = this.formatErrorDetails(error)
+      const errAny = error as any
       // If the object is not found, skip deletion
       if (errAny.code === 404 || errorDetails.code === 404) {
-        console.warn(`GCS object not found, skipping deletion: ${filePath}`);
-        return;
+        console.warn(`GCS object not found, skipping deletion: ${filePath}`)
+        return
       }
       // Remove non-serializable fields
-      delete (errorDetails as any).response;
+      delete (errorDetails as any).response
       throw throwConvexError({
         message: 'ファイルの削除に失敗しました',
         status: 500,
@@ -206,7 +214,52 @@ class GoogleStorageService {
         callFunc: 'GoogleStorageService.deleteImage',
         severity: 'low',
         details: { error: errorDetails },
-      });
+      })
+    }
+  }
+
+  /**
+   * オリジナル画像とサムネイル画像の両方を削除する
+   * （ファイルパスの命名規則からサムネイルパスを推測）
+   */
+  async deleteImageWithThumbnail(imgUrl: string): Promise<void> {
+    this.initializeIfNeeded()
+
+    try {
+      // オリジナル画像のパスを抽出
+      const originalPath = decodeURIComponent(this.extractFilePath(imgUrl))
+
+      // サムネイルのパスを推測
+      // originals/category/timestamp-filename.ext → thumbnails/category/timestamp-filename.ext
+      const thumbnailPath = originalPath.replace('originals/', 'thumbnails/')
+
+      const bucket = this.storage!.bucket(this.bucketName!)
+
+      // 両方のファイルを削除
+      try {
+        await bucket.file(originalPath).delete()
+      } catch (error) {
+        const errAny = error as any
+        if (errAny.code !== 404) throw error
+      }
+
+      try {
+        await bucket.file(thumbnailPath).delete()
+      } catch (error) {
+        const errAny = error as any
+        if (errAny.code !== 404) throw error
+      }
+    } catch (error) {
+      const errorDetails = this.formatErrorDetails(error)
+      throw throwConvexError({
+        message: '画像の削除に失敗しました',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        title: '画像の削除に失敗しました',
+        callFunc: 'GoogleStorageService.deleteImageWithThumbnail',
+        severity: 'low',
+        details: { error: errorDetails },
+      })
     }
   }
 }
