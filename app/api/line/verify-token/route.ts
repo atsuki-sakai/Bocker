@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '@/convex/_generated/api'
-import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken' // JWTを扱うためにjsonwebtokenをインストールする必要があります
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
@@ -120,10 +119,13 @@ export async function POST(req: NextRequest) {
             customerId
           )
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[API /api/line/verify-token] Convex mutation/query error:', error)
         return NextResponse.json(
-          { error: 'Failed to process customer data', details: error.message || String(error) },
+          {
+            error: 'Failed to process customer data',
+            details: error instanceof Error ? error.message : String(error),
+          },
           { status: 500 }
         )
       }
@@ -164,7 +166,7 @@ export async function POST(req: NextRequest) {
     })
 
     return response
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API /api/line/verify-token] General error:', error)
     return NextResponse.json(
       { error: 'Internal server error', details: error.message || String(error) },

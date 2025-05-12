@@ -32,10 +32,13 @@ export async function GET(req: NextRequest) {
       },
       { status: 200 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API /api/auth/session] Error:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message || String(error) },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     )
   }
@@ -113,10 +116,13 @@ export async function POST(req: NextRequest) {
     })
 
     return response
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API /api/auth/session] Login error:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message || String(error) },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     )
   }

@@ -6,7 +6,7 @@ import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 const AUTH_COOKIE_NAME = LINE_LOGIN_SESSION_KEY
 
 // クライアントサイドでHTTPOnlyクッキー（bcker_login_session）の内容を取得するためのAPI
-export async function GET(req: NextRequest) {
+export async function GET(_: NextRequest) {
   try {
     // クッキーからセッションを取得
     const cookieStore = await cookies()
@@ -26,10 +26,13 @@ export async function GET(req: NextRequest) {
       },
       { status: 200 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API /api/line/session] Error:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message || String(error) },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     )
   }
