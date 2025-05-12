@@ -60,7 +60,6 @@ export default function ReservePage() {
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors, isSubmitting },
   } = useZodForm(emailLoginSchema)
 
@@ -121,6 +120,7 @@ export default function ReservePage() {
             email: data.email,
             password: data.password,
             salonId: salonId,
+            customerId: customerId,
           }),
         })
 
