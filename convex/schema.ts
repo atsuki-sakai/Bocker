@@ -113,6 +113,7 @@ export default defineSchema({
     lineAccessToken: v.optional(v.string()), // LINEアクセストークン
     lineChannelSecret: v.optional(v.string()), // LINEチャンネルシークレット
     liffId: v.optional(v.string()), // LIFF ID
+    lineChannelId: v.optional(v.string()), // LINEチャンネルID
     destinationId: v.optional(v.string()), // LINE公式アカウント識別子
     ...CommonFields,
   }).index('by_salon_id', ['salonId', 'isArchive']),

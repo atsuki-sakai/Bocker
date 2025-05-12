@@ -15,7 +15,7 @@ export const create = mutation({
     todayFirstLaterMinutes: v.optional(v.number()), // 本日の場合、何分後から予約可能か？
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx)
+    checkAuth(ctx, true)
     validateSalonScheduleConfig(args)
     return await salonService.createScheduleConfig(ctx, args)
   },
@@ -31,7 +31,7 @@ export const update = mutation({
     todayFirstLaterMinutes: v.optional(v.number()), // 本日の場合、何分後から予約可能か？
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx)
+    checkAuth(ctx, true)
     validateSalonScheduleConfig(args)
     return await salonService.updateScheduleConfig(ctx, args)
   },

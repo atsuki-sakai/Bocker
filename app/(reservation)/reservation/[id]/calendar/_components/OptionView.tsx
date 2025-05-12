@@ -127,9 +127,7 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
           <DialogDescription>{selectedOption?.description}</DialogDescription>
           <DialogFooter>
             <div className="flex items-center justify-between w-full gap-2">
-              <Button variant="outline" onClick={() => setShowOptionDetail(false)}>
-                閉じる
-              </Button>
+              <Button onClick={() => setShowOptionDetail(false)}>閉じる</Button>
               <Button
                 onClick={() => {
                   if (selectedOption) {

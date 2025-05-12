@@ -5,13 +5,12 @@ import { Id } from '@/convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { setCookie } from '@/lib/utils'
 import { useLiff } from '@/hooks/useLiff'
 import { ChevronRight, Loader2, Eye, EyeOff } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
-import { useRouter } from 'next/navigation'
 import { z } from 'zod'
 import { api } from '@/convex/_generated/api'
 import { useMutation } from 'convex/react'
@@ -19,7 +18,7 @@ import { useZodForm } from '@/hooks/useZodForm'
 import { fetchQuery } from 'convex/nextjs'
 import { Mail, Lock } from 'lucide-react'
 import { ZodTextField } from '@/components/common'
-import { encryptStringCryptoJS, decryptStringCryptoJS, deleteCookie, getCookie } from '@/lib/utils'
+import { encryptStringCryptoJS, deleteCookie } from '@/lib/utils'
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
 
@@ -67,14 +66,11 @@ export default function ReservePage() {
 
   const onSubmit = async (data: z.infer<typeof emailLoginSchema>) => {
     setIsFirstLogin(true)
-    let newSession = JSON.stringify({
-      salonId: salonId,
-      email: data.email,
-      tags: ['EMAIL'],
-    })
 
     try {
-      deleteCookie(LINE_LOGIN_SESSION_KEY)
+      deleteCookie(LINE_LOGIN_SESSION_KEY) // 古いクッキーは削除
+
+      // 既存ユーザーの確認
       const existingCustomer = await fetchQuery(api.customer.core.query.findByEmail, {
         email: data.email,
         salonId,
@@ -82,50 +78,61 @@ export default function ReservePage() {
       console.log('existingCustomer', existingCustomer)
 
       if (existingCustomer) {
-        // ログイン
-        const password = decryptStringCryptoJS(
-          existingCustomer.password ?? '',
-          process.env.NEXT_PUBLIC_ENCRYPTION_SECRET_KEY!
-        )
-        if (data.password === password) {
-          newSession = JSON.stringify({
-            customerId: existingCustomer._id,
-            salonId: salonId,
+        // 既存ユーザーの場合は認証APIを使用
+        const response = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             email: data.email,
-            tags: ['EMAIL'],
-          })
-          setCookie(LINE_LOGIN_SESSION_KEY, newSession, 60)
-        } else {
-          toast.error('パスワードが一致しません。')
+            password: data.password,
+            salonId: salonId,
+          }),
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          toast.error(result.error || 'ログインに失敗しました')
           return
         }
+
+        toast.success('ログインに成功しました')
         router.push(`/reservation/${salonId}/calendar`)
       } else {
-        // 新規登録
+        // 新規登録の場合
         const encryptedPassword = encryptStringCryptoJS(
           data.password,
           process.env.NEXT_PUBLIC_ENCRYPTION_SECRET_KEY!
         )
+
+        // 1. まずユーザーを作成
         const customerId = await createCompleteFields({
           salonId: salonId,
           email: data.email,
           password: encryptedPassword,
           tags: ['EMAIL'],
         })
-        newSession = JSON.stringify({
-          customerId: customerId,
-          salonId: salonId,
-          email: data.email,
-          tags: ['EMAIL'],
+
+        // 2. 作成したユーザーIDでセッションを作成
+        const response = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+            salonId: salonId,
+          }),
         })
-        try {
-          setCookie(LINE_LOGIN_SESSION_KEY, newSession, 60)
-          router.push(`/reservation/${salonId}/calendar`)
-        } catch (error) {
-          console.error('セッションの保存に失敗しました', error)
-          toast.error('セッションの保存に失敗しました')
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          toast.error(result.error || 'アカウント作成後のログインに失敗しました')
           return
         }
+
+        toast.success('アカウントを作成しました')
+        router.push(`/reservation/${salonId}/calendar`)
       }
     } catch (error) {
       toast.error(handleErrorToMsg(error))
@@ -133,24 +140,15 @@ export default function ReservePage() {
   }
 
   useEffect(() => {
-    async function init() {
-      const session = getCookie(LINE_LOGIN_SESSION_KEY)
-      if (session) {
-        const sessionData = JSON.parse(session)
-        const sessionSalonId = sessionData.salonId as Id<'salon'>
-        if (
-          sessionSalonId === salonId &&
-          ((typeof sessionData.email === 'string' && sessionData.email.length > 0) ||
-            (typeof sessionData.lineId === 'string' && sessionData.lineId.length > 0))
-        ) {
+    // サーバーAPI経由でセッション有無を判定
+    fetch('/api/line/session', { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.session) {
           router.push(`/reservation/${salonId}/calendar`)
-        } else {
-          deleteCookie(LINE_LOGIN_SESSION_KEY)
         }
-      }
-    }
-    init()
-  }, [router, salonId, reset])
+      })
+  }, [router, salonId])
 
   return (
     <div className="w-full  mx-auto bg-background min-h-screen flex items-center justify-center">

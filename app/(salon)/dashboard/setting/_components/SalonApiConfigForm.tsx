@@ -28,28 +28,30 @@ const salonApiConfigFormSchema = z.object({
   lineAccessToken: z.string().optional(),
   lineChannelSecret: z.string().optional(),
   liffId: z.string().optional(),
+  lineChannelId: z.string().optional(),
   destinationId: z.string().optional(),
-});
+})
 
 // スキーマから型を生成
-type SalonApiConfigFormValues = z.infer<typeof salonApiConfigFormSchema>;
+type SalonApiConfigFormValues = z.infer<typeof salonApiConfigFormSchema>
 
 const ApiSettingsCard = () => {
-  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false)
   const [showFields, setShowFields] = useState<{ [key: string]: boolean }>({
     lineAccessToken: false,
     lineChannelSecret: false,
     liffId: false,
     destinationId: false,
-  });
-  const { salonId } = useSalon();
+    lineChannelId: false,
+  })
+  const { salonId } = useSalon()
 
   // すべてのフックをここでトップレベルで宣言
   const salonApiConfig = useQuery(
     api.salon.api_config.query.findBySalonId,
     salonId ? { salonId } : 'skip'
-  );
-  const upsertSalonApiConfig = useMutation(api.salon.api_config.mutation.upsert);
+  )
+  const upsertSalonApiConfig = useMutation(api.salon.api_config.mutation.upsert)
 
   // フォーム管理（useZodFormを使用）
   const {
@@ -57,52 +59,52 @@ const ApiSettingsCard = () => {
     handleSubmit,
     reset,
     formState: { errors, isDirty },
-  } = useZodForm(salonApiConfigFormSchema);
+  } = useZodForm(salonApiConfigFormSchema)
 
   // フォームの初期値が変更されたらリセット
   useEffect(() => {
     if (salonApiConfig) {
-      reset(salonApiConfig);
+      reset(salonApiConfig)
     }
-  }, [salonApiConfig, reset]);
+  }, [salonApiConfig, reset])
 
   // APIの設定を保存する関数
   const onApiSubmit = useCallback(
     async (data: SalonApiConfigFormValues) => {
-      if (!salonId) return;
+      if (!salonId) return
 
       try {
-        setSubmitting(true);
+        setSubmitting(true)
 
         await upsertSalonApiConfig({
           salonId,
           ...data,
-        });
+        })
 
-        toast.success('API設定を保存しました');
+        toast.success('API設定を保存しました')
       } catch (error) {
-        toast.error(handleErrorToMsg(error));
+        toast.error(handleErrorToMsg(error))
       } finally {
-        setSubmitting(false);
+        setSubmitting(false)
       }
     },
     [upsertSalonApiConfig, salonId]
-  );
+  )
 
   const handleShowFields = (
     e: React.MouseEvent<HTMLButtonElement>,
     field: keyof SalonApiConfigFormValues
   ) => {
-    e.preventDefault();
-    setShowFields({ ...showFields, [field]: !showFields[field] });
-  };
+    e.preventDefault()
+    setShowFields({ ...showFields, [field]: !showFields[field] })
+  }
 
   if (!salonId) {
-    return <Loading />;
+    return <Loading />
   }
 
   if (salonApiConfig === undefined) {
-    return <Loading />;
+    return <Loading />
   }
 
   return (
@@ -159,6 +161,9 @@ const ApiSettingsCard = () => {
                     )}
                   </Button>
                 </div>
+                <span className="text-xs text-muted-foreground">
+                  MessagingAPI設定のチャネルアクセストークンからトークンを発行し設定してください。
+                </span>
               </FormField>
 
               <FormField
@@ -188,6 +193,9 @@ const ApiSettingsCard = () => {
                     )}
                   </Button>
                 </div>
+                <span className="text-xs text-muted-foreground">
+                  MessagingAPIのチャネルのシークレットキーを入力してください。
+                </span>
               </FormField>
 
               <FormField
@@ -218,6 +226,42 @@ const ApiSettingsCard = () => {
                     )}
                   </Button>
                 </div>
+                <span className="text-xs text-muted-foreground">
+                  LINEログインに紐付けたLIFFアプリのIDを設定してください。
+                </span>
+              </FormField>
+
+              <FormField
+                label="LINEチャンネルID"
+                icon={<MessageSquare className="h-4 w-4 text-primary" />}
+                error={errors.lineChannelId?.message}
+                tooltip="LINEのチャネルIDを入力してください"
+              >
+                <div className="flex items-center gap-2 relative">
+                  <Input
+                    type={showFields.lineChannelId ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    {...register('lineChannelId')}
+                    placeholder="LINEチャンネルID"
+                    className="transition-all pr-10 duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400"
+                  />
+
+                  <Button
+                    className="absolute right-0"
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => handleShowFields(e, 'lineChannelId')}
+                  >
+                    {showFields.lineChannelId ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  LINEログインを使用しているチャネルのIDを設定してください。
+                </span>
               </FormField>
 
               <div className="hidden">
@@ -239,6 +283,7 @@ const ApiSettingsCard = () => {
                       placeholder="LINE公式アカウント識別子"
                       className="transition-all duration-200 focus:ring-2 focus:ring-offset-1 focus:ring-blue-400 pointer-events-none"
                     />
+
                     <Button
                       className="absolute right-0"
                       variant="outline"
@@ -375,6 +420,6 @@ const ApiSettingsCard = () => {
       </Accordion>
     </div>
   )
-};
+}
 
 export default ApiSettingsCard;

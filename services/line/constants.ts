@@ -1,1 +1,1 @@
-export const LINE_LOGIN_SESSION_KEY = '__bcker_line_login'
+export const LINE_LOGIN_SESSION_KEY = 'bocker_login_session'

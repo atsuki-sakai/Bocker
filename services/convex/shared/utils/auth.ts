@@ -26,7 +26,6 @@ export async function checkAuth(
   if (skipCheck) {
     return null
   }
-
   const identity = await ctx.auth.getUserIdentity()
   if (!identity) {
     throw throwConvexError({
@@ -64,7 +63,7 @@ export async function checkSalonAccess(
   // skipCheckがtrueの場合は認証チェックをスキップ
   if (skipCheck) {
     // サロンの存在チェックのみ行う
-    const salon = await ctx.db.get(salonId);
+    const salon = await ctx.db.get(salonId)
     if (!salon) {
       throw throwConvexError({
         message: 'サロンが見つかりません',
@@ -76,15 +75,13 @@ export async function checkSalonAccess(
         details: {
           salonId,
         },
-      });
+      })
     }
-    return true;
+    return true
   }
 
-  const identity = await checkAuth(ctx);
-
   // サロンとユーザーの関連をチェック
-  const salon = await ctx.db.get(salonId);
+  const salon = await ctx.db.get(salonId)
   if (!salon) {
     throw throwConvexError({
       message: 'サロンが見つかりません',
@@ -96,15 +93,15 @@ export async function checkSalonAccess(
       details: {
         salonId,
       },
-    });
+    })
   }
 
   // 管理者の場合は常に許可（設定に応じて）
-  if (allowAdmin && isAdmin(identity)) {
-    return true;
+  if (allowAdmin) {
+    return true
   }
 
-  return true;
+  return true
 }
 
 /**

@@ -3,11 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useLiff } from '@/hooks/useLiff'
-import { getCookie, setCookie, deleteCookie } from '@/lib/utils'
+import { getCookie, deleteCookie } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
-import { useMutation } from 'convex/react'
-import { api } from '@/convex/_generated/api'
-import { fetchQuery } from 'convex/nextjs'
 import { handleErrorToMsg } from '@/lib/error'
 import { toast } from 'sonner'
 
@@ -17,138 +14,216 @@ import { Loader2, ExternalLink } from 'lucide-react'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 
 export default function ReserveRedirectPage() {
-  const { liff } = useLiff()
+  const {
+    liff,
+    isLoggedIn: liffIsLoggedIn,
+    profile: liffProfile,
+    isLoading: liffIsLoading,
+    isError: liffIsError,
+    errorMessage: liffErrorMessage,
+  } = useLiff()
   const router = useRouter()
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
-  const createCompleteFields = useMutation(api.customer.core.mutation.createCompleteFields)
-  const updateCustomer = useMutation(api.customer.core.mutation.updateRelatedTables)
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    async function initLiff() {
-      let lineUserId: string | null = null
-      if (liff?.isLoggedIn()) {
-        const profile = await liff?.getProfile()
-        if (profile) {
-          lineUserId = profile.userId
-        } else {
-          toast.error('プロフィールの取得に失敗しました。ページを閉じて再度ログインしてください。')
-        }
-      } else {
-        const session = getCookie(LINE_LOGIN_SESSION_KEY)
-        if (session) {
-          const { salonId } = JSON.parse(session)
-          console.log('salonId', salonId)
-          router.push(`/reservation/${salonId}/calendar`)
-        } else {
-          return router.push('/reservation')
-        }
-      }
+    async function handleLiffLogin() {
+      console.log('[ReserveRedirectPage] useEffect triggered. LIFF object:', liff)
+      console.log('[ReserveRedirectPage] LIFF states:', {
+        isLoggedIn: liffIsLoggedIn,
+        isLoading: liffIsLoading,
+        isError: liffIsError,
+      })
 
-      const profile = await liff?.getProfile()
-      const sessionCookie = getCookie(LINE_LOGIN_SESSION_KEY)
-      if (sessionCookie === null) {
-        console.log('Session cookie not found')
+      // LIFF初期化中はまだ処理しない
+      if (liffIsLoading) {
+        console.log('[ReserveRedirectPage] LIFF is still loading. Waiting...')
         return
       }
 
-      const { salonId } = JSON.parse(sessionCookie ?? '')
-      if (!salonId) {
-        console.error('storeId is missing in session cookie')
-        throw new Error('storeId is missing in session cookie')
+      // LIFFエラーチェック
+      if (liffIsError) {
+        console.error(`[ReserveRedirectPage] LIFF initialization error: ${liffErrorMessage}`)
+        setErrorMessage(`LINE連携でエラーが発生しました: ${liffErrorMessage || '不明なエラー'}`)
+        setIsLoading(false)
+        return
       }
 
-      const computedRedirectUrl = `/reservation/${salonId}/calendar`
+      // LIFF初期化が完了していない場合は早期リターン
+      if (!liff) {
+        console.log(
+          '[ReserveRedirectPage] LIFF is not initialized yet. Waiting for initialization...'
+        )
+        return
+      }
+
+      setIsLoading(true)
+      setErrorMessage(null)
+
+      const initialSession = getCookie(LINE_LOGIN_SESSION_KEY)
+      let salonIdFromSession: string | null = null
+
+      if (initialSession) {
+        try {
+          const parsedSession = JSON.parse(initialSession)
+          salonIdFromSession = parsedSession.salonId
+        } catch (e) {
+          console.error('[ReserveRedirectPage] Failed to parse initial session cookie:', e)
+          setErrorMessage('セッション情報の解析に失敗しました')
+          setIsLoading(false)
+          return
+        }
+      }
+
+      if (!salonIdFromSession) {
+        console.error(
+          '[ReserveRedirectPage] salonId is missing from initial session. Cannot proceed.'
+        )
+        setErrorMessage('サロン情報が見つかりません。予約フローを最初からやり直してください')
+        setIsLoading(false)
+        return
+      }
+
+      console.log(`[ReserveRedirectPage] Retrieved salonId from session: ${salonIdFromSession}`)
+      const computedRedirectUrl = `/reservation/${salonIdFromSession}/calendar`
       setRedirectUrl(computedRedirectUrl)
-      deleteCookie(LINE_LOGIN_SESSION_KEY)
 
-      let newSession = JSON.stringify({
-        salonId: salonId,
-        lineId: lineUserId,
-        lineUserName: profile?.displayName,
-      })
+      if (liff && liff.isLoggedIn()) {
+        console.log('[ReserveRedirectPage] LIFF is logged in.')
+        let idToken: string | null = null
 
-      try {
-        const existingCustomer = await fetchQuery(api.customer.core.query.findByLineId, {
-          lineId: lineUserId ?? '',
-          salonId: salonId,
-        })
-
-        console.log('既存顧客:', existingCustomer)
-
-        const userEmail = liff?.getDecodedIDToken()?.email || ''
-        if (!existingCustomer) {
-          await createCompleteFields({
-            salonId: salonId,
-            lineId: profile?.userId,
-            lineUserName: profile?.displayName || '',
-            email: userEmail,
-            phone: undefined,
-            tags: ['LINE'],
-          })
-          console.log('新規顧客を作成しました')
-        } else {
-          await updateCustomer({
-            customerId: existingCustomer._id,
-            salonId: salonId,
-            lineId: profile?.userId ?? '',
-            lineUserName: profile?.displayName || '',
-            email: existingCustomer.email || userEmail,
-            phone: existingCustomer.phone || '',
-          })
-          newSession = JSON.stringify({
-            customerId: existingCustomer._id,
-            salonId: salonId,
-            lineId: profile?.userId,
-            email: existingCustomer.email || userEmail,
-            phone: existingCustomer.phone || '',
-            lineUserName: profile?.displayName || '',
-          })
-          console.log('既存顧客情報を更新しました')
+        try {
+          idToken = liff.getIDToken()
+        } catch (e) {
+          console.error('[ReserveRedirectPage] Error getting ID token:', e)
+          setErrorMessage('LINE認証情報の取得に失敗しました')
+          setIsLoading(false)
+          return
         }
-      } catch (error) {
-        const errorMessage = handleErrorToMsg(error)
-        console.error(errorMessage)
+
+        if (!idToken) {
+          console.error(
+            '[ReserveRedirectPage] Could not get ID Token from LIFF even though logged in.'
+          )
+          setErrorMessage('LINE情報の取得に失敗しました。ログインし直してください')
+          if (liff) liff.logout()
+          deleteCookie(LINE_LOGIN_SESSION_KEY)
+          setIsLoading(false)
+          toast.error('認証に失敗しました。ログインし直してください')
+          router.push(`/reservation/${salonIdFromSession}`)
+          return
+        }
+
+        console.log('[ReserveRedirectPage] Got idToken. Calling /api/line/verify-token...')
+        try {
+          const response = await fetch('/api/line/verify-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken, salonId: salonIdFromSession }),
+          })
+
+          const data = await response.json()
+
+          if (response.ok && data.success) {
+            console.log('[ReserveRedirectPage] API call successful. Server issued session cookie.')
+            deleteCookie(LINE_LOGIN_SESSION_KEY)
+            console.log('[ReserveRedirectPage] Deleted old LINE_LOGIN_SESSION_KEY.')
+            toast.success('認証に成功しました。予約ページへ移動します')
+            router.push(computedRedirectUrl)
+          } else {
+            console.error('[ReserveRedirectPage] API call failed:', data)
+            setErrorMessage(
+              `認証サーバーとの通信に失敗しました: ${data.message || data.error || '詳細不明'}`
+            )
+            setIsLoading(false)
+          }
+        } catch (error) {
+          console.error('[ReserveRedirectPage] Error calling /api/line/verify-token:', error)
+          setErrorMessage(`認証処理中にエラーが発生しました: ${handleErrorToMsg(error)}`)
+          setIsLoading(false)
+        }
+      } else if (liff && !liffIsLoading) {
+        console.log('[ReserveRedirectPage] LIFF is not logged in. Initiating LIFF login.')
+        if (!initialSession || !salonIdFromSession) {
+          console.error(
+            '[ReserveRedirectPage] salonId was not in session before trying to log in with LIFF.'
+          )
+          setErrorMessage('予約セッション情報が不足しています。最初からやり直してください')
+          setIsLoading(false)
+          return
+        }
+        console.log(
+          `[ReserveRedirectPage] About to call liff.login(). Redirect URI should be this page or similar to continue the flow.`
+        )
+
+        try {
+          liff.login({
+            redirectUri: window.location.href,
+          })
+        } catch (e) {
+          console.error('[ReserveRedirectPage] LIFF login failed:', e)
+          setErrorMessage(
+            `LINE連携ログインに失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`
+          )
+          setIsLoading(false)
+        }
+      } else {
+        console.log(
+          '[ReserveRedirectPage] LIFF object not available or still loading, cannot proceed with login check.'
+        )
       }
-
-      // セッションクッキーの保存を確実に行う
-      console.log('保存するセッション情報:', newSession)
-      setCookie(LINE_LOGIN_SESSION_KEY, newSession, 60)
-
-      // 短いディレイを追加してクッキーの保存を確実にする
-      setTimeout(() => {
-        // 保存されたかを確認
-        const savedSession = getCookie(LINE_LOGIN_SESSION_KEY)
-        console.log('保存されたセッション情報:', savedSession)
-
-        if (!savedSession) {
-          console.warn('セッションの保存に失敗した可能性があります。再試行します。')
-          // 再試行
-          setCookie(LINE_LOGIN_SESSION_KEY, newSession, 60)
-        }
-
-        // リダイレクト
-        router.push(computedRedirectUrl)
-      }, 300) // 300ミリ秒待機
     }
 
-    if (liff) {
-      initLiff()
-    }
-  }, [liff, router, createCompleteFields, updateCustomer])
+    handleLiffLogin()
+  }, [liff, liffIsLoggedIn, liffProfile, liffIsLoading, liffIsError, router])
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
+        <Card className="w-full max-w-md shadow-lg border-none">
+          <CardContent className="flex flex-col items-center justify-center space-y-6 py-6">
+            <div className="relative">
+              <Loader2 className="h-12 w-12 text-active animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-6 w-6 rounded-full bg-active-foreground animate-pulse"></div>
+              </div>
+            </div>
+            <p className="text-center text-primary font-medium animate-pulse">
+              認証情報を確認中...
+            </p>
+            <p className="text-center text-sm text-muted-foreground max-w-xs">
+              LINEアカウント情報を確認し、安全にログイン処理を行っています。
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
+        <Card className="w-full max-w-md shadow-lg border-destructive">
+          <CardContent className="flex flex-col items-center justify-center space-y-4 py-6">
+            <p className="text-center text-destructive font-semibold">エラーが発生しました</p>
+            <p className="text-center text-sm text-muted-foreground max-w-xs">{errorMessage}</p>
+            <Button variant="outline" onClick={() => router.push('/reservation')}>
+              予約トップに戻る
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md shadow-lg border-none">
         <CardContent className="flex flex-col items-center justify-center space-y-6 py-6">
-          <div className="relative">
-            <Loader2 className="h-12 w-12 text-active animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-6 w-6 rounded-full bg-active-foreground animate-pulse"></div>
-            </div>
-          </div>
-          <p className="text-center text-primary font-medium animate-pulse">リダイレクト中...</p>
+          <p className="text-center text-primary font-medium">処理が完了しました</p>
           <p className="text-center text-sm text-muted-foreground max-w-xs">
-            お客様の情報を確認し、予約ページへ移動しています。しばらくお待ちください。
+            まもなく予約ページへ移動します。
           </p>
         </CardContent>
         <CardFooter className="flex flex-col space-y-3 pt-0">

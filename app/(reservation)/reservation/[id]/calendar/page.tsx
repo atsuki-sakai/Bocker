@@ -13,6 +13,7 @@ import { MenuView, StaffView, OptionView, DateView, PaymentView, ConfirmView } f
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { reservationFlexMessageTemplate } from '@/services/line/message_template/reservation_flex'
+import { jwtDecode } from 'jwt-decode'
 
 import {
   Check,
@@ -40,14 +41,13 @@ import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
 import { useQuery } from 'convex/react'
 
-export type LoginSession = {
-  salonId: Id<'salon'>
-  customerId: Id<'customer'>
-  lineId?: string
+type LineSessionPayload = {
+  lineUserId: string
+  customerId: string
+  salonId: string
+  name?: string
   email?: string
-  phone?: string
-  lineUserName?: string
-  tags?: string[]
+  // 必要に応じて他のフィールドも追加
 }
 
 // 予約ステップの定義
@@ -98,7 +98,7 @@ export default function CalendarPage() {
   const salonId = params.id as Id<'salon'>
   const { liff } = useLiff()
   // STATES
-  const [sessionCustomer, setSessionCustomer] = useState<LoginSession | null>(null)
+  const [sessionCustomer, setSessionCustomer] = useState<LineSessionPayload | null>(null)
   const [customer, setCustomer] = useState<Doc<'customer'> | null>(null)
   const [customerPhone, setCustomerPhone] = useState<string | null>(null)
   const [notes, setNotes] = useState<string>('')
@@ -137,10 +137,15 @@ export default function CalendarPage() {
   const pointConfig = useQuery(api.point.config.query.findBySalonId, {
     salonId: salonId,
   })
-  const customerPoints = useQuery(api.customer.points.query.findBySalonAndCustomerId, {
-    salonId: salonId,
-    customerId: sessionCustomer?.customerId as Id<'customer'>,
-  })
+  const customerPoints = useQuery(
+    api.customer.points.query.findBySalonAndCustomerId,
+    sessionCustomer?.customerId
+      ? {
+          salonId: salonId,
+          customerId: sessionCustomer.customerId as Id<'customer'>,
+        }
+      : 'skip' // sessionCustomer?.customerIdがない場合はクエリを実行しない
+  )
 
   // Convex mutations
   const createReservationMutation = useMutation(api.reservation.mutation.create)
@@ -225,13 +230,14 @@ export default function CalendarPage() {
     setIsQuestionnaireOpen(true)
   }
 
-  const handleLogout = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     setIsLogout(true)
-    deleteCookie(LINE_LOGIN_SESSION_KEY)
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
     if (liff?.isLoggedIn()) {
       liff.logout()
     }
+    toast.success('ログアウトしました。')
     router.push(`/reservation/${salonId}`)
     setIsLogout(false)
   }
@@ -264,7 +270,7 @@ export default function CalendarPage() {
       const reservationData = {
         salonId: salonComplete.salon._id as Id<'salon'>,
         customerId: sessionCustomer.customerId as Id<'customer'>,
-        customerName: sessionCustomer.email ? sessionCustomer.email : sessionCustomer.lineUserName,
+        customerName: sessionCustomer.email ? sessionCustomer.email : sessionCustomer.name,
         staffId: selectedStaffCompleted.staff._id as Id<'staff'>,
         staffName: selectedStaffCompleted.staff.name,
         menus: selectedMenus.map((menu) => ({ menuId: menu._id, quantity: 1 })), // quantityは現状1で固定
@@ -372,11 +378,11 @@ export default function CalendarPage() {
 
         // ポイントを利用していればauthPinCodeを送信してポイントを店舗で利用できるように
 
-        if (usePoints && usePoints > 0) {
+        if (usePoints && usePoints > 0 && customerPoints?._id) {
           const pointTransaction = await createPointTransactionMutation({
             salonId: salonComplete.salon._id,
             reservationId: reservationId,
-            customerId: sessionCustomer.customerId,
+            customerId: sessionCustomer.customerId as Id<'customer'>,
             points: usePoints,
             transactionType: 'used', // 獲得、使用、調整、期限切れ
             transactionDate_unix: new Date().getTime(),
@@ -385,12 +391,12 @@ export default function CalendarPage() {
 
           await updateCustomerPointsMutation({
             lastTransactionDate_unix: new Date().getTime(),
-            customerPointsId: customerPoints?._id as Id<'customer_points'>,
-            totalPoints: customerPoints?.totalPoints ? customerPoints.totalPoints - usePoints : 0,
+            customerPointsId: customerPoints._id as Id<'customer_points'>,
+            totalPoints: customerPoints.totalPoints ? customerPoints.totalPoints - usePoints : 0,
           })
         }
 
-        if (sessionCustomer.lineId) {
+        if (sessionCustomer.lineUserId) {
           // Lineにメッセージ予約の確認用Flexメッセージを作成
           const flexMessages = reservationFlexMessageTemplate(
             salonComplete.config,
@@ -414,7 +420,7 @@ export default function CalendarPage() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              lineId: sessionCustomer?.lineId,
+              lineId: sessionCustomer?.lineUserId,
               messages: flexMessages,
               accessToken: salonComplete.apiConfig.lineAccessToken,
             }),
@@ -467,22 +473,24 @@ export default function CalendarPage() {
         }
 
         // ポイントを付与するqueueを作成
-        const earnPoints = Math.floor(
-          pointConfig?.isFixedPoint
-            ? (pointConfig.fixedPoint ?? 0)
-            : calculateTotal() * ((pointConfig?.pointRate ?? 0) / 100)
-        )
+        if (sessionCustomer?.customerId && pointConfig) {
+          const earnPoints = Math.floor(
+            pointConfig.isFixedPoint
+              ? (pointConfig.fixedPoint ?? 0)
+              : calculateTotal() * ((pointConfig.pointRate ?? 0) / 100)
+          )
 
-        const scheduledFor_unix = reservationStartDateTime.getTime() + 1000 * 60 * 60 * 24 * 30 // 予約日の30日後
+          const scheduledFor_unix = reservationStartDateTime.getTime() + 1000 * 60 * 60 * 24 * 30 // 予約日の30日後
 
-        const pointQueue = await createPointQueueMutation({
-          salonId: salonComplete.salon._id,
-          reservationId: reservationId,
-          customerId: sessionCustomer.customerId,
-          points: earnPoints,
-          scheduledFor_unix: scheduledFor_unix,
-        })
-        console.log(pointQueue)
+          const pointQueue = await createPointQueueMutation({
+            salonId: salonComplete.salon._id,
+            reservationId: reservationId,
+            customerId: sessionCustomer.customerId as Id<'customer'>,
+            points: earnPoints,
+            scheduledFor_unix: scheduledFor_unix,
+          })
+          console.log(pointQueue)
+        }
 
         toast.success('予約を受け付けしました。')
       }
@@ -494,57 +502,91 @@ export default function CalendarPage() {
 
   // USE EFFECT
   useEffect(() => {
-    const cookie = getCookie(LINE_LOGIN_SESSION_KEY)
-    const cookieJson: LoginSession | null = cookie ? JSON.parse(cookie) : null
-    setSessionCustomer(cookieJson)
-    console.log('cookieJson', cookieJson)
-    if (cookieJson?.salonId) {
-      const fetchSalon = async () => {
-        try {
-          setIsLoading(true)
-          const { salon, config, apiConfig, scheduleConfig } = await fetchQuery(
-            api.salon.core.query.getRelations,
-            { id: cookieJson.salonId as Id<'salon'> }
-          )
-          setSalonComplete(
-            salon && config && apiConfig && scheduleConfig
-              ? {
-                  salon: salon as Doc<'salon'>,
-                  config: config as Doc<'salon_config'>,
-                  apiConfig: apiConfig as Doc<'salon_api_config'>,
-                  scheduleConfig: scheduleConfig as Doc<'salon_schedule_config'>,
-                }
-              : null
-          )
-          if (cookieJson.customerId === undefined || cookieJson.salonId === undefined) {
-            deleteCookie(LINE_LOGIN_SESSION_KEY)
-            router.push(`/reservation/${salonId}`)
-          }
-          const customerPointConfig = await fetchQuery(
-            api.customer.points.query.findBySalonAndCustomerId,
-            {
-              salonId: cookieJson.salonId as Id<'salon'>,
-              customerId: cookieJson.customerId as Id<'customer'>,
-            }
-          )
-          setAvailablePoints(customerPointConfig?.totalPoints || 0)
-          const customer = await fetchQuery(api.customer.core.query.getById, {
-            customerId: cookieJson.customerId as Id<'customer'>,
-          })
-          setCustomer(customer)
-          setCustomerPhone(customer?.phone || null)
-          setIsPhoneValid(isValidPhoneNumber(customer?.phone || null)) // 初期値のバリデーション
-        } catch (error) {
-          console.error('サロン情報の取得に失敗しました:', error)
-          setSalonComplete(null)
-        } finally {
-          setIsLoading(false)
+    // JWT Cookieからセッション情報を取得
+    const fetchSession = async () => {
+      try {
+        setIsLoading(true)
+
+        // HTTPOnly Cookieの内容をAPIを経由して取得
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include',
+        })
+
+        if (!response.ok) {
+          // セッションが見つからない場合はリダイレクト
+          console.error('認証セッションが見つかりません。予約画面に戻ります。')
+          router.push(`/reservation/${salonId}`)
+          return
         }
+
+        const data = await response.json()
+        let sessionCustomer: LineSessionPayload | null = null
+
+        if (data.session) {
+          try {
+            sessionCustomer = jwtDecode<LineSessionPayload>(data.session)
+            console.log('sessionCustomer', sessionCustomer)
+          } catch (e) {
+            console.error('JWTデコード失敗:', e)
+            sessionCustomer = null
+          }
+        }
+
+        setSessionCustomer(sessionCustomer)
+
+        if (sessionCustomer?.salonId) {
+          try {
+            const { salon, config, apiConfig, scheduleConfig } = await fetchQuery(
+              api.salon.core.query.getRelations,
+              { id: sessionCustomer.salonId as Id<'salon'> }
+            )
+
+            setSalonComplete(
+              salon && config && apiConfig && scheduleConfig
+                ? {
+                    salon: salon as Doc<'salon'>,
+                    config: config as Doc<'salon_config'>,
+                    apiConfig: apiConfig as Doc<'salon_api_config'>,
+                    scheduleConfig: scheduleConfig as Doc<'salon_schedule_config'>,
+                  }
+                : null
+            )
+
+            if (sessionCustomer.customerId === undefined || sessionCustomer.salonId === undefined) {
+              deleteCookie(LINE_LOGIN_SESSION_KEY)
+              router.push(`/reservation/${salonId}`)
+            }
+
+            const customerPointConfig = await fetchQuery(
+              api.customer.points.query.findBySalonAndCustomerId,
+              {
+                salonId: sessionCustomer.salonId as Id<'salon'>,
+                customerId: sessionCustomer.customerId as Id<'customer'>,
+              }
+            )
+            setAvailablePoints(customerPointConfig?.totalPoints || 0)
+            const customer = await fetchQuery(api.customer.core.query.getById, {
+              customerId: sessionCustomer.customerId as Id<'customer'>,
+            })
+            setCustomer(customer)
+            setCustomerPhone(customer?.phone || null)
+            setIsPhoneValid(isValidPhoneNumber(customer?.phone || null)) // 初期値のバリデーション
+          } catch (error) {
+            console.error('サロン情報の取得に失敗しました:', error)
+            setSalonComplete(null)
+          }
+        } else {
+          router.push('/reservation')
+        }
+      } catch (error) {
+        console.error('セッション取得中にエラーが発生しました:', error)
+        router.push(`/reservation/${salonId}`)
+      } finally {
+        setIsLoading(false)
       }
-      fetchSalon()
-    } else {
-      router.push('/reservation')
     }
+
+    fetchSession()
   }, [router, salonId])
 
   if (isLoading) return <Loading />
@@ -965,10 +1007,10 @@ export default function CalendarPage() {
     <div className="container mx-auto p-4" style={{ paddingBottom: bottomBarHeight }}>
       <div className="overflow-hidden flex items-center justify-between mb-2">
         <div>
-          {sessionCustomer?.lineUserName ? (
+          {sessionCustomer?.name ? (
             <p className="text-sm flex items-center gap-2">
               <CheckCheck className="w-5 h-5 text-active rounded-full p-1" />
-              <span className="font-light">{sessionCustomer?.lineUserName} 様</span>
+              <span className="font-light">{sessionCustomer?.name} 様</span>
             </p>
           ) : (
             sessionCustomer?.email && (

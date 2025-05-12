@@ -10,14 +10,15 @@ export const create = mutation({
     lineAccessToken: v.optional(v.string()),
     lineChannelSecret: v.optional(v.string()),
     liffId: v.optional(v.string()),
+    lineChannelId: v.optional(v.string()),
     destinationId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateSalonApiConfig(args);
-    return await salonService.createApiConfig(ctx, args);
+    checkAuth(ctx)
+    validateSalonApiConfig(args)
+    return await salonService.createApiConfig(ctx, args)
   },
-});
+})
 
 export const update = mutation({
   args: {
@@ -25,14 +26,15 @@ export const update = mutation({
     lineAccessToken: v.optional(v.string()),
     lineChannelSecret: v.optional(v.string()),
     liffId: v.optional(v.string()),
+    lineChannelId: v.optional(v.string()),
     destinationId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateSalonApiConfig(args);
-    return await salonService.updateApiConfig(ctx, args);
+    checkAuth(ctx)
+    validateSalonApiConfig(args)
+    return await salonService.updateApiConfig(ctx, args)
   },
-});
+})
 
 export const upsert = mutation({
   args: {
@@ -40,11 +42,12 @@ export const upsert = mutation({
     lineAccessToken: v.optional(v.string()),
     lineChannelSecret: v.optional(v.string()),
     liffId: v.optional(v.string()),
+    lineChannelId: v.optional(v.string()),
     destinationId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateSalonApiConfig(args);
-    return await salonService.upsertApiConfig(ctx, args);
+    checkAuth(ctx)
+    validateSalonApiConfig(args)
+    return await salonService.upsertApiConfig(ctx, args)
   },
-});
+})

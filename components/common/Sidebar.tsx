@@ -10,6 +10,8 @@ import { useStaffAuth } from '@/hooks/useStaffAuth'
 import { Loading } from '@/components/common'
 import RoleBasedView from './RoleBasedView'
 import { Separator } from '@/components/ui/separator'
+import { useTheme } from 'next-themes'
+import Image from 'next/image'
 import {
   Dialog,
   DialogBackdrop,
@@ -48,8 +50,10 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
+  const { resolvedTheme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isLinkClicked, setIsLinkClicked] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const { signOut } = useClerk()
   const { isSignedIn } = useAuth()
   const salon = usePreloadedQuery(
@@ -185,6 +189,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
       setIsLinkClicked(false)
     }
   }, [pathname, isLinkClicked, setSidebarOpen])
+  useEffect(() => setMounted(true), [])
 
   if (!salon) {
     return <Loading />
@@ -224,9 +229,21 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
               {/* Sidebar for mobile */}
               <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-background px-6 pb-4">
                 <div className="flex flex-col mt-2">
-                  <h1 className="text-xl bg-background bg-clip-text text-foreground font-thin">
-                    Bocker
-                  </h1>
+                  <div className="flex items-center gap-x-2">
+                    <Image
+                      src={
+                        mounted && resolvedTheme === 'dark'
+                          ? '/assets/images/logo-white.png'
+                          : '/assets/images/logo-darkgreen.png'
+                      }
+                      alt="Bocker"
+                      width={42}
+                      height={42}
+                    />
+                    <h1 className="text-xl bg-background bg-clip-text text-foreground font-thin">
+                      Bocker
+                    </h1>
+                  </div>
                   <div className="flex items-center gap-x-2">
                     <p className="text-xs text-primary">サロンの運営をもっと便利に。</p>
                   </div>
@@ -377,7 +394,19 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
         <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
           <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r bg-background px-6 pb-4">
             <div className="flex flex-col mt-2">
-              <h1 className="text-2xl font-thin text-primary bg-clip-text">Bocker</h1>
+              <div className="flex items-center gap-x-2">
+                <Image
+                  src={
+                    mounted && resolvedTheme === 'dark'
+                      ? '/assets/images/logo-white.png'
+                      : '/assets/images/logo-darkgreen.png'
+                  }
+                  alt="Bocker"
+                  width={42}
+                  height={42}
+                />
+                <h1 className="text-2xl font-bold text-primary">Bocker</h1>
+              </div>
               <div className="flex items-center gap-x-2">
                 <p className="text-xs text-muted-foreground">サロンの運営をもっと便利に。</p>
               </div>

@@ -69,7 +69,7 @@ export default function Home() {
   useEffect(() => setMounted(true), [])
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-primary w-screen overflow-x-hidden">
+    <div className="flex flex-col min-h-screen h-full bg-background text-primary w-screen overflow-x-hidden">
       {/* ナビゲーション */}
       <header className="w-full py-4 px-4 sticky top-0 bg-background backdrop-blur-md z-50 border-b">
         <div className="container mx-auto flex justify-between items-center">
@@ -199,7 +199,7 @@ export default function Home() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
-              className="space-y-6"
+              className=""
             >
               <motion.div variants={fadeIn}>
                 <Badge className="px-4 py-1.5 text-sm align-baseline font-bold rounded-full mb-6 bg-pop text-pop-foreground">
@@ -208,7 +208,7 @@ export default function Home() {
               </motion.div>
               <motion.h1
                 variants={fadeIn}
-                className="tracking-wide text-2xl md:text-6xl font-bold  bg-gradient-to-r from-gray-700 via-green-800 to-green-900 dark:from-gray-200 dark:via-green-400 dark:to-green-300 bg-clip-text text-transparent"
+                className="tracking-wide text-2xl md:text-6xl font-bold  bg-gradient-to-r from-slate-700 via-slate-800 to-slate-900 dark:from-gray-200 dark:via-slate-400 dark:to-slate-300 bg-clip-text text-transparent"
               >
                 予約<span className="text-xl md:text-4xl">も</span>顧客
                 <span className="text-xl md:text-4xl">も</span>
@@ -222,7 +222,7 @@ export default function Home() {
               </motion.h1>
               <motion.p
                 variants={fadeIn}
-                className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
+                className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mt-6"
               >
                 メニュー予約管理システムで日々の業務を効率化し、
                 <br className="hidden md:block" />
@@ -232,17 +232,23 @@ export default function Home() {
 
             <motion.div
               variants={fadeIn}
-              className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 w-full justify-center mt-8"
+              className="flex flex-col space-y-4 md:space-y-0 md:space-x-4 w-full justify-center mt-12"
             >
-              <Link href="/sign-up">
-                <Button size="lg" className="font-bold text-xl md:text-2xl">
-                  30日間無料トライアル
-                </Button>
-              </Link>
-            </motion.div>
-
-            <motion.div variants={fadeIn} className="text-xs text-muted-foreground mt-2">
-              ご契約はキャンセル料金不要でいつでもキャンセル可能
+              <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 w-full justify-center">
+                <Link href="/">
+                  <Button size="lg" className="font-bold text-lg md:text-xl">
+                    デモを確認する
+                  </Button>
+                </Link>
+                <Link href="/sign-up">
+                  <Button size="lg" className="font-bold text-lg md:text-xl">
+                    30日間無料トライアル
+                  </Button>
+                </Link>
+              </div>
+              <motion.div variants={fadeIn} className="text-xs text-muted-foreground pt-4">
+                ご契約はキャンセル料金不要でいつでもキャンセル可能
+              </motion.div>
             </motion.div>
           </div>
         </motion.div>
@@ -252,7 +258,7 @@ export default function Home() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.5 }}
           transition={{ duration: 1, delay: 0.5 }}
-          className="absolute -top-24 -right-24 w-96 h-96 bg-cyan-200 dark:bg-cyan-700 rounded-full filter blur-3xl opacity-20 z-0"
+          className="absolute -top-24 -right-24 w-96 h-96 bg-orange-200 dark:bg-orange-700 rounded-full filter blur-3xl opacity-20 z-0"
         ></motion.div>
         <motion.div
           initial={{ opacity: 0 }}
@@ -825,7 +831,7 @@ export default function Home() {
         </motion.div>
       </section>
       {/* CTA セクション */}
-      <section className="w-full py-20 md:py-32 bg-pop text-pop-foreground relative overflow-hidden">
+      <section className="w-full py-20 md:py-32 bg-muted text-primary relative overflow-hidden">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -835,12 +841,12 @@ export default function Home() {
         >
           <div className="flex flex-col items-center justify-center space-y-8 text-center max-w-3xl mx-auto">
             <motion.h2 variants={fadeIn} className="text-3xl md:text-5xl font-bold ">
-              あなたのビジネスを、
+              サロンの運用業務
               <br />
               今日から変えませんか？
             </motion.h2>
             <motion.p variants={fadeIn} className="text-xl text-secondary-foreground">
-              月額15,000円で、予約管理の悩みから解放されましょう
+              月額5,980円で、予約管理の悩みから解放されましょう！
             </motion.p>
             <motion.div
               variants={fadeIn}
@@ -858,11 +864,11 @@ export default function Home() {
         </motion.div>
 
         {/* 装飾的な背景要素 */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-chart-1 rounded-full"></div>
-          <div className="absolute top-40 left-20 w-60 h-60 bg-chart-2 rounded-full"></div>
-          <div className="absolute bottom-40 right-20 w-60 h-60 bg-chart-3 rounded-full"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-chart-4 rounded-full"></div>
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-80">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-palette-4-foreground rounded-full"></div>
+          <div className="absolute top-40 left-20 w-60 h-60 bg-palette-2-foreground rounded-full"></div>
+          <div className="absolute bottom-40 right-20 w-60 h-60 bg-palette-3-foreground rounded-full"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-palette-5-foreground rounded-full"></div>
         </div>
       </section>
       {/* フッター */}

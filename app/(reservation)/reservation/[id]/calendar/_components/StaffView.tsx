@@ -118,7 +118,7 @@ export const StaffView = ({
                 </div>
               </div>
               <Button
-                variant={selectedStaff?._id === staff._id ? 'default' : 'outline'}
+                variant={selectedStaff?._id !== staff._id ? 'default' : 'selected'}
                 onClick={() => {
                   onChangeStaffAction(staff)
                 }}
