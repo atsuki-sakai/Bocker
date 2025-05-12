@@ -21,9 +21,8 @@ import { ZodTextField } from '@/components/common'
 import { encryptStringCryptoJS, deleteCookie } from '@/lib/utils'
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
-import { useTheme } from 'next-themes'
 import Image from 'next/image'
-
+import { useTheme } from 'next-themes'
 const emailLoginSchema = z.object({
   email: z
     .string()
@@ -41,9 +40,9 @@ export default function ReservePage() {
   const { liff } = useLiff()
   const router = useRouter()
   const salonId = params.id as Id<'salon'>
+  const { resolvedTheme } = useTheme()
 
   const [mounted, setMounted] = useState(false)
-  const [resolvedTheme, setResolvedTheme] = useState('light')
   const [showPassword, setShowPassword] = useState(false)
   const [isFirstLogin, setIsFirstLogin] = useState(false)
 

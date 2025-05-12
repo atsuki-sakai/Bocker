@@ -38,7 +38,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
 import { useQuery } from 'convex/react'
-import { tree } from 'next/dist/build/templates/app-page'
 
 type LineSessionPayload = {
   lineUserId: string

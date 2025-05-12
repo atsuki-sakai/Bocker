@@ -92,6 +92,7 @@ export default function Home() {
               />
               <h1 className="text-2xl font-bold">Bocker</h1>
             </div>
+            <p className="text-xs text-muted-foreground">サロンの予約を簡単・便利に</p>
           </motion.div>
 
           {/* モバイルメニューボタン */}
