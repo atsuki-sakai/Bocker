@@ -21,6 +21,8 @@ import { ZodTextField } from '@/components/common'
 import { encryptStringCryptoJS, deleteCookie } from '@/lib/utils'
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
+import { useTheme } from 'next-themes'
+import Image from 'next/image'
 
 const emailLoginSchema = z.object({
   email: z
@@ -40,6 +42,8 @@ export default function ReservePage() {
   const router = useRouter()
   const salonId = params.id as Id<'salon'>
 
+  const [mounted, setMounted] = useState(false)
+  const [resolvedTheme, setResolvedTheme] = useState('light')
   const [showPassword, setShowPassword] = useState(false)
   const [isFirstLogin, setIsFirstLogin] = useState(false)
 
@@ -150,6 +154,7 @@ export default function ReservePage() {
       })
   }, [router, salonId])
 
+  useEffect(() => setMounted(true), [])
   return (
     <div className="w-full  mx-auto bg-background min-h-screen flex items-center justify-center">
       <motion.div
@@ -158,13 +163,25 @@ export default function ReservePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-full max-w-md shadow-lg border-none mt-4">
-          <CardHeader className="py-5">
+        <Card className="w-full max-w-md shadow-lg border-none mt-4 bg-background">
+          <CardHeader className="py-4 ">
             <div className="flex flex-col items-start">
-              <h1 className="text-2xl font-bold text-primary bg-clip-text">Bocker</h1>
-              <span className="text-xs scale-75 -ml-3 -mt-1.5 text-muted-foreground">
-                予約を簡単・便利に
-              </span>
+              <div className="flex items-center">
+                <Image
+                  src={
+                    mounted && resolvedTheme === 'dark'
+                      ? '/assets/images/logo-white.png'
+                      : '/assets/images/logo-darkgreen.png'
+                  }
+                  alt="Bocker"
+                  width={36}
+                  height={36}
+                />
+                <h1 className="text-2xl font-bold">Bocker</h1>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0 leading-tight">
+                サロンの予約を簡単・便利に
+              </p>
             </div>
           </CardHeader>
 

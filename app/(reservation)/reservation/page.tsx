@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import { handleErrorToMsg } from '@/lib/error'
 import { toast } from 'sonner'
 
-import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, ExternalLink } from 'lucide-react'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
@@ -130,7 +130,7 @@ export default function ReserveRedirectPage() {
             deleteCookie(LINE_LOGIN_SESSION_KEY)
             console.log('[ReserveRedirectPage] Deleted old LINE_LOGIN_SESSION_KEY.')
             toast.success('認証に成功しました。予約ページへ移動します')
-            router.push(computedRedirectUrl)
+            // router.push(computedRedirectUrl)
           } else {
             console.error('[ReserveRedirectPage] API call failed:', data)
             setErrorMessage(
@@ -181,14 +181,16 @@ export default function ReserveRedirectPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <Card className="w-full max-w-md shadow-lg border-none">
-          <CardContent className="flex flex-col items-center justify-center space-y-6 py-6">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="flex flex-col items-center bg-muted justify-center space-y-6 py-6">
             <div className="relative">
-              <Loader2 className="h-12 w-12 text-active animate-spin" />
+              <Loader2 className="h-12 w-12 text-accent animate-spin" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-6 w-6 rounded-full bg-active-foreground animate-pulse"></div>
+                <div className="h-6 w-6 rounded-full bg-accent animate-pulse"></div>
               </div>
             </div>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center space-y-6 py-6">
             <p className="text-center text-primary font-medium animate-pulse">
               認証情報を確認中...
             </p>
