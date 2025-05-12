@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 
@@ -6,7 +6,7 @@ import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 const AUTH_COOKIE_NAME = LINE_LOGIN_SESSION_KEY
 
 // クライアントサイドでHTTPOnlyクッキー（bcker_login_session）の内容を取得するためのAPI
-export async function GET(_: NextRequest) {
+export async function GET() {
   try {
     // クッキーからセッションを取得
     const cookieStore = await cookies()

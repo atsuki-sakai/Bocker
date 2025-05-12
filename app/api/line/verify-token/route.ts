@@ -169,7 +169,10 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error('[API /api/line/verify-token] General error:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message || String(error) },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     )
   }

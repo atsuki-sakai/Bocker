@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { getCookie, deleteCookie } from '@/lib/utils'
-import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
 import { Doc, Id } from '@/convex/_generated/dataModel'
@@ -553,7 +551,8 @@ export default function CalendarPage() {
             )
 
             if (sessionCustomer.customerId === undefined || sessionCustomer.salonId === undefined) {
-              deleteCookie(LINE_LOGIN_SESSION_KEY)
+              // cookiesを明示的に削除
+              await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
               router.push(`/reservation/${salonId}`)
             }
 

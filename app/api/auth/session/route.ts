@@ -12,7 +12,7 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 const JWT_SECRET = process.env.JWT_SECRET || 'bocker-auth-session-secret-key'
 
 // セッション情報取得API
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // クッキーからセッション情報を取得
     const cookieStore = await cookies()
