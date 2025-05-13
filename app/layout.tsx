@@ -4,7 +4,6 @@ import { ConvexClientProvider } from '@/components/providers'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Toaster } from 'sonner'
 import { Noto_Sans_JP, Allerta_Stencil } from 'next/font/google'
-import { ChannelTalkLoader } from '@/components/common/ChannelTalkLoader'
 import { ThemeProvider } from 'next-themes'
 
 const notoJP = Noto_Sans_JP({
@@ -54,8 +53,6 @@ export default function RootLayout({
           </ThemeProvider>
         </ClerkProvider>
       </body>
-
-      <ChannelTalkLoader />
     </html>
   )
 }

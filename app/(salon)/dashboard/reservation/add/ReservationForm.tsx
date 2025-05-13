@@ -641,19 +641,8 @@ export default function ReservationForm() {
                       <p className="text-primary font-bold">顧客検索</p>
                     </div>
                     <p className="text-muted-foreground text-xs">
-                      既存顧客の予約を作成する場合はこちらから
-                      <strong>顧客無しでも予約は作成できます。</strong>
+                      顧客無しでも予約は作成できます。
                     </p>
-                    <span className="text-muted-foreground text-xs font-bold">
-                      新規顧客の場合は先に
-                      <Link
-                        className="text-link-foreground underline"
-                        href="/dashboard/customer/add"
-                      >
-                        こちら
-                      </Link>
-                      から顧客を作成してください。
-                    </span>
                   </div>
                   <Input
                     className="w-full my-3"

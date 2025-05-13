@@ -441,6 +441,7 @@ export const findByAvailableStaffs = query({
         gender: staff.gender,
         description: staff.description,
         imgPath: staff.imgPath,
+        thumbnailPath: staff.thumbnailPath,
         isActive: staff.isActive,
         tags: staff.tags,
         _creationTime: staff._creationTime,

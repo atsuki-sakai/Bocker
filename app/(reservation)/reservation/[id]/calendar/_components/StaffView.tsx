@@ -88,12 +88,12 @@ export const StaffView = ({
               className="flex items-center justify-between border rounded-lg p-4"
             >
               <div className="flex items-start gap-2">
-                {staff.imgPath && staff.imgPath !== '' && (
+                {staff.thumbnailPath && staff.thumbnailPath !== '' && (
                   <Image
-                    src={staff.imgPath}
+                    src={staff.thumbnailPath}
                     alt={staff.name ? staff.name : 'Staff Image'}
-                    width={40}
-                    height={40}
+                    width={250}
+                    height={250}
                     className="rounded-sm w-14 h-14"
                   />
                 )}
