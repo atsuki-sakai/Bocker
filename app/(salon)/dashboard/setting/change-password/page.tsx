@@ -24,7 +24,7 @@ import { CardDescription, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import Image from 'next/image'
+
 
 // パスワード変更用のバリデーションスキーマ
 const changePasswordSchema = z

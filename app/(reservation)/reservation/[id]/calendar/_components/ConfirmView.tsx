@@ -10,7 +10,7 @@ import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import type { StaffDisplay } from './StaffView'
 import type { TimeRange } from '@/lib/type'
-import { Card } from '@/components/ui/card'
+
 type ConfirmViewProps = {
   salonId: Id<'salon'>
   availablePoints: number
