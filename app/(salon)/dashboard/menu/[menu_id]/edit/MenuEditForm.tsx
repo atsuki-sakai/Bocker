@@ -17,7 +17,7 @@ import { useZodForm } from '@/hooks/useZodForm'
 import { useSalon } from '@/hooks/useSalon'
 import { ImageDrop } from '@/components/common'
 import { TagInput } from '@/components/common'
-import { compressAndConvertToWebP, fileToBase64, createImageWithThumbnail } from '@/lib/utils'
+import { fileToBase64, createImageWithThumbnail } from '@/lib/utils'
 import { useAction, useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
@@ -94,11 +94,11 @@ const schemaMenu = z
       .optional(),
     salePrice: z.preprocess(
       (val) => {
-        // 空文字列の場合はnullを返す
-        if (val === '' || val === null || val === undefined) return null
-        // 数値に変換できない場合もnullを返す
+        // 空文字列の場合はundefinedを返す
+        if (val === '' || val === null || val === undefined) return undefined
+        // 数値に変換できない場合もundefinedを返す
         const num = Number(val)
-        return isNaN(num) ? null : num
+        return isNaN(num) ? undefined : num
       },
       z
         .number()
@@ -112,9 +112,9 @@ const schemaMenu = z
         message: '実際にスタッフが稼働する施術時間は必須です',
       })
       .optional(),
-    imgFilePath: z.string().max(512, { message: '画像は512文字以内で入力してください' }).optional(),
-    imgPath: z.string().max(512).optional(),
-    thumbnailPath: z.string().max(512).optional(),
+    imgFilePath: z.string().optional(),
+    imgPath: z.string().optional(),
+    thumbnailPath: z.string().optional(),
     description: z
       .string()
       .min(1, { message: '説明は必須です' })
@@ -189,9 +189,9 @@ export default function MenuEditForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const uploadImage = useAction(api.storage.action.upload)
-  const uploadImageWithThumbnail = useAction(api.storage.action.uploadWithThumbnail)
+  // const uploadImageWithThumbnail = useAction(api.storage.action.uploadWithThumbnail)
   const deleteImage = useAction(api.storage.action.kill)
-  const deleteImageWithThumbnail = useAction(api.storage.action.killWithThumbnail)
+  // const deleteImageWithThumbnail = useAction(api.storage.action.killWithThumbnail)
   const updateMenu = useMutation(api.menu.core.mutation.update)
 
   const {
@@ -243,64 +243,6 @@ export default function MenuEditForm() {
     }
   }, [menuData, reset, setValue, isInitialized])
 
-  // 画像アップロード処理を更新
-  const handleImageUpload = async (file: File | null) => {
-    if (!file) return
-
-    try {
-      setCurrentFile(file)
-      setIsUploading(true)
-
-      // クライアント側で画像処理を行う
-      const { original, thumbnail } = await createImageWithThumbnail(file)
-
-      // オリジナル画像をアップロード
-      const originalBase64 = await fileToBase64(original)
-      const originalResult = await uploadImage({
-        base64Data: originalBase64,
-        filePath: original.name,
-        contentType: original.type,
-        directory: 'menu',
-      })
-
-      // サムネイル画像をアップロード
-      const thumbnailBase64 = await fileToBase64(thumbnail)
-      const thumbnailResult = await uploadImage({
-        base64Data: thumbnailBase64,
-        filePath: thumbnail.name,
-        contentType: thumbnail.type,
-        directory: 'menu',
-      })
-
-      // 既存の画像があれば削除
-      if (existingImageUrl) {
-        await deleteImage({
-          imgUrl: existingImageUrl,
-        })
-      }
-      if (existingThumbnailUrl) {
-        await deleteImage({
-          imgUrl: existingThumbnailUrl,
-        })
-      }
-
-      // フォームの値を更新
-      setValue('imgPath', originalResult.publicUrl)
-      setValue('thumbnailPath', thumbnailResult.publicUrl)
-      setValue('imgFilePath', file.name)
-
-      setExistingImageUrl(originalResult.publicUrl)
-      setExistingThumbnailUrl(thumbnailResult.publicUrl)
-
-      setIsUploading(false)
-      toast.success('画像のアップロードに成功しました')
-    } catch (err) {
-      console.error('Image upload error:', err)
-      toast.error(handleErrorToMsg(err) || '画像のアップロードに失敗しました')
-      setIsUploading(false)
-    }
-  }
-
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
     try {
@@ -309,26 +251,139 @@ export default function MenuEditForm() {
         return
       }
 
-      setIsSubmitting(true)
-      await updateMenu({
-        menuId,
-        name: data.name,
-        categories: data.categories,
-        unitPrice: data.unitPrice,
-        salePrice: data.salePrice,
-        timeToMin: data.timeToMin,
-        imgPath: data.imgPath,
-        thumbnailPath: data.thumbnailPath,
-        description: data.description,
-        targetGender: data.targetGender,
-        targetType: data.targetType,
-        tags: data.tags,
-        paymentMethod: data.paymentMethod,
-        isActive: data.isActive,
-      })
+      if (!currentFile) return
 
-      toast.success('メニューを更新しました')
-      router.push(`/dashboard/menu/${menuId}`)
+      setIsSubmitting(true)
+      let uploadedOriginalUrl: string | undefined = undefined
+      let uploadedThumbnailUrl: string | undefined = undefined
+      let hasDeletedOldImages = false
+
+      try {
+        setIsUploading(true)
+
+        // クライアント側で画像処理を行う
+        const { original, thumbnail } = await createImageWithThumbnail(currentFile)
+
+        // オリジナル画像をアップロード
+        const originalBase64 = await fileToBase64(original)
+        const originalResult = await uploadImage({
+          base64Data: originalBase64,
+          filePath: original.name,
+          contentType: original.type,
+          directory: 'menu/original',
+        })
+        uploadedOriginalUrl = originalResult.publicUrl
+
+        // サムネイル画像をアップロード
+        const thumbnailBase64 = await fileToBase64(thumbnail)
+        const thumbnailResult = await uploadImage({
+          base64Data: thumbnailBase64,
+          filePath: thumbnail.name,
+          contentType: thumbnail.type,
+          directory: 'menu/thumbnail',
+        })
+        uploadedThumbnailUrl = thumbnailResult.publicUrl
+
+        // 既存の画像があれば削除
+        try {
+          if (existingImageUrl) {
+            await deleteImage({
+              imgUrl: existingImageUrl,
+            })
+          }
+          if (existingThumbnailUrl) {
+            await deleteImage({
+              imgUrl: existingThumbnailUrl,
+            })
+          }
+          hasDeletedOldImages = true
+        } catch (deleteErr) {
+          console.error('Failed to delete existing images:', deleteErr)
+          // 古い画像の削除に失敗しても処理を続行
+        }
+
+        setIsUploading(false)
+
+        try {
+          await updateMenu({
+            menuId,
+            name: data.name,
+            categories: data.categories,
+            unitPrice: data.unitPrice,
+            salePrice: data.salePrice === null ? undefined : (data.salePrice as number | undefined),
+            timeToMin: data.timeToMin,
+            imgPath: uploadedOriginalUrl,
+            thumbnailPath: uploadedThumbnailUrl,
+            description: data.description,
+            targetGender: data.targetGender,
+            targetType: data.targetType,
+            tags: data.tags,
+            paymentMethod: data.paymentMethod,
+            isActive: data.isActive,
+          })
+
+          toast.success('メニューを更新しました')
+          router.push(`/dashboard/menu/${menuId}`)
+        } catch (updateErr) {
+          // メニュー更新に失敗した場合、新しくアップロードした画像を削除
+          if (uploadedOriginalUrl) {
+            try {
+              await deleteImage({
+                imgUrl: uploadedOriginalUrl,
+              })
+            } catch (deleteErr) {
+              console.error('Failed to delete original image after update failure:', deleteErr)
+            }
+          }
+
+          if (uploadedThumbnailUrl) {
+            try {
+              await deleteImage({
+                imgUrl: uploadedThumbnailUrl,
+              })
+            } catch (deleteErr) {
+              console.error('Failed to delete thumbnail image after update failure:', deleteErr)
+            }
+          }
+
+          // 既存の画像を削除していた場合はエラーメッセージを変更
+          if (hasDeletedOldImages) {
+            toast.error(
+              'メニュー更新に失敗し、既存の画像が削除されました。もう一度お試しください。'
+            )
+          } else {
+            toast.error(handleErrorToMsg(updateErr) || 'メニュー更新に失敗しました')
+          }
+
+          setIsSubmitting(false)
+          throw updateErr // 外側のcatchブロックでキャッチするために再スロー
+        }
+      } catch (err) {
+        // 画像アップロード中にエラーが発生した場合
+        if (uploadedOriginalUrl) {
+          try {
+            await deleteImage({
+              imgUrl: uploadedOriginalUrl,
+            })
+          } catch (deleteErr) {
+            console.error('Failed to delete original image:', deleteErr)
+          }
+        }
+
+        if (uploadedThumbnailUrl) {
+          try {
+            await deleteImage({
+              imgUrl: uploadedThumbnailUrl,
+            })
+          } catch (deleteErr) {
+            console.error('Failed to delete thumbnail image:', deleteErr)
+          }
+        }
+
+        setIsUploading(false)
+        setIsSubmitting(false)
+        toast.error(handleErrorToMsg(err) || '画像処理に失敗しました')
+      }
     } catch (err) {
       setIsSubmitting(false)
       toast.error(handleErrorToMsg(err) || 'メニュー更新に失敗しました')
@@ -341,7 +396,7 @@ export default function MenuEditForm() {
   const renderCategories = watch('categories') || menuData?.categories || []
   const renderTimeToMin = watch('timeToMin') || menuData?.timeToMin || undefined
 
-  if (!salon || !menuData) {
+  if (!salon || !menuData || !isInitialized) {
     return <Loading />
   }
 
@@ -369,7 +424,7 @@ export default function MenuEditForm() {
                 initialImageUrl={existingImageUrl}
                 maxSizeMB={6}
                 onFileSelect={(file) => {
-                  handleImageUpload(file)
+                  setCurrentFile(file)
                 }}
               />
             </div>

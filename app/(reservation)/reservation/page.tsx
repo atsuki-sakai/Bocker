@@ -130,7 +130,7 @@ export default function ReserveRedirectPage() {
             deleteCookie(LINE_LOGIN_SESSION_KEY)
             console.log('[ReserveRedirectPage] Deleted old LINE_LOGIN_SESSION_KEY.')
             toast.success('認証に成功しました。予約ページへ移動します')
-            // router.push(computedRedirectUrl)
+            router.push(computedRedirectUrl)
           } else {
             console.error('[ReserveRedirectPage] API call failed:', data)
             setErrorMessage(

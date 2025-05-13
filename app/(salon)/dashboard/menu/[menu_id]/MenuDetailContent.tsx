@@ -149,14 +149,15 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
       {/* ヘッダー情報 */}
       <div className="flex flex-col md:flex-row gap-6 items-start">
         {/* メニュー画像 */}
+
         <Card className="w-full md:w-1/3 overflow-hidden transition-shadow hover:shadow-md">
-          <div className="relative h-64 overflow-hidden">
+          <div className="relative w-full aspect-[3/4] bg-muted">
             {menu.imgPath ? (
               <div className="h-full w-full">
                 <Image
                   src={menu.imgPath}
                   alt={menu.name || 'メニュー画像'}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   priority
@@ -197,10 +198,14 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
         {/* メニュー情報 */}
         <div className="w-full md:w-2/3">
           <CardHeader className="pb-2">
-            {menu.category && (
-              <Badge variant={'default'} className="text-xs w-fit px-2 py-1">
-                <p>{menu.category}</p>
-              </Badge>
+            {Array.isArray(menu.categories) && menu.categories.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {menu.categories.map((cat, idx) => (
+                  <Badge key={idx} variant={'default'} className="text-xs w-fit px-2 py-1">
+                    <p>{cat}</p>
+                  </Badge>
+                ))}
+              </div>
             )}
             <CardTitle className="text-2xl font-bold text-primary bg-clip-text py-1">
               {menu.name}
@@ -243,16 +248,10 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                     <Clock className="w-5 h-5 mt-1 mr-3 text-primary" />
                     <div className="flex flex-row gap-6">
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">実作業時間</p>
-                        <p className="text-lg font-medium text-primary">{menu.timeToMin || 0}分</p>
-                      </div>
-                      <div>
                         <p className="text-sm font-medium text-muted-foreground">
                           トータル施術時間
                         </p>
-                        <p className="text-lg font-medium text-primary">
-                          {menu.ensureTimeToMin || 0}分
-                        </p>
+                        <p className="text-lg font-medium text-primary">{menu.timeToMin || 0}分</p>
                       </div>
                     </div>
                   </div>

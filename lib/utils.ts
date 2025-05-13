@@ -280,10 +280,10 @@ export async function createImageWithThumbnail(
   try {
     // オリジナル画像の生成（最適化）
     const originalOptions = {
-      maxSizeMB: 2,
-      maxWidthOrHeight: 1200,
+      maxSizeMB: 4,
+      maxWidthOrHeight: 2500,
       webpQuality: 90,
-      useWebWorker: true
+      useWebWorker: true,
     }
     const originalFile = await compressAndConvertToWebP(file, originalOptions)
 
@@ -292,19 +292,19 @@ export async function createImageWithThumbnail(
       maxSizeMB: 0.5,
       maxWidthOrHeight: 250,
       webpQuality: 80,
-      useWebWorker: true
+      useWebWorker: true,
     }
     const thumbnailFile = await compressAndConvertToWebP(file, thumbnailOptions)
 
     // ファイル名にサフィックスを追加（サムネイル）
     const thumbnailFileName = file.name.replace(/(\.[^.]+)$/, '-thumbnail$1')
     const renamedThumbnail = new File([thumbnailFile], thumbnailFileName, {
-      type: thumbnailFile.type
+      type: thumbnailFile.type,
     })
 
     return {
       original: originalFile,
-      thumbnail: renamedThumbnail
+      thumbnail: renamedThumbnail,
     }
   } catch (error) {
     console.error('画像処理エラー:', error)
@@ -338,8 +338,8 @@ export async function compressAndConvertToWebP(
   try {
     // 画像を圧縮（デフォルト値を改善）
     const compressionOptions = {
-      maxSizeMB: options?.maxSizeMB ?? 0.5, // 最大サイズを0.5MB（デフォルト）
-      maxWidthOrHeight: options?.maxWidthOrHeight ?? 1024, // 最大幅/高さを1024px
+      maxSizeMB: options?.maxSizeMB ?? 2, // 最大サイズを0.5MB（デフォルト）
+      maxWidthOrHeight: options?.maxWidthOrHeight ?? 2048, // 最大幅/高さを1024px
       useWebWorker: options?.useWebWorker ?? true,
       // fileType: 'image/webp', // imageCompression側でWebPを指定するオプションもあるが、ここではcanvasで変換
       signal: undefined, // 必要に応じてAbortControllerからのSignalを渡す
@@ -733,4 +733,42 @@ export const deleteCookie = (name: string) => {
   const secureFlag = process.env.NODE_ENV === 'production' ? 'secure;' : ''
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; ${secureFlag}SameSite=Lax` // SameSite属性も合わせて設定
   console.log(`クッキー "${name}" を削除しました。`)
+}
+
+/**
+ * GCSに安全に保存できるファイル名へサニタイズする
+ * - 絵文字・サロゲートペア・GCS非推奨文字を除去または置換
+ * - ファイル拡張子は維持
+ */
+export function sanitizeFileName(fileName: string): string {
+  if (typeof fileName !== 'string') throw new TypeError('fileName must be a string')
+
+  // ファイル名と拡張子を分離
+  const match = fileName.match(/^(.*?)(\.[^.]+)?$/)
+  if (!match) return 'file'
+  const [, name, ext] = match
+
+  // 絵文字・サロゲートペア・GCS非推奨文字を除去または置換
+  const sanitizedName = name
+    // 絵文字・サロゲートペア除去
+    .replace(/[\u{1F600}-\u{1F6FF}]/gu, '')
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')
+    .replace(/[\u{1F700}-\u{1F77F}]/gu, '')
+    .replace(/[\u{1F780}-\u{1F7FF}]/gu, '')
+    .replace(/[\u{1F800}-\u{1F8FF}]/gu, '')
+    .replace(/[\u{1F900}-\u{1F9FF}]/gu, '')
+    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '')
+    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '')
+    .replace(/[\u{2600}-\u{26FF}]/gu, '')
+    // GCS非推奨文字を_に置換
+    .replace(/[\/\\?%*:|"<>#\[\]\{\}]/g, '_')
+    // 制御文字除去
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    // 空白を_
+    .replace(/\s+/g, '_')
+    // 先頭・末尾の_を除去
+    .replace(/^_+|_+$/g, '')
+
+  if (!sanitizedName) return 'file'
+  return sanitizedName + (ext || '')
 }

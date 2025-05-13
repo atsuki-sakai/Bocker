@@ -257,6 +257,16 @@ export default function CalendarPage() {
 
     setIsProcessingPayment(true)
 
+    const { isAvailable } = await fetchQuery(api.reservation.query.countAvailableSheetInTimeRange, {
+      salonId: salonId as Id<'salon'>,
+      startTime: reservationStartDateTime.getTime(),
+      endTime: reservationEndDateTime.getTime(),
+    })
+    if (!isAvailable) {
+      toast.error('同時に予約できる人数を超えています。')
+      return
+    }
+
     try {
       if (customer && customerPhone && customerPhone !== customer.phone) {
         await updateCustomerMutation({
@@ -619,7 +629,7 @@ export default function CalendarPage() {
 
   const calculateTotalMinutes = () => {
     const totalMinutes = selectedMenus.reduce((sum, menu) => {
-      return sum + (menu.ensureTimeToMin || menu.timeToMin || 0)
+      return sum + (menu.timeToMin || 0)
     }, 0)
     return totalMinutes
   }

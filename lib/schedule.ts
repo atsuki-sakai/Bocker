@@ -133,13 +133,11 @@ export function formatTimestamp(
 
 export function getMinuteMultiples(interval: number, maxMinute?: number): number[] {
   const max = maxMinute ?? 180;
-  const result: number[] = [];
-
-  // 1から順にintervalの倍数を計算し、max以下のものをリストに追加する
-  for (let i = 1; i * interval <= max; i++) {
-    result.push(i * interval);
+  const step = interval > 0 ? interval : 5 // 0や負なら5分刻み
+  const result: number[] = []
+  for (let min = 0; min <= max; min += step) {
+    result.push(min)
   }
-
   return result;
 }
 

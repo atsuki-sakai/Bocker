@@ -645,20 +645,31 @@ export function validateMenu(args: Partial<Doc<'menu'>>) {
   if (args.timeToMin) {
     validateNumberRange(args.timeToMin, 0, MAX_NUM, '施術時間');
   }
-  if (args.ensureTimeToMin) {
-    validateNumberRange(args.ensureTimeToMin, 0, MAX_NUM, 'トータルの施術時間');
-  }
+
 
   if (args.description) {
-    validateStringLength(args.description, MAX_NOTES_LENGTH, '説明');
+    validateStringLength(args.description, MAX_NOTES_LENGTH, '説明')
   }
 
   if (args.tags) {
-    validateTags(args.tags, 'タグ');
+    validateTags(args.tags, 'タグ')
   }
 
-  if (args.category) {
-    validateStringLength(args.category, MAX_TEXT_LENGTH, 'カテゴリ');
+  if (args.categories) {
+    if (!Array.isArray(args.categories) || args.categories.length === 0) {
+      throw throwConvexError({
+        message: 'カテゴリは必須です',
+        status: 400,
+        code: 'VALIDATION',
+        title: 'カテゴリ未選択',
+        callFunc: 'validateMenu',
+        severity: 'low',
+        details: { categories: args.categories },
+      })
+    }
+    args.categories.forEach((cat) => {
+      validateStringLength(cat, MAX_TEXT_LENGTH, 'カテゴリ')
+    })
   }
 }
 

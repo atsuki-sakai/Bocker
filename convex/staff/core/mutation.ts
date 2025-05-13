@@ -17,6 +17,7 @@ export const create = mutation({
     gender: v.optional(genderType),
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
+    thumbnailPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
     tags: v.optional(v.array(v.string())),
   },
@@ -66,6 +67,7 @@ export const update = mutation({
     gender: v.optional(genderType),
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
+    thumbnailPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
     tags: v.optional(v.array(v.string())),
   },
@@ -115,6 +117,7 @@ export const upsert = mutation({
     gender: v.optional(genderType),
     description: v.optional(v.string()),
     imgPath: v.optional(v.string()),
+    thumbnailPath: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
     tags: v.optional(v.array(v.string())),
   },
@@ -142,45 +145,45 @@ export const killRelatedTables = mutation({
     staffAuthId: v.id('staff_auth'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx, true);
+    checkAuth(ctx, true)
 
     if (args.staffConfigId) {
-      await killRecord(ctx, args.staffConfigId);
+      await killRecord(ctx, args.staffConfigId)
     }
     if (args.staffAuthId) {
-      await killRecord(ctx, args.staffAuthId);
+      await killRecord(ctx, args.staffAuthId)
     }
     if (args.staffId) {
-      await killRecord(ctx, args.staffId);
+      await killRecord(ctx, args.staffId)
     }
     const staffWeekSchedules = await ctx.db
       .query('staff_week_schedule')
       .withIndex('by_staff_id', (q) => q.eq('staffId', args.staffId))
-      .collect();
+      .collect()
 
-    await Promise.all(staffWeekSchedules.map((schedule) => killRecord(ctx, schedule._id)));
+    await Promise.all(staffWeekSchedules.map((schedule) => killRecord(ctx, schedule._id)))
 
     const staffSchedules = await ctx.db
       .query('staff_schedule')
       .withIndex('by_staff_id', (q) => q.eq('staffId', args.staffId))
-      .collect();
-    await Promise.all(staffSchedules.map((schedule) => killRecord(ctx, schedule._id)));
+      .collect()
+    await Promise.all(staffSchedules.map((schedule) => killRecord(ctx, schedule._id)))
     return {
       deletedStaffConfigId: args.staffConfigId,
       deletedStaffAuthId: args.staffAuthId,
       deletedStaffId: args.staffId,
-    };
+    }
   },
-});
+})
 
 export const removeImgPath = mutation({
   args: {
     staffId: v.id('staff'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateRequired(args.staffId, 'staffId');
-    const staff = await ctx.db.get(args.staffId);
+    checkAuth(ctx)
+    validateRequired(args.staffId, 'staffId')
+    const staff = await ctx.db.get(args.staffId)
     if (!staff) {
       throw throwConvexError({
         message: '指定されたスタッフが存在しません',
@@ -190,13 +193,14 @@ export const removeImgPath = mutation({
         callFunc: 'staff.core.removeImgPath',
         severity: 'low',
         details: { ...args },
-      });
+      })
     }
     const deletedStaffImage = await ctx.db.patch(args.staffId, {
       imgPath: undefined,
-    });
+      thumbnailPath: undefined,
+    })
     return {
       deletedStaffImage,
-    };
+    }
   },
-});
+})

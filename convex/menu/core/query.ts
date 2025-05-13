@@ -4,7 +4,7 @@ import { validateMenu, validateRequired } from '@/services/convex/shared/utils/v
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { genderType, targetType } from '@/services/convex/shared/types/common';
 import { paginationOptsValidator } from 'convex/server';
-
+import type { MenuCategory } from '@/services/convex/shared/types/common'
 // メニューIDからメニューを取得
 export const get = query({
   args: {
@@ -47,7 +47,7 @@ export const getDisplayByIds = query({
           unitPrice: menu.unitPrice,
           salePrice: menu.salePrice,
           timeToMin: menu.timeToMin,
-          ensureTimeToMin: menu.ensureTimeToMin,
+          categories: menu.categories || [],
         })),
       options: options
         .filter((option) => option !== null) // nullを除外
@@ -57,7 +57,6 @@ export const getDisplayByIds = query({
           unitPrice: option.unitPrice,
           salePrice: option.salePrice,
           timeToMin: option.timeToMin,
-          ensureTimeToMin: option.ensureTimeToMin,
         })),
     }
   },
@@ -135,3 +134,26 @@ export const findByGender = query({
       .paginate(args.paginationOpts);
   },
 });
+
+export const getMenusByCategories = query({
+  args: {
+    salonId: v.id('salon'),
+    categories: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // サロンIDでフィルタリングしたメニューをすべて取得
+    const allMenus = await ctx.db
+      .query('menu')
+      .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId).eq('isArchive', false))
+      .collect()
+
+    // カテゴリでフィルタリング
+    // 引数のcategoriesの少なくとも1つが、メニューのcategoriesに含まれているものを返す
+    return allMenus.filter((menu) => {
+      if (!menu.categories) return false
+      return args.categories.some(
+        (category) => menu.categories && menu.categories.includes(category as MenuCategory)
+      )
+    })
+  },
+})

@@ -12,17 +12,16 @@ export const create = mutation({
     salePrice: v.optional(v.number()), // セール価格
     orderLimit: v.optional(v.number()), // 注文制限
     timeToMin: v.number(), // 時間(分)
-    ensureTimeToMin: v.optional(v.number()), // 座席を確保する時間(分): パーマなどの場合作業時間と確保する時間の差分の待ち時間が発生する為、予約枠の計算はtimeToMinを使用して効率的に予約できるようにするため
     tags: v.optional(v.array(v.string())), // タグ
     description: v.optional(v.string()), // 説明
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateOption(args);
-    return await optionService.createOption(ctx, args);
+    checkAuth(ctx)
+    validateOption(args)
+    return await optionService.createOption(ctx, args)
   },
-});
+})
 export const update = mutation({
   args: {
     optionId: v.id('salon_option'),
@@ -31,18 +30,17 @@ export const update = mutation({
     salePrice: v.optional(v.number()), // セール価格
     orderLimit: v.optional(v.number()), // 注文制限
     timeToMin: v.optional(v.number()), // 時間(分)
-    ensureTimeToMin: v.optional(v.number()), // 座席を確保する時間(分): パーマなどの場合作業時間と確保する時間の差分の待ち時間が発生する為、予約枠の計算はtimeToMinを使用して効率的に予約できるようにするため
     tags: v.optional(v.array(v.string())), // タグ
     description: v.optional(v.string()), // 説明
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateOption(args);
-    const { optionId, ...updateData } = args;
-    return await optionService.updateOption(ctx, optionId, updateData);
+    checkAuth(ctx)
+    validateOption(args)
+    const { optionId, ...updateData } = args
+    return await optionService.updateOption(ctx, optionId, updateData)
   },
-});
+})
 export const kill = mutation({
   args: {
     optionId: v.id('salon_option'),

@@ -95,7 +95,7 @@ export default function OptionList() {
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-primary"
                   >
-                    実施術時間/トータル施術時間
+                    トータル施術時間
                   </th>
                   <th
                     scope="col"
@@ -151,17 +151,17 @@ export default function OptionList() {
                       </td>
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                         {option.timeToMin ? `${option.timeToMin}分` : '未設定'}
-                        {option.ensureTimeToMin ? `/ ${option.ensureTimeToMin}分` : ''}
                       </td>
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                         {option.tags && option.tags.length > 0 ? option.tags.join('、') : '未設定'}
                       </td>
                       <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
-                        <Link
-                          href={`/dashboard/option/${option._id}/edit`}
-                          className="text-link hover:text-link-foreground"
-                        >
-                          <Button variant="ghost" size="sm">
+                        <Link href={`/dashboard/option/${option._id}/edit`}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-link-foreground bg-link hover:opacity-80"
+                          >
                             編集<span className="sr-only">, {option.name}</span>
                           </Button>
                         </Link>
@@ -169,8 +169,9 @@ export default function OptionList() {
                       <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                         <Button
                           variant="ghost"
+                          size="sm"
                           onClick={() => showDeleteDialog(option._id)}
-                          className="text-destructive hover:text-destructive-foreground"
+                          className="text-destructive-foreground bg-destructive hover:text-destructive-foreground"
                         >
                           削除<span className="sr-only">, {option.name}</span>
                         </Button>

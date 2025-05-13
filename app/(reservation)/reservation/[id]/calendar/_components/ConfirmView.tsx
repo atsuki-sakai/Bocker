@@ -56,12 +56,12 @@ export const ConfirmView = ({
   const calculateTotalTime = () => {
     // メニューの施術時間を計算
     const menuTime = selectedMenus.reduce((total: number, menu: Doc<'menu'>) => {
-      return total + (menu.ensureTimeToMin || menu.timeToMin || 0)
+      return total + (menu.timeToMin || 0)
     }, 0)
 
     // オプションの施術時間を計算
     const optionTime = selectedOptions.reduce((total: number, option: Doc<'salon_option'>) => {
-      return total + (option.ensureTimeToMin || option.timeToMin || 0)
+      return total + (option.timeToMin || 0)
     }, 0)
 
     return menuTime + optionTime
@@ -249,8 +249,8 @@ export const ConfirmView = ({
                   <li key={menu._id} className="flex justify-between">
                     <span>{menu.name}</span>
                     <span className="text-muted-foreground text-nowrap">
-                      {menu.ensureTimeToMin || menu.timeToMin
-                        ? `¥${menu.salePrice ? menu.salePrice.toLocaleString() : menu.unitPrice ? menu.unitPrice.toLocaleString() : ''} / ${menu.ensureTimeToMin || menu.timeToMin}分`
+                      {menu.timeToMin
+                        ? `¥${menu.salePrice ? menu.salePrice.toLocaleString() : menu.unitPrice ? menu.unitPrice.toLocaleString() : ''} / ${menu.timeToMin}分`
                         : ''}
                     </span>
                   </li>
@@ -267,8 +267,8 @@ export const ConfirmView = ({
                     <li key={option._id} className="flex justify-between">
                       <span>{option.name}</span>
                       <span className="text-muted-foreground text-nowrap">
-                        {option.ensureTimeToMin || option.timeToMin
-                          ? `¥${option.salePrice ? option.salePrice.toLocaleString() : option.unitPrice ? option.unitPrice.toLocaleString() : ''} / ${option.ensureTimeToMin || option.timeToMin}分`
+                        {option.timeToMin
+                          ? `¥${option.salePrice ? option.salePrice.toLocaleString() : option.unitPrice ? option.unitPrice.toLocaleString() : ''} / ${option.timeToMin}分`
                           : ''}
                       </span>
                     </li>

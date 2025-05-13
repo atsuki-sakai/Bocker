@@ -9,8 +9,11 @@ import { z } from 'zod'
 import { useDebounce } from 'use-debounce'
 import Image from 'next/image'
 import { ja } from 'date-fns/locale'
+import { TagInput } from '@/components/common'
+import { Textarea } from '@/components/ui/textarea'
 import { getDayOfWeek, formatJpTime } from '@/lib/schedule'
-import { PaymentMethod } from '@/services/convex/shared/types/common'
+import { convertGender, PaymentMethod } from '@/services/convex/shared/types/common'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 // 入力値を数値または undefined に変換するプリプロセス関数
 const preprocessNumber = (val: unknown) => {
   if (typeof val === 'string' && val.trim() === '') return undefined
@@ -58,45 +61,67 @@ import { useMutation } from 'convex/react'
 import {
   RESERVATION_STATUS_VALUES,
   PAYMENT_METHOD_VALUES,
+  GENDER_VALUES,
 } from '@/services/convex/shared/types/common'
-const schemaReservation = z.object({
-  customerId: z.string().optional(), // 顧客ID
-  staffId: z.string().optional(), // スタッフID
-  staffName: z.string().optional(), // スタッフ名
-  menus: z
-    .preprocess(
-      preprocessStringArray,
-      z.array(
-        z.object({
-          menuId: z.string(),
-          quantity: z.number(),
-        })
+const schemaReservation = z
+  .object({
+    customerId: z.string().optional(), // 顧客ID
+    staffId: z.string().optional(), // スタッフID
+    staffName: z.string().optional(), // スタッフ名
+    customerLastName: z.string().optional(), // 顧客名（姓）
+    customerFirstName: z.string().optional(), // 顧客名（名）
+    customerPhone: z.string().optional(), // 顧客電話番号
+    customerGender: z.preprocess(preprocessEmptyString, z.enum(GENDER_VALUES)).optional(), // 顧客性別
+    customerBirthday: z.string().optional(), // 顧客生年月日
+    customerTags: z.array(z.string()).optional(), // タグ
+    customerNotes: z.string().optional(), // 備考
+    menus: z
+      .preprocess(
+        preprocessStringArray,
+        z.array(
+          z.object({
+            menuId: z.string(),
+            quantity: z.number(),
+          })
+        )
       )
-    )
-    .optional(), // メニューID（複数選択可能に変更）
-  salonId: z.string().optional(), // サロンID
-  options: z
-    .preprocess(
-      preprocessStringArray,
-      z.array(
-        z.object({
-          optionId: z.string(),
-          quantity: z.number(),
-        })
+      .optional(), // メニューID（複数選択可能に変更）
+    salonId: z.string().optional(), // サロンID
+    options: z
+      .preprocess(
+        preprocessStringArray,
+        z.array(
+          z.object({
+            optionId: z.string(),
+            quantity: z.number(),
+          })
+        )
       )
-    )
-    .optional(), // オプションID（カンマ区切り → 配列）
-  unitPrice: z.preprocess(preprocessNumber, z.number()).optional(), // 単価
-  totalPrice: z.preprocess(preprocessNumber, z.number()).optional(), // 合計金額
-  status: z.preprocess(preprocessEmptyString, z.enum(RESERVATION_STATUS_VALUES)).optional(), // 予約ステータス
-  startTime_unix: z.preprocess(preprocessNumber, z.number()).optional(), // 開始時間 UNIXタイム
-  endTime_unix: z.preprocess(preprocessNumber, z.number()).optional(), // 終了時間 UNIXタイム
-  usePoints: z.preprocess(preprocessNumber, z.number()).optional(), // 使用ポイント数
-  couponId: z.string().optional(), // クーポンID
-  featuredHairimgPath: z.string().optional(), // 顧客が希望する髪型の画像ファイルパス
-  notes: z.string().optional(), // 備考
-  paymentMethod: z.preprocess(preprocessEmptyString, z.enum(PAYMENT_METHOD_VALUES)).optional(), // 支払い方法
-})
+      .optional(), // オプションID（カンマ区切り → 配列）
+    unitPrice: z.preprocess(preprocessNumber, z.number()).optional(), // 単価
+    totalPrice: z.preprocess(preprocessNumber, z.number()).optional(), // 合計金額
+    status: z.preprocess(preprocessEmptyString, z.enum(RESERVATION_STATUS_VALUES)).optional(), // 予約ステータス
+    startTime_unix: z.preprocess(preprocessNumber, z.number()).optional(), // 開始時間 UNIXタイム
+    endTime_unix: z.preprocess(preprocessNumber, z.number()).optional(), // 終了時間 UNIXタイム
+    usePoints: z.preprocess(preprocessNumber, z.number()).optional(), // 使用ポイント数
+    couponId: z.string().optional(), // クーポンID
+    featuredHairimgPath: z.string().optional(), // 顧客が希望する髪型の画像ファイルパス
+    notes: z.string().optional(), // 備考
+    paymentMethod: z.preprocess(preprocessEmptyString, z.enum(PAYMENT_METHOD_VALUES)).optional(), // 支払い方法
+    isFirstCustomer: z.boolean().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.isFirstCustomer) {
+        return !!data.customerFirstName && !!data.customerLastName && !!data.customerPhone
+      }
+      return true
+    },
+    {
+      message: '新規顧客の場合、姓・名・電話番号は必須です',
+      path: ['customerFirstName'], // エラー表示位置（必要に応じて他も追加可）
+    }
+  )
 
 import { Input } from '@/components/ui/input'
 import { usePaginatedQuery, useQuery } from 'convex/react'
@@ -110,7 +135,6 @@ import {
 } from '@/components/ui/select'
 import { fetchQuery } from 'convex/nextjs'
 import { Id, Doc } from '@/convex/_generated/dataModel'
-import { Textarea } from '@/components/ui/textarea'
 import { Gender } from '@/services/convex/shared/types/common'
 import { handleErrorToMsg } from '@/lib/error'
 
@@ -123,6 +147,7 @@ type AvailableStaff = {
   gender: Gender
   description: string
   imgPath: string
+  thumbnailPath: string
   extraCharge: number
   priority: number
 }
@@ -130,6 +155,7 @@ type AvailableStaff = {
 export default function ReservationForm() {
   const { salonId, salon } = useSalon()
   const router = useRouter()
+  const [isFirstCustomer, setIsFirstCustomer] = useState<boolean>(true)
   // 複数選択に対応するためにstateを配列に変更
   const [selectedMenus, setSelectedMenus] = useState<{ menuId: Id<'menu'>; quantity: number }[]>([])
   const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null)
@@ -228,6 +254,7 @@ export default function ReservationForm() {
     }
   )
   const createReservation = useMutation(api.reservation.mutation.create)
+  const createCustomerComplete = useMutation(api.customer.core.mutation.createCompleteFields)
 
   const {
     register,
@@ -331,23 +358,6 @@ export default function ReservationForm() {
     }, 0)
 
     return menuTime + optionTime
-  }, [selectedMenus, menus, selectedOptions, options])
-
-  // 合計確保時間 (ensureTimeToMin の合算)
-  const ensureTotalMinutes = React.useMemo(() => {
-    const menuEnsure = selectedMenus.reduce((sum, item) => {
-      const menu = menus.find((m) => m._id === item.menuId)
-      const ensure = menu?.ensureTimeToMin ?? menu?.timeToMin ?? 0
-      return sum + ensure
-    }, 0)
-
-    const optionEnsure = selectedOptions.reduce((sum, item) => {
-      const option = options.find((o) => o._id === item.optionId)
-      const ensure = option?.ensureTimeToMin ?? option?.timeToMin ?? 0
-      return sum + ensure * item.quantity
-    }, 0)
-
-    return menuEnsure + optionEnsure
   }, [selectedMenus, menus, selectedOptions, options])
 
   // 選択されたメニューの合計金額 (salePrice が 0 か未定義の場合は unitPrice)
@@ -519,41 +529,6 @@ export default function ReservationForm() {
     setSelectedOptions(newOpts)
     setValue('options', newOpts)
   }
-
-  // スマホでポップオーバー開時に自動でキーボードが表示されるのを防ぐ
-  // useEffect(() => {
-  //   if (menuPopoverOpen) {
-  //     setTimeout(() => {
-  //       const input = document.querySelector(
-  //         '[cmdk-input-wrapper] input'
-  //       ) as HTMLInputElement | null
-  //       input?.blur()
-  //     }, 0)
-  //   }
-  // }, [menuPopoverOpen])
-
-  // useEffect(() => {
-  //   if (optionPopoverOpen) {
-  //     setTimeout(() => {
-  //       const input = document.querySelector(
-  //         '[cmdk-input-wrapper] input'
-  //       ) as HTMLInputElement | null
-  //       input?.blur()
-  //     }, 0)
-  //   }
-  // }, [optionPopoverOpen])
-
-  // useEffect(() => {
-  //   if (customerPopoverOpen) {
-  //     setTimeout(() => {
-  //       const input = document.querySelector(
-  //         '[cmdk-input-wrapper] input'
-  //       ) as HTMLInputElement | null
-  //       input?.blur()
-  //     }, 0)
-  //   }
-  // }, [customerPopoverOpen])
-
   const onSubmit = async (data: z.infer<typeof schemaReservation>) => {
     if (!salonId) return
     try {
@@ -570,12 +545,31 @@ export default function ReservationForm() {
         return
       }
 
-      const customerName =
-        (reservationCustomer?.lastName ?? '') +
-        (reservationCustomer?.firstName ? ' ' + reservationCustomer?.firstName : '')
+      let customerId: Id<'customer'> | undefined
+      let customerName: string | undefined
+      if (!isFirstCustomer) {
+        customerId = await createCustomerComplete({
+          salonId: salonId as Id<'salon'>,
+          lastName: data.customerLastName ?? undefined,
+          firstName: data.customerFirstName ?? undefined,
+          gender: data.customerGender ?? undefined,
+          birthday: data.customerBirthday ?? undefined,
+          tags: data.customerTags ?? undefined,
+          phone: data.customerPhone ?? undefined,
+          notes: data.notes ?? undefined,
+        })
+        customerName =
+          (data.customerLastName ? data.customerLastName : '') +
+          (data.customerFirstName ? ' ' + data.customerFirstName : '')
+      } else {
+        customerId = reservationCustomer?._id ?? undefined
+        customerName =
+          (reservationCustomer?.lastName ?? '') +
+          (reservationCustomer?.firstName ? ' ' + reservationCustomer?.firstName : '')
+      }
+
       await createReservation({
-        ...data,
-        customerId: reservationCustomer?._id ?? undefined,
+        customerId: customerId,
         customerName: customerName,
         salonId: salonId as Id<'salon'>,
         menus: data.menus as { menuId: Id<'menu'>; quantity: number }[],
@@ -610,9 +604,7 @@ export default function ReservationForm() {
 
   if (!salon || !salonId) return <Loading />
 
-  console.log(searchName)
-  console.log(customers.results)
-
+  console.log(isFirstCustomer)
   return (
     <div className="container mx-auto relative">
       <form
@@ -625,127 +617,219 @@ export default function ReservationForm() {
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
-              <div className="flex flex-col items-start gap-2">
+            <div className="flex flex-col items-start gap-2 mt-4">
+              <p className="text-muted-foreground text-sm font-bold">顧客属性の選択</p>
+              <ToggleGroup
+                type="single"
+                className="w-fit"
+                value={isFirstCustomer ? 'first' : 'new'}
+                onValueChange={(value) => setIsFirstCustomer(value === 'first')}
+              >
+                <ToggleGroupItem className="border border-border" value="first">
+                  既存顧客の予約
+                </ToggleGroupItem>
+                <ToggleGroupItem className="border border-border" value="new">
+                  新規顧客の予約
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+            {isFirstCustomer ? (
+              <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
                 <div className="flex flex-col items-start gap-2">
-                  <div className="flex items-center text-xl gap-2">
-                    <p className="text-primary font-bold">顧客検索</p>
+                  <div className="flex flex-col items-start gap-2">
+                    <div className="flex items-center text-xl gap-2">
+                      <p className="text-primary font-bold">顧客検索</p>
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      既存顧客の予約を作成する場合はこちらから
+                      <strong>顧客無しでも予約は作成できます。</strong>
+                    </p>
+                    <span className="text-muted-foreground text-xs font-bold">
+                      新規顧客の場合は先に
+                      <Link
+                        className="text-link-foreground underline"
+                        href="/dashboard/customer/add"
+                      >
+                        こちら
+                      </Link>
+                      から顧客を作成してください。
+                    </span>
                   </div>
-                  <p className="text-muted-foreground text-xs">
-                    既存顧客の予約を作成する場合はこちらから
-                    <strong>顧客無しでも予約は作成できます。</strong>
-                  </p>
-                  <span className="text-muted-foreground text-xs font-bold">
-                    新規顧客の場合は先に
-                    <Link className="text-link-foreground underline" href="/dashboard/customer/add">
-                      こちら
-                    </Link>
-                    から顧客を作成してください。
-                  </span>
+                  <Input
+                    className="w-full my-3"
+                    placeholder="顧客を検索"
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                  />
                 </div>
-                <Input
-                  className="w-full my-3"
-                  placeholder="顧客を検索"
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
+                {customers && customers.results.length > 0 ? (
+                  customers.results.map((customer) => {
+                    return (
+                      <div key={customer._id}>
+                        <p className="text-primary text-sm font-bold mb-1">検索結果</p>
+                        <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={'outline'}
+                              className="w-full justify-start h-fit border border-border"
+                            >
+                              {customer.lastName && customer.lastName !== '未登録'
+                                ? customer.lastName + ' '
+                                : ''}
+                              {customer.firstName && customer.firstName !== '未登録'
+                                ? customer.firstName + ' '
+                                : ''}
+                              {customer.lineUserName && customer.lineUserName !== '未登録'
+                                ? customer.lineUserName + '　'
+                                : ''}
+                              {customer.phone ? 'tel:' + customer.phone : ''}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-full min-w-[350px] p-2 overflow-y-auto h-fit"
+                            onOpenAutoFocus={(event) => event.preventDefault()}
+                          >
+                            <Command>
+                              <div className="flex items-center justify-between border-b">
+                                <p className="text-muted-foreground text-sm">検索結果</p>
+                                <button
+                                  type="button"
+                                  onClick={() => setCustomerPopoverOpen(false)}
+                                  className="p-2 text-muted-foreground "
+                                >
+                                  <X className="w-4 h-4" aria-hidden="true" />
+                                  <span className="sr-only">閉じる</span>
+                                </button>
+                              </div>
+                              <CommandList className="max-h-[300px] py-2 overflow-y-auto">
+                                {customers.results.map((customer) => {
+                                  return (
+                                    <CommandItem
+                                      key={customer._id}
+                                      className="flex items-center justify-between cursor-pointer"
+                                      onSelect={() => {
+                                        setReservationCustomer(customer)
+                                        setCustomerPopoverOpen(false)
+                                      }}
+                                    >
+                                      <div className="flex items-start gap-1 text-xs">
+                                        {customer.lastName && customer.lastName !== '未登録'
+                                          ? customer.lastName + ' '
+                                          : ''}
+                                        {customer.firstName && customer.firstName !== '未登録'
+                                          ? customer.firstName + ' '
+                                          : ''}
+                                        {customer.lineUserName && customer.lineUserName !== '未登録'
+                                          ? customer.lineUserName + '　'
+                                          : ''}
+                                        {customer.phone ? 'tel:' + customer.phone : ''}
+                                        {customer.phone ? 'tel:' + customer.phone : ''}
+                                      </div>
+                                    </CommandItem>
+                                  )
+                                })}
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    )
+                  })
+                ) : searchName.length > 0 ? (
+                  <p className="text-warning-foreground text-sm text-center bg-warning border border-warning-foreground p-4 rounded-md">
+                    顧客が見つかりません
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground text-sm text-center bg-muted border border-border p-4 rounded-md">
+                    顧客を検索してください。
+                  </p>
+                )}
+                {reservationCustomer && (
+                  <div className="flex flex-col gap-2 mt-2 bg-active-foreground border border-active p-3 rounded-md">
+                    <p className="text-active text-sm font-bold">予約する顧客</p>
+                    <p className="text-active text-sm">
+                      {reservationCustomer.lastName ? reservationCustomer.lastName + ' ' : null}
+                      {reservationCustomer.firstName ? reservationCustomer.firstName + ' ' : null}
+                      {reservationCustomer.lineUserName
+                        ? reservationCustomer.lineUserName + '　'
+                        : null}
+                      {reservationCustomer.phone ? 'tel:' + reservationCustomer.phone : null}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
+                <h4 className="text-primary text-xl font-bold">顧客情報</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <ZodTextField
+                    register={register}
+                    name="customerLastName"
+                    placeholder="姓"
+                    className="w-full"
+                    errors={errors}
+                    label="姓"
+                  />
+                  <ZodTextField
+                    register={register}
+                    name="customerFirstName"
+                    placeholder="名"
+                    className="w-full"
+                    errors={errors}
+                    label="名"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <ZodTextField
+                    register={register}
+                    type="tel"
+                    name="customerPhone"
+                    placeholder="電話番号"
+                    className="w-full"
+                    errors={errors}
+                    label="電話番号"
+                  />
+                  <div className="flex flex-col">
+                    <Label className="text-sm ml-2">性別</Label>
+                    <Select
+                      value={watch('customerGender') ?? ''}
+                      onValueChange={(value: string) => {
+                        setValue('customerGender', value as Gender)
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="性別" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GENDER_VALUES.map((gender) => (
+                          <SelectItem key={gender} value={gender}>
+                            {convertGender(gender, true)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm ml-2">生年月日</Label>
+                  <Input
+                    type="date"
+                    value={watch('customerBirthday') ?? ''}
+                    onChange={(e) => setValue('customerBirthday', e.target.value)}
+                  />
+                </div>
+                <TagInput
+                  tags={watch('customerTags') ?? []}
+                  setTagsAction={(value: string[]) => setValue('customerTags', value)}
+                />
+                <Textarea
+                  placeholder="備考"
+                  rows={8}
+                  value={watch('customerNotes') ?? ''}
+                  onChange={(e) => setValue('customerNotes', e.target.value)}
                 />
               </div>
-              {customers && customers.results.length > 0 ? (
-                customers.results.map((customer) => {
-                  return (
-                    <div key={customer._id}>
-                      <p className="text-primary text-sm font-bold mb-1">検索結果</p>
-                      <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant={'outline'}
-                            className="w-full justify-start h-fit border border-border"
-                          >
-                            {customer.lastName && customer.lastName !== '未登録'
-                              ? customer.lastName + ' '
-                              : ''}
-                            {customer.firstName && customer.firstName !== '未登録'
-                              ? customer.firstName + ' '
-                              : ''}
-                            {customer.lineUserName && customer.lineUserName !== '未登録'
-                              ? customer.lineUserName + '　'
-                              : ''}
-                            {customer.phone ? 'tel:' + customer.phone : ''}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-full min-w-[350px] p-2 overflow-y-auto h-fit"
-                          onOpenAutoFocus={(event) => event.preventDefault()}
-                        >
-                          <Command>
-                            <div className="flex items-center justify-between border-b">
-                              <p className="text-muted-foreground text-sm">検索結果</p>
-                              <button
-                                type="button"
-                                onClick={() => setCustomerPopoverOpen(false)}
-                                className="p-2 text-muted-foreground "
-                              >
-                                <X className="w-4 h-4" aria-hidden="true" />
-                                <span className="sr-only">閉じる</span>
-                              </button>
-                            </div>
-                            <CommandList className="max-h-[300px] py-2 overflow-y-auto">
-                              {customers.results.map((customer) => {
-                                return (
-                                  <CommandItem
-                                    key={customer._id}
-                                    className="flex items-center justify-between cursor-pointer"
-                                    onSelect={() => {
-                                      setReservationCustomer(customer)
-                                      setCustomerPopoverOpen(false)
-                                    }}
-                                  >
-                                    <div className="flex items-start gap-1 text-xs">
-                                      {customer.lastName && customer.lastName !== '未登録'
-                                        ? customer.lastName + ' '
-                                        : ''}
-                                      {customer.firstName && customer.firstName !== '未登録'
-                                        ? customer.firstName + ' '
-                                        : ''}
-                                      {customer.lineUserName && customer.lineUserName !== '未登録'
-                                        ? customer.lineUserName + '　'
-                                        : ''}
-                                      {customer.phone ? 'tel:' + customer.phone : ''}
-                                      {customer.phone ? 'tel:' + customer.phone : ''}
-                                    </div>
-                                  </CommandItem>
-                                )
-                              })}
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  )
-                })
-              ) : searchName.length > 0 ? (
-                <p className="text-warning-foreground text-sm text-center bg-warning border border-warning-foreground p-4 rounded-md">
-                  顧客が見つかりません
-                </p>
-              ) : (
-                <p className="text-muted-foreground text-sm text-center bg-muted border border-border p-4 rounded-md">
-                  顧客を検索してください。
-                </p>
-              )}
-              {reservationCustomer && (
-                <div className="flex flex-col gap-2 mt-2 bg-active-foreground border border-active p-3 rounded-md">
-                  <p className="text-active text-sm font-bold">予約する顧客</p>
-                  <p className="text-active text-sm">
-                    {reservationCustomer.lastName ? reservationCustomer.lastName + ' ' : null}
-                    {reservationCustomer.firstName ? reservationCustomer.firstName + ' ' : null}
-                    {reservationCustomer.lineUserName
-                      ? reservationCustomer.lineUserName + '　'
-                      : null}
-                    {reservationCustomer.phone ? 'tel:' + reservationCustomer.phone : null}
-                  </p>
-                </div>
-              )}
-            </div>
+            )}
             <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
               <div className="flex items-center gap-2">
                 <p className="text-primary font-bold text-xl">予約するメニュー</p>
@@ -829,7 +913,6 @@ export default function ReservationForm() {
                                 )}
                                 <div className="flex items-center gap-1">
                                   <p>{menu.timeToMin}分</p>
-                                  {menu.ensureTimeToMin ? `/ ${menu.ensureTimeToMin}分` : ''}
                                 </div>
                               </div>
                             </div>
@@ -933,11 +1016,11 @@ export default function ReservationForm() {
                     <div className="flex flex-col bg-active-foreground p-3 rounded-md border border-active mt-3">
                       <p className="text-active text-sm font-bold mb-2">選択中のスタッフ</p>
                       <div className="flex items-center gap-2">
-                        {selectStaff?.imgPath ? (
+                        {selectStaff?.thumbnailPath ? (
                           <Image
-                            src={selectStaff.imgPath}
+                            src={selectStaff.thumbnailPath}
                             alt={selectStaff?.name ?? ''}
-                            className="w-10 h-10 rounded-full"
+                            className="w-10 h-10 rounded-full object-cover"
                             width={40}
                             height={40}
                           />
@@ -1018,22 +1101,25 @@ export default function ReservationForm() {
                             <span className="sr-only">閉じる</span>
                           </button>
                         </div>
-                        <CommandList className="max-h-[300px] overflow-y-auto py-8">
+                        <CommandList className="max-h-[300px] max-w-[100vw] overflow-y-auto py-8">
                           {options.map((option) => {
                             const count = getOptionCount(option._id)
                             return (
                               <CommandItem
                                 key={option._id}
-                                className="flex items-center justify-between"
+                                className="flex items-center justify-between w-full"
                               >
-                                <div className="flex flex-col items-start gap-1 text-xs">
-                                  <p className="text-sm">{option.name}</p>
-                                  <div className="flex items-center gap-1">
-                                    <p>{option.timeToMin}分</p>
-                                    {option.ensureTimeToMin ? `/ ${option.ensureTimeToMin}分` : ''}
-                                  </div>
+                                <div className="flex flex-col items-start gap-1 text-xs w-3/5">
+                                  <p className="text-sm text-wrap overflow-hidden whitespace-nowrap">
+                                    {option.name}
+                                  </p>
+                                  {option.timeToMin && option.timeToMin > 0 ? (
+                                    <p className="text-xs text-muted-foreground">
+                                      {option.timeToMin}分
+                                    </p>
+                                  ) : null}
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 w-2/5">
                                   <Button
                                     size="icon"
                                     variant="outline"
@@ -1301,9 +1387,13 @@ export default function ReservationForm() {
           <div className="flex flex-col gap-2 mb-4">
             <p className="text-muted-foreground text-xs text-nowrap">施術者</p>
             <div className="flex items-center gap-2 bg-background p-2 border-b border-border">
-              {selectStaff?.imgPath ? (
+              {selectStaff?.thumbnailPath ? (
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src={selectStaff.imgPath} alt={selectStaff.name} />
+                  <AvatarImage
+                    className="object-cover"
+                    src={selectStaff.thumbnailPath}
+                    alt={selectStaff.name}
+                  />
                 </Avatar>
               ) : (
                 <Avatar className="w-8 h-8">
@@ -1363,12 +1453,8 @@ export default function ReservationForm() {
             </div>
             <div className="flex flex-wrap justify-between md:justify-end gap-2 md:gap-4 text-xs mt-2 md:mt-0 w-full md:w-2/3">
               <div className="border bg-background border-active p-1.5 rounded-md text-active flex  md:flex-row items-center w-fit sm:w-auto">
-                <Label className="text-xs text-active">実作業時間 / </Label>{' '}
+                <Label className="text-xs text-active">トータル施術時間 / </Label>{' '}
                 <p className=" font-bold">{totalTimeMinutes} 分</p>
-              </div>
-              <div className="border bg-background border-active p-1.5 rounded-md text-active flex  md:flex-row items-center w-fit sm:w-auto">
-                <Label className="text-xs text-active">トータル時間 / </Label>{' '}
-                <p className=" font-bold">{ensureTotalMinutes} 分</p>
               </div>
             </div>
           </div>

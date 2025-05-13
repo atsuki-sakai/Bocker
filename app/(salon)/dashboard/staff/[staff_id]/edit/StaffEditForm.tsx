@@ -25,15 +25,15 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { handleErrorToMsg } from '@/lib/error';
 import { useSalon } from '@/hooks/useSalon';
-import { compressAndConvertToWebP, fileToBase64, decryptString, encryptString } from '@/lib/utils';
-import { Id } from '@/convex/_generated/dataModel';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Separator } from '@/components/ui/separator';
-import { useParams } from 'next/navigation';
-import { generatePinCode } from '@/lib/utils';
+import { fileToBase64, decryptString, encryptString, createImageWithThumbnail } from '@/lib/utils'
+import { Id } from '@/convex/_generated/dataModel'
+import { motion } from 'framer-motion'
+import { Card, CardContent } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Separator } from '@/components/ui/separator'
+import { useParams } from 'next/navigation'
+import { generatePinCode } from '@/lib/utils'
 import {
   Save,
   ArrowLeft,
@@ -213,10 +213,11 @@ export default function StaffEditForm() {
 
   const onSubmit = async (data: z.infer<typeof staffAddSchema>) => {
     setIsLoading(true)
-    let uploadImageUrl: string | null = null
     let staffId: Id<'staff'> | null = null
     let staffConfigId: Id<'staff_config'> | null = null
     let staffAuthId: Id<'staff_auth'> | null = null
+    let uploadedOriginalUrl: string | undefined = undefined
+    let uploadedThumbnailUrl: string | undefined = undefined
 
     try {
       if (!salon) {
@@ -225,16 +226,37 @@ export default function StaffEditForm() {
       }
 
       if (selectedFile) {
-        const compressed = await compressAndConvertToWebP(selectedFile)
-        const base64 = await fileToBase64(compressed)
-        const filePath = `${Date.now()}-${selectedFile.name}`
-        const uploadResult = await uploadImage({
-          base64Data: base64,
-          contentType: 'image/webp',
-          directory: 'staff',
-          filePath: filePath,
-        })
-        uploadImageUrl = uploadResult.publicUrl
+        try {
+          // クライアント側で画像処理を行う
+          const { original, thumbnail } = await createImageWithThumbnail(selectedFile)
+
+          // オリジナル画像をアップロード
+          const originalBase64 = await fileToBase64(original)
+          const originalResult = await uploadImage({
+            base64Data: originalBase64,
+            contentType: original.type,
+            directory: 'staff/original',
+            filePath: `${Date.now()}-original-${original.name}`,
+          })
+          uploadedOriginalUrl = originalResult.publicUrl
+
+          // サムネイル画像をアップロード
+          const thumbnailBase64 = await fileToBase64(thumbnail)
+          const thumbnailResult = await uploadImage({
+            base64Data: thumbnailBase64,
+            contentType: thumbnail.type,
+            directory: 'staff/thumbnail',
+            filePath: `${Date.now()}-thumbnail-${thumbnail.name}`,
+          })
+          uploadedThumbnailUrl = thumbnailResult.publicUrl
+        } catch (error) {
+          console.error('画像アップロードエラー:', error)
+          toast.error(handleErrorToMsg(error), {
+            icon: <X className="h-4 w-4 text-red-500" />,
+          })
+          setIsLoading(false)
+          return
+        }
       }
 
       // スタッフの基本情報を追加
@@ -247,7 +269,8 @@ export default function StaffEditForm() {
         instagramLink: data.instagramLink ?? undefined,
         gender: data.gender,
         description: data.description,
-        imgPath: uploadImageUrl ?? undefined,
+        imgPath: uploadedOriginalUrl ?? undefined,
+        thumbnailPath: uploadedThumbnailUrl ?? undefined,
         isActive: data.isActive,
         tags: data.tags,
       })
@@ -310,13 +333,23 @@ export default function StaffEditForm() {
       }
     } catch (error: unknown) {
       // エラー発生時のクリーンアップ
-      if (uploadImageUrl) {
+      if (uploadedOriginalUrl) {
         try {
           await deleteImage({
-            imgUrl: uploadImageUrl,
+            imgUrl: uploadedOriginalUrl,
           })
         } catch (deleteError) {
           console.error('画像削除中にエラーが発生しました:', deleteError)
+        }
+      }
+
+      if (uploadedThumbnailUrl) {
+        try {
+          await deleteImage({
+            imgUrl: uploadedThumbnailUrl,
+          })
+        } catch (deleteError) {
+          console.error('サムネイル画像削除中にエラーが発生しました:', deleteError)
         }
       }
 
@@ -352,10 +385,21 @@ export default function StaffEditForm() {
     setIsDeletingImage(true)
     setShowDeleteDialog(false)
     try {
-      if (staffAllData?.imgPath && salon) {
-        await deleteImage({
-          imgUrl: staffAllData?.imgPath,
-        })
+      if ((staffAllData?.imgPath || staffAllData?.thumbnailPath) && salon) {
+        // オリジナル画像が存在する場合は削除
+        if (staffAllData?.imgPath) {
+          await deleteImage({
+            imgUrl: staffAllData.imgPath,
+          })
+        }
+
+        // サムネイル画像が存在する場合は削除
+        if (staffAllData?.thumbnailPath) {
+          await deleteImage({
+            imgUrl: staffAllData.thumbnailPath,
+          })
+        }
+
         await removeImgPath({
           staffId: staff_id as Id<'staff'>,
         })
@@ -366,6 +410,9 @@ export default function StaffEditForm() {
       }
     } catch (error) {
       console.error('画像削除中にエラーが発生しました:', error)
+      toast.error('画像削除中にエラーが発生しました', {
+        icon: <X className="h-4 w-4 text-red-500" />,
+      })
     } finally {
       setIsDeletingImage(false)
     }

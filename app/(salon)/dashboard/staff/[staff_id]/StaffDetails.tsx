@@ -143,24 +143,22 @@ export default function StaffDetails() {
       <div>
         <div className="mb-6">
           <div className="p-0">
-            <div className="flex flex-col md:flex-row">
+            <div className="flex flex-col md:flex-row w-full">
               {/* サムネイル部分 - スタイル改良 */}
-              <div className="relative bg-muted rounded-lg p-6 flex items-center justify-center md:w-1/3">
-                <div className="flex items-center justify-center mx-auto overflow-hidden">
-                  {staffAllData.imgPath ? (
-                    <Image
-                      src={staffAllData.imgPath}
-                      alt={staffAllData.name || ''}
-                      width={280}
-                      height={280}
-                      className="object-cover rounded-md"
-                    />
-                  ) : (
-                    <div className="text-3xl font-semibold text-primary/70 flex items-center justify-center h-full w-full">
-                      {getInitials(staffAllData.name || '')}
-                    </div>
-                  )}
-                </div>
+              <div className="flex items-center justify-center mx-auto overflow-hidden md:w-1/3">
+                {staffAllData.imgPath ? (
+                  <Image
+                    src={staffAllData.imgPath}
+                    alt={staffAllData.name || ''}
+                    width={800}
+                    height={800}
+                    className="object-cover rounded-md"
+                  />
+                ) : (
+                  <div className="text-3xl font-semibold text-primary/70 flex items-center justify-center h-full w-full">
+                    {getInitials(staffAllData.name || '')}
+                  </div>
+                )}
               </div>
 
               {/* 情報部分 - レイアウト改良 */}

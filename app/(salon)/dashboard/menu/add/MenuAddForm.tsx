@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { useZodForm } from '@/hooks/useZodForm';
 import { useSalon } from '@/hooks/useSalon';
 import { ImageDrop } from '@/components/common';
-import { compressAndConvertToWebP, fileToBase64, createImageWithThumbnail } from '@/lib/utils'
+import { fileToBase64, createImageWithThumbnail } from '@/lib/utils'
 import { useAction, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
@@ -171,9 +171,7 @@ export default function MenuAddForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const uploadImage = useAction(api.storage.action.upload)
-  const uploadImageWithThumbnail = useAction(api.storage.action.uploadWithThumbnail)
   const deleteImage = useAction(api.storage.action.kill)
-  const deleteImageWithThumbnail = useAction(api.storage.action.killWithThumbnail)
   const createMenu = useMutation(api.menu.core.mutation.create)
 
   const {
@@ -191,48 +189,6 @@ export default function MenuAddForm() {
     setValue('paymentMethod', method, { shouldValidate: true })
   }
 
-  const handleImageUpload = async (file: File | null) => {
-    if (!file) return
-
-    try {
-      setCurrentFile(file)
-      setIsUploading(true)
-
-      // クライアント側で画像処理を行う
-      const { original, thumbnail } = await createImageWithThumbnail(file)
-
-      // オリジナル画像をアップロード
-      const originalBase64 = await fileToBase64(original)
-      const originalResult = await uploadImage({
-        base64Data: originalBase64,
-        filePath: original.name,
-        contentType: original.type,
-        directory: 'menu',
-      })
-
-      // サムネイル画像をアップロード
-      const thumbnailBase64 = await fileToBase64(thumbnail)
-      const thumbnailResult = await uploadImage({
-        base64Data: thumbnailBase64,
-        filePath: thumbnail.name,
-        contentType: thumbnail.type,
-        directory: 'menu',
-      })
-
-      // フォームの値を更新
-      setValue('imgPath', originalResult.publicUrl)
-      setValue('thumbnailPath', thumbnailResult.publicUrl)
-      setValue('imgFilePath', file.name)
-
-      setIsUploading(false)
-      toast.success('画像のアップロードに成功しました')
-    } catch (err) {
-      console.error('Image upload error:', err)
-      toast.error(handleErrorToMsg(err) || '画像のアップロードに失敗しました')
-      setIsUploading(false)
-    }
-  }
-
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
     try {
@@ -242,25 +198,121 @@ export default function MenuAddForm() {
       }
 
       setIsSubmitting(true)
-      const menuId = await createMenu({
-        salonId: salon._id,
-        name: data.name,
-        categories: data.categories,
-        unitPrice: data.unitPrice,
-        salePrice: data.salePrice,
-        timeToMin: data.timeToMin,
-        imgPath: data.imgPath,
-        thumbnailPath: data.thumbnailPath,
-        description: data.description,
-        targetGender: data.targetGender,
-        targetType: data.targetType,
-        tags: data.tags,
-        paymentMethod: data.paymentMethod,
-        isActive: data.isActive,
-      })
 
-      toast.success('メニューを登録しました')
-      router.push(`/dashboard/menu/${menuId}`)
+      // 画像がある場合はアップロード処理を行う
+      let imgPath = data.imgPath
+      let thumbnailPath = data.thumbnailPath
+      let uploadedOriginalUrl: string | undefined = undefined
+      let uploadedThumbnailUrl: string | undefined = undefined
+
+      if (currentFile) {
+        try {
+          setIsUploading(true)
+
+          // クライアント側で画像処理を行う
+          const { original, thumbnail } = await createImageWithThumbnail(currentFile)
+
+          // オリジナル画像をアップロード
+          const originalBase64 = await fileToBase64(original)
+          const originalResult = await uploadImage({
+            base64Data: originalBase64,
+            filePath: original.name,
+            contentType: original.type,
+            directory: 'menu/original',
+          })
+          uploadedOriginalUrl = originalResult.publicUrl
+
+          // サムネイル画像をアップロード
+          const thumbnailBase64 = await fileToBase64(thumbnail)
+          const thumbnailResult = await uploadImage({
+            base64Data: thumbnailBase64,
+            filePath: thumbnail.name,
+            contentType: thumbnail.type,
+            directory: 'menu/thumbnail',
+          })
+          uploadedThumbnailUrl = thumbnailResult.publicUrl
+
+          imgPath = uploadedOriginalUrl
+          thumbnailPath = uploadedThumbnailUrl
+
+          setIsUploading(false)
+        } catch (err) {
+          // 画像アップロード中にエラーが発生した場合、アップロード済みの画像を削除
+          if (uploadedOriginalUrl) {
+            try {
+              await deleteImage({
+                imgUrl: uploadedOriginalUrl,
+              })
+            } catch (deleteErr) {
+              console.error('Failed to delete original image:', deleteErr)
+            }
+          }
+
+          if (uploadedThumbnailUrl) {
+            try {
+              await deleteImage({
+                imgUrl: uploadedThumbnailUrl,
+              })
+            } catch (deleteErr) {
+              console.error('Failed to delete thumbnail image:', deleteErr)
+            }
+          }
+
+          setIsUploading(false)
+          setIsSubmitting(false)
+          toast.error(handleErrorToMsg(err) || '画像のアップロードに失敗しました')
+          return
+        }
+      }
+
+      try {
+        const menuId = await createMenu({
+          salonId: salon._id,
+          name: data.name,
+          categories: data.categories,
+          unitPrice: data.unitPrice,
+          salePrice: (data.salePrice as number) || undefined,
+          timeToMin: data.timeToMin,
+          imgPath,
+          thumbnailPath,
+          description: data.description,
+          targetGender: data.targetGender,
+          targetType: data.targetType,
+          tags: data.tags,
+          paymentMethod: data.paymentMethod,
+          isActive: data.isActive,
+        })
+
+        toast.success('メニューを登録しました')
+        router.push(`/dashboard/menu/${menuId}`)
+      } catch (err) {
+        // メニュー作成に失敗した場合、アップロードした画像を削除
+        if (uploadedOriginalUrl) {
+          try {
+            await deleteImage({
+              imgUrl: uploadedOriginalUrl,
+            })
+          } catch (deleteErr) {
+            console.error('Failed to delete original image after menu creation failure:', deleteErr)
+          }
+        }
+
+        if (uploadedThumbnailUrl) {
+          try {
+            await deleteImage({
+              imgUrl: uploadedThumbnailUrl,
+            })
+          } catch (deleteErr) {
+            console.error(
+              'Failed to delete thumbnail image after menu creation failure:',
+              deleteErr
+            )
+          }
+        }
+
+        setIsSubmitting(false)
+        toast.error(handleErrorToMsg(err) || 'メニュー登録に失敗しました')
+      }
     } catch (err) {
       setIsSubmitting(false)
       toast.error(handleErrorToMsg(err) || 'メニュー登録に失敗しました')
@@ -316,7 +368,7 @@ export default function MenuAddForm() {
                   <ImageDrop
                     maxSizeMB={5}
                     onFileSelect={(file) => {
-                      handleImageUpload(file)
+                      setCurrentFile(file)
                     }}
                     className="rounded-md"
                   />

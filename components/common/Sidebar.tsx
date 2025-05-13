@@ -25,16 +25,20 @@ import {
 import {
   MenuIcon,
   CalendarIcon,
+  BookIcon,
   SettingsIcon,
   UserCircleIcon,
   FileIcon,
-  FolderIcon,
+  MenuSquareIcon,
   HomeIcon,
   XIcon,
   CreditCardIcon,
   ChevronDownIcon,
   TicketIcon,
   GiftIcon,
+  TimerIcon,
+  UsersIcon,
+  CloudIcon,
 } from 'lucide-react'
 import { useClerk, useAuth } from '@clerk/nextjs'
 import { api } from '@/convex/_generated/api'
@@ -94,56 +98,64 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
       requiredPlan: 'Lite',
     },
     {
-      name: '予約カレンダー',
+      name: '予約作成',
+      href: `/dashboard/reservation/add`,
+      icon: BookIcon,
+      requiredRole: 'staff', //スタッフ以上
+      requiredPlan: 'Lite',
+    },
+    {
+      name: '予約ボード',
       href: `/dashboard/reservation`,
       icon: CalendarIcon,
       requiredRole: 'staff', //スタッフ以上
       requiredPlan: 'Lite',
     },
+
     {
-      name: 'タイムライン',
+      name: '予約タイムライン',
       href: `/dashboard/timeline`,
-      icon: CalendarIcon,
+      icon: TimerIcon,
       requiredRole: 'staff', // スタッフ以上
       requiredPlan: 'Pro',
     },
     {
-      name: 'スタッフ一覧',
+      name: 'スタッフ管理',
       href: `/dashboard/staff`,
-      icon: FolderIcon,
+      icon: UsersIcon,
       requiredRole: 'owner', // オーナーのみ
       requiredPlan: 'Lite',
     },
     {
-      name: 'メニュー一覧',
+      name: 'メニュー管理',
       href: `/dashboard/menu`,
       icon: FileIcon,
       requiredRole: 'manager', // マネージャー以上
       requiredPlan: 'Lite',
     },
     {
-      name: '顧客一覧',
+      name: '顧客管理',
       href: `/dashboard/customer`,
       icon: UserCircleIcon,
       requiredRole: 'manager', // マネージャー以上
       requiredPlan: 'Lite',
     },
     {
-      name: '顧客カルテ',
+      name: '顧客カルテ管理',
       href: `/dashboard/carte`,
-      icon: TicketIcon,
+      icon: CloudIcon,
       requiredRole: 'manager', // マネージャー以上
       requiredPlan: 'Pro',
     },
     {
-      name: 'オプション一覧',
+      name: 'オプション管理',
       href: `/dashboard/option`,
-      icon: SettingsIcon,
+      icon: MenuSquareIcon,
       requiredRole: 'manager', // マネージャー以上
       requiredPlan: 'Pro',
     },
     {
-      name: 'クーポン設定',
+      name: 'クーポン管理',
       href: `/dashboard/coupon`,
       icon: GiftIcon,
       requiredRole: 'manager', // マネージャー以上

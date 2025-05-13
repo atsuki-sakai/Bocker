@@ -2,6 +2,7 @@ import { Storage } from '@google-cloud/storage';
 import { UploadResult } from './types'
 import { STORAGE_URL } from './constants'
 import { throwConvexError } from '@/lib/error'
+import { sanitizeFileName } from '@/lib/utils'
 
 /**
  * GCSクライアントとバケット設定を管理するクラス
@@ -119,10 +120,13 @@ class GoogleStorageService {
   ): Promise<UploadResult> {
     this.initializeIfNeeded()
 
+    // ファイル名をサニタイズ
+    const safeFileName = sanitizeFileName(fileName)
+
     try {
       const bucket = this.storage!.bucket(this.bucketName!)
       const timestamp = Date.now()
-      const filePath = `${directory}/${timestamp}-${fileName}`
+      const filePath = `${directory}/${timestamp}-${safeFileName}`
       const blob = bucket.file(filePath)
 
       // バッファから直接アップロード

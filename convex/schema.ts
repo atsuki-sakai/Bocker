@@ -323,6 +323,7 @@ export default defineSchema({
     instagramLink: v.optional(v.string()), // SNSリンク
     description: v.optional(v.string()), // 説明
     imgPath: v.optional(v.string()), // 画像ファイルパス
+    thumbnailPath: v.optional(v.string()), // サムネイル画像ファイルパス
     tags: v.optional(v.array(v.string())), // タグ
     featuredHairimgPath: v.optional(v.array(v.string())), // スタッフの過去の特集髪型画像ファイルパス
     isActive: v.optional(v.boolean()), // 有効/無効フラグ

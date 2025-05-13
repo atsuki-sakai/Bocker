@@ -3,7 +3,11 @@ import ReservationForm from './ReservationForm';
 
 export default function ReservationAddPage() {
   return (
-    <DashboardSection title="予約の作成" backLink="/dashboard/reservation" backLinkTitle="予約管理">
+    <DashboardSection
+      title="予約の作成"
+      backLink="/dashboard/reservation"
+      backLinkTitle="ダッシュボードへ"
+    >
       <ReservationForm />
     </DashboardSection>
   )

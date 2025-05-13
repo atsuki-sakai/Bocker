@@ -13,16 +13,18 @@ import { motion } from 'framer-motion'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 import { z } from 'zod'
 import { api } from '@/convex/_generated/api'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { useZodForm } from '@/hooks/useZodForm'
 import { fetchQuery } from 'convex/nextjs'
 import { Mail, Lock } from 'lucide-react'
 import { ZodTextField } from '@/components/common'
 import { encryptStringCryptoJS, deleteCookie } from '@/lib/utils'
 import { toast } from 'sonner'
+import { Loading } from '@/components/common'
 import { handleErrorToMsg } from '@/lib/error'
 import Image from 'next/image'
-import { useTheme } from 'next-themes'
+import Link from 'next/link'
+
 const emailLoginSchema = z.object({
   email: z
     .string()
@@ -40,13 +42,14 @@ export default function ReservePage() {
   const { liff } = useLiff()
   const router = useRouter()
   const salonId = params.id as Id<'salon'>
-  const { resolvedTheme } = useTheme()
-
-  const [mounted, setMounted] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [isFirstLogin, setIsFirstLogin] = useState(false)
 
   const createCompleteFields = useMutation(api.customer.core.mutation.createCompleteFields)
+
+  const salonConfig = useQuery(api.salon.config.query.findBySalonId, {
+    salonId,
+  })
 
   const handleLineLogin = () => {
     console.log('liff', liff)
@@ -153,7 +156,10 @@ export default function ReservePage() {
       })
   }, [router, salonId])
 
-  useEffect(() => setMounted(true), [])
+  if (!salonConfig) {
+    return <Loading />
+  }
+
   return (
     <div className="w-full  mx-auto bg-background min-h-screen flex items-center justify-center">
       <motion.div
@@ -162,29 +168,36 @@ export default function ReservePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-full max-w-md shadow-lg border-none mt-4 bg-background">
-          <CardHeader className="py-4 ">
-            <div className="flex flex-col items-start">
-              <div className="flex items-center">
-                <Image
-                  src={
-                    mounted && resolvedTheme === 'dark'
-                      ? '/assets/images/logo-white.png'
-                      : '/assets/images/logo-darkgreen.png'
-                  }
-                  alt="Bocker"
-                  width={36}
-                  height={36}
-                />
-                <h1 className="text-2xl font-bold">Bocker</h1>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0 leading-tight">
-                サロンの予約を簡単・便利に
-              </p>
+        <Card className="w-full max-w-md shadow-lg border-none mt-4 bg-background overflow-hidden">
+          <CardHeader className="relative w-full h-[220px] mb-2 overflow-hidden">
+            <div className="absolute inset-0">
+              {salonConfig.imgPath ? (
+                <div className="w-full h-full relative">
+                  <Image
+                    src={salonConfig.imgPath}
+                    alt={salonConfig.salonName ?? ''}
+                    width={1280}
+                    height={1280}
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-palette-1 to-palette-2 opacity-30"></div>
+                  <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/50">
+                    <h1 className="text-xl font-bold text-white">{salonConfig.salonName}</h1>
+                    <p className="text-sm text-white mt-1">{salonConfig.address}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-col w-full h-full bg-gradient-to-b from-palette-1 to-palette-2 text-white flex items-center justify-center">
+                  <h1 className="text-2xl font-bold text-muted-foreground">
+                    {salonConfig.salonName}
+                  </h1>
+                  <p className="text-sm text-muted-foreground mt-2">{salonConfig.address}</p>
+                </div>
+              )}
             </div>
           </CardHeader>
 
-          <CardContent className="">
+          <CardContent className="mt-4">
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <ZodTextField
                 icon={<Mail className="w-5 h-5" />}
@@ -257,13 +270,21 @@ export default function ReservePage() {
               </Button>
             </div>
           </CardFooter>
-          <p className="text-xs text-center text-muted-foreground mb-4 px-4">
+          <p className="text-xs text-center text-muted-foreground mb-4 px-8">
             ログインすることで、当サービスの
-            <span className="underline text-link-foreground cursor-pointer mx-1">利用規約</span>
+            <Link
+              href={`/reservation/${salonId}/calendar/terms-of-use`}
+              className="underline text-link-foreground cursor-pointer mx-1"
+            >
+              利用規約
+            </Link>
             および
-            <span className="underline text-link-foreground cursor-pointer mx-1">
+            <Link
+              href={`/reservation/${salonId}/calendar/privacy-policy`}
+              className="underline text-link-foreground cursor-pointer mx-1"
+            >
               プライバシーポリシー
-            </span>
+            </Link>
             に同意したものとします。
           </p>
         </Card>

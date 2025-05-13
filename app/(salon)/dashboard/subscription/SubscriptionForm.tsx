@@ -243,29 +243,11 @@ export default function SubscriptionForm({
     handleSubscribe,
   ])
 
-  // const handleEnterpriseSubscribe = useCallback(() => {
-  //   if (salon?.subscriptionId && salon?.subscriptionStatus !== 'canceled') {
-  //     handleGetPreview('Enterprise', billingPeriod);
-  //     setupdatePlanIdStr('Enterprise');
-  //   } else {
-  //     handleSubscribe('Enterprise');
-  //   }
-  // }, [
-  //   salon?.subscriptionId,
-  //   salon?.subscriptionStatus,
-  //   billingPeriod,
-  //   handleGetPreview,
-  //   handleSubscribe,
-  // ]);
-
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-20vh)]">
       {/* ヘッダー部分 */}
-      <div className="mb-4 text-center">
-        <h1 className="text-3xl font-thin bg-primary bg-clip-text text-transparent mb-2">
-          Bocker <span className="text-base text-muted-foreground">サブスクリプション</span>
-        </h1>
-        <p className="text-muted-foreground max-w-md mx-auto text-sm mb-6">
+      <div className="mb-4 text-center mt-6">
+        <p className="text-muted-foreground font-bold max-w-md mx-auto text-sm mb-6">
           あなたのサロンに最適なプランをお選びください
         </p>
 

@@ -71,10 +71,9 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
 
     // メニューからカテゴリを抽出して Set に追加
     menus.forEach((menu) => {
-      if (menu.category) {
-        categorySet.add(menu.category)
+      if (Array.isArray(menu.categories) && menu.categories.length > 0) {
+        menu.categories.forEach((cat) => categorySet.add(cat))
       } else {
-        // カテゴリがない場合は「その他」として追加
         categorySet.add('その他')
       }
     })
@@ -84,7 +83,6 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
       'カット',
       'カラー',
       'パーマ',
-      'ストレートパーマ',
       'トリートメント',
       'エクステ',
       'ヘアセット',
@@ -106,16 +104,19 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
 
     if (category === 'その他') {
       // 「その他」カテゴリの場合、カテゴリがないメニューを返す
-      return menus.filter((menu) => !menu.category || menu.category === 'その他')
+      return menus.filter((menu) => !menu.categories || menu.categories.length === 0)
     }
 
-    return menus.filter((menu) => menu.category === category)
+    return menus.filter(
+      (menu) => Array.isArray(menu.categories) && menu.categories.includes(category)
+    )
   }
 
   // メニュー選択時の処理
   const handleMenuSelect = (menu: Doc<'menu'>) => {
     // カテゴリがない場合は「その他」として扱う
-    const menuCategory = menu.category || 'その他'
+    const menuCategory =
+      menu.categories && menu.categories.length > 0 ? menu.categories[0] : 'その他'
 
     const newSelectedMenuMap = { ...selectedMenuMap }
 
@@ -147,7 +148,8 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
       selectedMenuIds.forEach((menuId) => {
         const menu = menus.find((m) => m._id === menuId)
         if (menu) {
-          const category = menu.category || 'その他'
+          const category =
+            menu.categories && menu.categories.length > 0 ? menu.categories[0] : 'その他'
           menuMap[category] = menu
         }
       })
@@ -274,19 +276,23 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
               <DialogHeader>
                 <DialogTitle className="text-xl">{selectedMenu.name}</DialogTitle>
                 <DialogDescription>
-                  {selectedMenu.category || 'その他'} |{' '}
-                  {convertTarget(selectedMenu.targetType as Target)} |{' '}
+                  {selectedMenu.categories && selectedMenu.categories.length > 0
+                    ? selectedMenu.categories.join(', ')
+                    : 'その他'}{' '}
+                  | {convertTarget(selectedMenu.targetType as Target)} |{' '}
                   {convertGender(selectedMenu.targetGender as Gender)}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-2">
                 {selectedMenu.imgPath && (
-                  <div className="relative w-full rounded-md overflow-hidden bg-muted aspect-[4/5]">
+                  <div className="relative w-full rounded-md overflow-hidden bg-muted aspect-[9/16]">
                     <Image
                       src={selectedMenu.imgPath}
                       alt={selectedMenu.name || ''}
                       fill
                       className="object-cover"
+                      quality={90}
+                      priority
                     />
                   </div>
                 )}
@@ -295,7 +301,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      {selectedMenu.ensureTimeToMin ?? selectedMenu.timeToMin}分
+                      {selectedMenu.timeToMin}分
                     </span>
                   </div>
                   <div>
@@ -358,7 +364,11 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                     setShowMenuDetails(false)
                   }}
                 >
-                  {selectedMenuMap[selectedMenu.category || 'その他']?._id === selectedMenu._id
+                  {selectedMenuMap[
+                    selectedMenu.categories && selectedMenu.categories.length > 0
+                      ? selectedMenu.categories[0]
+                      : 'その他'
+                  ]?._id === selectedMenu._id
                     ? 'メニューを解除'
                     : 'メニューを選択'}
                 </Button>
@@ -384,7 +394,11 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                   <Card
                     key={menu._id}
                     className={`cursor-pointer transition-all  p-2 ${
-                      selectedMenuMap[menu.category || 'その他']?._id === menu._id
+                      selectedMenuMap[
+                        menu.categories && menu.categories.length > 0
+                          ? menu.categories[0]
+                          : 'その他'
+                      ]?._id === menu._id
                         ? 'border-2 border-active shadow-md'
                         : 'hover:shadow-md border-2 border-transparent'
                     }`}
@@ -410,10 +424,10 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                     </div>
                     <CardContent className="p-2">
                       <div className="flex items-start gap-3">
-                        {menu.imgPath ? (
+                        {menu.thumbnailPath ? (
                           <div className="relative h-28 w-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
                             <Image
-                              src={menu.imgPath}
+                              src={menu.thumbnailPath}
                               alt={menu.name || ''}
                               fill
                               className="object-cover"
@@ -434,7 +448,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm text-muted-foreground">
-                                {menu.ensureTimeToMin ?? menu.timeToMin}分
+                                {menu.timeToMin}分
                               </span>
                             </div>
                             {menu.salePrice ? (
@@ -489,7 +503,10 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
               >
                 <div>
                   <span className="text-xs text-muted-foreground">
-                    {menu.category || 'その他'} / {menu.ensureTimeToMin ?? menu.timeToMin}分
+                    {menu.categories && menu.categories.length > 0
+                      ? menu.categories.join(', ')
+                      : 'その他'}{' '}
+                    / {menu.timeToMin}分
                   </span>
                   <span className="block text-sm font-bold">{menu.name}</span>
                 </div>

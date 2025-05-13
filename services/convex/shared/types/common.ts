@@ -23,10 +23,10 @@ export type DayOfWeek = Infer<typeof dayOfWeekType>;
 export const GENDER_VALUES = ['unselected', 'male', 'female'] as const;
 export const genderType = v.union(...GENDER_VALUES.map((gender) => v.literal(gender)));
 export type Gender = Infer<typeof genderType>;
-export const convertGender = (gender: Gender): string => {
+export const convertGender = (gender: Gender, inUnselected: boolean = false): string => {
   switch (gender) {
     case 'unselected':
-      return ''
+      return inUnselected ? '未選択' : ''
     case 'male':
       return '男性'
     case 'female':
@@ -155,44 +155,47 @@ export const convertMenuPaymentMethod = (method: MenuPaymentMethod): string => {
 }
 
 // スタッフロールの型定義
-export const ROLE_VALUES = ['owner', 'manager', 'staff'] as const;
-export const roleType = v.union(...ROLE_VALUES.map((role) => v.literal(role)));
-export type Role = Infer<typeof roleType>;
+export const ROLE_VALUES = ['owner', 'manager', 'staff'] as const
+export const roleType = v.union(...ROLE_VALUES.map((role) => v.literal(role)))
+export type Role = Infer<typeof roleType>
 
 // ポイントトランザクションタイプの型定義
-export const POINT_TRANSACTION_TYPE_VALUES = ['earned', 'used', 'adjusted', 'expired'] as const;
+export const POINT_TRANSACTION_TYPE_VALUES = ['earned', 'used', 'adjusted', 'expired'] as const
 export const pointTransactionType = v.union(
   ...POINT_TRANSACTION_TYPE_VALUES.map((type) => v.literal(type))
-);
-export type PointTransactionType = Infer<typeof pointTransactionType>;
+)
+export type PointTransactionType = Infer<typeof pointTransactionType>
 
 // クーポン割引タイプの型定義
-export const COUPON_DISCOUNT_TYPE_VALUES = ['fixed', 'percentage'] as const;
+export const COUPON_DISCOUNT_TYPE_VALUES = ['fixed', 'percentage'] as const
 export const couponDiscountType = v.union(
   ...COUPON_DISCOUNT_TYPE_VALUES.map((type) => v.literal(type))
-);
-export type CouponDiscountType = Infer<typeof couponDiscountType>;
+)
+export type CouponDiscountType = Infer<typeof couponDiscountType>
 
 // ファイルのパスの型定義
 export const IMG_DIRECTORY_VALUES = [
   'salon',
-  'staff',
-  'menu',
-  'carte',
-  'customer',
+  'staff/original',
+  'staff/thumbnail',
+  'menu/original',
+  'menu/thumbnail',
+  'carte/original',
+  'carte/thumbnail',
+  'customer/original',
+  'customer/thumbnail',
   'other',
-] as const;
+] as const
 export const imgDirectoryType = v.union(
   ...IMG_DIRECTORY_VALUES.map((directory) => v.literal(directory))
-);
-export type ImgDirectoryType = Infer<typeof imgDirectoryType>;
+)
+export type ImgDirectoryType = Infer<typeof imgDirectoryType>
 
 // メニューカテゴリの型定義
 export const MENU_CATEGORY_VALUES = [
   'カット',
   'カラー',
   'パーマ',
-  'ストレートパーマ',
   'トリートメント',
   'エクステ',
   'ヘアセット',
@@ -202,7 +205,7 @@ export const MENU_CATEGORY_VALUES = [
   'ヘアサロン',
   'メイク',
   'その他',
-] as const;
+] as const
 export const menuCategoryType = v.union(
   ...MENU_CATEGORY_VALUES.map((category) => v.literal(category))
 );

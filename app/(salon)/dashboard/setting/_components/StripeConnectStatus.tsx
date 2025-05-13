@@ -20,6 +20,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '@/components/ui/accordion'
+import { ExternalLink } from 'lucide-react'
 
 // ステータスの日本語表記
 const statusNameMap: Record<string, string> = {
@@ -178,7 +179,7 @@ export default function StripeConnectStatus() {
         </p>
       </div>
 
-      {/* <div className="flex flex-col md:flex-row justify-start items-start md:items-center gap-2 my-6">
+      <div className="flex flex-col md:flex-row justify-start items-start md:items-center gap-2 my-6">
         {isConnected && (
           <Button
             onClick={handleViewDashboard}
@@ -202,7 +203,7 @@ export default function StripeConnectStatus() {
             )}
           </Button>
         )}
-      </div> */}
+      </div>
 
       <Alert className={`${statusColorMap[status]} mb-4`}>
         <AlertTitle className=" text-sm font-medium mb-2">
@@ -335,9 +336,7 @@ export default function StripeConnectStatus() {
               onClick={handleConnectStripe}
               disabled={isLoading || (isConnected && status !== 'deauthorized')}
               className={`${
-                isConnected && status !== 'deauthorized'
-                  ? 'bg-muted hover:bg-muted'
-                  : 'bg-button hover:bg-button-foreground'
+                isConnected && status !== 'deauthorized' ? 'bg-muted hover:opacity-80' : ''
               }`}
             >
               {isLoading ? (

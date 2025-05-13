@@ -6,8 +6,7 @@ import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService';
 import { checkAuth } from '@/services/convex/shared/utils/auth';
 import { imgDirectoryType } from '@/services/convex/shared/types/common';
 import { throwConvexError } from '@/lib/error';
-import { validateRequired } from '@/services/convex/shared/utils/validation';
-import { ImageCategory } from '@/services/gcp/cloud_storage/types'
+import { validateRequired } from '@/services/convex/shared/utils/validation'
 
 export const upload = action({
   args: {
@@ -139,7 +138,6 @@ export const kill = action({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
-    validateRequired(args.imgUrl, 'imgUrl')
     try {
       await gcsService.deleteImage(args.imgUrl)
       return { success: true }
@@ -156,7 +154,6 @@ export const killWithThumbnail = action({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
-    validateRequired(args.imgUrl, 'imgUrl')
     try {
       await gcsService.deleteImageWithThumbnail(args.imgUrl)
       return { success: true }

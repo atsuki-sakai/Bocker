@@ -153,7 +153,7 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
             <div className="text-center">
               <Badge
                 variant="outline"
-                className={`flex-1 text-center p-2 rounded-md text-sm ${data.discountType === 'percentage' ? 'bg-link text-link-foreground font-medium' : 'bg-active text-active-foreground font-medium'}`}
+                className={`flex-1 text-center p-2 rounded-md text-sm ${data.discountType === 'percentage' ? 'bg-link text-link-foreground font-medium' : 'bg-active-foreground text-active font-medium'}`}
               >
                 {data.discountType === 'percentage'
                   ? `${data.percentageDiscountValue || 0}% OFF`
@@ -190,7 +190,7 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
           </div>
           <Badge
             variant={data.isActive ? 'default' : 'destructive'}
-            className={`h-6 ${data.isActive ? 'bg-active text-active-foreground' : 'bg-destructive text-destructive-foreground'}`}
+            className={`h-6 ${data.isActive ? 'bg-active-foreground text-active' : 'bg-destructive-foreground text-destructive'}`}
           >
             {data.isActive ? '有効' : '無効'}
           </Badge>
@@ -382,7 +382,7 @@ function CouponForm() {
                           )}
                         />
                         <div
-                          className={`flex-1 text-center p-2 rounded-md text-sm ${discountType === 'fixed' ? 'bg-active text-active-foreground font-medium' : 'text-muted-foreground'}`}
+                          className={`flex-1 text-center p-2 rounded-md text-sm ${discountType === 'fixed' ? 'bg-active-foreground text-active font-medium' : 'text-muted-foreground'}`}
                         >
                           固定金額
                         </div>

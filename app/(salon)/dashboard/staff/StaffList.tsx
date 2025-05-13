@@ -107,13 +107,14 @@ export default function StaffList() {
                         )}
                       </td>
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
-                        {staff.imgPath ? (
-                          <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center overflow-hidden">
+                        {staff.thumbnailPath ? (
+                          <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
                             <Image
-                              src={staff.imgPath}
+                              src={staff.thumbnailPath}
                               alt={staff.name ?? ''}
-                              width={100}
-                              height={100}
+                              layout="fill"
+                              objectFit="cover"
+                              className="object-cover"
                             />
                           </div>
                         ) : (

@@ -1,21 +1,23 @@
-'use client';
+'use client'
 
-import { useState, useCallback } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Dialog } from '@/components/common';
-import { Doc } from '@/convex/_generated/dataModel';
+import { useState, useCallback } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Dialog } from '@/components/common'
+import { Doc } from '@/convex/_generated/dataModel'
+import type { MenuCategory } from '@/services/convex/shared/types/common'
+import { MENU_CATEGORY_VALUES } from '@/services/convex/shared/types/common'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu'
 
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Pencil,
   Trash2,
@@ -26,24 +28,36 @@ import {
   List,
   Clock,
   CreditCard,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useSalon } from '@/hooks/useSalon';
-import { useMutation, useAction } from 'convex/react';
+  Filter,
+  X,
+  Check,
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useSalon } from '@/hooks/useSalon'
+import { useMutation, useAction, useQuery } from 'convex/react'
 
-import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
-import { api } from '@/convex/_generated/api';
-import { toast } from 'sonner';
-import { handleErrorToMsg } from '@/lib/error';
-import { Id } from '@/convex/_generated/dataModel';
+import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
+import { api } from '@/convex/_generated/api'
+import { toast } from 'sonner'
+import { handleErrorToMsg } from '@/lib/error'
+import { Id } from '@/convex/_generated/dataModel'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
-const numberOfMenus = 10;
+const numberOfMenus = 9
 
 // パフォーマンス最適化のためメモ化したメニューアイテムコンポーネント
 interface MenuItemProps {
-  menu: Doc<'menu'>;
-  onEdit: (menuId: Id<'menu'>) => void;
-  onDelete: (menuId: Id<'menu'>, imgPath: string) => void;
+  menu: Doc<'menu'>
+  onEdit: (menuId: Id<'menu'>) => void
+  onDelete: (menuId: Id<'menu'>, imgPath: string) => void
 }
 
 const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
@@ -96,11 +110,15 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
           </DropdownMenu>
         </div>
         <CardContent className="p-2 md:p-4">
-          {menu.category && (
-            <Badge variant="default" className="mb-1">
-              {menu.category}
-            </Badge>
-          )}
+          <div className="flex flex-wrap gap-1">
+            {menu.categories &&
+              menu.categories.length > 0 &&
+              menu.categories.map((category, index) => (
+                <p className="text-xs text-muted-foreground mb-1" key={category}>
+                  {category} {menu.categories && index === menu.categories.length - 1 ? '' : '・'}
+                </p>
+              ))}
+          </div>
           <h3 className="font-semibold text-base md:text-lg line-clamp-1">{menu.name}</h3>
 
           <div className="mt-2 flex items-center justify-between">
@@ -117,7 +135,7 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
               </div>
               <div className="flex items-center text-sm text-muted-foreground mt-1">
                 <Clock className="h-3 w-3 mr-1" />
-                {menu.timeToMin}分{menu.ensureTimeToMin ? ` / ${menu.ensureTimeToMin}分` : ''}
+                {menu.timeToMin}分
               </div>
             </div>
           </div>
@@ -177,7 +195,7 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
               exit="exit"
               layoutId={`menu-${menu._id}`}
             >
-              <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4 border-b border-gray-200 pb-4 mb-4">
+              <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 border-b border-gray-200 pb-4 mb-4">
                 {menu.isActive ? (
                   <Badge variant="default" className=" bg-active text-active-foreground">
                     公開中
@@ -188,7 +206,7 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                   </Badge>
                 )}
                 <div className="flex items-center gap-2">
-                  <div className="relative h-24 w-24 md:h-30 md:w-30 rounded-md overflow-hidden flex-shrink-0">
+                  <div className="relative h-12 w-12 rounded-md overflow-hidden flex-shrink-0">
                     {menu.imgPath ? (
                       <Image
                         src={menu.imgPath}
@@ -204,12 +222,17 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                       </div>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0 md:pl-2">
-                    {menu.category && (
-                      <Badge variant="outline" className="text-xs mb-1">
-                        {menu.category}
-                      </Badge>
-                    )}
+                  <div className="flex-1 min-w-0 md:pl-2 gap-1">
+                    <div className="flex flex-wrap gap-1">
+                      {menu.categories &&
+                        menu.categories.length > 0 &&
+                        menu.categories.map((category, index) => (
+                          <p className="text-xs text-muted-foreground mb-1" key={category}>
+                            {category}{' '}
+                            {menu.categories && index === menu.categories.length - 1 ? '' : '・'}
+                          </p>
+                        ))}
+                    </div>
                     <h3 className="font-medium text-base md:text-lg truncate">{menu.name}</h3>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
@@ -227,7 +250,6 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                       <div className="flex items-center">
                         <Clock className="h-3 w-3 mr-1" />
                         {menu.timeToMin}分{' '}
-                        {menu.ensureTimeToMin ? ` / ${menu.ensureTimeToMin}分` : ''}
                       </div>
 
                       {menu.paymentMethod && (
@@ -240,10 +262,13 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                               : '店舗決済'}
                         </div>
                       )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {menu.tags?.map((tag: string, idx: number) => <Badge key={idx}>{tag}</Badge>)}
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {menu.tags?.map((tag: string, idx: number) => (
+                          <Badge key={idx} className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -283,17 +308,29 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
 
 // メインコンポーネント
 export default function MenuList() {
-  const { salon } = useSalon();
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [deletingMenuId, setDeletingMenuId] = useState<Id<'menu'> | null>(null);
-  const [deletingImgPath, setDeletingImgPath] = useState<string>('');
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
+  const { salon } = useSalon()
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+  const [deletingMenuId, setDeletingMenuId] = useState<Id<'menu'> | null>(null)
+  const [deletingImgPath, setDeletingImgPath] = useState<string>('')
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false)
+  const [selectedCategories, setSelectedCategories] = useState<MenuCategory[]>([])
+  const [openCategoryPopover, setOpenCategoryPopover] = useState(false)
 
   // APIリクエスト用フック
-  const killMenu = useMutation(api.menu.core.mutation.kill);
-  const deleteMenuImage = useAction(api.storage.action.kill);
+  const killMenu = useMutation(api.menu.core.mutation.kill)
+  const deleteMenuImage = useAction(api.storage.action.kill)
+
+  // カテゴリで絞り込むクエリと全てのメニューを取得するクエリ
+  const filteredMenus = useQuery(
+    api.menu.core.query.getMenusByCategories,
+    salon?._id && selectedCategories.length > 0
+      ? { salonId: salon._id, categories: selectedCategories }
+      : 'skip'
+  )
+
+  // カテゴリ選択がない場合は全てのメニューを取得
   const {
-    results: menus,
+    results: allMenus,
     isLoading,
     loadMore,
     status,
@@ -303,35 +340,65 @@ export default function MenuList() {
     {
       initialNumItems: numberOfMenus,
     }
-  );
+  )
+
+  // 表示するメニューの決定
+  const menusToDisplay = selectedCategories.length > 0 ? filteredMenus : allMenus
+
+  // すべてのカテゴリをMENU_CATEGORY_VALUESから取得
+  const allCategories = MENU_CATEGORY_VALUES
+
+  // カテゴリの選択/解除
+  const toggleCategory = useCallback((category: MenuCategory) => {
+    setSelectedCategories((prev) => {
+      // すでに選択されている場合は削除
+      if (prev.includes(category)) {
+        return prev.filter((cat) => cat !== category)
+      }
+      // 選択されていない場合は追加
+      else {
+        return [...prev, category]
+      }
+    })
+  }, [])
+
+  // 特定のカテゴリを削除
+  const removeCategory = useCallback((category: MenuCategory) => {
+    setSelectedCategories((prev) => prev.filter((cat) => cat !== category))
+  }, [])
+
+  // すべてのカテゴリ選択をクリア
+  const clearCategoryFilter = useCallback(() => {
+    setSelectedCategories([])
+  }, [])
 
   // コールバック関数のメモ化
   const handleDeleteMenu = useCallback(async () => {
-    if (!deletingMenuId) return;
+    if (!deletingMenuId) return
 
     try {
       if (deletingImgPath === '') {
-        toast.error('メニュー画像がありません');
-        return;
+        toast.error('メニュー画像がありません')
+        return
       }
-      await killMenu({ menuId: deletingMenuId });
-      await deleteMenuImage({ imgUrl: deletingImgPath });
-      toast.success('メニューを削除しました');
-      setIsDeleteDialogOpen(false);
+      await killMenu({ menuId: deletingMenuId })
+      await deleteMenuImage({ imgUrl: deletingImgPath })
+      toast.success('メニューを削除しました')
+      setIsDeleteDialogOpen(false)
     } catch (error) {
-      toast.error(handleErrorToMsg(error));
+      toast.error(handleErrorToMsg(error))
     }
-  }, [deletingMenuId, deletingImgPath, killMenu, deleteMenuImage]);
+  }, [deletingMenuId, deletingImgPath, killMenu, deleteMenuImage])
 
   const openDeleteDialog = useCallback((menuId: Id<'menu'>, imgPath: string) => {
-    setDeletingMenuId(menuId);
-    setDeletingImgPath(imgPath);
-    setIsDeleteDialogOpen(true);
-  }, []);
+    setDeletingMenuId(menuId)
+    setDeletingImgPath(imgPath)
+    setIsDeleteDialogOpen(true)
+  }, [])
 
   const navigateToEdit = useCallback((menuId: Id<'menu'>) => {
-    window.location.href = `/dashboard/menu/${menuId}/edit`;
-  }, []);
+    window.location.href = `/dashboard/menu/${menuId}/edit`
+  }, [])
 
   // スケルトンローダーコンポーネント
   const renderSkeletons = useCallback(() => {
@@ -351,7 +418,7 @@ export default function MenuList() {
               </CardContent>
             </Card>
           </div>
-        ));
+        ))
     }
 
     return Array(3)
@@ -367,24 +434,28 @@ export default function MenuList() {
             <Skeleton className="h-8 w-16 rounded-md" />
           </div>
         </Card>
-      ));
-  }, [viewMode]);
+      ))
+  }, [viewMode])
 
   // メニューリストのレンダリング
   const renderMenus = () => {
-    if (!menus || menus.length === 0) {
+    if (!menusToDisplay || menusToDisplay.length === 0) {
       return (
-        <Card className="col-span-full p-10 text-center">
-          <p className="text-muted-foreground">メニューがありません</p>
+        <Card className="col-span-full p-10 text-center bg-muted">
+          <p className="text-muted-foreground">
+            {selectedCategories.length > 0
+              ? '選択されたカテゴリに該当するメニューがありません'
+              : 'メニューがありません'}
+          </p>
         </Card>
-      );
+      )
     }
 
     if (viewMode === 'grid') {
       return (
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           <AnimatePresence>
-            {menus.map((menu: Doc<'menu'>) => (
+            {menusToDisplay.map((menu: Doc<'menu'>) => (
               <MenuItem
                 key={menu._id}
                 menu={menu}
@@ -394,11 +465,14 @@ export default function MenuList() {
             ))}
           </AnimatePresence>
         </div>
-      );
+      )
     }
 
-    return <MenuListContent menus={menus} onDelete={openDeleteDialog} />;
-  };
+    return <MenuListContent menus={menusToDisplay} onDelete={openDeleteDialog} />
+  }
+
+  // ロード中かどうかを判定
+  const isLoadingData = isLoading || (selectedCategories.length > 0 && filteredMenus === undefined)
 
   // メインレンダリング
   return (
@@ -408,8 +482,103 @@ export default function MenuList() {
       transition={{ duration: 0.5 }}
       className="w-full flex flex-col gap-6"
     >
-      <div className="flex items-center justify-end gap-2">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* カテゴリフィルター - Commandコンポーネント使用 */}
+        <div className="flex flex-col w-full sm:w-auto gap-2">
+          <div className="flex items-center gap-1">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-medium">カテゴリで絞り込む</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Popover open={openCategoryPopover} onOpenChange={setOpenCategoryPopover}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={'secondary'}
+                  size="sm"
+                  className=" border-dashed flex justify-between"
+                >
+                  <span className="text-sm">
+                    {selectedCategories.length > 0
+                      ? `${selectedCategories.length}件選択中`
+                      : 'カテゴリを選択'}
+                  </span>
+                  <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0 w-56" align="start">
+                <Command>
+                  <div className="flex items-center gap-2">
+                    <CommandInput
+                      placeholder="カテゴリを検索..."
+                      className="h-9"
+                      // キーボードが自動で開かないようにする
+                      autoFocus={false}
+                      inputMode="none"
+                    />
+                    <Button
+                      onClick={() => setOpenCategoryPopover(false)}
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <CommandList>
+                    <CommandEmpty>カテゴリが見つかりません</CommandEmpty>
+                    <CommandGroup>
+                      {allCategories.map((category) => (
+                        <CommandItem
+                          key={category}
+                          value={category}
+                          onSelect={() => {
+                            toggleCategory(category)
+                            // 選択してもポップオーバーを閉じない
+                          }}
+                        >
+                          {selectedCategories.includes(category) && (
+                            <Check className="h-4 w-4 mr-2 text-primary" />
+                          )}
+                          <span>{category}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {selectedCategories.length > 0 && (
+              <Button size="sm" className="h-9 px-2" onClick={clearCategoryFilter}>
+                <X className="h-4 w-4 mr-1" />
+                クリア
+              </Button>
+            )}
+          </div>
+
+          {/* 選択されたカテゴリの表示 */}
+          {selectedCategories.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {selectedCategories.map((category) => (
+                <Badge
+                  key={category}
+                  variant="secondary"
+                  className="px-2 py-1 flex items-center gap-1"
+                >
+                  {category}
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors"
+                    onClick={() => removeCategory(category)}
+                  />
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col items-center gap-2">
+          <span className="text-xs font-medium">表示形式</span>
           <div className="bg-muted rounded-md p-1 flex items-center">
             <Button
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
@@ -435,7 +604,7 @@ export default function MenuList() {
 
       <div>
         {' '}
-        {isLoading ? (
+        {isLoadingData ? (
           viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {renderSkeletons()}
@@ -446,24 +615,27 @@ export default function MenuList() {
         ) : (
           renderMenus()
         )}
-        {menus && menus.length >= numberOfMenus && status === 'CanLoadMore' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6 flex justify-center"
-          >
-            <Button
-              onClick={() => loadMore(numberOfMenus)}
-              variant="outline"
-              className="gap-2"
-              disabled={isLoading}
+        {allMenus &&
+          !selectedCategories.length &&
+          allMenus.length >= numberOfMenus &&
+          status === 'CanLoadMore' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-6 flex justify-center"
             >
-              もっと見る
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </motion.div>
-        )}
+              <Button
+                onClick={() => loadMore(numberOfMenus)}
+                variant="outline"
+                className="gap-2"
+                disabled={isLoading}
+              >
+                もっと見る
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </motion.div>
+          )}
       </div>
 
       <Dialog
@@ -476,5 +648,5 @@ export default function MenuList() {
         onOpenChange={setIsDeleteDialogOpen}
       />
     </motion.div>
-  );
+  )
 }

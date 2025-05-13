@@ -228,6 +228,7 @@ export const getRelatedTables = query({
       gender: staff.gender,
       description: staff.description,
       imgPath: staff.imgPath,
+      thumbnailPath: staff.thumbnailPath,
       isActive: staff.isActive,
       tags: staff.tags,
       staffAuthId: staffAuth._id,
@@ -255,6 +256,7 @@ export const findAvailableStaffByMenu = query({
       gender: v.optional(genderType),
       description: v.optional(v.string()),
       imgPath: v.optional(v.string()),
+      thumbnailPath: v.optional(v.string()),
       extraCharge: v.optional(v.number()),
       priority: v.optional(v.number()),
     })
@@ -295,6 +297,7 @@ export const findAvailableStaffByMenu = query({
         gender: staff.gender,
         description: staff.description,
         imgPath: staff.imgPath,
+        thumbnailPath: staff.thumbnailPath,
         extraCharge: config?.extraCharge,
         priority: config?.priority,
       }

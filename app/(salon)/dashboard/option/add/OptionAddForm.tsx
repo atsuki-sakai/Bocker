@@ -33,8 +33,8 @@ import { Loading } from '@/components/common';
 import { useRouter } from 'next/navigation';
 import { handleErrorToMsg } from '@/lib/error';
 
-// 施術時間：5〜360分の5分刻みをキャッシュ
-const MINUTE_OPTIONS = getMinuteMultiples(5, 360);
+// 施術時間：0〜360分の5分刻みをキャッシュ
+const MINUTE_OPTIONS = getMinuteMultiples(0, 360)
 
 const optionSchema = z
   .object({
@@ -91,11 +91,6 @@ const optionSchema = z
       .min(1, { message: '時間は必須です' })
       .max(5, { message: '時間は5文字で入力してください' })
       .refine((val) => val !== '', { message: '時間は必須です' }), // 時間(分)
-    ensureTimeToMin: z
-      .string()
-      .min(1, { message: '時間は必須です' })
-      .max(5, { message: '時間は5文字で入力してください' })
-      .optional(), // 時間(分)
     tags: z.preprocess(
       (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
       z
@@ -132,23 +127,6 @@ const optionSchema = z
       path: ['salePrice'], // エラーメッセージをsalePriceフィールドに表示
     }
   )
-  .refine(
-    (data) => {
-      // 両方のフィールドが存在する場合のみ比較を行う
-      if (data.timeToMin !== undefined && data.ensureTimeToMin !== undefined) {
-        // 検証失敗条件: 確保する時間(ensureTimeToMin)が実際の稼働時間(timeToMin)より大きい場合
-        if (data.ensureTimeToMin < data.timeToMin) {
-          return false // 検証失敗
-        }
-      }
-      // 上記以外のケース（比較しない場合、または ensureTimeToMin <= timeToMin の場合）は検証成功
-      return true
-    },
-    {
-      message: '確保する時間は実際の稼働時間以下に設定してください', // メッセージも少し調整するとより適切かもしれません
-      path: ['ensureTimeToMin'], // エラーメッセージをensureTimeToMinフィールドに表示
-    }
-  )
 
 function OptionAddForm() {
   const { salon } = useSalon()
@@ -180,9 +158,7 @@ function OptionAddForm() {
         name: data.name,
         salonId: salon._id,
         timeToMin: Number(data.timeToMin),
-        ensureTimeToMin: data.ensureTimeToMin
-          ? Number(data.ensureTimeToMin)
-          : (undefined as unknown as number),
+
         salePrice: data.salePrice ? Number(data.salePrice) : (undefined as unknown as number),
         unitPrice: Number(data.unitPrice), // 明示的に数値型に変換
         orderLimit: data.orderLimit,
@@ -206,7 +182,7 @@ function OptionAddForm() {
         salePrice: undefined as unknown as number,
         orderLimit: 1,
         timeToMin: undefined as unknown as string,
-        ensureTimeToMin: undefined as unknown as string,
+
         tags: [] as unknown as string[],
         description: undefined as unknown as string,
         isActive: true,
@@ -281,7 +257,7 @@ function OptionAddForm() {
           <div className="w-full">
             <Label className="text-sm flex items-center gap-2 mb-2">
               <Clock size={16} className="text-primary" />
-              実際にスタッフが稼働する施術時間 <span className="text-destructive ml-1">*</span>
+              スタッフが稼働する施術時間 <span className="text-destructive ml-1">*</span>
             </Label>
             <Select
               onValueChange={(value) => {
@@ -289,7 +265,7 @@ function OptionAddForm() {
               }}
             >
               <SelectTrigger className="border-border transition-colors">
-                <SelectValue placeholder="施術時間を選択" />
+                <SelectValue placeholder="スタッフが稼働する施術時間を選択" />
               </SelectTrigger>
               <SelectContent>
                 {MINUTE_OPTIONS.map((time) => (
@@ -300,39 +276,10 @@ function OptionAddForm() {
               </SelectContent>
             </Select>
             <span className="text-xs text-muted-foreground">
-              スタッフが手を動かして施術に集中している正味の作業時間を指します。
+              メニューの実作業時間を設定します。
             </span>
             {errors.timeToMin && (
               <p className="text-destructive text-sm mt-1">{errors.timeToMin.message}</p>
-            )}
-          </div>
-
-          <div className="w-full">
-            <Label className="text-sm flex items-center gap-2 mb-2">
-              <Clock size={16} className="text-primary" />
-              待ち時間なども含めたトータルの施術時間
-            </Label>
-            <Select
-              onValueChange={(value) => {
-                setValue('ensureTimeToMin', value, { shouldValidate: true })
-              }}
-            >
-              <SelectTrigger className="border-border transition-colors">
-                <SelectValue placeholder="席を確保しておく時間を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {MINUTE_OPTIONS.map((time) => (
-                  <SelectItem key={time} value={time.toString()}>
-                    {time}分
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span className="text-xs text-muted-foreground">
-              施術席を専有する必要はあるものの、スタッフが別の作業に移れる待機時間を指します。
-            </span>
-            {errors.ensureTimeToMin && (
-              <p className="text-destructive text-sm mt-1">{errors.ensureTimeToMin.message}</p>
             )}
           </div>
         </div>
