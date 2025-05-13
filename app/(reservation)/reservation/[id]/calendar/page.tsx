@@ -90,6 +90,42 @@ interface SalonCompleteData {
   apiConfig: Doc<'salon_api_config'>
 }
 
+// 複数選択されたオプションをカウントして配列にする関数を追加
+const countOptionOccurrences = (options: Doc<'salon_option'>[]) => {
+  const counts = new Map<string, number>()
+  
+  options.forEach(option => {
+    counts.set(option._id, (counts.get(option._id) || 0) + 1)
+  })
+  
+  return Array.from(counts.entries()).map(([optionId, quantity]) => ({
+    optionId: optionId as Id<'salon_option'>,
+    quantity
+  }))
+}
+
+// 同じオプションをグループ化する関数を追加
+const groupOptionsByName = (options: Doc<'salon_option'>[]) => {
+  const groupedOptions = new Map<string, { name: string; count: number }>()
+  
+  options.forEach(option => {
+    if (groupedOptions.has(option._id)) {
+      const current = groupedOptions.get(option._id)!
+      groupedOptions.set(option._id, { 
+        name: current.name, 
+        count: current.count + 1 
+      })
+    } else {
+      groupedOptions.set(option._id, { 
+        name: option.name, 
+        count: 1 
+      })
+    }
+  })
+  
+  return Array.from(groupedOptions.values())
+}
+
 export default function CalendarPage() {
   const router = useRouter()
   const params = useParams()
@@ -151,6 +187,7 @@ export default function CalendarPage() {
   const createPointQueueMutation = useMutation(api.point.task_queue.mutation.create)
   const createPointTransactionMutation = useMutation(api.point.transaction.mutation.create)
   const updateCustomerPointsMutation = useMutation(api.customer.points.mutation.update)
+  const balanceStockMutation = useMutation(api.option.mutation.balanceStock)
 
   // ステップ変更時に画面トップへ自動スクロール
   useEffect(() => {
@@ -282,10 +319,7 @@ export default function CalendarPage() {
         staffId: selectedStaffCompleted.staff._id as Id<'staff'>,
         staffName: selectedStaffCompleted.staff.name,
         menus: selectedMenus.map((menu) => ({ menuId: menu._id, quantity: 1 })), // quantityは現状1で固定
-        options: selectedOptions.map((option) => ({
-          optionId: option._id,
-          quantity: 1, // quantityは現状1で固定
-        })),
+        options: countOptionOccurrences(selectedOptions), // 複数選択を考慮してカウント
         totalPrice: calculateTotal(),
         unitPrice:
           calculateTotal() +
@@ -304,6 +338,27 @@ export default function CalendarPage() {
       if (selectedPaymentMethod === 'credit_card') {
         // 1. Convexに予約データを'pending'ステータスで作成
         const reservationId = await createReservationMutation(reservationData)
+
+        // オプション在庫数の調整
+        // クレジットカード決済でも予約時点で在庫を調整する
+        const optionCounts = countOptionOccurrences(selectedOptions)
+        for (const { optionId, quantity } of optionCounts) {
+          // 選択されたオプションから対象のオプション情報を取得
+          const option = selectedOptions.find((opt) => opt._id === optionId)
+          if (option && option.inStock !== undefined && option.inStock !== null) {
+            // 現在の在庫数から使用数を減算
+            const newStock = Math.max(0, option.inStock - quantity)
+            try {
+              await balanceStockMutation({
+                optionId,
+                newQuantity: newStock,
+              })
+              console.log(`オプション「${option.name}」の在庫を${newStock}に更新しました`)
+            } catch (error) {
+              console.error(`オプション在庫の更新に失敗しました: ${error}`)
+            }
+          }
+        }
 
         // 2. クレジットカード決済の場合、バックエンドAPIを呼び出してStripe Checkoutセッションを作成
         const lineItems = [
@@ -378,9 +433,30 @@ export default function CalendarPage() {
           throw new Error('Checkout URLが取得できませんでした。')
         }
       } else if (selectedPaymentMethod === 'cash') {
-        // 1. Convexに予約データを'pending'ステータスで作成
+        // 1. Convexに予約データを'confirmed'ステータスで作成
         reservationData.status = 'confirmed' as ReservationStatus
         const reservationId = await createReservationMutation(reservationData)
+
+        // オプション在庫数の調整
+        // 選択されたオプションの数を集計して在庫を調整
+        const optionCounts = countOptionOccurrences(selectedOptions)
+        for (const { optionId, quantity } of optionCounts) {
+          // 選択されたオプションから対象のオプション情報を取得
+          const option = selectedOptions.find((opt) => opt._id === optionId)
+          if (option && option.inStock !== undefined && option.inStock !== null) {
+            // 現在の在庫数から使用数を減算
+            const newStock = Math.max(0, option.inStock - quantity)
+            try {
+              await balanceStockMutation({
+                optionId,
+                newQuantity: newStock,
+              })
+              console.log(`オプション「${option.name}」の在庫を${newStock}に更新しました`)
+            } catch (error) {
+              console.error(`オプション在庫の更新に失敗しました: ${error}`)
+            }
+          }
+        }
 
         setIsProcessingPayment(false)
 
@@ -610,28 +686,39 @@ export default function CalendarPage() {
 
   // 合計金額の計算
   const calculateTotal = () => {
+    // メニュー価格の合計
     const menuTotal = selectedMenus.reduce(
       (sum, menu) => sum + (menu.salePrice || menu.unitPrice || 0),
       0
     )
+
+    // オプション価格の合計（複数選択を考慮）
     const optionTotal = selectedOptions.reduce(
       (sum, option) => sum + (option.salePrice ?? option.unitPrice ?? 0),
       0
     )
+
+    // 指名料
     const extraChargeTotal = selectedStaffCompleted?.staff?.extraCharge || 0
 
+    // 割引額
     const discount = appliedDiscount.discount + usePoints
-    console.log('discount', discount)
-    console.log('usePoints', usePoints)
-    console.log('appliedDiscount', appliedDiscount)
+
     return menuTotal + optionTotal + extraChargeTotal - discount
   }
 
   const calculateTotalMinutes = () => {
-    const totalMinutes = selectedMenus.reduce((sum, menu) => {
+    // メニュー時間の合計
+    const menuMinutes = selectedMenus.reduce((sum, menu) => {
       return sum + (menu.timeToMin || 0)
     }, 0)
-    return totalMinutes
+
+    // オプション時間の合計（複数選択を考慮）
+    const optionMinutes = selectedOptions.reduce((sum, option) => {
+      return sum + (option.timeToMin || 0)
+    }, 0)
+
+    return menuMinutes + optionMinutes
   }
 
   // ステップインジケーターのレンダリング
@@ -760,7 +847,7 @@ export default function CalendarPage() {
                     </motion.div>
 
                     <motion.div
-                      className="mt-6 flex justify-center"
+                      className="mt-10 flex justify-center"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 }}
@@ -794,7 +881,7 @@ export default function CalendarPage() {
                       }}
                     />
                     <motion.div
-                      className="mt-6 flex justify-center"
+                      className="mt-10 flex justify-center"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
@@ -823,7 +910,7 @@ export default function CalendarPage() {
                       onChangeOptionsAction={(options) => setSelectedOptions(options)}
                     />
                     <motion.div
-                      className="mt-6 flex justify-center"
+                      className="mt-10 flex justify-center"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
@@ -869,7 +956,7 @@ export default function CalendarPage() {
                       }}
                     />
                     <motion.div
-                      className="mt-6 flex justify-center"
+                      className="mt-10 flex justify-center"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
@@ -899,7 +986,7 @@ export default function CalendarPage() {
                       onChangePaymentMethodAction={(method) => setSelectedPaymentMethod(method)}
                     />
                     <motion.div
-                      className="mt-6 flex justify-center"
+                      className="mt-10 flex justify-center"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
@@ -1076,7 +1163,13 @@ export default function CalendarPage() {
                   <div>
                     <span className="font-bold">オプション</span>
                     <br />
-                    {selectedOptions.map((option) => option.name).join('、')}
+                    {groupOptionsByName(selectedOptions).map((option, index) => (
+                      <span key={index}>
+                        {option.name}
+                        {option.count > 1 ? ` ×${option.count}` : ''}
+                        {index < groupOptionsByName(selectedOptions).length - 1 ? '、' : ''}
+                      </span>
+                    ))}
                   </div>
                 )}
               </motion.div>

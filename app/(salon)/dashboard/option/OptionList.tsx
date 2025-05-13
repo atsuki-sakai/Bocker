@@ -1,22 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery';
-import { api } from '@/convex/_generated/api';
-import { useSalon } from '@/hooks/useSalon';
-import Link from 'next/link';
-import { Loading, Dialog } from '@/components/common';
-import { Button } from '@/components/ui/button';
-import { useMutation } from 'convex/react';
-import { Id, Doc } from '@/convex/_generated/dataModel';
-import { toast } from 'sonner';
-import { handleErrorToMsg } from '@/lib/error';
+import Image from 'next/image'
+import { useState } from 'react'
+import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
+import { api } from '@/convex/_generated/api'
+import { useSalon } from '@/hooks/useSalon'
+import Link from 'next/link'
+import { Loading, Dialog } from '@/components/common'
+import { Button } from '@/components/ui/button'
+import { useMutation } from 'convex/react'
+import { Id, Doc } from '@/convex/_generated/dataModel'
+import { toast } from 'sonner'
+import { handleErrorToMsg } from '@/lib/error'
 
-const numberOfItems = 10;
+const numberOfItems = 10
 export default function OptionList() {
-  const { salon } = useSalon();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [deleteOptionId, setDeleteOptionId] = useState<Id<'salon_option'> | null>(null);
+  const { salon } = useSalon()
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [deleteOptionId, setDeleteOptionId] = useState<Id<'salon_option'> | null>(null)
   const {
     results: options,
     loadMore,
@@ -33,26 +34,26 @@ export default function OptionList() {
     {
       initialNumItems: numberOfItems,
     }
-  );
+  )
 
-  const killOption = useMutation(api.option.mutation.kill);
+  const killOption = useMutation(api.option.mutation.kill)
 
   const showDeleteDialog = (optionId: Id<'salon_option'>) => {
-    setIsDialogOpen(true);
-    setDeleteOptionId(optionId);
-  };
+    setIsDialogOpen(true)
+    setDeleteOptionId(optionId)
+  }
 
   const handleDelete = (optionId: Id<'salon_option'>) => {
     try {
       killOption({
         optionId,
-      });
-      toast.success('オプションを削除しました');
-      setIsDialogOpen(false);
+      })
+      toast.success('オプションを削除しました')
+      setIsDialogOpen(false)
     } catch (error) {
-      toast.error(handleErrorToMsg(error));
+      toast.error(handleErrorToMsg(error))
     }
-  };
+  }
 
   if (isLoading) {
     return <Loading />
@@ -71,6 +72,12 @@ export default function OptionList() {
                     className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-primary sm:pl-6"
                   >
                     ステータス
+                  </th>
+                  <th
+                    scope="col"
+                    className="py-3.5 pr-3 pl-4 text-lefts text-sm font-semibold text-primary sm:pl-6"
+                  >
+                    画像
                   </th>
                   <th
                     scope="col"
@@ -123,6 +130,25 @@ export default function OptionList() {
                         >
                           {option.isActive ? '有効' : '無効'}
                         </span>
+                      </td>
+                      <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-primary sm:pl-6">
+                        {option.thumbnailPath ? (
+                          <div className="w-12 h-12 rounded-md overflow-hidden">
+                            <Image
+                              src={option.thumbnailPath}
+                              alt={option.name}
+                              width={250}
+                              height={250}
+                              objectFit="cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-md overflow-hidden flex items-center justify-center bg-muted text-muted-foreground">
+                            <p className="text-sm text-muted-foreground">
+                              {option.name.slice(0, 1)}
+                            </p>
+                          </div>
+                        )}
                       </td>
                       <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-primary sm:pl-6">
                         {option.name}

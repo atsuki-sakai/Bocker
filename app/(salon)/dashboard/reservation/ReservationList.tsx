@@ -478,9 +478,11 @@ export default function ReservationList() {
                     </div>
 
                     {/* その日の予約カード */}
-                    {resArray.map((reservation) => (
-                      <ReservationCard key={reservation._id} reservation={reservation} />
-                    ))}
+                    {resArray
+                      .sort((a, b) => (a.startTime_unix || 0) - (b.startTime_unix || 0))
+                      .map((reservation) => (
+                        <ReservationCard key={reservation._id} reservation={reservation} />
+                      ))}
                   </div>
                 ))
               )}

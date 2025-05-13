@@ -10,6 +10,25 @@ import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import type { StaffDisplay } from './StaffView'
 import type { TimeRange } from '@/lib/type'
+import { Separator } from '@/components/ui/separator'
+// オプション選択数をカウントする関数
+const countOptionOccurrences = (options: Doc<'salon_option'>[]) => {
+  const counts = new Map<string, { option: Doc<'salon_option'>; count: number }>()
+
+  options.forEach((option) => {
+    if (counts.has(option._id)) {
+      const existing = counts.get(option._id)!
+      counts.set(option._id, {
+        option: existing.option,
+        count: existing.count + 1,
+      })
+    } else {
+      counts.set(option._id, { option, count: 1 })
+    }
+  })
+
+  return Array.from(counts.values())
+}
 
 type ConfirmViewProps = {
   salonId: Id<'salon'>
@@ -41,6 +60,7 @@ export const ConfirmView = ({
     return total + (menu.salePrice ? menu.salePrice : menu.unitPrice || 0)
   }, 0)
 
+  // オプション合計金額の計算（複数選択を考慮）
   const optionTotalPrice = selectedOptions.reduce((total: number, option: Doc<'salon_option'>) => {
     return total + (option.salePrice ? option.salePrice : option.unitPrice || 0)
   }, 0)
@@ -59,7 +79,7 @@ export const ConfirmView = ({
       return total + (menu.timeToMin || 0)
     }, 0)
 
-    // オプションの施術時間を計算
+    // オプションの施術時間を計算（複数選択を考慮）
     const optionTime = selectedOptions.reduce((total: number, option: Doc<'salon_option'>) => {
       return total + (option.timeToMin || 0)
     }, 0)
@@ -213,87 +233,93 @@ export const ConfirmView = ({
   const totalDiscount = usePoints + (appliedCoupon?.discount || 0)
   const finalAmount = totalAmount + extraCharge - totalDiscount
 
+  // オプションを選択数でグループ化
+  const groupedOptions = countOptionOccurrences(selectedOptions)
+
   return (
     <div>
       <div className="space-y-6">
         {/* 予約内容の概要 */}
-        <div className="bg-muted p-4 rounded-lg md:max-w-4xl mx-auto">
-          <h3 className="text-lg md:text-2xl font-bold text-center tracking-wide mb-4">
+        <div>
+          <h3 className="text-xl md:text-2xl font-bold text-center tracking-wide mb-6 text-primary">
             予約内容の確認
           </h3>
-          <div className="space-y-2 flex flex-col mb-4">
+          <div className="space-y-6">
             {/* 施術時間 */}
-
-            <div>
-              <p className="text-base font-bold text-active">
-                <span className="">{selectedDate?.toLocaleDateString()}</span>
-                <span className=" ml-3">
+            <div className="border-b pb-4 border-border">
+              <p className="text-lg font-bold text-primary flex items-center">
+                <span className="mr-4">{selectedDate?.toLocaleDateString()}</span>
+                <span>
                   {selectedTime?.startHour} - {selectedTime?.endHour}
                 </span>
               </p>
+              <div className="flex items-center text-sm md:text-base mt-3 text-muted-foreground">
+                <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                <p>
+                  施術時間{' '}
+                  <span className="text-muted-foreground ml-2">
+                    {hours > 0 ? `${hours}時間` : ''} {minutes > 0 ? `${minutes}分` : ''}
+                  </span>
+                </p>
+              </div>
             </div>
-            <div className="flex items-center text-sm mt-2">
-              <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-              <p>
-                施術時間{' '}
-                <span className="font-bold">
-                  {hours > 0 ? `${hours}時間` : ''} {minutes > 0 ? `${minutes}分` : ''}
-                </span>
-              </p>
-            </div>
-
             {/* メニュー一覧 */}
-            <div className="space-y-1">
-              <p className="text-sm font-bold">メニュー</p>
-              <ul className="text-sm pl-5 space-y-1">
+            <div className="border-b pb-4 border-border">
+              <p className="text-base font-bold mb-3 text-primary">メニュー</p>
+              <ul className="text-sm md:text-base pl-4 space-y-2 text-muted-foreground">
                 {selectedMenus.map((menu: Doc<'menu'>) => (
-                  <li key={menu._id} className="flex justify-between">
-                    <span>{menu.name}</span>
-                    <span className="text-muted-foreground text-nowrap">
+                  <li key={menu._id} className="flex justify-between items-start">
+                    <span className="flex-grow mr-2">{menu.name}</span>
+                    <span className="text-muted-foreground text-nowrap text-right">
                       {menu.timeToMin
                         ? `¥${menu.salePrice ? menu.salePrice.toLocaleString() : menu.unitPrice ? menu.unitPrice.toLocaleString() : ''} / ${menu.timeToMin}分`
-                        : ''}
+                        : `¥${menu.salePrice ? menu.salePrice.toLocaleString() : menu.unitPrice ? menu.unitPrice.toLocaleString() : ''}`}
                     </span>
                   </li>
                 ))}
               </ul>
             </div>
-
-            {/* オプション一覧 */}
-            {selectedOptions.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-sm font-bold">オプション</p>
-                <ul className="text-sm pl-5 space-y-1">
-                  {selectedOptions.map((option: Doc<'salon_option'>) => (
-                    <li key={option._id} className="flex justify-between">
-                      <span>{option.name}</span>
-                      <span className="text-muted-foreground text-nowrap">
+            {/* オプション一覧（グループ化して表示） */}
+            {groupedOptions.length > 0 && (
+              <div className="border-b pb-4 border-border">
+                <p className="text-base font-bold mb-3 text-primary">オプション</p>
+                <ul className="text-sm md:text-base pl-4 space-y-2 text-muted-foreground">
+                  {groupedOptions.map(({ option, count }) => (
+                    <li key={option._id} className="flex justify-between items-start">
+                      <span className="flex-grow mr-2">
+                        {option.name} {count > 1 ? `× ${count}` : ''}
+                      </span>
+                      <span className="text-muted-foreground text-nowrap text-right">
                         {option.timeToMin
-                          ? `¥${option.salePrice ? option.salePrice.toLocaleString() : option.unitPrice ? option.unitPrice.toLocaleString() : ''} / ${option.timeToMin}分`
-                          : ''}
+                          ? `¥${(option.salePrice ? option.salePrice : option.unitPrice || 0) * count} / ${option.timeToMin * count}分`
+                          : `¥${(option.salePrice ? option.salePrice : option.unitPrice || 0) * count}`}
                       </span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-
             {/* スタッフ情報 */}
             {selectedStaff && (
-              <div className="space-y-1">
-                <p className="text-sm font-bold">スタッフ</p>
-                <p className="text-sm pl-5 flex justify-between">
-                  <span>{selectedStaff.name}</span>
-                  {extraCharge > 0 && (
-                    <span className="text-muted-foreground">
+              <div>
+                <p className="text-base font-bold mb-3 text-primary">スタッフ</p>
+                <div className="text-sm md:text-base pl-4 flex justify-between items-start text-muted-foreground">
+                  <span className="flex-grow mr-2">{selectedStaff.name}</span>
+                  {extraCharge > 0 ? (
+                    <span className="text-muted-foreground text-nowrap text-right">
                       指名料 / ¥{extraCharge.toLocaleString()}
                     </span>
+                  ) : (
+                    <span className="text-muted-foreground text-nowrap text-right">
+                      指名料 / 無料
+                    </span>
                   )}
-                </p>
+                </div>
               </div>
             )}
           </div>
         </div>
+        <Separator className="my-6 " />
 
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground ">

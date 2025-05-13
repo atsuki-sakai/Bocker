@@ -47,6 +47,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   >({})
   const [selectedCategories, setSelectedCategories] = useState<MenuCategory[]>([])
   const [showPopover, setShowPopover] = useState<boolean>(false)
+  const [blockedCategories, setBlockedCategories] = useState<MenuCategory[]>([])
 
   // 選択されたメニューの配列を取得するための計算プロパティ
   const selectedMenus = useMemo(() => {
@@ -64,6 +65,22 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
     }
   )
 
+  // セットメニューかどうかを判定する関数
+  const isSetMenu = (menu: Doc<'menu'>): boolean => {
+    return Array.isArray(menu.categories) && menu.categories.length > 1
+  }
+
+  // メニューがブロックされているかどうかを判定する関数
+  const menuBlocked = (menu: Doc<'menu'>): boolean => {
+    // セットメニューはブロックされない
+    if (isSetMenu(menu)) return false
+
+    // メニューのカテゴリが一つでもブロックされていればtrue
+    return menu.categories
+      ? menu.categories.some((cat) => blockedCategories.includes(cat))
+      : blockedCategories.includes('その他')
+  }
+
   // FUNCTIONS
   const extractUniqueCategories = (menus: Doc<'menu'>[]): MenuCategory[] => {
     // Set を使用して重複を排除
@@ -78,7 +95,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
       }
     })
 
-    // カテゴリの順序を定義
+    // セットメニューを順序配列に追加
     const categoryOrder: MenuCategory[] = [
       'カット',
       'カラー',
@@ -91,6 +108,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
       'ネイル',
       'ヘアサロン',
       'メイク',
+      'セットメニュー',
       'その他',
     ]
 
@@ -102,30 +120,79 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   const getMenusByCategory = (category: MenuCategory | null): Doc<'menu'>[] => {
     if (!category || !menus) return []
 
+    if (category === 'セットメニュー') {
+      // セットメニューカテゴリの場合、複数カテゴリを持つメニューを返す
+      return menus.filter((menu) => isSetMenu(menu))
+    }
+
     if (category === 'その他') {
       // 「その他」カテゴリの場合、カテゴリがないメニューを返す
       return menus.filter((menu) => !menu.categories || menu.categories.length === 0)
     }
 
+    // 単一カテゴリのメニューのみ返す（複数カテゴリを持つメニューは除外）
     return menus.filter(
-      (menu) => Array.isArray(menu.categories) && menu.categories.includes(category)
+      (menu) =>
+        Array.isArray(menu.categories) &&
+        menu.categories.includes(category) &&
+        menu.categories.length === 1
     )
   }
 
   // メニュー選択時の処理
   const handleMenuSelect = (menu: Doc<'menu'>) => {
-    // カテゴリがない場合は「その他」として扱う
-    const menuCategory =
-      menu.categories && menu.categories.length > 0 ? menu.categories[0] : 'その他'
-
+    const isMenuSet = isSetMenu(menu)
+    const menuCategories = menu.categories || []
     const newSelectedMenuMap = { ...selectedMenuMap }
 
-    // 既に同じメニューが選択されている場合は選択解除
-    if (selectedMenuMap[menuCategory]?._id === menu._id) {
-      delete newSelectedMenuMap[menuCategory]
-    } else {
-      // 同じカテゴリの別のメニューが選択された場合は置き換え
-      newSelectedMenuMap[menuCategory] = menu
+    // メニューが既に選択されている場合（選択解除のケース）
+    if (
+      (isMenuSet && selectedMenuMap['セットメニュー']?._id === menu._id) ||
+      (!isMenuSet &&
+        menuCategories.length > 0 &&
+        selectedMenuMap[menuCategories[0]]?._id === menu._id) ||
+      (!menuCategories.length && selectedMenuMap['その他']?._id === menu._id)
+    ) {
+      if (isMenuSet) {
+        delete newSelectedMenuMap['セットメニュー']
+        // セットメニュー解除時、ブロックされたカテゴリをクリア
+        setBlockedCategories([])
+      } else {
+        const category = menuCategories.length > 0 ? menuCategories[0] : 'その他'
+        delete newSelectedMenuMap[category]
+      }
+    }
+    // 新しいメニュー選択のケース
+    else {
+      // 選択しようとしているカテゴリがブロックされているかチェック
+      const categoryIsBlocked = isMenuSet
+        ? false // セットメニューは常に選択可能
+        : menuCategories.some((cat) => blockedCategories.includes(cat))
+
+      if (categoryIsBlocked) {
+        // ブロックされているカテゴリなら選択させない
+        alert('このメニューは現在選択できません。セットメニューと競合しています。')
+        return
+      }
+
+      if (isMenuSet) {
+        // セットメニュー選択時、既存の競合するカテゴリの選択を解除
+        menuCategories.forEach((cat) => {
+          if (newSelectedMenuMap[cat]) {
+            delete newSelectedMenuMap[cat]
+          }
+        })
+
+        // セットメニューをマップに追加
+        newSelectedMenuMap['セットメニュー'] = menu
+
+        // ブロックするカテゴリを設定
+        setBlockedCategories(menuCategories)
+      } else {
+        // 通常メニュー選択
+        const category = menuCategories.length > 0 ? menuCategories[0] : 'その他'
+        newSelectedMenuMap[category] = menu
+      }
     }
 
     setSelectedMenuMap(newSelectedMenuMap)
@@ -144,17 +211,27 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
     if (selectedMenuIds && selectedMenuIds.length > 0 && menus) {
       // IDからメニューオブジェクトを取得
       const menuMap: Partial<Record<MenuCategory, Doc<'menu'>>> = {}
+      const blockedCats: MenuCategory[] = []
 
       selectedMenuIds.forEach((menuId) => {
         const menu = menus.find((m) => m._id === menuId)
         if (menu) {
-          const category =
-            menu.categories && menu.categories.length > 0 ? menu.categories[0] : 'その他'
-          menuMap[category] = menu
+          if (isSetMenu(menu)) {
+            menuMap['セットメニュー'] = menu
+            // ブロックするカテゴリを追加
+            if (menu.categories) {
+              blockedCats.push(...menu.categories)
+            }
+          } else {
+            const category =
+              menu.categories && menu.categories.length > 0 ? menu.categories[0] : 'その他'
+            menuMap[category] = menu
+          }
         }
       })
 
       setSelectedMenuMap(menuMap)
+      setBlockedCategories(blockedCats)
     }
   }, [selectedMenuIds, menus])
 
@@ -170,7 +247,14 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   }, [menus, currentCategory])
 
   // ユニークカテゴリ取得
-  const uniqueCategories = useMemo(() => extractUniqueCategories(menus), [menus])
+  const uniqueCategories: MenuCategory[] = useMemo(() => {
+    const categories = extractUniqueCategories(menus)
+    // セットメニューが含まれていない場合は追加
+    if (!categories.includes('セットメニュー')) {
+      return [...categories, 'セットメニュー']
+    }
+    return categories
+  }, [menus])
 
   // カテゴリトグル関数
   const toggleCategory = (category: MenuCategory) => {
@@ -224,13 +308,17 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                 <CommandItem
                   key={category}
                   className="cursor-pointer"
-                  onSelect={() => toggleCategory(category)}
+                  onSelect={() => toggleCategory(category as MenuCategory)}
                 >
                   <div className="flex justify-between items-center w-full">
-                    <span className={`${selectedCategories.includes(category) ? 'font-bold' : ''}`}>
+                    <span
+                      className={`${
+                        selectedCategories.includes(category as MenuCategory) ? 'font-bold' : ''
+                      }`}
+                    >
                       {category}
                     </span>
-                    {selectedCategories.includes(category) && (
+                    {selectedCategories.includes(category as MenuCategory) && (
                       <Check className="w-4 h-4 font-bold text-active" />
                     )}
                   </div>
@@ -380,114 +468,148 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
 
       {/* メニュー表示部分（カテゴリ別セクション） */}
       <div className="mt-4 space-y-8">
+        {/* 通常カテゴリを表示 */}
         {(selectedCategories.length === 0 ? uniqueCategories : selectedCategories).map(
-          (category) => (
-            <section key={category}>
-              <div className="flex flex-col justify-between items-start w-full mb-2">
-                <h3 className="text-lg font-semibold">{category}</h3>
-                <span className="text-xs text-muted-foreground ">
-                  同じカテゴリのメニューは一つまで選択可
-                </span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {getMenusByCategory(category).map((menu) => (
-                  <Card
-                    key={menu._id}
-                    className={`cursor-pointer transition-all  p-2 ${
-                      selectedMenuMap[
-                        menu.categories && menu.categories.length > 0
-                          ? menu.categories[0]
-                          : 'その他'
-                      ]?._id === menu._id
-                        ? 'border-2 border-active shadow-md'
-                        : 'hover:shadow-md border-2 border-transparent'
-                    }`}
-                    onClick={() => handleMenuSelect(menu)}
-                  >
-                    <div className="px-2 pt-2 flex justify-between items-center">
-                      <div className="flex flex-wrap gap-1 divide-x divide-border text-xs text-muted-foreground text-nowrap">
-                        <p className="">{convertTarget(menu.targetType as Target)}</p>
-                        <p className="pl-1">{convertGender(menu.targetGender as Gender)}</p>
-                      </div>
-                      {menu.tags && menu.tags.length > 0 && (
-                        <div className="flex justify-end flex-wrap gap-0.5 scale-95">
-                          {menu.tags.map((tag, idx) => (
-                            <p
-                              key={idx}
-                              className="text-xs px-2 py-0.5 bg-muted border border-border text-muted-foreground rounded-full"
-                            >
-                              {tag}
-                            </p>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <CardContent className="p-2">
-                      <div className="flex items-start gap-3">
-                        {menu.thumbnailPath ? (
-                          <div className="relative h-28 w-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
-                            <Image
-                              src={menu.thumbnailPath}
-                              alt={menu.name || ''}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        ) : null}
+          (category) => {
+            // 型保証
+            const validCategory = category as MenuCategory
+            const categoryMenus = getMenusByCategory(validCategory)
 
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <h3 className="font-medium text-base">{menu.name}</h3>
+            // カテゴリに該当するメニューがない場合はセクションを表示しない
+            if (categoryMenus.length === 0 && validCategory !== 'セットメニュー') return null
+
+            // セットメニューの場合、実際にセットメニュー（複数カテゴリ持ち）が存在する場合のみ表示
+            if (validCategory === 'セットメニュー' && categoryMenus.length === 0) {
+              const hasSetMenus = menus ? menus.some((menu) => isSetMenu(menu)) : false
+              if (!hasSetMenus) return null
+            }
+
+            return (
+              <section key={validCategory}>
+                <div className="flex flex-col justify-between items-start w-full mb-2">
+                  <h3 className="text-lg font-semibold">{validCategory}</h3>
+                  {validCategory === 'セットメニュー' ? (
+                    <span className="text-xs text-muted-foreground">
+                      複数のカテゴリを含むメニューです。選択すると含まれるカテゴリは個別に選択できなくなります。
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      同じカテゴリのメニューは一つまで選択可
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {categoryMenus.map((menu) => {
+                    const isBlocked = menuBlocked(menu)
+                    return (
+                      <Card
+                        key={menu._id}
+                        className={`transition-all p-2 ${
+                          selectedMenuMap[
+                            isSetMenu(menu)
+                              ? 'セットメニュー'
+                              : menu.categories && menu.categories.length > 0
+                                ? menu.categories[0]
+                                : 'その他'
+                          ]?._id === menu._id
+                            ? 'border-2 border-active shadow-md cursor-pointer'
+                            : isBlocked
+                              ? 'opacity-50 border-2 border-transparent'
+                              : 'hover:shadow-md border-2 border-transparent cursor-pointer'
+                        }`}
+                        onClick={() => !isBlocked && handleMenuSelect(menu)}
+                      >
+                        <div className="px-2 pt-2 flex justify-between items-center">
+                          <div className="flex flex-wrap gap-1 divide-x divide-border text-xs text-muted-foreground text-nowrap">
+                            <p className="">{convertTarget(menu.targetType as Target)}</p>
+                            <p className="pl-1">{convertGender(menu.targetGender as Gender)}</p>
                           </div>
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-xs scale-90 -ml-2 text-warning-foreground ">
-                              {convertPaymentMethod(menu.paymentMethod as PaymentMethod)}
-                            </p>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 mt-1">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm text-muted-foreground">
-                                {menu.timeToMin}分
-                              </span>
+                          {menu.tags && menu.tags.length > 0 && (
+                            <div className="flex justify-end flex-wrap gap-0.5 scale-95">
+                              {menu.tags.map((tag, idx) => (
+                                <p
+                                  key={idx}
+                                  className="text-xs px-2 py-0.5 bg-muted border border-border text-muted-foreground rounded-full"
+                                >
+                                  {tag}
+                                </p>
+                              ))}
                             </div>
-                            {menu.salePrice ? (
-                              <div className="flex items-center gap-1">
-                                <span className="line-through text-xs text-muted-foreground">
-                                  ¥{menu.unitPrice?.toLocaleString()}
-                                </span>
-                                <span className="font-bold text-active">
-                                  ¥{menu.salePrice.toLocaleString()}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="font-medium">
-                                ¥{menu.unitPrice?.toLocaleString()}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex justify-end">
-                            <Button
-                              variant="ghost"
-                              className="z-10 text-xs underline text-link-foreground tracking-widest"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation() // クリックイベントの伝播を停止
-                                // 詳細モーダルを表示する処理を実装
-                                handleShowMenuDetails(menu)
-                              }}
-                            >
-                              詳細を見る
-                            </Button>
-                          </div>
+                          )}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </section>
-          )
+                        <CardContent className="p-2">
+                          <div className="flex items-start gap-3">
+                            {menu.thumbnailPath ? (
+                              <div className="relative h-28 w-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                                <Image
+                                  src={menu.thumbnailPath}
+                                  alt={menu.name || ''}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ) : null}
+
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <h3 className="font-medium text-base">{menu.name}</h3>
+                              </div>
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-xs scale-90 -ml-2 text-warning-foreground ">
+                                  {convertPaymentMethod(menu.paymentMethod as PaymentMethod)}
+                                </p>
+                                {isSetMenu(menu) && (
+                                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                                    セット
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between gap-2 mt-1">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-sm text-muted-foreground">
+                                    {menu.timeToMin}分
+                                  </span>
+                                </div>
+                                {menu.salePrice ? (
+                                  <div className="flex items-center gap-1">
+                                    <span className="line-through text-xs text-muted-foreground">
+                                      ¥{menu.unitPrice?.toLocaleString()}
+                                    </span>
+                                    <span className="font-bold text-active">
+                                      ¥{menu.salePrice.toLocaleString()}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="font-medium">
+                                    ¥{menu.unitPrice?.toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex justify-end">
+                                <Button
+                                  variant="ghost"
+                                  className="z-10 text-xs underline text-link-foreground tracking-widest"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation() // クリックイベントの伝播を停止
+                                    // 詳細モーダルを表示する処理を実装
+                                    handleShowMenuDetails(menu)
+                                  }}
+                                >
+                                  詳細を見る
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              </section>
+            )
+          }
         )}
       </div>
 

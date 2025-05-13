@@ -25,26 +25,7 @@ import { RESERVATION_STATUS_VALUES } from '@/services/convex/shared/types/common
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
 
-// pending: {
-//   color: 'bg-warning-foreground text-warning ',
-//   text: '保留',
-// },
-// confirmed: {
-//   color: 'bg-palette-2-foreground text-palette-2 ',
-//   text: '予約確定',
-// },
-// cancelled: {
-//   color: 'bg-palette-4-foreground text-palette-4 ',
-//   text: 'キャンセル',
-// },
-// completed: {
-//   color: 'bg-palette-5-foreground text-palette-5 ',
-//   text: '完了',
-// },
-// refunded: {
-//   color: 'bg-palette-3-foreground text-palette-3 ',
-//   text: '返金',
-// },
+
 const statusColorMap = {
   confirmed: 'bg-palette-2-foreground border border-palette-2 text-palette-2',
   cancelled: 'bg-palette-4-foreground border border-palette-4 text-palette-4',
@@ -239,13 +220,14 @@ export default function ReservationPage() {
           <h2 className="text-xl font-semibold mb-3">担当スタッフ</h2>
           <div className="flex items-center gap-4">
             {staff.imgPath && (
-              <div className="w-16 h-16 rounded-full overflow-hidden">
+              <div className="relative h-16 w-16 border border-border shadow-sm rounded-full overflow-hidden flex items-center justify-center">
                 <Image
                   src={staff.imgPath}
                   alt={staff.name ?? ''}
                   width={64}
                   height={64}
                   objectFit="cover"
+                  className="object-cover"
                 />
               </div>
             )}

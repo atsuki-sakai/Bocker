@@ -74,9 +74,12 @@ export default defineSchema({
     unitPrice: v.optional(v.number()), // 価格
     salePrice: v.optional(v.number()), // セール価格
     orderLimit: v.optional(v.number()), // 注文制限
+    inStock: v.optional(v.number()), // 在庫数
     timeToMin: v.optional(v.number()), // 時間(分)
     tags: v.optional(v.array(v.string())), // タグ
     description: v.optional(v.string()), // 説明
+    imgPath: v.optional(v.string()), // 画像ファイルパス
+    thumbnailPath: v.optional(v.string()), // サムネイル画像ファイルパス
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
     ...CommonFields,
   })

@@ -11,10 +11,10 @@ export default function OptionPage() {
     >
       <div className="flex flex-col gap-2">
         <p className="text-sm text-gray-500">
-          オプションは顔剃り、トリートメントなどメニューのアップセルにご利用いただけます。
+          オプションはスタイリング剤、トリートメントなど物販などアップセルにご利用いただけます。
         </p>
       </div>
       <OptionList />
     </DashboardSection>
-  );
+  )
 }

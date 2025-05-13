@@ -58,8 +58,8 @@ export default function ReferralCard() {
       if (navigator.share) {
         navigator
           .share({
-            title: 'Bockerをお友達を紹介して最大30,000円お得に！',
-            text: '今なら紹介コードを入力して登録すると、あなたとお友達に１ヶ月¥5,000円の割引が適用されます。ぜひご利用ください！紹介はおひとり様で最大6回まで受けられます。',
+            title: 'Bockerをお友達を紹介して最大12,000円お得に！',
+            text: '今なら紹介コードを入力して登録すると、あなたとお友達に１ヶ月¥2,000円の割引が適用されます。ぜひご利用ください！紹介はおひとり様で最大6回まで受けられます。',
             url: signupUrl,
           })
           .catch((error) => {
@@ -142,12 +142,12 @@ export default function ReferralCard() {
                   <div className="flex flex-col gap-2 md:flex-row justify-between items-start mb-1">
                     <p className="text-sm font-semibold text-primary">紹介特典 🎁</p>
                     <p className="text-sm font-bold text-primary">
-                      最大<span className="text-active text-xl px-1">30,000</span>
+                      最大<span className="text-active text-xl px-1">12,000</span>
                       円分の割引を受け取る
                     </p>
                   </div>
                   <p className="text-xs tracking-wide leading-4 text-primary">
-                    1人紹介するごとに、翌月(25日)のサブスクリプション料金から 5,000円
+                    1人紹介するごとに、翌月(25日)のサブスクリプション料金から 2,000円
                     割引されます（最大6回まで）。 特典の適用状況は、
                     <Link
                       className="text-link-foreground font-medium underline"
@@ -158,7 +158,7 @@ export default function ReferralCard() {
                     でいつでもご確認いただけます。
                   </p>
                   <p className="text-xs tracking-wide leading-4 text-primary">
-                    紹介を受けた方お客様と紹介者のお客様の両方に月5,000円の割引を一回受けられます。毎月一回分の紹介料を割引き、余剰分は最大６回まで翌月に繰り越します。
+                    紹介を受けた方お客様と紹介者のお客様の両方に月2,000円の割引を一回受けられます。毎月一回分の紹介料を割引き、余剰分は最大６回まで翌月に繰り越します。
                   </p>
                   <p className="text-xs tracking-wide leading-4 text-primary mt-2">
                     割引は、毎月(25日)に契約中のサブスクリプションに適用されます。
@@ -170,7 +170,7 @@ export default function ReferralCard() {
                     <p className="text-xs font-bold tracking-tighter text-primary">
                       獲得した割引は
                       <span className="text-active text-2xl px-1">
-                        {(referral.totalReferralCount! * 5000).toLocaleString()}
+                        {(referral.totalReferralCount! * 2000).toLocaleString()}
                       </span>
                       円です。
                     </p>

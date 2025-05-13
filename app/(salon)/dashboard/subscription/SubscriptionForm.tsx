@@ -288,11 +288,13 @@ export default function SubscriptionForm({
           description="スモールサロン向けの基本プラン"
           price={
             billingPeriod === 'monthly'
-              ? SUBSCRIPTION_PLANS.LITE.monthly.price
-              : SUBSCRIPTION_PLANS.LITE.yearly.price
+              ? (SUBSCRIPTION_PLANS.LITE.monthly.price ?? 0)
+              : (SUBSCRIPTION_PLANS.LITE.yearly.price ?? 0)
           }
           savingPercent={
-            billingPeriod === 'yearly' ? SUBSCRIPTION_PLANS.LITE.yearly.savingPercent : undefined
+            billingPeriod === 'yearly'
+              ? (SUBSCRIPTION_PLANS.LITE.yearly.savingPercent ?? 0)
+              : undefined
           }
           features={SUBSCRIPTION_PLANS.LITE.features}
           currentPlanStr={currentPlanStr}
@@ -313,11 +315,13 @@ export default function SubscriptionForm({
           description="中規模サロン向けの標準プラン"
           price={
             billingPeriod === 'monthly'
-              ? SUBSCRIPTION_PLANS.PRO.monthly.price
-              : SUBSCRIPTION_PLANS.PRO.yearly.price
+              ? (SUBSCRIPTION_PLANS.PRO.monthly.price ?? 0)
+              : (SUBSCRIPTION_PLANS.PRO.yearly.price ?? 0)
           }
           savingPercent={
-            billingPeriod === 'yearly' ? SUBSCRIPTION_PLANS.PRO.yearly.savingPercent : undefined
+            billingPeriod === 'yearly'
+              ? (SUBSCRIPTION_PLANS.PRO.yearly.savingPercent ?? 0)
+              : undefined
           }
           features={SUBSCRIPTION_PLANS.PRO.features}
           currentPlanStr={currentPlanStr}

@@ -180,6 +180,8 @@ export const IMG_DIRECTORY_VALUES = [
   'staff/thumbnail',
   'menu/original',
   'menu/thumbnail',
+  'option/original',
+  'option/thumbnail',
   'carte/original',
   'carte/thumbnail',
   'customer/original',
@@ -205,6 +207,7 @@ export const MENU_CATEGORY_VALUES = [
   'ヘアサロン',
   'メイク',
   'その他',
+  'セットメニュー',
 ] as const
 export const menuCategoryType = v.union(
   ...MENU_CATEGORY_VALUES.map((category) => v.literal(category))

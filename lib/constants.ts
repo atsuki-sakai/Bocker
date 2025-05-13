@@ -72,44 +72,55 @@ export const SALON_RESERVATION_LIMIT_DAYS = [
   '360',
 ];
 
-// 価格設定（月額）
-const MONTHLY_PRICES = {
-  LITE: 6000,
-  PRO: 10000,
-  ENTERPRISE: 16000,
+
+// Monthly and Yearly prices extracted or inferred from the HTML content
+// HTMLには月額料金のみ記載があるため、YEARLY_PRICESはnullとしています。
+export const MONTHLY_PRICES = {
+  LITE: 5980,
+  PRO: 9980,
+  // ENTERPRISE: Not available in the provided HTML
 };
 
-// 価格設定（年額 - 月額の10ヶ月分で2ヶ月分割引）
-const YEARLY_PRICES = {
-  LITE: 50000,
-  PRO: 100000,
-  ENTERPRISE: 153600,
-};
+export const YEARLY_PRICES = {
+  LITE: null, // 年額料金はHTMLに記載なし
+  PRO: null, // 年額料金はHTMLに記載なし
+  // ENTERPRISE: Not available in the provided HTML
+}
 
-// Stripe Subscription Plans
+// Stripe Subscription Plans based on the provided HTML content
 export const SUBSCRIPTION_PLANS = {
   LITE: {
     id: 'lite',
-    name: 'Lite',
-    features: ['予約カレンダー基本機能', '最大3名までのスタッフ管理', '基本的なお客様情報管理'],
+    name: 'Lite', // HTMLの表示は'LITE'ですが、例の形式に合わせて'Lite'とします
+    features: [
+      '予約カレンダー基本機能',
+      '最大3名までのスタッフ管理',
+      '基本的なお客様情報管理',
+      '予約管理 (予約カレンダー, スタッフスケジュール設定, 予約確認・変更・キャンセル, 24/365オンライン予約)',
+      '顧客管理（基本情報, 予約・購入履歴）',
+      'スタッフ管理 (アカウント作成, 基本的な予約・シフト管理)',
+      'メニュー設定 (サービス登録, 料金・所要時間設定)',
+      '自動リマインド・通知 (メール・SMS)',
+      'スタッフ数(3名)、メニュー数(15件)、予約数(100件/月)が無制限', // HTMLの記述通りに含めます
+    ],
     monthly: {
       priceId: process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID!,
       price: MONTHLY_PRICES.LITE,
     },
     yearly: {
       priceId: process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID!,
-      price: YEARLY_PRICES.LITE,
-      savingPercent: 17, // 2/12 = 約17%
+      price: YEARLY_PRICES.LITE, // HTMLに年額料金の記載がないためnull
+      savingPercent: null, // HTMLに割引率の記載がないためnull (例では17でしたが、根拠がないためnullとします)
     },
   },
   PRO: {
     id: 'pro',
-    name: 'Pro',
+    name: 'Pro', // HTMLの表示は'PRO'ですが、例の形式に合わせて'Pro'とします
     features: [
-      'Liteプランの全機能',
-      '最大8名までのスタッフ管理',
-      '詳細な顧客管理機能',
-      '予約自動リマインド',
+      'LITEプランの全機能',
+      'カルテ管理 (施術内容の詳細記録, 画像添付機能, 薬剤使用履歴管理, カルテテンプレート機能, 施術者引継ぎ機能)',
+      'ポイント・クーポン機能 (カスタマイズ可能なポイント付与システム, クーポン管理)',
+      'スタッフ数、メニュー数、予約数が無制限',
     ],
     monthly: {
       priceId: process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID!,
@@ -117,31 +128,13 @@ export const SUBSCRIPTION_PLANS = {
     },
     yearly: {
       priceId: process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID!,
-      price: YEARLY_PRICES.PRO,
-      savingPercent: 17,
+      price: YEARLY_PRICES.PRO, // HTMLに年額料金の記載がないためnull
+      savingPercent: null, // HTMLに割引率の記載がないためnull (例では17でしたが、根拠がないためnullとします)
     },
   },
-  ENTERPRISE: {
-    id: 'enterprise',
-    name: 'Enterprise',
-    features: [
-      'Proプランの全機能',
-      'スタッフ人数無制限',
-      '高度な予約分析と統計',
-      'カスタマーサポート優先対応',
-      'ポイント機能',
-    ],
-    monthly: {
-      priceId: process.env.NEXT_PUBLIC_ENTRPIS_MONTHLY_PRC_ID!,
-      price: MONTHLY_PRICES.ENTERPRISE,
-    },
-    yearly: {
-      priceId: process.env.NEXT_PUBLIC_ENTRPIS_YEARLY_PRC_ID!,
-      price: YEARLY_PRICES.ENTERPRISE,
-      savingPercent: 20,
-    },
-  },
-};
+  // ENTERPRISEプランに関する情報は提供されたHTML内には見当たらなかったため、ここでは含めていません。
+  // もしENTERPRISEプランの情報もHTMLに別途記載がある場合は、同様の形式で追加できます。
+}
 
 // Staff Auth
 // Cookieの名前

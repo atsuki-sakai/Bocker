@@ -712,7 +712,6 @@ export default function ReservationForm() {
                                           ? customer.lineUserName + '　'
                                           : ''}
                                         {customer.phone ? 'tel:' + customer.phone : ''}
-                                        {customer.phone ? 'tel:' + customer.phone : ''}
                                       </div>
                                     </CommandItem>
                                   )

@@ -184,20 +184,19 @@ export const upsert = mutation({
     checkAuth(ctx)
     validateCustomer(args)
     const existingCustomer = await ctx.db.get(args.customerId)
-    let searchbleText = ''
+    const nameParts: string[] = []
+    if (args.lastName?.trim()) nameParts.push(args.lastName.trim())
+    if (args.firstName?.trim()) nameParts.push(args.firstName.trim())
+    if (args.lineUserName?.trim()) nameParts.push(args.lineUserName.trim())
+    if (args.phone?.trim()) nameParts.push(args.phone.trim())
+    if (args.email?.trim()) nameParts.push(args.email.trim())
+
+    // nameParts が空のときは lineUserName 優先、そうでなければ結合
+    const searchbleText =
+      nameParts.length > 0 ? nameParts.join(' ') : (args.lineUserName?.trim() ?? '')
+    
 
     if (!existingCustomer || existingCustomer.isArchive) {
-      searchbleText = [
-        args.lastName,
-        args.firstName,
-        args.lineUserName,
-        args.phone,
-        args.email,
-        args.password,
-      ]
-        .filter(Boolean)
-        .join(' ')
-
       validateCustomer({ ...args, searchbleText: searchbleText })
       return await ctx.db.insert('customer', {
         ...args,
@@ -205,16 +204,6 @@ export const upsert = mutation({
         isArchive: false,
       })
     } else {
-      searchbleText =
-        (args.lineUserName ?? existingCustomer.lineUserName) +
-        ' ' +
-        (args.lastName ? args.lastName : existingCustomer.lastName) +
-        ' ' +
-        (args.firstName ?? existingCustomer.firstName) +
-        ' ' +
-        (args.phone ?? existingCustomer.phone) +
-        ' ' +
-        (args.email ?? existingCustomer.email)
       validateCustomer({ ...args, searchbleText: searchbleText })
       const updateData = excludeFields(args, ['customerId'])
       return await ctx.db.patch(existingCustomer._id, {

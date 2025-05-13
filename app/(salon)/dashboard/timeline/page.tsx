@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { usePaginatedQuery } from 'convex/react'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 
 export default function TimelinePage() {
   const { salonId } = useSalon()
@@ -112,7 +112,7 @@ export default function TimelinePage() {
   const gridColsClass = viewMode === 'week' ? 'grid-cols-8' : 'grid-cols-1'
 
   // SP 週表示時は横スクロール出来る様に最小幅を確保し、PC では自動調整
-  const timelineContainerWidthClass = viewMode === 'week' ? 'min-w-[900px] md:min-w-0' : 'w-full'
+  const timelineContainerWidthClass = viewMode === 'week' ? 'min-w-[720px] md:min-w-0' : 'w-full'
 
   // 現在の週の日付を計算
   const getDaysOfWeek = (): Date[] => {
@@ -482,71 +482,69 @@ export default function TimelinePage() {
         </div>
         {reservations && reservations.length > 0 ? (
           <div className="flex h-full flex-col">
-            {/* 日付ヘッダー部分（モバイル） - 日本語化 */}
-            {viewMode === 'week' && (
-              <div
-                className={`grid h-20 border-b border-border ${gridColsClass}  bg-background`}
-                style={{ gridTemplateRows: '1.75rem repeat(576, minmax(0, 1fr)) auto' }}
-              >
-                <div className="min-w-[56px]"></div>
-                {daysOfWeek.map((date, index) => {
-                  const dateIsToday = isToday(date)
-                  const isSelected = date.toDateString() === selectedDate.toDateString()
-                  const hasReservations = hasReservationsOnDate(date)
-                  return (
-                    <button
-                      key={index}
-                      type="button"
-                      className="flex flex-col items-center pt-2 pb-3 bg-background"
-                      onClick={() => {
-                        setSelectedDate(date)
-                        setViewMode('day')
-                      }}
-                    >
-                      <div className="flex items-center justify-center">
-                        {weekDays[index]}{' '}
-                        {hasReservations && (
-                          <span className="ml-1 w-1.5 h-1.5 bg-active  text-active-foreground rounded-full" />
-                        )}
-                      </div>
-                      <span
-                        className={`mt-1 flex size-8 items-center justify-center py-3  ${
-                          dateIsToday
-                            ? 'rounded-full bg-active font-semibold text-active-foreground'
-                            : isSelected
-                              ? 'rounded-full bg-active font-semibold text-active-foreground'
-                              : hasReservations
-                                ? 'font-semibold text-active ring-1 ring-active bg-active-foreground rounded-full'
-                                : 'font-semibold text-active'
-                        }`}
-                      >
-                        {date.getDate()}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-            {viewMode === 'day' && (
-              <div className="grid grid-cols-1 text-sm/6 text-muted-foreground sm:hidden">
-                <div className="flex justify-center items-center pt-2 pb-3">
-                  <span className="font-medium">
-                    {weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]}
-                  </span>
-                  {hasReservationsOnDate(selectedDate) && (
-                    <span className="ml-2 bg-active text-active-foreground px-2 py-0.5 rounded-full text-xs font-medium">
-                      予約あり
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
             <ScrollArea className="relative h-[calc(100vh-15rem)]">
-              <div className=" flex flex-auto flex-col">
-                <div
-                  className={`flex flex-none flex-col max-w-full  ${timelineContainerWidthClass}`}
-                >
-                  <div className="flex flex-auto overflow-auto">
+              <div className="flex flex-auto flex-col">
+                {/* 日付ヘッダー部分（モバイル） - 日本語化 */}
+                {viewMode === 'week' && (
+                  <div
+                    className={`grid h-20 border-b border-border ${gridColsClass} bg-background ${timelineContainerWidthClass}`}
+                    style={{ gridTemplateRows: '1.75rem repeat(576, minmax(0, 1fr)) auto' }}
+                  >
+                    <div className="min-w-[56px]"></div>
+                    {daysOfWeek.map((date, index) => {
+                      const dateIsToday = isToday(date)
+                      const isSelected = date.toDateString() === selectedDate.toDateString()
+                      const hasReservations = hasReservationsOnDate(date)
+                      return (
+                        <button
+                          key={index}
+                          type="button"
+                          className="flex flex-col items-center pt-2 pb-3 bg-background"
+                          onClick={() => {
+                            setSelectedDate(date)
+                            setViewMode('day')
+                          }}
+                        >
+                          <div className="flex items-center justify-center">
+                            {weekDays[index]}{' '}
+                            {hasReservations && (
+                              <span className="ml-1 w-1.5 h-1.5 bg-active text-active-foreground rounded-full" />
+                            )}
+                          </div>
+                          <span
+                            className={`mt-1 flex size-8 items-center justify-center py-3 ${
+                              dateIsToday
+                                ? 'rounded-full bg-active font-semibold text-active-foreground'
+                                : isSelected
+                                  ? 'rounded-full bg-active font-semibold text-active-foreground'
+                                  : hasReservations
+                                    ? 'font-semibold text-active ring-1 ring-active bg-active-foreground rounded-full'
+                                    : 'font-semibold text-active'
+                            }`}
+                          >
+                            {date.getDate()}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+                {viewMode === 'day' && (
+                  <div className="grid grid-cols-1 text-sm/6 text-muted-foreground sm:hidden">
+                    <div className="flex justify-center items-center pt-2 pb-3">
+                      <span className="font-medium">
+                        {weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]}
+                      </span>
+                      {hasReservationsOnDate(selectedDate) && (
+                        <span className="ml-2 bg-active text-active-foreground px-2 py-0.5 rounded-full text-xs font-medium">
+                          予約あり
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div className={`flex flex-none flex-col ${timelineContainerWidthClass}`}>
+                  <div className="flex flex-auto">
                     <div className="grid flex-auto grid-cols-1 grid-rows-1">
                       {/* 時間の行 - 24時間分に修正 */}
                       <div
@@ -592,6 +590,8 @@ export default function TimelinePage() {
                   </div>
                 </div>
               </div>
+              {viewMode === 'week' && <ScrollBar orientation="horizontal" />}
+              <ScrollBar orientation="vertical" />
             </ScrollArea>
           </div>
         ) : isReservationsLoading && selectedStaffId ? (

@@ -221,11 +221,18 @@ export default function ChangePasswordPage() {
 
       router.push(`/dashboard`)
     } catch (error) {
-      console.error(error)
-      toast.error('パスワードの更新に失敗しました', {
-        description: 'もう一度お試しください',
-        icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
-      })
+      const errorMessage = typeof error === 'string' ? error : (error as Error)?.message || ''
+      if (errorMessage.includes('data breach')) {
+        toast.error('そのパスワードは過去に漏洩しています。別のパスワードを設定してください', {
+          description: '安全のため、他のパスワードをお使いください',
+          icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
+        })
+      } else {
+        toast.error('パスワードの更新に失敗しました', {
+          description: 'もう一度お試しください',
+          icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
+        })
+      }
     }
   }
 

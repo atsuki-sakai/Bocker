@@ -77,9 +77,11 @@ const customerEditFormSchema = z.object({
     .optional(),
   email: z
     .string()
-    .email({ message: 'メールアドレスが不正です' })
     .max(MAX_TEXT_LENGTH, {
       message: `メールアドレスは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+    })
+    .refine((val) => !val || z.string().email().safeParse(val).success, {
+      message: 'メールアドレスが不正です',
     })
     .optional(),
   gender: z.enum(GENDER_VALUES).default('unselected'),
@@ -190,7 +192,7 @@ export default function CustomerEditForm() {
 
         // Editable fields - use data from the form
         phone: data.phone,
-        email: data.email ?? '',
+        email: data.email ? data.email : undefined,
         firstName: data.firstName,
         lastName: data.lastName,
         tags: data.tags ?? [],
