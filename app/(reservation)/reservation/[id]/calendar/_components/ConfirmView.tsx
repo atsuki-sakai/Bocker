@@ -217,29 +217,30 @@ export const ConfirmView = ({
     <div>
       <div className="space-y-6">
         {/* 予約内容の概要 */}
-        <div className="bg-muted p-4 rounded-lg">
-          <h3 className="text-lg font-bold text-center tracking-wide mb-4">予約内容の確認</h3>
-          <div className="space-y-2">
+        <div className="bg-muted p-4 rounded-lg md:max-w-4xl mx-auto">
+          <h3 className="text-lg md:text-2xl font-bold text-center tracking-wide mb-4">
+            予約内容の確認
+          </h3>
+          <div className="space-y-2 flex flex-col mb-4">
             {/* 施術時間 */}
-            <Card className="p-4">
-              <div>
-                <p className="text-base font-bold text-active">
-                  <span className="">{selectedDate?.toLocaleDateString()}</span>
-                  <span className=" ml-3">
-                    {selectedTime?.startHour} - {selectedTime?.endHour}
-                  </span>
-                </p>
-              </div>
-              <div className="flex items-center text-sm mt-2">
-                <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                <p>
-                  施術時間{' '}
-                  <span className="font-bold">
-                    {hours > 0 ? `${hours}時間` : ''} {minutes > 0 ? `${minutes}分` : ''}
-                  </span>
-                </p>
-              </div>
-            </Card>
+
+            <div>
+              <p className="text-base font-bold text-active">
+                <span className="">{selectedDate?.toLocaleDateString()}</span>
+                <span className=" ml-3">
+                  {selectedTime?.startHour} - {selectedTime?.endHour}
+                </span>
+              </p>
+            </div>
+            <div className="flex items-center text-sm mt-2">
+              <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+              <p>
+                施術時間{' '}
+                <span className="font-bold">
+                  {hours > 0 ? `${hours}時間` : ''} {minutes > 0 ? `${minutes}分` : ''}
+                </span>
+              </p>
+            </div>
 
             {/* メニュー一覧 */}
             <div className="space-y-1">
@@ -295,6 +296,9 @@ export const ConfirmView = ({
         </div>
 
         <div className="space-y-2">
+          <div className="text-sm text-muted-foreground ">
+            現在保有しているポイント <span className="font-bold mx-1">{availablePoints}</span>P
+          </div>
           <div className="flex justify-between items-center">
             <p className="text-base font-bold">使用ポイント: {usePoints}ポイント</p>
             <p className="text-xs text-muted-foreground">最大 {maxUsablePoints}ポイント</p>

@@ -89,13 +89,14 @@ export const StaffView = ({
             >
               <div className="flex items-start gap-2">
                 {staff.thumbnailPath && staff.thumbnailPath !== '' && (
-                  <Image
-                    src={staff.thumbnailPath}
-                    alt={staff.name ? staff.name : 'Staff Image'}
-                    width={250}
-                    height={250}
-                    className="rounded-sm w-14 h-14"
-                  />
+                  <div className="relative w-14 h-14">
+                    <Image
+                      src={staff.thumbnailPath}
+                      alt={staff.name ? staff.name : 'Staff Image'}
+                      fill
+                      className="rounded-sm object-cover"
+                    />
+                  </div>
                 )}
                 <div className="flex justify-start items-start flex-col">
                   <p className="font-medium">
@@ -146,8 +147,8 @@ export const StaffView = ({
                   <Image
                     src={infoStaff?.imgPath ?? ''}
                     alt={infoStaff?.name ?? ''}
-                    fill
-                    sizes="(max-width: 42rem) 100vw, 42rem"
+                    width={1900}
+                    height={1900}
                     className="object-cover"
                   />
                 </div>

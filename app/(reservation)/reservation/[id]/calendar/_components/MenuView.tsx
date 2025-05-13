@@ -499,7 +499,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
             {selectedMenus.map((menu) => (
               <div
                 key={menu._id}
-                className="flex justify-between items-center p-2 bg-secondary rounded-md"
+                className="flex justify-between items-center p-2 bg-muted rounded-md"
               >
                 <div>
                   <span className="text-xs text-muted-foreground">
