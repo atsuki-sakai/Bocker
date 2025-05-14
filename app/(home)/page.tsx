@@ -77,7 +77,7 @@ export default function Home() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex items-center"
+            className="flex flex-col items-start"
           >
             <div className="flex items-center">
               <Image
@@ -92,7 +92,9 @@ export default function Home() {
               />
               <h1 className="text-2xl font-bold">Bocker</h1>
             </div>
-            <p className="text-xs text-muted-foreground">サロンの予約を簡単・便利に</p>
+            <p className="text-xs scale-75 -ml-4 -mt-2 text-muted-foreground">
+              サロンの予約を簡単・便利に
+            </p>
           </motion.div>
 
           {/* モバイルメニューボタン */}

@@ -1,13 +1,13 @@
 import { internalAction } from '@/convex/_generated/server'
 import { v } from 'convex/values'
-import { api } from '../_generated/api'
+import { api } from '@/convex/_generated/api'
 import Stripe from 'stripe'
 import {
   STRIPE_API_VERSION,
   BASE_REFERRAL_DISCOUNT_AMOUNT,
   MAX_REFERRAL_COUNT,
 } from '@/lib/constants'
-import { Doc } from '../_generated/dataModel'
+import { Doc } from '@/convex/_generated/dataModel'
 
 interface CronApplyReferralDiscountResultItem {
   email: string

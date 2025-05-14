@@ -5,13 +5,13 @@ const crons = cronJobs()
 
 crons.daily(
   'updateAllSalonTrackingSummaries',
-  { hourUTC: 0, minuteUTC: 0 }, // 毎日午前0時00分（UTC）
+  { hourUTC: 16, minuteUTC: 30 }, // 日本時間の毎日午前1時00分（UTC）
   internal.tracking.mutation.updateAllSalonTrackingSummaries
 )
 
 crons.cron(
   'applyAllReferralDiscount',
-  '0 2 25 * *', // 毎月25日の午前2時00分（UTC）
-  internal.admin.action.cronApplyReferralDiscount
+  '30 17 24 * *', // 日本時間の毎月25日の午前2時30分（UTC）
+  internal.salon.referral.action.cronApplyReferralDiscount
 )
 export default crons

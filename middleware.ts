@@ -7,6 +7,9 @@ import { fetchQuery } from 'convex/nextjs'
 import { fetchMutation } from 'convex/nextjs'
 import { Id } from '@/convex/_generated/dataModel'
 
+// メンテナンスモードが有効かどうか
+const isMaintenance = false
+
 // 認証不要なパス
 const publicPaths = [
   '/',
@@ -126,10 +129,32 @@ const setTrackingDataCookie = (
   }
 }
 
+const checkMaintenance = (pathname: string, req: NextRequest) => {
+  // メンテナンスモードが有効で、かつ現在のパスがメンテナンスページでない場合にリダイレクト
+  if (isMaintenance && pathname !== '/maintenance') {
+    const maintenanceUrl = new URL('/maintenance', req.url)
+    return NextResponse.redirect(maintenanceUrl)
+  }
+
+  // メンテナンスページへのアクセスの場合は、以降の処理をスキップしてページを表示
+  if (pathname === '/maintenance') {
+    return NextResponse.next()
+  }
+}
+
 // Clerkミドルウェアの設定
 export default clerkMiddleware(async (auth, req) => {
+  const { pathname } = req.nextUrl // 現在のパスを取得
+
+  // メンテナンスチェックを行い、リダイレクトまたは次の処理へ進むレスポンスを取得
+  const maintenanceResponse = checkMaintenance(pathname, req)
+  // maintenanceResponse が NextResponse オブジェクトであれば、それを返す
+  if (maintenanceResponse instanceof NextResponse) {
+    return maintenanceResponse
+  }
+
   const { userId, orgId } = await auth()
-  const { pathname, searchParams, origin } = req.nextUrl
+  const { searchParams, origin } = req.nextUrl
 
   console.log(`[Middleware] -----------------------------------------------------`)
   console.log(

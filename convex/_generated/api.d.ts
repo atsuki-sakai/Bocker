@@ -8,7 +8,6 @@
  * @module
  */
 
-import type * as admin_action from "../admin/action.js";
 import type * as admin_mutation from "../admin/mutation.js";
 import type * as admin_query from "../admin/query.js";
 import type * as carte_core_mutation from "../carte/core/mutation.js";
@@ -22,7 +21,7 @@ import type * as coupon_core_query from "../coupon/core/query.js";
 import type * as coupon_exclusion_menu_mutation from "../coupon/exclusion_menu/mutation.js";
 import type * as coupon_exclusion_menu_query from "../coupon/exclusion_menu/query.js";
 import type * as coupon_transaction_transaction from "../coupon/transaction/transaction.js";
-import type * as cron from "../cron.js";
+import type * as crons from "../crons.js";
 import type * as customer_core_mutation from "../customer/core/mutation.js";
 import type * as customer_core_query from "../customer/core/query.js";
 import type * as customer_detail_mutaiton from "../customer/detail/mutaiton.js";
@@ -54,6 +53,7 @@ import type * as salon_config_mutation from "../salon/config/mutation.js";
 import type * as salon_config_query from "../salon/config/query.js";
 import type * as salon_core_mutation from "../salon/core/mutation.js";
 import type * as salon_core_query from "../salon/core/query.js";
+import type * as salon_referral_action from "../salon/referral/action.js";
 import type * as salon_referral_mutation from "../salon/referral/mutation.js";
 import type * as salon_referral_query from "../salon/referral/query.js";
 import type * as salon_schedule_mutation from "../salon/schedule/mutation.js";
@@ -96,7 +96,6 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  "admin/action": typeof admin_action;
   "admin/mutation": typeof admin_mutation;
   "admin/query": typeof admin_query;
   "carte/core/mutation": typeof carte_core_mutation;
@@ -110,7 +109,7 @@ declare const fullApi: ApiFromModules<{
   "coupon/exclusion_menu/mutation": typeof coupon_exclusion_menu_mutation;
   "coupon/exclusion_menu/query": typeof coupon_exclusion_menu_query;
   "coupon/transaction/transaction": typeof coupon_transaction_transaction;
-  cron: typeof cron;
+  crons: typeof crons;
   "customer/core/mutation": typeof customer_core_mutation;
   "customer/core/query": typeof customer_core_query;
   "customer/detail/mutaiton": typeof customer_detail_mutaiton;
@@ -142,6 +141,7 @@ declare const fullApi: ApiFromModules<{
   "salon/config/query": typeof salon_config_query;
   "salon/core/mutation": typeof salon_core_mutation;
   "salon/core/query": typeof salon_core_query;
+  "salon/referral/action": typeof salon_referral_action;
   "salon/referral/mutation": typeof salon_referral_mutation;
   "salon/referral/query": typeof salon_referral_query;
   "salon/schedule/mutation": typeof salon_schedule_mutation;
