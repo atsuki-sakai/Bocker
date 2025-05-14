@@ -73,7 +73,7 @@ export const TagInput: React.FC<TagInputProps> = ({
         {title ?? 'タグ'} (最大5つ)
       </Label>
 
-      <div className="flex flex-wrap gap-2 mb-2">
+      <div className="flex flex-wrap gap-2 mb-2 max-w-full overflow-x-auto">
         {tags.map((tag, idx) => (
           <div
             key={idx}

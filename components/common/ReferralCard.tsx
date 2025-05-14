@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 import { toast } from 'sonner'
 import { Progress } from '../ui/progress'
 import Link from 'next/link'
+import { BASE_REFERRAL_DISCOUNT_AMOUNT, MAX_REFERRAL_COUNT } from '@/lib/constants'
 
 export default function ReferralCard() {
   const { salonId } = useSalon()
@@ -67,9 +68,6 @@ export default function ReferralCard() {
             // フォールバック: URLをクリップボードにコピー
             copySignupLink(signupUrl)
           })
-      } else {
-        // Web Share APIがサポートされていない場合、URLをクリップボードにコピー
-        copySignupLink(signupUrl)
       }
     }
   }
@@ -91,14 +89,14 @@ export default function ReferralCard() {
   // 紹介プログレス計算
   const calculateProgress = (): number => {
     if (!referral?.totalReferralCount) return 0
-    const count = Math.min(referral.totalReferralCount, 6)
-    return (count / 6) * 100
+    const count = Math.min(referral.totalReferralCount, MAX_REFERRAL_COUNT)
+    return (count / MAX_REFERRAL_COUNT) * 100
   }
 
   return (
     <AnimatePresence>
       {referral ? (
-        referral.totalReferralCount! < 6 ? (
+        referral.totalReferralCount! < MAX_REFERRAL_COUNT ? (
           <Card className="overflow-hidden border-border shadow-none">
             <CardContent className="p-5">
               <div className="flex flex-col gap-4">
@@ -142,13 +140,19 @@ export default function ReferralCard() {
                   <div className="flex flex-col gap-2 md:flex-row justify-between items-start mb-1">
                     <p className="text-sm font-semibold text-primary">紹介特典 🎁</p>
                     <p className="text-sm font-bold text-primary">
-                      最大<span className="text-active text-xl px-1">12,000</span>
+                      最大
+                      <span className="text-active text-xl px-1">
+                        {(MAX_REFERRAL_COUNT * BASE_REFERRAL_DISCOUNT_AMOUNT).toLocaleString()}
+                      </span>
                       円分の割引を受け取る
                     </p>
                   </div>
-                  <p className="text-xs tracking-wide leading-4 text-primary">
-                    1人紹介するごとに、翌月(25日)のサブスクリプション料金から 2,000円
-                    割引されます（最大6回まで）。 特典の適用状況は、
+                  <p className="text-xs tracking-wide text-primary">
+                    1人紹介するごとに、翌月(25日)のサブスクリプション料金から
+                    <span className="text-active text-xl px-1">
+                      {BASE_REFERRAL_DISCOUNT_AMOUNT.toLocaleString()}
+                    </span>
+                    円割引されます（最大{MAX_REFERRAL_COUNT}回まで）。 特典の適用状況は、
                     <Link
                       className="text-link-foreground font-medium underline"
                       href="/dashboard/subscription"
@@ -157,10 +161,15 @@ export default function ReferralCard() {
                     </Link>
                     でいつでもご確認いただけます。
                   </p>
-                  <p className="text-xs tracking-wide leading-4 text-primary">
-                    紹介を受けた方お客様と紹介者のお客様の両方に月2,000円の割引を一回受けられます。毎月一回分の紹介料を割引き、余剰分は最大６回まで翌月に繰り越します。
+                  <p className="text-xs tracking-wide  text-primary">
+                    紹介を受けた方お客様と紹介者のお客様の両方に月
+                    <span className="text-active text-xl px-1">
+                      {BASE_REFERRAL_DISCOUNT_AMOUNT.toLocaleString()}
+                    </span>
+                    円の割引を一回受けられます。毎月一回分の紹介料を割引き、余剰分は最大
+                    {MAX_REFERRAL_COUNT}回まで翌月に繰り越します。
                   </p>
-                  <p className="text-xs tracking-wide leading-4 text-primary mt-2">
+                  <p className="text-xs tracking-wide text-primary mt-2">
                     割引は、毎月(25日)に契約中のサブスクリプションに適用されます。
                   </p>
                 </div>
@@ -170,14 +179,17 @@ export default function ReferralCard() {
                     <p className="text-xs font-bold tracking-tighter text-primary">
                       獲得した割引は
                       <span className="text-active text-2xl px-1">
-                        {(referral.totalReferralCount! * 2000).toLocaleString()}
+                        {(
+                          referral.totalReferralCount! * BASE_REFERRAL_DISCOUNT_AMOUNT
+                        ).toLocaleString()}
                       </span>
                       円です。
                     </p>
                     <p className="text-sm text-primary">
-                      {referral.totalReferralCount && referral.totalReferralCount > 6
-                        ? '6/6'
-                        : `${referral.totalReferralCount ?? 0}/6`}
+                      {referral.totalReferralCount &&
+                      referral.totalReferralCount > MAX_REFERRAL_COUNT
+                        ? `${MAX_REFERRAL_COUNT}/${MAX_REFERRAL_COUNT}`
+                        : `${referral.totalReferralCount ?? 0}/${MAX_REFERRAL_COUNT}`}
                     </p>
                   </div>
 

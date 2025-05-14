@@ -21,20 +21,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-const trackingType = {
-  LINE: '?tracking=line',
-  Web: '?tracking=web',
-  Instagram: '?tracking=instagram',
-  X: '?tracking=x',
-  Facebook: '?tracking=facebook',
-  Youtube: '?tracking=youtube',
-  Tiktok: '?tracking=tiktok',
-  GoogleMap: '?tracking=googleMap',
-}
+import { TRACKING_CODE_VALUES, TrackingCode } from '@/services/convex/shared/types/common'
 
 export default function ReservationLink() {
   const { salon } = useSalon()
-  const [selectedTrackingType, setSelectedTrackingType] = useState<keyof typeof trackingType>('Web')
+  const [selectedTrackingType, setSelectedTrackingType] = useState<TrackingCode>('web')
   const apiConfig = useQuery(
     api.salon.api_config.query.findBySalonId,
     salon?._id ? { salonId: salon?._id } : 'skip'
@@ -56,13 +47,13 @@ export default function ReservationLink() {
           <div className="flex items-center gap-2 mb-4">
             <Select
               value={selectedTrackingType}
-              onValueChange={(value) => setSelectedTrackingType(value as keyof typeof trackingType)}
+              onValueChange={(value) => setSelectedTrackingType(value as TrackingCode)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="リンクの設置先を選択" />
               </SelectTrigger>
               <SelectContent>
-                {Object.keys(trackingType).map((key) => (
+                {TRACKING_CODE_VALUES.map((key) => (
                   <SelectItem key={key} value={key}>
                     {key}
                   </SelectItem>
@@ -73,7 +64,7 @@ export default function ReservationLink() {
               size="icon"
               onClick={() => {
                 navigator.clipboard.writeText(
-                  `${baseUrl}/reservation/${salon._id}${trackingType[selectedTrackingType]}`
+                  `${baseUrl}/reservation/${salon._id}/?code=${selectedTrackingType}`
                 )
               }}
             >
@@ -83,8 +74,8 @@ export default function ReservationLink() {
 
           <a
             className="text-sm text-link-foreground truncate"
-            href={`${baseUrl}/reservation/${salon._id}${trackingType[selectedTrackingType]}`}
-          >{`${baseUrl}/reservation/${salon._id}${trackingType[selectedTrackingType]}`}</a>
+            href={`${baseUrl}/reservation/${salon._id}/?code=${selectedTrackingType}`}
+          >{`${baseUrl}/reservation/${salon._id}/?code=${selectedTrackingType}`}</a>
           <Accordion type="single" collapsible>
             <AccordionItem value="item-1">
               <AccordionTrigger>

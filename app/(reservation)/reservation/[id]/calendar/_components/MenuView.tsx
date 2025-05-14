@@ -16,7 +16,11 @@ import {
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { usePaginatedQuery } from 'convex/react'
-import { convertPaymentMethod, MenuCategory } from '@/services/convex/shared/types/common'
+import {
+  convertPaymentMethod,
+  MENU_CATEGORY_VALUES,
+  MenuCategory,
+} from '@/services/convex/shared/types/common'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Clock, X } from 'lucide-react'
@@ -37,17 +41,19 @@ interface MenuViewProps {
   onChangeMenusAction: (menus: Doc<'menu'>[]) => void
 }
 
+type MenuCategoryWithSet = MenuCategory | 'セットメニュー'
+
 export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: MenuViewProps) => {
   // STATES
-  const [currentCategory, setCurrentCategory] = useState<MenuCategory | null>(null)
+  const [currentCategory, setCurrentCategory] = useState<MenuCategoryWithSet | null>(null)
   const [showMenuDetails, setShowMenuDetails] = useState<boolean>(false)
   const [selectedMenu, setSelectedMenu] = useState<Doc<'menu'> | null>(null)
   const [selectedMenuMap, setSelectedMenuMap] = useState<
-    Partial<Record<MenuCategory, Doc<'menu'>>>
+    Partial<Record<MenuCategoryWithSet, Doc<'menu'>>>
   >({})
-  const [selectedCategories, setSelectedCategories] = useState<MenuCategory[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<MenuCategoryWithSet[]>([])
   const [showPopover, setShowPopover] = useState<boolean>(false)
-  const [blockedCategories, setBlockedCategories] = useState<MenuCategory[]>([])
+  const [blockedCategories, setBlockedCategories] = useState<MenuCategoryWithSet[]>([])
 
   // 選択されたメニューの配列を取得するための計算プロパティ
   const selectedMenus = useMemo(() => {
@@ -82,9 +88,9 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   }
 
   // FUNCTIONS
-  const extractUniqueCategories = (menus: Doc<'menu'>[]): MenuCategory[] => {
+  const extractUniqueCategories = (menus: Doc<'menu'>[]): MenuCategoryWithSet[] => {
     // Set を使用して重複を排除
-    const categorySet = new Set<MenuCategory>()
+    const categorySet = new Set<MenuCategoryWithSet>()
 
     // メニューからカテゴリを抽出して Set に追加
     menus.forEach((menu) => {
@@ -96,28 +102,14 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
     })
 
     // セットメニューを順序配列に追加
-    const categoryOrder: MenuCategory[] = [
-      'カット',
-      'カラー',
-      'パーマ',
-      'トリートメント',
-      'エクステ',
-      'ヘアセット',
-      'ヘッドスパ',
-      'フェイスケア',
-      'ネイル',
-      'ヘアサロン',
-      'メイク',
-      'セットメニュー',
-      'その他',
-    ]
+    const categoryOrder: MenuCategoryWithSet[] = [...MENU_CATEGORY_VALUES, 'セットメニュー']
 
     // 順序に基づいて並び替え（存在するカテゴリのみ）
     return categoryOrder.filter((category) => categorySet.has(category))
   }
 
   // カテゴリに基づいてメニューをフィルタリング
-  const getMenusByCategory = (category: MenuCategory | null): Doc<'menu'>[] => {
+  const getMenusByCategory = (category: MenuCategoryWithSet | null): Doc<'menu'>[] => {
     if (!category || !menus) return []
 
     if (category === 'セットメニュー') {
@@ -210,8 +202,8 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   useEffect(() => {
     if (selectedMenuIds && selectedMenuIds.length > 0 && menus) {
       // IDからメニューオブジェクトを取得
-      const menuMap: Partial<Record<MenuCategory, Doc<'menu'>>> = {}
-      const blockedCats: MenuCategory[] = []
+      const menuMap: Partial<Record<MenuCategoryWithSet, Doc<'menu'>>> = {}
+      const blockedCats: MenuCategoryWithSet[] = []
 
       selectedMenuIds.forEach((menuId) => {
         const menu = menus.find((m) => m._id === menuId)
@@ -247,7 +239,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   }, [menus, currentCategory])
 
   // ユニークカテゴリ取得
-  const uniqueCategories: MenuCategory[] = useMemo(() => {
+  const uniqueCategories: MenuCategoryWithSet[] = useMemo(() => {
     const categories = extractUniqueCategories(menus)
     // セットメニューが含まれていない場合は追加
     if (!categories.includes('セットメニュー')) {
@@ -472,7 +464,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
         {(selectedCategories.length === 0 ? uniqueCategories : selectedCategories).map(
           (category) => {
             // 型保証
-            const validCategory = category as MenuCategory
+            const validCategory = category as MenuCategoryWithSet
             const categoryMenus = getMenusByCategory(validCategory)
 
             // カテゴリに該当するメニューがない場合はセクションを表示しない

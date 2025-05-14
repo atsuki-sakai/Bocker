@@ -19,6 +19,7 @@
     "@clerk/clerk-sdk-node": "^5.1.6",
     "@clerk/nextjs": "^6.11.2",
     "@convex-dev/action-retrier": "^0.2.0",
+    "@convex-dev/aggregate": "^0.1.20",
     "@convex-dev/migrations": "^0.2.5",
     "@google-cloud/storage": "^7.15.2",
     "@headlessui/react": "^2.2.0",

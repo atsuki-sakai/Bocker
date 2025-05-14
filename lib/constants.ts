@@ -152,3 +152,7 @@ export const POINT_EXPIRATION_DAYS = [
   { value: 1460, label: '4年' },
   { value: 1825, label: '5年' },
 ];
+
+// Referral Discount
+export const BASE_REFERRAL_DISCOUNT_AMOUNT = 2000
+export const MAX_REFERRAL_COUNT = 10

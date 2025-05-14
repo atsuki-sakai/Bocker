@@ -1,10 +1,10 @@
-import { v, Infer } from 'convex/values';
+import { v, Infer } from 'convex/values'
 
 // 共通の型定義
 export const CommonFields = {
   isArchive: v.optional(v.boolean()), // 論理削除フラグ
   deletedAt: v.optional(v.number()), // 論理削除日時 (UNIXタイム)
-};
+}
 
 // 曜日の型定義
 export const DAY_OF_WEEK_VALUES = [
@@ -15,14 +15,14 @@ export const DAY_OF_WEEK_VALUES = [
   'friday',
   'saturday',
   'sunday',
-] as const;
-export const dayOfWeekType = v.union(...DAY_OF_WEEK_VALUES.map((day) => v.literal(day)));
-export type DayOfWeek = Infer<typeof dayOfWeekType>;
+] as const
+export const dayOfWeekType = v.union(...DAY_OF_WEEK_VALUES.map((day) => v.literal(day)))
+export type DayOfWeek = Infer<typeof dayOfWeekType>
 
 // 性別の型定義
-export const GENDER_VALUES = ['unselected', 'male', 'female'] as const;
-export const genderType = v.union(...GENDER_VALUES.map((gender) => v.literal(gender)));
-export type Gender = Infer<typeof genderType>;
+export const GENDER_VALUES = ['unselected', 'male', 'female'] as const
+export const genderType = v.union(...GENDER_VALUES.map((gender) => v.literal(gender)))
+export type Gender = Infer<typeof genderType>
 export const convertGender = (gender: Gender, inUnselected: boolean = false): string => {
   switch (gender) {
     case 'unselected':
@@ -203,13 +203,30 @@ export const MENU_CATEGORY_VALUES = [
   'ヘアセット',
   'ヘッドスパ',
   'フェイスケア',
-  'ネイル',
-  'ヘアサロン',
-  'メイク',
   'その他',
-  'セットメニュー',
 ] as const
 export const menuCategoryType = v.union(
   ...MENU_CATEGORY_VALUES.map((category) => v.literal(category))
-);
-export type MenuCategory = Infer<typeof menuCategoryType>;
+)
+export type MenuCategory = Infer<typeof menuCategoryType>
+
+export const TRACKING_CODE_VALUES = [
+  'web',
+  'line',
+  'googleMap',
+  'facebook',
+  'youtube',
+  'tiktok',
+  'instagram',
+  'x',
+  'direct',
+  'unknown',
+] as const
+export const trackingCodeType = v.union(...TRACKING_CODE_VALUES.map((code) => v.literal(code)))
+export type TrackingCode = Infer<typeof trackingCodeType>
+
+export const TRACKING_EVENT_TYPE_VALUES = ['page_view', 'conversion'] as const
+export const trackingEventType = v.union(
+  ...TRACKING_EVENT_TYPE_VALUES.map((type) => v.literal(type))
+)
+export type TrackingEventType = Infer<typeof trackingEventType>

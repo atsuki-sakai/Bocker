@@ -15,7 +15,9 @@ import {
   genderType,
   reservationIntervalMinutesType,
   menuCategoryType,
-} from '../services/convex/shared/types/common';
+  trackingCodeType,
+  trackingEventType,
+} from '../services/convex/shared/types/common'
 
 /**
  * Convexスキーマ定義
@@ -254,6 +256,16 @@ export default defineSchema({
     useCount: v.optional(v.number()), // 利用回数
     lastReservationDate_unix: v.optional(v.number()), // 最終予約日
     tags: v.optional(v.array(v.string())), // タグ
+    initialTracking: v.optional(
+      // 未実装
+      v.object({
+        code: v.optional(v.string()), // コード(line, googleMap, facebook, youtube, tiktok, instagram, x)
+        source: v.optional(v.string()), // 流入元URL
+        campaign: v.optional(v.string()), // キャンペーン名 (新生活に向けて心機一転！...)
+        term: v.optional(v.string()), // キャンペーンのキーワード (話題の〇〇、疲れた時に)
+        createdAt: v.number(), // 流入日時
+      })
+    ),
     ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
@@ -611,4 +623,27 @@ export default defineSchema({
       'reservationId',
       'isArchive',
     ]),
+
+  // トラッキングイベント
+  tracking_event: defineTable({
+    salonId: v.id('salon'), // サロンID
+    sessionId: v.optional(v.string()), // 訪問者ID (Cookieベース)
+    code: trackingCodeType, // コード(web, line, googleMap, facebook, youtube, tiktok, instagram, x, unknown)
+    eventType: v.optional(trackingEventType), // トラッキングタイプ("click", "page_view", "conversion")
+  }).index('by_session_id_and_event_details', ['sessionId', 'salonId', 'eventType', 'code']),
+
+  // トラッキングサマリー
+  tracking_summaries: defineTable({
+    salonId: v.id('salon'), // サロンID
+    date: v.string(), // '2024-05-14' のような日付単位 日付で管理
+    eventType: v.optional(trackingEventType), // トラッキングタイプ("click", "page_view", "conversion")
+    // 分析単位（任意の軸：utm_source / campaign / medium / line / instagram / x / youtube / tiktok / facebook / unknown）
+    code: v.optional(trackingCodeType),
+
+    // 集計結果
+    totalCount: v.number(), // 訪問数
+    ...CommonFields,
+  })
+    .index('by_salon_date', ['salonId', 'date'])
+    .index('by_salon_date_event_type', ['salonId', 'date', 'eventType']),
 })
