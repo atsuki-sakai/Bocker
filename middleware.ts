@@ -327,7 +327,7 @@ async function getSalonIdFromRequest(
 
 // トラッキングデータから適切な `code` を決定する仮の関数
 function determineTrackingCode(trackingCode?: string | null) {
-  if (!trackingCode) return 'web' // デフォルト値または適切なロジック
+  if (!trackingCode) return 'direct' // デフォルト値または適切なロジック
 
   const code = trackingCode?.toLowerCase()
   // const medium = trackingData.medium?.toLowerCase(); // 必要に応じてmediumも使用
@@ -339,7 +339,6 @@ function determineTrackingCode(trackingCode?: string | null) {
   if (code?.includes('tiktok')) return 'tiktok'
   if (code?.includes('x')) return 'x'
   if (code?.includes('youtube')) return 'youtube'
-  if (!code) return 'direct'
   // 他のソースや媒体に基づいたマッピングルールを追加
 
   return 'unknown' // いずれにも一致しない場合のデフォルト
