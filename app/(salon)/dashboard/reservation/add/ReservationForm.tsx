@@ -875,9 +875,9 @@ export default function ReservationForm() {
                             key={menu._id}
                             className="flex items-center justify-between w-full"
                           >
-                            {menu.imgPath && (
+                            {menu.images && menu.images[0]?.imgPath && (
                               <Image
-                                src={menu.imgPath}
+                                src={menu.images[0].imgPath}
                                 alt={menu.name ?? ''}
                                 className="w-10 h-10 rounded-full max-w-[40px] max-h-[40px] min-w-[40px] min-h-[40px]"
                                 width={40}

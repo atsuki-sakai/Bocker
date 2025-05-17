@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServiceRole } from "@/services/supabase/SupabaseService";
 import { api } from "@/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
-import { Doc, Id } from "@/convex/_generated/dataModel";
+import { Id, Doc } from "@/convex/_generated/dataModel";
 
 /**
  * Convex 予約データをカーソルベースで取得するヘルパー

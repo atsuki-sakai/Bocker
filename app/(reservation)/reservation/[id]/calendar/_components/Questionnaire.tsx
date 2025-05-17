@@ -230,13 +230,13 @@ export const Questionnaire = ({
                       onUploadComplete={handleUploadComplete}
                       initialImageUrl={hairImgPreviewUrl || undefined}
                       maxSizeMB={6}
-                      onFileSelect={(file) => {
-                        form.setValue('hairImgFile', file)
-                        setHairImgFile(file)
+                      onFileSelect={(files) => {
+                        form.setValue('hairImgFile', files[0] ?? null)
+                        setHairImgFile(files[0] ?? null)
                         if (hairImgPreviewUrl && hairImgPreviewUrl.startsWith('blob:')) {
                           URL.revokeObjectURL(hairImgPreviewUrl)
                         }
-                        setHairImgPreviewUrl(URL.createObjectURL(file))
+                        setHairImgPreviewUrl(files[0] ? URL.createObjectURL(files[0]) : null)
                       }}
                     />
                   </FormControl>
