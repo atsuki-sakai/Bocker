@@ -175,7 +175,7 @@ export type CouponDiscountType = Infer<typeof couponDiscountType>
 
 // ファイルのパスの型定義
 export const IMG_DIRECTORY_VALUES = [
-  'salon',
+  'setting',
   'staff/original',
   'staff/thumbnail',
   'menu/original',

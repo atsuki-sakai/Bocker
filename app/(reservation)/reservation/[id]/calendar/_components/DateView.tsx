@@ -37,6 +37,7 @@ export const DateView = ({
   const salonId = params.id as Id<'salon'>
   const [availableTimes, setAvailableTimes] = useState<TimeRange[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate || startOfToday())
 
   const salonExceptionDates = useQuery(
     api.schedule.salon_exception.query.displayExceptionSchedule,
@@ -49,7 +50,7 @@ export const DateView = ({
           day: '2-digit',
         })
         .replace(/\//g, '-'),
-      take: 10,
+      take: 30,
     }
   )
 
@@ -142,8 +143,6 @@ export const DateView = ({
     { dayOfWeek: uniqueClosedDayIndices },
   ]
 
-  console.log('disabledDates', disabledDates)
-
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[300px]">
@@ -153,14 +152,11 @@ export const DateView = ({
     )
   }
 
-  console.log('salonWeeekSchedule', salonWeeekSchedule)
-  console.log('staffWeekSchedule', staffWeekSchedule)
-
   return (
     <div>
       <h2 className="text-base">日時を選択</h2>
       <p className="text-muted-foreground mb-4 text-sm">ご希望の日付と時間を選択してください。</p>
-
+      <div></div>
       <div className="flex flex-col md:flex-row gap-6">
         <div className="md:w-1/2 flex flex-col justify-center items-center">
           <h3 className="text-lg font-medium mb-2">日付</h3>
@@ -170,6 +166,8 @@ export const DateView = ({
             onSelect={handleDateSelect}
             disabled={disabledDates}
             locale={ja}
+            month={currentMonth}
+            onMonthChange={setCurrentMonth}
             className="border rounded-md p-3"
           />
         </div>

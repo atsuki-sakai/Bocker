@@ -8,7 +8,7 @@ import { useAuth } from '@clerk/nextjs';
 
 
 export default function ConvexClientProvider({ children }: { children: ReactNode }) {
-  const convexClient = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+  const convexClient = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL as string)
   return (
     <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
       <ConvexQueryCacheProvider>{children}</ConvexQueryCacheProvider>

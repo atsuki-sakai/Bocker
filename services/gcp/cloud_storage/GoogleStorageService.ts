@@ -3,7 +3,7 @@ import { UploadResult } from './types'
 import { STORAGE_URL } from './constants'
 import { throwConvexError } from '@/lib/error'
 import { sanitizeFileName } from '@/lib/utils'
-
+import { Id } from '@/convex/_generated/dataModel';
 /**
  * GCSクライアントとバケット設定を管理するクラス
  */
@@ -102,21 +102,14 @@ class GoogleStorageService {
   }
 
   /**
-   * ファイルパスを生成する
-   */
-  private generateFilePath(fileName: string, directory: string): string {
-    const timestamp = Date.now()
-    return `${directory}/${timestamp}-${fileName}`
-  }
-
-  /**
    * バッファからファイルをアップロードする
    */
   async uploadFileBuffer(
     buffer: Buffer,
     fileName: string,
     contentType: string,
-    directory: string
+    directory: string,
+    salonId: Id<"salon">
   ): Promise<UploadResult> {
     this.initializeIfNeeded()
 
@@ -125,8 +118,8 @@ class GoogleStorageService {
 
     try {
       const bucket = this.storage!.bucket(this.bucketName!)
-      const timestamp = Date.now()
-      const filePath = `${directory}/${timestamp}-${safeFileName}`
+      const timestamp = new Date().toISOString().replace(/[-:Z]/g, '').split('.')[0]
+      const filePath = `${salonId}/${directory}/${timestamp}_${safeFileName}`
       const blob = bucket.file(filePath)
 
       // バッファから直接アップロード
@@ -235,13 +228,14 @@ class GoogleStorageService {
 
       // サムネイルのパスを推測
       // originals/category/timestamp-filename.ext → thumbnails/category/timestamp-filename.ext
-      const thumbnailPath = originalPath.replace('originals/', 'thumbnails/')
+      const thumbnailPath = originalPath.replace('original/', 'thumbnail/')
 
       const bucket = this.storage!.bucket(this.bucketName!)
 
       // 両方のファイルを削除
       try {
         await bucket.file(originalPath).delete()
+        console.log('Original image deleted:', originalPath)
       } catch (error) {
         const errAny = error as any
         if (errAny.code !== 404) throw error
@@ -249,6 +243,7 @@ class GoogleStorageService {
 
       try {
         await bucket.file(thumbnailPath).delete()
+        console.log('Thumbnail image deleted:', thumbnailPath)
       } catch (error) {
         const errAny = error as any
         if (errAny.code !== 404) throw error

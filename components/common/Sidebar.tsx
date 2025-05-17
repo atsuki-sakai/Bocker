@@ -240,7 +240,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
               </TransitionChild>
               {/* Sidebar for mobile */}
               <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-background px-6 pb-4">
-                <div className="flex flex-col mt-2">
+                <div className="relative flex flex-col mt-2">
                   <div className="flex items-center gap-x-2">
                     <Image
                       src={
@@ -258,6 +258,11 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                   </div>
                   <div className="flex items-center gap-x-2">
                     <p className="text-xs text-primary">サロンの運営をもっと便利に。</p>
+                  </div>
+                  <div className="absolute right-1 top-2">
+                    <div className="relative lg:hidden">
+                      <ModeToggle />
+                    </div>
                   </div>
                 </div>
                 <Separator className="my-2 w-2/3 mx-auto" />
@@ -603,7 +608,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                   </span>
 
                   <div aria-hidden="true" className="hidden lg:block lg:h-6 lg:w-px" />
-                  <div className="relative">
+                  <div className="relative hidden lg:block">
                     <ModeToggle />
                   </div>
                   <Menu as="div" className="relative">

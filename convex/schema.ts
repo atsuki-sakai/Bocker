@@ -132,6 +132,7 @@ export default defineSchema({
     address: v.optional(v.string()), // 住所
     reservationRules: v.optional(v.string()), // 予約ルール
     imgPath: v.optional(v.string()), // 画像ファイルパス
+    thumbnailPath: v.optional(v.string()), // サムネイルファイルパス
     description: v.optional(v.string()), // 説明
     ...CommonFields,
   }).index('by_salon_id', ['salonId', 'isArchive']),
@@ -344,7 +345,8 @@ export default defineSchema({
     isActive: v.optional(v.boolean()), // 有効/無効フラグ
     ...CommonFields,
   })
-    .index('by_salon_id', ['salonId', 'isActive', 'isArchive'])
+    .index('by_salon_id', ['salonId', 'isArchive'])
+    .index('by_salon_id_is_active', ['salonId', 'isActive', 'isArchive'])
     .index('by_name', ['name', 'isActive', 'isArchive'])
     .index('by_email', ['email', 'isActive', 'isArchive'])
     .index('by_salon_id_name', ['salonId', 'name', 'isActive', 'isArchive'])
@@ -398,8 +400,14 @@ export default defineSchema({
     unitPrice: v.optional(v.number()), // 単価
     salePrice: v.optional(v.number()), // セール価格
     timeToMin: v.optional(v.number()), // 時間(分): 実質の作業時間
-    imgPath: v.optional(v.string()), // 画像ファイルパス
-    thumbnailPath: v.optional(v.string()), // サムネイル画像ファイルパス
+    images: v.optional(
+      v.array(
+        v.object({
+          imgPath: v.optional(v.string()), // 画像ファイルパス
+          thumbnailPath: v.optional(v.string()), // サムネイル画像ファイルパス
+        })
+      )
+    ),
     description: v.optional(v.string()), // 説明
     targetGender: v.optional(genderType), // 対象性別
     targetType: v.optional(targetType), // 対象タイプ
@@ -536,6 +544,13 @@ export default defineSchema({
     featuredHairimgPath: v.optional(v.string()), // 顧客が希望する髪型の画像ファイルパス
     notes: v.optional(v.string()), // 備考
     paymentMethod: v.optional(paymentMethodType), // 支払い方法
+    stripeCheckoutSessionId: v.optional(v.string()), // Stripe CheckoutセッションID
+    paymentStatus: v.optional(v.union( // 支払い状況
+      v.literal('pending'), // 未払い
+      v.literal('paid'), // 支払い済み
+      v.literal('failed'), // 支払い失敗
+      v.literal('cancelled') // キャンセル済み
+    )),
     ...CommonFields,
   })
     .index('by_salon_id', ['salonId', 'isArchive'])
@@ -562,6 +577,7 @@ export default defineSchema({
   // サロンのポイント基本設定テーブル
   point_config: defineTable({
     salonId: v.id('salon'),
+    isActive: v.optional(v.boolean()), // 有効/無効フラグ
     isFixedPoint: v.optional(v.boolean()), // 固定ポイントかどうか
     pointRate: v.optional(v.number()), // ポイント付与率 (例: 0.1なら10%)
     fixedPoint: v.optional(v.number()), // 固定ポイント (例: 100円につき1ポイント)

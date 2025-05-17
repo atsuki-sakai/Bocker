@@ -197,7 +197,7 @@ export default function ReservationPage() {
                   ? customer.lineUserName
                   : customer.lastName && customer.firstName
                     ? `${customer.lastName} ${customer.firstName}`
-                    : 'N/A'}
+                    : '未設定'}
               </p>
             </div>
           </div>
@@ -220,14 +220,13 @@ export default function ReservationPage() {
           <h2 className="text-xl font-semibold mb-3">担当スタッフ</h2>
           <div className="flex items-center gap-4">
             {staff.imgPath && (
-              <div className="relative h-16 w-16 border border-border shadow-sm rounded-full overflow-hidden flex items-center justify-center">
+              <div className="relative h-auto w-full max-w-xs border border-border shadow-sm rounded-md overflow-hidden flex items-center justify-center">
                 <Image
                   src={staff.imgPath}
                   alt={staff.name ?? ''}
-                  width={64}
-                  height={64}
-                  objectFit="cover"
-                  className="object-cover"
+                  width={180}
+                  height={180}
+                  className="object-cover w-full h-full"
                 />
               </div>
             )}

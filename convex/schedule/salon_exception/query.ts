@@ -18,7 +18,7 @@ export const displayExceptionSchedule = query({
       .withIndex('by_salon_id', (q) => q.eq('salonId', args.salonId))
       .filter((q) => q.gte(q.field('date'), args.dateString)) // gteを使用して当日を含める
       .order('desc')
-      .take(args.take || 10);
+      .take(args.take || 30);
   },
 });
 // 取得関数の修正

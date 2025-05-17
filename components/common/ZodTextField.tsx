@@ -1,29 +1,31 @@
-import { z } from 'zod';
-import { UseFormRegister, FieldErrors } from 'react-hook-form';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { AlertCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+'use client'
+
+import { z } from 'zod'
+import { UseFormRegister, FieldErrors } from 'react-hook-form'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { AlertCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const fadeIn = {
   hidden: { opacity: 0, y: -10 },
   visible: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -10 },
-};
+}
 
 type ZodTextFieldProps<TSchema extends z.ZodTypeAny> = {
-  register: UseFormRegister<z.infer<TSchema>>;
-  errors: FieldErrors<z.infer<TSchema>>;
-  name: string;
-  label: string;
-  type?: string;
-  icon?: React.ReactNode;
-  placeholder?: string;
-  className?: string;
-  required?: boolean;
-  readOnly?: boolean;
-  ghost?: boolean;
-};
+  register: UseFormRegister<z.infer<TSchema>>
+  errors: FieldErrors<z.infer<TSchema>>
+  name: string
+  label: string
+  type?: string
+  icon?: React.ReactNode
+  placeholder?: string
+  className?: string
+  required?: boolean
+  readOnly?: boolean
+  ghost?: boolean
+}
 
 // ZodTextField コンポーネント - 再利用可能なフォームフィールド
 export default function ZodTextField({

@@ -42,6 +42,12 @@ export const create = mutation({
     couponDiscount: v.optional(v.number()),
     notes: v.optional(v.string()),
     paymentMethod: v.optional(paymentMethodType),
+    stripeCheckoutSessionId: v.optional(v.string()),
+    paymentStatus: v.optional(v.union(v.literal('pending'), // 未払い
+      v.literal('paid'), // 支払い済み
+      v.literal('failed'), // 支払い失敗
+      v.literal('cancelled') // キャンセル済み
+    ))
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)
@@ -166,6 +172,12 @@ export const update = mutation({
     couponDiscount: v.optional(v.number()),
     notes: v.optional(v.string()),
     paymentMethod: v.optional(paymentMethodType),
+    stripeCheckoutSessionId: v.optional(v.string()),
+    paymentStatus: v.optional(v.union(v.literal('pending'), // 未払い
+      v.literal('paid'), // 支払い済み
+      v.literal('failed'), // 支払い失敗
+      v.literal('cancelled') // キャンセル済み
+    ))
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
@@ -407,3 +419,36 @@ export const updateStatus = mutation({
     })
   },
 })
+
+export const updateReservationPaymentStatus = mutation({
+  args: {
+    reservationId: v.id('reservation'),
+    paymentStatus: v.union(
+      v.literal('pending'),
+      v.literal('paid'),
+      v.literal('failed'),
+      v.literal('cancelled')
+    ),
+    stripeCheckoutSessionId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.reservationId, {
+      paymentStatus: args.paymentStatus,
+      ...(args.stripeCheckoutSessionId && { stripeCheckoutSessionId: args.stripeCheckoutSessionId }),
+    });
+  },
+});
+
+export const updateReservationStripeCheckoutSessionId = mutation({
+  args: {
+    reservationId: v.id('reservation'),
+    stripeCheckoutSessionId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.reservationId, {
+      stripeCheckoutSessionId: args.stripeCheckoutSessionId,
+      paymentStatus: 'pending', // Checkout Session作成時はpendingに設定
+    });
+  },
+}); 
+

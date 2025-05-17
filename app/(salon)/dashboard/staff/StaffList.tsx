@@ -94,14 +94,11 @@ export default function StaffList() {
                     <tr key={index}>
                       <td className="py-4 pr-3 pl-4 text-xs font-medium whitespace-nowrap text-muted-foreground sm:pl-6">
                         {staff.isActive ? (
-                          <Badge variant="outline" className="bg-active text-active-foreground">
+                          <Badge variant="outline" className="bg-active-foreground text-active">
                             有効
                           </Badge>
                         ) : (
-                          <Badge
-                            variant="outline"
-                            className="bg-destructive text-destructive-foreground"
-                          >
+                          <Badge variant="outline" className="bg-muted  text-muted-foreground">
                             無効
                           </Badge>
                         )}

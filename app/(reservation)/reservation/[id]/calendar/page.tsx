@@ -1,8 +1,10 @@
 'use client'
 
+
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { api } from '@/convex/_generated/api'
+import { convertDayOfWeekToJa } from '@/lib/schedule'
 import { fetchQuery } from 'convex/nextjs'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
@@ -12,6 +14,8 @@ import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { reservationFlexMessageTemplate } from '@/services/line/message_template/reservation_flex'
 import { jwtDecode } from 'jwt-decode'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import Image from 'next/image'
 
 import {
   Check,
@@ -23,11 +27,19 @@ import {
   Calendar,
   CreditCard,
   CheckCircle,
+  ChevronRight,
 } from 'lucide-react'
 import type { StaffDisplay } from './_components/StaffView.tsx'
 import { Separator } from '@/components/ui/separator'
 import { Questionnaire } from './_components/Questionnaire'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { useLiff } from '@/hooks/useLiff'
 import { ModeToggle } from '@/components/common'
 import { PaymentMethod, ReservationStatus } from '@/services/convex/shared/types/common'
@@ -38,6 +50,17 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
 import { useQuery } from 'convex/react'
+
+// 曜日をソートするための順序を定義
+const dayOrder: Record<string, number> = {
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+  sunday: 7, // 日曜日を最後にする場合は 7, 最初にする場合は 0
+}
 
 type LineSessionPayload = {
   lineUserId: string
@@ -91,38 +114,40 @@ interface SalonCompleteData {
 }
 
 // 複数選択されたオプションをカウントして配列にする関数を追加
-const countOptionOccurrences = (options: Doc<'salon_option'>[]) => {
+const countOptionOccurrences = (
+  options: Doc<'salon_option'>[]
+): { optionId: Id<'salon_option'>; quantity: number }[] => {
   const counts = new Map<string, number>()
-  
-  options.forEach(option => {
+
+  options.forEach((option) => {
     counts.set(option._id, (counts.get(option._id) || 0) + 1)
   })
-  
+
   return Array.from(counts.entries()).map(([optionId, quantity]) => ({
     optionId: optionId as Id<'salon_option'>,
-    quantity
+    quantity,
   }))
 }
 
 // 同じオプションをグループ化する関数を追加
 const groupOptionsByName = (options: Doc<'salon_option'>[]) => {
   const groupedOptions = new Map<string, { name: string; count: number }>()
-  
-  options.forEach(option => {
+
+  options.forEach((option) => {
     if (groupedOptions.has(option._id)) {
       const current = groupedOptions.get(option._id)!
-      groupedOptions.set(option._id, { 
-        name: current.name, 
-        count: current.count + 1 
+      groupedOptions.set(option._id, {
+        name: current.name,
+        count: current.count + 1,
       })
     } else {
-      groupedOptions.set(option._id, { 
-        name: option.name, 
-        count: 1 
+      groupedOptions.set(option._id, {
+        name: option.name,
+        count: 1,
       })
     }
   })
-  
+
   return Array.from(groupedOptions.values())
 }
 
@@ -142,6 +167,7 @@ export default function CalendarPage() {
   const [selectedStaffCompleted, setSelectedStaffCompleted] = useState<{
     staff: StaffDisplay | null
   } | null>(null)
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [selectedOptions, setSelectedOptions] = useState<Doc<'salon_option'>[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<TimeRange | null>(null)
@@ -162,12 +188,18 @@ export default function CalendarPage() {
   const [isLogout, setIsLogout] = useState(false)
   const totalSteps = 10 // Questionnaireと合わせる
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [isCreatingCheckoutSession, setIsCreatingCheckoutSession] = useState(false) // 追加
+  const [isSalonInfoSheetOpen, setIsSalonInfoSheetOpen] = useState(false)
 
   // bottomBar高さ測定用のrefとstate
   const bottomBarRef = useRef<HTMLDivElement>(null)
   const [bottomBarHeight, setBottomBarHeight] = useState<number>(0)
 
   // Convex queries
+  const salonWeekSchedule = useQuery(api.schedule.salon_week_schedule.query.getAllBySalonId, {
+    salonId: salonId as Id<'salon'>,
+  })
+
   const pointConfig = useQuery(api.point.config.query.findBySalonId, {
     salonId: salonId,
   })
@@ -261,8 +293,9 @@ export default function CalendarPage() {
     }
   }
 
-  const handleShowQuestionnaire = () => {
-    setIsQuestionnaireOpen(true)
+  const handleShowLogoutDialog = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    setShowLogoutDialog(true)
   }
 
   const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -275,6 +308,208 @@ export default function CalendarPage() {
     toast.success('ログアウトしました。')
     router.push(`/reservation/${salonId}`)
     setIsLogout(false)
+  }
+
+  // クレジットカード決済処理を共通化
+  const processCreditCardPayment = async (): Promise<string | null> => {
+    if (
+      !sessionCustomer ||
+      !salonComplete?.salon?._id ||
+      !selectedStaffCompleted?.staff ||
+      !reservationStartDateTime ||
+      !reservationEndDateTime
+    ) {
+      console.error('予約に必要な情報が不足しています。')
+      toast.error('予約に必要な情報が不足しています。選択内容をご確認ください。')
+      return null
+    }
+
+    try {
+      // 予約データを準備 (status: 'pending' で作成)
+      const reservationData = {
+        salonId: salonComplete.salon._id as Id<'salon'>,
+        customerId: sessionCustomer.customerId as Id<'customer'>,
+        customerName: sessionCustomer.email ? sessionCustomer.email : sessionCustomer.name,
+        staffId: selectedStaffCompleted.staff._id as Id<'staff'>,
+        staffName: selectedStaffCompleted.staff.name,
+        menus: selectedMenus.map((menu) => ({ menuId: menu._id, quantity: 1 })),
+        options: countOptionOccurrences(selectedOptions),
+        totalPrice: calculateTotal(), // 表示・保存用の最終合計金額
+        // 割引前の本来の合計金額 (小計)
+        unitPrice:
+          selectedMenus.reduce((sum, menu) => sum + (menu.salePrice || menu.unitPrice || 0), 0) +
+          selectedOptions.reduce(
+            (sum, option) => sum + (option.salePrice ? option.salePrice : (option.unitPrice ?? 0)),
+            0
+          ) +
+          (selectedStaffCompleted.staff.extraCharge || 0),
+        status: 'pending' as ReservationStatus,
+        startTime_unix: reservationStartDateTime.getTime(),
+        endTime_unix: reservationEndDateTime.getTime(),
+        usePoints: usePoints,
+        couponId: appliedDiscount.couponId || undefined,
+        couponDiscount: appliedDiscount.discount || undefined,
+        paymentMethod: 'credit_card' as PaymentMethod,
+        notes: notes,
+      }
+
+      // 1. Convexに予約データを'pending'ステータスで作成
+      const reservationId = await createReservationMutation(reservationData)
+
+      // オプション在庫数の調整
+      const optionCounts = countOptionOccurrences(selectedOptions)
+      for (const { optionId, quantity } of optionCounts) {
+        const option = selectedOptions.find((opt) => opt._id === optionId)
+        if (option && option.inStock !== undefined && option.inStock !== null) {
+          const newStock = Math.max(0, option.inStock - quantity)
+          try {
+            await balanceStockMutation({
+              optionId,
+              newQuantity: newStock,
+            })
+            console.log(`オプション「${option.name}」の在庫を${newStock}に更新しました`)
+          } catch (error) {
+            console.error(`オプション在庫の更新に失敗しました: ${error}`)
+            throw error
+          }
+        }
+      }
+
+      // 2. Stripe Checkoutセッションを作成するためのlineItemsを準備
+      //    各アイテムの unit_amount には、独自システムで計算した割引適用後の価格を設定する
+
+      const totalDiscountAmount = (appliedDiscount.discount || 0) + (usePoints || 0)
+
+      const lineItemsRaw = [
+        ...selectedMenus.map((menu) => ({
+          name: menu.name,
+          originalPrice: menu.salePrice || menu.unitPrice || 0,
+          type: 'menu' as const,
+        })),
+        ...countOptionOccurrences(selectedOptions).map(({ optionId, quantity }) => {
+          const option = selectedOptions.find((opt) => opt._id === optionId)
+          return {
+            name: option?.name || 'オプション',
+            originalPrice:
+              (option?.salePrice ? option.salePrice : (option?.unitPrice ?? 0)) * quantity,
+            type: 'option' as const,
+            quantity, // オプションの場合、quantityはここで考慮済みなので按分後の価格計算では使わない
+          }
+        }),
+        ...(selectedStaffCompleted?.staff?.extraCharge &&
+        selectedStaffCompleted.staff.extraCharge > 0
+          ? [
+              {
+                name: '指名料',
+                originalPrice: selectedStaffCompleted.staff.extraCharge,
+                type: 'staff_charge' as const,
+              },
+            ]
+          : []),
+      ]
+
+      const subtotalBeforeDiscount = lineItemsRaw.reduce((sum, item) => sum + item.originalPrice, 0)
+
+      const stripeLineItems = lineItemsRaw
+        .map((item) => {
+          let discountedPrice = item.originalPrice
+          if (totalDiscountAmount > 0 && subtotalBeforeDiscount > 0) {
+            const itemDiscountShare =
+              (item.originalPrice / subtotalBeforeDiscount) * totalDiscountAmount
+            discountedPrice = Math.max(0, item.originalPrice - itemDiscountShare) // 価格がマイナスにならないように
+          }
+          // Stripeのunit_amountは整数である必要があるため、四捨五入または切り捨て/切り上げ
+          // JPYの場合、Stripeは最小通貨単位（円）で扱うので、小数点以下は通常不要
+          const finalAmount = Math.round(discountedPrice)
+
+          return {
+            price_data: {
+              currency: 'jpy',
+              product_data: { name: item.name },
+              // オプションの場合、originalPriceが既にquantityを考慮しているので、
+              // unit_amountには按分後の価格をそのまま設定（Stripe側でquantity=1で扱わせる）
+              // ただし、元のcheckoutOptionsの構造と合わせるため、ここではitemがもつquantityで割るか、
+              // lineItemsRaw作成時にオプションのoriginalPriceを単価にし、ここでquantityを渡すか検討が必要
+              // 今回は、オプションも単一アイテムとして扱い、quantityは1でStripeに渡す想定で進める
+              // そのため、countOptionOccurrencesで集約されたオプションは、Stripe上では1つのラインアイテムになる
+              unit_amount: finalAmount,
+            },
+            quantity: item.type === 'option' && item.quantity ? item.quantity : 1, // オプションの場合のみ元の数量をStripeに渡す
+          }
+        })
+        .filter(
+          (item) =>
+            item.price_data.unit_amount > 0 ||
+            (item.price_data.unit_amount === 0 &&
+              item.quantity > 0 &&
+              subtotalBeforeDiscount === totalDiscountAmount)
+        )
+      // 全額割引の場合など、0円のアイテムも送信する必要がある場合がある。
+      // Stripeは0円のラインアイテムを許可するが、最低支払額（JPYで50円）には注意。
+      // ここでは、0円でも数量があれば送信し、そうでなければフィルタリング。
+      // ただし、合計がStripeの最低金額を下回る場合はエラーになる。
+      // もし合計が0円の場合は、Stripe Checkoutではなく別の処理（無料予約完了など）を検討する必要がある。
+
+      // Stripeに渡す最終的なラインアイテムの合計金額を計算 (デバッグ用)
+      const totalAmountForStripe = stripeLineItems.reduce(
+        (sum, item) => sum + item.price_data.unit_amount * item.quantity,
+        0
+      )
+      console.log('Total amount for Stripe:', totalAmountForStripe)
+      if (totalAmountForStripe < 50 && totalAmountForStripe > 0) {
+        console.warn('Stripeに渡す合計金額が50円未満です。Stripe側でエラーになる可能性があります。')
+      }
+      if (totalAmountForStripe === 0 && subtotalBeforeDiscount > 0) {
+        // 全額割引で実質0円の場合の処理 (例: Stripe Checkoutをスキップして予約を確定)
+        // このシナリオは別途設計が必要
+        console.log('合計金額が0円のため、Stripe Checkoutはスキップします。')
+        // ここで予約ステータスを 'confirmed' に更新し、完了ページへリダイレクトするなどの処理を行う。
+        // handleConfirmReservation の現金払いと同様のロジックを参考に実装できる。
+        // 今回は processCreditCardPayment のスコープ外として、エラーを投げるか、
+        // 何もしないで return null するかなどを検討。
+        // ここでは一旦、エラーとして処理を進めないようにする。
+        toast.error(
+          '合計金額が0円になるため、クレジットカード決済はご利用いただけません。別の決済方法を選択するか、お問い合わせください。'
+        )
+        return null // またはエラーをスロー
+      }
+
+      // 3. バックエンドAPIを呼び出してStripe Checkoutセッションを作成
+      const requestBody = {
+        stripeConnectId: salonComplete.salon.stripeConnectId,
+        reservationId,
+        salonId,
+        customerEmail: sessionCustomer.email,
+        lineItems: stripeLineItems,
+      }
+      console.log(
+        'Request body for /api/stripe/connect/checkout:',
+        JSON.stringify(requestBody, null, 2)
+      )
+
+      const response = await fetch('/api/stripe/connect/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Stripe Checkoutセッションの作成に失敗しました。')
+      }
+
+      const responseData = await response.json()
+      const checkoutUrl = responseData.checkoutUrl
+
+      if (checkoutUrl) {
+        return checkoutUrl
+      } else {
+        throw new Error('Checkout URLが取得できませんでした。')
+      }
+    } catch (error) {
+      toast.error(handleErrorToMsg(error))
+      return null
+    }
   }
 
   const handleConfirmReservation = async () => {
@@ -311,8 +546,8 @@ export default function CalendarPage() {
           phone: customerPhone,
         })
       }
-      // 予約データを準備
-      const reservationData = {
+      // 予約データを準備 (handleConfirmReservation内ではstatusをまだ設定しない)
+      const reservationBaseData = {
         salonId: salonComplete.salon._id as Id<'salon'>,
         customerId: sessionCustomer.customerId as Id<'customer'>,
         customerName: sessionCustomer.email ? sessionCustomer.email : sessionCustomer.name,
@@ -325,7 +560,7 @@ export default function CalendarPage() {
           calculateTotal() +
           (usePoints && usePoints > 0 ? usePoints : 0) +
           (appliedDiscount.discount && appliedDiscount.discount > 0 ? appliedDiscount.discount : 0),
-        status: 'pending' as ReservationStatus, // Stripe決済の場合はまずpendingで作成
+        // status: 'pending' as ReservationStatus, // statusは決済方法によって分岐後に設定
         startTime_unix: reservationStartDateTime.getTime(),
         endTime_unix: reservationEndDateTime.getTime(),
         usePoints: usePoints,
@@ -336,106 +571,21 @@ export default function CalendarPage() {
       }
 
       if (selectedPaymentMethod === 'credit_card') {
-        // 1. Convexに予約データを'pending'ステータスで作成
-        const reservationId = await createReservationMutation(reservationData)
-
-        // オプション在庫数の調整
-        // クレジットカード決済でも予約時点で在庫を調整する
-        const optionCounts = countOptionOccurrences(selectedOptions)
-        for (const { optionId, quantity } of optionCounts) {
-          // 選択されたオプションから対象のオプション情報を取得
-          const option = selectedOptions.find((opt) => opt._id === optionId)
-          if (option && option.inStock !== undefined && option.inStock !== null) {
-            // 現在の在庫数から使用数を減算
-            const newStock = Math.max(0, option.inStock - quantity)
-            try {
-              await balanceStockMutation({
-                optionId,
-                newQuantity: newStock,
-              })
-              console.log(`オプション「${option.name}」の在庫を${newStock}に更新しました`)
-            } catch (error) {
-              console.error(`オプション在庫の更新に失敗しました: ${error}`)
-            }
-          }
-        }
-
-        // 2. クレジットカード決済の場合、バックエンドAPIを呼び出してStripe Checkoutセッションを作成
-        const lineItems = [
-          ...selectedMenus.map((menu) => ({
-            price_data: {
-              currency: 'jpy',
-              product_data: { name: menu.name },
-              unit_amount: menu.salePrice || menu.unitPrice || 0,
-            },
-            quantity: 1,
-          })),
-          ...selectedOptions.map((option) => ({
-            price_data: {
-              currency: 'jpy',
-              product_data: { name: option.name },
-              unit_amount: option.salePrice ?? option.unitPrice ?? 0,
-            },
-            quantity: 1,
-          })),
-        ]
-        if (
-          selectedStaffCompleted.staff.extraCharge &&
-          selectedStaffCompleted.staff.extraCharge > 0
-        ) {
-          lineItems.push({
-            price_data: {
-              currency: 'jpy',
-              product_data: { name: `${selectedStaffCompleted.staff.name} 指名料` },
-              unit_amount: selectedStaffCompleted.staff.extraCharge,
-            },
-            quantity: 1,
-          })
-        }
-        // 割引やポイントを反映した最終的なラインアイテムを作成（ここでは簡略化のため合計金額を単一アイテムとして扱う）
-        // API側で手数料を差し引くため、ここでは顧客が支払う総額をStripeに渡すのが適切
-        const checkoutLineItems = [
-          {
-            price_data: {
-              currency: 'jpy',
-              product_data: {
-                name: `予約合計金額（${selectedMenus.map((m) => m.name).join(', ')} 他）`,
-                description: `メニュー、オプション、指名料、割引、ポイント利用を含む最終支払額`,
-              },
-              unit_amount: calculateTotal(), // 割引およびポイント適用後の最終合計金額
-            },
-            quantity: 1,
-          },
-        ]
-
-        const response = await fetch('/api/stripe/connect/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            reservationId: reservationId,
-            salonId: salonComplete.salon._id,
-            customerEmail: sessionCustomer.email, // Stripe customer_email用
-            lineItems: checkoutLineItems, // サーバー側でこれに基づいてCheckoutSessionを作成
-            // success_url, cancel_url はサーバーサイドで環境変数等から生成
-          }),
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Stripe Checkoutセッションの作成に失敗しました。')
-        }
-
-        const { checkoutUrl } = await response.json()
+        const checkoutUrl = await processCreditCardPayment()
         if (checkoutUrl) {
-          router.push(checkoutUrl) // Stripe Checkoutページへリダイレクト
+          router.push(checkoutUrl)
           // リダイレクト後はこのページの操作は不要なため、isProcessingPaymentの解除はしない
         } else {
-          throw new Error('Checkout URLが取得できませんでした。')
+          // 決済処理失敗
+          setIsProcessingPayment(false)
         }
       } else if (selectedPaymentMethod === 'cash') {
         // 1. Convexに予約データを'confirmed'ステータスで作成
-        reservationData.status = 'confirmed' as ReservationStatus
-        const reservationId = await createReservationMutation(reservationData)
+        const reservationDataForCash = {
+          ...reservationBaseData,
+          status: 'confirmed' as ReservationStatus,
+        }
+        const reservationId = await createReservationMutation(reservationDataForCash)
 
         // オプション在庫数の調整
         // 選択されたオプションの数を集計して在庫を調整
@@ -490,7 +640,7 @@ export default function CalendarPage() {
             selectedTime!,
             selectedMenus,
             selectedOptions,
-            reservationData.unitPrice, // 小計（割引前）
+            reservationBaseData.unitPrice, // 小計（割引前）
             usePoints, // 使用ポイント
             appliedDiscount.discount || 0, // クーポン割引額
             calculateTotal(), // 最終合計料金
@@ -694,7 +844,7 @@ export default function CalendarPage() {
 
     // オプション価格の合計（複数選択を考慮）
     const optionTotal = selectedOptions.reduce(
-      (sum, option) => sum + (option.salePrice ?? option.unitPrice ?? 0),
+      (sum, option) => sum + (option.salePrice ? option.salePrice : (option.unitPrice ?? 0)),
       0
     )
 
@@ -763,7 +913,7 @@ export default function CalendarPage() {
     ]
 
     return (
-      <div className="relative mb-4">
+      <div className="relative mb-4 w-full max-w-3xl mx-auto">
         {/* ② ステップ丸要素群 */}
         <div className="relative grid grid-cols-6 gap-2">
           {steps.map((step, index) => {
@@ -810,7 +960,7 @@ export default function CalendarPage() {
           initial="initial"
           animate="animate"
           exit="exit"
-          className="w-full"
+          className="w-full max-w-3xl mx-auto"
         >
           {(() => {
             switch (currentStep) {
@@ -1017,6 +1167,7 @@ export default function CalendarPage() {
                       selectedStaff={selectedStaffCompleted?.staff as StaffDisplay | null}
                       availablePoints={availablePoints ?? 0}
                       usePoints={usePoints}
+                      selectedPaymentMethod={selectedPaymentMethod as PaymentMethod}
                       onChangePointsAction={(points: number) => setUsePoints(points)}
                       selectedDate={selectedDate}
                       selectedTime={selectedTime}
@@ -1066,25 +1217,55 @@ export default function CalendarPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
                     >
-                      <Button
-                        onClick={handleConfirmReservation}
-                        disabled={isProcessingPayment || !isPhoneValid}
-                        className="relative overflow-hidden w-full"
-                      >
-                        <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                          予約を確定する
-                        </motion.span>
-                      </Button>
-                      <Separator className="w-1/3 mx-auto my-1" />
-                      <Button
-                        onClick={handleShowQuestionnaire}
-                        className="relative overflow-hidden w-full"
-                        disabled={isProcessingPayment || !isPhoneValid}
-                      >
-                        <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                          問診票に回答してから予約を確定する
-                        </motion.span>
-                      </Button>
+                      <div className="flex w-full gap-4">
+                        {selectedPaymentMethod === 'credit_card' && (
+                          <Button
+                            onClick={async () => {
+                              setIsCreatingCheckoutSession(true)
+                              try {
+                                const checkoutUrl = await processCreditCardPayment()
+                                if (checkoutUrl) {
+                                  router.push(checkoutUrl)
+                                } else {
+                                  setIsCreatingCheckoutSession(false)
+                                }
+                              } catch (error) {
+                                console.error('Error during credit card payment process:', error)
+                                toast.error(
+                                  handleErrorToMsg(error) ||
+                                    'クレジットカード決済中にエラーが発生しました。'
+                                )
+                                setIsCreatingCheckoutSession(false)
+                              }
+                            }}
+                            disabled={
+                              isCreatingCheckoutSession || isProcessingPayment || !isPhoneValid
+                            }
+                            className="relative overflow-hidden w-full"
+                          >
+                            <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                              {isCreatingCheckoutSession ? '処理中...' : 'クレジットカードで支払う'}
+                            </motion.span>
+                          </Button>
+                        )}
+                        <Button
+                          onClick={handleConfirmReservation}
+                          disabled={
+                            isProcessingPayment ||
+                            !isPhoneValid ||
+                            selectedPaymentMethod === 'credit_card'
+                          }
+                          className="relative overflow-hidden w-full"
+                        >
+                          <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            {isProcessingPayment
+                              ? '処理中...'
+                              : selectedPaymentMethod === 'credit_card'
+                                ? '予約内容を確認 (現金払い)'
+                                : '予約を確定する'}
+                          </motion.span>
+                        </Button>
+                      </div>
                     </motion.div>
                   </motion.div>
                 )
@@ -1099,18 +1280,126 @@ export default function CalendarPage() {
     return <Loading />
   }
 
+  console.log(salonComplete)
+
   return (
-    <div className="container mx-auto p-4" style={{ paddingBottom: bottomBarHeight }}>
+    <div className="container max-w-3xl mx-auto p-4" style={{ paddingBottom: bottomBarHeight }}>
       <div className="overflow-hidden flex items-center justify-between mb-2">
         <div>
+          {/* サロン情報を表示するSheet */}
+          <Sheet open={isSalonInfoSheetOpen} onOpenChange={setIsSalonInfoSheetOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost">
+                <h1 className="text-xl font-bold text-primary hover:underline cursor-pointer break-words">
+                  {salonComplete.config.salonName}
+                </h1>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-full sm:max-w-lg overflow-y-auto p-6">
+              <SheetHeader className="mb-6">
+                <SheetTitle className="text-2xl font-bold">
+                  {salonComplete.config.salonName}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="space-y-6">
+                {salonComplete.config.imgPath && (
+                  <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden shadow-md">
+                    <Image
+                      src={salonComplete.config.imgPath}
+                      alt={salonComplete.config.salonName ?? ''}
+                      layout="fill"
+                      objectFit="cover"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 text-foreground">店舗情報</h3>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                    {salonComplete.config.description}
+                  </p>
+                </div>
+                <div className="flex flex-col justify-start items-start mb-4">
+                  <p className="text-lg text-primary font-bold">営業日</p>
+                  <div className="flex flex-col items-start gap-2 mt-2">
+                    {salonWeekSchedule
+                      ?.sort((a, b) => {
+                        const dayA = dayOrder[a.dayOfWeek!] ?? 8 // 未定義の曜日は最後に
+                        const dayB = dayOrder[b.dayOfWeek!] ?? 8 // 未定義の曜日は最後に
+                        return dayA - dayB
+                      })
+                      .map((schedule, index) => (
+                        <div
+                          key={index}
+                          className="flex  items-center justify-start gap-1 border-b border-border pb-2"
+                        >
+                          <div className="flex  items-center justify-start gap-2 mr-3">
+                            <div
+                              className={`h-3 w-3 rounded-full border border-border ring-1 ring-offset-1 ${schedule.isOpen ? 'bg-active ring-active' : 'bg-destructive-foreground ring-destructive-foreground'}`}
+                            />
+                            <p className="text-sm text-muted-foreground text-nowrap">
+                              {convertDayOfWeekToJa(schedule.dayOfWeek!)}
+                            </p>
+                          </div>
+                          <p
+                            className={`text-sm text-center font-bold ${schedule.isOpen ? 'text-muted-foreground' : 'text-destructive'}`}
+                          >
+                            {schedule.isOpen
+                              ? `${schedule.startHour} ~ ${schedule.endHour}`
+                              : '休日'}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 text-foreground">連絡先</h3>
+                  <ul className="list-none space-y-1 text-sm text-muted-foreground">
+                    <li>
+                      <strong>住所:</strong> {salonComplete.config.postalCode}{' '}
+                      {salonComplete.config.address}
+                    </li>
+                    <li>
+                      <strong>電話:</strong>{' '}
+                      <a
+                        href={`tel:${salonComplete.config.phone}`}
+                        className="hover:underline text-blue-500"
+                      >
+                        {salonComplete.config.phone}
+                      </a>
+                    </li>
+                    <li>
+                      <strong>メール:</strong>{' '}
+                      <a
+                        href={`mailto:${salonComplete.config.email}`}
+                        className="hover:underline text-blue-500"
+                      >
+                        {salonComplete.config.email}
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+                {salonComplete.config.reservationRules && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2 text-foreground">予約ルール</h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                      {salonComplete.config.reservationRules}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+
           {sessionCustomer?.name ? (
-            <p className="text-sm flex items-center gap-2">
+            <p className="text-sm flex items-center gap-2 mt-1">
               <CheckCheck className="w-5 h-5 text-active rounded-full p-1" />
               <span className="font-light">{sessionCustomer?.name} 様</span>
             </p>
           ) : (
             sessionCustomer?.email && (
-              <p className="text-sm flex items-center gap-2">
+              <p className="text-sm flex items-center gap-2 mt-1">
                 <CheckCheck className="w-5 h-5 text-active" />
                 <span className="font-light">{sessionCustomer?.email}</span>
               </p>
@@ -1120,7 +1409,7 @@ export default function CalendarPage() {
         <div className="flex items-center gap-2">
           <ModeToggle />
           <div className="flex flex-col items-center gap-2">
-            <Button size="icon" onClick={(e) => handleLogout(e)}>
+            <Button size="icon" variant="outline" onClick={(e) => handleShowLogoutDialog(e)}>
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
@@ -1140,7 +1429,7 @@ export default function CalendarPage() {
           animate={{ y: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
-          <div className="container mx-auto flex justify-between items-center">
+          <div className="container max-w-3xl mx-auto flex justify-between items-center">
             <div className="flex flex-col items-start justify-between gap-2 w-5/7">
               <motion.div className="text-xs text-muted-foreground">
                 {selectedMenus.length > 0 && (
@@ -1184,7 +1473,7 @@ export default function CalendarPage() {
             </div>
             <div className="flex flex-col items-end justify-between gap-2 w-2/7">
               <motion.p
-                className="text-xs mb-2 border border-link-foreground text-link-foreground rounded-full px-2 py-1 text-nowrap"
+                className="text-xs font-bold mb-2 border border-link-foreground text-link-foreground rounded-full px-2 py-1 text-nowrap"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
@@ -1268,6 +1557,28 @@ export default function CalendarPage() {
               予約を確定する
             </Button>
           )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ログアウト</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>ログアウトしますか？</DialogDescription>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLogoutDialog(false)}>
+              キャンセル
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={(e) => {
+                setShowLogoutDialog(false)
+                handleLogout(e)
+              }}
+            >
+              ログアウト
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

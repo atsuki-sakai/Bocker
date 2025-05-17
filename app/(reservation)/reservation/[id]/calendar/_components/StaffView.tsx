@@ -9,6 +9,7 @@ import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { convertGender, Gender } from '@/services/convex/shared/types/common'
 import { Instagram } from 'lucide-react'
+import { getDayOfWeek } from '@/lib/schedule'
 import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
@@ -62,7 +63,6 @@ export const StaffView = ({
       : 'skip'
   )
 
-  console.log('staffsDisplayData', staffsDisplayData)
   if (!staffsDisplayData) {
     return <Loading />
   }
@@ -73,6 +73,9 @@ export const StaffView = ({
     if (priDiff !== 0) return priDiff
     return (a.extraCharge ?? 0) - (b.extraCharge ?? 0)
   })
+
+  const today = new Date()
+  const todayDayOfWeek = getDayOfWeek(today)
 
   return (
     <div>
@@ -99,6 +102,15 @@ export const StaffView = ({
                   </div>
                 )}
                 <div className="flex justify-start items-start flex-col">
+                  <div className="flex items-center gap-2">
+                    <p className={`text-xs  font-bold text-destructive`}>
+                      {staff.weekSchedules?.find(
+                        (schedule) => schedule.dayOfWeek === todayDayOfWeek
+                      )?.isOpen
+                        ? null
+                        : '本日休み'}
+                    </p>
+                  </div>
                   <p className="font-medium">
                     {staff.name}{' '}
                     <span className="text-sm text-muted-foreground">

@@ -3,22 +3,15 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loading, ZodTextField } from '@/components/common';
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from '@/components/ui/accordion';
-import { Loader2 } from 'lucide-react';
+import { Loading, ZodTextField } from '@/components/common'
+import { Loader2 } from 'lucide-react'
 import { MENU_CATEGORY_VALUES } from '@/services/convex/shared/types/common'
 import { z } from 'zod'
 import { useZodForm } from '@/hooks/useZodForm'
 import { useSalon } from '@/hooks/useSalon'
-import { ImageDrop } from '@/components/common'
-import { TagInput } from '@/components/common'
-import { fileToBase64, createImageWithThumbnail } from '@/lib/utils'
-import { useAction, useMutation, useQuery } from 'convex/react'
+import { ImageDrop, TagInput } from '@/components/common'
+import { fileToBase64 } from '@/lib/utils'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
@@ -112,9 +105,14 @@ const schemaMenu = z
         message: '実際にスタッフが稼働する施術時間は必須です',
       })
       .optional(),
-    imgFilePath: z.string().optional(),
-    imgPath: z.string().optional(),
-    thumbnailPath: z.string().optional(),
+    images: z
+      .array(
+        z.object({
+          imgPath: z.string(),
+          thumbnailPath: z.string(),
+        })
+      )
+      .optional(),
     description: z
       .string()
       .min(1, { message: '説明は必須です' })
@@ -177,9 +175,10 @@ export default function MenuEditForm() {
   const { salon } = useSalon()
   const menuData = useQuery(api.menu.core.query.get, { menuId })
 
-  const [currentFile, setCurrentFile] = useState<File | null>(null)
-  const [existingImageUrl, setExistingImageUrl] = useState<string | undefined>(undefined)
-  const [existingThumbnailUrl, setExistingThumbnailUrl] = useState<string | undefined>(undefined)
+  const [newFiles, setNewFiles] = useState<File[]>([])
+  const [existingImages, setExistingImages] = useState<
+    { imgPath: string; thumbnailPath: string }[]
+  >([])
   const [isUploading, setIsUploading] = useState(false)
   const [targetType, setTargetType] = useState<Target>('all')
   const [targetGender, setTargetGender] = useState<Gender>('unselected')
@@ -188,10 +187,6 @@ export default function MenuEditForm() {
   const [isInitialized, setIsInitialized] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const uploadImage = useAction(api.storage.action.upload)
-  // const uploadImageWithThumbnail = useAction(api.storage.action.uploadWithThumbnail)
-  const deleteImage = useAction(api.storage.action.kill)
-  // const deleteImageWithThumbnail = useAction(api.storage.action.killWithThumbnail)
   const updateMenu = useMutation(api.menu.core.mutation.update)
 
   const {
@@ -212,8 +207,12 @@ export default function MenuEditForm() {
       const paymentMethodValue = menuData.paymentMethod || 'cash'
 
       // ステート変数を設定
-      setExistingImageUrl(menuData.imgPath)
-      setExistingThumbnailUrl(menuData.thumbnailPath)
+      setExistingImages(
+        menuData.images?.map((image) => ({
+          imgPath: image.imgPath || '',
+          thumbnailPath: image.thumbnailPath || '',
+        })) || []
+      )
       setCurrentTags(menuData.tags || [])
 
       setTargetGender(targetGenderValue)
@@ -227,15 +226,18 @@ export default function MenuEditForm() {
         unitPrice: menuData.unitPrice ?? undefined,
         salePrice: menuData.salePrice ?? undefined,
         timeToMin: timeToMinValue ?? undefined,
-        imgFilePath: menuData.imgPath || (undefined as unknown as string),
+
         description: menuData.description || (undefined as unknown as string),
         targetGender: targetGenderValue,
         targetType: targetTypeValue,
         tags: menuData.tags ?? undefined,
         paymentMethod: paymentMethodValue,
         isActive: menuData.isActive ?? true,
-        imgPath: menuData.imgPath || undefined,
-        thumbnailPath: menuData.thumbnailPath || undefined,
+        images:
+          menuData.images?.map((image) => ({
+            imgPath: image.imgPath || '',
+            thumbnailPath: image.thumbnailPath || '',
+          })) || [],
       })
 
       // 初期化完了フラグを設定
@@ -243,150 +245,158 @@ export default function MenuEditForm() {
     }
   }, [menuData, reset, setValue, isInitialized])
 
+  console.log('existingImages: ', existingImages)
+  console.log('newFiles: ', newFiles)
+
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
     try {
-      if (!salon?._id) {
-        toast.error('サロン情報が必要です')
+      if (!salon?._id || !menuData) {
+        toast.error('サロン情報または既存メニュー情報が見つかりません')
         return
       }
 
-      if (!currentFile) return
-
       setIsSubmitting(true)
-      let uploadedOriginalUrl: string | undefined = undefined
-      let uploadedThumbnailUrl: string | undefined = undefined
-      let hasDeletedOldImages = false
+      let imagesToSave: { imgPath: string; thumbnailPath: string }[] = [...existingImages]
 
-      try {
+      if (newFiles.length > 0 && newFiles[0] !== undefined) {
         setIsUploading(true)
-
-        // クライアント側で画像処理を行う
-        const { original, thumbnail } = await createImageWithThumbnail(currentFile)
-
-        // オリジナル画像をアップロード
-        const originalBase64 = await fileToBase64(original)
-        const originalResult = await uploadImage({
-          base64Data: originalBase64,
-          filePath: original.name,
-          contentType: original.type,
-          directory: 'menu/original',
-        })
-        uploadedOriginalUrl = originalResult.publicUrl
-
-        // サムネイル画像をアップロード
-        const thumbnailBase64 = await fileToBase64(thumbnail)
-        const thumbnailResult = await uploadImage({
-          base64Data: thumbnailBase64,
-          filePath: thumbnail.name,
-          contentType: thumbnail.type,
-          directory: 'menu/thumbnail',
-        })
-        uploadedThumbnailUrl = thumbnailResult.publicUrl
-
-        // 既存の画像があれば削除
         try {
-          if (existingImageUrl) {
-            await deleteImage({
-              imgUrl: existingImageUrl,
+          const imagePayloads = await Promise.all(
+            newFiles.map(async (file) => {
+              const originalBase64 = await fileToBase64(file)
+              return {
+                base64Data: originalBase64,
+                fileName: file.name,
+                directory: 'menu' as const,
+                salonId: salon._id,
+                quality: 'high',
+              }
             })
+          )
+          const response = await fetch('/api/storage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(imagePayloads),
+          })
+          const imageResults = await response.json()
+          setIsUploading(false)
+
+          if (imageResults && Array.isArray(imageResults.successfulUploads)) {
+            const uploadedImages = imageResults.successfulUploads.map(
+              (upload: { imgUrl: string; thumbnailUrl: string }) => ({
+                imgPath: upload.imgUrl,
+                thumbnailPath: upload.thumbnailUrl,
+              })
+            )
+            imagesToSave = [...existingImages, ...uploadedImages]
+          } else {
+            console.error('画像アップロードのレスポンス形式が不正です:', imageResults)
+            toast.error('画像アップロードのレスポンス形式が不正です。')
+            setIsSubmitting(false)
+            return
           }
-          if (existingThumbnailUrl) {
-            await deleteImage({
-              imgUrl: existingThumbnailUrl,
-            })
-          }
-          hasDeletedOldImages = true
-        } catch (deleteErr) {
-          console.error('Failed to delete existing images:', deleteErr)
-          // 古い画像の削除に失敗しても処理を続行
+        } catch (err) {
+          setIsUploading(false)
+          setIsSubmitting(false)
+          toast.error(handleErrorToMsg(err) || '画像処理に失敗しました')
+          return
         }
+      }
 
-        setIsUploading(false)
+      const finalImagesToSavePaths = imagesToSave.map((img) => img.imgPath)
+      const finalImagesToDelete: { imgPath: string; thumbnailPath: string }[] = []
+      menuData.images?.forEach((initialImage) => {
+        if (initialImage.imgPath && !finalImagesToSavePaths.includes(initialImage.imgPath)) {
+          finalImagesToDelete.push({
+            imgPath: initialImage.imgPath,
+            thumbnailPath: initialImage.thumbnailPath || '',
+          })
+        }
+      })
 
+      if (finalImagesToDelete.length > 0) {
         try {
-          await updateMenu({
-            menuId,
-            name: data.name,
-            categories: data.categories,
-            unitPrice: data.unitPrice,
-            salePrice: data.salePrice === null ? undefined : (data.salePrice as number | undefined),
-            timeToMin: data.timeToMin,
-            imgPath: uploadedOriginalUrl,
-            thumbnailPath: uploadedThumbnailUrl,
-            description: data.description,
-            targetGender: data.targetGender,
-            targetType: data.targetType,
-            tags: data.tags,
-            paymentMethod: data.paymentMethod,
-            isActive: data.isActive,
+          // APIが期待する形式に合わせてペイロードを構築
+          const deleteApiPayload = {
+            imgUrls: finalImagesToDelete.map((img) => img.imgPath), // imgPath の配列を imgUrls に設定
+            withThumbnail: true, // すべての画像に対してサムネイルも削除すると仮定
+          }
+          const deleteResponse = await fetch('/api/storage', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(deleteApiPayload), // 単一のオブジェクトを送信
           })
 
-          toast.success('メニューを更新しました')
-          router.push(`/dashboard/menu/${menuId}`)
-        } catch (updateErr) {
-          // メニュー更新に失敗した場合、新しくアップロードした画像を削除
-          if (uploadedOriginalUrl) {
-            try {
-              await deleteImage({
-                imgUrl: uploadedOriginalUrl,
-              })
-            } catch (deleteErr) {
-              console.error('Failed to delete original image after update failure:', deleteErr)
+          if (!deleteResponse.ok) {
+            const errorData = {
+              message: `ストレージからの画像削除リクエスト失敗 (ステータス: ${deleteResponse.status})`,
+              details: {},
             }
-          }
-
-          if (uploadedThumbnailUrl) {
             try {
-              await deleteImage({
-                imgUrl: uploadedThumbnailUrl,
-              })
-            } catch (deleteErr) {
-              console.error('Failed to delete thumbnail image after update failure:', deleteErr)
+              // レスポンスボディが存在し、JSON形式であればパース試行
+              if (deleteResponse.body) {
+                const textBody = await deleteResponse.text() // まずテキストとして読み込む
+                if (textBody) {
+                  // ボディが空でないことを確認
+                  errorData.details = JSON.parse(textBody) // その後JSONとしてパース
+                } else {
+                  errorData.details = { originalResponse: 'empty body' }
+                }
+              }
+            } catch (e) {
+              // JSONパースに失敗した場合 (レスポンスがJSONでない、または不正なJSON)
+              console.warn('画像削除APIのエラーレスポンスのJSONパースに失敗:', e)
+              errorData.details = { originalResponse: 'not a valid JSON or failed to parse' }
             }
-          }
-
-          // 既存の画像を削除していた場合はエラーメッセージを変更
-          if (hasDeletedOldImages) {
-            toast.error(
-              'メニュー更新に失敗し、既存の画像が削除されました。もう一度お試しください。'
-            )
+            console.error('ストレージからの画像削除に失敗:', errorData)
+            toast.error(errorData.message)
           } else {
-            toast.error(handleErrorToMsg(updateErr) || 'メニュー更新に失敗しました')
+            // 成功時でもレスポンスボディがあるか確認
+            const successData = await deleteResponse.json().catch(() => null)
+            if (successData) {
+              console.log('画像削除成功レスポンス:', successData)
+              toast.info(
+                successData.message ||
+                  `${finalImagesToDelete.length}件の古い画像をストレージから削除しました。`
+              )
+            } else {
+              toast.info(
+                `${finalImagesToDelete.length}件の古い画像をストレージから削除しました。 (レスポンスボディなし)`
+              )
+            }
           }
-
-          setIsSubmitting(false)
-          throw updateErr // 外側のcatchブロックでキャッチするために再スロー
+        } catch (err: unknown) {
+          // catchの型をanyに
+          console.error('ストレージからの画像削除中にクライアントサイドエラー:', err)
+          toast.error(
+            `古い画像の削除中にエラーが発生しました: ${err instanceof Error ? err.message : '不明なエラー'}`
+          )
         }
-      } catch (err) {
-        // 画像アップロード中にエラーが発生した場合
-        if (uploadedOriginalUrl) {
-          try {
-            await deleteImage({
-              imgUrl: uploadedOriginalUrl,
-            })
-          } catch (deleteErr) {
-            console.error('Failed to delete original image:', deleteErr)
-          }
-        }
-
-        if (uploadedThumbnailUrl) {
-          try {
-            await deleteImage({
-              imgUrl: uploadedThumbnailUrl,
-            })
-          } catch (deleteErr) {
-            console.error('Failed to delete thumbnail image:', deleteErr)
-          }
-        }
-
-        setIsUploading(false)
-        setIsSubmitting(false)
-        toast.error(handleErrorToMsg(err) || '画像処理に失敗しました')
       }
+
+      await updateMenu({
+        menuId,
+        name: data.name,
+        categories: data.categories,
+        unitPrice: data.unitPrice,
+        salePrice: data.salePrice === null ? undefined : (data.salePrice as number | undefined),
+        timeToMin: data.timeToMin,
+        images: imagesToSave,
+        description: data.description,
+        targetGender: data.targetGender,
+        targetType: data.targetType,
+        tags: data.tags,
+        paymentMethod: data.paymentMethod,
+        isActive: data.isActive,
+      })
+      toast.success('メニューを更新しました')
+      router.push(`/dashboard/menu/${menuId}`)
     } catch (err) {
       setIsSubmitting(false)
       toast.error(handleErrorToMsg(err) || 'メニュー更新に失敗しました')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -399,6 +409,8 @@ export default function MenuEditForm() {
   if (!salon || !menuData || !isInitialized) {
     return <Loading />
   }
+
+  console.log('existingImages: ', existingImages)
 
   return (
     <div>
@@ -421,10 +433,28 @@ export default function MenuEditForm() {
               </CardHeader>
 
               <ImageDrop
-                initialImageUrl={existingImageUrl}
+                multiple={true}
+                initialImageUrls={existingImages.map((image) => image.thumbnailPath)}
                 maxSizeMB={6}
-                onFileSelect={(file) => {
-                  setCurrentFile(file)
+                onFileSelect={(files: File[]) => {
+                  setNewFiles(files)
+                }}
+                onPreviewChange={(previewUrlsFromDrop: string[]) => {
+                  const keptExistingImages = existingImages.filter((existingImg) =>
+                    previewUrlsFromDrop.includes(existingImg.thumbnailPath)
+                  )
+
+                  const orderedKeptExistingImages = keptExistingImages.sort((a, b) => {
+                    const indexA = previewUrlsFromDrop.indexOf(a.thumbnailPath)
+                    const indexB = previewUrlsFromDrop.indexOf(b.thumbnailPath)
+                    if (indexA === -1 && indexB === -1) return 0
+                    if (indexA === -1) return 1
+                    if (indexB === -1) return -1
+                    return indexA - indexB
+                  })
+
+                  setExistingImages(orderedKeptExistingImages)
+                  setValue('images', orderedKeptExistingImages, { shouldValidate: true })
                 }}
               />
             </div>
@@ -494,11 +524,11 @@ export default function MenuEditForm() {
                   </PopoverContent>
                 </Popover>
                 <span className="text-xs text-muted-foreground">
-                  もしカテゴリがない場合は
-                  <a href="mailto:bocker.help@gmail.com" className="text-link underline">
+                  もしご希望のカテゴリがない場合は
+                  <a href="mailto:bocker.help@gmail.com" className="text-link-foreground underline">
                     こちら
                   </a>
-                  から追加申請いただけます。
+                  から追加申請をお願いいたします。
                 </span>
                 {errors.categories && <ErrorMessage message={errors.categories.message} />}
               </div>
@@ -539,7 +569,6 @@ export default function MenuEditForm() {
                   value={watch('timeToMin')?.toString() ?? renderTimeToMin?.toString()}
                   onValueChange={(value) => {
                     if (!value) {
-                      // プレースホルダが選ばれた場合は undefined 扱い
                       setValue('timeToMin', undefined, { shouldValidate: true })
                       return
                     }
@@ -633,7 +662,7 @@ export default function MenuEditForm() {
 
             <TagInput
               tags={currentTags}
-              setTagsAction={(tags) => {
+              setTagsAction={(tags: string[]) => {
                 setCurrentTags(tags)
                 setValue('tags', tags, { shouldValidate: true })
               }}
@@ -658,19 +687,19 @@ export default function MenuEditForm() {
                   }}
                 >
                   <ToggleGroupItem
-                    className="text-sm shadow-sm bg-muted hover:bg-muted-foreground hover:text-active-foreground p-4 data-[state=on]:bg-active data-[state=on]:text-active-foreground"
+                    className="text-sm shadow-sm border border-border bg-muted text-muted-foreground hover:bg-muted-foreground hover:text-active p-4 data-[state=on]:bg-active-foreground data-[state=on]:border-active-foreground data-[state=on]:text-active"
                     value="cash"
                   >
                     店舗決済のみ
                   </ToggleGroupItem>
                   <ToggleGroupItem
-                    className="text-sm shadow-sm bg-muted hover:bg-muted-foreground hover:text-active-foreground p-4 data-[state=on]:bg-active data-[state=on]:text-active-foreground"
+                    className="text-sm shadow-sm border border-border bg-muted text-muted-foreground hover:bg-muted-foreground hover:text-active p-4 data-[state=on]:bg-active-foreground data-[state=on]:border-active-foreground data-[state=on]:text-active"
                     value="credit_card"
                   >
                     オンライン決済のみ
                   </ToggleGroupItem>
                   <ToggleGroupItem
-                    className="text-sm shadow-sm bg-muted hover:bg-muted-foreground hover:text-active-foreground p-4 data-[state=on]:bg-active data-[state=on]:text-active-foreground"
+                    className="text-sm shadow-sm border border-border bg-muted text-muted-foreground hover:bg-muted-foreground hover:text-active p-4 data-[state=on]:bg-active-foreground data-[state=on]:border-active-foreground data-[state=on]:text-active"
                     value="all"
                   >
                     両方対応
@@ -737,7 +766,7 @@ export default function MenuEditForm() {
           <Switch
             id="isActive"
             checked={watch('isActive')}
-            onCheckedChange={(checked) => setValue('isActive', checked)} // onCheckedChangeの引数を直接渡す
+            onCheckedChange={(checked) => setValue('isActive', checked)}
           />
         </div>
 
@@ -767,7 +796,7 @@ export default function MenuEditForm() {
           </div>
         </div>
       </form>
-      <Accordion type="multiple" className="mt-8 space-y-2">
+      {/* <Accordion type="multiple" className="mt-8 space-y-2">
         <AccordionItem value="line-access-token">
           <AccordionTrigger>
             実際の稼働時間と待機時間を含めたトータルの施術時間の違いについて
@@ -800,7 +829,7 @@ export default function MenuEditForm() {
             </p>
           </AccordionContent>
         </AccordionItem>
-      </Accordion>
+      </Accordion> */}
     </div>
   )
 }

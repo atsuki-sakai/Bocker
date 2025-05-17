@@ -14,4 +14,10 @@ crons.cron(
   '30 17 24 * *', // 日本時間の毎月25日の午前2時30分（UTC）
   internal.salon.referral.action.cronApplyReferralDiscount
 )
+
+crons.cron(
+  'triggerSupabaseSync',
+  '0 0 * * *', // 日本時間の毎日午前0時00分（UTC）
+  internal.sync.actions.triggerSupabaseSync
+)
 export default crons

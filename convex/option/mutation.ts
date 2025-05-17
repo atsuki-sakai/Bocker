@@ -67,8 +67,8 @@ export const balanceStock = mutation({
     if (!option) {
       throw new Error('オプションが見つかりません')
     }
-    if (option.inStock && option.inStock > 1000) {
-      throw new Error('在庫数は1000が最大です。')
+    if (option.inStock && option.inStock > 9999) {
+      throw new Error('在庫数は9999が最大です。')
     }
     return await ctx.db.patch(args.optionId, { inStock: args.newQuantity })
   },

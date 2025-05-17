@@ -143,7 +143,7 @@ const ReservationCard: React.FC<ReservationCardProps> = memo(({ reservation }) =
   return (
     <Link href={`/dashboard/reservation/${reservation._id}`} className="block w-full">
       <Card
-        className="mb-4 bg-muted hover:shadow-md transition-shadow duration-300"
+        className="mb-4 hover:shadow-md transition-shadow duration-300"
         style={{ borderLeftColor: statusMap[status].color.split(' ')[0] }}
       >
         <CardContent className="p-4">

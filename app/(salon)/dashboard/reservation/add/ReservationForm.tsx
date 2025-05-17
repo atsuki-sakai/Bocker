@@ -236,7 +236,7 @@ export default function ReservationForm() {
     salonId
       ? {
           salonId: salonId,
-          take: 20,
+          take: 30,
           dateString: new Date().toISOString().split('T')[0],
         }
       : 'skip'

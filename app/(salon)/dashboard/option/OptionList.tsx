@@ -43,11 +43,20 @@ export default function OptionList() {
     setDeleteOptionId(optionId)
   }
 
-  const handleDelete = (optionId: Id<'salon_option'>) => {
+  const handleDelete = async (option: Doc<'salon_option'>) => {
     try {
       killOption({
-        optionId,
+        optionId: option._id,
       })
+      if (option.imgPath) {
+        await fetch('/api/storage', {
+          method: 'DELETE',
+          body: JSON.stringify({
+            imgUrl: option.imgPath,
+            withThumbnail: true,
+          }),
+        })
+      }
       toast.success('オプションを削除しました')
       setIsDialogOpen(false)
     } catch (error) {
@@ -228,7 +237,9 @@ export default function OptionList() {
         onOpenChange={setIsDialogOpen}
         title="オプションを削除しますか？"
         description="この操作は元に戻すことができません。"
-        onConfirmAction={() => handleDelete(deleteOptionId!)}
+        onConfirmAction={() =>
+          handleDelete(options.find((option) => option._id === deleteOptionId)!)
+        }
       />
     </div>
   )

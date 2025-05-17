@@ -62,7 +62,7 @@ export default function DashboardSection({
           )}
         </div>
       </div>
-      <div className="mb-24">{children}</div>
+      <div className="mb-24 max-w-[100vw]">{children}</div>
     </div>
   )
 }

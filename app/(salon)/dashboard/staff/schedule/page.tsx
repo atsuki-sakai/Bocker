@@ -284,7 +284,10 @@ export default function StaffSchedulePage() {
                     disabled={!selectedStaffId}
                     selectedDates={selectedDates}
                     onDatesChangeAction={(dates) => {
-                      // 日付選択時に日付をソートしておく
+                      if (dates.length > 30) {
+                        toast.error('休日は最大30日までしか選択できません')
+                        return
+                      }
                       const sortedDates = [...dates].sort(compareAsc)
                       setSelectedDates(sortedDates)
                     }}
@@ -506,7 +509,7 @@ export default function StaffSchedulePage() {
                     クリックするだけで複数日をまとめて指定できます。もう一度クリックすると解除されます。
                   </li>
                   <li className="bg-muted text-muted-foreground p-2 rounded-md">
-                    <strong>終日 or 時間帯を設定</strong>
+                    <strong>終日 or 時間帯を設定</strong>
                     <br />
                     「終日」スイッチを ON にするとその日は 24 時間受付停止、OFF
                     の場合は開始・終了時刻を 10 分刻みで入力します。

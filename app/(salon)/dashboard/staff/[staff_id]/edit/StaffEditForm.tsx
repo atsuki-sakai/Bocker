@@ -1,31 +1,31 @@
 'use client';
 
 import { useZodForm } from '@/hooks/useZodForm';
-import { useMutation, useAction, useQuery } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { useEffect, useState } from 'react';
-import { ImageDrop, Loading, Dialog, TagInput } from '@/components/common';
-import { ExclusionMenu } from '@/components/common';
-import { z } from 'zod';
-import { Gender, Role, GENDER_VALUES, ROLE_VALUES } from '@/services/convex/shared/types/common';
-import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH } from '@/services/convex/constants';
-import { Textarea } from '@/components/ui/textarea';
-import { ZodTextField } from '@/components/common';
+import { useMutation, useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { useEffect, useState } from 'react'
+import { ImageDrop, Loading, Dialog, TagInput } from '@/components/common'
+import { ExclusionMenu } from '@/components/common'
+import { z } from 'zod'
+import { Gender, Role, GENDER_VALUES, ROLE_VALUES } from '@/services/convex/shared/types/common'
+import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH } from '@/services/convex/constants'
+import { Textarea } from '@/components/ui/textarea'
+import { ZodTextField } from '@/components/common'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { handleErrorToMsg } from '@/lib/error';
-import { useSalon } from '@/hooks/useSalon';
-import { fileToBase64, decryptString, encryptString, createImageWithThumbnail } from '@/lib/utils'
+} from '@/components/ui/select'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { handleErrorToMsg } from '@/lib/error'
+import { useSalon } from '@/hooks/useSalon'
+import { fileToBase64, decryptString, encryptString } from '@/lib/utils'
 import { Id } from '@/convex/_generated/dataModel'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
@@ -95,7 +95,8 @@ const staffAddSchema = z.object({
     z.number().max(99, { message: '年齢は99以下で入力してください' }).nullable().optional()
   ),
   description: z.string().min(1, { message: '説明は必須です' }).max(MAX_NOTES_LENGTH),
-  imgPath: z.string().max(512).optional(),
+  imgPath: z.string().optional(),
+  thumbnailPath: z.string().optional(),
   isActive: z.boolean(),
 
   role: z.enum(ROLE_VALUES),
@@ -149,14 +150,12 @@ export default function StaffEditForm() {
   const { salon } = useSalon()
   const [selectedExclusionMenuIds, setSelectedExclusionMenuIds] = useState<Id<'menu'>[]>([])
   const [exclusionInitialized, setExclusionInitialized] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isDeletingImage, setIsDeletingImage] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [currentTags, setCurrentTags] = useState<string[]>([])
 
-  const uploadImage = useAction(api.storage.action.upload)
-  const deleteImage = useAction(api.storage.action.kill)
   const updateRole = useMutation(api.staff.auth.mutation.update)
 
   // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
@@ -225,30 +224,25 @@ export default function StaffEditForm() {
         return
       }
 
-      if (selectedFile) {
+      if (selectedFiles && selectedFiles.length > 0) {
         try {
           // クライアント側で画像処理を行う
-          const { original, thumbnail } = await createImageWithThumbnail(selectedFile)
+          const originalBase64 = await fileToBase64(selectedFiles[0])
 
-          // オリジナル画像をアップロード
-          const originalBase64 = await fileToBase64(original)
-          const originalResult = await uploadImage({
-            base64Data: originalBase64,
-            contentType: original.type,
-            directory: 'staff/original',
-            filePath: `${Date.now()}-original-${original.name}`,
+          const result = await fetch('/api/storage', {
+            method: 'POST',
+            body: JSON.stringify({
+              base64Data: originalBase64,
+              fileName: selectedFiles[0].name,
+              directory: 'staff',
+              salonId: salon._id,
+              quality: 'high',
+            }),
           })
-          uploadedOriginalUrl = originalResult.publicUrl
 
-          // サムネイル画像をアップロード
-          const thumbnailBase64 = await fileToBase64(thumbnail)
-          const thumbnailResult = await uploadImage({
-            base64Data: thumbnailBase64,
-            contentType: thumbnail.type,
-            directory: 'staff/thumbnail',
-            filePath: `${Date.now()}-thumbnail-${thumbnail.name}`,
-          })
-          uploadedThumbnailUrl = thumbnailResult.publicUrl
+          const { imgUrl, thumbnailUrl } = await result.json()
+          uploadedOriginalUrl = imgUrl
+          uploadedThumbnailUrl = thumbnailUrl
         } catch (error) {
           console.error('画像アップロードエラー:', error)
           toast.error(handleErrorToMsg(error), {
@@ -269,8 +263,8 @@ export default function StaffEditForm() {
         instagramLink: data.instagramLink ?? undefined,
         gender: data.gender,
         description: data.description,
-        imgPath: uploadedOriginalUrl ?? undefined,
-        thumbnailPath: uploadedThumbnailUrl ?? undefined,
+        imgPath: uploadedOriginalUrl,
+        thumbnailPath: uploadedThumbnailUrl,
         isActive: data.isActive,
         tags: data.tags,
       })
@@ -335,21 +329,15 @@ export default function StaffEditForm() {
       // エラー発生時のクリーンアップ
       if (uploadedOriginalUrl) {
         try {
-          await deleteImage({
-            imgUrl: uploadedOriginalUrl,
+          await fetch('/api/storage', {
+            method: 'DELETE',
+            body: JSON.stringify({
+              imgUrl: uploadedOriginalUrl,
+              withThumbnail: true,
+            }),
           })
         } catch (deleteError) {
           console.error('画像削除中にエラーが発生しました:', deleteError)
-        }
-      }
-
-      if (uploadedThumbnailUrl) {
-        try {
-          await deleteImage({
-            imgUrl: uploadedThumbnailUrl,
-          })
-        } catch (deleteError) {
-          console.error('サムネイル画像削除中にエラーが発生しました:', deleteError)
         }
       }
 
@@ -388,15 +376,12 @@ export default function StaffEditForm() {
       if ((staffAllData?.imgPath || staffAllData?.thumbnailPath) && salon) {
         // オリジナル画像が存在する場合は削除
         if (staffAllData?.imgPath) {
-          await deleteImage({
-            imgUrl: staffAllData.imgPath,
-          })
-        }
-
-        // サムネイル画像が存在する場合は削除
-        if (staffAllData?.thumbnailPath) {
-          await deleteImage({
-            imgUrl: staffAllData.thumbnailPath,
+          await fetch('/api/storage', {
+            method: 'DELETE',
+            body: JSON.stringify({
+              imgUrl: staffAllData.imgPath,
+              withThumbnail: true,
+            }),
           })
         }
 
@@ -507,29 +492,33 @@ export default function StaffEditForm() {
                               スタッフ画像
                             </span>
                           </div>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="mb-2"
-                            onClick={handleShowDeleteDialog}
-                          >
-                            {isDeletingImage ? (
-                              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                            ) : (
-                              <Trash className="h-3 w-3 mr-2" />
-                            )}
-                            {isDeletingImage ? '削除中...' : '画像を削除'}
-                          </Button>
+                          {staffAllData?.imgPath && staffAllData.imgPath !== '' && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="mb-2"
+                              onClick={handleShowDeleteDialog}
+                            >
+                              {isDeletingImage ? (
+                                <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                              ) : (
+                                <Trash className="h-3 w-3 mr-2" />
+                              )}
+                              {isDeletingImage ? '削除中...' : '画像を削除'}
+                            </Button>
+                          )}
                         </div>
                       )}
 
                       <div className="w-full flex flex-col md:flex-row items-end justify-center gap-4">
-                        <div className="w-full flex flex-col">
-                          <p className="text-sm text-muted-foreground">スタッフ画像</p>
-                          <ImageDrop
-                            initialImageUrl={staffAllData?.imgPath}
-                            onFileSelect={(file) => setSelectedFile(file)}
-                          />
+                        <div className="max-w-xl mx-auto">
+                          <div className="w-full">
+                            <ImageDrop
+                              initialImageUrl={staffAllData?.imgPath}
+                              onFileSelect={(files) => setSelectedFiles(files)}
+                              className="transition-all duration-200 hover:opacity-90 aspect-square"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -871,7 +860,11 @@ export default function StaffEditForm() {
 
           <Button
             type="submit"
-            disabled={isSubmitting || isLoading || (!isDirty && !selectedFile && !exclusionChanged)}
+            disabled={
+              isSubmitting ||
+              isLoading ||
+              (!isDirty && !exclusionChanged && selectedFiles.length === 0)
+            }
           >
             {isSubmitting || isLoading ? (
               <>
@@ -894,6 +887,15 @@ export default function StaffEditForm() {
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
       />
+      <div>
+        {Object.keys(errors).length > 0 && (
+          <ul className="text-red-500 bg-red-50 p-2 rounded-md space-y-1 text-xs mt-2 list-disc pl-5">
+            {Object.values(errors).map((error, index) => (
+              <li key={index}>{error.message}</li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }

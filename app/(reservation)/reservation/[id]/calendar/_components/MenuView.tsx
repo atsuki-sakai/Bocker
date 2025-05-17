@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { api } from '@/convex/_generated/api'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
@@ -23,7 +23,7 @@ import {
 } from '@/services/convex/shared/types/common'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
-import { Clock, X } from 'lucide-react'
+import { Clock, X, Info } from 'lucide-react'
 import {
   convertGender,
   convertTarget,
@@ -34,6 +34,15 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Command, CommandInput, CommandList, CommandItem } from '@/components/ui/command'
 import { Check } from 'lucide-react'
+
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from '@/components/ui/carousel'
 
 interface MenuViewProps {
   salonId: Id<'salon'>
@@ -55,6 +64,31 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   const [showPopover, setShowPopover] = useState<boolean>(false)
   const [blockedCategories, setBlockedCategories] = useState<MenuCategoryWithSet[]>([])
 
+  // ADDED START: State and effect for Carousel
+  const [mainCarouselApi, setMainCarouselApi] = useState<CarouselApi>()
+  const [currentMainImageIndex, setCurrentMainImageIndex] = useState(0)
+
+  // ADDED START: Effect to sync main carousel's current image index
+  useEffect(() => {
+    if (!mainCarouselApi) {
+      return
+    }
+
+    const handleSelect = () => {
+      setCurrentMainImageIndex(mainCarouselApi.selectedScrollSnap())
+    }
+
+    mainCarouselApi.on('select', handleSelect)
+    // 初期状態を設定
+    handleSelect()
+
+    // クリーンアップ関数
+    return () => {
+      mainCarouselApi.off('select', handleSelect)
+    }
+  }, [mainCarouselApi])
+  // ADDED END: Effect to sync main carousel's current image index
+
   // 選択されたメニューの配列を取得するための計算プロパティ
   const selectedMenus = useMemo(() => {
     return Object.values(selectedMenuMap)
@@ -72,9 +106,9 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   )
 
   // セットメニューかどうかを判定する関数
-  const isSetMenu = (menu: Doc<'menu'>): boolean => {
+  const isSetMenu = useCallback((menu: Doc<'menu'>): boolean => {
     return Array.isArray(menu.categories) && menu.categories.length > 1
-  }
+  }, [])
 
   // メニューがブロックされているかどうかを判定する関数
   const menuBlocked = (menu: Doc<'menu'>): boolean => {
@@ -109,27 +143,31 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
   }
 
   // カテゴリに基づいてメニューをフィルタリング
-  const getMenusByCategory = (category: MenuCategoryWithSet | null): Doc<'menu'>[] => {
-    if (!category || !menus) return []
+  const getMenusByCategory = useCallback(
+    (category: MenuCategoryWithSet | null): Doc<'menu'>[] => {
+      if (!category || !menus) return []
 
-    if (category === 'セットメニュー') {
-      // セットメニューカテゴリの場合、複数カテゴリを持つメニューを返す
-      return menus.filter((menu) => isSetMenu(menu))
-    }
+      if (category === 'セットメニュー') {
+        // セットメニューカテゴリの場合、複数カテゴリを持つメニューを返す
+        return menus.filter((menu) => isSetMenu(menu))
+      }
 
-    if (category === 'その他') {
-      // 「その他」カテゴリの場合、カテゴリがないメニューを返す
-      return menus.filter((menu) => !menu.categories || menu.categories.length === 0)
-    }
+      if (category === 'その他') {
+        // 「その他」カテゴリの場合、カテゴリがないメニューを返す
+        return menus.filter((menu) => !menu.categories || menu.categories.length === 0)
+      }
 
-    // 単一カテゴリのメニューのみ返す（複数カテゴリを持つメニューは除外）
-    return menus.filter(
-      (menu) =>
-        Array.isArray(menu.categories) &&
-        menu.categories.includes(category) &&
-        menu.categories.length === 1
-    )
-  }
+      // 選択されたカテゴリがメニューのカテゴリ配列に含まれていれば表示
+      // ただし、セットメニューとして分類されるものは除く
+      return menus.filter(
+        (menu) =>
+          Array.isArray(menu.categories) &&
+          menu.categories.includes(category) && // 選択されたカテゴリを含む
+          !isSetMenu(menu) // セットメニューではない
+      )
+    },
+    [menus, isSetMenu]
+  )
 
   // メニュー選択時の処理
   const handleMenuSelect = (menu: Doc<'menu'>) => {
@@ -225,7 +263,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
       setSelectedMenuMap(menuMap)
       setBlockedCategories(blockedCats)
     }
-  }, [selectedMenuIds, menus])
+  }, [selectedMenuIds, menus, isSetMenu])
 
   // 初期カテゴリ設定
   useEffect(() => {
@@ -254,6 +292,89 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
       prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
     )
   }
+
+  const handleThumbnailClick = (index: number) => {
+    mainCarouselApi?.scrollTo(index)
+  }
+
+  const filteredMenusToDisplay = useMemo(() => {
+    if (!menus) return {}
+
+    // カテゴリ絞り込みがない場合は、すべてのメニューをカテゴリ別にグループ化して返す
+    if (selectedCategories.length === 0) {
+      const grouped: Partial<Record<MenuCategoryWithSet, Doc<'menu'>[]>> = {}
+      uniqueCategories.forEach((cat) => {
+        // getMenusByCategory は null を受け付けないように修正されている前提
+        grouped[cat] = getMenusByCategory(cat)
+      })
+      return grouped
+    }
+
+    // 選択されたカテゴリに基づいてフィルタリング
+    const result: Partial<Record<MenuCategoryWithSet, Doc<'menu'>[]>> = {}
+
+    selectedCategories.forEach((selectedCat) => {
+      // selectedCat が MenuCategory であることを保証 (型安全のため)
+      const currentFilteringCategory = selectedCat as MenuCategory
+
+      // 通常カテゴリのメニューを取得 (セットメニューは除く)
+      const categoryMenus = menus.filter((menu) => {
+        if (isSetMenu(menu)) return false // セットメニューは別途専用ロジックで扱う
+
+        if (!menu.categories || menu.categories.length === 0) {
+          return currentFilteringCategory === 'その他'
+        }
+        return menu.categories.includes(currentFilteringCategory)
+      })
+
+      if (categoryMenus.length > 0) {
+        if (!result[currentFilteringCategory]) {
+          result[currentFilteringCategory] = []
+        }
+        // 重複を避けて追加
+        categoryMenus.forEach((menu) => {
+          if (!result[currentFilteringCategory]?.find((m) => m._id === menu._id)) {
+            result[currentFilteringCategory]?.push(menu)
+          }
+        })
+      }
+    })
+
+    // セットメニューの処理
+    // 常に「セットメニュー」カテゴリのセクションは表示する可能性があるためキーは保持
+    // 実際に表示するセットメニューは、選択されたカテゴリに合致するもの、または全てのセットメニュー
+    const setMenuCategoryKey = 'セットメニュー' as MenuCategoryWithSet
+    const allSetMenus = menus.filter(isSetMenu)
+    let relevantSetMenus: Doc<'menu'>[] = []
+
+    if (selectedCategories.length === 0) {
+      relevantSetMenus = allSetMenus // 絞り込みがない場合は全てのセットメニュー
+    } else if (selectedCategories.includes(setMenuCategoryKey as MenuCategory)) {
+      relevantSetMenus = allSetMenus // 「セットメニュー」が選択されていれば全てのセットメニュー
+    } else {
+      // 他のカテゴリが選択されている場合、それらのカテゴリを一つでも含むセットメニューを抽出
+      relevantSetMenus = allSetMenus.filter((sMenu) =>
+        sMenu.categories?.some((cat) => selectedCategories.includes(cat as MenuCategory))
+      )
+    }
+    // 既存の result にセットメニューのカテゴリがなければ初期化
+    if (!result[setMenuCategoryKey] && relevantSetMenus.length > 0) {
+      result[setMenuCategoryKey] = []
+    }
+    // relevantSetMenus を result[setMenuCategoryKey] にマージ (重複回避)
+    relevantSetMenus.forEach((menu) => {
+      if (!result[setMenuCategoryKey]?.find((m) => m._id === menu._id)) {
+        result[setMenuCategoryKey]?.push(menu)
+      }
+    })
+    // selectedCategories に何も含まれていない場合でも、セットメニューのキーは保持したいので、
+    // もし relevantSetMenus が空でも、キーだけは作成しておく（表示ロジックで中身がなければ非表示になる）
+    if (!result[setMenuCategoryKey]) {
+      result[setMenuCategoryKey] = []
+    }
+
+    return result
+  }, [menus, selectedCategories, uniqueCategories, getMenusByCategory, isSetMenu])
 
   if (isLoading) return <Loading />
 
@@ -364,25 +485,82 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-2">
-                {selectedMenu.imgPath && (
-                  <div className="relative w-full rounded-md overflow-hidden bg-muted aspect-[9/16]">
-                    <Image
-                      src={selectedMenu.imgPath}
-                      alt={selectedMenu.name || ''}
-                      fill
-                      className="object-cover"
-                      quality={90}
-                      priority
-                    />
-                  </div>
-                )}
+                <div className="w-full max-w-sm mx-auto">
+                  {selectedMenu.images && selectedMenu.images.length > 0 ? (
+                    <div className="space-y-4">
+                      <Carousel
+                        setApi={setMainCarouselApi}
+                        className="w-full max-w-2xl mx-auto"
+                        opts={{
+                          loop: selectedMenu.images.length > 1,
+                          align: 'start',
+                        }}
+                      >
+                        <CarouselContent>
+                          {selectedMenu.images.map((image, index) => (
+                            <CarouselItem key={`main-${index}`}>
+                              <div className="relative w-full h-full aspect-[3/4] bg-muted group rounded-lg overflow-hidden">
+                                <Image
+                                  src={image.imgPath || ''}
+                                  alt={`${selectedMenu.name || 'メニュー画像'} ${index + 1}`}
+                                  className="w-full max-h-[70vh] h-full object-contain"
+                                  fill
+                                  priority={index === currentMainImageIndex}
+                                  loading={index === currentMainImageIndex ? 'eager' : 'lazy'}
+                                />
+                                {selectedMenu.images && selectedMenu.images.length > 1 && (
+                                  <>
+                                    <CarouselPrevious className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-background hover:bg-muted p-1 rounded-full text-muted-foreground" />
+                                    <CarouselNext className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-background hover:bg-muted p-1 rounded-full text-muted-foreground" />
+                                  </>
+                                )}
+                              </div>
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                      </Carousel>
+
+                      {selectedMenu.images && selectedMenu.images.length > 1 && (
+                        <div className="flex space-x-2 justify-center overflow-x-auto py-2">
+                          {selectedMenu.images.map((image, index) => (
+                            <button
+                              key={`thumb-${index}`}
+                              onClick={() => handleThumbnailClick(index)}
+                              className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 relative rounded-md border-2 overflow-hidden
+                                             ${
+                                               currentMainImageIndex === index
+                                                 ? 'border-transparent ring-accent ring-2 ring-offset-1 sm:ring-offset-2'
+                                                 : 'border-foreground opacity-70 hover:opacity-100'
+                                             } focus:outline-none transition-all duration-150 ease-in-out`}
+                              aria-label={`画像 ${index + 1} を表示`}
+                            >
+                              <Image
+                                src={image.thumbnailPath || ''}
+                                alt={`サムネイル ${index + 1}`}
+                                className="w-full h-full object-cover"
+                                fill
+                                sizes="64px md:80px"
+                                loading="lazy"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center w-full aspect-[4/3] sm:aspect-[3/4] bg-muted text-muted-foreground rounded-lg">
+                      <Info className="w-8 h-8 mr-2 opacity-30" />
+                      <span>画像がありません</span>
+                    </div>
+                  )}
+                </div>
 
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      {selectedMenu.timeToMin}分
-                    </span>
+                    <p className="text-xs font-bold text-muted-foreground">
+                      <span className="text-lg text-primary">{selectedMenu.timeToMin} </span>分
+                    </p>
                   </div>
                   <div>
                     {selectedMenu.salePrice ? (
@@ -405,7 +583,7 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                 {selectedMenu.description && (
                   <div className="mt-2">
                     <Label className="text-sm font-medium">説明</Label>
-                    <p className="text-sm mt-1 w-full whitespace-normal break-all bg-muted p-2 tracking-wide leading-5 rounded-md">
+                    <p className="text-sm mt-1 w-full whitespace-normal break-all bg-muted p-4  tracking-wide leading-5 rounded-md">
                       {selectedMenu.description}
                     </p>
                   </div>
@@ -460,27 +638,51 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
 
       {/* メニュー表示部分（カテゴリ別セクション） */}
       <div className="mt-4 space-y-8">
-        {/* 通常カテゴリを表示 */}
-        {(selectedCategories.length === 0 ? uniqueCategories : selectedCategories).map(
-          (category) => {
-            // 型保証
-            const validCategory = category as MenuCategoryWithSet
-            const categoryMenus = getMenusByCategory(validCategory)
+        {Object.entries(filteredMenusToDisplay)
+          .sort(([catA], [catB]) => {
+            // 'セットメニュー' を最後に表示するためのソートロジック
+            const order: MenuCategoryWithSet[] = [
+              ...MENU_CATEGORY_VALUES,
+              'その他',
+              'セットメニュー',
+            ]
+            const indexA = order.indexOf(catA as MenuCategoryWithSet)
+            const indexB = order.indexOf(catB as MenuCategoryWithSet)
+            if (indexA === -1 && indexB === -1) return 0 // 両方とも順序配列になければそのまま
+            if (indexA === -1) return 1 // AだけなければAを後ろに
+            if (indexB === -1) return -1 // BだけなければBを後ろに
+            return indexA - indexB
+          })
+          .map(([categoryStr, categoryMenus]) => {
+            const category = categoryStr as MenuCategoryWithSet // 型キャスト
 
             // カテゴリに該当するメニューがない場合はセクションを表示しない
-            if (categoryMenus.length === 0 && validCategory !== 'セットメニュー') return null
-
-            // セットメニューの場合、実際にセットメニュー（複数カテゴリ持ち）が存在する場合のみ表示
-            if (validCategory === 'セットメニュー' && categoryMenus.length === 0) {
-              const hasSetMenus = menus ? menus.some((menu) => isSetMenu(menu)) : false
-              if (!hasSetMenus) return null
+            // ただし、絞り込み表示で「セットメニュー」が選択されていなくても、
+            // 他のカテゴリとの関連でセットメニューセクションのヘッダーだけは表示したい場合があるため、
+            // selectedCategories が空でない、かつ category が 'セットメニュー' の場合は、categoryMenus が空でも表示を試みる
+            if (
+              categoryMenus.length === 0 &&
+              !(selectedCategories.length > 0 && category === 'セットメニュー')
+            ) {
+              // もし、categoryがセットメニューで、かつ実際に表示すべきセットメニューがない場合はここで早期リターン
+              // （例えば、絞り込みがなく、元々セットメニューが０件の場合など）
+              if (
+                category === 'セットメニュー' &&
+                !menus?.some(isSetMenu) &&
+                selectedCategories.length === 0
+              )
+                return null
+              // selectedCategories が空でなく、category が 'セットメニュー' で、categoryMenus が空の場合でも、
+              // ヘッダーだけ表示するケースがあるので、ここではリターンしない。
+              // それ以外のカテゴリでメニューがなければ非表示
+              if (category !== 'セットメニュー') return null
             }
 
             return (
-              <section key={validCategory}>
+              <section key={category}>
                 <div className="flex flex-col justify-between items-start w-full mb-2">
-                  <h3 className="text-lg font-semibold">{validCategory}</h3>
-                  {validCategory === 'セットメニュー' ? (
+                  <h3 className="text-lg font-semibold">{category}</h3>
+                  {category === 'セットメニュー' ? (
                     <span className="text-xs text-muted-foreground">
                       複数のカテゴリを含むメニューです。選択すると含まれるカテゴリは個別に選択できなくなります。
                     </span>
@@ -490,13 +692,17 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {categoryMenus.map((menu) => {
-                    const isBlocked = menuBlocked(menu)
-                    return (
-                      <Card
-                        key={menu._id}
-                        className={`transition-all p-2 ${
+                {/* categoryMenus が空でも、selectedCategories が空でなく category が 'セットメニュー' の場合は grid を表示しない */}
+                {!(
+                  categoryMenus.length === 0 &&
+                  selectedCategories.length > 0 &&
+                  category === 'セットメニュー'
+                ) &&
+                  categoryMenus.length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {categoryMenus.map((menu) => {
+                        const isBlocked = menuBlocked(menu)
+                        const isCurrentlySelected =
                           selectedMenuMap[
                             isSetMenu(menu)
                               ? 'セットメニュー'
@@ -504,105 +710,122 @@ export const MenuView = ({ salonId, selectedMenuIds, onChangeMenusAction }: Menu
                                 ? menu.categories[0]
                                 : 'その他'
                           ]?._id === menu._id
-                            ? 'border-2 border-active shadow-md cursor-pointer'
-                            : isBlocked
-                              ? 'opacity-50 border-2 border-transparent'
-                              : 'hover:shadow-md border-2 border-transparent cursor-pointer'
-                        }`}
-                        onClick={() => !isBlocked && handleMenuSelect(menu)}
-                      >
-                        <div className="px-2 pt-2 flex justify-between items-center">
-                          <div className="flex flex-wrap gap-1 divide-x divide-border text-xs text-muted-foreground text-nowrap">
-                            <p className="">{convertTarget(menu.targetType as Target)}</p>
-                            <p className="pl-1">{convertGender(menu.targetGender as Gender)}</p>
-                          </div>
-                          {menu.tags && menu.tags.length > 0 && (
-                            <div className="flex justify-end flex-wrap gap-0.5 scale-95">
-                              {menu.tags.map((tag, idx) => (
-                                <p
-                                  key={idx}
-                                  className="text-xs px-2 py-0.5 bg-muted border border-border text-muted-foreground rounded-full"
-                                >
-                                  {tag}
-                                </p>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <CardContent className="p-2">
-                          <div className="flex items-start gap-3">
-                            {menu.thumbnailPath ? (
-                              <div className="relative h-28 w-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
-                                <Image
-                                  src={menu.thumbnailPath}
-                                  alt={menu.name || ''}
-                                  fill
-                                  className="object-cover"
-                                />
-                              </div>
-                            ) : null}
 
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between gap-2">
-                                <h3 className="font-medium text-base">{menu.name}</h3>
+                        return (
+                          <Card
+                            key={menu._id}
+                            className={`transition-all p-2 ${
+                              isCurrentlySelected
+                                ? 'border-2 border-active shadow-md cursor-pointer'
+                                : isBlocked
+                                  ? 'opacity-50 border-2 border-transparent'
+                                  : 'hover:shadow-md border-2 border-transparent cursor-pointer'
+                            }`}
+                            onClick={() => !isBlocked && handleMenuSelect(menu)}
+                          >
+                            <div className="px-2 pt-2 flex justify-between items-center">
+                              <div className="flex flex-wrap gap-1 divide-x divide-border text-xs text-muted-foreground text-nowrap">
+                                <p className="">{convertTarget(menu.targetType as Target)}</p>
+                                <p className="pl-1">{convertGender(menu.targetGender as Gender)}</p>
                               </div>
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-xs scale-90 -ml-2 text-warning-foreground ">
-                                  {convertPaymentMethod(menu.paymentMethod as PaymentMethod)}
-                                </p>
-                                {isSetMenu(menu) && (
-                                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
-                                    セット
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center justify-between gap-2 mt-1">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm text-muted-foreground">
-                                    {menu.timeToMin}分
-                                  </span>
+                              {menu.tags && menu.tags.length > 0 && (
+                                <div className="flex justify-end flex-wrap gap-0.5 scale-95">
+                                  {menu.tags.map((tag, idx) => (
+                                    <p
+                                      key={idx}
+                                      className="text-xs px-2 py-0.5 bg-muted border border-border text-muted-foreground rounded-full"
+                                    >
+                                      {tag}
+                                    </p>
+                                  ))}
                                 </div>
-                                {menu.salePrice ? (
-                                  <div className="flex items-center gap-1">
-                                    <span className="line-through text-xs text-muted-foreground">
-                                      ¥{menu.unitPrice?.toLocaleString()}
-                                    </span>
-                                    <span className="font-bold text-active">
-                                      ¥{menu.salePrice.toLocaleString()}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <span className="font-medium">
-                                    ¥{menu.unitPrice?.toLocaleString()}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex justify-end">
-                                <Button
-                                  variant="ghost"
-                                  className="z-10 text-xs underline text-link-foreground tracking-widest"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation() // クリックイベントの伝播を停止
-                                    // 詳細モーダルを表示する処理を実装
-                                    handleShowMenuDetails(menu)
-                                  }}
-                                >
-                                  詳細を見る
-                                </Button>
-                              </div>
+                              )}
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                </div>
+                            <CardContent className="p-2">
+                              <div className="flex items-start gap-3">
+                                {menu.images && menu.images.length > 0 && (
+                                  <div className="relative h-28 w-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                                    <Image
+                                      src={menu.images[0].thumbnailPath || ''}
+                                      alt={menu.name || ''}
+                                      fill
+                                      className="object-cover"
+                                      quality={90}
+                                      priority
+                                    />
+                                  </div>
+                                )}
+
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <h3 className="font-medium text-base">{menu.name}</h3>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-xs scale-90 -ml-2 text-warning-foreground ">
+                                      {convertPaymentMethod(menu.paymentMethod as PaymentMethod)}
+                                    </p>
+                                    {isSetMenu(menu) && (
+                                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                                        セット
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2 mt-1">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="h-4 w-4 text-muted-foreground" />
+                                      <span className="text-sm text-muted-foreground">
+                                        {menu.timeToMin}分
+                                      </span>
+                                    </div>
+                                    {menu.salePrice ? (
+                                      <div className="flex items-center gap-1">
+                                        <span className="line-through text-xs text-muted-foreground">
+                                          ¥{menu.unitPrice?.toLocaleString()}
+                                        </span>
+                                        <span className="font-bold text-active">
+                                          ¥{menu.salePrice.toLocaleString()}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="font-medium">
+                                        ¥{menu.unitPrice?.toLocaleString()}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex justify-end">
+                                    <Button
+                                      variant="ghost"
+                                      className="z-10 text-xs underline text-link-foreground tracking-widest"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation() // クリックイベントの伝播を停止
+                                        // 詳細モーダルを表示する処理を実装
+                                        handleShowMenuDetails(menu)
+                                      }}
+                                    >
+                                      詳細を見る
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  )}
+                {/* 絞り込みがあり、かつセットメニューカテゴリで、表示すべきメニューがない場合にメッセージを表示 */}
+                {category === 'セットメニュー' &&
+                  categoryMenus.length === 0 &&
+                  selectedCategories.length > 0 &&
+                  !selectedCategories.includes('セットメニュー' as MenuCategory) && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      選択中のカテゴリに該当するセットメニューはありません。
+                    </p>
+                  )}
               </section>
             )
-          }
-        )}
+          })}
       </div>
 
       {/* 選択済みメニュー表示 */}

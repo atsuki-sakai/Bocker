@@ -11,6 +11,7 @@ import { api } from '@/convex/_generated/api'
 import type { StaffDisplay } from './StaffView'
 import type { TimeRange } from '@/lib/type'
 import { Separator } from '@/components/ui/separator'
+import { PaymentMethod } from '@/services/convex/shared/types/common'
 // オプション選択数をカウントする関数
 const countOptionOccurrences = (options: Doc<'salon_option'>[]) => {
   const counts = new Map<string, { option: Doc<'salon_option'>; count: number }>()
@@ -37,6 +38,7 @@ type ConfirmViewProps = {
   onChangePointsAction: (points: number) => void
   selectedMenus: Doc<'menu'>[]
   selectedOptions: Doc<'salon_option'>[]
+  selectedPaymentMethod: PaymentMethod
   selectedStaff: StaffDisplay | null
   selectedDate: Date | null
   selectedTime: TimeRange | null
@@ -90,19 +92,6 @@ export const ConfirmView = ({
   // 指名料の計算
   const calculateExtraCharge = () => {
     return selectedStaff?.extraCharge || 0
-  }
-  // 合計金額の計算
-  const calculateTotal = () => {
-    const menuTotal = selectedMenus.reduce(
-      (sum, menu) => sum + (menu.salePrice || menu.unitPrice || 0),
-      0
-    )
-    const optionTotal = selectedOptions.reduce(
-      (sum, option) => sum + (option.salePrice ?? option.unitPrice ?? 0),
-      0
-    )
-    const extraChargeTotal = selectedStaff?.extraCharge || 0
-    return menuTotal + optionTotal + extraChargeTotal
   }
 
   // 合計施術時間（分）
@@ -191,16 +180,17 @@ export const ConfirmView = ({
           : coupon.fixedDiscountValue
 
       const resultDiscount =
-        calculateTotal() -
+        totalAmount +
+        extraCharge -
         (coupon.discountType === 'percentage'
           ? coupon.percentageDiscountValue
-            ? calculateTotal() - calculateTotal() * (discount / 100)
+            ? totalAmount + extraCharge - (totalAmount + extraCharge) * (discount / 100)
             : 0
           : coupon.fixedDiscountValue
-            ? calculateTotal() - coupon.fixedDiscountValue
+            ? totalAmount + extraCharge - coupon.fixedDiscountValue
             : 0)
 
-      if (resultDiscount > calculateTotal()) {
+      if (resultDiscount > totalAmount + extraCharge) {
         setCouponError('割引金額が合計金額を超えています。')
         setAppliedCoupon(null)
         return
@@ -211,7 +201,9 @@ export const ConfirmView = ({
         discount: resultDiscount,
         name: coupon.name + formattedDiscount,
       })
-      onApplyCoupon(resultDiscount, coupon._id)
+      if (onApplyCoupon) {
+        onApplyCoupon(resultDiscount, coupon._id)
+      }
       setCouponError(null)
     } catch (error) {
       console.log(error)
@@ -237,7 +229,7 @@ export const ConfirmView = ({
   const groupedOptions = countOptionOccurrences(selectedOptions)
 
   return (
-    <div>
+    <div className="w-full max-w-3xl mx-auto">
       <div className="space-y-6">
         {/* 予約内容の概要 */}
         <div>

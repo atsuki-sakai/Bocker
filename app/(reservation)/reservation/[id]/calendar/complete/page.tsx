@@ -247,7 +247,7 @@ export default function CompletePage() {
         {/* 成功メッセージカード */}
         <motion.div variants={itemVariants}>
           <Card className="mb-6 bg-background shadow-lg border-border overflow-hidden">
-            <CardHeader className="bg-palette-2 pb-4">
+            <CardHeader className="bg-muted pb-4">
               <div className="flex justify-center mb-2">
                 <motion.div
                   initial={{ scale: 0 }}
@@ -511,9 +511,9 @@ export default function CompletePage() {
               </Card>
 
               {/* サロン情報 */}
-              <Accordion type="single" collapsible className="border rounded-lg">
-                <AccordionItem value="salon-info" className="border-none">
-                  <AccordionTrigger className="px-4 py-3 hover:bg-muted">
+              <Accordion type="multiple" className="border rounded-lg">
+                <AccordionItem value="salon-info">
+                  <AccordionTrigger className="px-4 py-3">
                     <div className="flex items-baseline gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium text-muted-foreground">

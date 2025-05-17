@@ -27,6 +27,7 @@ export const upsert = mutation({
     address: v.optional(v.string()), // 住所
     reservationRules: v.optional(v.string()), // 予約ルール
     imgPath: v.optional(v.string()), // 画像ファイルパス
+    thumbnailPath: v.optional(v.string()), // サムネイルファイルパス
     description: v.optional(v.string()), // 説明
   },
   handler: async (ctx, args) => {

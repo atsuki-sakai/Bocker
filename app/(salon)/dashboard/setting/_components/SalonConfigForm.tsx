@@ -15,7 +15,6 @@ import { z } from 'zod'
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
 import { FormField } from '@/components/common'
-import { compressAndConvertToWebP } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
 import { Mail, Phone, MapPin, FileText, Info, Save, Upload, Building } from 'lucide-react'
 import { ZodTextField } from '@/components/common'
@@ -48,8 +47,6 @@ export default function SalonConfigForm() {
   const [isUploading, setIsUploading] = useState(false)
   const salonConfig = useQuery(api.salon.config.query.findBySalonId, salonId ? { salonId } : 'skip')
   const updateSalonConfig = useMutation(api.salon.config.mutation.upsert)
-  const deleteImage = useAction(api.storage.action.kill)
-  const uploadImage = useAction(api.storage.action.upload)
 
   const {
     register,
@@ -101,34 +98,46 @@ export default function SalonConfigForm() {
       e.preventDefault()
       if (!currentFile || !salonId) return
 
+      let uploadedOriginalUrl: string | null = null
+      let uploadedThumbnailUrl: string | null = null
       try {
         setIsUploading(true)
 
-        if (salonConfig?.imgPath) {
-          await deleteImage({ imgUrl: salonConfig.imgPath })
-        }
+        const originalBase64 = await fileToBase64(currentFile)
 
-        // 画像を圧縮してWebP形式に変換
-        const processedFile = await compressAndConvertToWebP(currentFile)
-
-        const base64Data = await fileToBase64(processedFile)
-        const filePath = `${Date.now()}-${processedFile.name}`
-
-        const data = await uploadImage({
-          directory: 'salon',
-          base64Data,
-          filePath,
-          contentType: processedFile.type,
-        })
-
-        if (data && 'publicUrl' in data) {
-          // サロン設定の画像パスを更新
-          await updateSalonConfig({
+        const result = await fetch('/api/storage', {
+          method: 'POST',
+          body: JSON.stringify({
+            base64Data: originalBase64,
+            fileName: currentFile!.name,
+            directory: 'setting',
             salonId,
-            imgPath: data.publicUrl,
-          })
+            quality: 'high',
+          }),
+        })
+        const data = await result.json()
+        uploadedOriginalUrl = data.imgUrl
+        uploadedThumbnailUrl = data.thumbnailUrl
 
-          // アップロード完了したらファイル選択をクリア
+        if (result.ok) {
+          // サロン設定の画像パスを更新
+          if (uploadedOriginalUrl && uploadedThumbnailUrl) {
+            await updateSalonConfig({
+              salonId,
+              imgPath: uploadedOriginalUrl,
+              thumbnailPath: uploadedThumbnailUrl,
+            })
+          }
+          if (salonConfig?.imgPath) {
+            await fetch('/api/storage/kill', {
+              method: 'DELETE',
+              body: JSON.stringify({
+                imgUrl: salonConfig.imgPath,
+                withThumbnail: true,
+              }),
+            })
+          }
+
           setCurrentFile(null)
           toast.success('画像を保存しました')
         }
@@ -138,7 +147,7 @@ export default function SalonConfigForm() {
         setIsUploading(false)
       }
     },
-    [currentFile, salonConfig, deleteImage, uploadImage, updateSalonConfig, salonId]
+    [currentFile, salonConfig, updateSalonConfig, salonId]
   )
 
   // フォーム送信処理（useCallbackでメモ化）
@@ -260,8 +269,8 @@ export default function SalonConfigForm() {
             <ImageDrop
               initialImageUrl={salonConfig?.imgPath}
               maxSizeMB={4}
-              onFileSelect={(file) => {
-                setCurrentFile(file)
+              onFileSelect={(files) => {
+                setCurrentFile(files[0] ?? null)
               }}
             />
             <Button

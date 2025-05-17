@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { InfoIcon, Plus, Minus, AlertTriangle } from 'lucide-react'
+import Image from 'next/image'
 
 type OptionViewProps = {
   selectedOptions: Doc<'salon_option'>[]
@@ -105,6 +106,8 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
 
   if (!options) return <Loading />
 
+  console.log(options)
+
   return (
     <div>
       <h2 className="text-base">オプションを選択</h2>
@@ -143,52 +146,70 @@ export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionVie
               key={option._id}
               className="flex items-center justify-between border rounded-lg p-4 w-full"
             >
-              <div className="flex flex-col gap-1 w-2/3 mr-4 ">
-                <p className="font-medium">{option.name}</p>
-                <p className="">
-                  {option.salePrice && option.salePrice > 0 ? (
-                    <>
-                      <span className="line-through text-muted-foreground text-sm">
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col items-start justify-start gap-1 w-full">
+                  {option.thumbnailPath ? (
+                    <Image
+                      src={option.thumbnailPath}
+                      alt={option.name}
+                      width={100}
+                      height={100}
+                      className="rounded-lg aspect-square object-cover"
+                    />
+                  ) : null}
+                </div>
+                <div className="flex flex-col gap-1 w-full mr-4 ">
+                  <p className="font-medium">{option.name}</p>
+                  <p className="">
+                    {option.salePrice && option.salePrice > 0 ? (
+                      <>
+                        <span className="line-through text-muted-foreground text-sm">
+                          ￥{option.unitPrice?.toLocaleString()}
+                        </span>
+                        <span className="font-semibold text-active text-sm">
+                          ￥{option.salePrice.toLocaleString()}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-sm font-semibold text-muted-foreground">
                         ￥{option.unitPrice?.toLocaleString()}
                       </span>
-                      <span className="font-semibold text-active text-sm">
-                        ￥{option.salePrice.toLocaleString()}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-sm font-semibold text-muted-foreground">
-                      ￥{option.unitPrice?.toLocaleString()}
-                    </span>
+                    )}
+                  </p>
+                  {option.description && option.description?.length > 50 && (
+                    <p className="text-sm text-muted-foreground break-words">
+                      {option.description?.slice(0, 25).concat('...')}
+                    </p>
                   )}
-                </p>
-                {option.orderLimit && option.orderLimit > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {selectedCount > 0
-                      ? `${selectedCount}/${option.orderLimit}`
-                      : `最大${option.orderLimit}個まで選択可能`}
-                  </p>
-                )}
-                {option.inStock !== undefined && option.inStock !== null && (
-                  <p className="text-xs text-muted-foreground">
-                    {selectedCount > 0
-                      ? `残り${option.inStock - selectedCount}個`
-                      : `在庫${option.inStock}個`}
-                  </p>
-                )}
-                {isLowStock && (
-                  <p className="text-xs text-amber-500 flex items-center">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    残り僅か
-                  </p>
-                )}
-                {option.description && option.description?.length > 50 && (
-                  <p className="text-sm text-muted-foreground break-words">
-                    {option.description?.slice(0, 25).concat('...')}
-                  </p>
-                )}
-                {option.description && option.description?.length <= 50 && (
-                  <p className="text-sm text-muted-foreground break-words">{option.description}</p>
-                )}
+                  {option.description && option.description?.length <= 50 && (
+                    <p className="text-sm text-muted-foreground break-words">
+                      {option.description}
+                    </p>
+                  )}
+                  {option.orderLimit && option.orderLimit > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {selectedCount > 0
+                        ? `${selectedCount}/${option.orderLimit}`
+                        : `最大${option.orderLimit}個まで選択可能`}
+                    </p>
+                  )}
+                  {option.inStock !== undefined && option.inStock !== null && (
+                    <p className="text-xs text-muted-foreground">
+                      {/* {selectedCount > 0
+                        ? `残り${option.inStock - selectedCount}個`
+                        : `在庫${option.inStock}個`} */}
+                      {selectedCount > 0 && selectedCount <= 10 && (
+                        <>残り{option.inStock - selectedCount}個</>
+                      )}
+                    </p>
+                  )}
+                  {isLowStock && (
+                    <p className="text-xs text-warning-foreground flex items-center">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      残り僅か
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col items-end w-1/3">
                 {isSelected ? (

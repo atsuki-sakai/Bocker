@@ -27,12 +27,12 @@ body {
     --button-foreground: oklch(1 0 none);
     --secondary: oklch(0.93 0 none);
     --secondary-foreground: oklch(0.32 0 none);
-    --muted: oklch(0.95 0.0066 160.07);
+    --muted: oklch(0.95 0.0089 179.6);
     --muted-foreground: oklch(0.54 0.0169 191.43);
     --active: oklch(0.63 0.1634 144.42);
     --active-foreground: oklch(0.97 0.0417 155.03);
     --warning: oklch(0.99 0.0235 104.23);
-    --warning-foreground: oklch(0.6 0.1043 82.6);
+    --warning-foreground: oklch(0.78 0.1518 94.86);
     --pop: oklch(0.63 0.1632 34.1);
     --pop-foreground: oklch(1 0 none);
     --accent: oklch(0.39 0.0415 233.64);

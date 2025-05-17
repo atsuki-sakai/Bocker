@@ -27,25 +27,30 @@ import {
 } from '@/components/ui/select'
 import { usePaginatedQuery } from 'convex/react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function TimelinePage() {
   const { salonId } = useSalon()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // クエリパラメータから初期値を取得
+  const initialStaffId = searchParams.get('staffId') as Id<'staff'> | null
+  const initialDate = searchParams.get('date') ? new Date(searchParams.get('date')!) : new Date()
+  const initialViewMode =
+    searchParams.get('viewMode') === 'day' || searchParams.get('viewMode') === 'week'
+      ? (searchParams.get('viewMode') as 'week' | 'day')
+      : 'week'
 
   const containerOffset = useRef<HTMLDivElement | null>(null)
-  const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null)
-
-  // 現在の日付と選択された日付を管理
-  const [currentDate, setCurrentDate] = useState<Date>(new Date())
-
-  // スマートフォン表示用の選択日
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-
-  // ビューモード（週表示または日表示）
-  const [viewMode, setViewMode] = useState<'week' | 'day'>('week')
-
-  // 日本の週の始まりは月曜日なので、optionsで指定
-  const startOfWeek = startOfWeekFns(currentDate, { weekStartsOn: 1 })
-  const endOfWeek = endOfWeekFns(currentDate, { weekStartsOn: 1 })
+  const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(initialStaffId)
+  const [currentDate, setCurrentDate] = useState<Date>(
+    initialViewMode === 'week' ? initialDate : new Date()
+  )
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    initialViewMode === 'day' ? initialDate : new Date()
+  )
+  const [viewMode, setViewMode] = useState<'week' | 'day'>(initialViewMode)
 
   const [currentReservations, setCurrentReservations] = useState<Doc<'reservation'>[]>([])
   const [currentSchedules, setCurrentSchedules] = useState<Doc<'staff_schedule'>[]>([])
@@ -117,7 +122,7 @@ export default function TimelinePage() {
   // 現在の週の日付を計算
   const getDaysOfWeek = (): Date[] => {
     const days: Date[] = []
-    const day = new Date(startOfWeek)
+    const day = new Date(startOfWeekFns(currentDate, { weekStartsOn: 1 }))
 
     for (let i = 0; i < 7; i++) {
       days.push(new Date(day))
@@ -157,7 +162,11 @@ export default function TimelinePage() {
       const startTime = new Date(schedule.startTime_unix!)
       // ビュー外のスケジュールは表示しない
       if (viewMode === 'week') {
-        if (startTime < startOfWeek || startTime > endOfWeek) return null
+        if (
+          startTime < startOfWeekFns(currentDate, { weekStartsOn: 1 }) ||
+          startTime > endOfWeekFns(currentDate, { weekStartsOn: 1 })
+        )
+          return null
       } else {
         if (!isSameDay(startTime, selectedDate)) return null
       }
@@ -226,7 +235,11 @@ export default function TimelinePage() {
       // 週表示の場合は週内の予約を全て表示
       // 日表示の場合は選択された日付の予約のみを表示
       if (viewMode === 'week') {
-        if (startTime < startOfWeek || startTime > endOfWeek) return null
+        if (
+          startTime < startOfWeekFns(currentDate, { weekStartsOn: 1 }) ||
+          startTime > endOfWeekFns(currentDate, { weekStartsOn: 1 })
+        )
+          return null
       } else {
         // 選択された日付と同じ日付かどうかをチェック
         if (!isSameDay(startTime, selectedDate)) return null
@@ -300,16 +313,63 @@ export default function TimelinePage() {
     return slots
   }
 
+  // クエリパラメータを更新する関数
+  const updateQueryParams = (params: {
+    staffId?: Id<'staff'> | null
+    date?: Date
+    viewMode?: 'week' | 'day'
+  }) => {
+    const sp = new URLSearchParams(searchParams.toString())
+    if (params.staffId !== undefined) {
+      if (params.staffId) sp.set('staffId', params.staffId)
+      else sp.delete('staffId')
+    }
+    if (params.date !== undefined) {
+      if (params.date) sp.set('date', params.date.toISOString())
+      else sp.delete('date')
+    }
+    if (params.viewMode !== undefined) {
+      sp.set('viewMode', params.viewMode)
+    }
+    router.replace(`?${sp.toString()}`)
+  }
+
+  // スタッフ選択時
+  const handleStaffChange = (value: Id<'staff'>) => {
+    setSelectedStaffId(value)
+    updateQueryParams({ staffId: value })
+  }
+
+  // 日付選択時
+  const handleDateChange = (date: Date) => {
+    if (viewMode === 'week') {
+      setCurrentDate(date)
+      updateQueryParams({ date, viewMode: 'week' })
+    } else {
+      setSelectedDate(date)
+      updateQueryParams({ date, viewMode: 'day' })
+    }
+  }
+
+  // ビューモード切替時
+  const handleViewModeToggle = () => {
+    const newMode = viewMode === 'week' ? 'day' : 'week'
+    setViewMode(newMode)
+    updateQueryParams({ viewMode: newMode, date: newMode === 'week' ? currentDate : selectedDate })
+  }
+
   // 前の日/週へ移動
   const moveToPrevious = (): void => {
     if (viewMode === 'week') {
       const newDate = new Date(currentDate)
       newDate.setDate(currentDate.getDate() - 7)
       setCurrentDate(newDate)
+      updateQueryParams({ date: newDate, viewMode: 'week' })
     } else {
       const newDate = new Date(selectedDate)
       newDate.setDate(selectedDate.getDate() - 1)
       setSelectedDate(newDate)
+      updateQueryParams({ date: newDate, viewMode: 'day' })
     }
   }
 
@@ -319,10 +379,12 @@ export default function TimelinePage() {
       const newDate = new Date(currentDate)
       newDate.setDate(currentDate.getDate() + 7)
       setCurrentDate(newDate)
+      updateQueryParams({ date: newDate, viewMode: 'week' })
     } else {
       const newDate = new Date(selectedDate)
       newDate.setDate(selectedDate.getDate() + 1)
       setSelectedDate(newDate)
+      updateQueryParams({ date: newDate, viewMode: 'day' })
     }
   }
 
@@ -330,11 +392,7 @@ export default function TimelinePage() {
   const moveToToday = (): void => {
     setCurrentDate(new Date())
     setSelectedDate(new Date())
-  }
-
-  // 日表示と週表示の切り替え
-  const toggleViewMode = (): void => {
-    setViewMode(viewMode === 'week' ? 'day' : 'week')
+    updateQueryParams({ date: new Date(), viewMode })
   }
 
   // 予約データの更新
@@ -353,14 +411,18 @@ export default function TimelinePage() {
               {viewMode === 'week' ? (
                 <time
                   className="flex flex-col md:flex-row items-center justify-center gap-1"
-                  dateTime={`${format(startOfWeek, 'yyyy-MM-dd')}/${format(endOfWeek, 'yyyy-MM-dd')}`}
+                  dateTime={`${format(startOfWeekFns(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd')}/${format(endOfWeekFns(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd')}`}
                 >
                   <span className="font-bold text-base md:text-xl">
-                    {format(startOfWeek, 'yyyy年MM月dd日', { locale: ja })}
+                    {format(startOfWeekFns(currentDate, { weekStartsOn: 1 }), 'yyyy年MM月dd日', {
+                      locale: ja,
+                    })}
                   </span>
                   <div className=" text-muted-foreground text-xs">から</div>
                   <span className="font-bold text-base md:text-xl">
-                    {format(endOfWeek, 'yyyy年MM月dd日', { locale: ja })}
+                    {format(endOfWeekFns(currentDate, { weekStartsOn: 1 }), 'yyyy年MM月dd日', {
+                      locale: ja,
+                    })}
                   </span>
                 </time>
               ) : (
@@ -375,10 +437,7 @@ export default function TimelinePage() {
             <div className="flex flex-col gap-2">
               <div className="md:hidden flex flex-col gap-2 items-end justify-end">
                 <div className="w-fit min-w-[180px]">
-                  <Select
-                    value={selectedStaffId ?? ''}
-                    onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
-                  >
+                  <Select value={selectedStaffId ?? ''} onValueChange={handleStaffChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="スタッフを選択" />
                     </SelectTrigger>
@@ -422,16 +481,13 @@ export default function TimelinePage() {
                 {/* ビューモード切替ボタン（PC表示専用） */}
                 <button
                   type="button"
-                  onClick={toggleViewMode}
+                  onClick={handleViewModeToggle}
                   className="ml-4 hidden md:inline-flex items-center rounded-md border border-border bg-background px-3.5 py-2 text-sm font-semibold text-primary shadow-sm hover:bg-muted"
                 >
                   {viewMode === 'day' ? '週表示' : '日表示'}
                 </button>
                 <div className="hidden md:ml-4 md:flex md:flex-col md:items-center">
-                  <Select
-                    value={selectedStaffId ?? ''}
-                    onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
-                  >
+                  <Select value={selectedStaffId ?? ''} onValueChange={handleStaffChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="スタッフを選択" />
                     </SelectTrigger>
@@ -468,7 +524,7 @@ export default function TimelinePage() {
                         <Link
                           href="#"
                           className="block px-4 py-2 text-sm text-muted-foreground data-focus:bg-muted data-focus:text-primary data-focus:outline-hidden"
-                          onClick={toggleViewMode}
+                          onClick={handleViewModeToggle}
                         >
                           {viewMode === 'day' ? '週表示に切り替え' : '日表示に切り替え'}
                         </Link>
@@ -501,8 +557,7 @@ export default function TimelinePage() {
                           type="button"
                           className="flex flex-col items-center pt-2 pb-3 bg-background"
                           onClick={() => {
-                            setSelectedDate(date)
-                            setViewMode('day')
+                            handleDateChange(date)
                           }}
                         >
                           <div className="flex items-center justify-center">

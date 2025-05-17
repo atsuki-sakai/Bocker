@@ -1,3 +1,4 @@
+'use node';
 import Stripe from 'stripe';
 import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
@@ -20,10 +21,13 @@ export class StripeSubscriptionRepository {
 
   private constructor(private stripe: Stripe) {
     // Convexクライアントの初期化
-    this.convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL as string);
+    if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+      throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is not set.");
+    }
+    this.convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
     // 開発環境かどうか
-    this.isDevelopment = process.env.NODE_ENV === 'development';
+    this.isDevelopment = process.env.APP_ENV === 'development';
   }
 
   public static getInstance(stripe: Stripe): StripeSubscriptionRepository {
@@ -165,10 +169,7 @@ export class StripeSubscriptionRepository {
           if (customerId) {
             try {
               // 新規ユーザーのStripe顧客情報を取得して紹介コードを抽出
-              const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-                apiVersion: STRIPE_API_VERSION,
-              });
-              const customer = await stripe.customers.retrieve(customerId as string);
+              const customer = await this.stripe.customers.retrieve(customerId as string);
 
               // 削除されていない顧客からreferralCodeを取得
               const referralCode = !customer.deleted ? customer.metadata?.referralCode : undefined;
@@ -177,17 +178,17 @@ export class StripeSubscriptionRepository {
               console.log('新規ユーザーのサブスクリプションID:', inviteSubscriptionId);
               console.log('紹介コード:', referralCode);
 
-              const referral = await fetchQuery(api.salon.referral.query.getByReferralCode, {
+              const referral = await this.convex.query(api.salon.referral.query.getByReferralCode, {
                 referralCode: referralCode as string,
               });
-              const inviteSalon = await fetchQuery(api.salon.core.query.findByStripeCustomerId, {
+              const inviteSalon = await this.convex.query(api.salon.core.query.findByStripeCustomerId, {
                 stripeCustomerId: customerId as string,
               });
               if (!inviteSalon) {
                 console.log('招待されたユーザーのサロン情報が見つかりません');
                 return { success: true, message: '招待されたユーザーのサロン情報が見つかりません' };
               }
-              const inviteReferral = await fetchQuery(api.salon.referral.query.findBySalonId, {
+              const inviteReferral = await this.convex.query(api.salon.referral.query.findBySalonId, {
                 salonId: inviteSalon._id,
               });
 
@@ -197,19 +198,19 @@ export class StripeSubscriptionRepository {
               }
 
               if (referral) {
-                await fetchMutation(api.salon.referral.mutation.incrementReferralCount, {
+                await this.convex.mutation(api.salon.referral.mutation.incrementReferralCount, {
                   referralId: inviteReferral._id,
                 });
 
                 if (referralCode) {
                   const referralBySalon = await retryOperation(() =>
-                    fetchQuery(api.salon.referral.query.getByReferralCode, {
+                    this.convex.query(api.salon.referral.query.getByReferralCode, {
                       referralCode: referralCode,
                     })
                   );
                   if (referralBySalon) {
                     await retryOperation(() =>
-                      fetchMutation(api.salon.referral.mutation.incrementReferralCount, {
+                      this.convex.mutation(api.salon.referral.mutation.incrementReferralCount, {
                         referralId: referralBySalon._id,
                       })
                     );
@@ -235,10 +236,10 @@ export class StripeSubscriptionRepository {
           return { success: result.success, message: result.error };
 
         case 'customer.subscription.updated': {
-          const subscription = event.data.object as Stripe.Subscription;
-          const priceId = subscription.items.data[0].plan.id;
-          const result = await this.syncSubscription(subscription, priceId);
-          return { success: result.success, message: result.error };
+          const subscriptionUpdated = event.data.object as Stripe.Subscription;
+          const priceIdUpdated = subscriptionUpdated.items.data[0].plan.id;
+          const resultUpdated = await this.syncSubscription(subscriptionUpdated, priceIdUpdated);
+          return { success: resultUpdated.success, message: resultUpdated.error };
         }
 
         case 'invoice.payment_succeeded': {

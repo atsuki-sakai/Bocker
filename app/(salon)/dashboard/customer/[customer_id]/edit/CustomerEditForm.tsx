@@ -24,7 +24,6 @@ import { Button } from '@/components/ui/button'
 import { GENDER_VALUES } from '@/services/convex/shared/types/common'
 import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH, MAX_TAG_LENGTH } from '@/services/convex/constants'
 import { Loader2, Pencil } from 'lucide-react'
-// import { Controller } from 'react-hook-form'; // Unused
 import { useMutation } from 'convex/react'
 import { handleErrorToMsg, throwConvexError } from '@/lib/error'
 import { Loading } from '@/components/common'
@@ -60,16 +59,28 @@ const calculateAge = (birthdayString: string | undefined | null): number | undef
 }
 
 const customerEditFormSchema = z.object({
-  lastName: z
-    .string()
-    .min(1, { message: '苗字は必須です' })
-    .max(MAX_TEXT_LENGTH, { message: `苗字は${MAX_TEXT_LENGTH}文字以内で入力してください` })
-    .optional(),
-  firstName: z
-    .string()
-    .min(1, { message: '名前は必須です' })
-    .max(MAX_TEXT_LENGTH, { message: `名前は${MAX_TEXT_LENGTH}文字以内で入力してください` })
-    .optional(),
+  lastName: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return undefined
+      return val
+    },
+    z
+      .string()
+      .min(1, { message: '苗字は必須です' })
+      .max(MAX_TEXT_LENGTH, { message: `苗字は${MAX_TEXT_LENGTH}文字以内で入力してください` })
+      .optional()
+  ),
+  firstName: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return undefined
+      return val
+    },
+    z
+      .string()
+      .min(1, { message: '名前は必須です' })
+      .max(MAX_TEXT_LENGTH, { message: `名前は${MAX_TEXT_LENGTH}文字以内で入力してください` })
+      .optional()
+  ),
   phone: z
     .string()
     .min(1, { message: '電話番号は必須です' })
@@ -398,8 +409,6 @@ export default function CustomerEditForm() {
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting || !isDirty}>
-            {' '}
-            {/* Button disabled if not dirty */}
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

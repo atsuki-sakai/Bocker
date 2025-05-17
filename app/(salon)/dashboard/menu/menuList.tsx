@@ -34,7 +34,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSalon } from '@/hooks/useSalon'
-import { useMutation, useAction, useQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
 import { api } from '@/convex/_generated/api'
@@ -57,7 +57,7 @@ const numberOfMenus = 9
 interface MenuItemProps {
   menu: Doc<'menu'>
   onEdit: (menuId: Id<'menu'>) => void
-  onDelete: (menuId: Id<'menu'>, imgPath: string) => void
+  onDelete: (menuId: Id<'menu'>, imgPaths: string[]) => void
 }
 
 const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
@@ -65,8 +65,13 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
     <div className="col-span-1">
       <Card className="h-full overflow-hidden hover:shadow-md transition-all">
         <div className="relative h-32 md:h-48 w-full">
-          {menu.imgPath ? (
-            <Image src={menu.imgPath} alt={menu.name || ''} fill className="object-cover" />
+          {menu.images && menu.images.length > 0 ? (
+            <Image
+              src={menu.images[0].thumbnailPath || ''}
+              alt={menu.name || ''}
+              fill
+              className="object-cover"
+            />
           ) : (
             <div className="absolute inset-0 bg-muted flex items-center justify-center">
               <p className="text-muted-foreground text-base font-bold uppercase">
@@ -100,7 +105,9 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
                 <span>編集</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => onDelete(menu._id, menu.imgPath || '')}
+                onClick={() =>
+                  onDelete(menu._id, menu.images?.map((image) => image.imgPath || '') || [])
+                }
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -159,7 +166,7 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
 // メニューリスト表示コンポーネント
 interface MenuListContentProps {
   menus: Doc<'menu'>[]
-  onDelete: (menuId: Id<'menu'>, imgPath: string) => void
+  onDelete: (menuId: Id<'menu'>, imgPaths: string[]) => void
 }
 
 const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
@@ -207,9 +214,9 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                 )}
                 <div className="flex items-center gap-2">
                   <div className="relative h-12 w-12 rounded-md overflow-hidden flex-shrink-0">
-                    {menu.imgPath ? (
+                    {menu.images && menu.images.length > 0 ? (
                       <Image
-                        src={menu.imgPath}
+                        src={menu.images[0].thumbnailPath || ''}
                         alt={menu.name || ''}
                         fill
                         className="object-cover"
@@ -291,7 +298,9 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                    onClick={() => onDelete(menu._id, menu.imgPath || '')}
+                    onClick={() =>
+                      onDelete(menu._id, menu.images?.map((image) => image.imgPath || '') || [])
+                    }
                   >
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">削除</span>
@@ -311,14 +320,13 @@ export default function MenuList() {
   const { salon } = useSalon()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
   const [deletingMenuId, setDeletingMenuId] = useState<Id<'menu'> | null>(null)
-  const [deletingImgPath, setDeletingImgPath] = useState<string>('')
+  const [deletingImgPaths, setDeletingImgPaths] = useState<string[]>([])
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false)
   const [selectedCategories, setSelectedCategories] = useState<MenuCategory[]>([])
   const [openCategoryPopover, setOpenCategoryPopover] = useState(false)
 
   // APIリクエスト用フック
   const killMenu = useMutation(api.menu.core.mutation.kill)
-  const deleteMenuImage = useAction(api.storage.action.kill)
 
   // カテゴリで絞り込むクエリと全てのメニューを取得するクエリ
   const filteredMenus = useQuery(
@@ -377,22 +385,69 @@ export default function MenuList() {
     if (!deletingMenuId) return
 
     try {
-      if (deletingImgPath === '') {
+      if (deletingImgPaths.length === 0) {
         toast.error('メニュー画像がありません')
-        return
+        // 画像がない場合はメニューの削除のみ実行する場合もあるので、returnはコメントアウトまたは削除検討
+        // return
       }
       await killMenu({ menuId: deletingMenuId })
-      await deleteMenuImage({ imgUrl: deletingImgPath })
-      toast.success('メニューを削除しました')
+
+      // 画像を一括削除
+      if (deletingImgPaths.length > 0) {
+        try {
+          const response = await fetch('/api/storage', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ imgUrls: deletingImgPaths, withThumbnail: true }),
+          })
+
+          const result = await response.json()
+
+          if (!response.ok) {
+            // APIがエラーを返した場合 (207 Multi-Status もエラーとして扱うか検討)
+            // ここでは、response.ok でない場合は全てエラーとしてトースト表示する
+            const errorMessage =
+              result.error || result.message || '画像の一括削除中にエラーが発生しました。'
+            toast.error(errorMessage)
+            if (result.details) {
+              console.error('画像削除失敗詳細:', result.details)
+            }
+            // 必要に応じて、一部成功・一部失敗のシナリオをより詳細にハンドリング
+            if (
+              response.status === 207 &&
+              result.failedDeletes &&
+              result.failedDeletes.length > 0
+            ) {
+              toast.warning(`${result.failedDeletes.length}件の画像の削除に失敗しました。`)
+              result.failedDeletes.forEach((fail: { url: string; error: string }) => {
+                console.error(` - ${fail.url}: ${fail.error}`)
+              })
+            }
+          } else {
+            // response.ok === true (通常は200 OK)
+            if (result.message) {
+              toast.success(result.message) // 例: "3件の画像を削除しました。"
+            }
+          }
+        } catch (e) {
+          // ネットワークエラーやJSONパースエラーなど
+          console.error('画像一括削除リクエストエラー:', e)
+          toast.error('画像削除リクエストの送信に失敗しました。')
+        }
+      }
+
+      toast.success('メニューを削除しました') // メニュー自体の削除成功メッセージ
       setIsDeleteDialogOpen(false)
     } catch (error) {
       toast.error(handleErrorToMsg(error))
     }
-  }, [deletingMenuId, deletingImgPath, killMenu, deleteMenuImage])
+  }, [deletingMenuId, deletingImgPaths, killMenu])
 
-  const openDeleteDialog = useCallback((menuId: Id<'menu'>, imgPath: string) => {
+  const openDeleteDialog = useCallback((menuId: Id<'menu'>, imgPaths: string[]) => {
     setDeletingMenuId(menuId)
-    setDeletingImgPath(imgPath)
+    setDeletingImgPaths(imgPaths)
     setIsDeleteDialogOpen(true)
   }, [])
 
@@ -482,7 +537,7 @@ export default function MenuList() {
       transition={{ duration: 0.5 }}
       className="w-full flex flex-col gap-6"
     >
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex items-start sm:items-center justify-between gap-4">
         {/* カテゴリフィルター - Commandコンポーネント使用 */}
         <div className="flex flex-col w-full sm:w-auto gap-2">
           <div className="flex items-center gap-1">

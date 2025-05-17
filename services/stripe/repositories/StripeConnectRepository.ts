@@ -1,9 +1,11 @@
+'use node';
 import Stripe from 'stripe';
 import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
 import { Id } from '@/convex/_generated/dataModel';
 import { StripeResult } from '@/services/stripe/types';
 import { throwConvexError, handleErrorToMsg } from '@/lib/error';
+import { Doc } from '@/convex/_generated/dataModel';
 
 /**
  * Stripe Connect APIを扱うリポジトリクラス
@@ -75,6 +77,37 @@ export class StripeConnectRepository {
   }
 
   /**
+   * checkout.session.completed イベントを処理
+   */
+  async handleCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<{ success: boolean }> {
+    try {
+      const reservationId = session.client_reference_id as Id<'reservation'> | undefined;
+      const stripeConnectId = session.metadata?.stripeConnectId as string | undefined;
+      const salonId = session.metadata?.salonId as Id<'salon'> | undefined;
+
+      if (!reservationId || !stripeConnectId || !salonId) {
+        console.error('必要なメタデータが不足しています。', { reservationId, stripeConnectId, salonId });
+        // 失敗として扱うが、エラーは投げずにStripeに200を返すことで再試行を防ぐ
+        return { success: false };
+      }
+      
+      // ここでConvexのミューテーションを呼び出し、予約ステータスを更新する
+      // 例: reservation.paymentCompleted
+      await this.convex.mutation(api.reservation.mutation.updateReservationPaymentStatus, {
+        reservationId,
+        paymentStatus: 'paid', // 仮のステータス。スキーマに合わせてください。
+        stripeCheckoutSessionId: session.id,
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('checkout.session.completedの処理中にエラー:', error);
+      // 失敗として扱うが、エラーは投げずにStripeに200を返すことで再試行を防ぐ
+      return { success: false };
+    }
+  }
+
+  /**
    * Webhookイベントを処理
    */
   async handleWebhookEvent(event: Stripe.Event): Promise<{ success: boolean; message?: string }> {
@@ -82,7 +115,8 @@ export class StripeConnectRepository {
       switch (event.type) {
         case 'account.updated':
           return await this.handleAccountUpdatedEvent(event.data.object as Stripe.Account);
-
+        case 'checkout.session.completed':
+          return await this.handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
         default:
           return { success: true, message: `未処理のイベントタイプ: ${event.type}` };
       }
@@ -282,6 +316,71 @@ export class StripeConnectRepository {
       return {
         success: false,
         error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Stripe Checkoutセッションを作成
+   */
+  async createCheckoutSession(params: {
+    stripeConnectId: string; // 支払いを受け取るStripe ConnectアカウントID
+    salonId: Id<'salon'>;
+    reservationId: Id<'reservation'>;
+    lineItems: Stripe.Checkout.SessionCreateParams.LineItem[];
+    customerEmail?: string;
+    successUrl: string;
+    cancelUrl: string;
+    metadata?: Record<string, string>;
+  }): Promise<StripeResult<{ sessionId: string; url: string | null }>> {
+    const {
+      stripeConnectId,
+      salonId,
+      reservationId,
+      lineItems,
+      customerEmail,
+      successUrl,
+      cancelUrl,
+      metadata,
+    } = params;
+
+    try {
+      const sessionCreateParams: Stripe.Checkout.SessionCreateParams = {
+        payment_method_types: ['card'],
+        line_items: lineItems,
+        mode: 'payment',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        customer_email: customerEmail,
+        client_reference_id: reservationId,
+        payment_intent_data: {
+          application_fee_amount: Math.floor(lineItems.reduce((sum, item) => sum + (item.price_data?.unit_amount_decimal ? parseFloat(item.price_data.unit_amount_decimal) : item.price_data?.unit_amount || 0),0) * 0.04) + 40,
+          transfer_data: {
+            destination: stripeConnectId,
+          },
+        },
+        metadata: {
+          ...metadata,
+          reservationId: reservationId,
+          stripeConnectId: stripeConnectId,
+          salonId: salonId,
+        },
+      };
+      
+      const session = await this.stripe.checkout.sessions.create(sessionCreateParams);
+
+      if (!session.url) {
+        throw new Error('CheckoutセッションURLが取得できませんでした。');
+      }
+
+      return {
+        success: true,
+        data: { sessionId: session.id, url: session.url },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: handleErrorToMsg(error),
       };
     }
   }

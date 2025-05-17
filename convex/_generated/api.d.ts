@@ -32,6 +32,7 @@ import type * as menu_core_mutation from "../menu/core/mutation.js";
 import type * as menu_core_query from "../menu/core/query.js";
 import type * as menu_menu_exclusion_staff_mutation from "../menu/menu_exclusion_staff/mutation.js";
 import type * as menu_menu_exclusion_staff_query from "../menu/menu_exclusion_staff/query.js";
+import type * as migration from "../migration.js";
 import type * as migrations from "../migrations.js";
 import type * as option_mutation from "../option/mutation.js";
 import type * as option_query from "../option/query.js";
@@ -76,6 +77,8 @@ import type * as storage_action from "../storage/action.js";
 import type * as subscription_action from "../subscription/action.js";
 import type * as subscription_mutation from "../subscription/mutation.js";
 import type * as subscription_query from "../subscription/query.js";
+import type * as sync_actions from "../sync/actions.js";
+import type * as sync_reservation from "../sync/reservation.js";
 import type * as tracking_aggregate from "../tracking/aggregate.js";
 import type * as tracking_mutation from "../tracking/mutation.js";
 import type * as tracking_query from "../tracking/query.js";
@@ -120,6 +123,7 @@ declare const fullApi: ApiFromModules<{
   "menu/core/query": typeof menu_core_query;
   "menu/menu_exclusion_staff/mutation": typeof menu_menu_exclusion_staff_mutation;
   "menu/menu_exclusion_staff/query": typeof menu_menu_exclusion_staff_query;
+  migration: typeof migration;
   migrations: typeof migrations;
   "option/mutation": typeof option_mutation;
   "option/query": typeof option_query;
@@ -164,6 +168,8 @@ declare const fullApi: ApiFromModules<{
   "subscription/action": typeof subscription_action;
   "subscription/mutation": typeof subscription_mutation;
   "subscription/query": typeof subscription_query;
+  "sync/actions": typeof sync_actions;
+  "sync/reservation": typeof sync_reservation;
   "tracking/aggregate": typeof tracking_aggregate;
   "tracking/mutation": typeof tracking_mutation;
   "tracking/query": typeof tracking_query;
@@ -241,83 +247,6 @@ export declare const components: {
         }>
       >;
       migrate: FunctionReference<
-        "mutation",
-        "internal",
-        {
-          batchSize?: number;
-          cursor?: string | null;
-          dryRun: boolean;
-          fnHandle: string;
-          name: string;
-          next?: Array<{ fnHandle: string; name: string }>;
-        },
-        {
-          batchSize?: number;
-          cursor?: string | null;
-          error?: string;
-          isDone: boolean;
-          latestEnd?: number;
-          latestStart: number;
-          name: string;
-          next?: Array<string>;
-          processed: number;
-          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
-        }
-      >;
-    };
-    public: {
-      cancel: FunctionReference<
-        "mutation",
-        "internal",
-        { name: string },
-        {
-          batchSize?: number;
-          cursor?: string | null;
-          error?: string;
-          isDone: boolean;
-          latestEnd?: number;
-          latestStart: number;
-          name: string;
-          next?: Array<string>;
-          processed: number;
-          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
-        }
-      >;
-      cancelAll: FunctionReference<
-        "mutation",
-        "internal",
-        { sinceTs?: number },
-        Array<{
-          batchSize?: number;
-          cursor?: string | null;
-          error?: string;
-          isDone: boolean;
-          latestEnd?: number;
-          latestStart: number;
-          name: string;
-          next?: Array<string>;
-          processed: number;
-          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
-        }>
-      >;
-      getStatus: FunctionReference<
-        "query",
-        "internal",
-        { limit?: number; migrationNames?: Array<string> },
-        Array<{
-          batchSize?: number;
-          cursor?: string | null;
-          error?: string;
-          isDone: boolean;
-          latestEnd?: number;
-          latestStart: number;
-          name: string;
-          next?: Array<string>;
-          processed: number;
-          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
-        }>
-      >;
-      runMigration: FunctionReference<
         "mutation",
         "internal",
         {

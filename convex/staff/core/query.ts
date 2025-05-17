@@ -7,6 +7,8 @@ import { checkAuth } from '@/services/convex/shared/utils/auth'
 import { throwConvexError } from '@/lib/error'
 import { genderType } from '@/services/convex/shared/types/common'
 import { validateRequired } from '@/services/convex/shared/utils/validation'
+import { api } from '@/convex/_generated/api'
+
 // サロンIDとメールアドレスからスタッフを取得
 export const getById = query({
   args: {
@@ -46,7 +48,6 @@ export const getStaffListBySalonId = query({
       .withIndex('by_salon_id', (q) =>
         q
           .eq('salonId', args.salonId)
-          .eq('isActive', true)
           .eq('isArchive', args.includeArchive || false)
       )
       .order(args.sort ?? 'desc')
@@ -265,7 +266,7 @@ export const findAvailableStaffByMenu = query({
     // 1. 全スタッフ取得
     const allStaff = await ctx.db
       .query('staff')
-      .withIndex('by_salon_id', (q) =>
+      .withIndex('by_salon_id_is_active', (q) =>
         q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
       )
       .collect()
@@ -361,7 +362,7 @@ export const listDisplayData = query({
 
     const staffs = await ctx.db
       .query('staff')
-      .withIndex('by_salon_id', (q) =>
+      .withIndex('by_salon_id_is_active', (q) =>
         q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
       )
       .collect()
@@ -403,7 +404,7 @@ export const findByAvailableStaffs = query({
     // 1. 全スタッフ取得（アクティブかつアーカイブされていない）
     const allStaff = await ctx.db
       .query('staff')
-      .withIndex('by_salon_id', (q) =>
+      .withIndex('by_salon_id_is_active', (q) =>
         q.eq('salonId', args.salonId).eq('isActive', true).eq('isArchive', false)
       )
       .collect()
@@ -430,6 +431,20 @@ export const findByAvailableStaffs = query({
       .collect()
     const configMap = new Map(configs.map((config) => [config.staffId, config]))
 
+    // 5. weekScheduleを取得
+    const availableStaffWeekSchedules = await Promise.all(availableStaff.map(async (staff) => {
+      const weekSchedules = await ctx.db
+        .query('staff_week_schedule')
+        .withIndex('by_salon_id_staff_id', (q) =>
+          q.eq('salonId', args.salonId).eq('staffId', staff._id).eq('isArchive', false)
+        )
+        .collect()
+      return {
+        staffId: staff._id,
+        weekSchedules: weekSchedules,
+      }
+    }));
+
     // 5. 結果を整形して返却
     return availableStaff.map((staff) => {
       const config = configMap.get(staff._id)
@@ -449,6 +464,7 @@ export const findByAvailableStaffs = query({
         featuredHairimgPath: staff.featuredHairimgPath,
         extraCharge: config?.extraCharge,
         priority: config?.priority,
+        weekSchedules: availableStaffWeekSchedules.find((schedule) => schedule.staffId === staff._id)?.weekSchedules,
       }
     })
   },

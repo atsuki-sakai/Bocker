@@ -147,13 +147,15 @@ export default function StaffDetails() {
               {/* サムネイル部分 - スタイル改良 */}
               <div className="flex items-center justify-center mx-auto overflow-hidden md:w-1/3">
                 {staffAllData.imgPath ? (
-                  <Image
-                    src={staffAllData.imgPath}
-                    alt={staffAllData.name || ''}
-                    width={800}
-                    height={800}
-                    className="object-cover rounded-md"
-                  />
+                  <div className="w-full h-full max-w-2xl mx-auto">
+                    <Image
+                      src={staffAllData.imgPath}
+                      alt={staffAllData.name || ''}
+                      width={1920}
+                      height={1920}
+                      className="object-cover rounded-md"
+                    />
+                  </div>
                 ) : (
                   <div className="text-3xl font-semibold text-primary/70 flex items-center justify-center h-full w-full">
                     {getInitials(staffAllData.name || '')}
@@ -167,17 +169,13 @@ export default function StaffDetails() {
                   <div>
                     <h2 className="text-2xl font-bold text-primary">{staffAllData.name}</h2>
                     <div className="flex items-center gap-4 mt-2">
-                      <Badge
-                        variant={staffAllData.isActive ? 'outline' : 'destructive'}
-                        className={`transition-all duration-300 ${
-                          staffAllData.isActive
-                            ? 'border-active text-active hover:border-active-foreground'
-                            : 'border-destructive text-destructive hover:border-destructive-foreground'
-                        }`}
-                      >
+                      <Badge variant={staffAllData.isActive ? 'default' : 'outline'}>
                         {staffAllData.isActive ? 'アクティブ' : '非アクティブ'}
                       </Badge>
-                      <Badge variant="outline" className="border-primary/50 text-primary">
+                      <Badge
+                        variant="outline"
+                        className="border-active text-active bg-active-foreground"
+                      >
                         {getRoleDisplay(staffAllData.role || '')}
                       </Badge>
                     </div>
@@ -186,13 +184,13 @@ export default function StaffDetails() {
                   <div className="flex flex-col gap-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-primary">
+                      <span className="text-primary font-bold text-lg">
                         {getGenderText(staffAllData.gender || '未選択')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-primary">
+                      <span className="text-primary font-bold text-lg">
                         {staffAllData.age ? `${staffAllData.age}歳` : '年齢未設定'}
                       </span>
                     </div>
@@ -224,7 +222,7 @@ export default function StaffDetails() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                   {/* 指名料金 */}
                   <div className="flex justify-between  p-3 rounded-lg border border-palette-1-foreground bg-palette-1 transition-shadow">
                     <div className="flex flex-col gap-1">
@@ -259,46 +257,42 @@ export default function StaffDetails() {
                   </div>
 
                   {/* メールアドレス */}
-                  <div className="flex justify-between  p-3 rounded-lg border border-palette-3-foreground bg-palette-3 transition-shadow">
-                    <div className="flex flex-col gap-1">
+                  <div className="flex justify-between  p-3 rounded-lg border border-palette-3-foreground bg-palette-3 transition-shadow overflow-hidden">
+                    <div className="flex flex-col gap-1 w-full">
                       <div className="flex items-center gap-2 text-palette-3-foreground">
                         <Mail className="h-4 w-4" />
                         <p className="text-xs font-bold">メールアドレス</p>
                       </div>
-                      <p className="font-bold text-sm text-palette-3-foreground truncate max-w-[180px]">
+                      <p className="font-bold text-sm text-palette-3-foreground text-clip w-full truncate">
                         {staffAllData.email || '未設定'}
                       </p>
                       <div className="flex flex-col gap-1">
                         <p className="text-xs scale-75 -ml-6 text-palette-3-foreground">
                           ピンコード
                         </p>
-                        <div className="flex items-center -mt-3">
-                          <p className="text-palette-3-foreground text-sm w-20 tracking-wider font-bold">
+                        <div className="flex flex-col items-end justify-between gap-2 w-full">
+                          <p className="text-palette-3-foreground text-sm text-end tracking-wider font-bold w-full">
                             {showPinCode ? decryptedPinCode : '*** ***'}
                           </p>
 
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="ml-4 scale-75"
-                            onClick={handleShowPinCode}
-                          >
-                            {showPinCode ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className=" scale-75"
-                            onClick={() => {
-                              navigator.clipboard.writeText(decryptedPinCode)
-                            }}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="icon" onClick={handleShowPinCode}>
+                              {showPinCode ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => {
+                                navigator.clipboard.writeText(decryptedPinCode)
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>

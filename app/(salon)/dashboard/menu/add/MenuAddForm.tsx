@@ -9,8 +9,8 @@ import { z } from 'zod';
 import { useZodForm } from '@/hooks/useZodForm';
 import { useSalon } from '@/hooks/useSalon';
 import { ImageDrop } from '@/components/common';
-import { fileToBase64, createImageWithThumbnail } from '@/lib/utils'
-import { useAction, useMutation } from 'convex/react'
+import { fileToBase64 } from '@/lib/utils'
+import { useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
@@ -49,7 +49,6 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import { motion } from 'framer-motion'
@@ -64,6 +63,7 @@ import {
   CommandItem,
 } from '@/components/ui/command'
 import { Check, ChevronDown } from 'lucide-react'
+import { ProcessedImageResult } from '@/services/image/image.types'
 
 const GenderList = ['unselected', 'male', 'female'] as const
 const TargetList = ['all', 'first', 'repeat'] as const
@@ -72,12 +72,18 @@ const PaymentMethodList = ['cash', 'credit_card', 'all'] as const
 const schemaMenu = z
   .object({
     name: z
-      .string()
+      .string({
+        required_error: 'メニュー名は必須です',
+        invalid_type_error: 'メニュー名は文字列で入力してください',
+      })
       .min(1, { message: 'メニュー名は必須です' })
       .max(100, { message: 'メニュー名は100文字以内で入力してください' }),
     categories: z.array(z.enum(MENU_CATEGORY_VALUES)).min(1, { message: 'カテゴリは必須です' }),
     unitPrice: z
-      .number()
+      .number({
+        required_error: '価格は必須です',
+        invalid_type_error: '価格は数値で入力してください',
+      })
       .min(1, { message: '価格は必須です' })
       .max(99999, { message: '価格は99999円以下で入力してください' })
       .nullable()
@@ -98,18 +104,21 @@ const schemaMenu = z
         .optional()
     ),
     timeToMin: z
-      .number({ message: '施術時間は必須です' })
+      .number({
+        required_error: '時間は必須です',
+      })
       .refine((val) => val !== 0 && val !== null && val !== undefined, {
         message: '時間は必須です',
       }),
-    imgFilePath: z.string().max(512).optional(),
-    imgPath: z.string().max(512).optional(),
-    thumbnailPath: z.string().max(512).optional(),
+    imgPaths: z.array(z.string()).optional(),
+    thumbnailPaths: z.array(z.string()).optional(),
     description: z
-      .string()
+      .string({
+        required_error: '説明は必須です',
+        invalid_type_error: '説明は文字列で入力してください',
+      })
       .min(1, { message: '説明は必須です' })
-      .max(1000, { message: '説明は1000文字以内で入力してください' })
-      .optional(),
+      .max(1000, { message: '説明は1000文字以内で入力してください' }),
     targetGender: z.enum(GenderList, { message: '性別は必須です' }),
     targetType: z.enum(TargetList, { message: '対象タイプは必須です' }),
     tags: z.preprocess(
@@ -162,7 +171,8 @@ export default function MenuAddForm() {
   const router = useRouter()
   const { salon } = useSalon()
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false)
-  const [currentFile, setCurrentFile] = useState<File | null>(null)
+  const [currentFiles, setCurrentFiles] = useState<File[]>([])
+
   const [isUploading, setIsUploading] = useState(false)
   const [targetType, setTargetType] = useState<Target>('all')
   const [targetGender, setTargetGender] = useState<Gender>('unselected')
@@ -170,8 +180,6 @@ export default function MenuAddForm() {
   const [currentTags, setCurrentTags] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const uploadImage = useAction(api.storage.action.upload)
-  const deleteImage = useAction(api.storage.action.kill)
   const createMenu = useMutation(api.menu.core.mutation.create)
 
   const {
@@ -198,74 +206,67 @@ export default function MenuAddForm() {
       }
 
       setIsSubmitting(true)
+      let newUploadedImageUrls: ProcessedImageResult[] = []
 
-      // 画像がある場合はアップロード処理を行う
-      let imgPath = data.imgPath
-      let thumbnailPath = data.thumbnailPath
-      let uploadedOriginalUrl: string | undefined = undefined
-      let uploadedThumbnailUrl: string | undefined = undefined
-
-      if (currentFile) {
+      if (currentFiles.length > 0) {
+        setIsUploading(true)
         try {
-          setIsUploading(true)
+          const imagePayloads = await Promise.all(
+            currentFiles.map(async (file) => {
+              const originalBase64 = await fileToBase64(file)
+              return {
+                base64Data: originalBase64,
+                fileName: file.name,
+                directory: 'menu' as const, // ImageService側で salonId が結合されることを期待
+                salonId: salon._id,
+                quality: 'high',
+              }
+            })
+          )
 
-          // クライアント側で画像処理を行う
-          const { original, thumbnail } = await createImageWithThumbnail(currentFile)
-
-          // オリジナル画像をアップロード
-          const originalBase64 = await fileToBase64(original)
-          const originalResult = await uploadImage({
-            base64Data: originalBase64,
-            filePath: original.name,
-            contentType: original.type,
-            directory: 'menu/original',
+          const response = await fetch('/api/storage', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(imagePayloads),
           })
-          uploadedOriginalUrl = originalResult.publicUrl
 
-          // サムネイル画像をアップロード
-          const thumbnailBase64 = await fileToBase64(thumbnail)
-          const thumbnailResult = await uploadImage({
-            base64Data: thumbnailBase64,
-            filePath: thumbnail.name,
-            contentType: thumbnail.type,
-            directory: 'menu/thumbnail',
-          })
-          uploadedThumbnailUrl = thumbnailResult.publicUrl
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || '画像のアップロードに失敗しました')
+          }
 
-          imgPath = uploadedOriginalUrl
-          thumbnailPath = uploadedThumbnailUrl
+          const responseData: { successfulUploads?: ProcessedImageResult[] } = await response.json()
+          if (responseData.successfulUploads) {
+            newUploadedImageUrls = responseData.successfulUploads
+          } else {
+            // レスポンスの形式が期待と異なる場合
+            throw new Error('画像のアップロード結果の形式が正しくありません。')
+          }
 
           setIsUploading(false)
         } catch (err) {
-          // 画像アップロード中にエラーが発生した場合、アップロード済みの画像を削除
-          if (uploadedOriginalUrl) {
-            try {
-              await deleteImage({
-                imgUrl: uploadedOriginalUrl,
-              })
-            } catch (deleteErr) {
-              console.error('Failed to delete original image:', deleteErr)
-            }
-          }
-
-          if (uploadedThumbnailUrl) {
-            try {
-              await deleteImage({
-                imgUrl: uploadedThumbnailUrl,
-              })
-            } catch (deleteErr) {
-              console.error('Failed to delete thumbnail image:', deleteErr)
-            }
-          }
+          // APIへのリクエスト失敗時や、API側でロールバックが発生した場合
+          // newUploadedImageUrls には何も入っていないか、APIがロールバックしているのでここでは削除処理は不要
 
           setIsUploading(false)
           setIsSubmitting(false)
-          toast.error(handleErrorToMsg(err) || '画像のアップロードに失敗しました')
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : handleErrorToMsg(err) || '画像のアップロードに失敗しました'
+          )
           return
         }
       }
 
       try {
+        const images = newUploadedImageUrls.map((urlPair) => ({
+          imgPath: urlPair.imgUrl,
+          thumbnailPath: urlPair.thumbnailUrl,
+        }))
+
         const menuId = await createMenu({
           salonId: salon._id,
           name: data.name,
@@ -273,8 +274,7 @@ export default function MenuAddForm() {
           unitPrice: data.unitPrice,
           salePrice: (data.salePrice as number) || undefined,
           timeToMin: data.timeToMin,
-          imgPath,
-          thumbnailPath,
+          images: images.length > 0 ? images : undefined,
           description: data.description,
           targetGender: data.targetGender,
           targetType: data.targetType,
@@ -287,28 +287,10 @@ export default function MenuAddForm() {
         router.push(`/dashboard/menu/${menuId}`)
       } catch (err) {
         // メニュー作成に失敗した場合、アップロードした画像を削除
-        if (uploadedOriginalUrl) {
-          try {
-            await deleteImage({
-              imgUrl: uploadedOriginalUrl,
-            })
-          } catch (deleteErr) {
-            console.error('Failed to delete original image after menu creation failure:', deleteErr)
-          }
-        }
-
-        if (uploadedThumbnailUrl) {
-          try {
-            await deleteImage({
-              imgUrl: uploadedThumbnailUrl,
-            })
-          } catch (deleteErr) {
-            console.error(
-              'Failed to delete thumbnail image after menu creation failure:',
-              deleteErr
-            )
-          }
-        }
+        // newUploadedImageUrlsを使って削除処理を行う (API側でロールバックされていなければ)
+        // ただし、API側でロールバックが行われているはずなので、ここでの削除は二重処理になる可能性がある
+        // そのため、エラー発生時の画像削除ロジックを再検討するか、API側でのロールバックに依存する。
+        // 現状は、API側のロールバックに任せ、クライアント側ではStateのクリアのみ行う。
 
         setIsSubmitting(false)
         toast.error(handleErrorToMsg(err) || 'メニュー登録に失敗しました')
@@ -328,7 +310,7 @@ export default function MenuAddForm() {
         unitPrice: undefined as unknown as number,
         salePrice: undefined as unknown as number,
         timeToMin: undefined as unknown as number,
-        imgFilePath: undefined as unknown as string,
+        // imgFilePath は削除したので不要
         description: undefined as unknown as string,
         targetGender: 'unselected',
         targetType: 'all',
@@ -337,6 +319,7 @@ export default function MenuAddForm() {
         isActive: true,
       })
       setCurrentTags([])
+      setCurrentFiles([]) // currentFilesも初期化
     }
   }, [salon?._id, reset])
 
@@ -356,25 +339,16 @@ export default function MenuAddForm() {
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="md:col-span-1">
-            <Card className="border border-dashed h-full flex flex-col">
-              <CardHeader className="pb-0">
-                <CardTitle className="text-base flex items-center gap-2 mb-2">
-                  <ImageIcon size={18} className="text-muted-foreground" />
-                  メニュー画像
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow flex items-center justify-center">
-                <div className="w-full">
-                  <ImageDrop
-                    maxSizeMB={5}
-                    onFileSelect={(file) => {
-                      setCurrentFile(file)
-                    }}
-                    className="rounded-md"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <div className="text-base flex items-center gap-2 mb-2">
+              <ImageIcon size={18} className="text-muted-foreground" />
+              メニュー画像 (4枚まで)
+            </div>
+            <ImageDrop
+              multiple={true}
+              onFileSelect={(newFiles) => {
+                setCurrentFiles(newFiles)
+              }}
+            />
           </div>
 
           <div className="md:col-span-2 space-y-5">
@@ -471,13 +445,10 @@ export default function MenuAddForm() {
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <span className="text-xs text-muted-foreground">
-                  カテゴリがない場合は
-                  <a href="mailto:bocker.help@gmail.com" className="text-link-foreground underline">
-                    こちら
-                  </a>
-                  から追加申請いただけます。
-                </span>
+                <p className="text-xs text-muted-foreground mt-1">
+                  複数のカテゴリを選択した場合、自動的にセットメニューとして扱われます。
+                </p>
+
                 {errors.categories && <ErrorMessage message={errors.categories.message} />}
               </div>
             </div>

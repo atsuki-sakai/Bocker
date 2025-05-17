@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react'
 import { Separator } from '@/components/ui/separator'
 import { Coins, Gift, Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -37,10 +37,10 @@ import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { handleErrorToMsg } from '@/lib/error'
 import { useSalon } from '@/hooks/useSalon'
-import xor from 'lodash-es/xor'
 
 const pointConfigSchema = z.object({
   id: z.string().optional(),
+  isActive: z.boolean().default(true),
   isFixedPoint: z.boolean().default(false),
   pointRate: z.preprocess(
     (val) => {
@@ -77,8 +77,8 @@ export default function PointTabs() {
   const { salon } = useSalon()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('basic')
+  const [exclusionMenuChanged, setExclusionMenuChanged] = useState(false)
   const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([])
-  const [initialExclusionMenuIds, setInitialExclusionMenuIds] = useState<Id<'menu'>[]>([])
 
   const pointConfig = useQuery(
     api.point.config.query.findBySalonId,
@@ -113,20 +113,16 @@ export default function PointTabs() {
         fixedPoint: pointConfig.fixedPoint,
         pointExpirationDays: pointConfig.pointExpirationDays ?? POINT_EXPIRATION_DAYS[0].value,
         isFixedPoint: pointConfig.isFixedPoint,
+        isActive: pointConfig.isActive,
       })
       if (initialExclusionIds) {
-        setInitialExclusionMenuIds(initialExclusionIds)
         setSelectedMenuIds(initialExclusionIds)
       }
+      setExclusionMenuChanged(false)
     }
   }, [pointConfig, initialExclusionIds, reset])
 
-  const isExclusionDirty = useMemo(() => {
-    return xor(initialExclusionMenuIds, selectedMenuIds).length > 0
-  }, [initialExclusionMenuIds, selectedMenuIds])
-
   const onSubmit = async (data: z.infer<typeof pointConfigSchema>) => {
-    console.log(data)
     try {
       if (!salon) {
         toast.error('サロンが見つかりません')
@@ -138,6 +134,7 @@ export default function PointTabs() {
         fixedPoint: data.fixedPoint ?? undefined,
         pointExpirationDays: data.pointExpirationDays ?? undefined,
         isFixedPoint: data.isFixedPoint ?? undefined,
+        isActive: data.isActive ?? undefined,
       })
       await upsertExclusionMenu({
         salonId: salon._id,
@@ -145,7 +142,8 @@ export default function PointTabs() {
         selectedMenuIds: selectedMenuIds,
       })
       toast.success('設定を保存しました')
-      router.refresh()
+      router.push('/dashboard/point')
+      setExclusionMenuChanged(false)
     } catch (error) {
       toast.error(handleErrorToMsg(error))
     }
@@ -160,6 +158,7 @@ export default function PointTabs() {
 
   const watchedExpirationDays = watch('pointExpirationDays')
   const watchedIsFixedPoint = watch('isFixedPoint')
+  const watchedIsActive = watch('isActive')
 
   return (
     <form
@@ -198,13 +197,38 @@ export default function PointTabs() {
                     <span className="font-bold">1ポイント = 1円</span>
                     で付与されます。
                   </p>
-
-                  <span className="text-xs border-warning border bg-warning text-warning-foreground rounded-md p-2">
-                    ※ポイントを還元しない場合は0を設定してください。
-                  </span>
                 </div>
 
                 <div className="space-y-6 p-3 my-3">
+                  <div className="flex flex-col items-start gap-2">
+                    <div
+                      className={`px-2 py-1 rounded-md ${
+                        watchedIsActive
+                          ? 'text-active bg-active-foreground border border-active'
+                          : 'text-destructive bg-destructive-foreground border border-destructive'
+                      }`}
+                    >
+                      <p className="text-sm font-bold">
+                        {watchedIsActive ? 'ポイント機能は有効' : 'ポイント機能は無効'}
+                      </p>
+                    </div>
+                    <Switch
+                      id="point-active"
+                      checked={watchedIsActive}
+                      onCheckedChange={(checked) => {
+                        setValue('isActive', checked, { shouldDirty: true })
+                      }}
+                      className="mx-2 "
+                    />
+                    <div>
+                      <Label htmlFor="point-type">
+                        ポイント機能を{watchedIsActive ? '有効' : '無効'}にする
+                      </Label>
+                      <span className="block text-xs text-muted-foreground">
+                        ポイント機能を有効にすると、利用額に対して設定したポイント付与率でポイントが自動で付与されます。
+                      </span>
+                    </div>
+                  </div>
                   <div className="flex flex-col space-y-2">
                     <Label htmlFor="point-type">ポイント付与タイプ</Label>
                     <span className="text-xs text-muted-foreground">
@@ -323,9 +347,9 @@ export default function PointTabs() {
                       現在の設定内容が適用されるとどのように適応されるのかを確認できます。
                     </p>
                   </div>
-                  <div className="p-3">
+                  <div className="p-4">
                     <div className="space-y-5">
-                      <div className="space-y-2 text-sm">
+                      <div className="space-y-3 text-sm">
                         {watchedIsFixedPoint ? (
                           <p className="flex justify-between items-end text-sm font-bold">
                             <span className="text-primary">固定ポイント:</span>
@@ -399,7 +423,11 @@ export default function PointTabs() {
           <ExclusionMenu
             title="購入されてもポイントを付与しないメニュー"
             selectedMenuIds={selectedMenuIds}
-            setSelectedMenuIdsAction={setSelectedMenuIds}
+            setSelectedMenuIdsAction={(ids) => {
+              setSelectedMenuIds(ids)
+              setValue('isActive', true, { shouldDirty: true })
+              setExclusionMenuChanged(true)
+            }}
           />
         </TabsContent>
       </Tabs>
@@ -407,7 +435,7 @@ export default function PointTabs() {
         <Button
           type="submit"
           className="px-8 gap-2"
-          disabled={isSubmitting || (!isDirty && !isExclusionDirty)}
+          disabled={isSubmitting || (!isDirty && !exclusionMenuChanged)}
         >
           {isSubmitting ? (
             <>

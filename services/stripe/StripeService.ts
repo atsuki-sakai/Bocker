@@ -1,3 +1,4 @@
+'use node';
 import Stripe from 'stripe';
 import { STRIPE_API_VERSION } from '@/lib/constants';
 import {
@@ -153,6 +154,22 @@ class StripeService {
     accountId: string
   ): Promise<StripeResult<{ url: string; isOnboarding?: boolean }>> {
     return await this.connectRepo.createDashboardLoginLink(accountId);
+  }
+
+  /**
+   * Stripe Checkoutセッションを作成
+   */
+  async createCheckoutSession(params: {
+    stripeConnectId: string;
+    salonId: Id<'salon'>;
+    reservationId: Id<'reservation'>;
+    lineItems: Stripe.Checkout.SessionCreateParams.LineItem[];
+    customerEmail?: string;
+    successUrl: string;
+    cancelUrl: string;
+    metadata?: Record<string, string>;
+  }): Promise<StripeResult<{ sessionId: string; url: string | null }>> {
+    return await this.connectRepo.createCheckoutSession(params);
   }
 
   // Subscription API 関連メソッド

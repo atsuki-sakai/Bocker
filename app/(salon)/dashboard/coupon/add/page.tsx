@@ -53,9 +53,15 @@ import { Id } from '@/convex/_generated/dataModel'
 // スキーマとタイプ定義
 
 const couponSchema = z.object({
-  name: z.string().min(1, 'クーポン名を入力してください'),
+  name: z
+    .string({
+      required_error: 'クーポン名は必須です',
+    })
+    .min(1, 'クーポン名を入力してください'),
   couponUid: z
-    .string()
+    .string({
+      required_error: 'クーポンコードは必須です',
+    })
     .min(1, '1文字以上の値を入力してください')
     .max(MAX_COUPON_UID_LENGTH, `${MAX_COUPON_UID_LENGTH}文字以内で入力してください`),
   discountType: z.enum(['percentage', 'fixed']),
@@ -69,7 +75,7 @@ const couponSchema = z.object({
     },
     z
       .number()
-      .min(0, { message: '割引率は0%以上で入力してください' })
+      .min(1, { message: '割引率は1%以上で入力してください' })
       .max(100, { message: '割引率は100%以下で入力してください' })
       .nullable()
       .optional()
@@ -84,7 +90,7 @@ const couponSchema = z.object({
     },
     z
       .number()
-      .min(0, { message: '割引額は0円以上で入力してください' })
+      .min(1, { message: '割引額は1円以上で入力してください' })
       .max(99999, { message: '割引額は99999円以下で入力してください' })
       .nullable()
       .optional()

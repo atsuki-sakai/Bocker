@@ -281,18 +281,18 @@ export async function createImageWithThumbnail(
   try {
     // オリジナル画像の生成（最適化）
     const originalOptions = {
-      maxSizeMB: 4,
-      maxWidthOrHeight: 2500,
-      webpQuality: 90,
+      maxSizeMB: 0.1, // 約100KB
+      maxWidthOrHeight: 1280,
+      webpQuality: 75, // 品質 (0-100) なので、0.75ではなく75
       useWebWorker: true,
     }
     const originalFile = await compressAndConvertToWebP(file, originalOptions)
 
     // サムネイル画像の生成
     const thumbnailOptions = {
-      maxSizeMB: 0.5,
+      maxSizeMB: 0.1,
       maxWidthOrHeight: 250,
-      webpQuality: 80,
+      webpQuality: 50,
       useWebWorker: true,
     }
     const thumbnailFile = await compressAndConvertToWebP(file, thumbnailOptions)
@@ -339,8 +339,8 @@ export async function compressAndConvertToWebP(
   try {
     // 画像を圧縮（デフォルト値を改善）
     const compressionOptions = {
-      maxSizeMB: options?.maxSizeMB ?? 2, // 最大サイズを0.5MB（デフォルト）
-      maxWidthOrHeight: options?.maxWidthOrHeight ?? 2048, // 最大幅/高さを1024px
+      maxSizeMB: options?.maxSizeMB ?? 0.1, // 最大サイズを0.1MB（デフォルト 100KB）
+      maxWidthOrHeight: options?.maxWidthOrHeight ?? 1280, // 最大幅/高さを1280px（デフォルト）
       useWebWorker: options?.useWebWorker ?? true,
       // fileType: 'image/webp', // imageCompression側でWebPを指定するオプションもあるが、ここではcanvasで変換
       signal: undefined, // 必要に応じてAbortControllerからのSignalを渡す
@@ -394,7 +394,7 @@ export async function compressAndConvertToWebP(
               resolve(webpFile)
             },
             'image/webp',
-            options?.webpQuality ?? 0.8 // 品質を0.8（デフォルト）、必要に応じて変更
+            options?.webpQuality ?? 0.75 // 品質を0.75（デフォルト 75%）、必要に応じて変更
           )
         }
 

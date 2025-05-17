@@ -42,47 +42,89 @@ import { handleErrorToMsg, throwConvexError } from '@/lib/error'
 import { toast } from 'sonner'
 import { ZodTextField } from '@/components/common'
 
-const couponSchema = z.object({
-  name: z.string().min(1, 'クーポン名を入力してください'),
-  couponUid: z
-    .string()
-    .min(1, 'クーポンUIDを入力してください')
-    .max(12, 'クーポンUIDは12文字以内で入力してください')
-    .optional(),
-  discountType: z.enum(['percentage', 'fixed']),
-  percentageDiscountValue: z.preprocess(
-    (val) => {
-      if (val === '' || val === null || val === undefined) return 0
-      const num = Number(val)
-      return isNaN(num) ? 0 : num
-    },
-    z
-      .number()
-      .min(0, { message: '0以上の値を入力してください' })
-      .max(100, { message: '割引率は100%以下で入力してください' })
-      .optional()
-  ),
-  fixedDiscountValue: z.preprocess(
-    (val) => {
-      if (val === '' || val === null || val === undefined) return 0
-      const num = Number(val)
-      return isNaN(num) ? 0 : num
-    },
-    z
-      .number()
-      .min(0, { message: '0以上の値を入力してください' })
-      .max(99999, { message: '割引額は99999円以下で入力してください' })
-      .optional()
-  ),
-  isActive: z.boolean(),
-  startDate: z.date(),
-  endDate: z
-    .date()
-    .refine((date) => date > new Date(), { message: '終了日は現在より後の日付を選択してください' }),
-  maxUseCount: z.number().min(0, '0以上の値を入力してください'),
-  numberOfUse: z.number().min(0, '0以上の値を入力してください'),
-  selectedMenus: z.array(z.string()).optional(),
-})
+const couponSchema = z
+  .object({
+    name: z.string().min(1, 'クーポン名を入力してください'),
+    couponUid: z
+      .string()
+      .min(1, 'クーポンUIDを入力してください')
+      .max(12, 'クーポンUIDは12文字以内で入力してください')
+      .optional(),
+    discountType: z.enum(['percentage', 'fixed']),
+    percentageDiscountValue: z.preprocess(
+      (val) => {
+        if (val === '' || val === null || val === undefined) return null
+        const num = Number(val)
+        return isNaN(num) ? null : num
+      },
+      z.number().nullable() // min/maxバリデーションを削除し、superRefineで処理
+    ),
+    fixedDiscountValue: z.preprocess(
+      (val) => {
+        if (val === '' || val === null || val === undefined) return null
+        const num = Number(val)
+        return isNaN(num) ? null : num
+      },
+      z.number().nullable() // min/maxバリデーションを削除し、superRefineで処理
+    ),
+    isActive: z.boolean(),
+    startDate: z.date(),
+    endDate: z.date().refine((date) => date > new Date(), {
+      message: '終了日は現在より後の日付を選択してください',
+    }),
+    maxUseCount: z.number().min(0, '0以上の値を入力してください'),
+    numberOfUse: z.number().min(0, '0以上の値を入力してください'),
+    selectedMenus: z.array(z.string()).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.discountType === 'percentage') {
+      if (data.percentageDiscountValue === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '割引率を入力してください',
+          path: ['percentageDiscountValue'],
+        })
+      } else {
+        if (data.percentageDiscountValue <= 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: '1%以上の値を入力してください',
+            path: ['percentageDiscountValue'],
+          })
+        }
+        if (data.percentageDiscountValue > 100) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: '割引率は100%以下で入力してください',
+            path: ['percentageDiscountValue'],
+          })
+        }
+      }
+    } else if (data.discountType === 'fixed') {
+      if (data.fixedDiscountValue === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '割引額を入力してください',
+          path: ['fixedDiscountValue'],
+        })
+      } else {
+        if (data.fixedDiscountValue <= 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: '1円以上の値を入力してください',
+            path: ['fixedDiscountValue'],
+          })
+        }
+        if (data.fixedDiscountValue > 99999) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: '割引額は99999円以下で入力してください',
+            path: ['fixedDiscountValue'],
+          })
+        }
+      }
+    }
+  })
 
 // アニメーション定義
 const fadeIn = {
@@ -268,9 +310,11 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         name: submitData.name,
         discountType: submitData.discountType,
         percentageDiscountValue:
-          submitData.percentageDiscountValue !== undefined ? submitData.percentageDiscountValue : 0,
+          submitData.percentageDiscountValue === null
+            ? undefined
+            : submitData.percentageDiscountValue,
         fixedDiscountValue:
-          submitData.fixedDiscountValue !== undefined ? submitData.fixedDiscountValue : 0,
+          submitData.fixedDiscountValue === null ? undefined : submitData.fixedDiscountValue,
         isActive: submitData.isActive,
         startDate_unix: submitData.startDate.getTime(),
         endDate_unix: submitData.endDate.getTime(),
@@ -292,8 +336,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         name: coupon.name,
         couponUid: coupon.couponUid,
         discountType: (coupon.discountType as 'percentage' | 'fixed') ?? 'percentage',
-        percentageDiscountValue: coupon.percentageDiscountValue ?? 0,
-        fixedDiscountValue: coupon.fixedDiscountValue ?? 0,
+        percentageDiscountValue: coupon.percentageDiscountValue ?? 1,
+        fixedDiscountValue: coupon.fixedDiscountValue ?? 1,
         isActive: coupon.isActive,
         startDate: new Date(couponConfig.startDate_unix ?? Date.now()),
         endDate: new Date(couponConfig.endDate_unix ?? Date.now()),

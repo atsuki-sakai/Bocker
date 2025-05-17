@@ -6,31 +6,31 @@ import { Loader2 } from 'lucide-react';
 import { TagInput } from '@/components/common';
 import { DashboardSection } from '@/components/common';
 import { useZodForm } from '@/hooks/useZodForm';
-import { useMutation, useAction } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { useEffect, useState } from 'react';
-import { ImageDrop } from '@/components/common';
-import { z } from 'zod';
-import { Gender, GENDER_VALUES, Role, ROLE_VALUES } from '@/services/convex/shared/types/common';
-import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH } from '@/services/convex/constants';
-import { Textarea } from '@/components/ui/textarea';
-import { ZodTextField } from '@/components/common';
-import { generatePinCode } from '@/lib/utils';
+import { useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { useEffect, useState } from 'react'
+import { ImageDrop } from '@/components/common'
+import { z } from 'zod'
+import { Gender, GENDER_VALUES, Role, ROLE_VALUES } from '@/services/convex/shared/types/common'
+import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH } from '@/services/convex/constants'
+import { Textarea } from '@/components/ui/textarea'
+import { ZodTextField } from '@/components/common'
+import { generatePinCode } from '@/lib/utils'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { handleErrorToMsg } from '@/lib/error';
-import { useSalon } from '@/hooks/useSalon';
-import { fileToBase64, encryptString, createImageWithThumbnail } from '@/lib/utils'
+} from '@/components/ui/select'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { handleErrorToMsg } from '@/lib/error'
+import { useSalon } from '@/hooks/useSalon'
+import { fileToBase64, encryptString } from '@/lib/utils'
 import { Id } from '@/convex/_generated/dataModel'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
@@ -149,8 +149,6 @@ export default function StaffAddPage() {
   const staffAuthAdd = useMutation(api.staff.auth.mutation.create)
   const staffKill = useMutation(api.staff.core.mutation.killRelatedTables)
   const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert)
-  const uploadImage = useAction(api.storage.action.upload)
-  const deleteImage = useAction(api.storage.action.kill)
 
   const {
     register,
@@ -192,27 +190,21 @@ export default function StaffAddPage() {
       if (selectedFile) {
         try {
           // クライアント側で画像処理を行う
-          const { original, thumbnail } = await createImageWithThumbnail(selectedFile)
+          const originalBase64 = await fileToBase64(selectedFile)
 
-          // オリジナル画像をアップロード
-          const originalBase64 = await fileToBase64(original)
-          const originalResult = await uploadImage({
-            base64Data: originalBase64,
-            contentType: original.type,
-            directory: 'staff/original',
-            filePath: `${Date.now()}-original-${original.name}`,
+          const response = await fetch('/api/storage', {
+            method: 'POST',
+            body: JSON.stringify({
+              base64Data: originalBase64,
+              directory: 'staff',
+              fileName: selectedFile.name,
+              salonId: salon._id,
+              quality: 'high',
+            }),
           })
-          uploadedOriginalUrl = originalResult.publicUrl
-
-          // サムネイル画像をアップロード
-          const thumbnailBase64 = await fileToBase64(thumbnail)
-          const thumbnailResult = await uploadImage({
-            base64Data: thumbnailBase64,
-            contentType: thumbnail.type,
-            directory: 'staff/thumbnail',
-            filePath: `${Date.now()}-thumbnail-${thumbnail.name}`,
-          })
-          uploadedThumbnailUrl = thumbnailResult.publicUrl
+          const data = await response.json()
+          uploadedOriginalUrl = data.imgUrl
+          uploadedThumbnailUrl = data.thumbnailUrl
         } catch (error) {
           console.log('画像アップロードエラー: ', error)
 
@@ -229,16 +221,16 @@ export default function StaffAddPage() {
         try {
           staffId = await staffAdd({
             salonId: salon._id,
-            name: data.name,
+            name: data.name ?? undefined,
             age: data.age ?? undefined,
-            email: data.email,
+            email: data.email ?? undefined,
             instagramLink: data.instagramLink ?? undefined,
-            gender: data.gender,
-            description: data.description,
+            gender: data.gender ?? undefined,
+            description: data.description ?? undefined,
             imgPath: uploadedOriginalUrl ?? undefined,
             thumbnailPath: uploadedThumbnailUrl ?? undefined,
             isActive: data.isActive,
-            tags: data.tags,
+            tags: data.tags ? data.tags : [],
           })
         } catch (creationError) {
           console.log('creationError type: ', typeof creationError)
@@ -306,24 +298,17 @@ export default function StaffAddPage() {
       // エラー発生時のクリーンアップ
       if (uploadedOriginalUrl) {
         try {
-          await deleteImage({
-            imgUrl: uploadedOriginalUrl,
+          await fetch('/api/storage', {
+            method: 'DELETE',
+            body: JSON.stringify({
+              imgUrl: uploadedOriginalUrl,
+              withThumbnail: true,
+            }),
           })
         } catch (deleteError) {
           console.error('画像削除中にエラーが発生しました:', deleteError)
         }
       }
-
-      if (uploadedThumbnailUrl) {
-        try {
-          await deleteImage({
-            imgUrl: uploadedThumbnailUrl,
-          })
-        } catch (deleteError) {
-          console.error('サムネイル画像削除中にエラーが発生しました:', deleteError)
-        }
-      }
-
       if (staffId) {
         try {
           if (staffConfigId && staffAuthId && staffId) {
@@ -396,7 +381,7 @@ export default function StaffAddPage() {
                   {/* 基本情報セクション */}
                   <div>
                     <div className="grid md:grid-cols-2 gap-6 pb-4">
-                      <div>
+                      <div className="max-w-xl mx-auto">
                         <div className="mb-2 flex items-center">
                           <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
                           <span className="text-sm font-medium text-muted-foreground">
@@ -404,10 +389,12 @@ export default function StaffAddPage() {
                           </span>
                         </div>
 
-                        <ImageDrop
-                          onFileSelect={(file) => setSelectedFile(file)}
-                          className="transition-all duration-200 hover:opacity-90"
-                        />
+                        <div className="w-full">
+                          <ImageDrop
+                            onFileSelect={(files) => setSelectedFile(files[0] ?? null)}
+                            className="transition-all duration-200 hover:opacity-90 aspect-square"
+                          />
+                        </div>
                       </div>
 
                       <div className="space-y-4">

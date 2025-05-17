@@ -98,6 +98,10 @@ export default function SalonExceptionScheduleForm() {
 
   // 日付選択時の処理 - コールバック関数化
   const handleDatesChange = useCallback((dates: Date[]) => {
+    if (dates.length > 30) {
+      toast.error('休業日は最大30日までしか選択できません')
+      return
+    }
     setSelectedDates(dates);
   }, []);
 

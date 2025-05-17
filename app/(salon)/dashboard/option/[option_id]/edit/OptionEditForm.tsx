@@ -2,12 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation, useAction } from 'convex/react'
+import { useQuery, useMutation } from 'convex/react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { api } from '@/convex/_generated/api'
+import { Trash2 } from 'lucide-react'
 import { Id } from '@/convex/_generated/dataModel'
 import { useZodForm } from '@/hooks/useZodForm'
 import { z } from 'zod'
-import { Loading, ZodTextField, ImageDrop } from '@/components/common'
+import { Loading, ZodTextField, ImageDrop, TagInput } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -17,13 +26,7 @@ import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { handleErrorToMsg } from '@/lib/error'
 import { useSalon } from '@/hooks/useSalon'
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from '@/components/ui/accordion'
-import { TagInput } from '@/components/common'
+
 import { getMinuteMultiples } from '@/lib/schedule' // getMinuteMultiplesを追加
 import {
   Tag,
@@ -45,7 +48,11 @@ import {
   SelectItem,
 } from '@/components/ui/select' // Select関連を追加
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { fileToBase64, createImageWithThumbnail } from '@/lib/utils'
+import { fileToBase64 } from '@/lib/utils'
+import type { ProcessedImageResult } from '@/services/image/image.types'
+
+// APIレスポンスの型定義
+type StorageApiResponse = ProcessedImageResult | { error: string }
 
 // バリデーションスキーマ
 const optionSchema = z
@@ -75,6 +82,8 @@ const optionSchema = z
         .nullable()
         .optional()
     ),
+    imgPath: z.string().optional(),
+    thumbnailPath: z.string().optional(),
     orderLimit: z
       .number()
       .min(1, { message: '最大注文数は1以上で入力してください' })
@@ -83,14 +92,18 @@ const optionSchema = z
       .refine((val): val is number => val !== null && val !== undefined, {
         message: '最大注文数は必須です',
       }), // refineを更新
-    inStock: z
-      .number()
-      .min(1, { message: '在庫数は1以上で入力してください' })
-      .max(1000, { message: '在庫数は1000個以下で入力してください' })
-      .nullable()
-      .refine((val): val is number => val !== null && val !== undefined, {
-        message: '在庫数は必須です',
-      }), // refineを更新
+    inStock: z.preprocess(
+      (val) => {
+        if (val === '' || val === null || val === undefined) return null
+        const num = Number(val)
+        return isNaN(num) ? null : num
+      },
+      z
+        .number()
+        .max(1000, { message: '在庫数は1000個以下で入力してください' })
+        .nullable()
+        .optional()
+    ),
     timeToMin: z // timeToMinのバリデーションを追加
       .string()
       .min(1, { message: '時間は必須です' })
@@ -120,8 +133,6 @@ const optionSchema = z
       .max(1000, { message: '説明は1000文字以内で入力してください' })
       .optional(),
     isActive: z.boolean().optional(),
-    imgPath: z.string().max(512).optional(),
-    thumbnailPath: z.string().max(512).optional(),
   })
   .refine(
     (data) => {
@@ -165,21 +176,17 @@ export default function OptionEditForm() {
 
   const [isInitialized, setIsInitialized] = useState(false)
   const [currentTags, setCurrentTags] = useState<string[]>([])
-  const [currentFile, setCurrentFile] = useState<File | null>(null)
-  const [existingImageUrl, setExistingImageUrl] = useState<string | undefined>(undefined)
-  const [existingThumbnailUrl, setExistingThumbnailUrl] = useState<string | undefined>(undefined)
+  const [currentFiles, setCurrentFile] = useState<File[]>([])
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const uploadImage = useAction(api.storage.action.upload)
-  const deleteImage = useAction(api.storage.action.kill)
-
+  const [isDeleteImageModalOpen, setIsDeleteImageModalOpen] = useState(false)
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    formState: { isSubmitting: formIsSubmitting, errors },
+    formState: { isSubmitting: formIsSubmitting, errors, isDirty },
   } = useZodForm(optionSchema)
   const isActive = watch('isActive')
   const watchTimeToMin = watch('timeToMin')
@@ -192,8 +199,7 @@ export default function OptionEditForm() {
       const initialTags = optionData.tags || []
 
       // 画像関連の状態を設定
-      setExistingImageUrl(optionData.imgPath)
-      setExistingThumbnailUrl(optionData.thumbnailPath)
+      setExistingImageUrls(optionData.imgPath ? [optionData.imgPath] : [])
 
       // Stateの更新
       setCurrentTags(initialTags)
@@ -224,87 +230,42 @@ export default function OptionEditForm() {
       }
 
       setIsSubmitting(true)
-      let imgPath = data.imgPath
-      let thumbnailPath = data.thumbnailPath
       let uploadedOriginalUrl: string | undefined = undefined
       let uploadedThumbnailUrl: string | undefined = undefined
       let hasDeletedOldImages = false
 
       // 新しい画像がアップロードされた場合
-      if (currentFile) {
+      if (currentFiles && currentFiles.length > 0) {
         try {
           setIsUploading(true)
-
-          // クライアント側で画像処理を行う
-          const { original, thumbnail } = await createImageWithThumbnail(currentFile)
-
-          // オリジナル画像をアップロード
-          const originalBase64 = await fileToBase64(original)
-          const originalResult = await uploadImage({
-            base64Data: originalBase64,
-            filePath: original.name,
-            contentType: original.type,
-            directory: 'option/original',
+          const base64Data = await fileToBase64(currentFiles[0])
+          const result = await fetch('/api/storage', {
+            method: 'POST',
+            body: JSON.stringify({
+              base64Data,
+              fileName: currentFiles[0].name,
+              directory: 'option',
+              salonId: salon._id,
+              quality: 'low',
+            }),
           })
-          uploadedOriginalUrl = originalResult.publicUrl
+          const responseData = (await result.json()) as StorageApiResponse
 
-          // サムネイル画像をアップロード
-          const thumbnailBase64 = await fileToBase64(thumbnail)
-          const thumbnailResult = await uploadImage({
-            base64Data: thumbnailBase64,
-            filePath: thumbnail.name,
-            contentType: thumbnail.type,
-            directory: 'option/thumbnail',
-          })
-          uploadedThumbnailUrl = thumbnailResult.publicUrl
-
-          // 既存の画像があれば削除
-          try {
-            if (existingImageUrl) {
-              await deleteImage({
-                imgUrl: existingImageUrl,
-              })
-            }
-            if (existingThumbnailUrl) {
-              await deleteImage({
-                imgUrl: existingThumbnailUrl,
-              })
-            }
-            hasDeletedOldImages = true
-          } catch (deleteErr) {
-            console.error('Failed to delete existing images:', deleteErr)
-            // 古い画像の削除に失敗しても処理を続行
+          if ('error' in responseData) {
+            toast.error(responseData.error)
+            setIsSubmitting(false) // エラー時は submitting を解除
+            setIsUploading(false) // エラー時は uploading を解除
+            return
           }
-
-          imgPath = uploadedOriginalUrl
-          thumbnailPath = uploadedThumbnailUrl
-          setIsUploading(false)
-        } catch (err) {
-          // 画像アップロード中にエラーが発生した場合、アップロード済みの画像を削除
-          if (uploadedOriginalUrl) {
-            try {
-              await deleteImage({
-                imgUrl: uploadedOriginalUrl,
-              })
-            } catch (deleteErr) {
-              console.error('Failed to delete original image:', deleteErr)
-            }
-          }
-
-          if (uploadedThumbnailUrl) {
-            try {
-              await deleteImage({
-                imgUrl: uploadedThumbnailUrl,
-              })
-            } catch (deleteErr) {
-              console.error('Failed to delete thumbnail image:', deleteErr)
-            }
-          }
-
-          setIsUploading(false)
-          setIsSubmitting(false)
-          toast.error(handleErrorToMsg(err) || '画像のアップロードに失敗しました')
+          uploadedOriginalUrl = responseData.imgUrl
+          uploadedThumbnailUrl = responseData.thumbnailUrl
+        } catch (error) {
+          toast.error(handleErrorToMsg(error))
+          setIsSubmitting(false) // エラー時は submitting を解除
+          setIsUploading(false) // エラー時は uploading を解除
           return
+        } finally {
+          setIsUploading(false)
         }
       }
 
@@ -317,13 +278,43 @@ export default function OptionEditForm() {
           salePrice: data.salePrice ? Number(data.salePrice) : 0,
           orderLimit: data.orderLimit,
           timeToMin: data.timeToMin ? Number(data.timeToMin) : undefined, // 文字列を数値 or undefined に変換
-          inStock: data.inStock,
+          inStock: data.inStock ? Number(data.inStock) : undefined,
           tags: data.tags, // zodで変換された配列 or undefined
           description: data.description,
           isActive: data.isActive,
-          imgPath,
-          thumbnailPath,
+          // 新しい画像がある場合は新しいパス、ない場合は existingImageUrl を維持するか、削除の場合は undefined
+          imgPath: uploadedOriginalUrl !== undefined ? uploadedOriginalUrl : data.imgPath,
+          thumbnailPath:
+            uploadedThumbnailUrl !== undefined ? uploadedThumbnailUrl : data.thumbnailPath,
           optionId, // idは必須
+        }
+
+        // 画像を「なし」にする場合 (currentFile がなく、uploadedOriginalUrl もなく、かつ既存の画像パスが存在する場合)
+        // または新しい画像に置き換える場合 (uploadedOriginalUrl が存在する)
+        // に古い画像を削除
+        if (
+          (currentFiles.length === 0 && !uploadedOriginalUrl && data.imgPath) || // 画像なしにするケース
+          (uploadedOriginalUrl && data.imgPath) // 新しい画像に置き換えるケース
+        ) {
+          try {
+            await fetch('/api/storage', {
+              method: 'DELETE',
+              body: JSON.stringify({
+                imgUrl: data.imgPath,
+                withThumbnail: true,
+              }),
+            })
+            hasDeletedOldImages = true
+            // データベース更新用に imgPath と thumbnailPath をクリア
+            if (currentFiles.length === 0 && !uploadedOriginalUrl) {
+              updateData.imgPath = undefined
+              updateData.thumbnailPath = undefined
+            }
+          } catch (deleteError) {
+            console.error('Failed to delete old image:', deleteError)
+            // 古い画像の削除に失敗しても、オプション更新は試みる
+            // 必要に応じてエラーハンドリングを追加
+          }
         }
 
         await updateOption(updateData)
@@ -332,41 +323,79 @@ export default function OptionEditForm() {
         router.push('/dashboard/option')
       } catch (updateErr) {
         // メニュー更新に失敗した場合、新しくアップロードした画像を削除
-        if (uploadedOriginalUrl && currentFile) {
+        if (uploadedOriginalUrl && currentFiles.length === 0) {
           try {
-            await deleteImage({
-              imgUrl: uploadedOriginalUrl,
+            await fetch('/api/storage', {
+              method: 'DELETE',
+              body: JSON.stringify({
+                imgUrl: uploadedOriginalUrl,
+                withThumbnail: true,
+              }),
+            })
+            // DBの更新
+            updateOption({
+              imgPath: '',
+              thumbnailPath: '',
+              optionId,
             })
           } catch (deleteErr) {
-            console.error('Failed to delete original image after update failure:', deleteErr)
-          }
-        }
-
-        if (uploadedThumbnailUrl && currentFile) {
-          try {
-            await deleteImage({
-              imgUrl: uploadedThumbnailUrl,
-            })
-          } catch (deleteErr) {
-            console.error('Failed to delete thumbnail image after update failure:', deleteErr)
+            console.error('Failed to delete new original image after update failure:', deleteErr)
           }
         }
 
         // 既存の画像を削除していた場合はエラーメッセージを変更
         if (hasDeletedOldImages) {
           toast.error(
-            'オプション更新に失敗し、既存の画像が削除されました。もう一度お試しください。'
+            'オプション更新に失敗しました。画像が変更されている場合は、再度ご確認ください。'
           )
         } else {
           toast.error(handleErrorToMsg(updateErr) || 'オプション更新に失敗しました')
         }
 
         setIsSubmitting(false)
-        throw updateErr
+        // throw updateErr // エラーを再スローしない場合、ここで処理を終える
+        return // エラー発生時はここで処理を中断
       }
     } catch (error) {
       setIsSubmitting(false)
       toast.error(handleErrorToMsg(error))
+    }
+  }
+
+  const handleDeleteImage = async (imgUrl: string) => {
+    try {
+      setIsUploading(true)
+      // APIに削除リクエストを送信
+      const response = await fetch('/api/storage', {
+        method: 'DELETE',
+        body: JSON.stringify({ imgUrl, withThumbnail: true }),
+      })
+
+      if (!response.ok) {
+        // エラーレスポンスを処理
+        const errorData = await response.json().catch(() => ({})) // JSONパースエラーも考慮
+        toast.error(errorData?.error || '画像の削除に失敗しました')
+        return // エラー時はここで処理を終了
+      }
+
+      // データベースの画像パスをクリア
+      await updateOption({
+        imgPath: '',
+        thumbnailPath: '',
+        optionId,
+      })
+
+      toast.success('画像を削除しました')
+      setExistingImageUrls([]) // 既存画像のURLをクリア
+      setCurrentFile([]) // 選択中のファイルをクリア
+      setValue('imgPath', undefined, { shouldDirty: true, shouldValidate: true }) // フォームの画像パスをクリア
+      setValue('thumbnailPath', undefined, { shouldDirty: true, shouldValidate: true }) // フォームのサムネイルパスをクリア
+      setIsDeleteImageModalOpen(false)
+      router.push('/dashboard/option')
+    } catch (error) {
+      toast.error(handleErrorToMsg(error))
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -387,16 +416,28 @@ export default function OptionEditForm() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="md:col-span-1">
             <Card className="border border-dashed h-full flex flex-col">
-              <CardHeader className="pb-0">
+              <CardHeader className="pb-0 flex flex-row mb-3 items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2 mb-2">
                   <ImageIcon size={18} className="text-muted-foreground" />
                   オプションメニュー画像
                 </CardTitle>
+                {existingImageUrls[0] && (
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setIsDeleteImageModalOpen(true)
+                    }}
+                  >
+                    <Trash2 />
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="flex-grow flex items-center justify-center">
                 <div className="w-full">
                   <ImageDrop
-                    initialImageUrl={existingImageUrl}
+                    initialImageUrls={existingImageUrls}
                     maxSizeMB={5}
                     onFileSelect={(file) => {
                       setCurrentFile(file)
@@ -483,7 +524,7 @@ export default function OptionEditForm() {
                     onValueChange={(value) => {
                       if (!value.trim()) return
                       const numValue = Number(value)
-                      setValue('timeToMin', value, { shouldValidate: true })
+                      setValue('timeToMin', value, { shouldValidate: true, shouldDirty: true })
                       console.log('スタッフが稼働する施術時間を選択:', { value, numValue }) // デバッグ用
                     }}
                   >
@@ -508,7 +549,7 @@ export default function OptionEditForm() {
                 tags={currentTags}
                 setTagsAction={(tags) => {
                   setCurrentTags(tags)
-                  setValue('tags', tags, { shouldValidate: true })
+                  setValue('tags', tags, { shouldValidate: true, shouldDirty: true })
                 }}
               />
             </div>
@@ -526,7 +567,9 @@ export default function OptionEditForm() {
           id="description"
           placeholder="オプションの詳細説明を入力してください（任意）"
           {...register('description')}
-          onChange={(e) => setValue('description', e.target.value, { shouldValidate: true })}
+          onChange={(e) =>
+            setValue('description', e.target.value, { shouldValidate: true, shouldDirty: true })
+          }
           rows={10}
           className="border-border"
         />
@@ -543,7 +586,9 @@ export default function OptionEditForm() {
           <Switch
             id="isActive"
             checked={isActive}
-            onCheckedChange={(checked) => setValue('isActive', checked)}
+            onCheckedChange={(checked) =>
+              setValue('isActive', checked, { shouldValidate: true, shouldDirty: true })
+            }
             className="data-[state=checked]:bg-active"
           />
         </div>
@@ -558,59 +603,56 @@ export default function OptionEditForm() {
             >
               戻る
             </Button>
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Button type="submit" disabled={isSubmitting || isUploading || formIsSubmitting}>
-                {isSubmitting || isUploading || formIsSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    更新中...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    オプションを更新
-                  </>
-                )}
-              </Button>
-            </motion.div>
+
+            <Button
+              type="submit"
+              disabled={isSubmitting || isUploading || (!isDirty && currentFiles.length === 0)}
+            >
+              {isSubmitting || isUploading || formIsSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  更新中...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  オプションを更新
+                </>
+              )}
+            </Button>
           </div>
         </div>
+        {errors.root && <ErrorMessage message={errors.root.message} />}
       </form>
-      <Accordion type="multiple" className="mt-8 space-y-2">
-        {/* 実際の稼働時間と確保する時間の違いについて */}
-        <AccordionItem value="line-access-token">
-          <AccordionTrigger>
-            実際の稼働時間と待機時間を含めたトータルの施術時間の違いについて
-          </AccordionTrigger>
-          <AccordionContent className="space-y-2 text-sm text-muted-foreground leading-6">
-            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
-              <li>
-                <strong>実際の稼働時間 :</strong>
-                スタッフが手を動かして施術に集中している正味の作業時間を指します。
-                <br />
-                例）パーマの薬剤塗布・カット・シャンプーなど。
-              </li>
-              <li>
-                <strong>待機時間を含めたトータルの施術時間 :</strong>
-                施術席を専有する必要はあるものの、スタッフが別の作業に移れる待機時間を指します。
-                <br />
-                例）薬剤の放置時間・髪の乾燥時間など。
-              </li>
-              <li>
-                予約枠のアルゴリズムは <strong>実際の稼働時間</strong> を基準に空き時間を算出し、
-                <strong>待機時間を含めたトータルの施術時間</strong>{' '}
-                を待機時間として扱うことで、同じ席を効率よく回転させられます。
-              </li>
-            </ol>
 
-            <p className="text-xs text-muted-foreground space-y-1">
-              * 両時間とも必須入力です。
-              <br />* <strong>入力例：</strong> パーマ 90 分（実際の稼働 45 分 ＋ 確保 45
-              分）の場合、スタッフは途中 45 分間ほかの顧客を担当できます。
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+      <Dialog open={isDeleteImageModalOpen} onOpenChange={setIsDeleteImageModalOpen}>
+        <DialogContent>
+          <DialogHeader className="bg-destructive p-4 rounded-t-md mr-2">
+            <DialogTitle className="text-destructive-foreground">画像を削除しますか？</DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="text-muted-foreground">
+            この操作は元に戻すことができません。
+          </DialogDescription>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteImageModalOpen(false)}>
+              キャンセル
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => existingImageUrls[0] && handleDeleteImage(existingImageUrls[0])}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  削除中...
+                </>
+              ) : (
+                '削除する'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

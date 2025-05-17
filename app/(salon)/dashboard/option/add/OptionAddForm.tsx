@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MAX_TEXT_LENGTH } from '@/services/convex/constants';
 import { useZodForm } from '@/hooks/useZodForm';
 import { api } from '@/convex/_generated/api';
-import { useMutation, useAction } from 'convex/react'
+import { useMutation } from 'convex/react'
 import { TagInput, ImageDrop } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { ZodTextField } from '@/components/common'
@@ -32,8 +32,12 @@ import { getMinuteMultiples } from '@/lib/schedule'
 import { Loading } from '@/components/common'
 import { useRouter } from 'next/navigation'
 import { handleErrorToMsg } from '@/lib/error'
-import { fileToBase64, createImageWithThumbnail } from '@/lib/utils'
+import { fileToBase64 } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import type { ProcessedImageResult } from '@/services/image/image.types'
+
+// APIレスポンスの型定義
+type StorageApiResponse = ProcessedImageResult | { error: string }
 
 // 施術時間：0〜360分の5分刻みをキャッシュ
 const MINUTE_OPTIONS = getMinuteMultiples(0, 360)
@@ -41,35 +45,42 @@ const MINUTE_OPTIONS = getMinuteMultiples(0, 360)
 const optionSchema = z
   .object({
     name: z
-      .string()
+      .string({
+        required_error: 'オプションメニュー名は必須です',
+        invalid_type_error: 'オプションメニュー名は有効な文字列で入力してください',
+      })
       .min(1, { message: 'オプションメニュー名は必須です' })
       .max(MAX_TEXT_LENGTH, {
         message: `オプションメニュー名は${MAX_TEXT_LENGTH}文字以内で入力してください`,
       }), // オプションメニュー名
     unitPrice: z.preprocess(
       (val) => {
-        // 空文字列の場合はnullを返す
-        if (val === '' || val === null || val === undefined) return null
-        // 数値に変換できない場合もnullを返す
+        // 空文字列、null、undefinedの場合はundefinedを返し、required_errorをトリガー
+        if (val === '' || val === null || val === undefined) return undefined
+        // 数値に変換できない場合は元の値を返し、invalid_type_errorをトリガー
         const num = Number(val)
-        return isNaN(num) ? null : num
+        return isNaN(num) ? val : num
       },
       z
-        .number()
-        .min(1, { message: '価格は必須です' })
+        .number({
+          required_error: '価格は必須です',
+          invalid_type_error: '価格は有効な数値で入力してください',
+        })
+        .min(1, { message: '価格は1円以上で入力してください' })
         .max(99999, { message: '価格は99999円以下で入力してください' })
-        .refine((val) => val !== null && val !== undefined, { message: '価格は必須です' })
     ), // 価格
     salePrice: z.preprocess(
       (val) => {
-        // 空文字列の場合はnullを返す
+        // 空文字列、null、undefinedの場合はnullを返し、nullable()で許容
         if (val === '' || val === null || val === undefined) return null
-        // 数値に変換できない場合もnullを返す
+        // 数値に変換できない場合は元の値を返し、invalid_type_errorをトリガー
         const num = Number(val)
-        return isNaN(num) ? null : num
+        return isNaN(num) ? val : num
       },
       z
-        .number()
+        .number({
+          invalid_type_error: 'セール価格は有効な数値で入力してください',
+        })
         .max(99999, { message: 'セール価格は99999円以下で入力してください' })
         .nullable()
         .optional()
@@ -83,9 +94,12 @@ const optionSchema = z
         return isNaN(num) ? 1 : num
       },
       z
-        .number()
+        .number({
+          required_error: '注文制限は必須です',
+          invalid_type_error: '注文制限は有効な数値で入力してください',
+        })
         .min(0, { message: '注文制限は0以上で入力してください' })
-        .max(6, { message: '注文制限は6以下で入力してください' })
+        .max(5, { message: '注文制限は5以下で入力してください' })
         .optional()
     ), // 注文制限
     inStock: z.preprocess(
@@ -99,7 +113,10 @@ const optionSchema = z
       z.number().max(1000, { message: '在庫数は1000以下で入力してください' }).optional()
     ),
     timeToMin: z
-      .string()
+      .string({
+        required_error: '時間は必須です',
+        invalid_type_error: '時間は有効な数値で入力してください',
+      })
       .min(1, { message: '時間は必須です' })
       .max(5, { message: '時間は5文字で入力してください' })
       .refine((val) => val !== '', { message: '時間は必須です' }), // 時間(分)
@@ -120,10 +137,12 @@ const optionSchema = z
         .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
     ), // タグ
     description: z
-      .string()
+      .string({
+        required_error: '説明は必須です',
+        invalid_type_error: '説明は有効な文字列で入力してください',
+      })
       .min(1, { message: '説明は必須です' })
-      .max(1000, { message: '説明は1000文字以内で入力してください' })
-      .optional(), // 説明
+      .max(1000, { message: '説明は1000文字以内で入力してください' }), // 説明
     isActive: z.boolean({ message: '有効/無効フラグは必須です' }), // 有効/無効フラグ
     imgPath: z.string().max(512).optional(),
     thumbnailPath: z.string().max(512).optional(),
@@ -150,13 +169,11 @@ function OptionAddForm() {
   const [isUploading, setIsUploading] = useState(false)
 
   const addOption = useMutation(api.option.mutation.create)
-  const uploadImage = useAction(api.storage.action.upload)
-  const deleteImage = useAction(api.storage.action.kill)
 
   const {
     register,
     handleSubmit,
-    formState: { isSubmitting, errors },
+    formState: { isSubmitting, errors, isDirty },
     setValue,
     watch,
     reset,
@@ -165,74 +182,46 @@ function OptionAddForm() {
   const isActive = watch('isActive')
 
   const onSubmit = async (data: z.infer<typeof optionSchema>) => {
+    // 画像がある場合はアップロード処理を行う
+    let uploadedOriginalUrl: string | undefined = undefined
+    let uploadedThumbnailUrl: string | undefined = undefined
+
     try {
       if (!salon?._id) {
         toast.error('サロン情報が必要です')
         return
       }
 
-      // 画像がある場合はアップロード処理を行う
-      let imgPath = data.imgPath
-      let thumbnailPath = data.thumbnailPath
-      let uploadedOriginalUrl: string | undefined = undefined
-      let uploadedThumbnailUrl: string | undefined = undefined
-
       if (currentFile) {
         try {
           setIsUploading(true)
-
-          // クライアント側で画像処理を行う
-          const { original, thumbnail } = await createImageWithThumbnail(currentFile)
-
-          // オリジナル画像をアップロード
-          const originalBase64 = await fileToBase64(original)
-          const originalResult = await uploadImage({
-            base64Data: originalBase64,
-            filePath: original.name,
-            contentType: original.type,
-            directory: 'option/original',
+          const base64Data = await fileToBase64(currentFile!)
+          const result = await fetch('/api/storage', {
+            method: 'POST',
+            body: JSON.stringify({
+              base64Data,
+              fileName: currentFile!.name,
+              directory: 'option',
+              salonId: salon._id,
+              quality: 'low',
+            }),
           })
-          uploadedOriginalUrl = originalResult.publicUrl
+          const responseData = (await result.json()) as StorageApiResponse
 
-          // サムネイル画像をアップロード
-          const thumbnailBase64 = await fileToBase64(thumbnail)
-          const thumbnailResult = await uploadImage({
-            base64Data: thumbnailBase64,
-            filePath: thumbnail.name,
-            contentType: thumbnail.type,
-            directory: 'option/thumbnail',
-          })
-          uploadedThumbnailUrl = thumbnailResult.publicUrl
-
-          imgPath = uploadedOriginalUrl
-          thumbnailPath = uploadedThumbnailUrl
-
-          setIsUploading(false)
-        } catch (err) {
-          // 画像アップロード中にエラーが発生した場合、アップロード済みの画像を削除
-          if (uploadedOriginalUrl) {
-            try {
-              await deleteImage({
-                imgUrl: uploadedOriginalUrl,
-              })
-            } catch (deleteErr) {
-              console.error('Failed to delete original image:', deleteErr)
-            }
+          if ('error' in responseData) {
+            toast.error(responseData.error)
+            setIsUploading(false) // エラー時は uploading を解除
+            return
           }
-
-          if (uploadedThumbnailUrl) {
-            try {
-              await deleteImage({
-                imgUrl: uploadedThumbnailUrl,
-              })
-            } catch (deleteErr) {
-              console.error('Failed to delete thumbnail image:', deleteErr)
-            }
-          }
-
-          setIsUploading(false)
-          toast.error(handleErrorToMsg(err) || '画像のアップロードに失敗しました')
+          uploadedOriginalUrl = responseData.imgUrl
+          uploadedThumbnailUrl = responseData.thumbnailUrl
+        } catch (error) {
+          toast.error(handleErrorToMsg(error))
+          setIsUploading(false) // エラー時は uploading を解除
+          toast.error(handleErrorToMsg(error))
           return
+        } finally {
+          setIsUploading(false)
         }
       }
 
@@ -248,14 +237,42 @@ function OptionAddForm() {
         tags: data.tags,
         description: data.description,
         isActive: data.isActive,
-        imgPath,
-        thumbnailPath,
+        imgPath: uploadedOriginalUrl,
+        thumbnailPath: uploadedThumbnailUrl,
       }
 
       await addOption(createData)
       toast.success('オプションメニューを登録しました')
       router.push('/dashboard/option')
     } catch (error) {
+      // メニュー作成に失敗した場合、新しくアップロードした画像を削除
+      if (uploadedOriginalUrl && currentFile) {
+        try {
+          await fetch('/api/storage', {
+            method: 'DELETE',
+            body: JSON.stringify({
+              imgUrl: uploadedOriginalUrl,
+              withThumbnail: true,
+            }),
+          })
+        } catch (deleteErr) {
+          console.error('Failed to delete new original image after update failure:', deleteErr)
+        }
+      }
+
+      if (uploadedThumbnailUrl && currentFile) {
+        try {
+          await fetch('/api/storage', {
+            method: 'DELETE',
+            body: JSON.stringify({
+              imgUrl: uploadedThumbnailUrl,
+              withThumbnail: true,
+            }),
+          })
+        } catch (deleteErr) {
+          console.error('Failed to delete new thumbnail image after update failure:', deleteErr)
+        }
+      }
       toast.error(handleErrorToMsg(error))
     }
   }
@@ -307,8 +324,8 @@ function OptionAddForm() {
                 <div className="w-full">
                   <ImageDrop
                     maxSizeMB={5}
-                    onFileSelect={(file) => {
-                      setCurrentFile(file)
+                    onFileSelect={(files) => {
+                      setCurrentFile(files[0] ?? null)
                     }}
                     className="rounded-md"
                   />
@@ -452,7 +469,7 @@ function OptionAddForm() {
           <Button
             variant="default"
             type="submit"
-            disabled={isSubmitting || isUploading}
+            disabled={isSubmitting || isUploading || !isDirty}
             onClick={() => {
               console.log('ボタンクリック')
               console.log('フォームバリデーション状態:', errors)

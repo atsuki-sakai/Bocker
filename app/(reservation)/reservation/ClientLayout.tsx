@@ -32,7 +32,6 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
       if (pathname && pathname.startsWith('/reservation/')) {
         const pathParts = pathname.split('/')
         const pathSalonId = pathParts[2] // /reservation/:salonId
-        console.log('pathSalonId', pathSalonId)
         if (pathSalonId) {
           try {
             console.log('pathSalonId', pathSalonId)

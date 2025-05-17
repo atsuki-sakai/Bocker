@@ -1,12 +1,11 @@
 // この行を追加: React Hooks の依存関係を修正したファイル
 // /components/menu/MenuDetailContent.tsx
-'use client';
+'use client'
 
-import Image from 'next/image';
-import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image'
+import { useState, useMemo, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Archive,
   CreditCard,
   Clock,
   Tag,
@@ -16,24 +15,31 @@ import {
   ChevronDown,
   ChevronUp,
   Trash,
-  Eye,
-  EyeOff,
   Info,
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Doc } from '@/convex/_generated/dataModel';
-import Link from 'next/link';
-import { Dialog } from '@/components/common';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { handleErrorToMsg } from '@/lib/error';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Doc } from '@/convex/_generated/dataModel'
+import Link from 'next/link'
+import { Dialog } from '@/components/common'
+import { useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { handleErrorToMsg } from '@/lib/error'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { convertGender } from '@/services/convex/shared/types/common'
+
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from '@/components/ui/carousel'
 
 // ラベル定義をコンポーネント外に移動し、再レンダリングの影響を受けないようにする
 const labels = {
@@ -63,6 +69,36 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const deleteMenu = useMutation(api.menu.core.mutation.kill)
+
+  // ADDED START: State and effect for Carousel
+  const [mainCarouselApi, setMainCarouselApi] = useState<CarouselApi>()
+  const [currentMainImageIndex, setCurrentMainImageIndex] = useState(0)
+
+  useEffect(() => {
+    if (!mainCarouselApi) {
+      return
+    }
+    // Set initial snap a soon as API is ready
+    setCurrentMainImageIndex(mainCarouselApi.selectedScrollSnap())
+
+    const onSelect = () => {
+      if (mainCarouselApi) {
+        // Check if api is still valid
+        setCurrentMainImageIndex(mainCarouselApi.selectedScrollSnap())
+      }
+    }
+    mainCarouselApi.on('select', onSelect)
+
+    // Clean up listener on component unmount or when api changes
+    return () => {
+      mainCarouselApi.off('select', onSelect)
+    }
+  }, [mainCarouselApi])
+
+  const handleThumbnailClick = (index: number) => {
+    mainCarouselApi?.scrollTo(index)
+  }
+  // ADDED END
 
   // メモ化によるパフォーマンス最適化
   const formattedPrice = useMemo(() => {
@@ -108,6 +144,63 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
 
     try {
       await deleteMenu({ menuId: menu._id })
+
+      // 画像削除処理をPromiseとして配列に格納
+      const deleteImagePromises = menu.images
+        ?.filter((image) => image.imgPath) // imgPath が存在する画像のみを対象にする
+        .map(async (image) => {
+          try {
+            const response = await fetch('/api/storage', {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json', // JSON形式で送信することを指定
+              },
+              body: JSON.stringify({
+                imgUrl: image.imgPath,
+                withThumbnail: true,
+              }),
+            })
+
+            if (!response.ok) {
+              // HTTPステータスコードが200番台でない場合にエラーを投げる
+              const errorBody = await response.text() // エラーレスポンスの内容を取得
+              throw new Error(
+                `画像の削除に失敗しました: ${response.status} ${response.statusText} - ${errorBody}`
+              )
+            }
+
+            // 成功した場合のレスポンスを返す（必要であれば）
+            // return await response.json();
+            console.log(`画像削除成功: ${image.imgPath}`)
+            return { status: 'fulfilled', value: response.status } // Promise.allSettled の結果形式に合わせる
+          } catch (error) {
+            // エラーが発生した場合
+            console.error(`画像削除失敗: ${image.imgPath}`, error)
+            // Promise.allSettled の結果形式に合わせる
+            // reject ではなく catch ブロックでエラーを処理し、resolved with status:'rejected' のようなオブジェクトを返すことで、
+            // Promise.allSettled が 'rejected' ステータスとして扱えるようにする
+            // または、単に catch の中でログを出力し、throw error で reject させることも可能
+            throw error // re-throw the error so Promise.allSettled catches it as 'rejected'
+          }
+        })
+
+      // Promise.allSettled を使って全ての画像削除Promiseが完了するのを待つ
+      if (deleteImagePromises && deleteImagePromises.length > 0) {
+        const results = await Promise.allSettled(deleteImagePromises)
+
+        // 各画像削除の結果を確認（オプション）
+        results.forEach((result, index) => {
+          // results のインデックスは deleteImagePromises のインデックスに対応します
+          // どの画像かが分かりやすいように、元の画像の imgPath などを使用すると良いでしょう
+          const originalImage = menu.images?.filter((img) => img.imgPath)[index] // 対応する元の画像オブジェクトを取得
+          if (result.status === 'fulfilled') {
+            console.log(`画像削除 (${originalImage?.imgPath || '不明'}) 成功:`, result.value)
+          } else {
+            console.error(`画像削除 (${originalImage?.imgPath || '不明'}) 失敗:`, result.reason)
+          }
+        })
+      }
+
       router.push('/dashboard/menu')
       toast.success('メニューを削除しました')
     } catch (error) {
@@ -149,51 +242,76 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
       {/* ヘッダー情報 */}
       <div className="flex flex-col md:flex-row gap-6 items-start">
         {/* メニュー画像 */}
+        <div className="w-full max-w-sm mx-auto">
+          {menu.images && menu.images.length > 0 ? (
+            <div className="space-y-4">
+              <Carousel
+                setApi={setMainCarouselApi}
+                className="w-full max-w-2xl mx-auto"
+                opts={{
+                  loop: menu.images.length > 1,
+                  align: 'start',
+                }}
+              >
+                <CarouselContent>
+                  {menu.images.map((image, index) => (
+                    <CarouselItem key={`main-${index}`}>
+                      <div className="relative w-full aspect-[4/3] sm:aspect-[3/4] bg-muted group rounded-lg overflow-hidden">
+                        <Image
+                          src={image.imgPath || ''}
+                          alt={`${menu.name || 'メニュー画像'} ${index + 1}`}
+                          className="w-full h-full object-contain"
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 80vw, (max-width: 1200px) 50vw, 33vw"
+                          priority={index === currentMainImageIndex}
+                          loading={index === currentMainImageIndex ? 'eager' : 'lazy'}
+                        />
+                        {menu.images && menu.images.length > 1 && (
+                          <>
+                            <CarouselPrevious className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-background hover:bg-muted p-1 rounded-full text-muted-foreground" />
+                            <CarouselNext className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-background hover:bg-muted p-1 rounded-full text-muted-foreground" />
+                          </>
+                        )}
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
 
-        <Card className="w-full md:w-1/3 overflow-hidden transition-shadow hover:shadow-md">
-          <div className="relative w-full aspect-[3/4] bg-muted">
-            {menu.imgPath ? (
-              <div className="h-full w-full">
-                <Image
-                  src={menu.imgPath}
-                  alt={menu.name || 'メニュー画像'}
-                  className="w-full h-full object-contain"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  priority
-                  loading="eager"
-                />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full bg-muted text-muted-foreground">
-                <Info className="w-8 h-8 mr-2 opacity-30" />
-                <span>画像がありません</span>
-              </div>
-            )}
-          </div>
-          <CardFooter className="p-4 flex flex-wrap gap-2">
-            <Badge
-              variant={menu.isActive ? 'default' : 'secondary'}
-              className={`transition-all ${menu.isActive ? 'bg-active border-active text-active-foreground' : 'bg-muted border-border text-muted-foreground'}`}
-            >
-              {menu.isActive ? (
-                <>
-                  <Eye className="w-3 h-3 mr-1" /> 公開中
-                </>
-              ) : (
-                <>
-                  <EyeOff className="w-3 h-3 mr-1" /> 非公開
-                </>
+              {menu.images && menu.images.length > 1 && (
+                <div className="flex space-x-2 justify-center overflow-x-auto py-2">
+                  {menu.images.map((image, index) => (
+                    <button
+                      key={`thumb-${index}`}
+                      onClick={() => handleThumbnailClick(index)}
+                      className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 relative rounded-md border-2 overflow-hidden
+                                  ${
+                                    currentMainImageIndex === index
+                                      ? 'border-transparent ring-accent ring-2 ring-offset-1 sm:ring-offset-2'
+                                      : 'border-foreground opacity-70 hover:opacity-100'
+                                  } focus:outline-none transition-all duration-150 ease-in-out`}
+                      aria-label={`画像 ${index + 1} を表示`}
+                    >
+                      <Image
+                        src={image.thumbnailPath || ''}
+                        alt={`サムネイル ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        fill
+                        sizes="64px md:80px"
+                        loading="lazy"
+                      />
+                    </button>
+                  ))}
+                </div>
               )}
-            </Badge>
-
-            {menu.isArchive && (
-              <Badge variant="destructive" className="transition-all">
-                <Archive className="w-3 h-3 mr-1" /> アーカイブ済み
-              </Badge>
-            )}
-          </CardFooter>
-        </Card>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center w-full aspect-[4/3] sm:aspect-[3/4] bg-muted text-muted-foreground rounded-lg">
+              <Info className="w-8 h-8 mr-2 opacity-30" />
+              <span>画像がありません</span>
+            </div>
+          )}
+        </div>
 
         {/* メニュー情報 */}
         <div className="w-full md:w-2/3">

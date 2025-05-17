@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken'
 import { decryptStringCryptoJS } from '@/lib/utils'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL as string)
 
 // JWT署名用のシークレットキー (環境変数から取得)
 const JWT_SECRET = process.env.JWT_SECRET || 'bocker-auth-session-secret-key'
