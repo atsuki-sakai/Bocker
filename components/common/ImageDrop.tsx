@@ -1,11 +1,19 @@
 'use client';
 
-import { useState, useRef, useEffect, TouchEvent, DragEvent } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { FileImage, X } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import { DndContext, PointerSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core'
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 // コンポーネントのプロップス型定義
 interface ImageDropProps {
@@ -26,7 +34,7 @@ interface ImageDropProps {
 export default function ImageDrop({
   onFileSelect,
   onPreviewChange,
-  maxSizeMB = 4,
+  maxSizeMB = 5,
   previewWidth = 2016,
   previewHeight = 1512,
   className = '',
@@ -44,22 +52,45 @@ export default function ImageDrop({
     }
     return initialImageUrls ? [initialImageUrls[0]] : []
   })
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [selectedFiles, setSelectedFiles] = useState<(File | null)[]>(() =>
+    multiple && initialImageUrls ? Array(initialImageUrls.length).fill(null) : []
+  )
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const draggedItemIndexRef = useRef<number | null>(null)
-  const dragOverItemIndexRef = useRef<number | null>(null)
-  const [touchDraggingIndex, setTouchDraggingIndex] = useState<number | null>(null)
-  const touchDraggedItemRef = useRef<{ file: File | null; url: string } | null>(null)
+
+  // dnd‑kit sensors
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+
+  // 並べ替え完了時に配列を更新
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = previewImageUrls.indexOf(active.id as string)
+    const newIndex = previewImageUrls.indexOf(over.id as string)
+
+    const paddedFiles =
+      selectedFiles.length < previewImageUrls.length
+        ? [...selectedFiles, ...Array(previewImageUrls.length - selectedFiles.length).fill(null)]
+        : selectedFiles
+
+    const newUrls = arrayMove(previewImageUrls, oldIndex, newIndex)
+    const newFiles = arrayMove(paddedFiles, oldIndex, newIndex)
+
+    setPreviewImageUrls(newUrls)
+    setSelectedFiles(newFiles)
+
+    onPreviewChange?.(newUrls)
+    onFileSelect?.(newFiles.filter((f: File | null): f is File => f !== null))
+  }
 
   useEffect(() => {
-    if (selectedFiles.length === 0) {
-      if (multiple) {
-        setPreviewImageUrls(initialImageUrls || [])
-      } else {
-        setPreviewImageUrls(initialImageUrls ? [initialImageUrls[0]] : [])
-      }
+    if (multiple) {
+      setPreviewImageUrls(initialImageUrls || [])
+      setSelectedFiles(initialImageUrls ? Array(initialImageUrls.length).fill(null) : [])
+    } else {
+      setPreviewImageUrls(initialImageUrls ? [initialImageUrls[0]] : [])
     }
-  }, [initialImageUrls, multiple, selectedFiles.length])
+  }, [initialImageUrls, multiple])
 
   // 実際に使用するプレビュー画像（外部から渡されるか内部で管理されるか）
   const displayImageUrl =
@@ -154,13 +185,27 @@ export default function ImageDrop({
         return
       }
 
-      const updatedFiles = [...selectedFiles, ...filesToAdd]
-      const updatedUrls = [...previewImageUrls, ...urlsToAdd]
+      // --- 既存プレースホルダ(null)を優先して埋める ---
+      let updatedFiles = [...selectedFiles]
+      let updatedUrls = [...previewImageUrls]
+
+      filesToAdd.forEach((file, i) => {
+        const url = urlsToAdd[i]
+        const nullIdx = updatedFiles.findIndex((f) => f === null)
+        if (nullIdx !== -1) {
+          updatedFiles[nullIdx] = file
+          updatedUrls[nullIdx] = url
+        } else {
+          updatedFiles.push(file)
+          updatedUrls.push(url)
+        }
+      })
+
       setSelectedFiles(updatedFiles)
       setPreviewImageUrls(updatedUrls)
 
       if (onFileSelect) {
-        onFileSelect(updatedFiles)
+        onFileSelect(updatedFiles.filter((f): f is File => f !== null))
       }
       if (onPreviewChange) {
         onPreviewChange(updatedUrls)
@@ -204,145 +249,16 @@ export default function ImageDrop({
     }
   }
 
-  // ドラッグ＆ドロップ並び替えハンドラ (HTML5 D&D)
-  const handleDragStart = (_e: DragEvent<HTMLDivElement>, index: number) => {
-    draggedItemIndexRef.current = index
-  }
-
-  const handleDragEnter = (_e: DragEvent<HTMLDivElement>, index: number) => {
-    dragOverItemIndexRef.current = index
-  }
-
-  const handleDragLeave = (_e: DragEvent<HTMLDivElement>) => {
-    console.log('handleDragLeave', _e)
-    // dragOverItemIndexRef.current = null; // Optional: reset if leaving a specific item vs the container
-  }
-
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault() // Necessary to allow dropping
-  }
-
-  const handleDropSort = (_e: DragEvent<HTMLDivElement>) => {
-    console.log('handleDropSort', _e)
-    if (
-      draggedItemIndexRef.current === null ||
-      dragOverItemIndexRef.current === null ||
-      draggedItemIndexRef.current === dragOverItemIndexRef.current
-    ) {
-      draggedItemIndexRef.current = null
-      dragOverItemIndexRef.current = null
-      return
-    }
-
-    const draggedIndex = draggedItemIndexRef.current
-    const overIndex = dragOverItemIndexRef.current
-
-    const newFiles = [...selectedFiles]
-    const newUrls = [...previewImageUrls]
-    // --- ensure both arrays have the same length ---
-    while (newFiles.length < newUrls.length) {
-      newFiles.push(null as unknown as File) // placeholder for already‑uploaded image
-    }
-
-    const draggedFile = newFiles.splice(draggedIndex, 1)[0]
-    const draggedUrl = newUrls.splice(draggedIndex, 1)[0]
-
-    newFiles.splice(overIndex, 0, draggedFile)
-    newUrls.splice(overIndex, 0, draggedUrl)
-
-    setSelectedFiles(newFiles)
-    setPreviewImageUrls(newUrls)
-
-    if (onFileSelect) {
-      onFileSelect(newFiles.filter((f): f is File => f !== null))
-    }
-    if (onPreviewChange) {
-      onPreviewChange(newUrls)
-    }
-
-    draggedItemIndexRef.current = null
-    dragOverItemIndexRef.current = null
-  }
-
-  const handleDragEnd = () => {
-    draggedItemIndexRef.current = null
-    dragOverItemIndexRef.current = null
-  }
-
-  // タッチイベントによる並び替えハンドラ
-  const handleTouchStart = (e: TouchEvent<HTMLDivElement>, index: number) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setTouchDraggingIndex(index)
-    touchDraggedItemRef.current = {
-      file: selectedFiles[index],
-      url: previewImageUrls[index],
-    }
-    // Prevent default scroll behavior when dragging an item
-    if (e.currentTarget.style) {
-      e.currentTarget.style.touchAction = 'none'
-    }
-  }
-
-  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    if (touchDraggingIndex === null || !touchDraggedItemRef.current) return
-
-    const touch = e.touches[0]
-    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY)
-
-    if (targetElement) {
-      const targetIndexAttr = targetElement.closest('[data-index]')?.getAttribute('data-index')
-      if (targetIndexAttr) {
-        const targetIndex = parseInt(targetIndexAttr, 10)
-        if (targetIndex !== touchDraggingIndex && targetIndex < selectedFiles.length) {
-          const newFiles = [...selectedFiles]
-          const newUrls = [...previewImageUrls]
-          // --- ensure both arrays have the same length ---
-          while (newFiles.length < newUrls.length) {
-            newFiles.push(null as unknown as File) // placeholder
-          }
-
-          // Remove the dragged item
-          newFiles.splice(touchDraggingIndex, 1)
-          newUrls.splice(touchDraggingIndex, 1)
-
-          // Insert it at the new position
-          newFiles.splice(targetIndex, 0, touchDraggedItemRef.current.file as File)
-          newUrls.splice(targetIndex, 0, touchDraggedItemRef.current.url)
-
-          setSelectedFiles(newFiles)
-          setPreviewImageUrls(newUrls)
-          setTouchDraggingIndex(targetIndex) // Update the dragging index to the new position
-
-          if (onFileSelect) {
-            onFileSelect(newFiles.filter((f): f is File => f !== null))
-          }
-          if (onPreviewChange) {
-            onPreviewChange(newUrls)
-          }
-        }
-      }
-    }
-  }
-
-  const handleTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
-    if (e.currentTarget.style) {
-      e.currentTarget.style.touchAction = 'auto'
-    }
-    setTouchDraggingIndex(null)
-    touchDraggedItemRef.current = null
-  }
-
   // プレビューをクリアする関数
   const clearPreview = (index?: number) => {
-    let updatedFiles: File[] = [...selectedFiles] // 現在の選択ファイルで初期化
+    let updatedFiles: (File | null)[] = [...selectedFiles] // 現在の選択ファイルで初期化
     let updatedPreviewUrls: string[] = [...previewImageUrls] // 現在のプレビューURLで初期化
 
     if (multiple && typeof index === 'number') {
       // 特定のインデックスのファイルを削除
 
       const removedUrl = updatedPreviewUrls.splice(index, 1)[0] // previewImageUrls から削除
+      updatedFiles.splice(index, 1)
 
       if (removedUrl) {
         // 実際に revoke するのは createObjectURL で作られたものだけ
@@ -356,13 +272,14 @@ export default function ImageDrop({
       setPreviewImageUrls(updatedPreviewUrls)
 
       if (onFileSelect) {
-        onFileSelect(updatedFiles) // ★ 更新されたファイルリストを通知
+        onFileSelect(updatedFiles.filter((f): f is File => f !== null))
       }
       if (onPreviewChange) {
         onPreviewChange(updatedPreviewUrls)
       }
     } else if (multiple) {
       // すべてクリア（multiple時）
+      updatedFiles = []
       updatedPreviewUrls.forEach((url) => {
         if (url.startsWith('blob:')) URL.revokeObjectURL(url)
       })
@@ -376,7 +293,7 @@ export default function ImageDrop({
         fileInputRef.current.value = ''
       }
       if (onFileSelect) {
-        onFileSelect(updatedFiles) // ★ 更新されたファイルリストを通知
+        onFileSelect(updatedFiles.filter((f): f is File => f !== null))
       }
       if (onPreviewChange) {
         onPreviewChange(updatedPreviewUrls)
@@ -398,7 +315,7 @@ export default function ImageDrop({
         fileInputRef.current.value = ''
       }
       if (onFileSelect) {
-        onFileSelect(updatedFiles) // ★ 更新されたファイルリストを通知
+        onFileSelect(updatedFiles.filter((f): f is File => f !== null)) // ★ 更新されたファイルリストを通知
       }
       if (onPreviewChange) {
         onPreviewChange(updatedPreviewUrls)
@@ -422,73 +339,80 @@ export default function ImageDrop({
         {isDragging ? 'ここにファイルをドロップ' : placeholderText}
       </p>
       <p className="text-xs text-muted-foreground">
-        JPG、PNG / 最大{maxSizeMB}MB {multiple ? `(最大${maxFiles}ファイル)` : ''}
+        JPG、PNG、etc / 最大{maxSizeMB}MB {multiple ? `(最大${maxFiles}ファイル)` : ''}
       </p>
     </div>
   )
 
+  // --- dnd‑kit 用の個別サムネイル ---
+  function SortableThumb({ id, index }: { id: string; index: number }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id,
+    })
+    const style: React.CSSProperties = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+      touchAction: 'none',
+    }
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className="relative group aspect-square cursor-grab"
+      >
+        <Image
+          src={id}
+          alt={`Preview ${index + 1}`}
+          unoptimized
+          loader={({ src }) => src}
+          className="object-cover w-full h-full rounded-md pointer-events-none"
+          width={150}
+          height={150}
+        />
+        <Button
+          type="button"
+          variant="destructive"
+          size="icon"
+          className="absolute top-1 right-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 z-10"
+          onClick={() => clearPreview(index)}
+        >
+          <X className="h-3 w-3" />
+        </Button>
+        {selectedFiles[index] && (
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 truncate pointer-events-none">
+            {selectedFiles[index]?.name}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div
       className={`relative border border-dashed rounded-lg p-4 transition-colors bg-background text-center overflow-hidden border-border h-fit hover:bg-muted ${className}`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       {multiple ? (
         <div className="h-full flex flex-col">
           {previewImageUrls.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 grid-flow-row-dense gap-2 p-2 ">
-                {previewImageUrls.map((url, index) => (
-                  <div
-                    key={`${url}-${index}`} // Ensure key is unique and stable if possible
-                    data-index={index}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragEnter={(e) => handleDragEnter(e, index)}
-                    onDragLeave={handleDragLeave}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDropSort}
-                    onDragEnd={handleDragEnd}
-                    onTouchStart={(e) => handleTouchStart(e, index)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    className={`relative group aspect-square cursor-grab ${
-                      draggedItemIndexRef.current === index ? 'opacity-50' : ''
-                    } ${
-                      dragOverItemIndexRef.current === index &&
-                      draggedItemIndexRef.current !== index
-                        ? 'outline outline-2 outline-offset-2 outline-primary'
-                        : ''
-                    } ${touchDraggingIndex === index ? 'opacity-50 ring-2 ring-primary z-20' : ''}`}
-                    style={{ touchAction: 'none' }}
-                  >
-                    <Image
-                      src={url}
-                      alt={`Preview ${index + 1}`}
-                      unoptimized
-                      loader={({ src }) => src}
-                      className="object-cover w-full h-full rounded-md pointer-events-none" // pointer-events-none for easier parent drag
-                      width={150}
-                      height={150}
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 z-10"
-                      onClick={() => clearPreview(index)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                    {selectedFiles[index] && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 truncate pointer-events-none">
-                        {selectedFiles[index].name}
-                      </div>
-                    )}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext items={previewImageUrls} strategy={horizontalListSortingStrategy}>
+                  <div className="grid grid-cols-2 grid-flow-row-dense gap-2 p-2">
+                    {previewImageUrls.map((url, index) => (
+                      <SortableThumb key={url} id={url} index={index} />
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
               <div className="mt-auto pt-2 text-center space-x-2">
                 <Button type="button" onClick={() => fileInputRef.current?.click()}>
                   ファイルを追加
