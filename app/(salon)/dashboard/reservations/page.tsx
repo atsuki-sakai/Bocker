@@ -1,3 +1,5 @@
+'use client'
+
 import { supabaseService } from '@/services/supabase/SupabaseService'
 import {
   Table,
@@ -10,7 +12,9 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { ReservationDateFilter } from './_components/ReservationDateFilter'
 import { convertReservationStatus, ReservationStatus } from '@/services/convex/shared/types/common'
-
+import { useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { Tables } from '@/supabase.types'
 /**
  * 日時フォーマッタ:
  * - 10桁 UNIX → 秒, 13桁 → ミリ秒
@@ -30,45 +34,123 @@ function formatDate(v: string | number | null) {
   })
 }
 
-type ReservationsPageProps = {
-  searchParams?: {
-    from?: string
-    to?: string
-    staffId?: string
-    customerId?: string
-    page?: string
-  }
-}
+type SupabaseReservation = Tables<'reservation'>
 
-export default async function ReservationsPage({ searchParams }: ReservationsPageProps) {
+export default function ReservationsPage() {
   /* --- Query params --- */
-  const page = Math.max(Number(searchParams?.page ?? '1'), 1)
+  const searchParams = useSearchParams()
+  const page = Math.max(Number(searchParams?.get('page') ?? '1'), 1)
   const pageSize = 50
 
-  /* --- Supabase fetch --- */
-  const { data: reservations, count } = await supabaseService.listRecords('reservation', {
-    rangeFilter: {
-      column: 'start_time_unix',
-      from: searchParams?.from,
-      to: searchParams?.to,
-    },
-    filters: {
-      staff_id: searchParams?.staffId,
-      customer_id: searchParams?.customerId,
-    },
-    page,
-    pageSize,
-    select: [
-      'customer_name',
-      'staff_name',
-      'start_time_unix',
-      'status',
-      'total_price',
-      '_id',
-    ] as const,
+  const [from, setFrom] = useState<Date | undefined>(() => {
+    const fromParam = searchParams?.get('from')
+    return fromParam ? new Date(fromParam) : undefined
   })
 
+  const [to, setTo] = useState<Date | undefined>(() => {
+    const toParam = searchParams?.get('to')
+    if (toParam) {
+      const date = new Date(toParam)
+      // Check if the time is 00:00:00 (UTC), indicating it was likely set as just a date string YYYY-MM-DD
+      // Note: new Date('YYYY-MM-DD') parses as UTC midnight.
+      // We adjust it to the local timezone's end of day.
+      if (
+        date.getUTCHours() === 0 &&
+        date.getUTCMinutes() === 0 &&
+        date.getUTCSeconds() === 0 &&
+        date.getUTCMilliseconds() === 0
+      ) {
+        // Create a new date object to avoid mutating the one derived from searchParams directly if it's used elsewhere
+        const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+        localDate.setHours(23, 59, 59, 999) // Set to end of local day
+        return localDate
+      }
+      return date
+    }
+    return undefined
+  })
+  const [staffId, setStaffId] = useState<string | undefined>(
+    searchParams?.get('staffId') ?? undefined
+  )
+  const [customerId, setCustomerId] = useState<string | undefined>(
+    searchParams?.get('customerId') ?? undefined
+  )
+
+  useEffect(() => {
+    const fromParam = searchParams?.get('from')
+    setFrom(fromParam ? new Date(fromParam) : undefined)
+
+    const toParam = searchParams?.get('to')
+    if (toParam) {
+      const date = new Date(toParam)
+      if (
+        date.getUTCHours() === 0 &&
+        date.getUTCMinutes() === 0 &&
+        date.getUTCSeconds() === 0 &&
+        date.getUTCMilliseconds() === 0
+      ) {
+        const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+        localDate.setHours(23, 59, 59, 999)
+        setTo(localDate)
+      } else {
+        setTo(date)
+      }
+    } else {
+      setTo(undefined)
+    }
+
+    setStaffId(searchParams?.get('staffId') ?? undefined)
+    setCustomerId(searchParams?.get('customerId') ?? undefined)
+  }, [searchParams])
+
+  const [reservations, setReservations] = useState<SupabaseReservation[]>([])
+  const [count, setCount] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchReservations = async () => {
+      setLoading(true)
+      const { data, count: totalCount } = await supabaseService.listRecords('reservation', {
+        rangeFilter: {
+          column: 'start_time_unix',
+          from: from ? from.toISOString() : undefined,
+          to: to ? to.toISOString() : undefined,
+        },
+        filters: {
+          staff_id: staffId,
+          customer_id: customerId,
+        },
+        page,
+        pageSize,
+        select: [
+          'customer_name',
+          'staff_name',
+          'start_time_unix',
+          'status',
+          'total_price',
+          '_id',
+        ] as const,
+      })
+      setReservations(data)
+      setCount(totalCount)
+      setLoading(false)
+    }
+
+    // Check if 'from' is after 'to'. If so, don't fetch and clear results.
+    if (from && to && from > to) {
+      setReservations([])
+      setCount(0)
+      setLoading(false)
+    } else {
+      fetchReservations()
+    }
+  }, [from, to, staffId, customerId, page, pageSize])
+
   /* --- UI --- */
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
       <h1 className="text-2xl font-semibold">

@@ -133,11 +133,11 @@ const fadeIn = {
   exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
 }
 
-interface PageProps {
+interface CouponEditPageProps {
   params: Promise<{ coupon_id: Id<'coupon'> }>
 }
 // ページコンポーネント
-export default function Page({ params }: PageProps) {
+export default function Page({ params }: CouponEditPageProps) {
   const unwrappedParams = React.use(params)
   const { coupon_id } = unwrappedParams
   return (

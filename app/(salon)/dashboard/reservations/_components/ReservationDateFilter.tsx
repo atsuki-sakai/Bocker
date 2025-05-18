@@ -45,10 +45,7 @@ export function ReservationDateFilter() {
       current.delete('from')
     }
     if (toDate) {
-      // Set to end of day for inclusive range
-      const toEndOfDay = new Date(toDate)
-      toEndOfDay.setHours(23, 59, 59, 999)
-      current.set('to', format(toEndOfDay, 'yyyy-MM-dd'))
+      current.set('to', format(toDate, 'yyyy-MM-dd'))
     } else {
       current.delete('to')
     }
