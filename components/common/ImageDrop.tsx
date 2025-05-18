@@ -6,7 +6,14 @@ import { Button } from '@/components/ui/button'
 import { FileImage, X } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
-import { DndContext, PointerSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core'
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from '@dnd-kit/core'
 import {
   SortableContext,
   useSortable,
@@ -61,7 +68,7 @@ export default function ImageDrop({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   // 並べ替え完了時に配列を更新
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
@@ -186,8 +193,8 @@ export default function ImageDrop({
       }
 
       // --- 既存プレースホルダ(null)を優先して埋める ---
-      let updatedFiles = [...selectedFiles]
-      let updatedUrls = [...previewImageUrls]
+      const updatedFiles = [...selectedFiles]
+      const updatedUrls = [...previewImageUrls]
 
       filesToAdd.forEach((file, i) => {
         const url = urlsToAdd[i]
