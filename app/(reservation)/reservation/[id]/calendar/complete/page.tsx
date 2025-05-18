@@ -50,9 +50,10 @@ export default function CompletePage() {
   const reservation = useQuery(api.reservation.query.getById, {
     reservationId: reservationId as Id<'reservation'>,
   })
-  const salonConfig = useQuery(api.salon.config.query.findBySalonId, {
-    salonId: reservation?.salonId as Id<'salon'>,
-  })
+  const salonConfig = useQuery(
+    api.salon.config.query.findBySalonId,
+    reservation?.salonId ? { salonId: reservation.salonId as Id<'salon'> } : 'skip'
+  )
 
   const reservationItems = useQuery(
     api.menu.core.query.getDisplayByIds,

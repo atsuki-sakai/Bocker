@@ -113,7 +113,7 @@ export default function PointTabs() {
         fixedPoint: pointConfig.fixedPoint,
         pointExpirationDays: pointConfig.pointExpirationDays ?? POINT_EXPIRATION_DAYS[0].value,
         isFixedPoint: pointConfig.isFixedPoint,
-        isActive: pointConfig.isActive,
+        isActive: pointConfig.isActive ?? false,
       })
       if (initialExclusionIds) {
         setSelectedMenuIds(initialExclusionIds)

@@ -12,6 +12,7 @@ import type { StaffDisplay } from './StaffView'
 import type { TimeRange } from '@/lib/type'
 import { Separator } from '@/components/ui/separator'
 import { PaymentMethod } from '@/services/convex/shared/types/common'
+
 // オプション選択数をカウントする関数
 const countOptionOccurrences = (options: Doc<'salon_option'>[]) => {
   const counts = new Map<string, { option: Doc<'salon_option'>; count: number }>()
@@ -135,14 +136,16 @@ export const ConfirmView = ({
         activeOnly: true,
       })
 
+      console.log(coupon)
+
       if (!coupon) {
         setCouponError('クーポンが見つかりません。')
         setAppliedCoupon(null)
         return
       }
 
-      if (!coupon.fixedDiscountValue || !coupon.percentageDiscountValue) {
-        setCouponError('クーポンが見つかりません。')
+      if (!coupon.isActive) {
+        setCouponError('クーポンが有効ではありません。')
         setAppliedCoupon(null)
         return
       }
@@ -184,12 +187,16 @@ export const ConfirmView = ({
         extraCharge -
         (coupon.discountType === 'percentage'
           ? coupon.percentageDiscountValue
-            ? totalAmount + extraCharge - (totalAmount + extraCharge) * (discount / 100)
+            ? totalAmount +
+              extraCharge -
+              (totalAmount + extraCharge) * (discount ? discount / 100 : 0)
             : 0
           : coupon.fixedDiscountValue
             ? totalAmount + extraCharge - coupon.fixedDiscountValue
             : 0)
 
+      console.log(resultDiscount)
+      console.log(totalAmount + extraCharge)
       if (resultDiscount > totalAmount + extraCharge) {
         setCouponError('割引金額が合計金額を超えています。')
         setAppliedCoupon(null)
@@ -311,6 +318,7 @@ export const ConfirmView = ({
             )}
           </div>
         </div>
+
         <Separator className="my-6 " />
 
         <div className="space-y-2">
@@ -336,6 +344,7 @@ export const ConfirmView = ({
             <span>{maxUsablePoints}</span>
           </div>
         </div>
+
         <div className="space-y-2 border-t pt-4">
           <div>
             <p className="font-bold mb-2">クーポンコードを使用する</p>

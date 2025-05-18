@@ -26,6 +26,7 @@ import {
   MenuIcon,
   CalendarIcon,
   BookIcon,
+  CheckIcon,
   SettingsIcon,
   UserCircleIcon,
   FileIcon,
@@ -111,11 +112,17 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
       requiredRole: 'staff', //スタッフ以上
       requiredPlan: 'Lite',
     },
-
     {
       name: '予約タイムライン',
       href: `/dashboard/timeline`,
       icon: TimerIcon,
+      requiredRole: 'staff', // スタッフ以上
+      requiredPlan: 'Pro',
+    },
+    {
+      name: '完了済みの予約',
+      href: `/dashboard/reservations`,
+      icon: CheckIcon,
       requiredRole: 'staff', // スタッフ以上
       requiredPlan: 'Pro',
     },

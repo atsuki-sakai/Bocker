@@ -200,6 +200,7 @@ export default function CalendarPage() {
     salonId: salonId as Id<'salon'>,
   })
 
+
   const pointConfig = useQuery(api.point.config.query.findBySalonId, {
     salonId: salonId,
   })
@@ -612,7 +613,7 @@ export default function CalendarPage() {
 
         // ポイントを利用していればauthPinCodeを送信してポイントを店舗で利用できるように
 
-        if (usePoints && usePoints > 0 && customerPoints?._id) {
+        if (pointConfig?.isActive && usePoints && usePoints > 0 && customerPoints?._id) {
           const pointTransaction = await createPointTransactionMutation({
             salonId: salonComplete.salon._id,
             reservationId: reservationId,
@@ -699,8 +700,77 @@ export default function CalendarPage() {
             )
           }
         } else if (sessionCustomer.email) {
-          // FIXME:  メールアドレスへ確認メールの送信
+          // FIXME:  Resendを使用してメールアドレスへ確認メールの送信
           // ドメインを取得してから実装
+          try {
+            const mailSubject = `【${salonComplete.config.salonName}】ご予約内容の確認`
+            const mailHtmlBody = `
+              <h1>${sessionCustomer.name || sessionCustomer.email} 様</h1>
+              <p>この度は、【${salonComplete.config.salonName}】にご予約いただき、誠にありがとうございます。</p>
+              <p>以下の内容でご予約を承りました。</p>
+              <hr />
+              <h2>ご予約内容</h2>
+              <p><strong>店舗名:</strong> ${salonComplete.config.salonName}</p>
+              <p><strong>ご予約日時:</strong> ${selectedDate?.toLocaleDateString('ja-JP')} ${selectedTime?.startHour} ～ ${selectedTime?.endHour}</p>
+              <p><strong>担当スタッフ:</strong> ${selectedStaffCompleted.staff.name}</p>
+              <h3>メニュー</h3>
+              <ul>
+                ${selectedMenus.map((menu) => `<li>${menu.name}</li>`).join('')}
+              </ul>
+              ${
+                selectedOptions.length > 0
+                  ? `
+                <h3>オプション</h3>
+                <ul>
+                  ${groupOptionsByName(selectedOptions)
+                    .map(
+                      (option) =>
+                        `<li>${option.name}${option.count > 1 ? ` ×${option.count}` : ''}</li>`
+                    )
+                    .join('')}
+                </ul>
+              `
+                  : ''
+              }
+              <p><strong>小計:</strong> ¥${reservationBaseData.unitPrice.toLocaleString()}</p>
+              ${usePoints > 0 ? `<p><strong>使用ポイント:</strong> ${usePoints.toLocaleString()} P</p>` : ''}
+              ${appliedDiscount.discount > 0 ? `<p><strong>クーポン割引:</strong> ¥${appliedDiscount.discount.toLocaleString()}</p>` : ''}
+              <p><strong>合計金額:</strong> ¥${calculateTotal().toLocaleString()}</p>
+              <hr />
+              <p>ご来店を心よりお待ちしております。</p>
+              <p>${salonComplete.config.salonName}</p>
+              <p>電話: ${salonComplete.config.phone}</p>
+              <p>住所: ${salonComplete.config.postalCode} ${salonComplete.config.address}</p>
+              ${salonComplete.config.reservationRules ? `<p>予約ルール: ${salonComplete.config.reservationRules}</p>` : ''}
+            `
+
+            const emailResponse = await fetch('/api/resend', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: sessionCustomer.email,
+                subject: mailSubject,
+                html: mailHtmlBody,
+              }),
+            })
+
+            if (!emailResponse.ok) {
+              const errorData = await emailResponse.json()
+              console.error('メール送信APIエラー:', emailResponse.status, errorData)
+              throw new Error(errorData.error || 'メール送信に失敗しました。')
+            }
+            const emailResult = await emailResponse.json()
+            console.log('メール送信成功:', emailResult)
+            toast.success('予約確認メールを送信しました。')
+            router.push(`/reservation/${salonId}/calendar/complete?reservationId=${reservationId}`)
+          } catch (e) {
+            console.error('メール送信処理エラー:', e)
+            toast.error(
+              handleErrorToMsg(e) || 'メールの送信に失敗しましたが、予約は受け付けました。'
+            )
+            // メール送信失敗時も予約完了ページには遷移する
+            router.push(`/reservation/${salonId}/calendar/complete?reservationId=${reservationId}`)
+          }
         } else {
           toast.error('LINEにもメールにも通知できませんでしたが、予約は受け付けました。')
           router.push(`/reservation/${salonId}/calendar/complete?reservationId=${reservationId}`)
@@ -727,6 +797,7 @@ export default function CalendarPage() {
         }
 
         toast.success('予約を受け付けしました。')
+        router.push(`/reservation/${salonId}/calendar/complete?reservationId=${reservationId}`)
       }
     } catch (error) {
       toast.error(handleErrorToMsg(error))
@@ -808,6 +879,11 @@ export default function CalendarPage() {
             setIsPhoneValid(isValidPhoneNumber(customer?.phone || null)) // 初期値のバリデーション
           } catch (error) {
             console.error('サロン情報の取得に失敗しました:', error)
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+            if (liff?.isLoggedIn()) {
+              liff.logout()
+            }
+            toast.error('サロン情報の取得に失敗しました。サロンが削除されている可能性があります。')
             setSalonComplete(null)
           }
         } else {
@@ -822,7 +898,7 @@ export default function CalendarPage() {
     }
 
     fetchSession()
-  }, [router, salonId])
+  }, [router, salonId, liff])
 
   if (isLoading) return <Loading />
 
@@ -1472,22 +1548,24 @@ export default function CalendarPage() {
               </motion.p>
             </div>
             <div className="flex flex-col items-end justify-between gap-2 w-2/7">
-              <motion.p
-                className="text-xs font-bold mb-2 border border-link-foreground text-link-foreground rounded-full px-2 py-1 text-nowrap"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                獲得予定のポイント:{' '}
-                <span className="font-bold">
-                  {Math.floor(
-                    pointConfig?.isFixedPoint
-                      ? (pointConfig.fixedPoint ?? 0)
-                      : calculateTotal() * ((pointConfig?.pointRate ?? 0) / 100)
-                  )}
-                </span>
-                P
-              </motion.p>
+              {pointConfig?.isActive && (
+                <motion.p
+                  className="text-xs font-bold mb-2 border border-link-foreground text-link-foreground rounded-full px-2 py-1 text-nowrap"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  獲得予定のポイント:{' '}
+                  <span className="font-bold">
+                    {Math.floor(
+                      pointConfig?.isFixedPoint
+                        ? (pointConfig.fixedPoint ?? 0)
+                        : calculateTotal() * ((pointConfig?.pointRate ?? 0) / 100)
+                    )}
+                  </span>
+                  P
+                </motion.p>
+              )}
               <div className="flex space-x-2">
                 {currentStep !== 'menu' && (
                   <motion.div

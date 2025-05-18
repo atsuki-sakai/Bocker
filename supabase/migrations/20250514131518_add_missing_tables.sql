@@ -16,15 +16,15 @@ CREATE TABLE IF NOT EXISTS reservation (
   unit_price DOUBLE PRECISION,
   total_price DOUBLE PRECISION,
   status TEXT CHECK (status IN ('pending', 'confirmed', 'cancelled', 'completed', 'refunded')),
-  start_time_unix BIGINT,
-  end_time_unix BIGINT,
+  start_time_unix TIMESTAMP,
+  end_time_unix TIMESTAMP,
   use_points DOUBLE PRECISION,
   coupon_id TEXT, -- Needs coupon table first
   coupon_discount DOUBLE PRECISION,
   featured_hair_img_path TEXT,
   notes TEXT,
   payment_method TEXT CHECK (payment_method IN ('cash', 'credit_card', 'electronic_money', 'qr_code')),
-  creation_time TIMESTAMPTZ DEFAULT now(),
+  _creation_time TIMESTAMPTZ DEFAULT now(),
   updated_time TIMESTAMPTZ DEFAULT now(),
   is_archive BOOLEAN DEFAULT false
 );

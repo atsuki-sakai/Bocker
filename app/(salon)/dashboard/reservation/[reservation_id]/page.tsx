@@ -218,7 +218,7 @@ export default function ReservationPage() {
         )}
         <div className="border-b pb-4">
           <h2 className="text-xl font-semibold mb-3">担当スタッフ</h2>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col md:flex-row items-center gap-4">
             {staff.imgPath && (
               <div className="relative h-auto w-full max-w-xs border border-border shadow-sm rounded-md overflow-hidden flex items-center justify-center">
                 <Image
@@ -283,7 +283,8 @@ export default function ReservationPage() {
               <ul className="list-disc list-inside">
                 {reservationMenuDetails.options.map((option, index) => (
                   <li key={index} className="text-muted-foreground">
-                    {option.name} - ¥{option.unitPrice?.toLocaleString()}
+                    {option.name} - ¥{option.unitPrice?.toLocaleString()} x{' '}
+                    {reservation.options?.find((o) => o.optionId === option._id)?.quantity ?? 0}
                   </li>
                 ))}
               </ul>

@@ -2,7 +2,7 @@
 import { internalAction } from "@/convex/_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "@/convex/_generated/api";
-import { supabaseServiceRole } from "@/services/supabase/SupabaseService";
+import { supabaseAdmin } from "@/services/supabase/SupabaseService";
 import { Id, Doc } from "@/convex/_generated/dataModel";
 
 /**
@@ -89,18 +89,25 @@ export const processReservationBatch = internalAction({
 
       // Convexから取得したreservationsをSupabase用に変換
       const payloads = reservations.map((rec: Doc<"reservation">) => {
-        const convertedTable = convertConvexToSupabaseRecord(rec, true, { stringifyArrays: true, dateToIso: true });
-        // toLowerCaseKeys maps _creationTime -> creationtime, _updatedTime -> updatedtime
+        const convertedTable = convertConvexToSupabaseRecord(rec, false, { stringifyArrays: true, dateToIso: true });
         const {
-          creation_time: rawCreation,
+          _creation_time: rawCreation,
           updated_time: rawUpdated,
           _id,
+          start_time_unix: rawStartTime,
+          end_time_unix: rawEndTime,
           ...rest
         } = convertedTable;
         return {
           ...rest,
           _id,
-          creation_time: rawCreation !== undefined
+          start_time_unix: rawStartTime !== undefined
+            ? new Date(rawStartTime).toISOString()
+            : null,
+          end_time_unix: rawEndTime !== undefined
+            ? new Date(rawEndTime).toISOString()
+            : null,
+          _creation_time: rawCreation !== undefined
             ? new Date(rawCreation).toISOString()
             : null,
           updated_time: rawUpdated !== undefined
@@ -108,7 +115,7 @@ export const processReservationBatch = internalAction({
             : null,
         };
       });
-      const { error: upsertError } = await supabaseServiceRole
+      const { error: upsertError } = await supabaseAdmin
         .from("reservation")
         .upsert(payloads, { onConflict: "_id" });
       if (upsertError) {
@@ -124,7 +131,7 @@ export const processReservationBatch = internalAction({
         await ctx.scheduler.runAfter(
           0,
           internal.sync.action.processReservationBatch,
-          { afterId, limit }
+          { afterId: nextCursor ? (nextCursor as Id<"reservation">) : undefined, limit }
         );
       }
 

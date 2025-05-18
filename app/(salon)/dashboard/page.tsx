@@ -1,6 +1,6 @@
 import { ReservationLink, ReferralCard } from '@/components/common'
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <ReservationLink />
