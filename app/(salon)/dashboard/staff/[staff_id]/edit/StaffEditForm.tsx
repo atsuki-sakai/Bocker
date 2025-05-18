@@ -514,7 +514,7 @@ export default function StaffEditForm() {
                         <div className="max-w-xl mx-auto">
                           <div className="w-full">
                             <ImageDrop
-                              initialImageUrl={staffAllData?.imgPath}
+                              initialImageUrls={staffAllData?.imgPath ? [staffAllData.imgPath] : []}
                               onFileSelect={(files) => setSelectedFiles(files)}
                               className="transition-all duration-200 hover:opacity-90 aspect-square"
                             />
