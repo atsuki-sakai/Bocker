@@ -192,7 +192,11 @@ export default function ImageDrop({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files)
-      multiple ? processFiles(newFiles) : processFiles([newFiles[0]])
+      if (multiple) {
+        processFiles(newFiles)
+      } else {
+        processFiles([newFiles[0]])
+      }
     }
   }
 
@@ -203,7 +207,11 @@ export default function ImageDrop({
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const dropped = Array.from(e.dataTransfer.files)
-      !multiple && dropped.length > 1 ? processFiles([dropped[0]]) : processFiles(dropped)
+      if (!multiple && dropped.length > 1) {
+        processFiles([dropped[0]])
+      } else {
+        processFiles(dropped)
+      }
 
       if (fileInputRef.current) {
         const dt = new DataTransfer()
