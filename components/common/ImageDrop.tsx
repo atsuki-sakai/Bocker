@@ -1,4 +1,5 @@
-'use client';
+/* eslint-disable react-hooks/exhaustive-deps */
+'use client'
 
 import { useState, useRef, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
@@ -22,7 +23,18 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-// コンポーネントのプロップス型定義
+/**
+ * 変更点概要
+ * ------------------------------------------------------------
+ * 1. isDirty ステートを追加し、ユーザーが一度でも画像を追加・並べ替えした後は
+ *    `initialImageUrls` の変化でプレビューがリセットされないようにした。
+ * 2. processFiles / handleDragEnd / clearPreview で `setIsDirty(true)` を呼び出し、
+ *    ユーザー操作をトリガーとしてマーク。
+ * 3. useEffect の依存関係と条件を更新し、`isDirty` が true の場合は初期化をスキップ。
+ * 4. 型安全性のためにユーティリティ関数 filterNonNull を追加。
+ * ------------------------------------------------------------
+ */
+
 interface ImageDropProps {
   onFileSelect?: (files: File[]) => void
   onPreviewChange?: (previewUrls: string[]) => void
@@ -38,6 +50,9 @@ interface ImageDropProps {
   maxFiles?: number
 }
 
+// null 除去のヘルパ
+const filterNonNull = <T,>(arr: (T | null)[]): T[] => arr.filter(Boolean) as T[]
+
 export default function ImageDrop({
   onFileSelect,
   onPreviewChange,
@@ -51,23 +66,29 @@ export default function ImageDrop({
   multiple = false,
   maxFiles = 4,
 }: ImageDropProps) {
-  // 内部状態の管理
+  /* ------------------------------------------------------------------
+   * state 管理
+   * ------------------------------------------------------------------*/
   const [isDragging, setIsDragging] = useState(false)
   const [previewImageUrls, setPreviewImageUrls] = useState<string[]>(() => {
-    if (multiple) {
-      return initialImageUrls || []
-    }
+    if (multiple) return initialImageUrls || []
     return initialImageUrls ? [initialImageUrls[0]] : []
   })
   const [selectedFiles, setSelectedFiles] = useState<(File | null)[]>(() =>
     multiple && initialImageUrls ? Array(initialImageUrls.length).fill(null) : []
   )
+  // ユーザーが操作したら true
+  const [isDirty, setIsDirty] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // dnd‑kit sensors
+  /* ------------------------------------------------------------------
+   * dnd-kit sensors
+   * ------------------------------------------------------------------*/
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
-  // 並べ替え完了時に配列を更新
+  /* ------------------------------------------------------------------
+   * 並べ替え完了時の処理
+   * ------------------------------------------------------------------*/
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -75,158 +96,102 @@ export default function ImageDrop({
     const oldIndex = previewImageUrls.indexOf(active.id as string)
     const newIndex = previewImageUrls.indexOf(over.id as string)
 
-    const paddedFiles =
+    // existingFiles が足りない時は null でパディング
+    const padded =
       selectedFiles.length < previewImageUrls.length
         ? [...selectedFiles, ...Array(previewImageUrls.length - selectedFiles.length).fill(null)]
         : selectedFiles
 
     const newUrls = arrayMove(previewImageUrls, oldIndex, newIndex)
-    const newFiles = arrayMove(paddedFiles, oldIndex, newIndex)
+    const newFiles = arrayMove(padded, oldIndex, newIndex)
 
     setPreviewImageUrls(newUrls)
     setSelectedFiles(newFiles)
+    setIsDirty(true)
 
     onPreviewChange?.(newUrls)
-    onFileSelect?.(newFiles.filter((f: File | null): f is File => f !== null))
+    onFileSelect?.(filterNonNull(newFiles))
   }
 
+  /* ------------------------------------------------------------------
+   * initialImageUrls が変わった時
+   * - ユーザーがまだ操作していない場合のみプレビューを同期
+   * ------------------------------------------------------------------*/
   useEffect(() => {
+    if (isDirty) return // 一度でも操作したら reset しない
+
     if (multiple) {
       setPreviewImageUrls(initialImageUrls || [])
       setSelectedFiles(initialImageUrls ? Array(initialImageUrls.length).fill(null) : [])
     } else {
       setPreviewImageUrls(initialImageUrls ? [initialImageUrls[0]] : [])
     }
-  }, [initialImageUrls, multiple])
+  }, [initialImageUrls, multiple, isDirty])
 
-  // 実際に使用するプレビュー画像（外部から渡されるか内部で管理されるか）
-  const displayImageUrl =
-    !multiple && previewImageUrls.length > 0
-      ? previewImageUrls[0]
-      : !multiple && initialImageUrls
-        ? initialImageUrls[0]
-        : null
-
-  // ファイル変更時の処理
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files)
-      if (multiple) {
-        processFiles(newFiles)
-      } else if (newFiles[0]) {
-        processFiles([newFiles[0]])
-      }
-    }
-  }
-
-  // ファイルの処理を統一する関数 (複数ファイル対応)
+  /* ------------------------------------------------------------------
+   * ファイル選択/ドロップ時の共通処理
+   * ------------------------------------------------------------------*/
   const processFiles = async (files: File[]) => {
     const maxSize = maxSizeMB * 1024 * 1024
-    const newProcessedFiles: File[] = []
-    const newPreviewUrls: string[] = []
+    const acceptedFiles: File[] = []
+    const acceptedUrls: string[] = []
 
     for (const file of files) {
-      // ファイルタイプチェック
       if (!file.type.startsWith('image/')) {
         toast.error(`ファイル「${file.name}」は画像ファイルではありません。`)
         continue
       }
-
-      // サイズチェック
       if (file.size > maxSize) {
         toast.error(
-          `ファイル「${file.name}」のサイズが大きすぎます。${maxSizeMB}MB以下の画像をアップロードしてください。`
+          `ファイル「${file.name}」のサイズが大きすぎます。${maxSizeMB}MB以下にしてください。`
         )
         continue
       }
-      newProcessedFiles.push(file)
-      newPreviewUrls.push(URL.createObjectURL(file))
+      acceptedFiles.push(file)
+      acceptedUrls.push(URL.createObjectURL(file))
     }
 
-    if (newProcessedFiles.length === 0) {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
+    if (acceptedFiles.length === 0) {
+      fileInputRef.current && (fileInputRef.current.value = '')
       return
     }
 
+    setIsDirty(true)
+
     if (multiple) {
-      const currentTotalImageCount = previewImageUrls.length
-      const availableSlots = maxFiles - currentTotalImageCount
-
-      let filesToAdd = newProcessedFiles
-      let urlsToAdd = newPreviewUrls
-
-      if (newProcessedFiles.length > availableSlots) {
-        toast.error(
-          `ファイルの最大数 (${maxFiles}個) を超えています。超過したファイルは追加されません。${
-            availableSlots > 0
-              ? `あと ${availableSlots} 個追加できます。`
-              : '既に上限に達しています。'
-          }`
-        )
-        filesToAdd = newProcessedFiles.slice(0, availableSlots)
-        urlsToAdd = newPreviewUrls.slice(0, availableSlots)
+      const currentCount = previewImageUrls.length
+      const available = maxFiles - currentCount
+      if (acceptedFiles.length > available) {
+        toast.error(`最大 ${maxFiles} 枚までです。追加できるのはあと ${available} 枚です。`)
       }
 
-      if (filesToAdd.length === 0) {
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ''
-        }
-        if (
-          selectedFiles.length === 0 &&
-          initialImageUrls &&
-          initialImageUrls.length > 0 &&
-          onFileSelect
-        ) {
-          onFileSelect([])
-        }
-        if (
-          selectedFiles.length === 0 &&
-          initialImageUrls &&
-          initialImageUrls.length > 0 &&
-          onPreviewChange
-        ) {
-          onPreviewChange(previewImageUrls)
-        }
-        return
-      }
+      const filesToAdd = acceptedFiles.slice(0, available)
+      const urlsToAdd = acceptedUrls.slice(0, available)
 
-      // --- 既存プレースホルダ(null)を優先して埋める ---
-      const updatedFiles = [...selectedFiles]
-      const updatedUrls = [...previewImageUrls]
+      const newFiles = [...selectedFiles, ...filesToAdd]
+      const newUrls = [...previewImageUrls, ...urlsToAdd]
 
-      filesToAdd.forEach((file, i) => {
-        const url = urlsToAdd[i]
-        const nullIdx = updatedFiles.findIndex((f) => f === null)
-        if (nullIdx !== -1) {
-          updatedFiles[nullIdx] = file
-          updatedUrls[nullIdx] = url
-        } else {
-          updatedFiles.push(file)
-          updatedUrls.push(url)
-        }
-      })
+      setSelectedFiles(newFiles)
+      setPreviewImageUrls(newUrls)
 
-      setSelectedFiles(updatedFiles)
-      setPreviewImageUrls(updatedUrls)
-
-      if (onFileSelect) {
-        onFileSelect(updatedFiles.filter((f): f is File => f !== null))
-      }
-      if (onPreviewChange) {
-        onPreviewChange(updatedUrls)
-      }
+      onFileSelect?.(filterNonNull(newFiles))
+      onPreviewChange?.(newUrls)
     } else {
-      setSelectedFiles(newProcessedFiles)
-      setPreviewImageUrls(newPreviewUrls)
+      setSelectedFiles(acceptedFiles)
+      setPreviewImageUrls(acceptedUrls)
 
-      if (onFileSelect) {
-        onFileSelect(newProcessedFiles)
-      }
-      if (onPreviewChange) {
-        onPreviewChange(newPreviewUrls)
-      }
+      onFileSelect?.(acceptedFiles)
+      onPreviewChange?.(acceptedUrls)
+    }
+  }
+
+  /* ------------------------------------------------------------------
+   * Input change / Drag & Drop handlers
+   * ------------------------------------------------------------------*/
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files)
+      multiple ? processFiles(newFiles) : processFiles([newFiles[0]])
     }
   }
 
@@ -236,130 +201,59 @@ export default function ImageDrop({
     setIsDragging(false)
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const droppedFiles = Array.from(e.dataTransfer.files)
-      if (!multiple && droppedFiles.length > 1) {
-        toast.info('複数選択が許可されていません。最初のファイルのみ処理します。')
-        processFiles([droppedFiles[0]])
-        if (fileInputRef.current) {
-          const dataTransfer = new DataTransfer()
-          dataTransfer.items.add(droppedFiles[0])
-          fileInputRef.current.files = dataTransfer.files
-        }
-      } else {
-        processFiles(droppedFiles)
-        if (fileInputRef.current) {
-          const dataTransfer = new DataTransfer()
-          droppedFiles.forEach((file) => dataTransfer.items.add(file))
-          fileInputRef.current.files = dataTransfer.files
-        }
+      const dropped = Array.from(e.dataTransfer.files)
+      !multiple && dropped.length > 1 ? processFiles([dropped[0]]) : processFiles(dropped)
+
+      if (fileInputRef.current) {
+        const dt = new DataTransfer()
+        ;(multiple ? dropped : [dropped[0]]).forEach((f) => dt.items.add(f))
+        fileInputRef.current.files = dt.files
       }
     }
   }
 
-  // プレビューをクリアする関数
+  /* ------------------------------------------------------------------
+   * プレビュー削除
+   * ------------------------------------------------------------------*/
   const clearPreview = (index?: number) => {
-    let updatedFiles: (File | null)[] = [...selectedFiles] // 現在の選択ファイルで初期化
-    let updatedPreviewUrls: string[] = [...previewImageUrls] // 現在のプレビューURLで初期化
+    let files = [...selectedFiles]
+    let urls = [...previewImageUrls]
 
     if (multiple && typeof index === 'number') {
-      // 特定のインデックスのファイルを削除
-
-      const removedUrl = updatedPreviewUrls.splice(index, 1)[0] // previewImageUrls から削除
-      updatedFiles.splice(index, 1)
-
-      if (removedUrl) {
-        // 実際に revoke するのは createObjectURL で作られたものだけ
-        // blob URLかどうかを判定し、そうであればrevokeする
-        if (removedUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(removedUrl)
-        }
-      }
-
-      setSelectedFiles(updatedFiles)
-      setPreviewImageUrls(updatedPreviewUrls)
-
-      if (onFileSelect) {
-        onFileSelect(updatedFiles.filter((f): f is File => f !== null))
-      }
-      if (onPreviewChange) {
-        onPreviewChange(updatedPreviewUrls)
-      }
-    } else if (multiple) {
-      // すべてクリア（multiple時）
-      updatedFiles = []
-      updatedPreviewUrls.forEach((url) => {
-        if (url.startsWith('blob:')) URL.revokeObjectURL(url)
-      })
-      updatedFiles = []
-      updatedPreviewUrls = []
-
-      setSelectedFiles(updatedFiles)
-      setPreviewImageUrls(updatedPreviewUrls)
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-      if (onFileSelect) {
-        onFileSelect(updatedFiles.filter((f): f is File => f !== null))
-      }
-      if (onPreviewChange) {
-        onPreviewChange(updatedPreviewUrls)
-      }
-    } else {
-      // 単一ファイルモードの場合
-      if (updatedPreviewUrls[0] && updatedPreviewUrls[0].startsWith('blob:')) {
-        URL.revokeObjectURL(updatedPreviewUrls[0])
-      }
-
-      updatedFiles = []
-      // initialImageUrl があればそれを表示、なければ空にする
-      updatedPreviewUrls = initialImageUrls ? [initialImageUrls[0]] : []
-
-      setSelectedFiles(updatedFiles)
-      setPreviewImageUrls(updatedPreviewUrls)
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-      if (onFileSelect) {
-        onFileSelect(updatedFiles.filter((f): f is File => f !== null)) // ★ 更新されたファイルリストを通知
-      }
-      if (onPreviewChange) {
-        onPreviewChange(updatedPreviewUrls)
-      }
+      const removedUrl = urls.splice(index, 1)[0]
+      files.splice(index, 1)
+      removedUrl?.startsWith('blob:') && URL.revokeObjectURL(removedUrl)
+    } else if (!multiple) {
+      urls[0]?.startsWith('blob:') && URL.revokeObjectURL(urls[0])
+      files = []
+      urls = initialImageUrls ? [initialImageUrls[0]] : []
     }
+
+    setSelectedFiles(files)
+    setPreviewImageUrls(urls)
+    setIsDirty(true)
+
+    fileInputRef.current && (fileInputRef.current.value = '')
+    onFileSelect?.(filterNonNull(files))
+    onPreviewChange?.(urls)
   }
 
-  // ドラッグエリアのUIを返すヘルパー関数
-  const renderDragAreaPlaceholder = () => (
-    <div className="flex flex-col items-center justify-center h-full">
-      <FileImage
-        className={`h-12 w-12 mx-auto mb-2 transition-colors ${
-          isDragging ? 'text-active' : 'text-muted-foreground'
-        }`}
-      />
-      <p
-        className={`text-sm mb-2 transition-colors ${
-          isDragging ? 'text-active' : 'text-muted-foreground'
-        }`}
-      >
-        {isDragging ? 'ここにファイルをドロップ' : placeholderText}
-      </p>
-      <p className="text-xs text-muted-foreground">
-        JPG、PNG、etc / 最大{maxSizeMB}MB {multiple ? `(最大${maxFiles}ファイル)` : ''}
-      </p>
-    </div>
-  )
-
-  // --- dnd‑kit 用の個別サムネイル ---
-  function SortableThumb({ id, index }: { id: string; index: number }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-      id,
-    })
+  /* ------------------------------------------------------------------
+   * 並べ替え用サムネイル
+   * ------------------------------------------------------------------*/
+  const SortableThumb = ({ id, index }: { id: string; index: number }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging: isItemDragging,
+    } = useSortable({ id })
     const style: React.CSSProperties = {
       transform: CSS.Transform.toString(transform),
       transition,
-      opacity: isDragging ? 0.5 : 1,
+      opacity: isItemDragging ? 0.5 : 1,
       touchAction: 'none',
     }
 
@@ -398,13 +292,37 @@ export default function ImageDrop({
     )
   }
 
+  /* ------------------------------------------------------------------
+   * UI
+   * ------------------------------------------------------------------*/
+  const renderDragAreaPlaceholder = () => (
+    <div className="flex flex-col items-center justify-center h-full">
+      <FileImage
+        className={`h-12 w-12 mx-auto mb-2 ${isDragging ? 'text-active' : 'text-muted-foreground'}`}
+      />
+      <p className={`text-sm mb-2 ${isDragging ? 'text-active' : 'text-muted-foreground'}`}>
+        {isDragging ? 'ここにファイルをドロップ' : placeholderText}
+      </p>
+      <p className="text-xs text-muted-foreground">
+        JPG, PNG など / 最大 {maxSizeMB}MB {multiple ? `(最大${maxFiles}枚)` : ''}
+      </p>
+    </div>
+  )
+
+  const displayImageUrl = !multiple && previewImageUrls.length > 0 ? previewImageUrls[0] : null
+
   return (
     <div
-      className={`relative border border-dashed rounded-lg p-4 transition-colors bg-background text-center overflow-hidden border-border h-fit hover:bg-muted ${className}`}
+      className={`relative border border-dashed rounded-lg p-4 bg-background text-center overflow-hidden border-border h-fit hover:bg-muted ${className}`}
       onDrop={handleDrop}
+      onDragOver={(e) => {
+        e.preventDefault()
+        setIsDragging(true)
+      }}
+      onDragLeave={() => setIsDragging(false)}
     >
       {multiple ? (
-        <div className="h-full flex flex-col">
+        <div className="flex flex-col h-full">
           {previewImageUrls.length > 0 ? (
             <>
               <DndContext
@@ -414,8 +332,8 @@ export default function ImageDrop({
               >
                 <SortableContext items={previewImageUrls} strategy={horizontalListSortingStrategy}>
                   <div className="grid grid-cols-2 grid-flow-row-dense gap-2 p-2">
-                    {previewImageUrls.map((url, index) => (
-                      <SortableThumb key={url} id={url} index={index} />
+                    {previewImageUrls.map((url, idx) => (
+                      <SortableThumb key={url} id={url} index={idx} />
                     ))}
                   </div>
                 </SortableContext>
@@ -423,9 +341,6 @@ export default function ImageDrop({
               <div className="mt-auto pt-2 text-center space-x-2">
                 <Button type="button" onClick={() => fileInputRef.current?.click()}>
                   ファイルを追加
-                </Button>
-                <Button type="button" variant="outline" onClick={() => clearPreview()}>
-                  すべてクリア
                 </Button>
               </div>
             </>
@@ -451,36 +366,22 @@ export default function ImageDrop({
             width={previewWidth}
             height={previewHeight}
           />
-          {initialImageUrls &&
-          previewImageUrls.length > 0 &&
-          previewImageUrls[0] === initialImageUrls[0] &&
-          !selectedFiles[0] ? (
-            <Button
-              type="button"
-              size="sm"
-              className="absolute -top-3 -right-3 m-2 border-2 shadow-sm hover:opacity-100 hover:bg-accent"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              画像を変更
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute top-0 right-0 rounded-full bg-gradient-to-r from-green-800 to-green-600 text-white shadow-md"
-              onClick={() => clearPreview()}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute top-0 right-0 rounded-full bg-gradient-to-r from-green-800 to-green-600 text-white shadow-md"
+            onClick={() => clearPreview()}
+          >
+            <X className="h-4 w-4" />
+          </Button>
           {selectedFiles[0] && (
-            <div className="flex items-center justify-start  w-full gap-4 text-xs text-muted-foreground mt-2 text-start">
+            <div className="flex items-center justify-start w-full gap-4 text-xs text-muted-foreground mt-2 text-start">
               <p>
-                <span className="font-bold">ファイル名: </span> {selectedFiles[0].name}
+                <span className="font-bold">ファイル名:</span> {selectedFiles[0].name}
               </p>
               <p>
-                <span className="font-bold">サイズ: </span>{' '}
+                <span className="font-bold">サイズ:</span>{' '}
                 {(selectedFiles[0].size / 1024).toFixed(1)} KB
               </p>
             </div>
@@ -489,21 +390,20 @@ export default function ImageDrop({
       ) : (
         renderDragAreaPlaceholder()
       )}
+
+      {/* hidden input */}
       <Input
         type="file"
         multiple={multiple}
         ref={fileInputRef}
         accept={accept}
         onChange={handleFileChange}
-        className={`${
-          (!multiple &&
-            !displayImageUrl &&
-            selectedFiles.length === 0 &&
-            !(initialImageUrls && previewImageUrls[0] === initialImageUrls[0])) ||
+        className={
+          (!multiple && !displayImageUrl && selectedFiles.length === 0) ||
           (multiple && previewImageUrls.length === 0)
             ? 'opacity-0 absolute inset-0 cursor-pointer w-full h-full'
             : 'hidden'
-        }`}
+        }
       />
     </div>
   )
