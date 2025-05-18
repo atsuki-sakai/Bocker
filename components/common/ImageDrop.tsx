@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
@@ -152,7 +151,9 @@ export default function ImageDrop({
     }
 
     if (acceptedFiles.length === 0) {
-      fileInputRef.current && (fileInputRef.current.value = '')
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       return
     }
 
@@ -206,7 +207,8 @@ export default function ImageDrop({
 
       if (fileInputRef.current) {
         const dt = new DataTransfer()
-        ;(multiple ? dropped : [dropped[0]]).forEach((f) => dt.items.add(f))
+        const filesToAdd = multiple ? dropped : [dropped[0]]
+        filesToAdd.forEach((f) => dt.items.add(f))
         fileInputRef.current.files = dt.files
       }
     }
@@ -222,9 +224,13 @@ export default function ImageDrop({
     if (multiple && typeof index === 'number') {
       const removedUrl = urls.splice(index, 1)[0]
       files.splice(index, 1)
-      removedUrl?.startsWith('blob:') && URL.revokeObjectURL(removedUrl)
+      if (removedUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(removedUrl)
+      }
     } else if (!multiple) {
-      urls[0]?.startsWith('blob:') && URL.revokeObjectURL(urls[0])
+      if (urls[0]?.startsWith('blob:')) {
+        URL.revokeObjectURL(urls[0])
+      }
       files = []
       urls = initialImageUrls ? [initialImageUrls[0]] : []
     }
@@ -233,7 +239,9 @@ export default function ImageDrop({
     setPreviewImageUrls(urls)
     setIsDirty(true)
 
-    fileInputRef.current && (fileInputRef.current.value = '')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
     onFileSelect?.(filterNonNull(files))
     onPreviewChange?.(urls)
   }
