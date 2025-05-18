@@ -190,7 +190,7 @@ export default function CustomerList() {
                     <div className="flex items-center gap-4">
                       <Calendar size={16} className="text-muted-foreground" />
                       <span className="text-nowrap">
-                        {formatDate(customer.lastReservationDate_unix)}
+                        {formatDate(customer.lastReservationDateUnix)}
                       </span>
                     </div>
                   </TableCell>

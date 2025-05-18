@@ -142,13 +142,13 @@ export default function OptionList() {
                       </td>
                       <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-primary sm:pl-6">
                         {option.thumbnailPath ? (
-                          <div className="w-12 h-12 rounded-md overflow-hidden">
+                          <div className="relative w-12 h-12 rounded-md overflow-hidden">
                             <Image
                               src={option.thumbnailPath}
                               alt={option.name}
                               width={250}
                               height={250}
-                              objectFit="cover"
+                              className="object-cover w-full h-full"
                             />
                           </div>
                         ) : (

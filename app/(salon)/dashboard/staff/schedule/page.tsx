@@ -93,12 +93,12 @@ export default function StaffSchedulePage() {
         salonId: salonId as Id<'salon'>,
         dates: dateTimeSettings.map((item) => ({
           date: format(item.date, 'yyyy-MM-dd'),
-          startTime_unix: isAllDay[item.date.toISOString()]
+          startTimeUnix: isAllDay[item.date.toISOString()]
             ? convertHourToUnixTimestamp('00:00', item.date.toISOString())!
             : item.startTime
               ? convertHourToUnixTimestamp(item.startTime, item.date.toISOString())!
               : 0,
-          endTime_unix: isAllDay[item.date.toISOString()]
+          endTimeUnix: isAllDay[item.date.toISOString()]
             ? convertHourToUnixTimestamp('00:00', item.date.toISOString())!
             : item.endTime
               ? convertHourToUnixTimestamp(item.endTime, item.date.toISOString())!
@@ -181,8 +181,8 @@ export default function StaffSchedulePage() {
         // 重複する日付を排除した設定を作成
         const map = new Map<string, DateWithTimes>()
         staffSchedule.forEach((schedule) => {
-          const startDate = new Date(schedule.startTime_unix!)
-          const endDate = new Date(schedule.endTime_unix!)
+          const startDate = new Date(schedule.startTimeUnix!)
+          const endDate = new Date(schedule.endTimeUnix!)
           const iso = startDate.toISOString()
           if (!map.has(iso)) {
             map.set(iso, {
@@ -197,7 +197,7 @@ export default function StaffSchedulePage() {
         // fetched schedules include isAllDay, so initialize the all-day map
         const allDayMap: { [key: string]: boolean } = {}
         staffSchedule.forEach((schedule) => {
-          const iso = new Date(schedule.startTime_unix!).toISOString()
+          const iso = new Date(schedule.startTimeUnix!).toISOString()
           allDayMap[iso] = !!schedule.isAllDay
         })
 

@@ -32,8 +32,8 @@ export type UpdateCouponRelatedTablesInput = {
   percentageDiscountValue?: number;
   fixedDiscountValue?: number;
   isActive?: boolean;
-  startDate_unix?: number;
-  endDate_unix?: number;
+  startDateUnix?: number;
+  endDateUnix?: number;
   maxUseCount?: number;
   numberOfUse?: number;
   selectedMenuIds?: Id<'menu'>[];
@@ -61,15 +61,15 @@ export type FindByCouponUidInput = {
 export type CreateCouponConfigInput = {
   salonId: Id<'salon'>;
   couponId: Id<'coupon'>;
-  startDate_unix?: number;
-  endDate_unix?: number;
+  startDateUnix?: number;
+  endDateUnix?: number;
   maxUseCount?: number;
   numberOfUse?: number;
 };
 
 export type UpdateCouponConfigInput = {
-  startDate_unix?: number;
-  endDate_unix?: number;
+  startDateUnix?: number;
+  endDateUnix?: number;
   maxUseCount?: number;
   numberOfUse?: number;
 };

@@ -15,7 +15,7 @@ export const add = mutation({
     couponId: v.id('coupon'),
     customerId: v.id('customer'),
     reservationId: v.id('reservation'),
-    transactionDate_unix: v.optional(v.number()),
+    transactionDateUnix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -67,7 +67,7 @@ export const add = mutation({
 export const update = mutation({
   args: {
     couponTransactionId: v.id('coupon_transaction'),
-    transactionDate_unix: v.optional(v.number()),
+    transactionDateUnix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -109,7 +109,7 @@ export const upsert = mutation({
     couponId: v.id('coupon'),
     customerId: v.id('customer'),
     reservationId: v.id('reservation'),
-    transactionDate_unix: v.optional(v.number()),
+    transactionDateUnix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);

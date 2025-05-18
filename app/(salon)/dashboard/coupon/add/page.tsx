@@ -240,8 +240,8 @@ function CouponForm() {
         return
       }
       // 日付をUNIXタイムスタンプに変換（ミリ秒）
-      const startDate_unix = data.startDate.getTime()
-      const endDate_unix = data.endDate.getTime()
+      const startDateUnix = data.startDate.getTime()
+      const endDateUnix = data.endDate.getTime()
 
       await createCouponRelatedTables({
         salonId: salon!._id,
@@ -251,8 +251,8 @@ function CouponForm() {
         percentageDiscountValue: data.percentageDiscountValue ?? 0,
         fixedDiscountValue: data.fixedDiscountValue ?? 0,
         isActive: data.isActive,
-        startDate_unix,
-        endDate_unix,
+        startDateUnix,
+        endDateUnix,
         maxUseCount: data.maxUseCount ?? 0,
         numberOfUse: 0,
       })

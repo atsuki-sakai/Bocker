@@ -19,6 +19,7 @@ interface BulkUploadRequestBodyItem {
   directory: ImageDirectory;
   salonId: Id<'salon'>;
   quality?: ImageQuality;
+  isHotSpot?: boolean;
 }
 type BulkUploadRequestBody = BulkUploadRequestBodyItem[];
 
@@ -41,7 +42,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           item.fileName,
           item.directory,
           item.salonId,
-          item.quality
+          item.quality,
+          item.isHotSpot
         )
       );
 

@@ -267,7 +267,7 @@ export default function SalonConfigForm() {
           <div className="w-full md:w-1/2 flex flex-col gap-4">
             <h4 className="text-2xl font-bold">店舗画像</h4>
             <ImageDrop
-              initialImageUrl={salonConfig?.imgPath}
+              initialImageUrls={salonConfig?.imgPath ? [salonConfig.imgPath] : []}
               maxSizeMB={4}
               onFileSelect={(files) => {
                 setCurrentFile(files[0] ?? null)

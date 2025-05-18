@@ -17,7 +17,7 @@ export const create = mutation({
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
-    lastReservationDate_unix: v.optional(v.number()),
+    lastReservationDateUnix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)
@@ -69,7 +69,7 @@ export const update = mutation({
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     searchbleText: v.optional(v.string()),
-    lastReservationDate_unix: v.optional(v.number()),
+    lastReservationDateUnix: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
@@ -177,7 +177,7 @@ export const upsert = mutation({
     password: v.optional(v.string()),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
-    lastReservationDate_unix: v.optional(v.number()),
+    lastReservationDateUnix: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
@@ -271,14 +271,14 @@ export const createCompleteFields = mutation({
     firstName: v.optional(v.string()), // 名前
     lastName: v.optional(v.string()), // 苗字
     useCount: v.optional(v.number()), // 利用回数
-    lastReservationDate_unix: v.optional(v.number()), // 最終予約日
+    lastReservationDateUnix: v.optional(v.number()), // 最終予約日
     tags: v.optional(v.array(v.string())), // タグ
     age: v.optional(v.number()), // 年齢
     birthday: v.optional(v.string()), // 誕生日
     gender: v.optional(genderType), // 性別
     notes: v.optional(v.string()), // メモ
     totalPoints: v.optional(v.number()), // ポイント
-    lastTransactionDate_unix: v.optional(v.number()), // 最終トランザクション日
+    lastTransactionDateUnix: v.optional(v.number()), // 最終トランザクション日
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)
@@ -343,7 +343,7 @@ export const createCompleteFields = mutation({
           (args.phone ? args.phone + ' ' : '') +
           (args.email ? args.email + ' ' : ''), // 検索用フルネーム
         useCount: args.useCount, // 利用回数
-        lastReservationDate_unix: args.lastReservationDate_unix, // 最終予約日
+        lastReservationDateUnix: args.lastReservationDateUnix, // 最終予約日
         tags: args.tags, // タグ
         isArchive: false,
       })
@@ -362,7 +362,7 @@ export const createCompleteFields = mutation({
         customerId: customerId,
         salonId: args.salonId,
         totalPoints: args.totalPoints, // ポイント
-        lastTransactionDate_unix: undefined, // 最終トランザクション日
+        lastTransactionDateUnix: undefined, // 最終トランザクション日
         isArchive: false,
       })
       return customerId
@@ -385,14 +385,14 @@ export const updateRelatedTables = mutation({
     firstName: v.optional(v.string()), // 名前
     lastName: v.optional(v.string()), // 苗字
     useCount: v.optional(v.number()), // 利用回数
-    lastReservationDate_unix: v.optional(v.number()), // 最終予約日
+    lastReservationDateUnix: v.optional(v.number()), // 最終予約日
     tags: v.optional(v.array(v.string())), // タグ
     age: v.optional(v.number()), // 年齢
     birthday: v.optional(v.string()), // 誕生日
     gender: v.optional(genderType), // 性別
     notes: v.optional(v.string()), // メモ
     totalPoints: v.optional(v.number()), // ポイント
-    lastTransactionDate_unix: v.optional(v.number()), // 最終トランザクション日
+    lastTransactionDateUnix: v.optional(v.number()), // 最終トランザクション日
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)
@@ -418,7 +418,7 @@ export const updateRelatedTables = mutation({
         lastName: args.lastName, // 苗字
         searchbleText: searchbleText, // 検索用フルネーム
         useCount: args.useCount, // 利用回数
-        lastReservationDate_unix: args.lastReservationDate_unix, // 最終予約日
+        lastReservationDateUnix: args.lastReservationDateUnix, // 最終予約日
         tags: args.tags, // タグ
       })
 
@@ -462,7 +462,7 @@ export const updateRelatedTables = mutation({
       }
       await ctx.db.patch(updateCustomerPointsId._id, {
         totalPoints: args.totalPoints, // ポイント
-        lastTransactionDate_unix: args.lastTransactionDate_unix, // 最終トランザクション日
+        lastTransactionDateUnix: args.lastTransactionDateUnix, // 最終トランザクション日
       })
       return updateCustomerId
     } catch (error) {

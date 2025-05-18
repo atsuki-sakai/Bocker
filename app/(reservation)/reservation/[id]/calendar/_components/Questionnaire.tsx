@@ -228,7 +228,7 @@ export const Questionnaire = ({
                   <FormControl>
                     <ImageDrop
                       onUploadComplete={handleUploadComplete}
-                      initialImageUrl={hairImgPreviewUrl || undefined}
+                      initialImageUrls={hairImgPreviewUrl ? [hairImgPreviewUrl] : undefined}
                       maxSizeMB={6}
                       onFileSelect={(files) => {
                         form.setValue('hairImgFile', files[0] ?? null)

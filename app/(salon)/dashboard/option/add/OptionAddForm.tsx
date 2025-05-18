@@ -78,9 +78,7 @@ const optionSchema = z
         return isNaN(num) ? val : num
       },
       z
-        .number({
-          invalid_type_error: 'セール価格は有効な数値で入力してください',
-        })
+        .number()
         .max(99999, { message: 'セール価格は99999円以下で入力してください' })
         .nullable()
         .optional()

@@ -116,13 +116,16 @@ export default function StripeConnectStatus() {
   const handleConnectStripe = async () => {
     if (!salonId) return
     try {
+      console.log('handleConnectStripe')
       const { data } = await fetchApi<{ account: string; accountLink: string }>(
         '/api/stripe/connect',
         { salonId }
       )
+      console.log(data)
 
       if (data && data.account && data.accountLink) {
-        window.location.href = data.accountLink
+        console.log(data.accountLink)
+        // window.location.href = data.accountLink
       }
     } catch (error) {
       toast.error(handleErrorToMsg(error))

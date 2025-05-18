@@ -18,6 +18,9 @@ crons.cron(
 crons.cron(
   'triggerSupabaseSync',
   '0 0 * * *', // 日本時間の毎日午前0時00分（UTC）
-  internal.sync.actions.triggerSupabaseSync
+  internal.sync.action.processReservationBatch,
+  {
+    afterId: undefined
+  }
 )
 export default crons

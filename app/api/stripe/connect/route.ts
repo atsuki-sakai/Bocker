@@ -7,9 +7,11 @@ export async function POST(request: Request) {
     let salonId;
     try {
       const body = await request.json();
+      console.log('Stripe Connect API: Request body ->', body);
       salonId = body.salonId;
-    } catch {
-      // JSONでない場合は処理継続（後でsalonIdをチェック）
+      console.log('Stripe Connect API: salonId extracted ->', salonId);
+    } catch (err) {
+      console.error('Stripe Connect API: Failed to parse JSON ->', err);
     }
 
     if (!salonId) {
@@ -17,7 +19,9 @@ export async function POST(request: Request) {
     }
 
     // StripeConnectクラスを使用してアカウント連携を行う
+    console.log('Stripe Connect API: Calling createConnectAccountLink with salonId:', salonId);
     const result = await stripeService.createConnectAccountLink(salonId);
+    console.log('Stripe Connect API: createConnectAccountLink result ->', result);
 
     if (!result.success || !result.data) {
       return NextResponse.json({ error: result.error }, { status: 400 });

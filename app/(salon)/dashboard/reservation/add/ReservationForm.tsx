@@ -101,8 +101,8 @@ const schemaReservation = z
     unitPrice: z.preprocess(preprocessNumber, z.number()).optional(), // 単価
     totalPrice: z.preprocess(preprocessNumber, z.number()).optional(), // 合計金額
     status: z.preprocess(preprocessEmptyString, z.enum(RESERVATION_STATUS_VALUES)).optional(), // 予約ステータス
-    startTime_unix: z.preprocess(preprocessNumber, z.number()).optional(), // 開始時間 UNIXタイム
-    endTime_unix: z.preprocess(preprocessNumber, z.number()).optional(), // 終了時間 UNIXタイム
+    startTimeUnix: z.preprocess(preprocessNumber, z.number()).optional(), // 開始時間 UNIXタイム
+    endTimeUnix: z.preprocess(preprocessNumber, z.number()).optional(), // 終了時間 UNIXタイム
     usePoints: z.preprocess(preprocessNumber, z.number()).optional(), // 使用ポイント数
     couponId: z.string().optional(), // クーポンID
     featuredHairimgPath: z.string().optional(), // 顧客が希望する髪型の画像ファイルパス
@@ -161,8 +161,8 @@ export default function ReservationForm() {
   const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null)
   const [selectdate, setSelectDate] = useState<Date | null>(null)
   const [selectTime, setSelectTime] = useState<{
-    startTime_unix: number | undefined
-    endTime_unix: number | undefined
+    startTimeUnix: number | undefined
+    endTimeUnix: number | undefined
   } | null>(null)
   const [searchName, setSearchName] = useState<string>('')
   const [reservationCustomer, setReservationCustomer] = useState<Doc<'customer'> | null>(null)
@@ -282,8 +282,8 @@ export default function ReservationForm() {
       options: [], // オプションID
       unitPrice: undefined, // 単価
       totalPrice: undefined, // 合計金額
-      startTime_unix: undefined, // 開始時間 UNIXタイム
-      endTime_unix: undefined, // 終了時間 UNIXタイム
+      startTimeUnix: undefined, // 開始時間 UNIXタイム
+      endTimeUnix: undefined, // 終了時間 UNIXタイム
       usePoints: undefined, // 使用ポイント数
       couponId: undefined, // クーポンID
       featuredHairimgPath: undefined, // 顧客が希望する髪型の画像ファイルパス
@@ -536,8 +536,8 @@ export default function ReservationForm() {
         api.reservation.query.countAvailableSheetInTimeRange,
         {
           salonId: salonId as Id<'salon'>,
-          startTime: data.startTime_unix as number,
-          endTime: data.endTime_unix as number,
+          startTime: data.startTimeUnix as number,
+          endTime: data.endTimeUnix as number,
         }
       )
       if (!isAvailable) {
@@ -573,8 +573,8 @@ export default function ReservationForm() {
         customerName: customerName,
         salonId: salonId as Id<'salon'>,
         menus: data.menus as { menuId: Id<'menu'>; quantity: number }[],
-        startTime_unix: data.startTime_unix as number,
-        endTime_unix: data.endTime_unix as number,
+        startTimeUnix: data.startTimeUnix as number,
+        endTimeUnix: data.endTimeUnix as number,
         status: 'confirmed',
         unitPrice: data.unitPrice as number,
         staffId: selectStaff?._id as Id<'staff'>,
@@ -1252,7 +1252,7 @@ export default function ReservationForm() {
                           key={index}
                           type="button"
                           className={`flex items-center justify-center py-2 px-4 text-sm font-medium rounded-md border ${
-                            watch('startTime_unix') ===
+                            watch('startTimeUnix') ===
                             convertHourToUnixTimestamp(slot.startHour, formattedDate)
                               ? 'bg-active-foreground text-active border-active'
                               : 'border-border bg-background hover:bg-muted hover:text-muted-foreground'
@@ -1267,11 +1267,11 @@ export default function ReservationForm() {
                               slot.endHour,
                               formattedDate
                             )!
-                            setValue('startTime_unix', timestampStart)
-                            setValue('endTime_unix', timestampEnd)
+                            setValue('startTimeUnix', timestampStart)
+                            setValue('endTimeUnix', timestampEnd)
                             setSelectTime({
-                              startTime_unix: timestampStart,
-                              endTime_unix: timestampEnd,
+                              startTimeUnix: timestampStart,
+                              endTimeUnix: timestampEnd,
                             })
                           }}
                         >
@@ -1293,7 +1293,7 @@ export default function ReservationForm() {
                 ghost
                 register={register}
                 errors={errors}
-                name="startTime_unix"
+                name="startTimeUnix"
                 type="number"
                 label="開始時間 UNIXタイム"
               />
@@ -1301,7 +1301,7 @@ export default function ReservationForm() {
                 ghost
                 register={register}
                 errors={errors}
-                name="endTime_unix"
+                name="endTimeUnix"
                 type="number"
                 label="終了時間 UNIXタイム"
               />
@@ -1425,8 +1425,8 @@ export default function ReservationForm() {
                     <span className="font-semibold">{format(selectdate, 'yyyy年MM月dd日')}</span>
                     {selectTime && (
                       <span>
-                        {formatJpTime(watch('startTime_unix')!)} ~{' '}
-                        {formatJpTime(watch('endTime_unix')!)}
+                        {formatJpTime(watch('startTimeUnix')!)} ~{' '}
+                        {formatJpTime(watch('endTimeUnix')!)}
                       </span>
                     )}
                   </div>

@@ -521,8 +521,8 @@ export function validateCouponTransaction(args: Partial<Doc<'coupon_transaction'
   if (args.reservationId) {
     validateStringLength(args.reservationId, MAX_TEXT_LENGTH, '予約ID');
   }
-  if (args.transactionDate_unix) {
-    validateNumberRange(args.transactionDate_unix, 0, MAX_NUM, '取引日');
+  if (args.transactionDateUnix) {
+    validateNumberRange(args.transactionDateUnix, 0, MAX_NUM, '取引日');
   }
 }
 
@@ -563,8 +563,8 @@ export function validateCustomer(args: Partial<Doc<'customer'>>) {
   if (args.useCount) {
     validateNumberRange(args.useCount, 0, MAX_NUM, '利用回数');
   }
-  if (args.lastReservationDate_unix) {
-    validateNumberRange(args.lastReservationDate_unix, 0, MAX_NUM, '最終予約日');
+  if (args.lastReservationDateUnix) {
+    validateNumberRange(args.lastReservationDateUnix, 0, MAX_NUM, '最終予約日');
   }
 }
 
@@ -960,8 +960,8 @@ export function validateTimeCard(args: Partial<Doc<'time_card'>>) {
   if (args.staffId) {
     validateStringLength(args.staffId, MAX_TEXT_LENGTH, 'スタッフID');
   }
-  if (args.startDateTime_unix && args.endDateTime_unix) {
-    if (args.startDateTime_unix > args.endDateTime_unix) {
+  if (args.startDateTimeUnix && args.endDateTimeUnix) {
+    if (args.startDateTimeUnix > args.endDateTimeUnix) {
       throw throwConvexError({
         message: '開始時間は終了時間よりも前にしてください',
         status: 400,

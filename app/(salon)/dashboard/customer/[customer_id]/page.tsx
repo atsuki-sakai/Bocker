@@ -74,9 +74,9 @@ export default function CustomerDetailPage() {
     : '未登録'
 
 
-  const formattedLastReservationDate = completeCustomer.customer.lastReservationDate_unix
+  const formattedLastReservationDate = completeCustomer.customer.lastReservationDateUnix
     ? format(
-        new Date(completeCustomer.customer.lastReservationDate_unix * 1000),
+        new Date(completeCustomer.customer.lastReservationDateUnix * 1000),
         'yyyy年MM月dd日 HH:mm',
         {
           locale: ja,

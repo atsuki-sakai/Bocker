@@ -2,30 +2,29 @@
 
 -- Create reservation table
 CREATE TABLE IF NOT EXISTS reservation (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  _id TEXT,
+  _id TEXT PRIMARY KEY NOT NULL,
   -- customerId UUID REFERENCES customer(id),
-  customerId UUID,
-  customerName TEXT,
+  customer_id TEXT,
+  customer_name TEXT,
   -- staffId UUID NOT NULL REFERENCES staff(id),
-  staffId UUID, -- NOT NULLを削除
-  staffName TEXT,
-  menus JSONB, -- Example: '[{"menuId": "uuid", "quantity": 1}]'
-  -- salonId UUID NOT NULL REFERENCES salon(id),
-  salonId UUID, -- NOT NULLを削除
-  options JSONB, -- Example: '[{"optionId": "uuid", "quantity": 1}]'
-  unitPrice DOUBLE PRECISION,
-  totalPrice DOUBLE PRECISION,
-  status TEXT CHECK (status IN ('pending', 'confirmed', 'cancelled_by_salon', 'cancelled_by_customer', 'completed', 'noshow')),
-  startTimeUnix BIGINT,
-  endTimeUnix BIGINT,
-  usePoints DOUBLE PRECISION,
-  couponId UUID, -- Needs coupon table first
-  couponDiscount DOUBLE PRECISION,
-  featuredHairimgPath TEXT,
+  staff_id TEXT, -- NOT NULLを削除
+  staff_name TEXT,
+  menus JSONB, -- Example: '[{"menuId": "TEXT", "quantity": 1}]'
+  -- salonId TEXT NOT NULL REFERENCES salon(id),
+  salon_id TEXT, -- NOT NULLを削除
+  options JSONB, -- Example: '[{"optionId": "TEXT", "quantity": 1}]'
+  unit_price DOUBLE PRECISION,
+  total_price DOUBLE PRECISION,
+  status TEXT CHECK (status IN ('pending', 'confirmed', 'cancelled', 'completed', 'refunded')),
+  start_time_unix BIGINT,
+  end_time_unix BIGINT,
+  use_points DOUBLE PRECISION,
+  coupon_id TEXT, -- Needs coupon table first
+  coupon_discount DOUBLE PRECISION,
+  featured_hair_img_path TEXT,
   notes TEXT,
-  paymentMethod TEXT CHECK (paymentMethod IN ('cash', 'credit_card', 'electronic_money', 'qr_code')),
-  creationTime TIMESTAMPTZ DEFAULT now(),
-  updatedTime TIMESTAMPTZ DEFAULT now(),
-  isArchive BOOLEAN DEFAULT false
+  payment_method TEXT CHECK (payment_method IN ('cash', 'credit_card', 'electronic_money', 'qr_code')),
+  creation_time TIMESTAMPTZ DEFAULT now(),
+  updated_time TIMESTAMPTZ DEFAULT now(),
+  is_archive BOOLEAN DEFAULT false
 );

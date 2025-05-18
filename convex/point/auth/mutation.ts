@@ -12,7 +12,7 @@ export const create = mutation({
     reservationId: v.id('reservation'),
     customerId: v.id('customer'),
     authCode: v.optional(v.string()),
-    expirationTime_unix: v.optional(v.number()),
+    expirationTimeUnix: v.optional(v.number()),
     points: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -59,7 +59,7 @@ export const update = mutation({
   args: {
     pointAuthId: v.id('point_auth'),
     authCode: v.optional(v.string()),
-    expirationTime_unix: v.optional(v.number()),
+    expirationTimeUnix: v.optional(v.number()),
     points: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -104,7 +104,7 @@ export const upsert = mutation({
     reservationId: v.id('reservation'),
     customerId: v.id('customer'),
     authCode: v.optional(v.string()),
-    expirationTime_unix: v.optional(v.number()),
+    expirationTimeUnix: v.optional(v.number()),
     points: v.optional(v.number()),
   },
   handler: async (ctx, args) => {

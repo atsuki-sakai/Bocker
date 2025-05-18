@@ -18,7 +18,6 @@ interface ImageDropProps {
   className?: string
   placeholderText?: string
   accept?: string
-  initialImageUrl?: string
   initialImageUrls?: string[]
   multiple?: boolean
   maxFiles?: number
@@ -33,7 +32,6 @@ export default function ImageDrop({
   className = '',
   placeholderText = '画像をドラッグするか、クリックして選択',
   accept = 'image/*',
-  initialImageUrl,
   initialImageUrls,
   multiple = false,
   maxFiles = 4,
@@ -44,31 +42,31 @@ export default function ImageDrop({
     if (multiple) {
       return initialImageUrls || []
     }
-    return initialImageUrl ? [initialImageUrl] : []
+    return initialImageUrls ? [initialImageUrls[0]] : []
   })
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const draggedItemIndexRef = useRef<number | null>(null)
   const dragOverItemIndexRef = useRef<number | null>(null)
   const [touchDraggingIndex, setTouchDraggingIndex] = useState<number | null>(null)
-  const touchDraggedItemRef = useRef<{ file: File; url: string } | null>(null)
+  const touchDraggedItemRef = useRef<{ file: File | null; url: string } | null>(null)
 
   useEffect(() => {
     if (selectedFiles.length === 0) {
       if (multiple) {
         setPreviewImageUrls(initialImageUrls || [])
       } else {
-        setPreviewImageUrls(initialImageUrl ? [initialImageUrl] : [])
+        setPreviewImageUrls(initialImageUrls ? [initialImageUrls[0]] : [])
       }
     }
-  }, [initialImageUrl, initialImageUrls, multiple, selectedFiles.length])
+  }, [initialImageUrls, multiple, selectedFiles.length])
 
   // 実際に使用するプレビュー画像（外部から渡されるか内部で管理されるか）
   const displayImageUrl =
     !multiple && previewImageUrls.length > 0
       ? previewImageUrls[0]
-      : !multiple && initialImageUrl
-        ? initialImageUrl
+      : !multiple && initialImageUrls
+        ? initialImageUrls[0]
         : null
 
   // ファイル変更時の処理
@@ -241,6 +239,10 @@ export default function ImageDrop({
 
     const newFiles = [...selectedFiles]
     const newUrls = [...previewImageUrls]
+    // --- ensure both arrays have the same length ---
+    while (newFiles.length < newUrls.length) {
+      newFiles.push(null as unknown as File) // placeholder for already‑uploaded image
+    }
 
     const draggedFile = newFiles.splice(draggedIndex, 1)[0]
     const draggedUrl = newUrls.splice(draggedIndex, 1)[0]
@@ -252,7 +254,7 @@ export default function ImageDrop({
     setPreviewImageUrls(newUrls)
 
     if (onFileSelect) {
-      onFileSelect(newFiles)
+      onFileSelect(newFiles.filter((f): f is File => f !== null))
     }
     if (onPreviewChange) {
       onPreviewChange(newUrls)
@@ -269,6 +271,8 @@ export default function ImageDrop({
 
   // タッチイベントによる並び替えハンドラ
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault()
+    e.stopPropagation()
     setTouchDraggingIndex(index)
     touchDraggedItemRef.current = {
       file: selectedFiles[index],
@@ -281,8 +285,8 @@ export default function ImageDrop({
   }
 
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
+    e.preventDefault()
     if (touchDraggingIndex === null || !touchDraggedItemRef.current) return
-    // e.preventDefault(); // Prevent scrolling while dragging
 
     const touch = e.touches[0]
     const targetElement = document.elementFromPoint(touch.clientX, touch.clientY)
@@ -294,13 +298,17 @@ export default function ImageDrop({
         if (targetIndex !== touchDraggingIndex && targetIndex < selectedFiles.length) {
           const newFiles = [...selectedFiles]
           const newUrls = [...previewImageUrls]
+          // --- ensure both arrays have the same length ---
+          while (newFiles.length < newUrls.length) {
+            newFiles.push(null as unknown as File) // placeholder
+          }
 
           // Remove the dragged item
           newFiles.splice(touchDraggingIndex, 1)
           newUrls.splice(touchDraggingIndex, 1)
 
           // Insert it at the new position
-          newFiles.splice(targetIndex, 0, touchDraggedItemRef.current.file)
+          newFiles.splice(targetIndex, 0, touchDraggedItemRef.current.file as File)
           newUrls.splice(targetIndex, 0, touchDraggedItemRef.current.url)
 
           setSelectedFiles(newFiles)
@@ -308,7 +316,7 @@ export default function ImageDrop({
           setTouchDraggingIndex(targetIndex) // Update the dragging index to the new position
 
           if (onFileSelect) {
-            onFileSelect(newFiles)
+            onFileSelect(newFiles.filter((f): f is File => f !== null))
           }
           if (onPreviewChange) {
             onPreviewChange(newUrls)
@@ -381,7 +389,7 @@ export default function ImageDrop({
 
       updatedFiles = []
       // initialImageUrl があればそれを表示、なければ空にする
-      updatedPreviewUrls = initialImageUrl ? [initialImageUrl] : []
+      updatedPreviewUrls = initialImageUrls ? [initialImageUrls[0]] : []
 
       setSelectedFiles(updatedFiles)
       setPreviewImageUrls(updatedPreviewUrls)
@@ -421,7 +429,7 @@ export default function ImageDrop({
 
   return (
     <div
-      className={`relative border border-dashed h-full rounded-lg p-4 transition-colors bg-background text-center overflow-hidden border-border hover:bg-muted ${className}`}
+      className={`relative border border-dashed rounded-lg p-4 transition-colors bg-background text-center overflow-hidden border-border h-fit hover:bg-muted ${className}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -430,7 +438,7 @@ export default function ImageDrop({
         <div className="h-full flex flex-col">
           {previewImageUrls.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 gap-4 p-2 overflow-y-auto flex-grow">
+              <div className="grid grid-cols-2 grid-flow-row-dense gap-2 p-2 ">
                 {previewImageUrls.map((url, index) => (
                   <div
                     key={`${url}-${index}`} // Ensure key is unique and stable if possible
@@ -453,7 +461,7 @@ export default function ImageDrop({
                         ? 'outline outline-2 outline-offset-2 outline-primary'
                         : ''
                     } ${touchDraggingIndex === index ? 'opacity-50 ring-2 ring-primary z-20' : ''}`}
-                    style={{ touchAction: touchDraggingIndex === index ? 'none' : 'auto' }}
+                    style={{ touchAction: 'none' }}
                   >
                     <Image
                       src={url}
@@ -512,9 +520,9 @@ export default function ImageDrop({
             width={previewWidth}
             height={previewHeight}
           />
-          {initialImageUrl &&
+          {initialImageUrls &&
           previewImageUrls.length > 0 &&
-          previewImageUrls[0] === initialImageUrl &&
+          previewImageUrls[0] === initialImageUrls[0] &&
           !selectedFiles[0] ? (
             <Button
               type="button"
@@ -560,7 +568,7 @@ export default function ImageDrop({
           (!multiple &&
             !displayImageUrl &&
             selectedFiles.length === 0 &&
-            !(initialImageUrl && previewImageUrls[0] === initialImageUrl)) ||
+            !(initialImageUrls && previewImageUrls[0] === initialImageUrls[0])) ||
           (multiple && previewImageUrls.length === 0)
             ? 'opacity-0 absolute inset-0 cursor-pointer w-full h-full'
             : 'hidden'

@@ -117,7 +117,7 @@ export const findBySalonIdAndStaffId = query({
           .eq('isArchive', false)
           .eq('status', 'confirmed')
       )
-      .filter((q) => q.gt(q.field('startTime_unix'), Date.now() / 1000))
+      .filter((q) => q.gt(q.field('startTimeUnix'), Date.now() / 1000))
       .order('desc')
       .paginate(args.paginationOpts)
 
@@ -154,7 +154,7 @@ export const findByStatus = query({
 export const findBySalonAndDate = query({
   args: {
     salonId: v.id('salon'),
-    startTime_unix: v.number(),
+    startTimeUnix: v.number(),
     paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
     includeArchive: v.optional(v.boolean()),
@@ -169,7 +169,7 @@ export const findBySalonAndDate = query({
           .eq('salonId', args.salonId)
           .eq('isArchive', args.includeArchive || false)
           .eq('status', 'confirmed')
-          .eq('startTime_unix', args.startTime_unix)
+          .eq('startTimeUnix', args.startTimeUnix)
       )
       .order(args.sort || 'desc')
       .paginate(args.paginationOpts)
@@ -181,7 +181,7 @@ export const findByStaffAndDate = query({
   args: {
     staffId: v.id('staff'),
     salonId: v.id('salon'),
-    startTime_unix: v.number(),
+    startTimeUnix: v.number(),
     paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
     includeArchive: v.optional(v.boolean()),
@@ -197,7 +197,7 @@ export const findByStaffAndDate = query({
           .eq('staffId', args.staffId)
           .eq('isArchive', args.includeArchive || false)
           .eq('status', 'confirmed')
-          .eq('startTime_unix', args.startTime_unix)
+          .eq('startTimeUnix', args.startTimeUnix)
       )
       .order(args.sort || 'desc')
       .paginate(args.paginationOpts)
@@ -209,7 +209,7 @@ export const findByCustomerAndDate = query({
   args: {
     customerId: v.id('customer'),
     salonId: v.id('salon'),
-    startTime_unix: v.number(),
+    startTimeUnix: v.number(),
     paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
     includeArchive: v.optional(v.boolean()),
@@ -224,7 +224,7 @@ export const findByCustomerAndDate = query({
           .eq('salonId', args.salonId)
           .eq('customerId', args.customerId)
           .eq('isArchive', args.includeArchive || false)
-          .eq('startTime_unix', args.startTime_unix)
+          .eq('startTimeUnix', args.startTimeUnix)
       )
       .order(args.sort || 'desc')
       .paginate(args.paginationOpts)
@@ -511,8 +511,8 @@ export const findStaffSchedules = query({
         date: staffSchedule.date,
         isAllDay: staffSchedule.isAllDay,
         type: staffSchedule.type,
-        startTime: staffSchedule.startTime_unix!,
-        endTime: staffSchedule.endTime_unix!,
+        startTime: staffSchedule.startTimeUnix!,
+        endTime: staffSchedule.endTimeUnix!,
       }
     })
   },
@@ -557,8 +557,8 @@ export const findStaffReservations = query({
           .eq('staffId', args.staffId)
           .eq('isArchive', false)
           .eq('status', 'confirmed')
-          .gte('startTime_unix', startOfDaySec)
-          .lt('startTime_unix', endOfDaySec)
+          .gte('startTimeUnix', startOfDaySec)
+          .lt('startTimeUnix', endOfDaySec)
       )
       .collect()
 
@@ -567,8 +567,8 @@ export const findStaffReservations = query({
         date: args.date,
         isAllDay: false,
         type: 'reservation',
-        startTime: reservationSchedule.startTime_unix,
-        endTime: reservationSchedule.endTime_unix,
+        startTime: reservationSchedule.startTimeUnix,
+        endTime: reservationSchedule.endTimeUnix,
       }
     })
   },
@@ -841,9 +841,9 @@ export const countAvailableSheetInTimeRange = query({
           .eq('salonId', args.salonId)
           .eq('isArchive', false)
           .eq('status', 'confirmed')
-          .lt('startTime_unix', args.endTime)
+          .lt('startTimeUnix', args.endTime)
       )
-      .filter((q) => q.gt(q.field('endTime_unix'), args.startTime))
+      .filter((q) => q.gt(q.field('endTimeUnix'), args.startTime))
       .collect()
 
     const overlapCount = overlapping.length

@@ -66,8 +66,8 @@ class CouponService {
         isActive: data.isActive,
       }),
       this.couponConfigRepository.updateCouponConfig(ctx, data.couponConfigId, {
-        startDate_unix: data.startDate_unix,
-        endDate_unix: data.endDate_unix,
+        startDateUnix: data.startDateUnix,
+        endDateUnix: data.endDateUnix,
         maxUseCount: data.maxUseCount,
         numberOfUse: data.numberOfUse,
       }),
@@ -102,8 +102,8 @@ class CouponService {
     const couponConfigId = await this.couponConfigRepository.createCouponConfig(ctx, {
       salonId: data.salonId,
       couponId: couponId,
-      startDate_unix: data.startDate_unix,
-      endDate_unix: data.endDate_unix,
+      startDateUnix: data.startDateUnix,
+      endDateUnix: data.endDateUnix,
       maxUseCount: data.maxUseCount,
       numberOfUse: data.numberOfUse,
     });

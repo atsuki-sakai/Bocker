@@ -334,12 +334,12 @@ export const findSchedule = query({
       .first()
     return {
       schedules: staffSchedules
-        .sort((a, b) => (a.startTime_unix ?? 0) - (b.startTime_unix ?? 0))
+        .sort((a, b) => (a.startTimeUnix ?? 0) - (b.startTimeUnix ?? 0))
         .map((schedule) => ({
           type: schedule.type,
           date: schedule.date,
-          startTime_unix: schedule.startTime_unix,
-          endTime_unix: schedule.endTime_unix,
+          startTimeUnix: schedule.startTimeUnix,
+          endTimeUnix: schedule.endTimeUnix,
           isAllDay: schedule.isAllDay ?? false,
         })),
       week: {

@@ -164,8 +164,8 @@ export default function ReservationPage() {
             <div>
               <p className="text-muted-foreground">日時:</p>
               <p className="font-medium text-lg">
-                {formatUnixTimestamp(reservation.startTime_unix ?? 0)} -{' '}
-                {format(new Date(reservation.endTime_unix ?? 0), 'HH:mm')}
+                {formatUnixTimestamp(reservation.startTimeUnix ?? 0)} -{' '}
+                {format(new Date(reservation.startTimeUnix ?? 0), 'HH:mm')}
               </p>
             </div>
             <div>

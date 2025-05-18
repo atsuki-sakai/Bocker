@@ -78,6 +78,7 @@ export class ImageService {
     directory: ImageDirectory,
     salonId: Id<'salon'>,
     quality?: ImageQuality,
+    isHotSpot: boolean = false
   ): Promise<ProcessedImageResult> {
     const imageBuffer = Buffer.from(base64Data, 'base64');
     if (imageBuffer.length === 0) {
@@ -107,7 +108,8 @@ export class ImageService {
           uniqueFileName,
           this.mimeType,
           `${directory}/original`,
-          salonId
+          salonId,
+          isHotSpot
         ),
         gcsService.uploadFileBuffer(
           thumbnailBuffer,

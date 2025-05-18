@@ -95,14 +95,14 @@ export default function CompletePage() {
   const addToCalendar = () => {
     if (!reservation) return
 
-    const startDateTime = new Date(reservation.startTime_unix ?? 0)
-    const endDateTime = new Date(reservation.endTime_unix ?? 0)
+    const startDateTime = new Date(reservation.startTimeUnix ?? 0)
+    const endDateTime = new Date(reservation.endTimeUnix ?? 0)
 
     if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
       console.error(
         'Failed to create valid Date objects from timestamps for addToCalendar:',
-        reservation.startTime_unix,
-        reservation.endTime_unix
+        reservation.startTimeUnix,
+        reservation.endTimeUnix
       )
       alert('日時の変換に失敗したため、カレンダーに追加できませんでした。')
       return
@@ -110,7 +110,7 @@ export default function CompletePage() {
 
     // Google カレンダー用のリンクを作成
     const text = `${reservationItems?.menus.map((menu) => menu.name).join(', ')} / ${salonConfig?.salonName ?? ''}`
-    const details = `予約ID: ${reservation._id}\nメニュー: ${reservationItems?.menus.map((menu) => menu.name).join(', ')}\n料金: ${reservation.totalPrice ? reservation.totalPrice.toLocaleString() : '0円'}\nスタッフ: ${reservation.staffName}\n開始時間: ${formatTimeJP(reservation.startTime_unix)}\n終了時間: ${formatTimeJP(reservation.endTime_unix)}`
+    const details = `予約ID: ${reservation._id}\nメニュー: ${reservationItems?.menus.map((menu) => menu.name).join(', ')}\n料金: ${reservation.totalPrice ? reservation.totalPrice.toLocaleString() : '0円'}\nスタッフ: ${reservation.staffName}\n開始時間: ${formatTimeJP(reservation.startTimeUnix)}\n終了時間: ${formatTimeJP(reservation.endTimeUnix)}`
 
     const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
       text
@@ -126,7 +126,7 @@ export default function CompletePage() {
   const shareReservation = () => {
     if (!reservation) return
 
-    const shareText = `${salonConfig?.salonName}に${format(new Date(reservation.startTime_unix!), 'M月d日', { locale: ja })}の${reservation.startTime_unix ? format(new Date(reservation.startTime_unix), 'HH:mm', { locale: ja }) : '不明'}から予約しました！!\nメニューは${reservationItems?.menus.map((menu) => menu.name).join(', ')}です。${reservation.staffName}が担当します。料金は${reservation.totalPrice ? reservation.totalPrice.toLocaleString() : '0'}円です。`
+    const shareText = `${salonConfig?.salonName}に${format(new Date(reservation.startTimeUnix!), 'M月d日', { locale: ja })}の${reservation.endTimeUnix ? format(new Date(reservation.endTimeUnix), 'HH:mm', { locale: ja }) : '不明'}から予約しました！!\nメニューは${reservationItems?.menus.map((menu) => menu.name).join(', ')}です。${reservation.staffName}が担当します。料金は${reservation.totalPrice ? reservation.totalPrice.toLocaleString() : '0'}円です。`
 
     if (navigator.share) {
       navigator
@@ -290,7 +290,7 @@ export default function CompletePage() {
                       <span className="text-sm text-muted-foreground">予約日</span>
                     </div>
                     <span className="font-medium text-active">
-                      {formatDateJP(reservation.startTime_unix)}
+                      {formatDateJP(reservation.startTimeUnix)}
                     </span>
                   </div>
 
@@ -300,8 +300,8 @@ export default function CompletePage() {
                       <span className="text-sm text-muted-foreground">時間</span>
                     </div>
                     <span className="font-medium text-active">
-                      {formatTimeJP(reservation.startTime_unix)} 〜{' '}
-                      {formatTimeJP(reservation.endTime_unix)}
+                      {formatTimeJP(reservation.startTimeUnix)} 〜{' '}
+                      {formatTimeJP(reservation.endTimeUnix)}
                     </span>
                   </div>
                 </CardContent>

@@ -15,8 +15,8 @@ export const add = mutation({
     staffId: v.id('staff'),
     salonId: v.id('salon'),
     date: v.optional(v.string()),
-    startTime_unix: v.optional(v.number()),
-    endTime_unix: v.optional(v.number()),
+    startTimeUnix: v.optional(v.number()),
+    endTimeUnix: v.optional(v.number()),
     notes: v.optional(v.string()),
     type: v.optional(staffScheduleType),
     isAllDay: v.optional(v.boolean()),
@@ -64,8 +64,8 @@ export const update = mutation({
   args: {
     staffScheduleId: v.id('staff_schedule'),
     date: v.optional(v.string()),
-    startTime_unix: v.optional(v.number()),
-    endTime_unix: v.optional(v.number()),
+    startTimeUnix: v.optional(v.number()),
+    endTimeUnix: v.optional(v.number()),
     notes: v.optional(v.string()),
     type: v.optional(staffScheduleType),
     isAllDay: v.optional(v.boolean()),
@@ -110,8 +110,8 @@ export const upsert = mutation({
     staffId: v.id('staff'),
     salonId: v.id('salon'),
     date: v.optional(v.string()),
-    startTime_unix: v.optional(v.number()),
-    endTime_unix: v.optional(v.number()),
+    startTimeUnix: v.optional(v.number()),
+    endTimeUnix: v.optional(v.number()),
     notes: v.optional(v.string()),
     type: v.optional(staffScheduleType),
     isAllDay: v.optional(v.boolean()),
@@ -151,8 +151,8 @@ export const upsertSchedules = mutation({
     dates: v.array(
       v.object({
         date: v.string(),
-        startTime_unix: v.number(),
-        endTime_unix: v.number(),
+        startTimeUnix: v.number(),
+        endTimeUnix: v.number(),
         notes: v.optional(v.string()),
         isAllDay: v.optional(v.boolean()),
       })
@@ -219,8 +219,8 @@ export const upsertSchedules = mutation({
         if (existingSchedule) {
           // 既存のレコードを更新
           await ctx.db.patch(existingSchedule._id, {
-            startTime_unix: date.startTime_unix,
-            endTime_unix: date.endTime_unix,
+            startTimeUnix: date.startTimeUnix,
+            endTimeUnix: date.endTimeUnix,
             type: args.type,
             notes: date.notes,
             isAllDay: date.isAllDay,
@@ -232,8 +232,8 @@ export const upsertSchedules = mutation({
             staffId: args.staffId,
             salonId: args.salonId,
             date: date.date,
-            startTime_unix: date.startTime_unix,
-            endTime_unix: date.endTime_unix,
+            startTimeUnix: date.startTimeUnix,
+            endTimeUnix: date.endTimeUnix,
             type: args.type,
             notes: date.notes,
             isAllDay: date.isAllDay,

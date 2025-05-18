@@ -34,8 +34,8 @@ export const create = mutation({
     unitPrice: v.optional(v.number()),
     totalPrice: v.optional(v.number()),
     status: v.optional(reservationStatusType),
-    startTime_unix: v.optional(v.number()),
-    endTime_unix: v.optional(v.number()),
+    startTimeUnix: v.optional(v.number()),
+    endTimeUnix: v.optional(v.number()),
     hairImgFilePath: v.optional(v.string()),
     usePoints: v.optional(v.number()),
     couponId: v.optional(v.id('coupon')),
@@ -54,7 +54,7 @@ export const create = mutation({
     validateReservation(args)
 
     // 必須フィールドの存在確認
-    if (!args.startTime_unix || !args.endTime_unix) {
+    if (!args.startTimeUnix || !args.endTimeUnix) {
       throw throwConvexError({
         message: '予約の開始時間と終了時間は必須です',
         status: 400,
@@ -94,7 +94,7 @@ export const create = mutation({
       })
     }
 
-    if (args.startTime_unix === undefined || args.endTime_unix === undefined) {
+    if (args.startTimeUnix === undefined || args.endTimeUnix === undefined) {
       throw throwConvexError({
         message: '予約の開始時間と終了時間は必須です',
         status: 400,
@@ -112,8 +112,8 @@ export const create = mutation({
       {
         salonId: args.salonId,
         staffId: args.staffId,
-        startTime_unix: args.startTime_unix,
-        endTime_unix: args.endTime_unix,
+        startTimeUnix: args.startTimeUnix,
+        endTimeUnix: args.endTimeUnix,
       }
     )
     if (checkDoubleBooking.isOverlapping) {
@@ -164,8 +164,8 @@ export const update = mutation({
     unitPrice: v.optional(v.number()),
     totalPrice: v.optional(v.number()),
     status: v.optional(reservationStatusType),
-    startTime_unix: v.optional(v.number()),
-    endTime_unix: v.optional(v.number()),
+    startTimeUnix: v.optional(v.number()),
+    endTimeUnix: v.optional(v.number()),
     hairImgFilePath: v.optional(v.string()),
     usePoints: v.optional(v.number()),
     couponId: v.optional(v.id('coupon')),
@@ -199,13 +199,13 @@ export const update = mutation({
 
     // 予約時間が変更されている場合、重複チェックを行う
     if (
-      args.startTime_unix !== undefined &&
-      args.endTime_unix !== undefined &&
-      (args.startTime_unix !== reservation.startTime_unix ||
-        args.endTime_unix !== reservation.endTime_unix)
+      args.startTimeUnix !== undefined &&
+      args.endTimeUnix !== undefined &&
+      (args.startTimeUnix !== reservation.startTimeUnix ||
+        args.endTimeUnix !== reservation.endTimeUnix)
     ) {
       // ミリ秒単位のタイムスタンプをそのまま使用し、予約日を取得
-      const reservationDate = new Date(args.startTime_unix!)
+      const reservationDate = new Date(args.startTimeUnix!)
 
       // 予約時間の重複チェック（自分自身の予約は除外）
       const staffId = reservation.staffId
@@ -227,8 +227,8 @@ export const update = mutation({
             q.neq(q.field('_id'), args.reservationId),
             q.or(q.eq(q.field('status'), 'confirmed'), q.eq(q.field('status'), 'pending')),
             // 予約時間と重複するかどうかをチェック
-            q.lt(q.field('startTime_unix'), args.endTime_unix!),
-            q.gt(q.field('endTime_unix'), args.startTime_unix!)
+            q.lt(q.field('startTimeUnix'), args.endTimeUnix!),
+            q.gt(q.field('endTimeUnix'), args.startTimeUnix!)
           )
         )
         .collect()
@@ -289,8 +289,8 @@ export const upsert = mutation({
     unitPrice: v.optional(v.number()),
     totalPrice: v.optional(v.number()),
     status: v.optional(reservationStatusType),
-    startTime_unix: v.optional(v.number()),
-    endTime_unix: v.optional(v.number()),
+    startTimeUnix: v.optional(v.number()),
+    endTimeUnix: v.optional(v.number()),
     hairImgFilePath: v.optional(v.string()),
     usePoints: v.optional(v.number()),
     couponId: v.optional(v.id('coupon')),
@@ -303,7 +303,7 @@ export const upsert = mutation({
     validateReservation(args)
 
     // 必須フィールドの存在確認
-    if (!args.startTime_unix || !args.endTime_unix) {
+    if (!args.startTimeUnix || !args.endTimeUnix) {
       throw throwConvexError({
         message: '予約の開始時間と終了時間は必須です',
         status: 400,
@@ -326,8 +326,8 @@ export const upsert = mutation({
       // 既存予約の更新の場合
       // 予約時間が変更されている場合、重複チェックを行う
       if (
-        args.startTime_unix !== existingReservation.startTime_unix ||
-        args.endTime_unix !== existingReservation.endTime_unix
+        args.startTimeUnix !== existingReservation.startTimeUnix ||
+        args.endTimeUnix !== existingReservation.endTimeUnix
       ) {
         // 既存の予約を除外した形で利用可能かチェック
         const existingReservations = await ctx.db
@@ -345,8 +345,8 @@ export const upsert = mutation({
               q.neq(q.field('_id'), args.reservationId),
               q.or(q.eq(q.field('status'), 'confirmed'), q.eq(q.field('status'), 'pending')),
               // 予約時間と重複するかどうかをチェック
-              q.lt(q.field('startTime_unix'), args.endTime_unix!),
-              q.gt(q.field('endTime_unix'), args.startTime_unix!)
+              q.lt(q.field('startTimeUnix'), args.endTimeUnix!),
+              q.gt(q.field('endTimeUnix'), args.startTimeUnix!)
             )
           )
           .collect()

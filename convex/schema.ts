@@ -34,7 +34,7 @@ import {
  * 5. 空き時間を選択してもらい、予約を作成する。
  * 6. 予約を作成する。
  * 7. ポイント利用時はreservation_point_authテーブルを作成して、利用時に使用するコードを生成し、顧客にもLineで通知する。利用時に店舗でauthCodeを店舗で店員に見せて、店員が入力コードが合っていればポイントを利用する。ポイントトランザクションにはポイント利用の記録を作成する。利用が完了した際にreservation_point_authテーブルのレコードを削除する。予約のキャンセル時にはreservation_point_authテーブルのレコードを削除する。
- * 8. ポイント付与時は。予約が完了した際にpoint_queueテーブルにポイント付与の記録を作成する。scheduledFor_unixの利用時の翌月15日にスケジュール関数でポイント付与する。付与時にトランザクションを作成し、ポイント付与の記録を作成する。完了時にpoint_queueテーブルのレコードを削除する。予約のキャンセル時にはpoint_queueテーブルのレコードを削除する。
+ * 8. ポイント付与時は。予約が完了した際にpoint_queueテーブルにポイント付与の記録を作成する。scheduledForUnixの利用時の翌月15日にスケジュール関数でポイント付与する。付与時にトランザクションを作成し、ポイント付与の記録を作成する。完了時にpoint_queueテーブルのレコードを削除する。予約のキャンセル時にはpoint_queueテーブルのレコードを削除する。
  */
 export default defineSchema({
   // =====================
@@ -218,8 +218,8 @@ export default defineSchema({
     staffId: v.id('staff'),
     salonId: v.id('salon'),
     date: v.optional(v.string()), // 予約する日付 "YYYY-MM-DD" または "YYYY/MM/DD" 形式
-    startTime_unix: v.optional(v.number()), // 予約した施術の開始時間 UNIXタイム isAllDay: falseの場合はこちらで判定する予約がスケジュールに含まれるかどうかを判定するために使用
-    endTime_unix: v.optional(v.number()), // 予約した施術の終了時間 UNIXタイム isAllDay: falseの場合はこちらで判定する予約がスケジュールに含まれるかどうかを判定するために使用
+    startTimeUnix: v.optional(v.number()), // 予約した施術の開始時間 UNIXタイム isAllDay: falseの場合はこちらで判定する予約がスケジュールに含まれるかどうかを判定するために使用
+    endTimeUnix: v.optional(v.number()), // 予約した施術の終了時間 UNIXタイム isAllDay: falseの場合はこちらで判定する予約がスケジュールに含まれるかどうかを判定するために使用
     notes: v.optional(v.string()), // メモ
     type: v.optional(staffScheduleType), // 予約タイプ 現状はholiday(休日)のみ
     isAllDay: v.optional(v.boolean()), // true: 全日予約, false: 時間予約(時間指定が有効指定時間内のみ予約を受け付けないためのフラグ)
@@ -229,13 +229,13 @@ export default defineSchema({
     .index('by_salon_staff_id', ['salonId', 'staffId', 'isArchive'])
     .index('by_salon_staff_date', ['salonId', 'staffId', 'date', 'isArchive'])
     .index('by_salon_staff_date_type', ['salonId', 'staffId', 'date', 'type', 'isArchive'])
-    .index('by_staff_start_end', ['staffId', 'startTime_unix', 'endTime_unix', 'isArchive'])
+    .index('by_staff_start_end', ['staffId', 'startTimeUnix', 'endTimeUnix', 'isArchive'])
     .index('by_salon_staff_all_day', ['salonId', 'staffId', 'isAllDay', 'isArchive'])
     .index('by_salon_data_start_end', [
       'salonId',
       'date',
-      'startTime_unix',
-      'endTime_unix',
+      'startTimeUnix',
+      'endTimeUnix',
       'isArchive',
     ])
     .index('by_salon_staff_date_all_day', ['salonId', 'staffId', 'date', 'isAllDay', 'isArchive']),
@@ -255,7 +255,7 @@ export default defineSchema({
     lastName: v.optional(v.string()), // 苗字
     searchbleText: v.optional(v.string()), // 検索用テキスト
     useCount: v.optional(v.number()), // 利用回数
-    lastReservationDate_unix: v.optional(v.number()), // 最終予約日
+    lastReservationDateUnix: v.optional(v.number()), // 最終予約日
     tags: v.optional(v.array(v.string())), // タグ
     initialTracking: v.optional(
       // 未実装
@@ -296,7 +296,7 @@ export default defineSchema({
     customerId: v.id('customer'), // 顧客ID
     salonId: v.id('salon'), // サロンID
     totalPoints: v.optional(v.number()), // 保有ポイント
-    lastTransactionDate_unix: v.optional(v.number()), // 最終トランザクション日時
+    lastTransactionDateUnix: v.optional(v.number()), // 最終トランザクション日時
     ...CommonFields,
   })
     .index('by_salon_customer_archive', ['salonId', 'customerId', 'isArchive'])
@@ -366,16 +366,16 @@ export default defineSchema({
   time_card: defineTable({
     salonId: v.id('salon'), // サロンID
     staffId: v.id('staff'), // スタッフID
-    startDateTime_unix: v.optional(v.number()), // 開始時間 UNIXタイム
-    endDateTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
+    startDateTimeUnix: v.optional(v.number()), // 開始時間 UNIXタイム
+    endDateTimeUnix: v.optional(v.number()), // 終了時間 UNIXタイム
     workedTime: v.optional(v.number()), // 勤務時間(分)
     notes: v.optional(v.string()), // メモ
     ...CommonFields,
   })
     .index('by_salon_staff', ['salonId', 'staffId', 'isArchive'])
-    .index('by_salon_staff_start_time', ['salonId', 'staffId', 'isArchive', 'startDateTime_unix'])
-    .index('by_salon_start_time', ['salonId', 'startDateTime_unix', 'isArchive'])
-    .index('by_salon_staff_end_time', ['salonId', 'staffId', 'endDateTime_unix', 'isArchive'])
+    .index('by_salon_staff_start_time', ['salonId', 'staffId', 'isArchive', 'startDateTimeUnix'])
+    .index('by_salon_start_time', ['salonId', 'startDateTimeUnix', 'isArchive'])
+    .index('by_salon_staff_end_time', ['salonId', 'staffId', 'endDateTimeUnix', 'isArchive'])
     .index('by_salon_notes', ['salonId', 'notes', 'isArchive']),
 
   // スタッフの設定テーブル
@@ -485,8 +485,8 @@ export default defineSchema({
   coupon_config: defineTable({
     salonId: v.id('salon'), // サロンID
     couponId: v.id('coupon'), // クーポンID
-    startDate_unix: v.optional(v.number()), // 開始日 UNIXタイム
-    endDate_unix: v.optional(v.number()), // 終了日 UNIXタイム
+    startDateUnix: v.optional(v.number()), // 開始日 UNIXタイム
+    endDateUnix: v.optional(v.number()), // 終了日 UNIXタイム
     maxUseCount: v.optional(v.number()), // 最大利用回数
     numberOfUse: v.optional(v.number()), // 現在の利用回数
     ...CommonFields,
@@ -499,13 +499,13 @@ export default defineSchema({
     couponId: v.id('coupon'), // クーポンID
     customerId: v.id('customer'), // 顧客ID
     reservationId: v.id('reservation'), // 予約ID
-    transactionDate_unix: v.optional(v.number()), // 利用日時 UNIXタイム
+    transactionDateUnix: v.optional(v.number()), // 利用日時 UNIXタイム
     ...CommonFields,
   })
     .index('by_coupon_id', ['couponId', 'isArchive'])
     .index('by_customer_id', ['customerId', 'isArchive'])
     .index('by_reservation_id', ['reservationId', 'isArchive'])
-    .index('by_transaction_date', ['transactionDate_unix', 'isArchive']),
+    .index('by_transaction_date', ['transactionDateUnix', 'isArchive']),
 
   // =====================
   // RESERVATION
@@ -536,8 +536,8 @@ export default defineSchema({
     unitPrice: v.optional(v.number()), // 単価
     totalPrice: v.optional(v.number()), // 合計金額
     status: v.optional(reservationStatusType), // 予約ステータス
-    startTime_unix: v.optional(v.number()), // 開始時間 UNIXタイム
-    endTime_unix: v.optional(v.number()), // 終了時間 UNIXタイム
+    startTimeUnix: v.optional(v.number()), // 開始時間 UNIXタイム
+    endTimeUnix: v.optional(v.number()), // 終了時間 UNIXタイム
     usePoints: v.optional(v.number()), // 使用ポイント数
     couponId: v.optional(v.id('coupon')), // クーポンID
     couponDiscount: v.optional(v.number()), // クーポン割引額
@@ -557,19 +557,13 @@ export default defineSchema({
     .index('by_customer_id', ['salonId', 'customerId', 'isArchive'])
     .index('by_staff_id_status', ['salonId', 'staffId', 'isArchive', 'status'])
     .index('by_status', ['salonId', 'status', 'isArchive'])
-    .index('by_salon_status_start', ['salonId', 'isArchive', 'status', 'startTime_unix'])
-    .index('by_staff_date', ['salonId', 'staffId', 'isArchive', 'startTime_unix'])
-    .index('by_staff_date_status', ['salonId', 'staffId', 'isArchive', 'status', 'startTime_unix'])
-    .index('by_customer_date', ['salonId', 'customerId', 'isArchive', 'startTime_unix'])
-    .index('by_salon_staff_status_start_end', [
-      'salonId',
-      'staffId',
-      'isArchive',
-      'status',
-      'startTime_unix',
-      'endTime_unix',
-    ]),
-
+    .index('by_status_start_time', ['status', 'startTimeUnix'])
+    .index('by_salon_status_start', ['salonId', 'isArchive', 'status', 'startTimeUnix'])
+    .index('by_staff_date', ['salonId', 'staffId', 'isArchive', 'startTimeUnix'])
+    .index('by_staff_date_status', ['salonId', 'staffId', 'isArchive', 'status', 'startTimeUnix'])
+    .index('by_customer_date', ['salonId', 'customerId', 'isArchive', 'startTimeUnix'])
+    .index('by_salon_id_status_start_time', ['salonId', 'status', 'isArchive', 'startTimeUnix'])
+    .index('by_salon_staff_status_start_end', ['salonId', 'staffId', "isArchive", 'status', 'startTimeUnix', 'endTimeUnix']),
   // =====================
   // POINT
   // =====================
@@ -600,12 +594,12 @@ export default defineSchema({
     reservationId: v.id('reservation'), // 予約ID
     customerId: v.id('customer'), // 顧客ID
     points: v.optional(v.number()), // 加算ポイント
-    scheduledFor_unix: v.optional(v.number()), // 付与予定日時 UNIXタイム
+    scheduledForUnix: v.optional(v.number()), // 付与予定日時 UNIXタイム
     ...CommonFields,
   })
     .index('by_reservation_id', ['reservationId', 'isArchive'])
     .index('by_customer_id', ['customerId', 'isArchive'])
-    .index('by_scheduled_for', ['scheduledFor_unix', 'isArchive'])
+    .index('by_scheduled_for', ['scheduledForUnix', 'isArchive'])
     .index('by_salon_id', ['salonId', 'isArchive']),
 
   // 予約ポイント利用時の認証 予約完了時に生成しauthCodeを顧客のLineに送付する
@@ -613,13 +607,13 @@ export default defineSchema({
     reservationId: v.id('reservation'), // 予約ID
     customerId: v.id('customer'), // 顧客ID
     authCode: v.optional(v.string()), // 認証コード (6桁の大文字英語と数字)
-    expirationTime_unix: v.optional(v.number()), // 有効期限 UNIXタイム
+    expirationTimeUnix: v.optional(v.number()), // 有効期限 UNIXタイム
     points: v.optional(v.number()), // 利用ポイント
     ...CommonFields,
   })
     .index('by_reservation_id', ['reservationId', 'isArchive'])
     .index('by_customer_id', ['customerId', 'isArchive'])
-    .index('by_expiration_time', ['expirationTime_unix', 'isArchive']),
+    .index('by_expiration_time', ['expirationTimeUnix', 'isArchive']),
 
   // ポイント取引履歴
   point_transaction: defineTable({
@@ -628,7 +622,7 @@ export default defineSchema({
     customerId: v.id('customer'), // 顧客ID
     points: v.optional(v.number()), // ポイント数 (加算減算したポイント)
     transactionType: v.optional(pointTransactionType), // トランザクションタイプ
-    transactionDate_unix: v.optional(v.number()), // 取引日時 UNIXタイム
+    transactionDateUnix: v.optional(v.number()), // 取引日時 UNIXタイム
     ...CommonFields,
   })
     .index('by_salon_reservation_id', ['salonId', 'reservationId', 'isArchive'])

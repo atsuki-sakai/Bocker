@@ -218,8 +218,8 @@ export default function CustomerEditForm() {
         lineUserName: completeCustomer.customer.lineUserName ?? '',
         // Recalculate <searchbleText> based on submitted first/last name
         useCount: completeCustomer.customer.useCount,
-        lastReservationDate_unix: completeCustomer.customer.lastReservationDate_unix,
-        lastTransactionDate_unix: completeCustomer.customerPoints?.lastTransactionDate_unix,
+        lastReservationDateUnix: completeCustomer.customer.lastReservationDateUnix,
+        lastTransactionDateUnix: completeCustomer.customerPoints?.lastTransactionDateUnix,
       }
 
       await updateRelatedTables(payload)

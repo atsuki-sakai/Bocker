@@ -8,8 +8,8 @@ export const create = mutation({
   args: {
     salonId: v.id('salon'),
     couponId: v.id('coupon'),
-    startDate_unix: v.optional(v.number()),
-    endDate_unix: v.optional(v.number()),
+    startDateUnix: v.optional(v.number()),
+    endDateUnix: v.optional(v.number()),
     maxUseCount: v.optional(v.number()),
     numberOfUse: v.optional(v.number()),
   },
@@ -23,8 +23,8 @@ export const create = mutation({
 export const update = mutation({
   args: {
     couponConfigId: v.id('coupon_config'),
-    startDate_unix: v.optional(v.number()),
-    endDate_unix: v.optional(v.number()),
+    startDateUnix: v.optional(v.number()),
+    endDateUnix: v.optional(v.number()),
     maxUseCount: v.optional(v.number()),
     numberOfUse: v.optional(v.number()),
   },

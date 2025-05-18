@@ -57,8 +57,8 @@ interface Reservation {
   staffId?: Id<'staff'>
   staffName?: string
   customerName?: string
-  startTime_unix?: number
-  endTime_unix?: number
+  startTimeUnix?: number
+  endTimeUnix?: number
   totalPrice?: number
   status?: ReservationStatus
   isArchive?: boolean
@@ -160,15 +160,15 @@ const ReservationCard: React.FC<ReservationCardProps> = memo(({ reservation }) =
 
           <div className="flex items-center gap-2 text-sm text-primary mb-1">
             <Calendar className="h-3.5 w-3.5" />
-            <span>{convertUnixTimeToDateString(reservation.startTime_unix!)}</span>
+            <span>{convertUnixTimeToDateString(reservation.startTimeUnix!)}</span>
           </div>
 
           <div className="flex items-center gap-2 text-base text-link-foreground font-semibold">
             <Clock className="h-4 w-4" />
             <span>
-              {reservation.startTime_unix ? formatJpTime(reservation.startTime_unix) : '--:--'}
+              {reservation.startTimeUnix ? formatJpTime(reservation.startTimeUnix) : '--:--'}
               {' 〜 '}
-              {reservation.endTime_unix ? formatJpTime(reservation.endTime_unix) : '--:--'}
+              {reservation.endTimeUnix ? formatJpTime(reservation.endTimeUnix) : '--:--'}
             </span>
           </div>
 
@@ -280,11 +280,11 @@ export default function ReservationList() {
     }
 
     reservations.forEach((r) => {
-      if (!r.startTime_unix) return
+      if (!r.startTimeUnix) return
 
       // UNIX 秒なら *1000 に変換
       const startDate = new Date(
-        r.startTime_unix > 3_000_000_000 ? r.startTime_unix : r.startTime_unix * 1000
+        r.startTimeUnix > 3_000_000_000 ? r.startTimeUnix : r.startTimeUnix * 1000
       )
 
       if (isWithinInterval(startDate, { start: todayStart, end: todayEnd })) {
@@ -465,7 +465,7 @@ export default function ReservationList() {
                 Object.entries(
                   groupedReservations[group.id]!.reduce<Record<string, Reservation[]>>((acc, r) => {
                     // 日付 (YYYY/MM/DD) ごとにグループ化
-                    const dateKey = convertUnixTimeToDateString(r.startTime_unix!)
+                    const dateKey = convertUnixTimeToDateString(r.startTimeUnix!)
                     if (!acc[dateKey]) acc[dateKey] = []
                     acc[dateKey].push(r)
                     return acc
@@ -479,7 +479,7 @@ export default function ReservationList() {
 
                     {/* その日の予約カード */}
                     {resArray
-                      .sort((a, b) => (a.startTime_unix || 0) - (b.startTime_unix || 0))
+                      .sort((a, b) => (a.startTimeUnix || 0) - (b.startTimeUnix || 0))
                       .map((reservation) => (
                         <ReservationCard key={reservation._id} reservation={reservation} />
                       ))}

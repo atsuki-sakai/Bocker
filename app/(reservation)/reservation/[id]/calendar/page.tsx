@@ -344,8 +344,8 @@ export default function CalendarPage() {
           ) +
           (selectedStaffCompleted.staff.extraCharge || 0),
         status: 'pending' as ReservationStatus,
-        startTime_unix: reservationStartDateTime.getTime(),
-        endTime_unix: reservationEndDateTime.getTime(),
+        startTimeUnix: reservationStartDateTime.getTime(),
+        endTimeUnix: reservationEndDateTime.getTime(),
         usePoints: usePoints,
         couponId: appliedDiscount.couponId || undefined,
         couponDiscount: appliedDiscount.discount || undefined,
@@ -561,8 +561,8 @@ export default function CalendarPage() {
           (usePoints && usePoints > 0 ? usePoints : 0) +
           (appliedDiscount.discount && appliedDiscount.discount > 0 ? appliedDiscount.discount : 0),
         // status: 'pending' as ReservationStatus, // statusは決済方法によって分岐後に設定
-        startTime_unix: reservationStartDateTime.getTime(),
-        endTime_unix: reservationEndDateTime.getTime(),
+        startTimeUnix: reservationStartDateTime.getTime(),
+        endTimeUnix: reservationEndDateTime.getTime(),
         usePoints: usePoints,
         couponId: appliedDiscount.couponId || undefined, // クーポン機能実装時に追加
         couponDiscount: appliedDiscount.discount || undefined, // ポイント割引とは別の純粋なクーポン割引額を想定
@@ -619,12 +619,12 @@ export default function CalendarPage() {
             customerId: sessionCustomer.customerId as Id<'customer'>,
             points: usePoints,
             transactionType: 'used', // 獲得、使用、調整、期限切れ
-            transactionDate_unix: new Date().getTime(),
+            transactionDateUnix: new Date().getTime(),
           })
           console.log(pointTransaction)
 
           await updateCustomerPointsMutation({
-            lastTransactionDate_unix: new Date().getTime(),
+            lastTransactionDateUnix: new Date().getTime(),
             customerPointsId: customerPoints._id as Id<'customer_points'>,
             totalPoints: customerPoints.totalPoints ? customerPoints.totalPoints - usePoints : 0,
           })
@@ -714,14 +714,14 @@ export default function CalendarPage() {
               : calculateTotal() * ((pointConfig.pointRate ?? 0) / 100)
           )
 
-          const scheduledFor_unix = reservationStartDateTime.getTime() + 1000 * 60 * 60 * 24 * 30 // 予約日の30日後
+          const scheduledForUnix = reservationStartDateTime.getTime() + 1000 * 60 * 60 * 24 * 30 // 予約日の30日後
 
           const pointQueue = await createPointQueueMutation({
             salonId: salonComplete.salon._id,
             reservationId: reservationId,
             customerId: sessionCustomer.customerId as Id<'customer'>,
             points: earnPoints,
-            scheduledFor_unix: scheduledFor_unix,
+            scheduledForUnix: scheduledForUnix,
           })
           console.log(pointQueue)
         }

@@ -141,8 +141,8 @@ export default function TimelinePage() {
     const dates: Record<string, boolean> = {}
 
     currentReservations.forEach((reservation) => {
-      // startTime_unix はミリ秒のタイムスタンプなので、そのまま使用
-      const startTime = new Date(reservation.startTime_unix!)
+      // startTimeUnix はミリ秒のタイムスタンプなので、そのまま使用
+      const startTime = new Date(reservation.startTimeUnix!)
       const dateKey = format(startTime, 'yyyy-MM-dd')
       dates[dateKey] = true
     })
@@ -159,7 +159,7 @@ export default function TimelinePage() {
   const renderSchedules = () => {
     if (!currentSchedules) return null
     return currentSchedules.map((schedule) => {
-      const startTime = new Date(schedule.startTime_unix!)
+      const startTime = new Date(schedule.startTimeUnix!)
       // ビュー外のスケジュールは表示しない
       if (viewMode === 'week') {
         if (
@@ -170,11 +170,11 @@ export default function TimelinePage() {
       } else {
         if (!isSameDay(startTime, selectedDate)) return null
       }
-      const endTime = new Date(schedule.endTime_unix!)
+      const endTime = new Date(schedule.endTimeUnix!)
       // 全日スケジュール
       if (schedule.isAllDay) {
         // 全日スケジュール: 00:00から23:59まで赤く表示
-        const dayIndex = (new Date(schedule.startTime_unix!).getDay() + 6) % 7
+        const dayIndex = (new Date(schedule.startTimeUnix!).getDay() + 6) % 7
         const colStart = viewMode === 'week' ? dayIndex + 2 : 1
         return (
           <li
@@ -228,9 +228,9 @@ export default function TimelinePage() {
     if (!currentReservations) return null
 
     return currentReservations.map((reservation) => {
-      // startTime_unix, endTime_unix はミリ秒のタイムスタンプなので、そのまま使用
-      const startTime = new Date(reservation.startTime_unix!)
-      const endTime = new Date(reservation.endTime_unix!)
+      // startTimeUnix, endTimeUnix はミリ秒のタイムスタンプなので、そのまま使用
+      const startTime = new Date(reservation.startTimeUnix!)
+      const endTime = new Date(reservation.endTimeUnix!)
 
       // 週表示の場合は週内の予約を全て表示
       // 日表示の場合は選択された日付の予約のみを表示

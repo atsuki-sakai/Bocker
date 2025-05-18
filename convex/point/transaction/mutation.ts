@@ -17,7 +17,7 @@ export const create = mutation({
     customerId: v.id('customer'),
     points: v.optional(v.number()),
     transactionType: v.optional(pointTransactionType), // 獲得、使用、調整、期限切れ
-    transactionDate_unix: v.optional(v.number()),
+    transactionDateUnix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
@@ -78,7 +78,7 @@ export const update = mutation({
     pointTransactionId: v.id('point_transaction'),
     points: v.optional(v.number()),
     transactionType: v.optional(pointTransactionType),
-    transactionDate_unix: v.optional(v.number()),
+    transactionDateUnix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -124,7 +124,7 @@ export const upsert = mutation({
     customerId: v.id('customer'),
     points: v.optional(v.number()),
     transactionType: v.optional(pointTransactionType),
-    transactionDate_unix: v.optional(v.number()),
+    transactionDateUnix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)

@@ -316,8 +316,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         fixedDiscountValue:
           submitData.fixedDiscountValue === null ? undefined : submitData.fixedDiscountValue,
         isActive: submitData.isActive,
-        startDate_unix: submitData.startDate.getTime(),
-        endDate_unix: submitData.endDate.getTime(),
+        startDateUnix: submitData.startDate.getTime(),
+        endDateUnix: submitData.endDate.getTime(),
         maxUseCount: submitData.maxUseCount,
         numberOfUse: submitData.numberOfUse,
         selectedMenuIds: selectedMenuIds,
@@ -339,8 +339,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         percentageDiscountValue: coupon.percentageDiscountValue ?? 1,
         fixedDiscountValue: coupon.fixedDiscountValue ?? 1,
         isActive: coupon.isActive,
-        startDate: new Date(couponConfig.startDate_unix ?? Date.now()),
-        endDate: new Date(couponConfig.endDate_unix ?? Date.now()),
+        startDate: new Date(couponConfig.startDateUnix ?? Date.now()),
+        endDate: new Date(couponConfig.endDateUnix ?? Date.now()),
         maxUseCount: couponConfig.maxUseCount ?? 0,
         numberOfUse: couponConfig.numberOfUse ?? 0,
       })

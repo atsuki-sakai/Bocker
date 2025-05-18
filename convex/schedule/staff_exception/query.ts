@@ -101,8 +101,8 @@ export const checkDoubleBooking = query({
   args: {
     salonId: v.id('salon'), // サロンID 予約がないか確認したいサロンの_id
     staffId: v.id('staff'), // スタッフID 予約がないか確認したいスタッフの_id
-    startTime_unix: v.number(), // 予約がないか確認したい時間の範囲の開始時間
-    endTime_unix: v.number(), // 予約がないか確認したい時間の範囲の終了時間
+    startTimeUnix: v.number(), // 予約がないか確認したい時間の範囲の開始時間
+    endTimeUnix: v.number(), // 予約がないか確認したい時間の範囲の終了時間
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)
@@ -116,8 +116,8 @@ export const checkDoubleBooking = query({
           .eq('staffId', args.staffId)
           .eq('isArchive', false)
           .eq('status', 'confirmed')
-          .gte('startTime_unix', args.startTime_unix) // Add time constraints
-          .lt('startTime_unix', args.endTime_unix)
+          .gte('startTimeUnix', args.startTimeUnix) // Add time constraints
+          .lt('startTimeUnix', args.endTimeUnix)
       )
       .first()
     if (reservations) {

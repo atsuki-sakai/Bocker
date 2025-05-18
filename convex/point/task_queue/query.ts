@@ -42,7 +42,7 @@ export const findByCustomerId = query({
 // スケジュール日からポイントキューを取得
 export const findByScheduledFor = query({
   args: {
-    scheduledFor_unix: v.number(),
+    scheduledForUnix: v.number(),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
@@ -51,7 +51,7 @@ export const findByScheduledFor = query({
     return await ctx.db
       .query('point_task_queue')
       .withIndex('by_scheduled_for', (q) =>
-        q.eq('scheduledFor_unix', args.scheduledFor_unix).eq('isArchive', false)
+        q.eq('scheduledForUnix', args.scheduledForUnix).eq('isArchive', false)
       )
       .paginate(args.paginationOpts);
   },

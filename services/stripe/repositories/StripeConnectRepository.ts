@@ -226,7 +226,7 @@ export class StripeConnectRepository {
         business_type: 'individual',
         business_profile: {
           mcc: '7230', // Beauty salon & barber shops
-          url: `${process.env.NEXT_PUBLIC_DEVELOP_URL || 'http://localhost:3000'}`,
+          url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}`,
         },
         settings: {
           payouts: {
@@ -250,6 +250,13 @@ export class StripeConnectRepository {
       });
 
       // アカウント連携用のリンクを生成
+      console.log('StripeConnectRepository.createConnectAccountLink: Using DEPLOY_URL ->', process.env.NEXT_PUBLIC_DEPLOY_URL);
+      console.log('StripeConnectRepository.createConnectAccountLink: accountLinks.create params ->', {
+        account: account.id,
+        refresh_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/setting?refresh=true`,
+        return_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/setting?success=true`,
+        type: 'account_onboarding',
+      });
       const accountLink = await this.stripe.accountLinks.create({
         account: account.id,
         refresh_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/setting?refresh=true`,

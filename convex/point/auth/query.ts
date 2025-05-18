@@ -41,15 +41,15 @@ export const findByCustomerId = query({
 // 有効期限から予約ポイント認証を取得
 export const findByExpirationTime = query({
   args: {
-    expirationTime_unix: v.number(),
+    expirationTimeUnix: v.number(),
   },
   handler: async (ctx, args) => {
-    validateRequiredNumber(args.expirationTime_unix, 'expirationTime_unix');
+    validateRequiredNumber(args.expirationTimeUnix, 'expirationTimeUnix');
     checkAuth(ctx, true);
     return await ctx.db
       .query('point_auth')
       .withIndex('by_expiration_time', (q) =>
-        q.eq('expirationTime_unix', args.expirationTime_unix).eq('isArchive', false)
+        q.eq('expirationTimeUnix', args.expirationTimeUnix).eq('isArchive', false)
       )
       .first();
   },

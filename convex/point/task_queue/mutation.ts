@@ -11,7 +11,7 @@ export const create = mutation({
     reservationId: v.id('reservation'),
     customerId: v.id('customer'),
     points: v.optional(v.number()),
-    scheduledFor_unix: v.optional(v.number()),
+    scheduledForUnix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
@@ -56,7 +56,7 @@ export const update = mutation({
   args: {
     pointQueueId: v.id('point_task_queue'),
     points: v.optional(v.number()),
-    scheduledFor_unix: v.optional(v.number()),
+    scheduledForUnix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -102,7 +102,7 @@ export const upsert = mutation({
     reservationId: v.id('reservation'),
     customerId: v.id('customer'),
     points: v.optional(v.number()),
-    scheduledFor_unix: v.optional(v.number()),
+    scheduledForUnix: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)

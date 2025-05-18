@@ -63,7 +63,7 @@ const schemaCustomer = z.object({
     .min(1, { message: '苗字は1文字以上で入力してください' })
     .max(100, { message: '苗字は100文字以内で入力してください' }), // 苗字
   useCount: z.number().max(9999, { message: '利用回数は9999回以内で入力してください' }).optional(), // 利用回数
-  lastReservationDate_unix: z
+  lastReservationDateUnix: z
     .number()
     .max(9999999999, { message: '最終予約日は9999999999以下で入力してください' })
     .optional(), // 最終予約日
@@ -130,14 +130,14 @@ export default function CustomerAddForm() {
         ...data,
         salonId: salon._id,
         tags: currentTags,
-        lastTransactionDate_unix: new Date().getTime() / 1000,
+        lastTransactionDateUnix: new Date().getTime() / 1000,
         // ageがnullの場合はundefinedに変換
         age: data.age === null ? undefined : data.age,
         // useCountがnullの場合はundefinedに変換 (必要に応じて他の数値フィールドも同様に)
         useCount: data.useCount === null ? undefined : data.useCount,
         // totalPointsがnullの場合はundefinedに変換 (必要に応じて他の数値フィールドも同様に)
         totalPoints: data.totalPoints === null ? undefined : data.totalPoints,
-        // lastReservationDate_unix は常に数値がセットされるため変換不要
+        // lastReservationDateUnix は常に数値がセットされるため変換不要
       }
 
       await createCompleteFields(body)

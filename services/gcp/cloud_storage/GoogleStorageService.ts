@@ -4,6 +4,8 @@ import { STORAGE_URL } from './constants'
 import { throwConvexError } from '@/lib/error'
 import { sanitizeFileName } from '@/lib/utils'
 import { Id } from '@/convex/_generated/dataModel';
+import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 /**
  * GCSクライアントとバケット設定を管理するクラス
  */
@@ -109,7 +111,8 @@ class GoogleStorageService {
     fileName: string,
     contentType: string,
     directory: string,
-    salonId: Id<"salon">
+    salonId: Id<"salon">,
+    isHotSpot: boolean = false
   ): Promise<UploadResult> {
     this.initializeIfNeeded()
 
@@ -118,8 +121,23 @@ class GoogleStorageService {
 
     try {
       const bucket = this.storage!.bucket(this.bucketName!)
-      const timestamp = new Date().toISOString().replace(/[-:Z]/g, '').split('.')[0]
-      const filePath = `${salonId}/${directory}/${timestamp}_${safeFileName}`
+      let filePath: string;
+      if (isHotSpot) {
+        // ホットスポット回避用：UUID＋ハッシュ＋日付階層
+        const ext = safeFileName.split('.').pop() ?? 'jpg';
+        const uuid = uuidv4();
+        const hash = crypto.createHash('sha1').update(uuid).digest('hex').slice(0, 6);
+        const hashDir = `${hash.slice(0,2)}/${hash.slice(2,4)}/${hash.slice(4,6)}`;
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = ('0' + (now.getMonth() + 1)).slice(-2);
+        const day = ('0' + now.getDate()).slice(-2);
+        filePath = `${salonId}/${directory}/${year}/${month}/${day}/${hashDir}/${uuid}.${ext}`;
+      } else {
+        // 通常時：タイムスタンプ＋元ファイル名
+        const timestamp = new Date().toISOString().replace(/[-:Z]/g, '').split('.')[0];
+        filePath = `${salonId}/${directory}/${timestamp}_${safeFileName}`;
+      }
       const blob = bucket.file(filePath)
 
       // バッファから直接アップロード
