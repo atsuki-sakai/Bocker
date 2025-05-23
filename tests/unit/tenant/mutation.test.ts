@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest'; // Removed beforeEach from here
 import { t, RpcApi } from '../setupUnit'; // Use t and RpcApi from setupUnit
 import { validateStringLength } from '@/convex/utils/validations';
 import { checkAuth } from '@/convex/utils/auth';
@@ -21,13 +21,7 @@ vi.mock('@/convex/utils/helpers', () => ({
 
 describe('Tenant Mutations', () => {
   // 't' is now available from setupUnit.ts
-
-  beforeEach(() => {
-    // t is initialized and vi.clearAllMocks() is called in setupUnit.ts's beforeEach
-    // If additional specific mocks for this test file are needed, vi.clearAllMocks()
-    // can be called here again, or be more granular.
-    // For now, relying on setupUnit's clear.
-  });
+  // The beforeEach block that was here has been removed as it was empty of active code.
 
   // Tests for 'create' mutation
   describe('create', () => {
@@ -68,14 +62,10 @@ describe('Tenant Mutations', () => {
     };
 
     it('should call checkAuth and validateStringLength', async () => {
-      // Mock the db query for upsert's internal check if tenant exists,
-      // assuming it might query before validation or auth in some paths.
-      // If auth/validation happens first, this specific mock might not be needed for this test.
-      (t.db.query as vi.Mock).mockReturnValue({
-        withIndex: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        first: vi.fn().mockResolvedValueOnce(null), // Simulate tenant not found
-      });
+      // Mock the db.query chain for the existence check within upsert
+      t.db.query('tenant')
+        .withIndex('by_user_archive', q => q.eq('user_id', baseArgs.user_id).eq('is_archive', false))
+        .returnsOnce(null); // Or [] if your code expects an array from .collect() before .first()
 
       await t.mutation(RpcApi["tenant/mutation"].upsert, baseArgs);
 
@@ -86,11 +76,11 @@ describe('Tenant Mutations', () => {
     });
 
     it('should call createRecord if tenant does not exist', async () => {
-      (t.db.query as vi.Mock).mockReturnValue({
-        withIndex: vi.fn().mockReturnThis(), // Assuming 'by_user_archive' or similar
-        eq: vi.fn().mockReturnThis(),       // Assuming eq('user_id', baseArgs.user_id)
-        first: vi.fn().mockResolvedValueOnce(null), // Tenant not found
-      });
+      // Mock the specific query for this test case
+      t.db.query('tenant')
+        .withIndex('by_user_archive', q => q.eq('user_id', baseArgs.user_id).eq('is_archive', false))
+        .returnsOnce(null); // Simulate tenant not found
+      
       (createRecord as vi.Mock).mockResolvedValue({ _id: 'new_tenant_id', ...baseArgs });
       
       const result = await t.mutation(RpcApi["tenant/mutation"].upsert, baseArgs);
@@ -101,12 +91,12 @@ describe('Tenant Mutations', () => {
     });
 
     it('should call updateRecord if tenant exists', async () => {
-      const existingTenant = { _id: 'existing_tenant_id', ...baseArgs, is_archive: false };
-      (t.db.query as vi.Mock).mockReturnValue({
-        withIndex: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        first: vi.fn().mockResolvedValueOnce(existingTenant), // Tenant found
-      });
+      const existingTenant = { _id: 'existing_tenant_id' as any, ...baseArgs, is_archive: false };
+      // Mock the specific query for this test case
+      t.db.query('tenant')
+        .withIndex('by_user_archive', q => q.eq('user_id', baseArgs.user_id).eq('is_archive', false))
+        .returnsOnce(existingTenant); // Simulate tenant found
+        
       (updateRecord as vi.Mock).mockResolvedValue({ ...existingTenant, user_email: 'updated@example.com' });
 
       const updatedArgs = { ...baseArgs, user_email: 'updated@example.com' };
