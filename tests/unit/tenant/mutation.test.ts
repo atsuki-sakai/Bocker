@@ -1,7 +1,5 @@
-import { ConvexTestingHelper } from 'convex-test';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { api } from '@/convex/_generated/api';
-import { create, upsert, archive } from '@/convex/tenant/mutation'; // Using alias path
+import { t, RpcApi } from '../setupUnit'; // Use t and RpcApi from setupUnit
 import { validateStringLength } from '@/convex/utils/validations';
 import { checkAuth } from '@/convex/utils/auth';
 import { createRecord, updateRecord, archiveRecord } from '@/convex/utils/helpers';
@@ -22,11 +20,13 @@ vi.mock('@/convex/utils/helpers', () => ({
 }));
 
 describe('Tenant Mutations', () => {
-  let t: ConvexTestingHelper<typeof api>;
+  // 't' is now available from setupUnit.ts
 
   beforeEach(() => {
-    t = new ConvexTestingHelper(api);
-    vi.clearAllMocks(); // Clear mocks before each test
+    // t is initialized and vi.clearAllMocks() is called in setupUnit.ts's beforeEach
+    // If additional specific mocks for this test file are needed, vi.clearAllMocks()
+    // can be called here again, or be more granular.
+    // For now, relying on setupUnit's clear.
   });
 
   // Tests for 'create' mutation
@@ -44,13 +44,17 @@ describe('Tenant Mutations', () => {
       };
       (createRecord as vi.Mock).mockResolvedValue({ _id: 'tenant_id_123', ...args });
 
-      const result = await t.run(create, args);
+      const result = await t.mutation(RpcApi["tenant/mutation"].create, args);
 
       expect(validateStringLength).toHaveBeenCalledWith(args.user_id, 'user_id');
       expect(validateStringLength).toHaveBeenCalledWith(args.user_email, 'user_email');
       expect(validateStringLength).toHaveBeenCalledWith(args.stripe_customer_id, 'stripe_customer_id');
-      // ... add checks for all validated fields
-      expect(createRecord).toHaveBeenCalledWith(expect.anything(), 'tenant', args);
+      expect(validateStringLength).toHaveBeenCalledWith(args.subscription_id, 'subscription_id');
+      expect(validateStringLength).toHaveBeenCalledWith(args.subscription_status, 'subscription_status');
+      expect(validateStringLength).toHaveBeenCalledWith(args.plan_name, 'plan_name');
+      expect(validateStringLength).toHaveBeenCalledWith(args.price_id, 'price_id');
+      
+      expect(createRecord).toHaveBeenCalledWith(expect.anything(), 'tenant', args); // expect.anything() for ctx
       expect(result).toEqual({ _id: 'tenant_id_123', ...args });
     });
   });
@@ -64,7 +68,17 @@ describe('Tenant Mutations', () => {
     };
 
     it('should call checkAuth and validateStringLength', async () => {
-      await t.run(upsert, baseArgs);
+      // Mock the db query for upsert's internal check if tenant exists,
+      // assuming it might query before validation or auth in some paths.
+      // If auth/validation happens first, this specific mock might not be needed for this test.
+      (t.db.query as vi.Mock).mockReturnValue({
+        withIndex: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        first: vi.fn().mockResolvedValueOnce(null), // Simulate tenant not found
+      });
+
+      await t.mutation(RpcApi["tenant/mutation"].upsert, baseArgs);
+
       expect(checkAuth).toHaveBeenCalled();
       expect(validateStringLength).toHaveBeenCalledWith(baseArgs.user_id, 'user_id');
       expect(validateStringLength).toHaveBeenCalledWith(baseArgs.user_email, 'user_email');
@@ -72,10 +86,14 @@ describe('Tenant Mutations', () => {
     });
 
     it('should call createRecord if tenant does not exist', async () => {
-      t.db.query('tenant').withIndex('by_user_archive').returnsOnce([]); // Mock no existing record
+      (t.db.query as vi.Mock).mockReturnValue({
+        withIndex: vi.fn().mockReturnThis(), // Assuming 'by_user_archive' or similar
+        eq: vi.fn().mockReturnThis(),       // Assuming eq('user_id', baseArgs.user_id)
+        first: vi.fn().mockResolvedValueOnce(null), // Tenant not found
+      });
       (createRecord as vi.Mock).mockResolvedValue({ _id: 'new_tenant_id', ...baseArgs });
       
-      const result = await t.run(upsert, baseArgs);
+      const result = await t.mutation(RpcApi["tenant/mutation"].upsert, baseArgs);
 
       expect(createRecord).toHaveBeenCalledWith(expect.anything(), 'tenant', baseArgs);
       expect(updateRecord).not.toHaveBeenCalled();
@@ -84,11 +102,15 @@ describe('Tenant Mutations', () => {
 
     it('should call updateRecord if tenant exists', async () => {
       const existingTenant = { _id: 'existing_tenant_id', ...baseArgs, is_archive: false };
-      t.db.query('tenant').withIndex('by_user_archive').returnsOnce([existingTenant]); // Mock existing record
+      (t.db.query as vi.Mock).mockReturnValue({
+        withIndex: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        first: vi.fn().mockResolvedValueOnce(existingTenant), // Tenant found
+      });
       (updateRecord as vi.Mock).mockResolvedValue({ ...existingTenant, user_email: 'updated@example.com' });
 
       const updatedArgs = { ...baseArgs, user_email: 'updated@example.com' };
-      const result = await t.run(upsert, updatedArgs);
+      const result = await t.mutation(RpcApi["tenant/mutation"].upsert, updatedArgs);
 
       expect(updateRecord).toHaveBeenCalledWith(expect.anything(), existingTenant._id, updatedArgs);
       expect(createRecord).not.toHaveBeenCalled();
@@ -102,7 +124,7 @@ describe('Tenant Mutations', () => {
       const args = { tenant_id: 'tenant_to_archive_id' as any }; // Cast if Id type needs it
       (archiveRecord as vi.Mock).mockResolvedValue(undefined); // archiveRecord might not return anything significant
 
-      await t.run(archive, args);
+      await t.mutation(RpcApi["tenant/mutation"].archive, args);
 
       expect(checkAuth).toHaveBeenCalled();
       expect(archiveRecord).toHaveBeenCalledWith(expect.anything(), args.tenant_id);

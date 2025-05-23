@@ -1,22 +1,25 @@
-import { ConvexTestingHelper } from 'convex-test';
+import { convexTest } from 'convex-test';
 import { beforeEach, vi } from 'vitest';
-import { api } from '@/convex/_generated/api'; // Assuming this is the correct path to your API type definitions
+import schema from '../../convex/schema'; // Adjusted path to schema
+import { type ApiFromModules, type FunctionLocator } from 'convex/server'; // For typing 't' correctly
+import { api as RpcApi } from '@/convex/_generated/api'; // Keep for potential specific API object use or type comparison
+
+// Define a more precise type for 't' based on convexTest usage
+// This is a generic way to get the type, specific to your project's api structure.
+// If your `api` object from `@/convex/_generated/api` is already the fully typed one, you might use that.
+// However, `convexTest` itself often infers this. For explicit typing:
+type ConvexTestClient = ReturnType<typeof convexTest<typeof schema>>;
 
 // Mock Convex client
-let t: ConvexTestingHelper<typeof api>;
+let t: ConvexTestClient;
 
 beforeEach(() => {
-  t = new ConvexTestingHelper(api);
+  t = convexTest(schema);
   // Optional: If you need to mock specific Convex functions or modules, do it here.
-  // For example, mocking auth:
   // vi.mock('@/convex/utils/auth', () => ({
-  //   checkAuth: vi.fn().mockResolvedValue({ user: { id: 'test_user_id' } }) // Adjust mock as needed
+  //   checkAuth: vi.fn().mockResolvedValue({ user: { id: 'test_user_id' } })
   // }));
-
-  // Optional: Clear any other mocks or reset states if necessary
   vi.clearAllMocks();
 });
 
-// Export the testing helper instance if you need to use it directly in tests,
-// though often it's used implicitly or through specific test utilities.
-export { t };
+export { t, RpcApi }; // Export RpcApi as well if it's used by tests directly
