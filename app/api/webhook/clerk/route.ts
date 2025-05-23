@@ -86,8 +86,8 @@ export async function POST(req: Request) {
       const email = email_addresses[0]?.email_address || 'no-email';
       // クリティカルな操作は再試行付きで実行
       const existingSalon = await retryOperation(() =>
-        fetchQuery(api.salon.core.query.findByClerkId, {
-          clerkId: id,
+        fetchQuery(api.tenant.core.query.findByUserId, {
+          user_id: id,
         }).catch((err) => {
           throw err;
         })

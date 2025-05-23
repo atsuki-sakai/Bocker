@@ -1,659 +1,824 @@
+/* =============================================================
+ * Convex スキーマ定義（美容サロン向けマルチテナント SaaS "Bocker"）
+ * =============================================================
+ * ■ 全体ポリシー
+ * -----------------------------------------------------------------
+ * 1. **データ整合性と時刻の基準**:
+ *    - すべての時間は UNIX エポック（ミリ秒、UTC）で保存し、フロントエンドでユーザーのタイムゾーン（日本時間など）へ変換表示します。
+ *    - 日付文字列は "YYYY-MM-DD"、時間文字列(Hour)は "HH:MM" 形式を基本とします（例: スケジュール設定）。
+ * 2. **マルチテナントアーキテクチャ**:
+ *    - 全ての業務データ用テーブルは `tenant_id` を必須とし、多くの場合は `org_id`（店舗ID）も組み合わせます。
+ *    - クエリの際は、これらのIDを第一キーとする複合インデックスを積極的に利用し、テナント間のデータ分離とクエリ効率を保証します。
+ * 3. **論理削除の徹底**:
+ *    - `is_archive` (boolean) フラグを `CommonFields` に含め、原則として物理削除は行わず論理削除を採用します。
+ *    - 通常のデータ取得クエリでは `is_archive: false` を条件に含めます。複合インデックスの末尾に配置することで、アクティブなデータへのアクセスを効率化します。
+ * 4. **共通メタフィールド (`CommonFields`)**:
+ *    - `created_at` (作成日時), `updated_at` (最終更新日時), `_creationTime` (Convex自動付与), `is_archive` (論理削除フラグ), `sort_key` (汎用ソートキー、updated_atと連動推奨) を定義し、監査、論理削除、並び替え操作を横断的にサポートします。
+ * 5. **スケーラビリティ戦略**:
+ *    - **アクティブデータ中心**: Convex上には主にアクティブなデータ（例: 未来の予約、メニュー、スタッフ情報など予約に関連するデータ）を保持します。
+ *    - **過去データのアーカイブ**: 過去の予約データや顧客データは、毎晩、深夜にSupabaseへ移行します。
+ *      - 具体的な移行基準例:
+ *        - `reservation`: 施術完了し現在より過去の予約データ。
+ *        - `customer` (Supabase側で管理): 最終来店日から2年経過したアクティブでない顧客データなど。
+ *    - この運用により、Convexクラスタ内のドキュメント数を適正範囲（目標: 数百万レコードオーダー）に保ち、パフォーマンスとコスト効率を維持します。
+ * 6. **命名規則**:
+ * 　　supabaseとの互換性のため、以下のルールで命名します。
+ *    - テーブル名: スネークケース（例: `reservation_detail`）。
+ *    - フィールド名: スネークケース（例: `start_time_unix`）。
+ *    - *_config: 特定エンティティの設定や定数を格納するテーブル（通常1:1または1:Nの関係）。
+ *    - *_detail: 特定エンティティの補足情報や詳細情報を格納するテーブル（通常1:1の関係）。
+ *    - *_exclusion_*: 多対多の中間テーブルや、除外リストを示すテーブル。
+ * 7. **型定義との連携**:
+ *    - 頻出する型や複雑な型は `convex/types.ts` に集約し、スキーマ定義で `import` して利用します (例: `dayOfWeekType`, `imageType`)。
+ *
+ * ■ エンティティ相関図（主な関連のみ、詳細は各テーブル定義参照）
+ * -----------------------------------------------------------------
+ *   tenant (テナント) ─▶ organization (店舗) ─▶ staff (スタッフ) ─▶ reservation (予約)
+ *                 │                         └─▶ menu (施術メニュー)
+ *                 │                         └─▶ option (物販オプション)
+ *                 │                         └─▶ config (店舗設定各種)
+ *                 │
+ *                 └─▶ subscription (契約情報) [tenant:subscription 1:1想定]
+ *                 └─▶ coupon (クーポン) [org_id も持つ]
+ *                 └─▶ point_config (ポイント設定) [org_id も持つ]
+ *
+ *   (関連テーブル例)
+ *   reservation ─|| reservation_detail (予約詳細) [1:1]
+ *   staff       ─|| staff_config (スタッフ追加設定) [1:1]
+ *   staff       ─▶ staff_week_schedule (スタッフ週次シフト) [1:N]
+ *   staff       ─▶ staff_schedule (スタッフ個別スケジュール) [1:N]
+ *   menu        ─▶ menu_exclusion_staff (メニュー担当不可スタッフ) [N:M]
+ *   coupon      ─▶ coupon_exclusion_menu (クーポン対象外メニュー) [N:M]
+ *   point_config─▶ point_exclusion_menu (ポイント対象外メニュー) [N:M]
+ *
+ *   ※ `tenant_id` はほぼ全てのテーブルに存在するため図では省略。
+ *   ※ `org_id` は `organization` 以下の多くのテーブルに存在するため図では省略。
+ *
+ * ■ 主要な業務フローと関連テーブル（例）
+ * -----------------------------------------------------------------
+ * 1. **新規予約作成**:
+ *    - `customer` (顧客特定/新規作成、Supabase連携) → `menu`, `option` (メニュー選択) → `staff` (スタッフ指名/自動選択) → `staff_schedule`, `week_schedule`, `schedule_exception` (空き状況確認) → `reservation` (予約枠確保) → `reservation_detail` (詳細情報保存) → 通知 (LINE/メール(Resend)等)
+ * 2. **スタッフ勤怠管理**:
+ *    - `staff_week_schedule` (基本シフト設定) → `staff_schedule` (休暇/特勤登録) → 予約受付時の空き判定に影響
+ * 3. **売上集計 (日次/月次)**:
+ *    - `reservation` と `reservation_detail` から完了済み予約を抽出し、`menu`, `option`, `coupon`, `point_config` の情報と合わせて集計。必要に応じてサマリーテーブルへ格納。
+ *
+ * ■ インデックス設計思想
+ * -----------------------------------------------------------------
+ * - **テナント分離**: ほぼ全てのクエリが `tenant_id` (及び `org_id`) でフィルタリングされるため、これらを複合インデックスの先頭に配置。
+ * - **検索条件の考慮**: よく使われる検索条件やソートキーをインデックスに含める (例: `status`, `date`, `start_time_unix`)。
+ * - **論理削除フラグ**: `is_archive` は複合インデックスの末尾に配置し、アクティブデータ (`is_archive: false`) の絞り込み効率を維持。
+ * - **カーディナリティ**: 選択性の高いフィールドをインデックスの前方に配置することを意識。
+ * - 各テーブルのインデックス定義コメントで、想定されるクエリユースケースを記述推奨。
+ *
+ * ■ スケーラビリティ（再掲・補足）
+ * -----------------------------------------------------------------
+ * - Convexでのリアルタイム性が求められるアクティブデータ（未来の予約、メニュー、スタッフ情報など）に注力。
+ * - 履歴データやアクセス頻度の低いデータは、コストとパフォーマンスのバランスを考慮し、Supabaseへの定期的なオフロードを計画・実行。
+ * - これによりConvexのデータベースサイズを管理し、長期的な運用コストとパフォーマンスを最適化。
+ * - 想定レコード数目安:
+ *   - `tenant`: 数百〜数千
+ *   - `organization`: テナントあたり数件〜数十件
+ *   - `staff`: 店舗あたり数名〜数十名
+ *   - `menu`: 店舗あたり数十件
+ *   - `reservation`: アクティブ店舗あたり月間数百件〜数千件（過去分はアーカイブ）
+ *
+ * ■ Supabase連携テーブル (データアーカイブ先 / 拡張機能)
+ * -----------------------------------------------------------------
+ *-- 1. 顧客マスタ情報
+CREATE TABLE public.customer (
+  tenant_id                    TEXT        NOT NULL,
+  org_id                       TEXT        NOT NULL,
+  line_id                      TEXT,
+  line_user_name               TEXT,
+  phone                        TEXT,
+  email                        TEXT,
+  password                     TEXT,
+  first_name                   TEXT,
+  last_name                    TEXT,
+  searchable_text              TEXT,
+  use_count                    INTEGER,
+  last_reservation_date_unix   BIGINT,
+  tags                         TEXT[],
+  initial_tracking             JSONB,
+  created_at                   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at                   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_archive                   BOOLEAN     NOT NULL DEFAULT FALSE,
+  sort_key                     TEXT
+);
+
+-- 2. 顧客補足情報（1:1）
+CREATE TABLE public.customer_detail (
+  tenant_id     TEXT        NOT NULL,
+  org_id        TEXT        NOT NULL,
+  customer_id   UUID        NOT NULL REFERENCES public.customer(id),
+  email         TEXT,
+  age           INTEGER,
+  birthday      DATE,
+  gender        TEXT,
+  notes         TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_archive    BOOLEAN     NOT NULL DEFAULT FALSE,
+  sort_key      TEXT
+);
+
+-- 3. 顧客ポイント残高
+CREATE TABLE public.customer_points (
+  tenant_id                  TEXT        NOT NULL,
+  org_id                     TEXT        NOT NULL,
+  customer_id                UUID        NOT NULL REFERENCES public.customer(id),
+  total_points               INTEGER,
+  last_transaction_date_unix BIGINT,
+  created_at                 TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at                 TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_archive                 BOOLEAN     NOT NULL DEFAULT FALSE,
+  sort_key                   TEXT
+);
+
+-- 4. ポイント付与キュー
+CREATE TABLE public.point_task_queue (
+  tenant_id           TEXT        NOT NULL,
+  org_id              TEXT        NOT NULL,
+  reservation_id      UUID        REFERENCES public.reservation(id),
+  customer_id         UUID        NOT NULL REFERENCES public.customer(id),
+  points              INTEGER,
+  scheduled_for_unix  BIGINT,
+  status              TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_archive          BOOLEAN     NOT NULL DEFAULT FALSE,
+  sort_key            TEXT
+);
+
+-- 5. ポイント履歴
+CREATE TABLE public.point_transaction (
+  tenant_id            TEXT        NOT NULL,
+  org_id               TEXT        NOT NULL,
+  reservation_id       UUID        REFERENCES public.reservation(id),
+  customer_id          UUID        NOT NULL REFERENCES public.customer(id),
+  points               INTEGER     NOT NULL,
+  transaction_type     TEXT,
+  transaction_date_unix BIGINT    NOT NULL,
+  description          TEXT,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_archive           BOOLEAN     NOT NULL DEFAULT FALSE,
+  sort_key             TEXT
+);
+
+-- 6. クーポン利用履歴
+CREATE TABLE public.coupon_transaction (
+  tenant_id            TEXT        NOT NULL,
+  org_id               TEXT        NOT NULL,
+  coupon_id            UUID        NOT NULL REFERENCES public.coupon(id),
+  customer_id          UUID        NOT NULL REFERENCES public.customer(id),
+  reservation_id       UUID        NOT NULL REFERENCES public.reservation(id),
+  transaction_date_unix BIGINT    NOT NULL,
+  discount_amount      INTEGER,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_archive           BOOLEAN     NOT NULL DEFAULT FALSE,
+  sort_key             TEXT
+);
+
+-- 7. カルテ基本情報
+CREATE TABLE public.carte (
+  tenant_id      TEXT        NOT NULL,
+  org_id         TEXT        NOT NULL,
+  customer_id    UUID        NOT NULL REFERENCES public.customer(id),
+  skin_type      TEXT,
+  hair_type      TEXT,
+  allergy_history TEXT,
+  medical_history TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_archive     BOOLEAN     NOT NULL DEFAULT FALSE,
+  sort_key       TEXT
+);
+
+-- 8. カルテ詳細（施術ごと）
+CREATE TABLE public.carte_detail (
+  tenant_id           TEXT        NOT NULL,
+  org_id              TEXT        NOT NULL,
+  carte_id            UUID        NOT NULL REFERENCES public.carte(id),
+  reservation_id      UUID        NOT NULL REFERENCES public.reservation(id),
+  staff_id            UUID        NOT NULL REFERENCES public.staff(id),
+  before_hair_img_path TEXT,
+  after_hair_img_path  TEXT,
+  menu_details_json    JSONB,
+  used_products_json   JSONB,
+  notes                TEXT,
+  customer_requests    TEXT,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_archive           BOOLEAN     NOT NULL DEFAULT FALSE,
+  sort_key             TEXT
+);
+
+-- 9. タイムカード（勤怠）
+CREATE TABLE public.time_card (
+  tenant_id              TEXT        NOT NULL,
+  org_id                 TEXT        NOT NULL,
+  staff_id               UUID        NOT NULL REFERENCES public.staff(id),
+  start_date_time_unix   BIGINT     NOT NULL,
+  end_date_time_unix     BIGINT,
+  break_duration_minutes INTEGER,
+  worked_time_minutes    INTEGER,
+  notes                  TEXT,
+  created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_archive             BOOLEAN     NOT NULL DEFAULT FALSE,
+  sort_key               TEXT
+);
+
+-- 10. トラッキングイベントログ
+CREATE TABLE public.tracking_event (
+  tenant_id           TEXT        NOT NULL,
+  org_id              TEXT        NOT NULL,
+  session_id          TEXT        NOT NULL,
+  event_timestamp_unix BIGINT    NOT NULL,
+  event_type          TEXT        NOT NULL,
+  event_source        TEXT        NOT NULL,
+  page_url            TEXT,
+  page_title          TEXT,
+  target_element      TEXT,
+  utm_source          TEXT,
+  utm_medium          TEXT,
+  utm_campaign        TEXT,
+  utm_term            TEXT,
+  utm_content         TEXT,
+  custom_data_json    JSONB,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_archive          BOOLEAN     NOT NULL DEFAULT FALSE,
+  sort_key            TEXT
+);
+
+-- 11. トラッキング集計サマリー
+CREATE TABLE public.tracking_summaries (
+  tenant_id         TEXT        NOT NULL,
+  org_id            TEXT        NOT NULL,
+  summary_date      DATE        NOT NULL,
+  dimension_type    TEXT        NOT NULL,
+  dimension_value   TEXT        NOT NULL,
+  total_count       INTEGER     NOT NULL,
+  unique_user_count INTEGER,
+  conversion_count  INTEGER,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_archive        BOOLEAN     NOT NULL DEFAULT FALSE,
+  sort_key          TEXT
+);
+ * ============================================================== */
+
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
+
 import {
   CommonFields,
   dayOfWeekType,
   billingPeriodType,
   reservationStatusType,
-  salonScheduleExceptionType,
-  staffScheduleType,
+  ExceptionScheduleType,
   menuPaymentMethodType,
   paymentMethodType,
   roleType,
-  pointTransactionType,
   targetType,
   genderType,
   reservationIntervalMinutesType,
-  menuCategoryType,
-  trackingCodeType,
-  trackingEventType,
-} from '../services/convex/shared/types/common'
+  activeCustomerType,
+  reservationMenuOrOptionType,
+  imageType,
+  reservationPaymentStatusType,
+  couponDiscountType,
+} from './types';
 
 /**
- * Convexスキーマ定義
- * 時間はUNIXタイム（ミリ秒）で管理し、取得後に日本時間に変換する
- * 日付の文字列は YYYY-MM-DD 形式、時間は HH:MM の形式で保存
+ * =========================
+ * テナント
+ * =========================
+ * SaaS の契約主体。1テナント = 1美容室チェーン（複数店舗可）。
  */
-
-/**
- * 予約の空き時間を計算する処理のロジック
- * 1. まずサロンのアクティブなスタッフ全員を取得して表示する。表示したスタッフを顧客に選択してもらう。スタッフを指名しない場合は全スタッフが対象になります。
- * 2. 選択されたスタッフが対応可能なメニュー、オプションを表示する。指名しない場合はサロンに登録されているアクティブな全てのメニュー、オプションを表示する。
- * 3. 予約日(YYYY-MM-DD)を選択してもらい、staff_available_slotsテーブルから指名したスタッフの指定日の空き時間を取得する。スロットがまだ無ければ指定日をdateにしたのstaff_available_slotsテーブルを作成する。スタッフを指名しない場合は指定したメニューとオプションに対応できるスタッフでpriorityの一番高いスタッフの指定日の空き時間を取得する、この時ももしスロットが無ければ作成する。
- * 4. 空き時間を取得したら、選択したメニューとオプションの施術時間で予約可能な空き時間を表示する。スタッフを指名しない場合は指定したメニューとオプションに対応できるスタッフのなかでpriorityが一番高いスタッフの予約可能な時間を表示する。
- * 5. 空き時間を選択してもらい、予約を作成する。
- * 6. 予約を作成する。
- * 7. ポイント利用時はreservation_point_authテーブルを作成して、利用時に使用するコードを生成し、顧客にもLineで通知する。利用時に店舗でauthCodeを店舗で店員に見せて、店員が入力コードが合っていればポイントを利用する。ポイントトランザクションにはポイント利用の記録を作成する。利用が完了した際にreservation_point_authテーブルのレコードを削除する。予約のキャンセル時にはreservation_point_authテーブルのレコードを削除する。
- * 8. ポイント付与時は。予約が完了した際にpoint_queueテーブルにポイント付与の記録を作成する。scheduledForUnixの利用時の翌月15日にスケジュール関数でポイント付与する。付与時にトランザクションを作成し、ポイント付与の記録を作成する。完了時にpoint_queueテーブルのレコードを削除する。予約のキャンセル時にはpoint_queueテーブルのレコードを削除する。
- */
-export default defineSchema({
-  // =====================
-  // ADMIN
-  // =====================
-  // サービス管理者テーブル
-  admin: defineTable({
-    clerkId: v.string(),
-    email: v.string(),
-    password: v.string(),
-    ...CommonFields,
-  }).index('by_clerk_id', ['clerkId']),
-
-  // =====================
-  // SUBSCRIPTION
-  // =====================
-  // サブスクリプション関連テーブル
-  subscription: defineTable({
-    subscriptionId: v.string(), // StripeサブスクリプションID
-    stripeCustomerId: v.string(), // Stripe顧客ID (userとの関連)
-    status: v.string(), // ステータス ("active", "past_due", "canceled", etc.)
-    priceId: v.optional(v.string()), // 購読プランID (Price ID)
-    planName: v.optional(v.string()), // プラン名 ("Lite", "Pro", "Enterprise")
-    billingPeriod: v.optional(billingPeriodType), // 課金期間 (月額 or 年額)
-    currentPeriodEnd: v.optional(v.number()), // 現在の課金期間の終了タイムスタンプ
-    ...CommonFields,
-  })
-    .index('by_subscription_id', ['subscriptionId', 'isArchive'])
-    .index('by_stripe_customer_id', ['stripeCustomerId', 'isArchive']),
-
-  // =====================
-  // OPTION
-  // =====================
-
-  // サロンで販売するオプションテーブル
-  salon_option: defineTable({
-    salonId: v.id('salon'),
-    name: v.string(), // オプションメニュー名
-    unitPrice: v.optional(v.number()), // 価格
-    salePrice: v.optional(v.number()), // セール価格
-    orderLimit: v.optional(v.number()), // 注文制限
-    inStock: v.optional(v.number()), // 在庫数
-    timeToMin: v.optional(v.number()), // 時間(分)
-    tags: v.optional(v.array(v.string())), // タグ
-    description: v.optional(v.string()), // 説明
-    imgPath: v.optional(v.string()), // 画像ファイルパス
-    thumbnailPath: v.optional(v.string()), // サムネイル画像ファイルパス
-    isActive: v.optional(v.boolean()), // 有効/無効フラグ
-    ...CommonFields,
-  })
-    .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_salon_id_name', ['salonId', 'name', 'isArchive']),
-
-  // =====================
-  // SALON
-  // =====================
-  // サロンテーブル
-  salon: defineTable({
-    clerkId: v.string(), // ClerkのユーザーID
-    stripeConnectId: v.optional(v.string()), // StripeConnect連携アカウントID
-    stripeConnectStatus: v.optional(v.string()), // StripeConnect連携状態
-    stripeConnectCreatedAt: v.optional(v.number()), // StripeConnect作成日時
-    stripeCustomerId: v.optional(v.string()), // Stripe顧客ID
-    email: v.optional(v.string()), // Emailアドレス
-    subscriptionId: v.optional(v.string()), // 現在のサブスクリプションID
-    subscriptionStatus: v.optional(v.string()), // サブスクリプション状態
-    planName: v.optional(v.string()), // プラン名 ("lite", "pro", "enterprise")
-    priceId: v.optional(v.string()), // 購読プランID (Price ID)
-    billingPeriod: v.optional(billingPeriodType), // 課金期間 (月額 or 年額)
-    ...CommonFields,
-  })
-    .index('by_clerk_id', ['clerkId', 'isArchive'])
-    .index('by_stripe_connect_id', ['stripeConnectId', 'isArchive'])
-    .index('by_stripe_customer_id', ['stripeCustomerId', 'isArchive'])
-    .index('by_email', ['email', 'isArchive']),
-
-  // サロンのAPI設定テーブル
-  salon_api_config: defineTable({
-    salonId: v.id('salon'),
-    lineAccessToken: v.optional(v.string()), // LINEアクセストークン
-    lineChannelSecret: v.optional(v.string()), // LINEチャンネルシークレット
-    liffId: v.optional(v.string()), // LIFF ID
-    lineChannelId: v.optional(v.string()), // LINEチャンネルID
-    destinationId: v.optional(v.string()), // LINE公式アカウント識別子
-    ...CommonFields,
-  }).index('by_salon_id', ['salonId', 'isArchive']),
-
-  // サロンの基本設定テーブル
-  salon_config: defineTable({
-    salonId: v.id('salon'),
-    salonName: v.optional(v.string()), // サロン名
-    email: v.optional(v.string()), // メールアドレス
-    phone: v.optional(v.string()), // 電話番号
-    postalCode: v.optional(v.string()), // 郵便番号
-    address: v.optional(v.string()), // 住所
-    reservationRules: v.optional(v.string()), // 予約ルール
-    imgPath: v.optional(v.string()), // 画像ファイルパス
-    thumbnailPath: v.optional(v.string()), // サムネイルファイルパス
-    description: v.optional(v.string()), // 説明
-    ...CommonFields,
-  }).index('by_salon_id', ['salonId', 'isArchive']),
-
-  // サロンの営業スケジュール設定テーブル
-  salon_schedule_config: defineTable({
-    salonId: v.id('salon'),
-    availableSheet: v.optional(v.number()), // 同一時間内での最大予約数(席数が最大の施術数になるので席数と同じになる)
-    reservationLimitDays: v.optional(v.number()), // 現在から何日先まで予約できるかの日数
-    availableCancelDays: v.optional(v.number()), // 予約キャンセル可能日数
-    todayFirstLaterMinutes: v.optional(v.number()), // 本日の場合、何分後から予約可能か？
-    reservationIntervalMinutes: v.optional(reservationIntervalMinutesType) || 0, // 予約時間間隔(分)
-    ...CommonFields,
-  }).index('by_salon_id', ['salonId', 'isArchive']),
-
-  // サロンの紹介コードテーブル
-  salon_referral: defineTable({
-    salonId: v.id('salon'),
-    referralCode: v.optional(v.string()), // 紹介コード
-    referralCount: v.optional(v.number()), // 紹介回数
-    updatedAt: v.optional(v.number()), // 加算した日時
-    totalReferralCount: v.optional(v.number()), // 総紹介回数
-    ...CommonFields,
-  })
-    .index('by_referral_count', ['referralCount', 'isArchive'])
-    .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_referral_code', ['referralCode', 'isArchive'])
-    .index('by_total_referral_count', ['totalReferralCount', 'isArchive'])
-    .index('by_updated_at', ['updatedAt', 'isArchive'])
-    .index('by_referral_and_total_count', ['referralCount', 'totalReferralCount', 'isArchive']),
-
-  // =====================
-  // SCHEDULE
-  // =====================
-
-  // サロンの曜日毎のスケジュールテーブル
-  salon_week_schedule: defineTable({
-    salonId: v.id('salon'),
-    isOpen: v.optional(v.boolean()), // 営業しているか？false: 休日なので予約を受け付けない。
-    dayOfWeek: v.optional(dayOfWeekType), // 営業している曜日
-    startHour: v.optional(v.string()), // 営業している開始時間 例: 09:00
-    endHour: v.optional(v.string()), // 営業している終了時間 例: 18:00
-    ...CommonFields,
-  })
-    .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_salon_week_is_open_day_of_week', ['salonId', 'dayOfWeek', 'isOpen', 'isArchive']),
-
-  // サロンのスケジュール例外テーブル 事前に登録する(サロンの休業日を設定する)
-  salon_schedule_exception: defineTable({
-    salonId: v.id('salon'), // フィルタリング用
-    type: v.optional(salonScheduleExceptionType), // 例外タイプ
-    date: v.string(), // 日付 "YYYY-MM-DD" または "YYYY/MM/DD" 形式 この日は予約を受け付けない。
-    ...CommonFields,
-  })
-    .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_salon_date', ['salonId', 'date', 'isArchive'])
-    .index('by_salon_date_type', ['salonId', 'date', 'type', 'isArchive'])
-    .index('by_salon_type', ['salonId', 'type', 'isArchive']),
-
-  // スタッフの曜日毎のスケジュールテーブル
-  staff_week_schedule: defineTable({
-    staffId: v.id('staff'),
-    salonId: v.id('salon'),
-    isOpen: v.optional(v.boolean()), // 営業しているか？false: 休日なので予約を受け付けない。
-    dayOfWeek: v.optional(dayOfWeekType), // 営業している曜日
-    startHour: v.optional(v.string()), // 営業している開始時間 例: 09:00
-    endHour: v.optional(v.string()), // 営業している終了時間 例: 18:00
-    ...CommonFields,
-  })
-    .index('by_salon_staff_week_is_open', [
-      'salonId',
-      'staffId',
-      'dayOfWeek',
-      'isOpen',
-      'isArchive',
-    ])
-    .index('by_staff_id', ['staffId', 'isArchive'])
-    .index('by_salon_id_staff_id_day_of_week', ['salonId', 'staffId', 'dayOfWeek', 'isArchive'])
-    .index('by_salon_id_staff_id', ['salonId', 'staffId', 'isArchive']),
-
-  // スタッフのスケジュールテーブル 事前に登録する
-  staff_schedule: defineTable({
-    staffId: v.id('staff'),
-    salonId: v.id('salon'),
-    date: v.optional(v.string()), // 予約する日付 "YYYY-MM-DD" または "YYYY/MM/DD" 形式
-    startTimeUnix: v.optional(v.number()), // 予約した施術の開始時間 UNIXタイム isAllDay: falseの場合はこちらで判定する予約がスケジュールに含まれるかどうかを判定するために使用
-    endTimeUnix: v.optional(v.number()), // 予約した施術の終了時間 UNIXタイム isAllDay: falseの場合はこちらで判定する予約がスケジュールに含まれるかどうかを判定するために使用
-    notes: v.optional(v.string()), // メモ
-    type: v.optional(staffScheduleType), // 予約タイプ 現状はholiday(休日)のみ
-    isAllDay: v.optional(v.boolean()), // true: 全日予約, false: 時間予約(時間指定が有効指定時間内のみ予約を受け付けないためのフラグ)
-    ...CommonFields,
-  })
-    .index('by_staff_id', ['staffId', 'isArchive'])
-    .index('by_salon_staff_id', ['salonId', 'staffId', 'isArchive'])
-    .index('by_salon_staff_date', ['salonId', 'staffId', 'date', 'isArchive'])
-    .index('by_salon_staff_date_type', ['salonId', 'staffId', 'date', 'type', 'isArchive'])
-    .index('by_staff_start_end', ['staffId', 'startTimeUnix', 'endTimeUnix', 'isArchive'])
-    .index('by_salon_staff_all_day', ['salonId', 'staffId', 'isAllDay', 'isArchive'])
-    .index('by_salon_data_start_end', [
-      'salonId',
-      'date',
-      'startTimeUnix',
-      'endTimeUnix',
-      'isArchive',
-    ])
-    .index('by_salon_staff_date_all_day', ['salonId', 'staffId', 'date', 'isAllDay', 'isArchive']),
-
-  // =====================
-  // CUSTOMER
-  // =====================
-  // 顧客テーブル
-  customer: defineTable({
-    salonId: v.id('salon'), // サロンID
-    lineId: v.optional(v.string()), // LINE ID
-    lineUserName: v.optional(v.string()), // LINEユーザー名
-    phone: v.optional(v.string()), // 電話番号
-    email: v.optional(v.string()), // メールアドレス
-    password: v.optional(v.string()), // パスワード
-    firstName: v.optional(v.string()), // 名前
-    lastName: v.optional(v.string()), // 苗字
-    searchbleText: v.optional(v.string()), // 検索用テキスト
-    useCount: v.optional(v.number()), // 利用回数
-    lastReservationDateUnix: v.optional(v.number()), // 最終予約日
-    tags: v.optional(v.array(v.string())), // タグ
-    initialTracking: v.optional(
-      // 未実装
-      v.object({
-        code: v.optional(v.string()), // コード(line, googleMap, facebook, youtube, tiktok, instagram, x)
-        source: v.optional(v.string()), // 流入元URL
-        campaign: v.optional(v.string()), // キャンペーン名 (新生活に向けて心機一転！...)
-        term: v.optional(v.string()), // キャンペーンのキーワード (話題の〇〇、疲れた時に)
-        createdAt: v.number(), // 流入日時
-      })
-    ),
-    ...CommonFields,
-  })
-    .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_salon_line_id', ['salonId', 'lineId', 'isArchive'])
-    .index('by_salon_phone', ['salonId', 'phone', 'isArchive'])
-    .index('by_salon_email', ['salonId', 'email', 'isArchive'])
-    .index('by_salon_id_searchble_text', ['salonId', 'searchbleText', 'isArchive'])
-    .index('by_salon_id_line_user_name', ['salonId', 'lineUserName', 'isArchive'])
-    .searchIndex('search_searchble_text', {
-      searchField: 'searchbleText',
-      filterFields: ['salonId'],
-    }),
-
-  // 顧客の詳細テーブル
-  customer_detail: defineTable({
-    customerId: v.id('customer'),
-    email: v.optional(v.string()), // メールアドレス
-    age: v.optional(v.number()), // 年齢
-    birthday: v.optional(v.string()), // 誕生日
-    gender: v.optional(genderType), // 性別
-    notes: v.optional(v.string()), // メモ
-    ...CommonFields,
-  }).index('by_customer_id', ['customerId', 'isArchive']),
-
-  // 顧客のポイント残高
-  customer_points: defineTable({
-    customerId: v.id('customer'), // 顧客ID
-    salonId: v.id('salon'), // サロンID
-    totalPoints: v.optional(v.number()), // 保有ポイント
-    lastTransactionDateUnix: v.optional(v.number()), // 最終トランザクション日時
-    ...CommonFields,
-  })
-    .index('by_salon_customer_archive', ['salonId', 'customerId', 'isArchive'])
-    .index('by_customer_id', ['customerId', 'isArchive']),
-
-  // =====================
-  // CARTE
-  // =====================
-  carte: defineTable({
-    salonId: v.id('salon'), // サロンID
-    customerId: v.id('customer'), // 顧客ID
-    skinType: v.optional(v.string()), // 肌質
-    hairType: v.optional(v.string()), // 髪質
-    allergyHistory: v.optional(v.string()), // アレルギー歴
-    medicalHistory: v.optional(v.string()), // 持病
-    ...CommonFields,
-  }).index('by_salon_customer', ['salonId', 'customerId', 'isArchive']),
-
-  // 最大保存期間は1~2年間
-  carte_detail: defineTable({
-    carteId: v.id('carte'), // カルテID
-    reservationId: v.id('reservation'), // 予約ID
-    beforeHairimgPath: v.optional(v.string()), // 施術前の髪型画像ファイルパス
-    afterHairimgPath: v.optional(v.string()), // 施術後の髪型画像ファイルパス
-    notes: v.optional(v.string()), // メモ
-    ...CommonFields,
-  })
-    .index('by_carte_id_reservation_id', ['carteId', 'reservationId', 'isArchive'])
-    .index('by_carte_id', ['carteId', 'isArchive']),
-
-  // =====================
-  // STAFF
-  // =====================
-  staff: defineTable({
-    salonId: v.id('salon'),
-    name: v.optional(v.string()), // スタッフ名
-    age: v.optional(v.number()), // 年齢
-    email: v.optional(v.string()), // メールアドレス
-    gender: v.optional(genderType), // 性別
-    instagramLink: v.optional(v.string()), // SNSリンク
-    description: v.optional(v.string()), // 説明
-    imgPath: v.optional(v.string()), // 画像ファイルパス
-    thumbnailPath: v.optional(v.string()), // サムネイル画像ファイルパス
-    tags: v.optional(v.array(v.string())), // タグ
-    featuredHairimgPath: v.optional(v.array(v.string())), // スタッフの過去の特集髪型画像ファイルパス
-    isActive: v.optional(v.boolean()), // 有効/無効フラグ
-    ...CommonFields,
-  })
-    .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_salon_id_is_active', ['salonId', 'isActive', 'isArchive'])
-    .index('by_name', ['name', 'isActive', 'isArchive'])
-    .index('by_email', ['email', 'isActive', 'isArchive'])
-    .index('by_salon_id_name', ['salonId', 'name', 'isActive', 'isArchive'])
-    .index('by_salon_id_email', ['salonId', 'email', 'isActive', 'isArchive']),
-
-  // スタッフの認証テーブル
-  staff_auth: defineTable({
-    staffId: v.id('staff'),
-    pinCode: v.optional(v.string()), //　ピンコード
-    role: v.optional(roleType), // ロール
-    ...CommonFields,
-  })
-    .index('by_staff_id', ['staffId', 'isArchive'])
-    .index('by_pin_code', ['pinCode', 'isArchive']),
-
-  // スタッフのタイムカードテーブル
-  time_card: defineTable({
-    salonId: v.id('salon'), // サロンID
-    staffId: v.id('staff'), // スタッフID
-    startDateTimeUnix: v.optional(v.number()), // 開始時間 UNIXタイム
-    endDateTimeUnix: v.optional(v.number()), // 終了時間 UNIXタイム
-    workedTime: v.optional(v.number()), // 勤務時間(分)
-    notes: v.optional(v.string()), // メモ
-    ...CommonFields,
-  })
-    .index('by_salon_staff', ['salonId', 'staffId', 'isArchive'])
-    .index('by_salon_staff_start_time', ['salonId', 'staffId', 'isArchive', 'startDateTimeUnix'])
-    .index('by_salon_start_time', ['salonId', 'startDateTimeUnix', 'isArchive'])
-    .index('by_salon_staff_end_time', ['salonId', 'staffId', 'endDateTimeUnix', 'isArchive'])
-    .index('by_salon_notes', ['salonId', 'notes', 'isArchive']),
-
-  // スタッフの設定テーブル
-  staff_config: defineTable({
-    staffId: v.id('staff'),
-    salonId: v.id('salon'),
-    extraCharge: v.optional(v.number()), // 指名料金
-    priority: v.optional(v.number()), // 予約時の優先度
-    ...CommonFields,
-  })
-    .index('by_staff_id', ['staffId', 'isArchive'])
-    .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_staff_id_priority', ['staffId', 'isArchive', 'priority']),
-
-  // =====================
-  // MENU
-  // =====================
-  // サロンのメニューテーブル
-  menu: defineTable({
-    salonId: v.id('salon'),
-    name: v.optional(v.string()), // メニュー名
-    unitPrice: v.optional(v.number()), // 単価
-    salePrice: v.optional(v.number()), // セール価格
-    timeToMin: v.optional(v.number()), // 時間(分): 実質の作業時間
-    images: v.optional(
-      v.array(
-        v.object({
-          imgPath: v.optional(v.string()), // 画像ファイルパス
-          thumbnailPath: v.optional(v.string()), // サムネイル画像ファイルパス
-        })
-      )
-    ),
-    description: v.optional(v.string()), // 説明
-    targetGender: v.optional(genderType), // 対象性別
-    targetType: v.optional(targetType), // 対象タイプ
-    categories: v.optional(v.array(menuCategoryType)), // カテゴリ
-    tags: v.optional(v.array(v.string())), // タグ
-    paymentMethod: v.optional(menuPaymentMethodType), // 許可する支払い方法
-    isActive: v.optional(v.boolean()), // 有効/無効フラグ
-    ...CommonFields,
-  })
-    .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_salon_id_name', ['salonId', 'name', 'isArchive'])
-    .index('by_salon_id_gender', ['salonId', 'targetGender', 'isArchive'])
-    .index('by_salon_id_type', ['salonId', 'targetType', 'isArchive'])
-    .index('by_salon_id_category', ['salonId', 'categories', 'isArchive']),
-
-  menu_exclusion_staff: defineTable({
-    salonId: v.id('salon'), // サロンID
-    menuId: v.id('menu'), // メニューID
-    staffId: v.id('staff'), // スタッフID
-    ...CommonFields,
-  })
-    .index('by_salon_menu_staff', ['salonId', 'menuId', 'staffId', 'isArchive'])
-    .index('by_salon_menu_id', ['salonId', 'menuId', 'isArchive'])
-    .index('by_salon_staff_id', ['salonId', 'staffId', 'isArchive']),
-
-  // =====================
-  // PRODUCT // 未実装
-  // =====================
-  // サロンの商品テーブル
-  product: defineTable({
-    salonId: v.id('salon'),
-    stripeConnectId: v.optional(v.string()), // Stripe Connect ID
-    tags: v.optional(v.array(v.string())), // タグ
-    name: v.optional(v.string()), // 商品名
-    unitPrice: v.optional(v.number()), // 単価
-    salePrice: v.optional(v.number()), // セール価格
-    imgPath: v.optional(v.string()), // 画像ファイルパス
-    description: v.optional(v.string()), // 説明
-    targetGender: v.optional(genderType), // 対象性別
-    paymentMethod: v.optional(menuPaymentMethodType), // 許可する支払い方法
-    isActive: v.optional(v.boolean()), // 有効/無効フラグ
-    ...CommonFields,
-  }).index('by_salon_id', ['salonId', 'isArchive']),
-
-  // =====================
-  // COUPON
-  // =====================
-  // クーポンテーブル
-  coupon: defineTable({
-    salonId: v.id('salon'),
-    couponUid: v.optional(v.string()), // クーポン識別ID (8桁の大文字英語と数字)
-    name: v.optional(v.string()), // クーポン名
-    discountType: v.optional(v.union(v.literal('fixed'), v.literal('percentage'))), // 割引タイプ
-    percentageDiscountValue: v.optional(v.number()), // 割引率
-    fixedDiscountValue: v.optional(v.number()), // 固定割引額
-    isActive: v.optional(v.boolean()), // 有効/無効フラグ
-    ...CommonFields,
-  })
-    .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_name', ['name', 'isArchive'])
-    .index('by_salon_coupon_uid', ['salonId', 'couponUid', 'isArchive'])
-    .index('by_salon_coupon_uid_active', ['salonId', 'couponUid', 'isActive', 'isArchive']),
-
-  coupon_exclusion_menu: defineTable({
-    salonId: v.id('salon'), // サロンID
-    couponId: v.id('coupon'), // クーポンID
-    menuId: v.id('menu'), // メニューID
-    ...CommonFields,
-  })
-    .index('by_salon_menu_id', ['salonId', 'menuId', 'isArchive'])
-    .index('by_salon_coupon_id', ['salonId', 'couponId', 'isArchive'])
-    .index('by_salon_coupon_id_menu_id', ['salonId', 'couponId', 'menuId', 'isArchive']),
-
-  // クーポンの設定テーブル
-  coupon_config: defineTable({
-    salonId: v.id('salon'), // サロンID
-    couponId: v.id('coupon'), // クーポンID
-    startDateUnix: v.optional(v.number()), // 開始日 UNIXタイム
-    endDateUnix: v.optional(v.number()), // 終了日 UNIXタイム
-    maxUseCount: v.optional(v.number()), // 最大利用回数
-    numberOfUse: v.optional(v.number()), // 現在の利用回数
-    ...CommonFields,
-  })
-    .index('by_salon_coupon_id', ['salonId', 'couponId', 'isArchive'])
-    .index('by_coupon_id', ['couponId', 'isArchive']),
-
-  // クーポン取引テーブル
-  coupon_transaction: defineTable({
-    couponId: v.id('coupon'), // クーポンID
-    customerId: v.id('customer'), // 顧客ID
-    reservationId: v.id('reservation'), // 予約ID
-    transactionDateUnix: v.optional(v.number()), // 利用日時 UNIXタイム
-    ...CommonFields,
-  })
-    .index('by_coupon_id', ['couponId', 'isArchive'])
-    .index('by_customer_id', ['customerId', 'isArchive'])
-    .index('by_reservation_id', ['reservationId', 'isArchive'])
-    .index('by_transaction_date', ['transactionDateUnix', 'isArchive']),
-
-  // =====================
-  // RESERVATION
-  // =====================
-  // 最大保存期間は1~2年間
-  reservation: defineTable({
-    customerId: v.optional(v.id('customer')), // 顧客ID
-    customerName: v.optional(v.string()), // 顧客名
-    staffId: v.id('staff'), // スタッフID
-    staffName: v.optional(v.string()), // スタッフ名
-    menus: v.optional(
-      v.array(
-        v.object({
-          menuId: v.id('menu'),
-          quantity: v.number(),
-        })
-      )
-    ), // メニューID
-    salonId: v.id('salon'), // サロンID
-    options: v.optional(
-      v.array(
-        v.object({
-          optionId: v.id('salon_option'),
-          quantity: v.number(),
-        })
-      )
-    ), // オプションID
-    unitPrice: v.optional(v.number()), // 単価
-    totalPrice: v.optional(v.number()), // 合計金額
-    status: v.optional(reservationStatusType), // 予約ステータス
-    startTimeUnix: v.optional(v.number()), // 開始時間 UNIXタイム
-    endTimeUnix: v.optional(v.number()), // 終了時間 UNIXタイム
-    usePoints: v.optional(v.number()), // 使用ポイント数
-    couponId: v.optional(v.id('coupon')), // クーポンID
-    couponDiscount: v.optional(v.number()), // クーポン割引額
-    featuredHairimgPath: v.optional(v.string()), // 顧客が希望する髪型の画像ファイルパス
-    notes: v.optional(v.string()), // 備考
-    paymentMethod: v.optional(paymentMethodType), // 支払い方法
-    stripeCheckoutSessionId: v.optional(v.string()), // Stripe CheckoutセッションID
-    paymentStatus: v.optional(v.union( // 支払い状況
-      v.literal('pending'), // 未払い
-      v.literal('paid'), // 支払い済み
-      v.literal('failed'), // 支払い失敗
-      v.literal('cancelled') // キャンセル済み
-    )),
-    ...CommonFields,
-  })
-    .index('by_salon_id', ['salonId', 'isArchive'])
-    .index('by_customer_id', ['salonId', 'customerId', 'isArchive'])
-    .index('by_staff_id_status', ['salonId', 'staffId', 'isArchive', 'status'])
-    .index('by_status', ['salonId', 'status', 'isArchive'])
-    .index('by_status_start_time', ['status', 'startTimeUnix'])
-    .index('by_salon_status_start', ['salonId', 'isArchive', 'status', 'startTimeUnix'])
-    .index('by_staff_date', ['salonId', 'staffId', 'isArchive', 'startTimeUnix'])
-    .index('by_staff_date_status', ['salonId', 'staffId', 'isArchive', 'status', 'startTimeUnix'])
-    .index('by_customer_date', ['salonId', 'customerId', 'isArchive', 'startTimeUnix'])
-    .index('by_salon_id_status_start_time', ['salonId', 'status', 'isArchive', 'startTimeUnix'])
-    .index('by_salon_staff_status_start_end', ['salonId', 'staffId', "isArchive", 'status', 'startTimeUnix', 'endTimeUnix']),
-  // =====================
-  // POINT
-  // =====================
-
-  // サロンのポイント基本設定テーブル
-  point_config: defineTable({
-    salonId: v.id('salon'),
-    isActive: v.optional(v.boolean()), // 有効/無効フラグ
-    isFixedPoint: v.optional(v.boolean()), // 固定ポイントかどうか
-    pointRate: v.optional(v.number()), // ポイント付与率 (例: 0.1なら10%)
-    fixedPoint: v.optional(v.number()), // 固定ポイント (例: 100円につき1ポイント)
-    pointExpirationDays: v.optional(v.number()), // ポイントの有効期限(日)
-    ...CommonFields,
-  }).index('by_salon_id', ['salonId', 'isArchive']),
-
-  point_exclusion_menu: defineTable({
-    salonId: v.id('salon'), // サロンID
-    pointConfigId: v.id('point_config'), // ポイント基本設定ID
-    menuId: v.id('menu'), // メニューID
-    ...CommonFields,
-  })
-    .index('by_salon_point_config_menu', ['salonId', 'pointConfigId', 'menuId', 'isArchive'])
-    .index('by_salon_point_config_id', ['salonId', 'pointConfigId', 'isArchive']),
-
-  // ポイント付与キュー (定期処理で実行後に削除)
-  point_task_queue: defineTable({
-    salonId: v.id('salon'), // サロンID
-    reservationId: v.id('reservation'), // 予約ID
-    customerId: v.id('customer'), // 顧客ID
-    points: v.optional(v.number()), // 加算ポイント
-    scheduledForUnix: v.optional(v.number()), // 付与予定日時 UNIXタイム
-    ...CommonFields,
-  })
-    .index('by_reservation_id', ['reservationId', 'isArchive'])
-    .index('by_customer_id', ['customerId', 'isArchive'])
-    .index('by_scheduled_for', ['scheduledForUnix', 'isArchive'])
-    .index('by_salon_id', ['salonId', 'isArchive']),
-
-  // 予約ポイント利用時の認証 予約完了時に生成しauthCodeを顧客のLineに送付する
-  point_auth: defineTable({
-    reservationId: v.id('reservation'), // 予約ID
-    customerId: v.id('customer'), // 顧客ID
-    authCode: v.optional(v.string()), // 認証コード (6桁の大文字英語と数字)
-    expirationTimeUnix: v.optional(v.number()), // 有効期限 UNIXタイム
-    points: v.optional(v.number()), // 利用ポイント
-    ...CommonFields,
-  })
-    .index('by_reservation_id', ['reservationId', 'isArchive'])
-    .index('by_customer_id', ['customerId', 'isArchive'])
-    .index('by_expiration_time', ['expirationTimeUnix', 'isArchive']),
-
-  // ポイント取引履歴
-  point_transaction: defineTable({
-    salonId: v.id('salon'), // サロンID
-    reservationId: v.id('reservation'), // 予約ID
-    customerId: v.id('customer'), // 顧客ID
-    points: v.optional(v.number()), // ポイント数 (加算減算したポイント)
-    transactionType: v.optional(pointTransactionType), // トランザクションタイプ
-    transactionDateUnix: v.optional(v.number()), // 取引日時 UNIXタイム
-    ...CommonFields,
-  })
-    .index('by_salon_reservation_id', ['salonId', 'reservationId', 'isArchive'])
-    .index('by_salon_customer_id', ['salonId', 'customerId', 'isArchive'])
-    .index('by_salon_customer_reservation', [
-      'salonId',
-      'customerId',
-      'reservationId',
-      'isArchive',
-    ]),
-
-  // トラッキングイベント
-  tracking_event: defineTable({
-    salonId: v.id('salon'), // サロンID
-    sessionId: v.optional(v.string()), // 訪問者ID (Cookieベース)
-    code: trackingCodeType, // コード(web, line, googleMap, facebook, youtube, tiktok, instagram, x, unknown)
-    eventType: v.optional(trackingEventType), // トラッキングタイプ("click", "page_view", "conversion")
-  }).index('by_session_id_and_event_details', ['sessionId', 'salonId', 'eventType', 'code']),
-
-  // トラッキングサマリー
-  tracking_summaries: defineTable({
-    salonId: v.id('salon'), // サロンID
-    date: v.string(), // '2024-05-14' のような日付単位 日付で管理
-    eventType: v.optional(trackingEventType), // トラッキングタイプ("click", "page_view", "conversion")
-    // 分析単位（任意の軸：utm_source / campaign / medium / line / instagram / x / youtube / tiktok / facebook / unknown）
-    code: v.optional(trackingCodeType),
-
-    // 集計結果
-    totalCount: v.number(), // 訪問数
-    ...CommonFields,
-  })
-    .index('by_salon_date', ['salonId', 'date'])
-    .index('by_salon_date_event_type', ['salonId', 'date', 'eventType']),
+const tenant = defineTable({
+  user_id: v.string(),                     // Clerk ユーザーID（オーナー）
+  user_email: v.string(),                  // Clerk のメール
+  stripe_customer_id: v.optional(v.string()),
+  subscription_id: v.optional(v.string()), // 現契約サブスクリプション
+  subscription_status: v.optional(v.string()),
+  plan_name: v.optional(v.string()),       // "lite" | "pro"
+  price_id: v.optional(v.string()),        // Stripe Price ID
+  billing_period: v.optional(billingPeriodType), // 課金期間
+  ...CommonFields,
 })
+.index('by_user_archive',              ['user_id', 'is_archive']) // Clerk ユーザーID から取得
+.index('by_user_email_archive',        ['user_email', 'is_archive']) // Clerk オーナーのメール から取得
+.index('by_stripe_customer_archive',   ['stripe_customer_id', 'is_archive']); // Stripe Customer ID から取得
+
+/**
+ * =========================
+ * サブスクリプション関連
+ * =========================
+ * テナントに1レコード。Stripe の課金情報を保持します。
+ * 組織を増やす際に、プラン x 組織分でサブスクリプションを作成します。
+ * : Pro x 3つの組織 = 10,000 x 3 = 30,000円
+ */
+const subscription = defineTable({
+  tenant_id: v.id('tenant'),          // 契約元のテナントID
+  stripe_subscription_id: v.optional(v.string()),  // Stripe Subscription ID
+  stripe_customer_id: v.optional(v.string()),// Stripe Customer ID（Clerkユーザ単位ではなくテナント単位）
+  status: v.optional(v.string()),           // "active" | "past_due" | "canceled" ...
+  price_id: v.optional(v.string()),         // Stripe Price ID
+  plan_name: v.optional(v.string()),        // "Lite" | "Pro" | "Enterprise"
+  billing_period: v.optional(billingPeriodType), // "monthly" | "yearly"
+  current_period_end: v.optional(v.number()),    // 現在の課金期間終了UNIX
+  ...CommonFields,
+})
+.index('by_tenant_archive',            ['tenant_id', 'is_archive']) // テナントから 1レコード取得
+.index('by_tenant_stripe_subscription_archive',      ['tenant_id', 'stripe_subscription_id', 'is_archive']) // Stripe Webhook 用
+.index('by_tenant_stripe_customer_archive',   ['tenant_id', 'stripe_customer_id', 'is_archive']); // Stripe Customer ID で取得
+
+/**
+ * =========================
+ * テナント紹介コード
+ * =========================
+ * 友達紹介キャンペーン用。テナント単位で発行。
+ * テナントにつき1レコード。
+ */
+const tenant_referral = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  referral_code: v.optional(v.string()),   // 例: "ABCD1234"
+  referral_point: v.optional(v.number()),  // 所持している紹介ポイントの数
+  total_referral_count: v.optional(v.number()), // 総紹介数
+  ...CommonFields,
+})
+.index('by_referral_code_archive', ['referral_code', 'is_archive']) // referral_code から 1レコード取得
+.index('by_tenant_archive', ['tenant_id', 'is_archive']); // tenant から 1レコード取得
+
+
+/**
+ * =========================
+ * Organization（店舗・支社など）
+ * =========================
+ * テナントの持つ一つの組織に対応。
+ * テナントの持つ組織の分だけレコードを作成する。
+ */
+const organization = defineTable({
+  tenant_id: v.id('tenant'),
+  org_id: v.string(),                // Clerkの Organization ID
+  org_name: v.string(),              // 店舗名
+  org_email: v.string(),     // 組織のメール
+  stripe_connect_id: v.optional(v.string()), // Stripe Connect Account ID
+  stripe_connect_status: v.optional(v.string()), // Stripe Connect ステータス
+  stripe_connect_created_at: v.optional(v.number()), // Stripe Connect 作成日時
+  ...CommonFields,
+})
+.index('by_stripe_connect_archive', ['stripe_connect_id', 'is_archive']) // user_idとstripe_connect_idで取得
+.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']); // org_id で取得
+
+
+/**
+ * =========================
+ * Option（物販・追加オプション）
+ * =========================
+ * menu と区別し、在庫や注文制限を持つ汎用商品テーブル。
+ * 複数の組織で同じ商品を持つことが可能。
+ */
+const option = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // Clerk の組織ID
+  name: v.string(), // 商品名
+  unit_price: v.number(), // 単価
+  sale_price: v.optional(v.number()), // セール価格
+  order_limit: v.number(),        // 同一予約内での最大個数
+  in_stock: v.optional(v.number()), // 在庫数
+  duration_min: v.optional(v.number()),       // 併用施術時間
+  tags: v.array(v.string()), // タグ
+  description: v.optional(v.string()), // 商品説明
+  images: v.array(imageType), // 画像
+  is_active: v.boolean(), // 有効/無効
+  ...CommonFields,
+})
+.index('by_tenant_org_active_archive', ['tenant_id', 'org_id', 'is_active', 'is_archive']); // org_id で取得
+
+/**
+ * =========================
+ * API 設定（LINE/Firebase 等）
+ * =========================
+ * 組織単位での外部サービス認証情報。
+ * 組織の分だけレコードを作成される。
+ */
+const api_config = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // Clerk の組織ID
+  line_access_token: v.optional(v.string()), // LINE Access Token
+  line_channel_secret: v.optional(v.string()), // LINE Channel Secret
+  liff_id: v.optional(v.string()), // LIFF ID
+  line_channel_id: v.optional(v.string()), // LINE Channel ID
+  destination_id: v.optional(v.string()), // 送信先ID
+  ...CommonFields,
+})
+.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']);
+
+/**
+ * =========================
+ * 店舗基本設定
+ * =========================
+ * 組織の分だけレコードを作成される。
+ */
+const config = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // Clerk の組織ID
+  org_name: v.string(), // 店舗名
+  email: v.string(), // 代表メール
+  phone: v.optional(v.string()), // 電話番号
+  postal_code: v.optional(v.string()), // 郵便番号
+  address: v.optional(v.string()), // 住所
+  reservation_rules: v.optional(v.string()), // 予約ルール
+  images: v.array(imageType), // 画像
+  description: v.optional(v.string()), // 店舗説明
+  ...CommonFields,
+})
+.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive'])
+
+/**
+ * =========================
+ * 店舗の予約設定
+ * =========================
+ * 組織の分だけレコードを作成される。
+ */
+const reservation_config = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // Clerk の組織ID
+  available_sheet: v.optional(v.number()),         // 同時受付可能席数
+  reservation_limit_days: v.optional(v.number()),  // 何日先まで予約可
+  available_cancel_days: v.optional(v.number()),   // 何日前までキャンセル可
+  today_first_later_minutes: v.optional(v.number()), // 当日の最短予約時の開始時間を何分後にするか
+  reservation_interval_minutes: v.optional(reservationIntervalMinutesType), // 予約間隔
+  ...CommonFields,
+})
+.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']); // org_id で取得
+
+/**
+ * =========================
+ * 店舗営業スケジュール（曜日ベース）
+ * =========================
+ * 組織の分だけレコードを作成される。一つの組織につき7レコード作成される。
+ */
+const week_schedule = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // 組織ID
+  is_open: v.boolean(), // 営業/休業
+  day_of_week: dayOfWeekType, // 曜日
+  start_hour: v.optional(v.string()), // 開始時間
+  end_hour: v.optional(v.string()), // 終了時間
+  ...CommonFields,
+})
+.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']) // 組織IDとテナントIdで全てで取得
+.index('by_tenant_org_week_archive', ['tenant_id', 'org_id', 'day_of_week', 'is_archive']); // org_idと曜日と営業しているか？で取得 一件取得
+
+/**
+ * =========================
+ * 休業日（祝日・臨時休業など）
+ * =========================
+ * 組織の分だけレコードを作成される。組織は最大で0〜30日分のレコードを作成できる。
+ */
+const exception_schedule = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // Clerk の組織ID
+  type: ExceptionScheduleType, // スケジュール例外タイプ
+  date: v.string(), // 日付 YYYY-MM-DD
+  ...CommonFields,
+})
+.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']) // org_id で取得
+.index('by_tenant_org_date_type_archive', ['tenant_id', 'org_id', 'date', 'type', 'is_archive']); // org_idと日付と例外タイプで取得　一件取得
+
+/**
+ * スタッフ毎の曜日スケジュール（定期休暇・短縮営業など）
+ * スタッフ一人につき曜日毎の出勤情報を持つレコード、スタッフ一人につき7レコード作成される。
+ */
+const staff_week_schedule = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // 組織ID
+  staff_id: v.id('staff'), // スタッフID
+  is_open: v.boolean(), // 営業/休業
+  day_of_week: dayOfWeekType, // 曜日
+  start_hour: v.optional(v.string()), // 開始時間
+  end_hour: v.optional(v.string()), // 終了時間
+  ...CommonFields,
+})
+.index('by_tenant_org_staff_archive', ['tenant_id', 'org_id', 'staff_id', 'is_archive']) // staff_id で取得
+.index('by_tenant_org_staff_week_open_archive', ['tenant_id', 'org_id', 'staff_id', 'day_of_week', 'is_open', 'is_archive']) // staff_idと曜日と営業しているか？で取得　一件取得
+
+
+/**
+ * スタッフ個別スケジュール（休暇・短縮営業など）
+ * スタッフ一人につき最大で0〜30日分のレコードを作成できる。
+ */
+const staff_exception_schedule = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // 組織ID
+  staff_id: v.id('staff'), // スタッフID
+  date: v.string(), // 日付 YYYY-MM-DD
+  start_time_unix: v.optional(v.number()), // 開始時間
+  end_time_unix: v.optional(v.number()), // 終了時間
+  notes: v.optional(v.string()), // メモ
+  type: ExceptionScheduleType, // スタッフスケジュールタイプ
+  is_all_day: v.boolean(), // 全日休暇
+  ...CommonFields,
+})
+.index('by_tenant_org_date_archive',['tenant_id', 'org_id', 'date', 'is_archive']) // 組織＋日付単位で一覧取得
+.index('by_tenant_org_staff_date_archive',   ['tenant_id', 'org_id', 'staff_id', 'date','is_archive']) // スタッフ＋日付での一件取得
+/**
+ * =========================
+ * STAFF (従業員)
+ * =========================
+ * 組織に所属するスタッフで無制限に作成可能。平均5名程度。
+ */
+const staff = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // 組織ID
+  name: v.string(), // スタッフ名
+  age: v.optional(v.number()), // 年齢
+  email: v.string(), // メールアドレス
+  gender: genderType, // 性別
+  instagram_link: v.optional(v.string()), // インスタグラムリンク
+  description: v.optional(v.string()), // 自己紹介
+  images: v.array(imageType), // 画像
+  tags: v.array(v.string()), // タグ
+  featured_hair_images: v.array(imageType), // フィーチャー画像
+  is_active: v.boolean(), // 有効/無効
+  ...CommonFields,
+})  
+.index('by_tenant_org_active_archive', ['tenant_id', 'org_id', 'is_active', 'is_archive'])
+
+/**
+ * =========================
+ * スタッフ認証（PIN ログイン等）
+ * =========================
+ * スタッフ一人につき一つ作成する。
+ */
+const staff_auth = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  user_id: v.optional(v.string()),               // Clerk User ID
+  org_id: v.string(), // Clerk Organization ID
+  staff_id: v.id('staff'), // スタッフID
+  pin_code: v.optional(v.string()), // PINコード
+  role: roleType, // ロール
+  ...CommonFields,
+})
+.index('by_tenant_org_staff_archive', ['tenant_id', 'org_id', 'staff_id', 'is_archive']);
+
+/**
+ * =========================
+ * スタッフ追加設定
+ * =========================
+ * スタッフ一人につき一つ作成する。
+ */
+const staff_config = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // 組織ID
+  staff_id: v.id('staff'), // スタッフID
+  extra_charge: v.optional(v.number()), // 追加料金
+  priority: v.optional(v.number()), // 優先度
+  ...CommonFields,
+})
+.index('by_tenant_org_staff_archive', ['tenant_id', 'org_id', 'staff_id', 'is_archive']);
+
+/**
+ * =========================
+ * MENU (施術メニュー)
+ * =========================
+ * 組織の取り扱うメニュー。無制限に作成可能。平均は20点程度。
+ */
+const menu = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // 組織ID
+  name: v.string(), // メニュー名
+  unit_price: v.number(), // 単価
+  sale_price: v.optional(v.number()), // セール価格
+  duration_min: v.number(), // 施術時間
+  images: v.array(imageType), // 画像
+  description: v.optional(v.string()), // 説明
+  target_gender: v.optional(genderType), // 対象性別
+  target_type: v.optional(targetType), // 対象タイプ
+  categories: v.array(v.string()), // カテゴリ
+  tags: v.array(v.string()), // タグ
+  payment_method: menuPaymentMethodType, // 支払方法
+  is_active: v.boolean(), // 有効/無効
+  ...CommonFields,
+})
+.index('by_tenant_org_active_archive', ['tenant_id', 'org_id', 'is_active', 'is_archive'])
+
+/**
+ * =========================
+ * メニューとスタッフの除外関係 (N:M) "このメニューは担当できないスタッフ" の管理
+ * =========================
+ * 一つのメニューにつき平均５点程作成される予定。
+ */
+const menu_exclusion_staff = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // Clerk の組織ID
+  menu_id: v.id('menu'), // メニューID
+  staff_id: v.id('staff'), // スタッフID
+  ...CommonFields,
+})
+.index(
+  'by_tenant_org_menu_staff_archive',
+  ['tenant_id', 'org_id', 'menu_id', 'staff_id', 'is_archive']
+);
+
+/**
+ * =========================
+ * COUPON
+ * =========================
+ * 平均10点程度。
+ */
+const coupon = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // Clerk の組織ID
+  coupon_uid: v.string(), // クーポンUID
+  name: v.string(), // クーポン名
+  discount_type: couponDiscountType, // 割引タイプ
+  percentage_discount_value: v.optional(v.number()), // 割引率
+  fixed_discount_value: v.optional(v.number()), // 割引額
+  is_active: v.boolean(), // 有効/無効
+  ...CommonFields,
+})
+.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive'])
+.index('by_tenant_org_coupon_uid_archive', ['tenant_id', 'org_id','coupon_uid', 'is_archive']);
+
+/**
+ * =========================
+ * クーポンとメニューの除外関係 (N:M) 例: "割引対象外メニュー"
+ * =========================
+ * 一つのクーポンにつき平均5点程作成される予定。
+ */
+const coupon_exclusion_menu = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // Clerk の組織ID
+  coupon_id: v.id('coupon'), // クーポンID
+  menu_id: v.id('menu'), // メニューID
+  ...CommonFields
+})
+.index(
+  'by_tenant_org_coupon_menu_archive',
+  ['tenant_id', 'org_id', 'coupon_id', 'menu_id', 'is_archive']
+);
+
+/**
+ * =========================
+ * クーポン詳細設定
+ * =========================
+ * クーポンに対して一つ作成する。
+ */
+const coupon_config = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // Clerk の組織ID
+  coupon_id: v.id('coupon'), // クーポンID
+  start_date_unix: v.optional(v.number()), // 開始日時
+  end_date_unix: v.optional(v.number()), // 終了日時
+  max_use_count: v.optional(v.number()), // 最大利用回数
+  number_of_use: v.optional(v.number()), // 利用回数
+  active_customer_type: v.optional(activeCustomerType), // 適用対象(初回/リピート/全て)
+  ...CommonFields,
+})
+.index('by_tenant_org_coupon_archive', ['tenant_id', 'org_id', 'coupon_id', 'is_archive'])
+
+/**
+ * =========================
+ * RESERVATION (予約)
+ * =========================
+ * 一つの組織に対して無制限に作成可能。平均は月/100件程度。
+ */
+const reservation = defineTable({
+  master_id: v.string(),         // Convex & Supabase 共通識別子
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // 組織ID
+  customer_id: v.optional(v.string()), // Supabase 側の customer.id
+  staff_id: v.id('staff'), // スタッフID
+  customer_name: v.string(), // 顧客名
+  staff_name: v.string(), // スタッフ名
+  status: reservationStatusType, // 予約ステータス
+  payment_status: reservationPaymentStatusType, // 支払ステータス
+  stripe_checkout_session_id: v.optional(v.string()), // Stripe Checkout Session ID
+  date: v.string(), // 予約日 YYYY-MM-DD
+  start_time_unix: v.number(), // 予約開始時間
+  end_time_unix: v.number(), // 予約終了時間
+  ...CommonFields,
+})
+  // ① 単一レコード取得
+  .index('by_tenant_org_master_archive', ['tenant_id', 'org_id', 'master_id','is_archive'])
+  // ② ステータス＋日付＋開始時刻（ステータス絞り込み一覧）
+  .index(
+    'by_tenant_org_status_date_start_archive',
+    ['tenant_id', 'org_id','status','date','is_archive']
+  )
+  // ③ 日付＋ステータス（全ステータス取得・空き枠・カレンダー用）
+  .index(
+    'by_tenant_org_date_start_archive',
+    ['tenant_id', 'org_id','date','status','is_archive']
+  )
+  // ④ 顧客＋日付（顧客別履歴）
+  .index(
+    'by_tenant_org_customer_date_archive',
+    ['tenant_id', 'org_id','customer_id','date','is_archive']
+  )
+   // ⑤ スタッフ＋日付（スタッフ別履歴）
+   .index(
+    'by_tenant_org_staff_date_status_archive',
+    ['tenant_id', 'org_id','staff_id','date','status','is_archive']
+  )
+  // ⑥ ステータス＋開始時刻 バッチ処理用
+  .index('status_start_time_archive', ['status','start_time_unix']);
+/**
+ * =========================
+ * 予約詳細 (決済・メニュー構成)
+ * =========================
+ * 一つの予約につき一つ作成する。
+ */
+const reservation_detail = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // 組織ID
+  reservation_id: v.id('reservation'), // 予約ID
+  coupon_id: v.optional(v.id('coupon')), // クーポンID
+  payment_method: paymentMethodType, // 支払方法
+  menus: v.array(reservationMenuOrOptionType), // メニュー/オプション
+  options: v.array(reservationMenuOrOptionType), // オプション
+  extra_charge: v.optional(v.number()), // 追加料金
+  use_points: v.optional(v.number()), // 使用ポイント数
+  coupon_discount: v.optional(v.number()), // クーポン割引額
+  featured_hair_images: v.array(imageType), // フィーチャー画像
+  notes: v.optional(v.string()), // メモ
+  ...CommonFields,
+})
+.index('by_reservation_archive', ['reservation_id', 'is_archive'])
+
+/**
+ * =========================
+ * POINT PROGRAM
+ * =========================
+ * 一つの組織につき一つ作成する。
+ */
+const point_config = defineTable({
+  tenant_id: v.id('tenant'),
+  org_id: v.string(),
+  is_active: v.optional(v.boolean()),
+  is_fixed_point: v.optional(v.boolean()),
+  point_rate: v.optional(v.number()),
+  fixed_point: v.optional(v.number()),
+  point_expiration_days: v.optional(v.number()),
+  ...CommonFields,
+})
+.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']);
+
+/**
+ * =========================
+ * ポイント対象外メニュー
+ * =========================
+ * 平均で10点程度。
+ */
+const point_exclusion_menu = defineTable({
+  point_config_id: v.id('point_config'),
+  tenant_id: v.id('tenant'),
+  org_id: v.string(),
+  menu_id: v.id('menu'),
+  ...CommonFields,
+})
+.index(
+  'by_tenant_org_point_config_menu_archive',
+  ['tenant_id', 'org_id', 'point_config_id', 'menu_id', 'is_archive']
+);
+
+/**
+ * =============================================================
+ * スキーマエクスポート
+ * ============================================================= */
+
+export default defineSchema({
+  // テーブル一覧
+  subscription,
+  tenant,
+  tenant_referral,
+  organization,
+  option,
+  api_config,
+  config,
+  reservation_config,
+  week_schedule,
+  exception_schedule,
+  staff_week_schedule,
+  staff_exception_schedule,
+  staff,
+  staff_auth,
+  staff_config,
+  menu,
+  menu_exclusion_staff,
+  coupon,
+  coupon_exclusion_menu,
+  coupon_config,
+  reservation,
+  reservation_detail,
+  point_config,
+  point_exclusion_menu,
+});

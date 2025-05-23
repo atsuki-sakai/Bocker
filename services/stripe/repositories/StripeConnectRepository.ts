@@ -4,8 +4,9 @@ import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
 import { Id } from '@/convex/_generated/dataModel';
 import { StripeResult } from '@/services/stripe/types';
-import { throwConvexError, handleErrorToMsg } from '@/lib/error';
-import { Doc } from '@/convex/_generated/dataModel';
+import { ConvexError } from 'convex/values';
+import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
+import { BASE_URL } from '@/lib/constants';
 
 /**
  * Stripe Connect APIを扱うリポジトリクラス
@@ -52,24 +53,23 @@ export class StripeConnectRepository {
   async handleAccountUpdatedEvent(account: Stripe.Account): Promise<{ success: boolean }> {
     const accountId = account.id;
 
-    // アカウントIDからサロンを検索
-    const salons = await this.convex.query(api.salon.core.query.findSalonByConnectId, {
-      accountId: accountId,
+    // Stripe ConnectアカウントIDから組織を検索
+    const organization = await this.convex.query(api.organization.stripe_connect.query.findOrganizationByStripeConnectId, {
+      stripe_connect_id: accountId,
     });
 
-    if (!salons || salons.length === 0) {
-      throw new Error(`No salon found for Connect account ${accountId}`);
+    if (!organization) {
+      throw new Error(`No organization found for Connect account ${accountId}`);
     }
-
-    const salon = salons[0]; // 最初のサロンを使用
 
     // ステータスを判定
     const status = this.determineAccountStatus(account);
 
     // ステータスを更新
-    await this.convex.mutation(api.salon.core.mutation.updateConnectStatus, {
-      salonId: salon._id,
-      accountId: accountId,
+    await this.convex.mutation(api.organization.stripe_connect.mutation.updateConnectStatus, {
+      tenant_id: organization.tenant_id,
+      org_id: organization.org_id,
+      stripe_connect_id: accountId,
       status,
     });
 
@@ -83,10 +83,10 @@ export class StripeConnectRepository {
     try {
       const reservationId = session.client_reference_id as Id<'reservation'> | undefined;
       const stripeConnectId = session.metadata?.stripeConnectId as string | undefined;
-      const salonId = session.metadata?.salonId as Id<'salon'> | undefined;
+      const orgId = session.metadata?.orgId as string | undefined;
 
-      if (!reservationId || !stripeConnectId || !salonId) {
-        console.error('必要なメタデータが不足しています。', { reservationId, stripeConnectId, salonId });
+      if (!reservationId || !stripeConnectId || !orgId) {
+        console.error('必要なメタデータが不足しています。', { reservationId, stripeConnectId, orgId });
         // 失敗として扱うが、エラーは投げずにStripeに200を返すことで再試行を防ぐ
         return { success: false };
       }
@@ -94,9 +94,9 @@ export class StripeConnectRepository {
       // ここでConvexのミューテーションを呼び出し、予約ステータスを更新する
       // 例: reservation.paymentCompleted
       await this.convex.mutation(api.reservation.mutation.updateReservationPaymentStatus, {
-        reservationId,
-        paymentStatus: 'paid', // 仮のステータス。スキーマに合わせてください。
-        stripeCheckoutSessionId: session.id,
+        reservation_id: reservationId,
+        payment_status: 'paid', // 仮のステータス。スキーマに合わせてください。
+        stripe_checkout_session_id: session.id,
       });
 
       return { success: true };
@@ -121,14 +121,16 @@ export class StripeConnectRepository {
           return { success: true, message: `未処理のイベントタイプ: ${event.type}` };
       }
     } catch (error) {
-      throw throwConvexError({
-        message: 'Webhookイベントの処理に失敗しました',
-        status: 500,
-        code: 'INTERNAL_ERROR',
-        title: 'Webhookイベントの処理に失敗しました',
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+        severity: ERROR_SEVERITY.ERROR,
         callFunc: 'StripeConnectRepository.handleWebhookEvent',
-        severity: 'low',
-        details: { event, error: error instanceof Error ? error.message : '不明なエラー' },
+        message: 'Webhookイベントの処理に失敗しました',
+        code: 'INTERNAL_SERVER_ERROR',
+        status: 500,
+        details: {
+          error: error instanceof Error ? error.message : '不明なエラー',
+        },
       });
     }
   }
@@ -137,8 +139,9 @@ export class StripeConnectRepository {
    * 手動でアカウントステータスを確認・更新
    */
   async checkAndUpdateAccountStatus(
-    salonId: Id<'salon'>,
-    accountId: string
+    tenant_id: Id<'tenant'>,
+    org_id: string,
+    stripe_connect_id: string
   ): Promise<
     StripeResult<{
       status: string;
@@ -155,15 +158,16 @@ export class StripeConnectRepository {
   > {
     try {
       // Stripeからアカウント情報を取得
-      const account = await this.stripe.accounts.retrieve(accountId);
+      const account = await this.stripe.accounts.retrieve(stripe_connect_id);
 
       // ステータスを判定
       const status = this.determineAccountStatus(account);
 
       // Convexにステータスを保存
-      await this.convex.mutation(api.salon.core.mutation.updateConnectStatus, {
-        salonId,
-        accountId,
+      await this.convex.mutation(api.organization.stripe_connect.mutation.updateConnectStatus, {
+        tenant_id,
+        org_id,
+        stripe_connect_id,
         status,
       });
 
@@ -185,8 +189,8 @@ export class StripeConnectRepository {
     } catch (error) {
       return {
         success: false,
-        error: handleErrorToMsg(error),
-      };
+        error: error instanceof Error ? error.message : '不明なエラー',
+      }
     }
   }
 
@@ -194,22 +198,24 @@ export class StripeConnectRepository {
    * Stripeアカウント連携用のアカウントリンクを生成
    */
   async createConnectAccountLink(
-    salonId: Id<'salon'>
+    tenant_id: Id<'tenant'>,
+    org_id: string,
   ): Promise<StripeResult<{ account: Stripe.Account; accountLink: Stripe.AccountLink }>> {
     try {
       // 既存のアカウントを検索
-      const existingAccount = await this.convex.query(
-        api.salon.core.query.getConnectAccountDetails,
+      const existingOrganization = await this.convex.query(
+        api.organization.stripe_connect.query.findByTenantAndOrg,
         {
-          salonId,
+          tenant_id,
+          org_id,
         }
       );
 
       // 既存のアカウントがあれば削除
-      if (existingAccount && existingAccount.accountId) {
+      if (existingOrganization && existingOrganization.stripe_connect_id) {
         try {
           // Stripeアカウントを削除
-          await this.stripe.accounts.del(existingAccount.accountId);
+          await this.stripe.accounts.del(existingOrganization.stripe_connect_id);
         } catch (deleteError) {
           //削除に失敗しても続行する
         }
@@ -226,7 +232,7 @@ export class StripeConnectRepository {
         business_type: 'individual',
         business_profile: {
           mcc: '7230', // Beauty salon & barber shops
-          url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}`,
+          url: `${BASE_URL}`,
         },
         settings: {
           payouts: {
@@ -234,18 +240,23 @@ export class StripeConnectRepository {
               interval: 'monthly',
               monthly_anchor: 25,
             },
-            statement_descriptor: 'BOCKER PAYMENT',
+            statement_descriptor: 'BOCKER STRIPE PAYMENT',
           },
         },
         metadata: {
-          salonId,
+          tenant_id: tenant_id,
+          org_id: org_id,
         },
       })
 
       // Convexに接続情報を保存
-      await this.convex.mutation(api.salon.core.mutation.createConnectAccount, {
-        salonId,
-        accountId: account.id,
+      await this.convex.mutation(api.organization.stripe_connect.mutation.createConnectAccount, {
+        tenant_id: tenant_id,
+        org_id: org_id,
+        user_id: '',
+        org_name: '',
+        org_email: '',
+        stripe_connect_id: account.id,
         status: 'pending',
       });
 
@@ -268,7 +279,7 @@ export class StripeConnectRepository {
     } catch (error) {
       return {
         success: false,
-        error: handleErrorToMsg(error),
+        error: error instanceof Error ? error.message : '不明なエラー',
       };
     }
   }
@@ -290,8 +301,8 @@ export class StripeConnectRepository {
         // オンボーディングが完了していない場合、アカウントリンク（オンボーディング用）を生成
         const accountLink = await this.stripe.accountLinks.create({
           account: accountId,
-          refresh_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/setting?refresh=true`,
-          return_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/setting?success=true`,
+          refresh_url: `${BASE_URL}/dashboard/setting?refresh=true`,
+          return_url: `${BASE_URL}/dashboard/setting?success=true`,
           type: 'account_onboarding',
         });
 
@@ -314,10 +325,10 @@ export class StripeConnectRepository {
         if (error.code === 'account_invalid') {
           errorMessage = 'このアカウントは現在利用できません。Stripeの設定を完了してください。';
         } else {
-          errorMessage = handleErrorToMsg(error);
+          errorMessage = error instanceof Error ? error.message : '不明なエラー';
         }
       } else {
-        errorMessage = handleErrorToMsg(error);
+        errorMessage = error instanceof Error ? error.message : '不明なエラー';
       }
 
       return {
@@ -331,46 +342,52 @@ export class StripeConnectRepository {
    * Stripe Checkoutセッションを作成
    */
   async createCheckoutSession(params: {
-    stripeConnectId: string; // 支払いを受け取るStripe ConnectアカウントID
-    salonId: Id<'salon'>;
-    reservationId: Id<'reservation'>;
-    lineItems: Stripe.Checkout.SessionCreateParams.LineItem[];
-    customerEmail?: string;
-    successUrl: string;
-    cancelUrl: string;
+    stripe_connect_id: string; // 支払いを受け取るStripe ConnectアカウントID
+    tenant_id: Id<'tenant'>;
+    org_id: string;
+    reservation_id: Id<'reservation'>;
+    line_items: Stripe.Checkout.SessionCreateParams.LineItem[];
+    customer_email?: string;
+    success_url: string;
+    cancel_url: string;
     metadata?: Record<string, string>;
   }): Promise<StripeResult<{ sessionId: string; url: string | null }>> {
     const {
-      stripeConnectId,
-      salonId,
-      reservationId,
-      lineItems,
-      customerEmail,
-      successUrl,
-      cancelUrl,
+      stripe_connect_id,
+      tenant_id,
+      org_id,
+      reservation_id,
+      line_items,
+      customer_email,
+      success_url,
+      cancel_url,
       metadata,
     } = params;
 
     try {
+      const default_fee_amount = 40;// 40円固定
+      const percentage_fee = 0.04;// 4%
+      const fee_amount = Math.floor(line_items.reduce((sum, item) => sum + (item.price_data?.unit_amount_decimal ? parseFloat(item.price_data.unit_amount_decimal) : item.price_data?.unit_amount || 0),0) * percentage_fee) + default_fee_amount;
       const sessionCreateParams: Stripe.Checkout.SessionCreateParams = {
         payment_method_types: ['card'],
-        line_items: lineItems,
+        line_items: line_items,
         mode: 'payment',
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-        customer_email: customerEmail,
-        client_reference_id: reservationId,
+        success_url: success_url,
+        cancel_url: cancel_url,
+        customer_email: customer_email,
+        client_reference_id: reservation_id,
         payment_intent_data: {
-          application_fee_amount: Math.floor(lineItems.reduce((sum, item) => sum + (item.price_data?.unit_amount_decimal ? parseFloat(item.price_data.unit_amount_decimal) : item.price_data?.unit_amount || 0),0) * 0.04) + 40,
+          application_fee_amount: fee_amount,
           transfer_data: {
-            destination: stripeConnectId,
+            destination: stripe_connect_id,
           },
         },
         metadata: {
           ...metadata,
-          reservationId: reservationId,
-          stripeConnectId: stripeConnectId,
-          salonId: salonId,
+          reservation_id: reservation_id,
+          stripe_connect_id: stripe_connect_id,
+          tenant_id: tenant_id,
+          org_id: org_id,
         },
       };
       
@@ -387,7 +404,7 @@ export class StripeConnectRepository {
     } catch (error) {
       return {
         success: false,
-        error: handleErrorToMsg(error),
+        error: error instanceof Error ? error.message : '不明なエラー',
       };
     }
   }

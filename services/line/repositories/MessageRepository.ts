@@ -12,8 +12,15 @@ export interface MessageRepository {
    * @returns 送信結果
    */
   sendMessage(message: LineMessage, options: LineMessageOptions): Promise<boolean>
+  /**
+   * LINEメッセージを送信する
+   * @param line_id 送信先のLINEユーザーID
+   * @param messages 送信するメッセージ内容
+   * @param options メッセージ送信時のオプション
+   * @returns 送信結果
+   */
   sendFlexMessage(
-    lineId: string,
+    line_id: string,
     messages: Message[],
     options: LineMessageOptions
   ): Promise<boolean>
