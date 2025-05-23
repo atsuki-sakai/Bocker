@@ -1,4 +1,5 @@
 'use node';
+
 import Stripe from 'stripe';
 import { STRIPE_API_VERSION } from './constants';
 import {
@@ -222,24 +223,3 @@ class StripeService {
 
 // シングルトンインスタンスをエクスポート
 export const stripeService = StripeService.getInstance();
-
-export const getStripeClient = () => {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    throw new SystemError(
-      'Stripeの秘密鍵が設定されていません',
-      {
-        statusCode: ERROR_STATUS_CODE.UNAUTHORIZED,
-        severity: ERROR_SEVERITY.WARNING,
-        title: 'Stripeの秘密鍵が設定されていません',
-        callFunc: 'StripeService.getStripeClient',
-        details: {
-          stripeSecretKey: process.env.STRIPE_SECRET_KEY,
-        },
-      },
-      'STRIPE_ERROR - SECRET_KEY_NOT_FOUND'
-    );
-  }
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: STRIPE_API_VERSION,
-  });
-};

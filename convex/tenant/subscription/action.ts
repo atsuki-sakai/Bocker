@@ -1,3 +1,4 @@
+"use node"
 
 /**
  * サブスクリプションアクションAPI
@@ -12,7 +13,8 @@ import {
   validateStringLength,
   validateNumberLength
 } from '@/convex/utils/validations';
-import { getStripeClient } from '@/services/stripe/StripeService';
+import { Stripe } from 'stripe';
+import { STRIPE_API_VERSION } from '@/services/stripe/constants';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { BASE_URL, PLAN_TRIAL_DAYS } from '@/lib/constants';
@@ -59,7 +61,9 @@ export const createSubscriptionSession = action({
     const cancelUrl = `${BASE_URL}/dashboard/subscription/cancel`;
 
     try {
-      const stripe = getStripeClient();
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: STRIPE_API_VERSION,
+      });
       // Stripe Checkout Sessionを作成
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
@@ -109,7 +113,9 @@ export const getRealStripeCustomer = action({
   handler: async (ctx, args) => {
     validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
     try {
-      const stripe = getStripeClient();
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: STRIPE_API_VERSION,
+      });
       // Stripe API経由で顧客を取得
       const stripeCustomer = await stripe.customers.retrieve(args.stripe_customer_id);
       if (!stripeCustomer) {
@@ -165,7 +171,9 @@ export const getSubscriptionUpdatePreview = action({
 
       // プロレーション（按分）日時をUnix秒で取得
       const prorationDate = Math.floor(Date.now() / 1000);
-      const stripe = getStripeClient();
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: STRIPE_API_VERSION,
+      });
       // 現行サブスクリプション取得
       const subscription = await stripe.subscriptions.retrieve(args.subscription_id);
       const items = [
@@ -247,7 +255,9 @@ export const createBillingPortalSession = action({
       // 許可ドメインチェック
       checkAllowedUrl(args.return_url);
 
-      const stripe = getStripeClient();
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: STRIPE_API_VERSION,
+      });
       // Billing Portal Session作成
       const session = await stripe.billingPortal.sessions.create({
         customer: args.stripe_customer_id,
@@ -292,7 +302,9 @@ export const confirmSubscriptionUpdate = action({
       validateStringLength(args.new_price_id, 'new_price_id');
       validateNumberLength(args.proration_date, 'proration_date');
 
-      const stripe = getStripeClient();
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: STRIPE_API_VERSION,
+      });
       // Stripeサブスクリプションを更新
       const updatedSubscription = await stripe.subscriptions.update(
         args.subscription_id,

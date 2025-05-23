@@ -1,4 +1,3 @@
-"use node"
 
 import { mutation, internalMutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';

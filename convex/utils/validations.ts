@@ -7,7 +7,7 @@ import {
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { Id } from '../_generated/dataModel';
-import { QueryCtx, MutationCtx, ActionCtx } from '../_generated/server';
+import { QueryCtx, MutationCtx } from '../_generated/server';
 
 //================================================
 // COMMON
