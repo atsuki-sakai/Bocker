@@ -19,7 +19,7 @@ import { useZodForm } from '@/hooks/useZodForm'
 import { toast } from 'sonner'
 import { api } from '@/convex/_generated/api'
 import { useQuery, useMutation } from 'convex/react'
-import { useOrganization } from '@/hooks/useTenantAndOrg'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 
 // 共通リンクスタイル
 const externalLinkCls = 'text-blue-600 underline hover:text-blue-800'
@@ -36,7 +36,7 @@ const organizationApiConfigFormSchema = z.object({
 type OrganizationApiConfigFormValues = z.infer<typeof organizationApiConfigFormSchema>
 
 const ApiSettingsCard = () => {
-  const { tenantId, orgId } = useOrganization()
+  const { tenantId, orgId, isLoading } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [showFields, setShowFields] = useState<{ [key: string]: boolean }>({
@@ -102,6 +102,9 @@ const ApiSettingsCard = () => {
   }
 
   if (organizationApiConfig === undefined) {
+    return <Loading />
+  }
+  if (isLoading) {
     return <Loading />
   }
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2 } from 'lucide-react'
-import { useOrganization } from '@/hooks/useTenantAndOrg'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Loading } from '@/components/common'
 import {
@@ -125,7 +125,7 @@ export interface WeekScheduleData {
 const defaultScheduleHour = { startHour: '08:00', endHour: '19:00' }
 
 export default function WeekHourSchedule() {
-  const { tenantId, orgId } = useOrganization()
+  const { tenantId, orgId, isLoading: isLoadingTenantAndOrganization } = useTenantAndOrganization()
   const [isSaving, setIsSaving] = useState(false)
   const [scheduleTab, setScheduleTab] = useState('common')
   const { showErrorToast } = useErrorHandler()
@@ -458,6 +458,9 @@ export default function WeekHourSchedule() {
 
   // ローディング状態
   if (salonWeekSchedules === undefined) {
+    return <Loading />
+  }
+  if (isLoadingTenantAndOrganization) {
     return <Loading />
   }
 

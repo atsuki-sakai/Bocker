@@ -5,7 +5,7 @@ import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { ImageDrop, Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
-import { useOrganization } from '@/hooks/useTenantAndOrg'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Textarea } from '@/components/ui/textarea'
 import { fileToBase64 } from '@/lib/utils'
 import { useZodForm } from '@/hooks/useZodForm'
@@ -39,7 +39,7 @@ const orgConfigFormSchema = z.object({
 })
 
 export default function OrgConfigForm() {
-  const { tenantId, orgId } = useOrganization()
+  const { tenantId, orgId, isLoading } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [currentFile, setCurrentFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -191,6 +191,9 @@ export default function OrgConfigForm() {
   }, [orgConfig, reset])
 
   if (orgConfig === undefined) {
+    return <Loading />
+  }
+  if (isLoading) {
     return <Loading />
   }
 

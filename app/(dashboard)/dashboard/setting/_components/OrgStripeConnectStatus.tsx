@@ -19,7 +19,7 @@ import {
   AccordionContent,
 } from '@/components/ui/accordion'
 import { ExternalLink } from 'lucide-react'
-import { useOrganization } from '@/hooks/useTenantAndOrg'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 
 // ステータスの日本語表記
 const statusNameMap: Record<string, string> = {
@@ -56,7 +56,7 @@ const statusDescriptionMap: Record<string, string> = {
 }
 
 export default function StripeConnectStatus() {
-  const { tenantId, orgId } = useOrganization()
+  const { tenantId, orgId, isLoading: isLoadingTenantAndOrganization } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -162,6 +162,9 @@ export default function StripeConnectStatus() {
   }
 
   if (connectAccount === undefined) {
+    return <Loading />
+  }
+  if (isLoadingTenantAndOrganization) {
     return <Loading />
   }
 

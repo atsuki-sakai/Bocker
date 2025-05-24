@@ -1,6 +1,5 @@
 'use client'
 
-import { Loading } from '@/components/common'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useState } from 'react'
 import OrgConfigForm from './_components/OrgConfigForm'
@@ -8,16 +7,10 @@ import OrgApiConfigForm from './_components/OrgApiConfigForm'
 import OrgReservationConfigForm from './_components/OrgReservationConfigForm'
 import OrgExceptionScheduleForm from './_components/OrgExceptionScheduleForm'
 import OrgStripeConnectStatus from './_components/OrgStripeConnectStatus'
-import { useOrganization } from '@/hooks/useTenantAndOrg'
 
 export default function SettingPage() {
-  const { tenantId, orgId } = useOrganization()
-
   const [currentTab, setCurrentTab] = useState('basic')
 
-  if (!tenantId || !orgId) {
-    return <Loading />
-  }
   return (
     <Tabs value={currentTab} onValueChange={setCurrentTab}>
       <div className="overflow-x-scroll">

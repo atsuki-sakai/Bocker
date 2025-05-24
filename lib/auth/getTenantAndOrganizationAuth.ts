@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
  * サーバー上でConvexの認証を行う
  * @returns ユーザーIDとトークン
  */
-export async function getOrganizationAuth() {
+export async function getTenantAndOrganizationAuth() {
     const { userId, getToken, orgId } = await auth();
     const token = await getToken({ template: 'convex' });
 

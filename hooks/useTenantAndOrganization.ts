@@ -2,14 +2,14 @@ import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { Id } from "@/convex/_generated/dataModel";
+// import type { Role } from "@/convex/types";
 
 // Clerk JWT の型定義（必要に応じて追加）
 type ClerkConvexTokenPayload = {
   tenant_id: Id<'tenant'>;
-  org_id: string;
 };
 
-export function useOrganization() {
+export function useTenantAndOrganization() {
   const { getToken, orgRole, orgId, userId, isLoaded, isSignedIn } = useAuth();
   const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,12 +53,13 @@ export function useOrganization() {
 
     fetchTenantData();
     // 依存配列にorgIdやorgRoleも含めると、組織切り替え時も再取得されます
-  }, [getToken, isLoaded, isSignedIn, orgId, orgRole]);
+  }, [getToken, isLoaded, isSignedIn, orgId, orgRole, userId]);
 
+  // FIXME: Roleの型を合わせる
   return {
     tenantId,
     orgId,
-    orgRole,
+    role:orgRole,
     userId,
     isLoading,
     error,

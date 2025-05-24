@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/accordion'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Loader2 } from 'lucide-react'
-import { useOrganization } from '@/hooks/useTenantAndOrg'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 // カスタムカレンダーコンポーネントをインポート
 import CalendarMultiSelect from '@/components/common/CalendarMultiSelect'
 
@@ -29,7 +29,7 @@ const formatDate = (date: Date): string => {
 }
 
 export default function OrgExceptionScheduleForm() {
-  const { tenantId, orgId } = useOrganization()
+  const { tenantId, orgId, isLoading: isLoadingTenantAndOrganization } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const [isSaving, setIsSaving] = useState<boolean>(false)
@@ -203,6 +203,9 @@ export default function OrgExceptionScheduleForm() {
   )
 
   if (exceptionSchedules === undefined) {
+    return <Loading />
+  }
+  if (isLoadingTenantAndOrganization) {
     return <Loading />
   }
 

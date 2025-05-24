@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { preloadQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { Sidebar } from '@/components/common'
-import { getOrganizationAuth } from '@/lib/auth/getOrganizationAuth'
+import { getTenantAndOrganizationAuth } from '@/lib/auth/getTenantAndOrganizationAuth'
 import '../../globals.css'
 import { ThemeProvider } from 'next-themes'
 import { ChannelTalkLoader } from '@/components/common/ChannelTalkLoader'
@@ -30,14 +30,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const { userId, orgId, token, tenantId } = await getOrganizationAuth()
+  const { userId, orgId, token, tenantId } = await getTenantAndOrganizationAuth()
 
   if (!orgId || !tenantId) {
     throw new ApplicationError('orgId is required', {
       statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
       severity: ERROR_SEVERITY.ERROR,
       message: 'orgId is required',
-      callFunc: 'getOrganizationAuth - /dashboard/layout.tsx',
+      callFunc: 'getTenantAndOrganizationAuth - /dashboard/layout.tsx',
       details: {
         user_id: userId,
         org_id: orgId,

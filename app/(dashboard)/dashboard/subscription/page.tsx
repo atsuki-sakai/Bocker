@@ -1,11 +1,11 @@
 import SubscriptionForm from './SubscriptionForm'
 import { preloadQuery, preloadedQueryResult } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
-import { getOrganizationAuth } from '@/lib/auth/getOrganizationAuth'
+import { getTenantAndOrganizationAuth } from '@/lib/auth/getTenantAndOrganizationAuth'
 import { redirect } from 'next/navigation'
 
 export default async function SubscriptionPage() {
-  const { userId, token, orgId } = await getOrganizationAuth()
+  const { userId, token, orgId } = await getTenantAndOrganizationAuth()
 
   const tenantPreloaded = await preloadQuery(
     api.tenant.query.findByUserId,

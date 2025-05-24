@@ -13,7 +13,7 @@ import { Save } from 'lucide-react'
 import { SALON_RESERVATION_LIMIT_DAYS, SALON_RESERVATION_CANCEL_LIMIT_DAYS } from '@/lib/constants'
 import { RESERVATION_INTERVAL_MINUTES_VALUES } from '@/convex/types'
 import type { ReservationIntervalMinutes } from '@/convex/types'
-import { useOrganization } from '@/hooks/useTenantAndOrg'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import {
   Select,
   SelectContent,
@@ -69,7 +69,7 @@ const defaultReservationConfig = {
 }
 
 export default function OrgReservationConfigForm() {
-  const { tenantId, orgId } = useOrganization()
+  const { tenantId, orgId, isLoading: isLoadingTenantAndOrganization } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const reservationConfig = useQuery(
     api.organization.reservation_config.query.findByTenantAndOrg,
@@ -237,6 +237,9 @@ export default function OrgReservationConfigForm() {
   )
 
   if (reservationConfig === undefined) {
+    return <Loading />
+  }
+  if (isLoadingTenantAndOrganization) {
     return <Loading />
   }
 
