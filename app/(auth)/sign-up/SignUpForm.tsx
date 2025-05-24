@@ -32,7 +32,7 @@ import { api } from '@/convex/_generated/api';
 export const signUpSchema = z
   .object({
     salonName: z.string().min(1, { message: '店舗名を入力してください' }),
-    referralCode: z.string().optional(),
+    referralToken: z.string().optional(),
     email: z
       .string()
       .min(1, { message: 'メールアドレスを入力してください' })
@@ -49,7 +49,7 @@ export const signUpSchema = z
   .refine((data) => data.password === data.confirmPassword, {
     message: 'パスワードと確認用パスワードが一致しません',
     path: ['confirmPassword'],
-  });
+  })
 
 // パスワード強度の型定義
 type PasswordStrength = 'empty' | 'weak' | 'medium' | 'strong' | 'veryStrong';
@@ -194,14 +194,14 @@ export default function SignUpPage() {
   } = useZodForm(signUpSchema);
 
   const salonName = watch('salonName');
-  const referralCode = watch('referralCode');
+  const referralToken = watch('referralToken')
 
-  const email = watch('email');
+  const email = watch('email')
 
   // メモ化されたトグル関数
   const toggleShowPassword = useCallback(() => {
-    setShowPassword((prev) => !prev);
-  }, []);
+    setShowPassword((prev) => !prev)
+  }, [])
 
   // パスワード条件の充足状況 - useMemoでメモ化
   const passwordCriteria = useMemo(
@@ -213,52 +213,52 @@ export default function SignUpPage() {
       special: /[^A-Za-z0-9]/.test(password),
     }),
     [password]
-  );
+  )
 
   // パスワード値の監視
   useEffect(() => {
     const subscription = watch((value, { name }) => {
       if (name === 'password') {
-        setPassword(value.password || '');
+        setPassword(value.password || '')
       }
-    });
-    return () => subscription.unsubscribe();
-  }, [watch]);
+    })
+    return () => subscription.unsubscribe()
+  }, [watch])
 
   // パスワード強度を計算 - パスワードが変わった時だけ実行
   useEffect(() => {
     if (!password) {
-      setPasswordStrength('empty');
-      return;
+      setPasswordStrength('empty')
+      return
     }
 
-    let strength = 0;
+    let strength = 0
 
     // 長さチェック
-    if (password.length >= 8) strength += 1;
-    if (password.length >= 12) strength += 1;
+    if (password.length >= 8) strength += 1
+    if (password.length >= 12) strength += 1
 
     // 文字種チェック
-    if (/[A-Z]/.test(password)) strength += 1;
-    if (/[a-z]/.test(password)) strength += 1;
-    if (/[0-9]/.test(password)) strength += 1;
-    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1
+    if (/[a-z]/.test(password)) strength += 1
+    if (/[0-9]/.test(password)) strength += 1
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1
 
     // 強度の判定
     if (strength <= 2) {
-      setPasswordStrength('weak');
+      setPasswordStrength('weak')
     } else if (strength <= 3) {
-      setPasswordStrength('medium');
+      setPasswordStrength('medium')
     } else if (strength <= 4) {
-      setPasswordStrength('strong');
+      setPasswordStrength('strong')
     } else {
-      setPasswordStrength('veryStrong');
+      setPasswordStrength('veryStrong')
     }
-  }, [password]);
+  }, [password])
 
   // メモ化されたパスワード強度表示コンポーネント
   const PasswordStrengthIndicator = useMemo(() => {
-    if (!password) return null;
+    if (!password) return null
 
     return (
       <motion.div
@@ -305,12 +305,12 @@ export default function SignUpPage() {
           ></motion.div>
         </div>
       </motion.div>
-    );
-  }, [password, passwordStrength]);
+    )
+  }, [password, passwordStrength])
 
   // メモ化されたパスワード要件チェックリスト
   const PasswordRequirementsList = useMemo(() => {
-    if (!password) return null;
+    if (!password) return null
 
     return (
       <motion.div
@@ -366,33 +366,33 @@ export default function SignUpPage() {
           </div>
         </div>
       </motion.div>
-    );
-  }, [password, passwordCriteria]);
+    )
+  }, [password, passwordCriteria])
 
   // 登録フォーム送信ハンドラ
   const onSignUpSubmit = async (data: { email: string; password: string }) => {
-    if (!isLoaded) return;
+    if (!isLoaded) return
 
     try {
       // 既存のセッションがあるかチェックして、ある場合はサインアウト
       if (clerkClient.session) {
-        await clerkClient.signOut();
-        toast.info('既存のセッションからサインアウトしました');
+        await clerkClient.signOut()
+        toast.info('既存のセッションからサインアウトしました')
       }
 
       // 招待コードが存在する場合は、招待コードをチェック
       if (referralCode) {
-        const referral = await fetchQuery(api.salon.referral.query.getByReferralCode, {
-          referralCode: referralCode,
-        });
+        const referral = await fetchQuery(api.tenant.referral.query.getByReferralToken, {
+          referral_point: referralCode,
+        })
         if (!referral) {
-          toast.error('招待コードが見つかりません');
-          return;
+          toast.error('招待コードが見つかりません')
+          return
         }
 
         if (referral.referralCount && referral.referralCount >= 5) {
-          toast.error('招待コードの利用回数が上限に達しています。');
-          return;
+          toast.error('招待コードの利用回数が上限に達しています。')
+          return
         }
       }
 
@@ -404,17 +404,17 @@ export default function SignUpPage() {
           salonName: salonName,
           referralCode: referralCode,
         },
-      });
+      })
 
       // メール確認コードを送信
-      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
-      setPendingVerification(true);
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+      setPendingVerification(true)
 
-      toast.success('アカウントが作成されました。メールを確認してください');
+      toast.success('アカウントが作成されました。メールを確認してください')
     } catch (err) {
-      toast.error(handleErrorToMsg(err));
+      toast.error(handleErrorToMsg(err))
     }
-  };
+  }
 
   // 認証コード確認ハンドラ
   const onVerifySubmit = async (e: React.FormEvent<HTMLFormElement>) => {

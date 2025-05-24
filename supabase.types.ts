@@ -9,6 +9,154 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      customer: {
+        Row: {
+          _creation_time: string | null
+          email: string | null
+          first_name: string | null
+          initial_tracking: Json | null
+          is_archive: boolean | null
+          last_name: string | null
+          last_reservation_date_unix: string | null
+          line_id: string | null
+          line_user_name: string | null
+          password_hash: string | null
+          phone: string | null
+          salon_id: string | null
+          searchable_text: string | null
+          tags: Json | null
+          uid: string
+          updated_time: string | null
+          use_count: number | null
+        }
+        Insert: {
+          _creation_time?: string | null
+          email?: string | null
+          first_name?: string | null
+          initial_tracking?: Json | null
+          is_archive?: boolean | null
+          last_name?: string | null
+          last_reservation_date_unix?: string | null
+          line_id?: string | null
+          line_user_name?: string | null
+          password_hash?: string | null
+          phone?: string | null
+          salon_id?: string | null
+          searchable_text?: string | null
+          tags?: Json | null
+          uid: string
+          updated_time?: string | null
+          use_count?: number | null
+        }
+        Update: {
+          _creation_time?: string | null
+          email?: string | null
+          first_name?: string | null
+          initial_tracking?: Json | null
+          is_archive?: boolean | null
+          last_name?: string | null
+          last_reservation_date_unix?: string | null
+          line_id?: string | null
+          line_user_name?: string | null
+          password_hash?: string | null
+          phone?: string | null
+          salon_id?: string | null
+          searchable_text?: string | null
+          tags?: Json | null
+          uid?: string
+          updated_time?: string | null
+          use_count?: number | null
+        }
+        Relationships: []
+      }
+      customer_detail: {
+        Row: {
+          _creation_time: string | null
+          age: number | null
+          birthday: string | null
+          customer_uid: string
+          email: string | null
+          gender: string | null
+          is_archive: boolean | null
+          notes: string | null
+          uid: string
+          updated_time: string | null
+        }
+        Insert: {
+          _creation_time?: string | null
+          age?: number | null
+          birthday?: string | null
+          customer_uid: string
+          email?: string | null
+          gender?: string | null
+          is_archive?: boolean | null
+          notes?: string | null
+          uid: string
+          updated_time?: string | null
+        }
+        Update: {
+          _creation_time?: string | null
+          age?: number | null
+          birthday?: string | null
+          customer_uid?: string
+          email?: string | null
+          gender?: string | null
+          is_archive?: boolean | null
+          notes?: string | null
+          uid?: string
+          updated_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_detail_customer_uid_fkey"
+            columns: ["customer_uid"]
+            isOneToOne: false
+            referencedRelation: "customer"
+            referencedColumns: ["uid"]
+          },
+        ]
+      }
+      customer_points: {
+        Row: {
+          _creation_time: string | null
+          customer_uid: string
+          is_archive: boolean | null
+          last_transaction_date_unix: number | null
+          salon_id: string | null
+          total_points: number | null
+          uid: string
+          updated_time: string | null
+        }
+        Insert: {
+          _creation_time?: string | null
+          customer_uid: string
+          is_archive?: boolean | null
+          last_transaction_date_unix?: number | null
+          salon_id?: string | null
+          total_points?: number | null
+          uid: string
+          updated_time?: string | null
+        }
+        Update: {
+          _creation_time?: string | null
+          customer_uid?: string
+          is_archive?: boolean | null
+          last_transaction_date_unix?: number | null
+          salon_id?: string | null
+          total_points?: number | null
+          uid?: string
+          updated_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_points_customer_uid_fkey"
+            columns: ["customer_uid"]
+            isOneToOne: false
+            referencedRelation: "customer"
+            referencedColumns: ["uid"]
+          },
+        ]
+      }
       reservation: {
         Row: {
           _creation_time: string | null
@@ -89,7 +237,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_customer_with_details_and_points: {
+        Args: {
+          p_email: string
+          p_first_name: string
+          p_last_name: string
+          p_phone: string
+          p_salon_id: string
+          p_line_id: string
+          p_line_user_name: string
+          p_password_hash: string
+          p_detail_email: string
+          p_detail_gender: string
+          p_detail_birthday: string
+          p_detail_age: number
+          p_detail_notes: string
+          p_initial_points: number
+        }
+        Returns: {
+          _creation_time: string | null
+          email: string | null
+          first_name: string | null
+          initial_tracking: Json | null
+          is_archive: boolean | null
+          last_name: string | null
+          last_reservation_date_unix: string | null
+          line_id: string | null
+          line_user_name: string | null
+          password_hash: string | null
+          phone: string | null
+          salon_id: string | null
+          searchable_text: string | null
+          tags: Json | null
+          uid: string
+          updated_time: string | null
+          use_count: number | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

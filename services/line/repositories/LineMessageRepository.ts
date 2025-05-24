@@ -20,13 +20,13 @@ export class LineMessageRepository implements MessageRepository {
     try {
       // LINE Messaging APIクライアントの初期化
       const client = new MessagingApiClient({
-        channelAccessToken: options.accessToken,
+        channelAccessToken: options.access_token,
       })
 
       // メッセージの送信
-      console.log('Sending pushMessage to:', message.lineId, 'with message:', message.message)
+      console.log('Sending pushMessage to:', message.line_id, 'with message:', message.message)
       const response = await client.pushMessage({
-        to: message.lineId,
+        to: message.line_id,
         messages: [
           {
             type: 'text',
@@ -44,18 +44,18 @@ export class LineMessageRepository implements MessageRepository {
   }
 
   async sendFlexMessage(
-    lineId: string,
+    line_id: string,
     messages: Message[],
     options: LineMessageOptions
   ): Promise<boolean> {
     try {
       // LINE Messaging APIクライアントの初期化
       const client = new MessagingApiClient({
-        channelAccessToken: options.accessToken,
+        channelAccessToken: options.access_token,
       })
 
       const response = await client.pushMessage({
-        to: lineId,
+        to: line_id,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         messages: messages as any,
       })

@@ -1,20 +1,43 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/supabase.types'
+import { throwSupabaseError } from './utils/errors'
+import { CustomerRepository, CustomerDetailRepository, CustomerPointsRepository } from './repositories/customer'
+import { ReservationRepository } from './repositories/ReservationRepository'
 
 /* 型エイリアス --------------------------------------------------- */
-type Tables = Database['public']['Tables']
-type TableName = keyof Tables
-type RowType<K extends TableName> = Tables[K]['Row'];
-type InsertType<K extends TableName> = Tables[K]['Insert'];
-type SelectCols<R> = '*' | keyof R | (keyof R)[];
+export type Tables = Database['public']['Tables']
+export type TableName = keyof Tables
+export type RowType<K extends TableName> = Tables[K]['Row'];
+export type InsertType<K extends TableName> = Tables[K]['Insert'];
+export type UpdateType<K extends TableName> = Tables[K]['Update'];
+export type SelectCols<R> = '*' | keyof R | (keyof R)[];
 
 /* クライアント --------------------------------------------------- */
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+// const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY! // クライアントサイドでは参照しない
 
-export const supabase        = createClient(supabaseUrl, supabaseAnonKey)
-export const supabaseAdmin   = createClient(supabaseUrl, serviceRoleKey)
+if (!supabaseUrl) {
+  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL. Please check your .env file.')
+}
+if (!supabaseAnonKey) {
+  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY. Please check your .env file.')
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey) // モジュールロード時の初期化を削除
+
+// サーバーサイド用 Supabase Admin クライアントを作成するファクトリ関数
+export function createSupabaseAdminClient(): SupabaseClient {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    throw new Error('Missing env.SUPABASE_SERVICE_ROLE_KEY. This client is intended for server-side use only.');
+  }
+  if (!supabaseUrl) { // supabaseUrlもここでチェック（通常は上でチェックされるが念のため）
+    throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL for admin client.');
+  }
+  return createClient(supabaseUrl, serviceRoleKey);
+}
 
 /* リトライヘルパー ------------------------------------------------ */
 async function retryOperation<T>(
@@ -51,9 +74,9 @@ async function retryOperation<T>(
 }
 
 /* オプション型 --------------------------------------------------- */
-interface FetchOptions {
+interface FetchOptions<K extends TableName> {
   /** 取得カラム（既定 `"*"`） */
-  select?: string // This will be refined in the method signature
+  select?: SelectCols<RowType<K>>
   /** 1 始まりのページ番号（指定時 pageSize 必須） */
   page?: number
   /** 1 ページ当たり件数 */
@@ -65,13 +88,13 @@ interface FetchOptions {
   count?: 'exact' | 'planned' | 'estimated'
 }
 
-interface UpsertOptions {
+interface UpsertOptions<K extends TableName> {
   onConflict?: string
-  select?: string // This will be refined in the method signature
+  select?: SelectCols<RowType<K>>
 }
 
 /* サービスクラス ------------------------------------------------- */
-class SupabaseService {
+class SupabaseBaseService {
   private client: SupabaseClient
   private defaultRetryOptions = { retries: 3, delay: 1000 }
 
@@ -83,13 +106,13 @@ class SupabaseService {
   async fetch<K extends TableName>(
     table: K,
     {
-      select = '*',
+      select = '*' as SelectCols<RowType<K>>,
       page,
       pageSize,
       limit,
       offset = 0,
       count = 'exact',
-    }: FetchOptions & { select?: SelectCols<RowType<K>> } = {},
+    }: FetchOptions<K> = {},
   ): Promise<{ data: RowType<K>[]; count: number | null }> {
     const operationName = `fetch from ${String(table)}`
     return retryOperation(async () => {
@@ -109,11 +132,61 @@ class SupabaseService {
 
       const { data, error, count: total } = await query
       if (error) {
-        console.error(`[SupabaseService] ${operationName} error: ${error.message}`, { errorDetails: error, table, select })
-        throw new Error(`Supabase fetch error from table ${String(table)}: ${error.message}`)
+        throw throwSupabaseError({
+          callFunc: `SupabaseService.fetch(${String(table)})`,
+          message: error.message,
+          title: `Supabase fetch error from table ${String(table)}`,
+          severity: 'high',
+          code: 'DATABASE_ERROR',
+          status: 500,
+          details: {
+            table,
+            select,
+          },
+          error: error,
+        })
       }
       console.log(`[SupabaseService] ${operationName} success. Count: ${total}, Returned: ${data?.length ?? 0}`)
       return { data: (data ?? []) as unknown as RowType<K>[], count: total }
+    }, { ...this.defaultRetryOptions, operationName });
+  }
+
+  /**
+   * Supabase RPC (Remote Procedure Call) を実行します。
+   * @param fn 関数名
+   * @param params 関数に渡すパラメータ
+   * @param options オプション（ヘッドレスなど）
+   */
+  async rpc<T = any>(
+    fn: string,
+    params?: object,
+    options?: { head?: boolean; count?: 'exact' | 'planned' | 'estimated' }
+  ): Promise<{ data: T[]; error: any; count: number | null }> {
+    const operationName = `rpc call to ${fn}`
+    return retryOperation(async () => {
+      console.log(`[SupabaseService] Executing ${operationName}`, { fn, params, options });
+      const query = this.client.rpc(fn, params as any, options)
+      
+      const { data, error, count } = await query;
+
+      if (error) {
+        throw throwSupabaseError({
+          callFunc: `SupabaseService.rpc(${fn})`,
+          message: error.message,
+          title: `Supabase RPC error for function ${fn}`,
+          severity: 'high',
+          code: 'DATABASE_ERROR',
+          status: 500,
+          details: {
+            functionName: fn,
+            params,
+            options
+          },
+          error: error,
+        });
+      }
+      console.log(`[SupabaseService] ${operationName} success. Returned: ${data?.length ?? 0}, Count: ${count}`);
+      return { data: (data ?? []) as T[], error, count };
     }, { ...this.defaultRetryOptions, operationName });
   }
 
@@ -121,7 +194,7 @@ class SupabaseService {
   async upsert<K extends TableName>(
     table: K,
     rows: InsertType<K>[] | InsertType<K>,
-    { onConflict, select = '*' }: UpsertOptions & { select?: SelectCols<RowType<K>> } = {},
+    { onConflict, select = '*' as SelectCols<RowType<K>> }: UpsertOptions<K> = {},
   ): Promise<RowType<K>[]> {
     const operationName = `upsert to ${String(table)}`
     return retryOperation(async () => {
@@ -133,8 +206,20 @@ class SupabaseService {
         .upsert(payload, { onConflict })
         .select(sel)
       if (error) {
-        console.error(`[SupabaseService] ${operationName} error: ${error.message}`, { errorDetails: error, table, onConflict, select })
-        throw new Error(`Supabase upsert error to table ${String(table)}: ${error.message}`)
+        throw throwSupabaseError({
+          callFunc: `SupabaseService.upsert(${String(table)})`,
+          message: error.message,
+          title: `Supabase upsert error to table ${String(table)}`,
+          severity: 'high',
+          code: 'DATABASE_ERROR',
+          status: 500,
+          details: {
+            table,
+            onConflict,
+            select,
+          },
+          error: error,
+        })
       }
       console.log(`[SupabaseService] ${operationName} success. Returned: ${data?.length ?? 0}`)
       return (data ?? []) as unknown as RowType<K>[]
@@ -144,7 +229,7 @@ class SupabaseService {
   /** _id 指定 DELETE */
   async delete<K extends TableName>(
     table: K, 
-    idColumn: keyof RowType<K>, 
+    idColumn: keyof RowType<K> & string, 
     idValue: RowType<K>[typeof idColumn]
   ): Promise<void> {
     const operationName = `delete from ${String(table)} with ${String(idColumn)} = ${idValue}`
@@ -152,8 +237,20 @@ class SupabaseService {
       console.log(`[SupabaseService] Executing ${operationName}`, { table, idColumn, idValue });
       const { error } = await this.client.from(table).delete().eq(idColumn as string, idValue)
       if (error) {
-        console.error(`[SupabaseService] ${operationName} error: ${error.message}`, { errorDetails: error, table, idColumn, idValue })
-        throw new Error(`Supabase delete error from table ${String(table)} for ${String(idColumn)} = ${idValue}: ${error.message}`)
+        throw throwSupabaseError({
+          callFunc: `SupabaseService.delete(${String(table)})`,
+          message: error.message,
+          title: `Supabase delete error from table ${String(table)} for ${String(idColumn)} = ${idValue}`,
+          severity: 'high',
+          code: 'DATABASE_ERROR',
+          status: 500,
+          details: {
+            table,
+            idColumn,
+            idValue,
+          },
+          error: error,
+        })
       }
       console.log(`[SupabaseService] ${operationName} success.`)
     }, { ...this.defaultRetryOptions, operationName});
@@ -219,8 +316,23 @@ return retryOperation(async () => {
 
   const { data, error, count } = await query
   if (error) {
-    console.error(`[SupabaseService] ${operationName} error: ${error.message}`, { errorDetails: error })
-    throw new Error(`Supabase listRecords error: ${error.message}`)
+    throw throwSupabaseError({
+      callFunc: `SupabaseService.listRecords(${String(table)})`,
+      message: error.message,
+      title: `Supabase listRecords error from table ${String(table)}`,
+      severity: 'high',
+      code: 'DATABASE_ERROR',
+      status: 500,
+      details: {
+        table,
+        filters,
+        rangeFilter,
+        page,
+        pageSize,
+        select,
+      },
+      error: error,
+    })
   }
 
   console.log(`[SupabaseService] ${operationName} success. Count: ${count}, Returned: ${data?.length ?? 0}`)
@@ -230,5 +342,46 @@ return retryOperation(async () => {
   
 }
 
-/* インスタンスをエクスポート ------------------------------------ */
-export const supabaseService = new SupabaseService(supabaseAdmin)
+class SupabaseService extends SupabaseBaseService {
+  public readonly customer: CustomerRepository
+  public readonly reservation: ReservationRepository
+  public readonly customerDetail: CustomerDetailRepository
+  public readonly customerPoints: CustomerPointsRepository
+
+  constructor(supabaseInstance: SupabaseClient) {
+    super(supabaseInstance)
+    this.reservation = new ReservationRepository(this)
+    this.customer = new CustomerRepository(this)
+    this.customerDetail = new CustomerDetailRepository(this)
+    this.customerPoints = new CustomerPointsRepository(this)
+  }
+
+  async registerCustomerWithDetailsAndInitialPoints(
+    customerCoreData: Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'phone' | 'salon_id' | 'line_id' | 'line_user_name' | 'password_hash'>,
+    detailData: Omit<InsertType<'customer_detail'>, '_id' | 'customer_id' | '_creation_time' | 'updated_time' | 'is_archive'>, 
+    initialPoints: number = 0
+  ): ReturnType<CustomerRepository['createCustomerWithDetailsAndPoints']> { 
+    console.log("[SupabaseService] Calling CustomerRepository.createCustomerWithDetailsAndPoints");
+    try {
+      return await this.customer.createCustomerWithDetailsAndPoints(customerCoreData, detailData, initialPoints);
+    } catch (error) {
+      console.error("[SupabaseService] Error calling createCustomerWithDetailsAndPoints from CustomerRepository:", error);
+      if (error instanceof Error && !(error.name === 'SupabaseError')) {
+         throwSupabaseError({
+            callFunc: 'SupabaseService.registerCustomerWithDetailsAndInitialPoints',
+            message: `Failed during customer registration with details: ${error.message}`,
+            error: error,
+            severity: 'high',
+        });
+      }
+      throw error; 
+    }
+  }
+}
+
+
+// クライアントサイド用 (Anon権限)
+export const supabaseClientService = new SupabaseService(supabase); 
+
+// サーバーサイド用 (Admin権限)
+export const getSupabaseAdminService = () => new SupabaseService(createSupabaseAdminClient());

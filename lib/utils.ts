@@ -1,13 +1,59 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import Stripe from 'stripe'
-
-import { BillingPeriod } from '@/services/convex/shared/types/common'
+import { PLAN_MONTHLY_PRICES, PLAN_YEARLY_PRICES } from '@/lib/constants'
+import { BillingPeriod } from '@/convex/types'
+// FIXME: エラーハンドリングをカスタムエラーに変更する
+// import { ApplicationError, SystemError } from '@/lib/errors/custom_errors'
 import imageCompression from 'browser-image-compression'
 import CryptoJS from 'crypto-js' // CryptoJSをインポート
+import { SystemError } from '@/lib/errors/custom_errors'
+import { ALLOWED_DOMAINS } from '@/lib/constants'
+import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/**
+ * URLのドメインが許可されているか検証する関数
+ * @param checkUrl 検証するURL
+ * @throws SystemError ドメインが許可されていない場合
+ */
+export function checkAllowedUrl(checkUrl: string) {
+  // URLのドメインを検証
+  try {
+    const returnUrlObject = new URL(checkUrl);
+    if (!ALLOWED_DOMAINS.includes(returnUrlObject.hostname)) {
+      throw new SystemError(
+        "URLのドメインが許可されていません。",{
+        statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'tenant.subscription.createBillingPortalSession',
+        message: '無効なURLです。',
+        code: 'INVALID_REDIRECT_URL',
+        status: 400,
+        details: {
+          checkUrl,
+        },
+      });
+    }
+  } catch (e) {
+    // URLのパースに失敗した場合も無効なURLとみなす
+    throw new SystemError(
+      "URLのパースに失敗しました。",{
+      statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+      severity: ERROR_SEVERITY.ERROR,
+      callFunc: 'tenant.subscription.createBillingPortalSession',
+      message: '無効なリダイレクトURL形式です。',
+      code: 'INVALID_REDIRECT_URL_FORMAT',
+      status: 400,
+      details: {
+        checkUrl,
+        error: e instanceof Error ? e.message : '不明なエラー'
+      },
+    });
+  }
 }
 
 // 指数バックオフで再試行を行う関数
@@ -41,30 +87,6 @@ export async function retryOperation<T>(
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }
-}
-
-export function timestampToJSTISO(timestamp: number) {
-  const date = new Date(timestamp)
-  const parts = new Intl.DateTimeFormat('ja-JP', {
-    timeZone: 'Asia/Tokyo',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).formatToParts(date)
-
-  const year = parts.find((p) => p.type === 'year')?.value
-  const month = parts.find((p) => p.type === 'month')?.value
-  const day = parts.find((p) => p.type === 'day')?.value
-  const hour = parts.find((p) => p.type === 'hour')?.value
-  const minute = parts.find((p) => p.type === 'minute')?.value
-  const second = parts.find((p) => p.type === 'second')?.value
-
-  // フォーマットをYYYY-MM-DDTHH:mm:ss+09:00に修正
-  return `${year}-${month}-${day}T${hour}:${minute}:${second}+09:00`
 }
 
 // Stripeのサブスクリプションステータスを正規化する関数
@@ -141,42 +163,27 @@ export const generatePinCode = () => {
 
 // Stripeの課金期間をConvexの課金期間に変換
 export function priceIdToPlanInfo(priceId: string) {
-  // 環境変数へのアクセスはサーバーサイドで行うべきですが、
-  // この関数がクライアントサイドでも使われる可能性があるため、
-  // undefinedチェックやエラーハンドリングを強化します。
-  // 理想的には、価格情報はサーバーから取得するか、
-  // クライアントサイドで必要な最小限の情報のみを持つべきです。
 
   switch (priceId) {
     case process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID:
       return {
         name: 'Lite',
-        price: 6000, // 価格情報も環境変数から取得するか、安全な方法で管理すべき
+        price: PLAN_MONTHLY_PRICES.LITE,
       }
     case process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID:
       return {
         name: 'Lite',
-        price: 50000,
+        price: PLAN_YEARLY_PRICES.LITE,
       }
     case process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID:
       return {
         name: 'Pro',
-        price: 10000,
+        price: PLAN_MONTHLY_PRICES.PRO,
       }
     case process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID:
       return {
         name: 'Pro',
-        price: 100000,
-      }
-    case process.env.NEXT_PUBLIC_ENTRPIS_MONTHLY_PRC_ID:
-      return {
-        name: 'Enterprise',
-        price: 16000,
-      }
-    case process.env.NEXT_PUBLIC_ENTRPIS_YEARLY_PRC_ID:
-      return {
-        name: 'Enterprise',
-        price: 153600,
+        price: PLAN_YEARLY_PRICES.PRO,
       }
     default:
       // 無効なpriceIdの場合は明確なエラーを返す
@@ -198,9 +205,6 @@ export function getPriceStrFromPlanAndPeriod(planStr: string, period: BillingPer
       case 'pro':
         priceId = process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID
         break
-      case 'enterprise':
-        priceId = process.env.NEXT_PUBLIC_ENTRPIS_MONTHLY_PRC_ID
-        break
       default:
         throw new Error(`Invalid plan ID: ${planStr}`)
     }
@@ -212,9 +216,6 @@ export function getPriceStrFromPlanAndPeriod(planStr: string, period: BillingPer
         break
       case 'pro':
         priceId = process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID
-        break
-      case 'enterprise':
-        priceId = process.env.NEXT_PUBLIC_ENTRPIS_YEARLY_PRC_ID
         break
       default:
         throw new Error(`Invalid plan ID: ${planStr}`)

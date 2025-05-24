@@ -4,12 +4,12 @@ import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
 import { StripeResult } from '@/services/stripe/types';
 import { normalizeSubscriptionStatus, priceIdToPlanInfo } from '@/lib/utils';
-import { fetchQuery } from 'convex/nextjs';
 import * as Sentry from '@sentry/nextjs';
-import { STRIPE_API_VERSION } from '@/lib/constants';
-import { fetchMutation } from 'convex/nextjs';
 import { retryOperation } from '@/lib/utils';
-import { throwConvexError, handleErrorToMsg } from '@/lib/error';
+import { ConvexError } from 'convex/values';
+import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
+import { BillingPeriod } from '@/convex/types';
+import { Id } from '@/convex/_generated/dataModel';
 
 /**
  * Stripe Subscription APIを扱うリポジトリクラス
@@ -52,9 +52,10 @@ export class StripeSubscriptionRepository {
    * サブスクリプションステータスの同期
    */
   async syncSubscription(
+    tenant_id: Id<'tenant'>,
     subscription: Stripe.Subscription,
     priceId?: string
-  ): Promise<StripeResult<{ subscriptionId: string }>> {
+  ): Promise<StripeResult<{ stripe_subscription_id: string }>> {
     try {
       const customerId =
         typeof subscription.customer === 'string'
@@ -79,30 +80,30 @@ export class StripeSubscriptionRepository {
           error
         );
       }
-
-      await this.convex.mutation(api.subscription.mutation.syncSubscription, {
+      await this.convex.mutation(api.tenant.subscription.mutation.syncSubscription, {
         subscription: {
-          subscriptionId: subscription.id,
-          stripeCustomerId: customerId,
+          tenant_id: tenant_id,
+          stripe_subscription_id: subscription.id,
+          stripe_customer_id: customerId,
           status: status === 'ERROR' ? '契約切れ' : status,
-          priceId: actualPriceId,
-          currentPeriodEnd: subscription.current_period_end,
-          planName: planInfo.name,
-          billingPeriod: billingPeriod as 'monthly' | 'yearly',
-        },
+          price_id: actualPriceId,
+          current_period_end: subscription.current_period_end,
+          plan_name: planInfo.name,
+          billing_period: billingPeriod as BillingPeriod
+        }
       });
 
       return {
         success: true,
         data: {
-          subscriptionId: subscription.id,
+          stripe_subscription_id: subscription.id,
         },
       };
     } catch (error) {
       console.error('サブスクリプションデータの更新に失敗しました:', error);
       return {
         success: false,
-        error: handleErrorToMsg(error),
+        error: error instanceof Error ? error.message : '不明なエラー',
       };
     }
   }
@@ -111,16 +112,17 @@ export class StripeSubscriptionRepository {
    * サブスクリプション支払い失敗時の処理
    */
   async handlePaymentFailed(
-    subscriptionId: string,
-    stripeCustomerId: string
+    tenant_id: Id<'tenant'>,
+    stripe_subscription_id: string,
+    stripe_customer_id: string
   ): Promise<StripeResult<{ success: boolean }>> {
     try {
       const transactionId = `payment_failed_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      await this.convex.mutation(api.subscription.mutation.paymentFailed, {
-        subscriptionId,
-        stripeCustomerId,
-        transactionId,
+      await this.convex.mutation(api.tenant.subscription.mutation.paymentFailed, {
+        tenant_id: tenant_id,
+        stripe_customer_id: stripe_customer_id,
+        transaction_id: transactionId,
       });
 
       return {
@@ -128,10 +130,10 @@ export class StripeSubscriptionRepository {
         data: { success: true },
       };
     } catch (error) {
-      console.error(`サブスクリプション ${subscriptionId} の支払い失敗処理に失敗しました:`, error);
+      console.error(`サブスクリプション ${stripe_subscription_id} の支払い失敗処理に失敗しました:`, error);
       return {
         success: false,
-        error: handleErrorToMsg(error),
+        error: error instanceof Error ? error.message : '不明なエラー',
       };
     }
   }
@@ -139,17 +141,19 @@ export class StripeSubscriptionRepository {
   /**
    * Stripe顧客を取得
    */
-  async getStripeCustomer(customerId: string): Promise<Stripe.Customer | Stripe.DeletedCustomer> {
-    const customer = await this.stripe.customers.retrieve(customerId);
+  async getStripeCustomer(customer_id: string): Promise<Stripe.Customer | Stripe.DeletedCustomer> {
+    const customer = await this.stripe.customers.retrieve(customer_id);
     if (!customer) {
-      throw throwConvexError({
-        message: 'Stripe顧客が見つかりません',
-        status: 404,
-        code: 'NOT_FOUND',
-        title: 'Stripe顧客が見つかりません',
-        callFunc: 'StripeSubscriptionRepository.getStripeCustomer',
-        severity: 'low',
-        details: { customerId },
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'tenant.subscription.handlePaymentFailed',
+        message: 'サブスクリプションの支払い失敗処理に失敗しました',
+        code: 'INTERNAL_SERVER_ERROR',
+        status: 500,
+        details: {
+          customer_id: customer_id,
+        },
       });
     }
     return customer;
@@ -161,15 +165,17 @@ export class StripeSubscriptionRepository {
   async handleWebhookEvent(event: Stripe.Event): Promise<{ success: boolean; message?: string }> {
     console.log(`Processing Stripe subscription event: ${event.type}`);
 
+    
     try {
       switch (event.type) {
+        
         case 'customer.subscription.created':
-          const customerId = event?.data?.object.customer;
+          const customer_id = event?.data?.object.customer;
           const inviteSubscriptionId = event?.data?.object.id;
-          if (customerId) {
+          if (customer_id) {
             try {
               // 新規ユーザーのStripe顧客情報を取得して紹介コードを抽出
-              const customer = await this.stripe.customers.retrieve(customerId as string);
+              const customer = await this.stripe.customers.retrieve(customer_id as string);
 
               // 削除されていない顧客からreferralCodeを取得
               const referralCode = !customer.deleted ? customer.metadata?.referralCode : undefined;
@@ -178,18 +184,18 @@ export class StripeSubscriptionRepository {
               console.log('新規ユーザーのサブスクリプションID:', inviteSubscriptionId);
               console.log('紹介コード:', referralCode);
 
-              const referral = await this.convex.query(api.salon.referral.query.getByReferralCode, {
-                referralCode: referralCode as string,
+              const referral = await this.convex.query(api.tenant.referral.query.findByReferralCode, {
+                referral_code: referralCode as string,
               });
-              const inviteSalon = await this.convex.query(api.salon.core.query.findByStripeCustomerId, {
-                stripeCustomerId: customerId as string,
+              const inviteTenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
+                stripe_customer_id: customer_id as string,
               });
-              if (!inviteSalon) {
-                console.log('招待されたユーザーのサロン情報が見つかりません');
-                return { success: true, message: '招待されたユーザーのサロン情報が見つかりません' };
+              if (!inviteTenant) {
+                console.log('招待されたユーザーのテナント情報が見つかりません');
+                return { success: true, message: '招待されたユーザーのテナント情報が見つかりません' };
               }
-              const inviteReferral = await this.convex.query(api.salon.referral.query.findBySalonId, {
-                salonId: inviteSalon._id,
+              const inviteReferral = await this.convex.query(api.tenant.referral.query.findByTenantId, {
+                tenant_id: inviteTenant._id,
               });
 
               if (!inviteReferral) {
@@ -198,20 +204,20 @@ export class StripeSubscriptionRepository {
               }
 
               if (referral) {
-                await this.convex.mutation(api.salon.referral.mutation.incrementReferralCount, {
-                  referralId: inviteReferral._id,
+                await this.convex.mutation(api.tenant.referral.mutation.incrementReferralCount, {
+                  referral_id: inviteReferral._id,
                 });
 
                 if (referralCode) {
                   const referralBySalon = await retryOperation(() =>
-                    this.convex.query(api.salon.referral.query.getByReferralCode, {
-                      referralCode: referralCode,
+                    this.convex.query(api.tenant.referral.query.findByReferralCode, {
+                      referral_code: referralCode,
                     })
                   );
                   if (referralBySalon) {
                     await retryOperation(() =>
-                      this.convex.mutation(api.salon.referral.mutation.incrementReferralCount, {
-                        referralId: referralBySalon._id,
+                      this.convex.mutation(api.tenant.referral.mutation.incrementReferralCount, {
+                        referral_id: referralBySalon._id,
                       })
                     );
                   }
@@ -232,13 +238,29 @@ export class StripeSubscriptionRepository {
 
           const subscription = event.data.object as Stripe.Subscription;
           const priceId = subscription.items.data[0].plan.id;
-          const result = await this.syncSubscription(subscription, priceId);
+          const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
+            stripe_customer_id: customer_id as string,
+          });
+         
+          if (!tenant) {
+            console.log('テナント情報が見つかりません');
+            return { success: true, message: 'テナント情報が見つかりません' };
+          }
+          const result = await this.syncSubscription(tenant._id, subscription, priceId);
           return { success: result.success, message: result.error };
 
         case 'customer.subscription.updated': {
           const subscriptionUpdated = event.data.object as Stripe.Subscription;
           const priceIdUpdated = subscriptionUpdated.items.data[0].plan.id;
-          const resultUpdated = await this.syncSubscription(subscriptionUpdated, priceIdUpdated);
+          const customer_id = event?.data?.object.customer;
+          const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
+            stripe_customer_id: customer_id as string,
+          });
+          if (!tenant) {
+            console.log('テナント情報が見つかりません');
+            return { success: true, message: 'テナント情報が見つかりません' };
+          }
+          const resultUpdated = await this.syncSubscription(tenant._id, subscriptionUpdated, priceIdUpdated);
           return { success: resultUpdated.success, message: resultUpdated.error };
         }
 
@@ -252,7 +274,15 @@ export class StripeSubscriptionRepository {
           if (subId) {
             try {
               const subscription = await this.stripe.subscriptions.retrieve(subId);
-              const result = await this.syncSubscription(subscription);
+              const customer_id = event?.data?.object.customer;
+              const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
+                stripe_customer_id: customer_id as string,
+              });
+              if (!tenant) {
+                console.log('テナント情報が見つかりません');
+                return { success: true, message: 'テナント情報が見つかりません' };
+              }
+              const result = await this.syncSubscription(tenant._id, subscription);
               return { success: result.success, message: result.error };
             } catch (error) {
               console.error(`請求書 ${invoice.id} のサブスクリプション取得に失敗しました:`, error);
@@ -270,8 +300,8 @@ export class StripeSubscriptionRepository {
 
         case 'customer.subscription.deleted': {
           const canceledSub = event.data.object as Stripe.Subscription;
-          await this.convex.mutation(api.subscription.mutation.kill, {
-            stripeSubscriptionId: canceledSub.id,
+          await this.convex.mutation(api.tenant.subscription.mutation.kill, {
+            stripe_subscription_id: canceledSub.id,
           });
           return { success: true, message: 'サブスクリプションIDなし' };
         }
@@ -292,7 +322,15 @@ export class StripeSubscriptionRepository {
                   ? subscription.customer
                   : subscription.customer.id;
 
-              const result = await this.handlePaymentFailed(subId, customerId);
+              const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
+                stripe_customer_id: customerId as string,
+              });
+              if (!tenant) {
+                console.log('テナント情報が見つかりません');
+                return { success: true, message: 'テナント情報が見つかりません' };
+              }
+
+              const result = await this.handlePaymentFailed(tenant._id, subId, customerId);
               return { success: result.success, message: result.error };
             } catch (error) {
               console.error(`サブスクリプション ${subId} の支払い失敗処理に失敗しました:`, error);
@@ -312,14 +350,16 @@ export class StripeSubscriptionRepository {
           return { success: true, message: `未対応のStripeイベントタイプ: ${event.type}` };
       }
     } catch (error) {
-      throw throwConvexError({
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'tenant.subscription.handleWebhookEvent',
         message: 'Webhookイベントの処理に失敗しました',
+        code: 'INTERNAL_SERVER_ERROR',
         status: 500,
-        code: 'INTERNAL_ERROR',
-        title: 'Webhookイベントの処理に失敗しました',
-        callFunc: 'StripeSubscriptionRepository.handleWebhookEvent',
-        severity: 'low',
-        details: { event, error: error instanceof Error ? error.message : '不明なエラー' },
+        details: {
+          error: error instanceof Error ? error.message : '不明なエラー',
+        },
       });
     }
   }
@@ -331,8 +371,8 @@ export class StripeSubscriptionRepository {
    * @returns 割引適用結果
    */
   async applyDiscount(
-    subscriptionId: string,
-    discountAmount: number
+    stripe_subscription_id: string,
+    discount_amount: number
   ): Promise<
     StripeResult<{
       success: boolean;
@@ -341,11 +381,11 @@ export class StripeSubscriptionRepository {
   > {
     try {
       // 割引額を円からStripeの最小単位（銭）に変換
-      const subscriptionBefore = await this.stripe.subscriptions.retrieve(subscriptionId);
+      const subscriptionBefore = await this.stripe.subscriptions.retrieve(stripe_subscription_id);
       const amountBefore = subscriptionBefore.items.data[0]?.plan.amount || 0;
 
       // 割引額を円からStripeの最小単位（銭）に変換
-      const amountInSmallestUnit = discountAmount * 100;
+      const amountInSmallestUnit = discount_amount * 100;
 
       // 一意のクーポンコードを生成
       const couponId = `referral_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -360,12 +400,12 @@ export class StripeSubscriptionRepository {
       });
 
       // サブスクリプションに作成したクーポンを適用
-      await this.stripe.subscriptions.update(subscriptionId, {
+      await this.stripe.subscriptions.update(stripe_subscription_id, {
         coupon: coupon.id,
       });
 
       // 3. 割引適用後のサブスクリプション情報を再取得
-      const subscriptionAfter = await this.stripe.subscriptions.retrieve(subscriptionId);
+      const subscriptionAfter = await this.stripe.subscriptions.retrieve(stripe_subscription_id);
       const amountAfter = subscriptionAfter.items.data[0]?.plan.amount || 0;
       const discountInfoAfter = subscriptionAfter.discount;
 
@@ -381,7 +421,7 @@ export class StripeSubscriptionRepository {
       });
 
       // 検証結果をログに記録
-      console.log(`サブスクリプション ${subscriptionId} の割引検証:`, {
+      console.log(`サブスクリプション ${stripe_subscription_id} の割引検証:`, {
         適用前金額: amountBefore / 100,
         適用後金額: amountAfter / 100,
         割引情報: discountInfoAfter,
@@ -403,7 +443,7 @@ export class StripeSubscriptionRepository {
         },
       };
     } catch (error) {
-      console.error(`サブスクリプション ${subscriptionId} への割引適用に失敗しました:`, error);
+      console.error(`サブスクリプション ${stripe_subscription_id} への割引適用に失敗しました:`, error);
       Sentry.captureException(error, {
         level: 'error',
         tags: {
@@ -412,7 +452,7 @@ export class StripeSubscriptionRepository {
       });
       return {
         success: false,
-        error: handleErrorToMsg(error),
+        error: error instanceof Error ? error.message : '不明なエラー',
       };
     }
   }

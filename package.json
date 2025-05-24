@@ -10,10 +10,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest",
+    "test": "npm run test:unit && npm run test:e2e",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "migrate:supabase": "ts-node scripts/migrate-to-supabase.ts"
+    "migrate:supabase": "ts-node scripts/migrate-to-supabase.ts",
+    "test:unit": "vitest --config ./vitest.config.mts",
+    "test:e2e": "vitest --config ./vitest.config.mts --run tests/e2e",
+    "test:ui": "vitest --ui --config ./vitest.config.mts"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.22.12",
@@ -53,6 +56,8 @@
     "@radix-ui/react-toggle": "^1.1.2",
     "@radix-ui/react-toggle-group": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.8",
+    "@react-email/components": "^0.0.41",
+    "@react-email/render": "^1.1.2",
     "@sentry/nextjs": "^9.6.1",
     "@supabase/supabase-js": "^2.49.4",
     "@types/lodash-es": "^4.17.12",
@@ -112,6 +117,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/sharp": "^0.32.0",
+    "@vitest/ui": "^1.3.0",
+    "convex-test": "^0.0.10",
     "dotenv": "^16.4.7",
     "eslint": "^9",
     "eslint-config-next": "15.1.3",
@@ -122,6 +129,8 @@
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^4.3.1",
+    "vitest": "^1.3.0"
   }
 }

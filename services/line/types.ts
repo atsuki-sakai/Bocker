@@ -5,7 +5,7 @@ export interface LineMessage {
   /**
    * 送信先のLINEユーザーID
    */
-  lineId: string
+  line_id: string
 
   /**
    * 送信するメッセージ内容
@@ -20,5 +20,5 @@ export interface LineMessageOptions {
   /**
    * LINEチャネルアクセストークン
    */
-  accessToken: string
+  access_token: string
 }

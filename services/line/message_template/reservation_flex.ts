@@ -3,16 +3,16 @@ import { Doc } from '@/convex/_generated/dataModel'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { TimeRange } from '@/lib/type'
-import { StaffDisplay } from '@/app/(reservation)/reservation/[id]/calendar/_components/StaffView'
+import type { StaffDisplay } from '@/app/(reservation)/reservation/[id]/calendar/_components/StaffView'
 
 export const reservationFlexMessageTemplate = (
-  salonConfig: Doc<'salon_config'>,
-  sessionCustomer: Doc<'customer'>,
+  orgConfig: Doc<'config'>,
+  customerName: string,
   selectedStaff: StaffDisplay,
   selectedDate: Date,
   selectedTimeSlot: TimeRange,
   selectedMenus: Doc<'menu'>[],
-  selectedOptions: Doc<'salon_option'>[],
+  selectedOptions: Doc<'option'>[],
   subtotalPrice: number,
   usePoints: number,
   couponDiscount: number,
@@ -45,7 +45,7 @@ export const reservationFlexMessageTemplate = (
           contents: [
             {
               type: 'text',
-              text: sessionCustomer ? sessionCustomer.lineUserName + '様' : '',
+              text: customerName + '様',
               size: 'sm',
               color: '#000000',
               wrap: true,
@@ -445,7 +445,7 @@ export const reservationFlexMessageTemplate = (
               contents: [
                 {
                   type: 'text',
-                  text: salonConfig?.address ?? '',
+                  text: orgConfig?.address ?? '',
                   size: 'sm',
                   color: '#000000',
                   wrap: true,
@@ -479,7 +479,7 @@ export const reservationFlexMessageTemplate = (
               contents: [
                 {
                   type: 'text',
-                  text: salonConfig?.phone ?? '',
+                  text: orgConfig?.phone ?? '',
                   size: 'sm',
                   color: '#000000',
                 },
@@ -538,7 +538,7 @@ export const reservationFlexMessageTemplate = (
               contents: [
                 {
                   type: 'text',
-                  text: salonConfig?.salonName ?? '',
+                  text: orgConfig?.org_name ?? '',
                   weight: 'bold',
                   size: 'xl',
                   color: '#ffffff',

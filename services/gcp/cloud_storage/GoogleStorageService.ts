@@ -1,17 +1,22 @@
 import { Storage } from '@google-cloud/storage';
-import { UploadResult } from './types'
 import { STORAGE_URL } from './constants'
-import { throwConvexError } from '@/lib/error'
+import { SystemError } from '@/lib/errors/custom_errors';
+import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { sanitizeFileName } from '@/lib/utils'
-import { Id } from '@/convex/_generated/dataModel';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import sharp from 'sharp';
+import { ImageDirectory, ImageQuality, ProcessedImageResult, UploadedFileResult } from './types';
 /**
- * GCSクライアントとバケット設定を管理するクラス
+ * GCSクライアントとバケット設定を管理し、画像処理機能も提供するクラス
  */
 class GoogleStorageService {
   private storage: Storage | null = null
   private bucketName: string | null = null
+  private readonly activeFormat: "webp" | "avif" = 'webp';
+  // activeFormatに基づいて拡張子とMIMEタイプを定義
+  private readonly extension = this.activeFormat === 'webp' ? '.webp' : '.avif';
+  private readonly mimeType = this.activeFormat === 'webp' ? 'image/webp' : 'image/avif';
 
   /**
    * 必要な環境変数を取得し、存在しない場合はエラーを投げる
@@ -22,19 +27,25 @@ class GoogleStorageService {
     const privateKey = process.env.GCP_PRIVATE_KEY
     const bucketName = process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME
     if (!projectId || !clientEmail || !privateKey || !bucketName) {
-      throw throwConvexError({
-        message: '必要な環境変数が不足しています',
-        status: 500,
-        code: 'INTERNAL_ERROR',
-        title: '必要な環境変数が不足しています',
-        callFunc: 'GoogleStorageService.getEnvConfig',
-        severity: 'low',
-        details: {
-          projectId: Boolean(projectId),
-          clientEmail: Boolean(clientEmail),
-          privateKey: Boolean(privateKey),
-        },
-      })
+      throw new SystemError(
+        'GCS接続に必要な環境変数が不足しています。',
+        {
+          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+          severity: ERROR_SEVERITY.ERROR,
+          code: 'INTERNAL_SERVER_ERROR',
+          status: 500,
+          callFunc: 'GoogleStorageService.getEnvConfig',
+          message: 'GCS接続に必要な環境変数が不足しています。',
+          title: '環境変数設定エラー',
+          details: {
+            error: 'Required environment variables for GCS are missing.',
+            projectIdExists: Boolean(projectId),
+            clientEmailExists: Boolean(clientEmail),
+            privateKeyExists: Boolean(privateKey),
+            bucketNameExists: Boolean(bucketName),
+          },
+        }
+      );
     }
     return { projectId, clientEmail, privateKey, bucketName }
   }
@@ -64,67 +75,189 @@ class GoogleStorageService {
 
       this.bucketName = bucketName
     } catch (error) {
-      throw throwConvexError({
-        message: 'GCPストレージクライアントの初期化に失敗しました',
-        status: 500,
-        code: 'INTERNAL_ERROR',
-        title: 'GCPストレージクライアントの初期化に失敗しました',
-        callFunc: 'GoogleStorageService.initializeIfNeeded',
-        severity: 'low',
-        details: { error: this.formatErrorDetails(error) },
-      })
+      throw new SystemError(
+        'GCPストレージクライアントの初期化に失敗しました',
+        {
+          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.initializeIfNeeded',
+          message: 'GCPストレージクライアントの初期化に失敗しました',
+          code: 'INTERNAL_SERVER_ERROR',
+          status: 500,
+          title: 'GCS初期化失敗',
+          details: {
+            error: this.formatErrorDetails(error),
+          },
+        }
+      )
     }
   }
 
   /**
    * エラー詳細を抽出するユーティリティメソッド
+   * any の使用を避け、より安全な型処理を行う
    */
-  private formatErrorDetails(error: unknown): Record<string, any> {
-    const errorDetails: Record<string, any> = { type: typeof error }
+  private formatErrorDetails(error: unknown): Record<string, unknown> {
+    const errorDetails: Record<string, unknown> = { type: typeof error };
     if (error instanceof Error) {
-      errorDetails.name = error.name
-      errorDetails.message = error.message
-      errorDetails.stack = error.stack
+      errorDetails.name = error.name;
+      errorDetails.message = error.message;
+      errorDetails.stack = error.stack;
+      // Errorオブジェクトの追加プロパティを安全に取得
       Object.keys(error).forEach((key) => {
-        try {
-          const value = (error as any)[key]
+        if (key === 'name' || key === 'message' || key === 'stack') return;
+        if (Object.prototype.hasOwnProperty.call(error, key)) {
+          // unknown を経由して Record<string, unknown> にキャスト
+          const value = (error as unknown as Record<string, unknown>)[key];
           if (typeof value !== 'function') {
-            errorDetails[key] = value
+            errorDetails[key] = value;
           }
-        } catch (e) {}
-      })
+        }
+      });
+      
     } else {
       try {
-        errorDetails.stringified = JSON.stringify(error)
-      } catch (e) {
-        errorDetails.stringifyFailed = true
+        errorDetails.stringified = JSON.stringify(error);
+      } catch (stringifyError) {
+        errorDetails.stringifyFailed = true;
+        errorDetails.originalValue = String(error);
       }
     }
-    return errorDetails
+    return errorDetails;
+  }
+
+  /**
+   * 画像品質に応じた圧縮設定を取得する
+   * @param quality 画像品質 ('low' | 'medium' | 'high')
+   * @returns 圧縮設定 (オリジナル品質、オリジナル幅、サムネイル品質、サムネイル幅)
+   */
+  private getCompressionSettings(quality?: ImageQuality) {
+    const originalQualityValue = quality === "low" ? 40 : quality === "medium" ? 60 : 75;
+    const originalWidth = quality === "low" ? 920 : quality === "medium" ? 1280 : 1920;
+    const thumbnailQualityValue = quality === "low" ? 30 : quality === "medium" ? 40 : 50;
+    const thumbnailWidth = quality === "low" ? 180 : quality === "medium" ? 240 : 360;
+    return { originalQualityValue, originalWidth, thumbnailQualityValue, thumbnailWidth };
+  }
+
+  /**
+   * 指定された設定で画像を圧縮する
+   * @param inputBuffer 入力画像バッファ
+   * @param maxWidth 最大幅
+   * @param compressionQuality 圧縮品質
+   * @returns 圧縮された画像バッファ
+   */
+  private async compressImage(
+    inputBuffer: Buffer,
+    maxWidth: number,
+    compressionQuality: number,
+  ): Promise<Buffer> {
+    if (inputBuffer.length === 0) {
+      throw new SystemError(
+        '圧縮対象の画像バッファが空です。',
+        {
+          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.compressImage',
+          message: '圧縮対象の画像バッファが空です。',
+          code: 'INVALID_ARGUMENT',
+          status: 400,
+          title: '空の画像データ',
+          details: {
+            error: 'Input buffer for image compression is empty.',
+            maxWidth,
+            compressionQuality,
+          },
+        }
+      )
+    }
+    try {
+      const sharpInstance = sharp(inputBuffer).withMetadata();
+      const metadata = await sharpInstance.metadata();
+
+      if (metadata.width && metadata.width > maxWidth) {
+        sharpInstance.resize({ width: maxWidth, withoutEnlargement: true });
+      }
+
+      if (this.activeFormat === 'avif') {
+        return await sharpInstance.avif({ quality: compressionQuality, effort: 4 }).toBuffer();
+      } else {
+        return await sharpInstance.webp({ quality: compressionQuality }).toBuffer();
+      }
+    } catch (originalError) {
+      throw new SystemError(
+        '画像圧縮処理中にエラーが発生しました。',
+        {
+          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.compressImage',
+          message: '画像圧縮処理中にエラーが発生しました。',
+          code: 'INTERNAL_SERVER_ERROR',
+          status: 500,
+          title: '画像圧縮失敗',
+          details: {
+            error: this.formatErrorDetails(originalError),
+            inputBufferSize: inputBuffer.length,
+            maxWidth,
+            compressionQuality,
+            activeFormat: this.activeFormat,
+          },
+      });
+    }
   }
 
   /**
    * バッファからファイルをアップロードする
+   * (UploadedFileResult を返すように変更)
    */
   async uploadFileBuffer(
     buffer: Buffer,
-    fileName: string,
-    contentType: string,
+    fileName: string, // ここで渡されるfileNameは拡張子を含むことを期待
+    contentType: string, // このcontentTypeは圧縮後のもの(this.mimeType)を期待
     directory: string,
-    salonId: Id<"salon">,
+    org_id: string,
     isHotSpot: boolean = false
-  ): Promise<UploadResult> {
+  ): Promise<UploadedFileResult> {
     this.initializeIfNeeded()
 
-    // ファイル名をサニタイズ
-    const safeFileName = sanitizeFileName(fileName)
+    // サニタイズは行うが、拡張子はこの時点では変更しない
+    const safeFileName = sanitizeFileName(fileName);
+
+    if (buffer.length === 0) {
+      throw new SystemError(
+        'アップロードするファイルデータが空です。',
+        {
+          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.uploadFileBuffer',
+          message: 'アップロードするファイルデータが空です。',
+          code: 'INVALID_ARGUMENT',
+          status: 400,
+          title: '空ファイルエラー',
+          details: {
+            error: 'Attempted to upload an empty buffer.',
+            fileName: safeFileName,
+            contentType,
+            directory,
+            org_id,
+            isHotSpot,
+          },
+      });
+    }
 
     try {
       const bucket = this.storage!.bucket(this.bucketName!)
-      let filePath: string;
+      let gcsFilePath: string; // GCS上の最終的なパス。拡張子はthis.extensionが使われる場合がある
+
+      // ファイル名のベース部分（拡張子なし）と拡張子部分を取得
+      // safeFileNameが 'example.png' の場合、base = 'example', ext = '.png' (元の拡張子)
+      const lastDotIndex = safeFileName.lastIndexOf('.');
+      let baseName = lastDotIndex === -1 ? safeFileName : safeFileName.substring(0, lastDotIndex);
+      // let originalExt = lastDotIndex === -1 ? '' : safeFileName.substring(lastDotIndex);
+      // このメソッドは汎用的なバッファアップロードなので、contentTypeに基づいて動作すべき。
+      // 圧縮処理と組み合わせる uploadCompressedImageWithThumbnail で拡張子 (this.extension) は制御される。
+      // fileName パラメータには既に意図した拡張子が含まれている想定とする。
+
       if (isHotSpot) {
-        // ホットスポット回避用：UUID＋ハッシュ＋日付階層
-        const ext = safeFileName.split('.').pop() ?? 'jpg';
         const uuid = uuidv4();
         const hash = crypto.createHash('sha1').update(uuid).digest('hex').slice(0, 6);
         const hashDir = `${hash.slice(0,2)}/${hash.slice(2,4)}/${hash.slice(4,6)}`;
@@ -132,51 +265,281 @@ class GoogleStorageService {
         const year = now.getFullYear();
         const month = ('0' + (now.getMonth() + 1)).slice(-2);
         const day = ('0' + now.getDate()).slice(-2);
-        filePath = `${salonId}/${directory}/${year}/${month}/${day}/${hashDir}/${uuid}.${ext}`;
+        // isHotSpotの場合、ファイル名はUUIDとし、拡張子はfileNameから取得したものをそのまま使う
+        gcsFilePath = `${org_id}/${directory}/${year}/${month}/${day}/${hashDir}/${uuid}${safeFileName.substring(safeFileName.lastIndexOf('.'))}`;
       } else {
-        // 通常時：タイムスタンプ＋元ファイル名
         const timestamp = new Date().toISOString().replace(/[-:Z]/g, '').split('.')[0];
-        filePath = `${salonId}/${directory}/${timestamp}_${safeFileName}`;
+        // 通常時も、fileNameに含まれる拡張子をそのまま使用
+        gcsFilePath = `${org_id}/${directory}/${timestamp}_${safeFileName}`;
       }
-      const blob = bucket.file(filePath)
+      const blob = bucket.file(gcsFilePath)
 
-      // バッファから直接アップロード
       await blob.save(buffer, {
-        contentType: contentType,
+        contentType: contentType, // 呼び出し元が正しいcontentTypeを指定することを信頼
         metadata: {
           cacheControl: 'public, max-age=31536000',
         },
       })
 
-      // ファイルを公開状態に設定
       try {
         await blob.makePublic()
-      } catch (publicError) {}
+      } catch (publicError) {
+        console.warn('GCSファイルの公開に失敗しました:', publicError);
+      }
 
-      // encode path segments so spaces etc. become %20 – keeps DB key "raw" but URL safe
-      const publicUrl = `${STORAGE_URL}/${this.bucketName}/${encodeURI(filePath)}`
+      const publicUrl = `${STORAGE_URL}/${this.bucketName}/${encodeURI(gcsFilePath)}`
 
       return {
         publicUrl,
-        filePath,
+        filePath: gcsFilePath, // GCS内の実際のパスを返す
       }
     } catch (error) {
       const errorDetails = this.formatErrorDetails(error)
-      throw throwConvexError({
-        message: 'バッファからのアップロードに失敗しました',
-        status: 500,
-        code: 'INTERNAL_ERROR',
-        title: 'バッファからのアップロードに失敗しました',
-        callFunc: 'GoogleStorageService.uploadFileBuffer',
-        severity: 'low',
-        details: {
-          fileName,
-          contentType,
-          bufferSize: buffer.length,
-          directory,
-          error: errorDetails,
-        },
-      })
+      if ((error as any)?.isConvexError) {
+        throw error;
+      }
+      throw new SystemError(
+        'バッファからのファイルアップロードに失敗しました。',
+        {
+          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.uploadFileBuffer',
+          message: 'バッファからのファイルアップロードに失敗しました。',
+          code: 'INTERNAL_SERVER_ERROR',
+          status: 500,
+          title: 'ファイルアップロード失敗',
+          details: {
+            fileName: safeFileName,
+            contentType,
+            bufferSize: buffer.length,
+            directory,
+            org_id,
+            isHotSpot,
+            error: errorDetails,
+          },
+        }
+      )
+    }
+  }
+
+  /**
+   * Base64エンコードされた画像を圧縮し、オリジナルとサムネイルをGCSにアップロードする
+   * @param base64Data Base64エンコードされた画像データ
+   * @param originalFileName 元のファイル名 (例: "myImage.jpg", "profile.png")。拡張子も含む。
+   * @param directory 保存先ディレクトリ種別 (例: 'menu', 'staff')
+   * @param org_id 組織ID
+   * @param quality 画像品質設定 ('low' | 'high')
+   * @param isHotSpot ホットスポット対策を適用するかどうか
+   * @returns オリジナル画像とサムネイル画像の公開URLとGCSパス
+   */
+  async uploadCompressedImageWithThumbnail(
+    base64Data: string,
+    originalFileName: string, // 元のファイル名 (拡張子含む)
+    directory: ImageDirectory,
+    org_id: string,
+    quality?: ImageQuality,
+    isHotSpot: boolean = false
+  ): Promise<ProcessedImageResult> {
+    this.initializeIfNeeded();
+
+    const safeOriginalFileName = sanitizeFileName(originalFileName);
+
+    if (!base64Data) { // null or empty string check
+      throw new SystemError(
+        '処理するBase64画像データが提供されていません。',
+        {
+          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.uploadCompressedImageWithThumbnail',
+          message: '処理するBase64画像データが提供されていません。',
+          code: 'INVALID_ARGUMENT',
+          status: 400,
+          title: 'Base64データ不備',
+          details: {
+            error: 'Base64 data for image processing is missing or empty.',
+            originalFileName: safeOriginalFileName,
+            directory,
+            org_id,
+            quality,
+            isHotSpot,
+          },
+        }
+      );
+    }
+    
+    let imageBuffer: Buffer;
+    try {
+      imageBuffer = Buffer.from(base64Data, 'base64');
+    } catch (bufferError) {
+      throw new SystemError(
+        'Base64データのデコードに失敗しました。',
+        {
+          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.uploadCompressedImageWithThumbnail',
+          message: 'Base64データのデコードに失敗しました。',
+          code: 'INVALID_ARGUMENT',
+          status: 400,
+          title: 'Base64デコード失敗',
+          details: {
+            error: this.formatErrorDetails(bufferError),
+            originalFileName: safeOriginalFileName,
+            directory, org_id, quality, isHotSpot
+          },
+        }
+      );
+    }
+
+    if (imageBuffer.length === 0) {
+      throw new SystemError(
+        'デコード後の画像データが空です。',
+        {
+          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.uploadCompressedImageWithThumbnail',
+          message: 'デコード後の画像データが空です。',
+          code: 'INVALID_ARGUMENT',
+          status: 400,
+          title: '空画像データ',
+          details: {
+            error: 'Decoded image buffer is empty.',
+            originalFileName: safeOriginalFileName,
+            directory, org_id, quality, isHotSpot
+          },
+        }
+      );
+    }
+
+    const { originalQualityValue, originalWidth, thumbnailQualityValue, thumbnailWidth } = this.getCompressionSettings(quality);
+
+    let uploadedOriginalFile: UploadedFileResult | undefined = undefined;
+    let uploadedThumbnailFile: UploadedFileResult | undefined = undefined;
+
+    try {
+      // 画像圧縮処理 (オリジナルとサムネイル)
+      const originalCompressedBuffer = await this.compressImage(imageBuffer, originalWidth, originalQualityValue);
+      const thumbnailCompressedBuffer = await this.compressImage(imageBuffer, thumbnailWidth, thumbnailQualityValue);
+
+      if (originalCompressedBuffer.length === 0 || thumbnailCompressedBuffer.length === 0) {
+        throw new SystemError(
+          '画像圧縮後、バッファが空になりました。',
+          {
+            statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+            severity: ERROR_SEVERITY.ERROR,
+            callFunc: 'GoogleStorageService.uploadCompressedImageWithThumbnail',
+            message: '画像圧縮後、バッファが空になりました。',
+            code: 'INTERNAL_SERVER_ERROR',
+            status: 500,
+            title: '画像圧縮エラー（空バッファ）',
+            details: {
+              error: 'Image compression resulted in an empty buffer.',
+              originalFileName: safeOriginalFileName,
+              originalBufferLength: originalCompressedBuffer.length,
+              thumbnailBufferLength: thumbnailCompressedBuffer.length,
+              directory, org_id, quality, isHotSpot, activeCompressFormat: this.activeFormat,
+            },
+          }
+        );
+      }
+
+      // GCSにアップロードするファイル名を生成
+      // 元のファイル名から拡張子を除いた部分を取得しサニタイズ
+      const lastDotIndex = safeOriginalFileName.lastIndexOf('.');
+      const baseName = sanitizeFileName(lastDotIndex === -1 ? safeOriginalFileName : safeOriginalFileName.substring(0, lastDotIndex));
+
+      let finalOriginalName: string;
+      let finalThumbnailName: string;
+
+      if (isHotSpot) {
+        // ホットスポット回避: UUIDベースのファイル名 + 圧縮後の拡張子 (this.extension)
+        finalOriginalName = `${uuidv4()}${this.extension}`;
+        finalThumbnailName = `${uuidv4()}_thumb${this.extension}`;
+      } else {
+        // 通常: タイムスタンプ + サニタイズされたベース名 + 圧縮後の拡張子 (this.extension)
+        const timestamp = new Date().toISOString().replace(/[-:Z]/g, '').split('.')[0];
+        finalOriginalName = `${timestamp}_${baseName}${this.extension}`;
+        finalThumbnailName = `${timestamp}_${baseName}_thumb${this.extension}`;
+      }
+
+      // GCSへのアップロード (Promise.allで並列処理)
+      // uploadFileBuffer に渡すディレクトリパスを具体的に指定
+      const [originalResult, thumbnailResult] = await Promise.all([
+        this.uploadFileBuffer(
+          originalCompressedBuffer,
+          finalOriginalName,      // 拡張子(this.extension) を含んだユニークなファイル名
+          this.mimeType,          // 圧縮後のMIMEタイプ (this.mimeType)
+          `${directory}/original`, // GCS上の具体的なディレクトリパス
+          org_id,
+          isHotSpot
+        ),
+        this.uploadFileBuffer(
+          thumbnailCompressedBuffer,
+          finalThumbnailName,     // 拡張子(this.extension) を含んだユニークなファイル名 (サムネイル用)
+          this.mimeType,          // 圧縮後のMIMEタイプ (this.mimeType)
+          `${directory}/thumbnail`,// GCS上の具体的なディレクトリパス
+          org_id,
+          isHotSpot             // サムネイルも同様にホットスポット対策を適用
+        ),
+      ]);
+      uploadedOriginalFile = originalResult;
+      uploadedThumbnailFile = thumbnailResult;
+
+      return {
+        imgUrl: uploadedOriginalFile.publicUrl,
+        thumbnailUrl: uploadedThumbnailFile.publicUrl,
+      };
+    } catch (error) {
+      // エラー発生時、アップロード済みのファイルを削除する試み (ロールバック)
+      const deletionPromises: Promise<void>[] = [];
+      if (uploadedOriginalFile?.filePath) {
+        deletionPromises.push(this.deleteObjectByPath(uploadedOriginalFile.filePath).catch(delErr => {
+          console.error('ロールバック：オリジナル画像の削除失敗:', uploadedOriginalFile?.filePath, this.formatErrorDetails(delErr));
+        }));
+      }
+      if (uploadedThumbnailFile?.filePath) {
+        deletionPromises.push(this.deleteObjectByPath(uploadedThumbnailFile.filePath).catch(delErr => {
+          console.error('ロールバック：サムネイル画像の削除失敗:', uploadedThumbnailFile?.filePath, this.formatErrorDetails(delErr));
+        }));
+      }
+      if (deletionPromises.length > 0) {
+        // ロールバック処理の完了を待つが、ここでのエラーはキャッチしてログ出力に留める
+        // 主エラーをユーザーに返すため
+        Promise.allSettled(deletionPromises).then(results => {
+            results.forEach(result => {
+                if(result.status === 'rejected') {
+                    console.error("ロールバック中のファイル削除でエラー:", result.reason);
+                }
+            });
+        });
+      }
+
+      if ((error as any)?.isConvexError) {
+          throw error; // 既にConvexErrorならそのままスロー
+      }
+      // それ以外のエラーはここで throwConvexError を使ってラップ
+      throw new SystemError(
+        '画像とサムネイルのアップロード処理中に予期せぬエラーが発生しました。',
+        {
+          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.uploadCompressedImageWithThumbnail',
+          message: '画像とサムネイルのアップロード処理中に予期せぬエラーが発生しました。',
+          code: 'INTERNAL_SERVER_ERROR',
+          status: 500,
+          title: '画像アップロード包括エラー',
+          details: {
+            error: this.formatErrorDetails(error),
+            originalFileName: safeOriginalFileName,
+            directory,
+            org_id,
+            isHotSpot,
+            quality,
+            activeCompressFormat: this.activeFormat,
+            uploadedOriginalPath: uploadedOriginalFile?.filePath,
+            uploadedThumbnailPath: uploadedThumbnailFile?.filePath,
+          },
+        }
+      );
     }
   }
 
@@ -184,98 +547,168 @@ class GoogleStorageService {
    * imgUrl から GCS 内のファイルパスを抽出する
    */
   private extractFilePath(imgUrl: string): string {
+    if (!imgUrl || typeof imgUrl !== 'string') {
+        throw new SystemError(
+          'imgUrlが有効な文字列ではありません。',
+          {
+            statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+            severity: ERROR_SEVERITY.ERROR,
+            callFunc: 'GoogleStorageService.extractFilePath',
+            message: 'imgUrlが有効な文字列ではありません。',
+            code: 'INVALID_ARGUMENT',
+            status: 400,
+            title: '不正な画像URL',
+            details: { error: 'imgUrl must be a non-empty string.', receivedImgUrl: imgUrl }
+          }
+        );
+    }
     try {
-      const url = new URL(imgUrl)
-      // URL.pathname is "/bucketName/path/to/file"
-      const segments = url.pathname.split('/')
-      // Remove the leading empty segment and bucket name
-      const fileSegments = segments.slice(2)
-      return fileSegments.join('/')
-    } catch {
-      // If imgUrl isn't a full URL, assume it's already the object path
-      return imgUrl
+      const url = new URL(imgUrl);
+      const segments = url.pathname.split('/');
+      if (segments.length < 3 || segments[1] !== this.bucketName) {
+          throw new Error('URLが期待されるGCSの形式ではありません。');
+      }
+      return segments.slice(2).join('/');
+    } catch (e) {
+       // URL解析失敗時はimgUrl自体がパスであると仮定するが、基本的な検証は行う
+       if (imgUrl.includes('://') || imgUrl.startsWith('/')) {
+           throw new SystemError(
+            'imgUrlをファイルパスとして解析できませんでした。',
+            {
+              statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+              severity: ERROR_SEVERITY.ERROR,
+              callFunc: 'GoogleStorageService.extractFilePath',
+              message: 'imgUrlをファイルパスとして解析できませんでした。',
+              code: 'INVALID_ARGUMENT',
+              status: 400,
+              title: '不正なパス形式',
+              details: { error: this.formatErrorDetails(e), imgUrl }
+            }
+        );
+       }
+      return imgUrl;
     }
   }
 
   /**
-   * ファイルを削除する
+   * ファイルを削除する (imgUrl指定)
+   * GCSオブジェクトが見つからない(404)場合は警告ログを出力し、エラーをスローしない。
    */
   async deleteImage(imgUrl: string): Promise<void> {
     this.initializeIfNeeded()
 
     // decode in case imgUrl or stored key is URL‑encoded
     const filePath = decodeURIComponent(this.extractFilePath(imgUrl))
-    console.log('Deleting GCS object path:', filePath)
+    console.log('GCSオブジェクトを削除します (imgUrl指定):', filePath);
 
     try {
       const bucket = this.storage!.bucket(this.bucketName!)
       const file = bucket.file(filePath)
       await file.delete()
+      console.log('GCSオブジェクトが正常に削除されました:', filePath);
     } catch (error) {
       const errorDetails = this.formatErrorDetails(error)
-      const errAny = error as any
-      // If the object is not found, skip deletion
-      if (errAny.code === 404 || errorDetails.code === 404) {
-        console.warn(`GCS object not found, skipping deletion: ${filePath}`)
-        return
+      const errAny = error as any;
+      if (errAny.code === 404 || (errorDetails.originalError as any)?.code === 404 || String(errorDetails.message).includes('No such object')) {
+        console.warn(`GCSオブジェクトが見つからなかったため、削除をスキップしました: ${filePath}`);
+        return;
       }
-      // Remove non-serializable fields
-      delete (errorDetails as any).response
-      throw throwConvexError({
-        message: 'ファイルの削除に失敗しました',
-        status: 500,
-        code: 'INTERNAL_ERROR',
-        title: 'ファイルの削除に失敗しました',
-        callFunc: 'GoogleStorageService.deleteImage',
-        severity: 'low',
-        details: { error: errorDetails },
-      })
+      throw new SystemError(
+        'GCSからのファイル削除中にエラーが発生しました (imgUrl指定)。',
+        {
+          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.deleteImage',
+          message: 'GCSからのファイル削除中にエラーが発生しました (imgUrl指定)。',
+          code: 'INTERNAL_SERVER_ERROR',
+          title: 'ファイル削除失敗',
+          details: { error: errorDetails, imgUrl, filePath },
+        }
+      );
+    }
+  }
+
+  /**
+   * GCS内のファイルパスを指定してオブジェクトを直接削除するプライベートメソッド
+   * 主にロールバック処理で使用。404エラーは警告ログのみとし、エラーをスローしない。
+   */
+  private async deleteObjectByPath(filePath: string): Promise<void> {
+    if (!filePath || typeof filePath !== 'string') {
+      console.warn('削除対象のファイルパスが無効です。スキップします。', { filePath });
+      return;
+    }
+    this.initializeIfNeeded();
+    console.log('GCSオブジェクトを削除します (filePath指定):', filePath);
+    try {
+      const bucket = this.storage!.bucket(this.bucketName!);
+      const file = bucket.file(filePath);
+      await file.delete();
+      console.log('GCSオブジェクトが正常に削除されました:', filePath);
+    } catch (originalError) {
+      // 404以外のエラーはロールバック処理のコンテキストではログ出力に留める
+      console.error(`GCSオブジェクトの削除に失敗しました (filePath指定): ${filePath}`, this.formatErrorDetails(originalError));
     }
   }
 
   /**
    * オリジナル画像とサムネイル画像の両方を削除する
    * （ファイルパスの命名規則からサムネイルパスを推測）
+   * imgUrl はオリジナル画像のものを期待する。
    */
   async deleteImageWithThumbnail(imgUrl: string): Promise<void> {
     this.initializeIfNeeded()
 
+    let originalPath: string | undefined = undefined;
+    let thumbnailPath: string | undefined = undefined;
+
     try {
-      // オリジナル画像のパスを抽出
-      const originalPath = decodeURIComponent(this.extractFilePath(imgUrl))
+      // オリジナル画像のパスを抽出 (URLデコードも行う)
+      originalPath = decodeURIComponent(this.extractFilePath(imgUrl));
 
       // サムネイルのパスを推測
-      // originals/category/timestamp-filename.ext → thumbnails/category/timestamp-filename.ext
-      const thumbnailPath = originalPath.replace('original/', 'thumbnail/')
-
-      const bucket = this.storage!.bucket(this.bucketName!)
-
-      // 両方のファイルを削除
-      try {
-        await bucket.file(originalPath).delete()
-        console.log('Original image deleted:', originalPath)
-      } catch (error) {
-        const errAny = error as any
-        if (errAny.code !== 404) throw error
+      // GCSのパス構造 'salonId/directory/original/...' から 'salonId/directory/thumbnail/...' へ
+      if (originalPath.includes('/original/')) {
+        thumbnailPath = originalPath.replace('/original/', '/thumbnail/');
+      } else {
+        console.warn(`オリジナル画像のパスからサムネイルパスを推測できませんでした: ${originalPath}`);
+        await this.deleteObjectByPath(originalPath);
+        return;
       }
 
-      try {
-        await bucket.file(thumbnailPath).delete()
-        console.log('Thumbnail image deleted:', thumbnailPath)
-      } catch (error) {
-        const errAny = error as any
-        if (errAny.code !== 404) throw error
-      }
+      console.log('オリジナル画像を削除します:', originalPath);
+      console.log('サムネイル画像を削除します:', thumbnailPath);
+
+      // 両方のファイルを削除 (Promise.allSettled を使い、片方の失敗がもう片方に影響しないようにする)
+      const results = await Promise.allSettled([
+        this.deleteObjectByPath(originalPath),
+        this.deleteObjectByPath(thumbnailPath),
+      ]);
+
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const path = index === 0 ? originalPath : thumbnailPath;
+          console.warn(`${index === 0 ? 'オリジナル' : 'サムネイル'}画像の削除処理で問題が発生しました (詳細は先行ログ参照): ${path}`);
+        }
+      });
+
     } catch (error) {
       const errorDetails = this.formatErrorDetails(error)
-      throw throwConvexError({
-        message: '画像の削除に失敗しました',
-        status: 500,
-        code: 'INTERNAL_ERROR',
-        title: '画像の削除に失敗しました',
-        callFunc: 'GoogleStorageService.deleteImageWithThumbnail',
-        severity: 'low',
-        details: { error: errorDetails },
+      throw new SystemError(
+        'オリジナル画像とサムネイル画像の削除処理中に予期せぬエラーが発生しました。',
+        {
+          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.deleteImageWithThumbnail',
+          message: 'オリジナル画像とサムネイル画像の削除処理中に予期せぬエラーが発生しました。',
+          code: 'INTERNAL_SERVER_ERROR',
+          status: 500,
+          title: '画像一括削除失敗',
+          details: {
+          error: errorDetails,
+          originalImgUrl: imgUrl,
+          derivedOriginalPath: originalPath,
+          derivedThumbnailPath: thumbnailPath,
+        },
       })
     }
   }

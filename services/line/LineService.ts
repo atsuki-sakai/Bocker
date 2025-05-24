@@ -20,25 +20,25 @@ export class LineService {
 
   /**
    * LINEメッセージを送信する
-   * @param lineId 送信先のLINEユーザーID
+   * @param line_id 送信先のLINEユーザーID
    * @param message 送信するメッセージ内容
-   * @param accessToken LINEチャネルアクセストークン
+   * @param access_token LINEチャネルアクセストークン
    * @returns 送信結果の成否と結果メッセージ
    */
   async sendMessage(
-    lineId: string,
+    line_id: string,
     message: string,
-    accessToken: string
+    access_token: string
   ): Promise<{ success: boolean; message: string }> {
     try {
       // リクエストからドメインエンティティへの変換
       const lineMessage: LineMessage = {
-        lineId,
+        line_id,
         message,
       }
 
       const options: LineMessageOptions = {
-        accessToken,
+        access_token,
       }
 
       // リポジトリを使用してメッセージを送信
@@ -67,16 +67,16 @@ export class LineService {
   }
 
   async sendFlexMessage(
-    lineId: string,
+    line_id: string,
     messages: Message[],
-    accessToken: string
+    access_token: string
   ): Promise<{ success: boolean; message: string }> {
     try {
       const options: LineMessageOptions = {
-        accessToken,
+        access_token,
       }
 
-      await this.messageRepository.sendFlexMessage(lineId, messages, options)
+      await this.messageRepository.sendFlexMessage(line_id, messages, options)
 
       return {
         success: true,

@@ -20,10 +20,10 @@ export default function ReferralCard() {
   const [copied, setCopied] = useState<boolean>(false)
 
   const referral = useQuery(
-    api.salon.referral.query.findBySalonId,
+    api.tenant.referral.query.findByTenantId,
     salonId
       ? {
-          salonId: salonId,
+          tenantId: tenantId,
         }
       : 'skip'
   )

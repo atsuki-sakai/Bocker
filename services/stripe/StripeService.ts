@@ -1,13 +1,16 @@
 'use node';
+
 import Stripe from 'stripe';
-import { STRIPE_API_VERSION } from '@/lib/constants';
+import { STRIPE_API_VERSION } from './constants';
 import {
   StripeConnectRepository,
   StripeSubscriptionRepository,
 } from '@/services/stripe/repositories';
 import { Id } from '@/convex/_generated/dataModel';
 import { StripeResult } from '@/services/stripe/types';
-import { throwConvexError } from '@/lib/error';
+import { SystemError } from '@/lib/errors/custom_errors';
+import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
+
 /**
  * Stripeサービスクラス
  *
@@ -23,15 +26,19 @@ class StripeService {
 
   private constructor() {
     if (!process.env.STRIPE_SECRET_KEY) {
-      throw throwConvexError({
-        message: 'Stripeの秘密鍵が設定されていません',
-        status: 404,
-        code: 'NOT_FOUND',
-        title: 'Stripeの秘密鍵が設定されていません',
-        callFunc: 'StripeService.getInstance',
-        severity: 'low',
-        details: { stripeSecretKey: process.env.STRIPE_SECRET_KEY },
-      });
+      throw new SystemError(
+        'Stripeの秘密鍵が設定されていません',
+        {
+          statusCode: ERROR_STATUS_CODE.UNAUTHORIZED,
+          severity: ERROR_SEVERITY.WARNING,
+          title: 'Stripeの秘密鍵が設定されていません',
+          callFunc: 'StripeService.getInstance',
+          details: {
+            stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+          },
+        },
+        'STRIPE_ERROR - NOT_FOUND'
+      );
     }
 
     // Stripeインスタンスの初期化
@@ -91,15 +98,17 @@ class StripeService {
         console.warn('⚠️ 開発環境で署名検証をスキップします');
         return JSON.parse(body) as Stripe.Event;
       } else {
-        throw throwConvexError({
-          message: 'Webhook署名またはシークレットがありません',
-          status: 404,
-          code: 'NOT_FOUND',
-          title: 'Webhook署名またはシークレットがありません',
-          callFunc: 'StripeService.verifyWebhookSignature',
-          severity: 'low',
-          details: { signature, webhookSecret },
-        });
+        throw new SystemError(
+          'Webhook署名またはシークレットがありません',
+          {
+            statusCode: ERROR_STATUS_CODE.UNAUTHORIZED,
+            severity: ERROR_SEVERITY.WARNING,
+            title: 'Webhook署名またはシークレットがありません',
+            callFunc: 'StripeService.verifyWebhookSignature',
+            details: { signature, webhookSecret },
+          },
+          'STRIPE_ERROR - NOT_FOUND'
+        )
       }
     }
 
@@ -119,8 +128,9 @@ class StripeService {
    * 手動でアカウントステータスを確認・更新
    */
   async checkAndUpdateAccountStatus(
-    salonId: Id<'salon'>,
-    accountId: string
+    tenant_id: Id<'tenant'>,
+    org_id: string,
+    stripe_connect_id: string
   ): Promise<
     StripeResult<{
       status: string;
@@ -135,38 +145,40 @@ class StripeService {
       };
     }>
   > {
-    return await this.connectRepo.checkAndUpdateAccountStatus(salonId, accountId);
+    return await this.connectRepo.checkAndUpdateAccountStatus(tenant_id, org_id, stripe_connect_id);
   }
 
   /**
    * Stripeアカウント連携用のアカウントリンクを生成
    */
   async createConnectAccountLink(
-    salonId: Id<'salon'>
+    tenant_id: Id<'tenant'>,
+    org_id: string
   ): Promise<StripeResult<{ account: Stripe.Account; accountLink: Stripe.AccountLink }>> {
-    return await this.connectRepo.createConnectAccountLink(salonId);
+    return await this.connectRepo.createConnectAccountLink(tenant_id, org_id);
   }
 
   /**
    * Stripe Expressダッシュボードへのログインリンクを生成
    */
   async createDashboardLoginLink(
-    accountId: string
+    stripe_connect_id: string
   ): Promise<StripeResult<{ url: string; isOnboarding?: boolean }>> {
-    return await this.connectRepo.createDashboardLoginLink(accountId);
+    return await this.connectRepo.createDashboardLoginLink(stripe_connect_id);
   }
 
   /**
    * Stripe Checkoutセッションを作成
    */
   async createCheckoutSession(params: {
-    stripeConnectId: string;
-    salonId: Id<'salon'>;
-    reservationId: Id<'reservation'>;
-    lineItems: Stripe.Checkout.SessionCreateParams.LineItem[];
-    customerEmail?: string;
-    successUrl: string;
-    cancelUrl: string;
+    stripe_connect_id: string;
+    tenant_id: Id<'tenant'>;
+    org_id: string;
+    reservation_id: Id<'reservation'>;
+    line_items: Stripe.Checkout.SessionCreateParams.LineItem[];
+    customer_email?: string;
+    success_url: string;
+    cancel_url: string;
     metadata?: Record<string, string>;
   }): Promise<StripeResult<{ sessionId: string; url: string | null }>> {
     return await this.connectRepo.createCheckoutSession(params);
@@ -187,10 +199,11 @@ class StripeService {
    * サブスクリプション支払い失敗時の処理
    */
   async handlePaymentFailed(
-    subscriptionId: string,
-    stripeCustomerId: string
+    tenant_id: Id<'tenant'>,
+    stripe_subscription_id: string,
+    stripe_customer_id: string
   ): Promise<StripeResult<{ success: boolean }>> {
-    return await this.subscriptionRepo.handlePaymentFailed(subscriptionId, stripeCustomerId);
+    return await this.subscriptionRepo.handlePaymentFailed(tenant_id, stripe_subscription_id, stripe_customer_id);
   }
 
   /**
@@ -200,10 +213,11 @@ class StripeService {
    * @returns 割引適用結果
    */
   async applyDiscount(
-    subscriptionId: string,
-    discountAmount: number
+    tenant_id: Id<'tenant'>,
+    stripe_subscription_id: string,
+    discount_amount: number
   ): Promise<StripeResult<{ success: boolean }>> {
-    return await this.subscriptionRepo.applyDiscount(subscriptionId, discountAmount);
+    return await this.subscriptionRepo.applyDiscount(stripe_subscription_id, discount_amount);
   }
 }
 

@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { clerkMiddleware } from '@clerk/nextjs/server'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
-import { TrackingEventType } from '@/services/convex/shared/types/common'
+import { TrackingEventType } from '@/convex/shared/types/common'
 import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
 import { fetchMutation } from 'convex/nextjs'
