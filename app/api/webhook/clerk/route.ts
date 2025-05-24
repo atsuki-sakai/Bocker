@@ -156,6 +156,18 @@ export async function POST(req: Request) {
               if (!org) {
                 throw new Error('Organization creation failed');
               }
+              // ② 念のため membership を確認し、存在しなければ addMember
+              const memberships = await clerk.organizations.getOrganizationMembershipList({
+                organizationId: org.id,
+                limit: 1,
+              });
+              if (memberships.data.length === 0) {
+                await clerk.organizations.createOrganizationMembership({
+                  organizationId: org.id,
+                  userId: id,
+                  role: 'admin'
+                });
+              }
               const tenantId = await retryOperation(() =>
                 fetchMutation(api.tenant.mutation.create, {
                   user_id: id,

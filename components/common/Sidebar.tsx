@@ -38,7 +38,8 @@ import {
 } from 'lucide-react'
 import { useClerk } from '@clerk/nextjs'
 import { useOrganizationList } from '@clerk/nextjs'
-import { useAuth } from '@clerk/nextjs'
+import { useAuth, useUser } from '@clerk/nextjs'
+import { useOrganization } from '@clerk/nextjs'
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
@@ -54,11 +55,15 @@ export default function Sidebar({ children }: SidebarProps) {
   const [isLinkClicked, setIsLinkClicked] = useState(false)
   const [mounted, setMounted] = useState(false)
   const { signOut } = useClerk()
-  const { isLoaded, userMemberships, setActive } = useOrganizationList()
-  const { userId, orgId } = useAuth()
+  const { isLoaded: listLoaded, userMemberships, setActive } = useOrganizationList()
+  const { isLoaded: authLoaded, userId, orgId } = useAuth()
+  const { user } = useUser()
+  const { organization } = useOrganization()
 
-  console.log('userId', userId)
-  console.log('orgId', orgId)
+  console.log('organization: ', organization)
+  console.log('user.tenant_id: ', user?.publicMetadata?.tenant_id)
+  console.log('orgId: ', orgId)
+  console.log('userId: ', userId)
 
   const pathname = usePathname() // 現在のパスを取得
 
@@ -152,13 +157,13 @@ export default function Sidebar({ children }: SidebarProps) {
   useEffect(() => setMounted(true), [])
 
   useEffect(() => {
-    if (!isLoaded) return
+    if (!listLoaded || !authLoaded) return
 
-    // アクティブな組織がない場合に最初の組織をセット
-    if (userMemberships.data && userMemberships.data.length > 0) {
-      setActive({ organization: userMemberships.data[0].organization.id })
+    // アクティブ組織が無い時だけ実行
+    if (!orgId && userMemberships.data.length > 0) {
+      void setActive({ organization: userMemberships.data[0].organization.id })
     }
-  }, [isLoaded, userMemberships, setActive])
+  }, [listLoaded, authLoaded, orgId, userMemberships, setActive])
 
   return (
     <>
