@@ -15,6 +15,7 @@ let t: ConvexTestClient;
 
 beforeEach(() => {
   t = convexTest(schema);
+  t.db.reset(); // <--- ADDED THIS LINE
   // Optional: If you need to mock specific Convex functions or modules, do it here.
   // vi.mock('@/convex/utils/auth', () => ({
   //   checkAuth: vi.fn().mockResolvedValue({ user: { id: 'test_user_id' } })
