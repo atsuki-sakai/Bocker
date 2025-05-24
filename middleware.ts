@@ -1,11 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { clerkMiddleware } from '@clerk/nextjs/server'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
-import { TrackingEventType } from '@/convex/shared/types/common'
-import { api } from '@/convex/_generated/api'
-import { fetchQuery } from 'convex/nextjs'
-import { fetchMutation } from 'convex/nextjs'
-import { Id } from '@/convex/_generated/dataModel'
 
 // メンテナンスモードが有効かどうか
 const isMaintenance = false
@@ -61,73 +56,6 @@ const isAuthPath = (pathname: string): boolean =>
 const isProtectedApiPath = (pathname: string): boolean =>
   protectedApiPaths.some((apiPath) => pathname === apiPath || pathname.startsWith(`${apiPath}/`))
 
-// setTrackingDataCookie 関数はレスポンスオブジェクトを受け取り、それにクッキーを設定する役割
-const setTrackingDataCookie = (
-  req: NextRequest,
-  res: NextResponse,
-  targetStartsWithPath: string,
-  pathname: string
-) => {
-  // 対象のパスでない場合は何もしない
-  if (!pathname.startsWith(targetStartsWithPath)) {
-    return
-  }
-
-  const campaign = req.nextUrl.searchParams.get('campaign')
-  const source = req.nextUrl.searchParams.get('source')
-  const medium = req.nextUrl.searchParams.get('medium')
-  const term = req.nextUrl.searchParams.get('term')
-
-  const trackingData: {
-    code?: string // 流入元識別子(line, google, etc.)
-    source?: string // 流入元サイト
-    medium?: string // 流入媒体、投稿メディア
-    campaign?: string // 流入キャンペーン
-    term?: string // 流入キーワード
-    content?: string // 流入コンテンツ
-    referer?: string // リファラー
-    sessionId?: string // セッションID
-  } = {}
-
-  if (campaign) {
-    trackingData.campaign = campaign
-  }
-  if (source) {
-    trackingData.source = source
-  }
-  if (medium) {
-    trackingData.medium = medium
-  }
-  if (term) {
-    trackingData.term = term
-  }
-
-  // トラッキングデータがある場合は、JSON文字列を含む1つのCookieを設定
-  if (Object.keys(trackingData).length > 0) {
-    try {
-      // 既存のCookieを削除
-      res.cookies.delete('_bkr_tracking_source')
-      console.log('[Middleware] Deleted existing tracking_data cookie.')
-
-      const trackingDataJson = JSON.stringify(trackingData)
-      res.cookies.set({
-        name: '_bkr_tracking_source', // 1つのCookie名を使用
-        value: trackingDataJson,
-        httpOnly: true, // セキュリティのためhttpOnlyを保持
-        secure: process.env.NODE_ENV === 'production', // 本番環境ではSecureを設定
-        path: '/', // サイト全体で利用可能
-        maxAge: 60 * 60 * 24 * 30, // 30日
-        sameSite: 'lax',
-      })
-      console.log('[Middleware] Setting tracking_data cookie:', trackingDataJson)
-    } catch (error) {
-      console.error('[Middleware] トラッキングデータのJSON変換に失敗:', error)
-      // オプションでエラーを処理, コッキーを設定しない
-    }
-  } else {
-    console.log('[Middleware] No tracking parameters found.')
-  }
-}
 
 const checkMaintenance = (pathname: string, req: NextRequest) => {
   // メンテナンスモードが有効で、かつ現在のパスがメンテナンスページでない場合にリダイレクト
@@ -249,60 +177,6 @@ export default clerkMiddleware(async (auth, req) => {
     response = NextResponse.next() // レスポンスを設定
   }
 
-  // ここで流入元をTrackingEventに保存する
-  if (pathname.startsWith(TARGET_PATH_PREFIX)) {
-    const code = req.nextUrl.searchParams.get('code')
-
-    console.log('[Middleware] Attempting to get salonId for tracking.')
-    // getSalonIdFromRequest に middleware の auth 関数を渡す
-    const salonId = await getSalonIdFromRequest(req, auth)
-    const codeValue = determineTrackingCode(code)
-
-    if (salonId && codeValue) {
-      console.log(
-        `[Middleware] SalonId: ${salonId}, CodeValue: ${codeValue}. Creating tracking event for visitor: ${sessionId}.`
-      )
-      try {
-        await fetchMutation(api.tracking.mutation.createTrackingEvent, {
-          salonId: salonId as Id<'salon'>,
-          eventType: 'page_view' as TrackingEventType, // TrackingEventType型に合わせる
-          code: codeValue,
-          sessionId: sessionId, // 訪問者IDを渡す
-        })
-      } catch (error) {
-        console.error('[Middleware] Error creating tracking event:', error)
-      }
-    } else {
-      if (!salonId) {
-        console.log('[Middleware] Tracking event not sent: salonId could not be determined.')
-      }
-      if (!codeValue && salonId) {
-        // salonIdはあるがcodeValueがない場合（通常はdetermineTrackingCodeでデフォルト値が返るはず）
-        console.log(
-          '[Middleware] Tracking event not sent: codeValue could not be determined, even with defaults.'
-        )
-      }
-    }
-  }
-
-  // **ここが重要**:
-  // 上で決定した 'response' オブジェクトに対してクッキーを設定する関数を呼び出す
-  // 関数は void を返すので、response 変数はそのまま使用できる
-  setTrackingDataCookie(req, response, '/reservation', pathname)
-
-  // 新しい訪問者IDが生成された場合、レスポンスにCookieを設定
-  if (newSessionIdCookieSet && sessionId) {
-    response.cookies.set({
-      name: '_bkr_session_id',
-      value: sessionId,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7日間有効
-      sameSite: 'lax',
-    })
-    console.log(`[Middleware] Setting new session_id cookie: ${sessionId}`)
-  }
 
   console.log(`[Middleware] Final response determined.`)
   // 決定し、必要に応じてクッキー設定関数で修正された response を返す
@@ -315,53 +189,5 @@ export const config = {
   ],
 }
 
-// ★★★ 以下について、具体的な値を教えてください ★★★
-const TARGET_PATH_PREFIX = '/reservation' // 例: '/reservation' や '/lp' など、対象のルートプレフィックス
 
-// salonId をリクエストから取得する関数
-// clerkMiddlewareから渡されるauth関数を引数として受け取るように変更
-async function getSalonIdFromRequest(
-  req: NextRequest,
-  auth: any // 型をanyに変更して様子を見る
-): Promise<string | null> {
-  const { userId } = await auth()
-  if (!userId) {
-    console.log('[Middleware][getSalonIdFromRequest] No userId found from auth().')
-    return null
-  }
-  try {
-    console.log(`[Middleware][getSalonIdFromRequest] Fetching salon for userId: ${userId}`)
-    const salon = await fetchQuery(api.salon.core.query.findByClerkId, { clerkId: userId })
-    if (salon) {
-      console.log(`[Middleware][getSalonIdFromRequest] Salon found: ${salon._id}`)
-      return salon._id
-    } else {
-      console.log(`[Middleware][getSalonIdFromRequest] No salon found for userId: ${userId}`)
-      return null
-    }
-  } catch (error) {
-    console.error('[Middleware][getSalonIdFromRequest] Error fetching salonId:', error)
-    // Convex SDK (fetchQuery) がEdge Runtimeで期待通りに動作するかは注意が必要です。
-    // もし問題が発生する場合は、このロジックをAPI Routeに移動することを検討してください。
-    return null
-  }
-}
 
-// トラッキングデータから適切な `code` を決定する仮の関数
-function determineTrackingCode(trackingCode?: string | null) {
-  if (!trackingCode) return 'direct' // デフォルト値または適切なロジック
-
-  const code = trackingCode?.toLowerCase()
-  // const medium = trackingData.medium?.toLowerCase(); // 必要に応じてmediumも使用
-
-  if (code?.includes('line')) return 'line'
-  if (code?.includes('googleMap')) return 'googleMap'
-  if (code?.includes('facebook')) return 'facebook'
-  if (code?.includes('instagram')) return 'instagram'
-  if (code?.includes('tiktok')) return 'tiktok'
-  if (code?.includes('x')) return 'x'
-  if (code?.includes('youtube')) return 'youtube'
-  // 他のソースや媒体に基づいたマッピングルールを追加
-
-  return 'unknown' // いずれにも一致しない場合のデフォルト
-}

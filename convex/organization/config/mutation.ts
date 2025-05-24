@@ -4,21 +4,25 @@ import { checkAuth } from '@/convex/utils/auth';
 import { validateRequired, validateStringLength } from '@/convex/utils/validations';
 import { imageType } from '@/convex/types';
 import { createRecord, updateRecord } from '@/convex/utils/helpers';
+import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
+import { ConvexError } from 'convex/values';
+
 
 
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
+    user_id: v.string(),
     org_id: v.string(),
     org_name: v.string(),
-    email: v.string(),
+    org_email: v.string(),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true);
  
     validateRequired(args.org_id, 'org_id');
     validateRequired(args.org_name, 'org_name');
-    validateStringLength(args.email, 'email', 255);
+    validateStringLength(args.org_email, 'org_email', 255);
     return await createRecord(ctx, 'config', {
       ...args,
       images: [],
@@ -26,12 +30,46 @@ export const create = mutation({
   },
 });
 
+export const updateImages = mutation({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.string(),
+    images: v.array(imageType),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+    validateRequired(args.org_id, 'org_id');
+    const config = await ctx.db.query('config').withIndex('by_tenant_org_archive', q => 
+      q.eq('tenant_id', args.tenant_id)
+       .eq('org_id', args.org_id)
+       .eq('is_archive', false)
+    )
+    .first();
+
+    if(!config) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'organization.config.updateImages',
+        message: 'サロンの設定が見つかりませんでした。',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: {
+          ...args,
+        },
+      });
+    
+    }
+    return await updateRecord(ctx, config._id, { images: args.images });
+  },
+})
+
 export const upsert = mutation({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.string(),
-    org_name: v.string(), // サロン名
-    email: v.string(), // メールアドレス
+    org_name: v.optional(v.string()), // サロン名
+    org_email: v.optional(v.string()), // メールアドレス
     phone: v.optional(v.string()), // 電話番号
     postal_code: v.optional(v.string()), // 郵便番号
     address: v.optional(v.string()), // 住所
@@ -43,7 +81,7 @@ export const upsert = mutation({
     checkAuth(ctx);
     validateRequired(args.org_id, 'org_id');
     validateStringLength(args.org_name, 'org_name');
-    validateStringLength(args.email, 'email');
+    validateStringLength(args.org_email, 'org_email');
     validateStringLength(args.phone, 'phone');
     validateStringLength(args.postal_code, 'postal_code');
     validateStringLength(args.address, 'address');
@@ -59,9 +97,16 @@ export const upsert = mutation({
     .first();
     if (existing) {
       return await updateRecord(ctx, existing._id, args);
-    } else {  
+    } else {
       return await createRecord(ctx, 'config', {
         ...args,
+        org_id: args.org_id,
+        org_name: args.org_name || "",
+        org_email: args.org_email || "",
+        phone: args.phone,
+        postal_code: args.postal_code,
+        address: args.address,
+        reservation_rules: args.reservation_rules,
         images: [],
       });
     }

@@ -6,9 +6,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { usePreloadedQuery } from 'convex/react'
-import { useStaffAuth } from '@/hooks/useStaffAuth'
 import { Loading } from '@/components/common'
-import RoleBasedView from './RoleBasedView'
 import { Separator } from '@/components/ui/separator'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
@@ -41,9 +39,10 @@ import {
   UsersIcon,
   CloudIcon,
 } from 'lucide-react'
-import { useClerk, useAuth } from '@clerk/nextjs'
+import { useClerk } from '@clerk/nextjs'
 import { api } from '@/convex/_generated/api'
 import { Preloaded } from 'convex/react'
+import { useOrganizationList } from '@clerk/nextjs'
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
@@ -51,145 +50,116 @@ function classNames(...classes: string[]) {
 
 interface SidebarProps {
   children: React.ReactNode
-  preloadedSalon: Preloaded<typeof api.salon.core.query.findByClerkId>
+  preloadedTenant: Preloaded<typeof api.tenant.query.findByUserId>
+  preloadedOrganization: Preloaded<typeof api.organization.query.findByTenantAndOrg>
 }
 
-export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
+export default function Sidebar({
+  children,
+  preloadedOrganization,
+  preloadedTenant,
+}: SidebarProps) {
   const { resolvedTheme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isLinkClicked, setIsLinkClicked] = useState(false)
   const [mounted, setMounted] = useState(false)
   const { signOut } = useClerk()
-  const { isSignedIn } = useAuth()
-  const salon = usePreloadedQuery(
-    preloadedSalon as Preloaded<typeof api.salon.core.query.findByClerkId>
+  const { setActive, isLoaded, userMemberships } = useOrganizationList({
+    userMemberships: true,
+  })
+  const organization = usePreloadedQuery(
+    preloadedOrganization as Preloaded<typeof api.organization.query.findByTenantAndOrg>
   )
-  const {
-    isAuthenticated: isStaffAuthenticated,
-    logout: staffLogout,
-    name: staffName,
-    salonId,
-  } = useStaffAuth()
+  const tenant = usePreloadedQuery(
+    preloadedTenant as Preloaded<typeof api.tenant.query.findByUserId>
+  )
+
   const pathname = usePathname() // 現在のパスを取得
 
-  // オーナーかスタッフかを判定
-  // スタッフ認証が存在する場合は、Clerkセッションがあってもスタッフとして扱う
-  const isOwner = isSignedIn && !isStaffAuthenticated
-
-  // オーナーログアウト処理
-  const handleOwnerSignOut = () => {
+  // ログアウト処理
+  const handleSignOut = () => {
     signOut(() => {
       window.location.href = '/sign-in'
     })
   }
 
-  // スタッフログアウト処理
-  const handleStaffSignOut = () => {
-    if (salonId) {
-      staffLogout(salonId)
-    }
-  }
-  // navigation の current は削除し、表示時に pathname と比較する
+  // 全てのナビゲーション項目を統合
   const navigation = [
     {
       name: 'ダッシュボード',
       href: `/dashboard`,
       icon: HomeIcon,
-      requiredRole: 'staff', //スタッフ以上
-      requiredPlan: 'Lite',
     },
     {
       name: '予約作成',
       href: `/dashboard/reservation/add`,
       icon: BookIcon,
-      requiredRole: 'staff', //スタッフ以上
-      requiredPlan: 'Lite',
     },
     {
       name: '予約ボード',
       href: `/dashboard/reservation`,
       icon: CalendarIcon,
-      requiredRole: 'staff', //スタッフ以上
-      requiredPlan: 'Lite',
     },
     {
       name: '予約タイムライン',
       href: `/dashboard/timeline`,
       icon: TimerIcon,
-      requiredRole: 'staff', // スタッフ以上
-      requiredPlan: 'Pro',
     },
     {
       name: '完了済みの予約',
       href: `/dashboard/reservations`,
       icon: CheckIcon,
-      requiredRole: 'staff', // スタッフ以上
-      requiredPlan: 'Pro',
     },
     {
       name: 'スタッフ管理',
       href: `/dashboard/staff`,
       icon: UsersIcon,
-      requiredRole: 'owner', // オーナーのみ
-      requiredPlan: 'Lite',
     },
     {
       name: 'メニュー管理',
       href: `/dashboard/menu`,
       icon: FileIcon,
-      requiredRole: 'manager', // マネージャー以上
-      requiredPlan: 'Lite',
     },
     {
       name: '顧客管理',
       href: `/dashboard/customer`,
       icon: UserCircleIcon,
-      requiredRole: 'manager', // マネージャー以上
-      requiredPlan: 'Lite',
     },
     {
       name: '顧客カルテ管理',
       href: `/dashboard/carte`,
       icon: CloudIcon,
-      requiredRole: 'manager', // マネージャー以上
-      requiredPlan: 'Pro',
     },
     {
       name: 'オプション管理',
       href: `/dashboard/option`,
       icon: MenuSquareIcon,
-      requiredRole: 'manager', // マネージャー以上
-      requiredPlan: 'Pro',
     },
     {
       name: 'クーポン管理',
       href: `/dashboard/coupon`,
       icon: GiftIcon,
-      requiredRole: 'manager', // マネージャー以上
-      requiredPlan: 'Pro',
     },
     {
       name: 'ポイント設定',
       href: `/dashboard/point`,
       icon: TicketIcon,
-      requiredRole: 'manager', // マネージャー以上
-      requiredPlan: 'Pro',
     },
-  ]
-
-  // オーナーのみに表示する項目
-  const ownerOnlyNavigation = [
     {
       name: 'サブスクリプション',
       href: `/dashboard/subscription`,
       icon: CreditCardIcon,
-      requiredRole: 'admin', // オーナーのみ
+    },
+    {
+      name: '設定',
+      href: `/dashboard/setting`,
+      icon: SettingsIcon,
     },
   ]
 
   const [timeOut, setTimeOut] = useState(false)
   useEffect(() => {
-    if (!timeOut && !salon) {
+    if (!timeOut && !organization) {
       setTimeout(() => {
         setTimeOut(true)
       }, 5000)
@@ -200,7 +170,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
         window.location.href = '/sign-in'
       })
     }
-  }, [salon, timeOut, signOut])
+  }, [organization, timeOut, signOut])
 
   useEffect(() => {
     if (isLinkClicked) {
@@ -210,12 +180,21 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
   }, [pathname, isLinkClicked, setSidebarOpen])
   useEffect(() => setMounted(true), [])
 
-  if (!salon) {
+  useEffect(() => {
+    if (!isLoaded) return
+
+    // アクティブな組織がない場合に最初の組織をセット
+    if (userMemberships.data && userMemberships.data.length > 0) {
+      setActive({ organization: userMemberships.data[0].organization.id })
+    }
+  }, [isLoaded, userMemberships, setActive])
+
+  if (!organization) {
     return <Loading />
   }
 
   // サブスクリプションがアクティブでない場合はリダイレクト
-  if (salon?.subscriptionStatus !== 'active' && pathname !== '/dashboard/subscription') {
+  if (tenant?.subscription_status !== 'active' && pathname !== '/dashboard/subscription') {
     return redirect('/dashboard/subscription')
   }
 
@@ -275,7 +254,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                 <Separator className="my-2 w-2/3 mx-auto" />
 
                 <nav className="flex flex-1 flex-col">
-                  {isOwner && salon?.subscriptionStatus !== 'active' && (
+                  {tenant?.subscription_status !== 'active' && (
                     <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
                       <p className="text-xs text-muted-foreground">
                         <span className="inline-block font-bold mb-2">
@@ -290,124 +269,35 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                     {navigation.map((item) => {
                       const isCurrent = pathname === item.href
 
-                      const linkContent = (
-                        <Link
-                          href={item.href}
-                          onClick={() => setIsLinkClicked(true)}
-                          className={classNames(
-                            isCurrent
-                              ? 'text-accent-foreground bg-accent'
-                              : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                            'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
-                          )}
-                        >
-                          <item.icon
-                            aria-hidden="true"
+                      return (
+                        <li key={item.name}>
+                          <Link
+                            href={item.href}
+                            onClick={() => setIsLinkClicked(true)}
                             className={classNames(
-                              isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
-                              'size-4 shrink-0'
+                              isCurrent
+                                ? 'text-accent-foreground bg-accent'
+                                : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                              'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
                             )}
-                          />
-                          <p className="w-full text-nowrap">{item.name}</p>
-                          {isCurrent && (
-                            <div className="w-full flex justify-end items-center pr-2">
-                              <div className="h-3 w-3 bg-active border-ring border rounded-full" />
-                            </div>
-                          )}
-                        </Link>
-                      )
-
-                      // 権限に基づいた表示（オーナーの場合は常に表示）
-                      if (isOwner) {
-                        // オーナーの場合でもプランに基づいた表示制御
-                        if (item.requiredPlan) {
-                          const hasPlanAccess =
-                            (item.requiredPlan === 'Lite' &&
-                              (salon?.planName === 'Lite' || salon?.planName === 'Pro')) ||
-                            (item.requiredPlan === 'Pro' && salon?.planName === 'Pro')
-
-                          return hasPlanAccess && salon?.subscriptionStatus === 'active' ? (
-                            <li key={item.name}>{linkContent}</li>
-                          ) : null
-                        }
-                        return <li key={item.name}>{linkContent}</li>
-                      } else if (item.requiredRole) {
-                        return (
-                          <li key={item.name}>
-                            <RoleBasedView
-                              requiredRole={
-                                item.requiredRole as 'staff' | 'admin' | 'manager' | 'owner'
-                              }
-                              requiredPlan={item.requiredPlan as 'Lite' | 'Pro' | undefined}
-                              currentPlan={salon?.planName}
-                            >
-                              {linkContent}
-                            </RoleBasedView>
-                          </li>
-                        )
-                      }
-
-                      return null
-                    })}
-
-                    {/* オーナーにのみ表示する項目 */}
-                    {isOwner &&
-                      ownerOnlyNavigation.map((item) => {
-                        const isCurrent = pathname === item.href
-                        return (
-                          <li key={item.name}>
-                            <Link
-                              href={item.href}
-                              onClick={() => setIsLinkClicked(true)}
+                          >
+                            <item.icon
+                              aria-hidden="true"
                               className={classNames(
-                                isCurrent
-                                  ? 'bg-accent text-accent-foreground'
-                                  : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                                'group flex items-center gap-x-3 rounded-md p-2 text-sm'
+                                isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
+                                'size-4 shrink-0'
                               )}
-                            >
-                              <item.icon
-                                aria-hidden="true"
-                                className={classNames(
-                                  isCurrent
-                                    ? 'text-accent-foreground font-semibold'
-                                    : 'text-primaryfont-light',
-                                  'size-3 shrink-0'
-                                )}
-                              />
-                              <p className="w-full text-nowrap">{item.name}</p>
-                              {isCurrent && (
-                                <div className="w-full flex justify-end items-center pr-2">
-                                  <div className="h-3 w-3 bg-active border-active border-2 rounded-full" />
-                                </div>
-                              )}
-                            </Link>
-                          </li>
-                        )
-                      })}
-
-                    {isOwner && salon?.subscriptionStatus === 'active' && (
-                      <li>
-                        <Link
-                          href={`/dashboard/setting`}
-                          onClick={() => setIsLinkClicked(true)}
-                          className={classNames(
-                            pathname === '/dashboard/setting'
-                              ? 'bg-accent text-accent-foreground'
-                              : 'text-primary font-light',
-                            'group flex items-center gap-x-3 rounded-md p-2 text-sm'
-                          )}
-                        >
-                          <SettingsIcon aria-hidden="true" className="size-3 shrink-0 " />
-                          <p className="w-full text-nowrap">設定</p>
-                          {pathname === '/dashboard/setting' && (
-                            <div className="w-full flex justify-end items-center pr-2">
-                              <div className="h-3 w-3 bg-active border-active border-2 rounded-full" />
-                            </div>
-                          )}
-                        </Link>
-                      </li>
-                    )}
+                            />
+                            <p className="w-full text-nowrap">{item.name}</p>
+                            {isCurrent && (
+                              <div className="w-full flex justify-end items-center pr-2">
+                                <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                              </div>
+                            )}
+                          </Link>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </nav>
               </div>
@@ -437,7 +327,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
             </div>
             <Separator className="my-2" />
             <nav className="flex flex-1 flex-col">
-              {isOwner && salon?.subscriptionStatus !== 'active' && (
+              {tenant?.subscription_status !== 'active' && (
                 <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
                   <p className="text-xs text-muted-foreground">
                     <span className="inline-block font-bold mb-2">
@@ -454,132 +344,37 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                     {navigation.map((item) => {
                       const isCurrent = pathname === item.href
 
-                      const linkContent = (
-                        <Link
-                          href={item.href}
-                          onClick={() => setIsLinkClicked(true)}
-                          className={classNames(
-                            isCurrent
-                              ? 'text-accent-foreground bg-accent'
-                              : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                            'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
-                          )}
-                        >
-                          <item.icon
-                            aria-hidden="true"
+                      return (
+                        <li key={item.name}>
+                          <Link
+                            href={item.href}
+                            onClick={() => setIsLinkClicked(true)}
                             className={classNames(
-                              isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
-                              'size-4 shrink-0'
+                              isCurrent
+                                ? 'text-accent-foreground bg-accent'
+                                : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                              'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
                             )}
-                          />
-                          <p className="w-full text-nowrap">{item.name}</p>
-                          {isCurrent && (
-                            <div className="w-full flex justify-end items-center pr-2">
-                              <div className="h-3 w-3 bg-active border-ring border rounded-full" />
-                            </div>
-                          )}
-                        </Link>
-                      )
-
-                      // 権限に基づいた表示（オーナーの場合は常に表示）
-                      if (isOwner) {
-                        // オーナーの場合でもプランに基づいた表示制御
-                        if (item.requiredPlan) {
-                          const hasPlanAccess =
-                            (item.requiredPlan === 'Lite' &&
-                              (salon?.planName === 'Lite' || salon?.planName === 'Pro')) ||
-                            (item.requiredPlan === 'Pro' && salon?.planName === 'Pro')
-
-                          return hasPlanAccess && salon?.subscriptionStatus === 'active' ? (
-                            <li key={item.name}>{linkContent}</li>
-                          ) : null
-                        }
-                        return <li key={item.name}>{linkContent}</li>
-                      } else if (item.requiredRole) {
-                        return (
-                          <li key={item.name}>
-                            <RoleBasedView
-                              requiredRole={
-                                item.requiredRole as 'staff' | 'admin' | 'manager' | 'owner'
-                              }
-                              requiredPlan={item.requiredPlan as 'Lite' | 'Pro' | undefined}
-                              currentPlan={salon?.planName}
-                            >
-                              {linkContent}
-                            </RoleBasedView>
-                          </li>
-                        )
-                      }
-
-                      return null
-                    })}
-
-                    {/* オーナーにのみ表示する項目 */}
-                    {isOwner &&
-                      ownerOnlyNavigation.map((item) => {
-                        const isCurrent = pathname === item.href
-                        return (
-                          <li key={item.name}>
-                            <Link
-                              href={item.href}
-                              onClick={() => setIsLinkClicked(true)}
+                          >
+                            <item.icon
+                              aria-hidden="true"
                               className={classNames(
-                                isCurrent
-                                  ? 'text-accent-foreground bg-accent'
-                                  : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                                'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                                isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
+                                'size-4 shrink-0'
                               )}
-                            >
-                              <item.icon
-                                aria-hidden="true"
-                                className={classNames(
-                                  isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
-                                  'size-4 shrink-0'
-                                )}
-                              />
-                              <p className="w-full text-nowrap">{item.name}</p>
-                              {isCurrent && (
-                                <div className="w-full flex justify-end items-center pr-2">
-                                  <div className="h-3 w-3 bg-active border-ring border rounded-full" />
-                                </div>
-                              )}
-                            </Link>
-                          </li>
-                        )
-                      })}
+                            />
+                            <p className="w-full text-nowrap">{item.name}</p>
+                            {isCurrent && (
+                              <div className="w-full flex justify-end items-center pr-2">
+                                <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                              </div>
+                            )}
+                          </Link>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </li>
-
-                {isOwner && salon?.subscriptionStatus === 'active' && (
-                  <li className="mt-auto">
-                    <Link
-                      href={`/dashboard/setting`}
-                      onClick={() => setIsLinkClicked(true)}
-                      className={classNames(
-                        pathname === '/dashboard/setting'
-                          ? 'text-accent-foreground bg-accent'
-                          : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                        'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
-                      )}
-                    >
-                      <SettingsIcon
-                        aria-hidden="true"
-                        className={classNames(
-                          pathname === '/dashboard/setting'
-                            ? 'text-accent-foreground bg-accent'
-                            : 'text-primary',
-                          'size-4 shrink-0'
-                        )}
-                      />
-                      <p className="w-full text-nowrap">設定</p>
-                      {pathname === '/dashboard/setting' && (
-                        <div className="w-full flex justify-end items-center pr-2">
-                          <div className="h-3 w-3 bg-active border-ring border rounded-full" />
-                        </div>
-                      )}
-                    </Link>
-                  </li>
-                )}
               </ul>
             </nav>
           </div>
@@ -600,18 +395,18 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
 
               <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                 <div className="flex items-center justify-start w-full"></div>
-                <div className="flex items-center gap-x-4 lg:gap-x-6å">
-                  {/* プロプランバッジは管理者のみ表示 */}
-                  {salon?.planName && (
+                <div className="flex items-center gap-x-4 lg:gap-x-6">
+                  {/* プランバッジ表示 */}
+                  {tenant?.plan_name && (
                     <div className="flex items-center gap-x-4 lg:gap-x-6">
                       <p className="text-xs tracking-widest w-fit text-center font-bold border border-muted-foreground rounded-full px-4 py-1 bg-primary text-primary-foreground">
-                        {salon?.planName}
+                        {tenant.plan_name}
                       </p>
                     </div>
                   )}
 
                   <span className="text-xs tracking-wider text-muted-foreground">
-                    {salon.email}
+                    {organization?.org_email || tenant?.user_email}
                   </span>
 
                   <div aria-hidden="true" className="hidden lg:block lg:h-6 lg:w-px" />
@@ -623,7 +418,7 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                       <span className="sr-only">ユーザーメニューを開く</span>
                       <span className="flex lg:items-center">
                         <h5 className="text-sm text-muted-foreground">
-                          {isOwner ? (staffName ?? '') : (staffName ?? '')}
+                          {organization?.org_name || 'ユーザー'}
                         </h5>
                         <ChevronDownIcon
                           aria-hidden="true"
@@ -635,39 +430,33 @@ export default function Sidebar({ children, preloadedSalon }: SidebarProps) {
                       transition
                       className="absolute right-0 z-10 mt-2.5 w-52 origin-top-right rounded-md bg-background py-2 shadow-lg border border-ring transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
                     >
-                      {isOwner && salon?.subscriptionStatus === 'active' && (
-                        <MenuItem key="emailPreferences">
-                          <Link
-                            href={`/dashboard/setting/email-preferences`}
-                            className="block px-3 py-1 text-sm/6 text-primary data-focus:bg-gray-50 data-focus:outline-hidden hover:opacity-80 hover:bg-muted"
-                          >
-                            メールアドレス設定
-                          </Link>
-                        </MenuItem>
-                      )}
-                      {isOwner && salon?.subscriptionStatus === 'active' && (
-                        <MenuItem key="changeEmail">
-                          <Link
-                            href={`/dashboard/setting/change-email`}
-                            className="block px-3 py-1 text-sm/6 text-primary data-focus:bg-gray-50 data-focus:outline-hidden hover:opacity-80 hover:bg-muted"
-                          >
-                            メールアドレス変更
-                          </Link>
-                        </MenuItem>
-                      )}
-                      {isOwner && salon?.subscriptionStatus === 'active' && (
-                        <MenuItem key="changePassword">
-                          <Link
-                            href={`/dashboard/setting/change-password`}
-                            className="block px-3 py-1 text-sm/6 text-primary data-focus:bg-muted data-focus:outline-hidden hover:opacity-80 hover:bg-muted"
-                          >
-                            パスワード変更
-                          </Link>
-                        </MenuItem>
-                      )}
+                      <MenuItem key="emailPreferences">
+                        <Link
+                          href={`/dashboard/setting/email-preferences`}
+                          className="block px-3 py-1 text-sm/6 text-primary data-focus:bg-gray-50 data-focus:outline-hidden hover:opacity-80 hover:bg-muted"
+                        >
+                          メールアドレス設定
+                        </Link>
+                      </MenuItem>
+                      <MenuItem key="changeEmail">
+                        <Link
+                          href={`/dashboard/setting/change-email`}
+                          className="block px-3 py-1 text-sm/6 text-primary data-focus:bg-gray-50 data-focus:outline-hidden hover:opacity-80 hover:bg-muted"
+                        >
+                          メールアドレス変更
+                        </Link>
+                      </MenuItem>
+                      <MenuItem key="changePassword">
+                        <Link
+                          href={`/dashboard/setting/change-password`}
+                          className="block px-3 py-1 text-sm/6 text-primary data-focus:bg-muted data-focus:outline-hidden hover:opacity-80 hover:bg-muted"
+                        >
+                          パスワード変更
+                        </Link>
+                      </MenuItem>
                       <MenuItem key="signOut">
                         <a
-                          onClick={isOwner ? handleOwnerSignOut : handleStaffSignOut}
+                          onClick={handleSignOut}
                           className="block px-3 py-1 text-sm/6 text-primary data-focus:bg-gray-50 data-focus:outline-hidden cursor-pointer hover:opacity-80 hover:bg-muted"
                         >
                           ログアウト

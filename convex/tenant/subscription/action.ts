@@ -46,11 +46,11 @@ export const createSubscriptionSession = action({
     if (args.trial_days && (args.trial_days < 0 || args.trial_days > PLAN_TRIAL_DAYS)) {
       validateNumberLength(args.trial_days, 'trial_days');
       throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+        statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'tenant.subscription.createSubscriptionSession',
         message: 'トライアル期間が不正です',
-        code: 'INVALID_ARGUMENT',
+        code: 'UNPROCESSABLE_ENTITY',
         status: 400,
         details: { ...args },
       });
@@ -182,11 +182,11 @@ export const getSubscriptionUpdatePreview = action({
 
       if (!subscription) {
         throw new ConvexError({
-          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
           severity: ERROR_SEVERITY.ERROR,
           callFunc: 'tenant.subscription.getSubscriptionUpdatePreview',
           message: 'サブスクリプションの取得に失敗しました',
-          code: 'INVALID_ARGUMENT',
+          code: 'UNPROCESSABLE_ENTITY',
           status: 400,
           details: { ...args },
         });
@@ -202,11 +202,11 @@ export const getSubscriptionUpdatePreview = action({
 
       if (!upcomingInvoice) {
         throw new ConvexError({
-          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
           severity: ERROR_SEVERITY.ERROR,
           callFunc: 'tenant.subscription.getSubscriptionUpdatePreview',
           message: '請求書プレビューの取得に失敗しました',
-          code: 'INVALID_ARGUMENT',
+          code: 'UNPROCESSABLE_ENTITY',
           status: 400,
           details: { ...args },
         });

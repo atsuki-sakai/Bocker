@@ -26,11 +26,11 @@ export const upload = action({
     // ファイル名とMIMEタイプの検証
     if (!args.filePath) {
       throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+        statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'storage.upload',
         message: 'ファイル名が指定されていません',
-        code: 'INVALID_ARGUMENT',
+        code: 'UNPROCESSABLE_ENTITY',
         status: 400,
         details: {
           ...args,
@@ -40,11 +40,11 @@ export const upload = action({
 
     if (!args.contentType) {
       throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+        statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'storage.upload',
         message: 'ファイルタイプが指定されていません',
-        code: 'INVALID_ARGUMENT',
+        code: 'UNPROCESSABLE_ENTITY',
         status: 400,
         details: {
           ...args,
@@ -57,11 +57,11 @@ export const upload = action({
 
     if (binaryData.length === 0) {
       throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+        statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'storage.upload',
         message: 'ファイルデータが空です',
-        code: 'INVALID_ARGUMENT',
+        code: 'UNPROCESSABLE_ENTITY',
         status: 400,
         details: {
           ...args,
@@ -99,11 +99,11 @@ export const uploadWithThumbnail = action({
     checkAuth(ctx)
     if (!args.fileName) {
       throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+        statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'storage.uploadWithThumbnail',
         message: 'ファイル名が指定されていません。',
-        code: 'INVALID_ARGUMENT',
+        code: 'UNPROCESSABLE_ENTITY',
         status: 400,
         details: {
           ...args,
@@ -112,11 +112,11 @@ export const uploadWithThumbnail = action({
     }
     if (!args.base64Data) {
       throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+        statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'storage.uploadWithThumbnail',
         message: '画像データ(Base64)が指定されていません。',
-        code: 'INVALID_ARGUMENT',
+        code: 'UNPROCESSABLE_ENTITY',
         status: 400,
         details: {
           ...args,
@@ -148,11 +148,11 @@ export const kill = action({
     checkAuth(ctx)
     if (!args.imgUrl) {
       throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+        statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'storage.kill',
         message: '削除対象の画像URLが指定されていません。',
-        code: 'INVALID_ARGUMENT',
+        code: 'UNPROCESSABLE_ENTITY',
         status: 400,
         details: {
           ...args,
@@ -177,11 +177,11 @@ export const killWithThumbnail = action({
     checkAuth(ctx)
     if (!args.imgUrl) {
       throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+        statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'storage.killWithThumbnail',
         message: '削除対象の画像URLが指定されていません。',
-        code: 'INVALID_ARGUMENT',
+        code: 'UNPROCESSABLE_ENTITY',
         status: 400,
         details: {
           ...args,

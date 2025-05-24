@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { Label } from '@/components/ui/label';
-import { Tag, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useState } from 'react'
+import { Label } from '@/components/ui/label'
+import { Tag, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
+import { AlertCircle } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 // エラーメッセージコンポーネント
 const ErrorMessage = ({ message }: { message: string | undefined }) => (
@@ -28,13 +28,7 @@ type TagInputProps = {
   exampleText?: string
 }
 
-export const TagInput: React.FC<TagInputProps> = ({
-  tags,
-  setTagsAction,
-  error,
-  exampleText,
-  title,
-}) => {
+const TagInput: React.FC<TagInputProps> = ({ tags, setTagsAction, error, exampleText, title }) => {
   const [input, setInput] = useState('')
 
   // タグ追加
@@ -113,3 +107,5 @@ export const TagInput: React.FC<TagInputProps> = ({
     </div>
   )
 }
+
+export default TagInput

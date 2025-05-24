@@ -9,9 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import * as Sentry from '@sentry/nextjs';
-import { handleErrorToMsg } from '@/lib/error';
-import { useSearchParams } from 'next/navigation';
+import * as Sentry from '@sentry/nextjs'
+import { useSearchParams } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -19,20 +18,22 @@ import {
   CardTitle,
   CardFooter,
   CardDescription,
-} from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import Link from 'next/link';
-import { useZodForm } from '@/hooks/useZodForm';
-import { toast } from 'sonner';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle, User, Loader2 } from 'lucide-react';
-import { UseFormRegister, FieldErrors } from 'react-hook-form';
-import { z } from 'zod';
-import { api } from '@/convex/_generated/api';
+} from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import Link from 'next/link'
+import { useZodForm } from '@/hooks/useZodForm'
+import { toast } from 'sonner'
+import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle, User, Loader2 } from 'lucide-react'
+import { UseFormRegister, FieldErrors } from 'react-hook-form'
+import { z } from 'zod'
+import { api } from '@/convex/_generated/api'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { MAX_REFERRAL_COUNT } from '@/lib/constants'
 
 export const signUpSchema = z
   .object({
-    salonName: z.string().min(1, { message: '店舗名を入力してください' }),
-    referralToken: z.string().optional(),
+    orgName: z.string().min(1, { message: '店舗名を入力してください' }),
+    referralCode: z.string().optional(),
     email: z
       .string()
       .min(1, { message: 'メールアドレスを入力してください' })
@@ -52,39 +53,39 @@ export const signUpSchema = z
   })
 
 // パスワード強度の型定義
-type PasswordStrength = 'empty' | 'weak' | 'medium' | 'strong' | 'veryStrong';
+type PasswordStrength = 'empty' | 'weak' | 'medium' | 'strong' | 'veryStrong'
 
 // パスワード強度に基づく色を取得
 const getStrengthColor = (strength: PasswordStrength) => {
   switch (strength) {
     case 'weak':
-      return 'bg-red-500';
+      return 'bg-red-500'
     case 'medium':
-      return 'bg-yellow-500';
+      return 'bg-yellow-500'
     case 'strong':
-      return 'bg-green-500';
+      return 'bg-green-500'
     case 'veryStrong':
-      return 'bg-emerald-600';
+      return 'bg-emerald-600'
     default:
-      return 'bg-gray-200';
+      return 'bg-gray-200'
   }
-};
+}
 
 // パスワード強度に基づくテキストを取得
 const getStrengthText = (strength: PasswordStrength) => {
   switch (strength) {
     case 'weak':
-      return '弱い';
+      return '弱い'
     case 'medium':
-      return '普通';
+      return '普通'
     case 'strong':
-      return '強い';
+      return '強い'
     case 'veryStrong':
-      return '非常に強い';
+      return '非常に強い'
     default:
-      return '';
+      return ''
   }
-};
+}
 
 // パスワード要件チェックアイコン - メモ化
 const CheckIcon = ({ fulfilled }: { fulfilled: boolean }) => (
@@ -94,16 +95,16 @@ const CheckIcon = ({ fulfilled }: { fulfilled: boolean }) => (
   >
     {fulfilled && <CheckCircle className="w-3 h-3" />}
   </div>
-);
+)
 
-type SignUpFormData = z.infer<typeof signUpSchema>;
+type SignUpFormData = z.infer<typeof signUpSchema>
 
 type PasswordInputProps = {
-  register: UseFormRegister<SignUpFormData>;
-  errors: FieldErrors<SignUpFormData>;
-  showPassword: boolean;
-  toggleShowPassword: () => void;
-};
+  register: UseFormRegister<SignUpFormData>
+  errors: FieldErrors<SignUpFormData>
+  showPassword: boolean
+  toggleShowPassword: () => void
+}
 
 const PasswordInput = ({
   register,
@@ -146,8 +147,8 @@ const PasswordInput = ({
         </p>
       )}
     </div>
-  );
-};
+  )
+}
 
 // アニメーションのバリアント
 const containerVariants = {
@@ -159,7 +160,7 @@ const containerVariants = {
       delayChildren: 0.2,
     },
   },
-};
+}
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
@@ -168,22 +169,23 @@ const itemVariants = {
     opacity: 1,
     transition: { type: 'spring', stiffness: 100 },
   },
-};
+}
 
 export default function SignUpPage() {
-  const searchParams = useSearchParams();
-  const paramsReferralCode = searchParams.get('referral_code');
-
-  const { isLoaded, signUp, setActive } = useSignUp();
-  const [pendingVerification, setPendingVerification] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [password, setPassword] = useState('');
-  const [showReferralCode, setShowReferralCode] = useState(paramsReferralCode ? true : false);
-  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('empty');
-  const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
-  const clerkClient = useClerk();
+  const searchParams = useSearchParams()
+  const paramsReferralCode = searchParams.get('referral_code')
+  const { showErrorToast } = useErrorHandler()
+  const router = useRouter()
+  const clerk = useClerk()
+  const [createdUserId, setCreatedUserId] = useState('')
+  const { isLoaded, signUp, setActive } = useSignUp()
+  const [pendingVerification, setPendingVerification] = useState(false)
+  const [verificationCode, setVerificationCode] = useState('')
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [password, setPassword] = useState('')
+  const [showReferralCode, setShowReferralCode] = useState(paramsReferralCode ? true : false)
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('empty')
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -191,10 +193,10 @@ export default function SignUpPage() {
     formState: { errors, isSubmitting },
     watch,
     setValue,
-  } = useZodForm(signUpSchema);
+  } = useZodForm(signUpSchema)
 
-  const salonName = watch('salonName');
-  const referralToken = watch('referralToken')
+  const orgName = watch('orgName')
+  const referralCode = watch('referralCode')
 
   const email = watch('email')
 
@@ -375,36 +377,37 @@ export default function SignUpPage() {
 
     try {
       // 既存のセッションがあるかチェックして、ある場合はサインアウト
-      if (clerkClient.session) {
-        await clerkClient.signOut()
+      if (clerk.session) {
+        await clerk.signOut()
         toast.info('既存のセッションからサインアウトしました')
       }
 
       // 招待コードが存在する場合は、招待コードをチェック
       if (referralCode) {
-        const referral = await fetchQuery(api.tenant.referral.query.getByReferralToken, {
-          referral_point: referralCode,
+        const referral = await fetchQuery(api.tenant.referral.query.findByReferralCode, {
+          referral_code: referralCode,
         })
         if (!referral) {
           toast.error('招待コードが見つかりません')
           return
         }
 
-        if (referral.referralCount && referral.referralCount >= 5) {
+        if (referral.total_referral_count && referral.total_referral_count >= MAX_REFERRAL_COUNT) {
           toast.error('招待コードの利用回数が上限に達しています。')
           return
         }
       }
 
       // Clerkでユーザー作成
-      await signUp?.create({
+      const result = await signUp?.create({
         emailAddress: data.email,
         password: data.password,
         unsafeMetadata: {
-          salonName: salonName,
+          orgName: orgName,
           referralCode: referralCode,
         },
       })
+      setCreatedUserId(result?.createdUserId || '')
 
       // メール確認コードを送信
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
@@ -412,27 +415,26 @@ export default function SignUpPage() {
 
       toast.success('アカウントが作成されました。メールを確認してください')
     } catch (err) {
-      toast.error(handleErrorToMsg(err))
+      showErrorToast(err)
     }
   }
 
   // 認証コード確認ハンドラ
   const onVerifySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsVerifying(true);
-    if (!isLoaded || !verificationCode) return;
-
+    e.preventDefault()
+    setIsVerifying(true)
+    if (!isLoaded || !verificationCode) return
     try {
       const result = await signUp.attemptEmailAddressVerification({
         code: verificationCode,
-      });
+      })
 
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
-        toast.success('認証に成功しました');
-        router.push(`/dashboard`);
+      if (result.status === 'complete' && createdUserId !== '') {
+        await setActive({ session: result.createdSessionId })
+        toast.success('認証に成功しました')
+        router.push(`/dashboard`)
       } else {
-        toast.error('認証に失敗しました');
+        toast.error('認証に失敗しました')
       }
     } catch (err) {
       Sentry.captureException(err, {
@@ -441,18 +443,18 @@ export default function SignUpPage() {
           operation: 'signUp.attemptEmailAddressVerification',
           email: email,
         },
-      });
-      toast.error(handleErrorToMsg(err))
+      })
+      showErrorToast(err)
     } finally {
-      setIsVerifying(false);
+      setIsVerifying(false)
     }
-  };
+  }
 
   useEffect(() => {
     if (paramsReferralCode) {
-      setValue('referralCode', paramsReferralCode);
+      setValue('referralCode', paramsReferralCode)
     }
-  }, [paramsReferralCode, setValue]);
+  }, [paramsReferralCode, setValue])
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
@@ -490,23 +492,23 @@ export default function SignUpPage() {
                   noValidate
                 >
                   <motion.div variants={itemVariants} className="space-y-2">
-                    <Label htmlFor="salonName" className="text-sm font-medium">
+                    <Label htmlFor="orgName" className="text-sm font-medium">
                       店舗名
                     </Label>
                     <div className="relative">
                       <Input
-                        id="salonName"
+                        id="orgName"
                         type="text"
-                        {...register('salonName')}
+                        {...register('orgName')}
                         placeholder="店舗名を入力"
                         className="pl-3"
                         required
                         autoFocus
                       />
                     </div>
-                    {errors.salonName && (
-                      <p id="salonName-error" className="text-xs text-red-600" role="alert">
-                        {errors.salonName.message}
+                    {errors.orgName && (
+                      <p id="orgName-error" className="text-xs text-red-600" role="alert">
+                        {errors.orgName.message}
                       </p>
                     )}
                   </motion.div>
@@ -720,8 +722,8 @@ export default function SignUpPage() {
                         try {
                           await signUp?.prepareEmailAddressVerification({
                             strategy: 'email_code',
-                          });
-                          toast.success('認証コードを再送信しました');
+                          })
+                          toast.success('認証コードを再送信しました')
                         } catch (err) {
                           Sentry.captureException(err, {
                             level: 'error',
@@ -729,8 +731,8 @@ export default function SignUpPage() {
                               operation: 'signUp.prepareEmailAddressVerification',
                               email: email,
                             },
-                          });
-                          toast.error('認証コードの再送信に失敗しました');
+                          })
+                          toast.error('認証コードの再送信に失敗しました')
                         }
                       }}
                     >
@@ -760,5 +762,5 @@ export default function SignUpPage() {
         </Card>
       </motion.div>
     </div>
-  );
+  )
 }

@@ -22,10 +22,10 @@ import type * as organization_config_mutation from "../organization/config/mutat
 import type * as organization_config_query from "../organization/config/query.js";
 import type * as organization_exception_schedule_mutation from "../organization/exception_schedule/mutation.js";
 import type * as organization_exception_schedule_query from "../organization/exception_schedule/query.js";
+import type * as organization_mutation from "../organization/mutation.js";
+import type * as organization_query from "../organization/query.js";
 import type * as organization_reservation_config_mutation from "../organization/reservation_config/mutation.js";
 import type * as organization_reservation_config_query from "../organization/reservation_config/query.js";
-import type * as organization_stripe_connect_mutation from "../organization/stripe_connect/mutation.js";
-import type * as organization_stripe_connect_query from "../organization/stripe_connect/query.js";
 import type * as organization_week_schedule_mutation from "../organization/week_schedule/mutation.js";
 import type * as organization_week_schedule_query from "../organization/week_schedule/query.js";
 import type * as reservation_action from "../reservation/action.js";
@@ -44,6 +44,7 @@ import type * as types from "../types.js";
 import type * as utils_auth from "../utils/auth.js";
 import type * as utils_helpers from "../utils/helpers.js";
 import type * as utils_validations from "../utils/validations.js";
+import type * as webhook_events_mutation from "../webhook_events/mutation.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -63,10 +64,10 @@ declare const fullApi: ApiFromModules<{
   "organization/config/query": typeof organization_config_query;
   "organization/exception_schedule/mutation": typeof organization_exception_schedule_mutation;
   "organization/exception_schedule/query": typeof organization_exception_schedule_query;
+  "organization/mutation": typeof organization_mutation;
+  "organization/query": typeof organization_query;
   "organization/reservation_config/mutation": typeof organization_reservation_config_mutation;
   "organization/reservation_config/query": typeof organization_reservation_config_query;
-  "organization/stripe_connect/mutation": typeof organization_stripe_connect_mutation;
-  "organization/stripe_connect/query": typeof organization_stripe_connect_query;
   "organization/week_schedule/mutation": typeof organization_week_schedule_mutation;
   "organization/week_schedule/query": typeof organization_week_schedule_query;
   "reservation/action": typeof reservation_action;
@@ -85,6 +86,7 @@ declare const fullApi: ApiFromModules<{
   "utils/auth": typeof utils_auth;
   "utils/helpers": typeof utils_helpers;
   "utils/validations": typeof utils_validations;
+  "webhook_events/mutation": typeof webhook_events_mutation;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

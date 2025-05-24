@@ -6,6 +6,7 @@ import { ConvexError } from "convex/values";
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from "@/lib/errors/constants";
 import { validateStringLength } from "@/convex/utils/validations";
 
+
 export const findByTenantAndOrg = query({
   args: {
     tenant_id: v.id('tenant'),

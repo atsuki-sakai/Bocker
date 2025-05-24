@@ -1,5 +1,4 @@
 import type { ERROR_SEVERITY, ERROR_STATUS_CODE } from './constants';
-import type { Value } from 'convex/values';
 // エラーのペイロード
 export interface ErrorPayload {
   statusCode: ERROR_STATUS_CODE;

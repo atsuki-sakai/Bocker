@@ -18,8 +18,7 @@ export class ApplicationError<
       details?: ErrorPayload['details'];
       headers?: ErrorPayload['headers'];
     },
-    nameOverride?: N,
-    cause?: unknown,
+    nameOverride?: N
   ) {
     const errorName = nameOverride || ('APPLICATION_ERROR' as N);
     super(errorName, message, payloadInput);
@@ -42,8 +41,7 @@ export class SystemError<
       details?: ErrorPayload['details'];
       headers?: ErrorPayload['headers'];
     },
-    nameOverride?: N,
-    cause?: unknown,
+    nameOverride?: N
   ) {
     const errorName = nameOverride || ('SYSTEM_ERROR' as N);
     const finalPayloadInput = {

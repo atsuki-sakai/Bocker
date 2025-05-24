@@ -33,6 +33,8 @@ export const reservationMenuOrOptionType = v.object({
   price: v.number(),
   quantity: v.number(),
 })
+export type ReservationMenuOrOption = Infer<typeof reservationMenuOrOptionType>
+
 
 export const reservationPaymentStatusType = v.union( // 支払い状況
   v.literal('pending'), // 未払い

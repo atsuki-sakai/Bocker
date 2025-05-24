@@ -33,7 +33,7 @@ export const syncSubscription = mutation({
     }),
   },
   handler: async (ctx, args) => {
-
+    // バリデーション処理
     validateStringLength(args.subscription.stripe_subscription_id, 'stripe_subscription_id');
     validateStringLength(args.subscription.stripe_customer_id, 'stripe_customer_id');
     validateStringLength(args.subscription.status, 'status');
@@ -44,11 +44,11 @@ export const syncSubscription = mutation({
 
     // 関連するテナントを検索して更新
     const existingTenant = await ctx.db.query('tenant')
-    .withIndex('by_stripe_customer_archive', q => 
-      q.eq('stripe_customer_id', args.subscription.stripe_customer_id)
-      .eq('is_archive', false)
-    )
-    .first();
+      .withIndex('by_stripe_customer_archive', q => 
+        q.eq('stripe_customer_id', args.subscription.stripe_customer_id)
+        .eq('is_archive', false)
+      )
+      .first();
     
     if (existingTenant) {
       // テナントのサブスクリプション情報も更新
@@ -110,7 +110,7 @@ export const updateSubscription = mutation({
 });
 
 /**
- * 支払い失敗
+ * 支払い失敗（冪等性対応版）
  */
 export const paymentFailed = mutation({
   args: {
@@ -120,6 +120,7 @@ export const paymentFailed = mutation({
   },
   handler: async (ctx, args) => {
     validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
+    
     // サブスクリプションを検索
     let subscription = await ctx.db.query('subscription').withIndex('by_tenant_stripe_customer_archive', q => 
       q.eq('tenant_id', args.tenant_id)
@@ -127,23 +128,32 @@ export const paymentFailed = mutation({
       .eq('is_archive', false)
     )
     .first();
+
+    // 冪等性対応: サブスクリプションが見つからない場合もエラーではなく成功として扱う
     if (!subscription) {
-      throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'tenant.subscription.paymentFailed',
-        message: 'サブスクリプションが見つかりません',
-        code: 'NOT_FOUND',
-        status: 404,
-        details: {
-          ...args,
-        },
-      });
+      console.log(`支払い失敗処理: サブスクリプションが見つかりません（冪等性により成功扱い）: ${args.stripe_customer_id}`);
+      return { 
+        success: true, 
+        alreadyProcessed: true,
+        message: 'サブスクリプションが既に削除済みまたは存在しません' 
+      };
     }
+
+    // 既に支払い失敗状態の場合は冪等性により何もしない
+    if (subscription.status === 'payment_failed') {
+      console.log(`支払い失敗処理: 既に支払い失敗状態です（冪等性により成功扱い）: ${subscription.stripe_subscription_id}`);
+      return { 
+        success: true, 
+        alreadyProcessed: true,
+        message: '既に支払い失敗状態です' 
+      };
+    }
+
     // ステータスを更新
     const subscriptionResult = await ctx.db.patch(subscription._id, {
       status: 'payment_failed',
     });
+
     // 関連するテナントも更新
     const tenant = await ctx.db.query('tenant')
       .withIndex('by_stripe_customer_archive', q => 
@@ -158,7 +168,11 @@ export const paymentFailed = mutation({
       });
     }
 
-    return subscriptionResult;
+    return { 
+      success: true, 
+      alreadyProcessed: false,
+      result: subscriptionResult 
+    };
   },
 });
 
@@ -171,27 +185,28 @@ export const archive = mutation({
   },
 });
 
+/**
+ * サブスクリプション削除（冪等性対応版）
+ */
 export const kill = mutation({
   args: {
     stripe_subscription_id: v.string(),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true);
-    const subscription = await ctx.db.query('subscription').filter((q) => q.eq(q.field('stripe_subscription_id'), args.stripe_subscription_id))
-    .first();
+    
+    const subscription = await ctx.db.query('subscription')
+      .filter((q) => q.eq(q.field('stripe_subscription_id'), args.stripe_subscription_id))
+      .first();
 
+    // 冪等性対応: サブスクリプションが見つからない場合もエラーではなく成功として扱う
     if (!subscription) {
-      throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'tenant.subscription.kill',
-        message: 'サブスクリプションが見つかりません',
-        code: 'NOT_FOUND',
-        status: 404,
-        details: {
-          ...args,
-        },
-      });
+      console.log(`kill処理: サブスクリプションが見つかりません（冪等性により成功扱い）: ${args.stripe_subscription_id}`);
+      return { 
+        success: true, 
+        alreadyProcessed: true,
+        message: 'サブスクリプションが既に削除済みまたは存在しません' 
+      };
     }
 
     const tenant = await ctx.db
@@ -199,20 +214,18 @@ export const kill = mutation({
       .withIndex('by_stripe_customer_archive')
       .filter((q) => q.eq(q.field('stripe_customer_id'), subscription.stripe_customer_id))
       .first();
+
+    // 冪等性対応: テナントが見つからない場合もエラーではなく成功として扱う  
     if (!tenant) {
-      throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'tenant.subscription.kill',
-        message: 'テナントが見つかりません',
-        code: 'NOT_FOUND',
-        status: 404,
-        details: {
-          ...args,
-        },
-      });
+      console.log(`kill処理: テナントが見つかりません（冪等性により成功扱い）: ${subscription.stripe_customer_id}`);
+      return { 
+        success: true, 
+        alreadyProcessed: true,
+        message: 'テナントが既に削除済みまたは存在しません' 
+      };
     }
 
+    // テナント情報を更新
     await updateRecord(ctx, tenant._id, {
       subscription_status: 'canceled',
       billing_period: undefined,
@@ -221,6 +234,13 @@ export const kill = mutation({
       subscription_id: undefined,
     });
 
+    // サブスクリプションを削除
     await killRecord(ctx, subscription._id);
+
+    return { 
+      success: true, 
+      alreadyProcessed: false,
+      message: 'サブスクリプション削除が完了しました' 
+    };
   },
 });

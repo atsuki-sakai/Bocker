@@ -155,11 +155,11 @@ class GoogleStorageService {
       throw new SystemError(
         '圧縮対象の画像バッファが空です。',
         {
-          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
           severity: ERROR_SEVERITY.ERROR,
           callFunc: 'GoogleStorageService.compressImage',
           message: '圧縮対象の画像バッファが空です。',
-          code: 'INVALID_ARGUMENT',
+          code: 'UNPROCESSABLE_ENTITY',
           status: 400,
           title: '空の画像データ',
           details: {
@@ -226,11 +226,11 @@ class GoogleStorageService {
       throw new SystemError(
         'アップロードするファイルデータが空です。',
         {
-          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
           severity: ERROR_SEVERITY.ERROR,
           callFunc: 'GoogleStorageService.uploadFileBuffer',
           message: 'アップロードするファイルデータが空です。',
-          code: 'INVALID_ARGUMENT',
+          code: 'UNPROCESSABLE_ENTITY',
           status: 400,
           title: '空ファイルエラー',
           details: {
@@ -348,11 +348,11 @@ class GoogleStorageService {
       throw new SystemError(
         '処理するBase64画像データが提供されていません。',
         {
-          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
           severity: ERROR_SEVERITY.ERROR,
           callFunc: 'GoogleStorageService.uploadCompressedImageWithThumbnail',
           message: '処理するBase64画像データが提供されていません。',
-          code: 'INVALID_ARGUMENT',
+          code: 'UNPROCESSABLE_ENTITY',
           status: 400,
           title: 'Base64データ不備',
           details: {
@@ -374,11 +374,11 @@ class GoogleStorageService {
       throw new SystemError(
         'Base64データのデコードに失敗しました。',
         {
-          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
           severity: ERROR_SEVERITY.ERROR,
           callFunc: 'GoogleStorageService.uploadCompressedImageWithThumbnail',
           message: 'Base64データのデコードに失敗しました。',
-          code: 'INVALID_ARGUMENT',
+          code: 'UNPROCESSABLE_ENTITY',
           status: 400,
           title: 'Base64デコード失敗',
           details: {
@@ -394,11 +394,11 @@ class GoogleStorageService {
       throw new SystemError(
         'デコード後の画像データが空です。',
         {
-          statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
           severity: ERROR_SEVERITY.ERROR,
           callFunc: 'GoogleStorageService.uploadCompressedImageWithThumbnail',
           message: 'デコード後の画像データが空です。',
-          code: 'INVALID_ARGUMENT',
+          code: 'UNPROCESSABLE_ENTITY',
           status: 400,
           title: '空画像データ',
           details: {
@@ -551,11 +551,11 @@ class GoogleStorageService {
         throw new SystemError(
           'imgUrlが有効な文字列ではありません。',
           {
-            statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+            statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
             severity: ERROR_SEVERITY.ERROR,
             callFunc: 'GoogleStorageService.extractFilePath',
             message: 'imgUrlが有効な文字列ではありません。',
-            code: 'INVALID_ARGUMENT',
+            code: 'UNPROCESSABLE_ENTITY',
             status: 400,
             title: '不正な画像URL',
             details: { error: 'imgUrl must be a non-empty string.', receivedImgUrl: imgUrl }
@@ -575,11 +575,11 @@ class GoogleStorageService {
            throw new SystemError(
             'imgUrlをファイルパスとして解析できませんでした。',
             {
-              statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+              statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
               severity: ERROR_SEVERITY.ERROR,
               callFunc: 'GoogleStorageService.extractFilePath',
               message: 'imgUrlをファイルパスとして解析できませんでした。',
-              code: 'INVALID_ARGUMENT',
+              code: 'UNPROCESSABLE_ENTITY',
               status: 400,
               title: '不正なパス形式',
               details: { error: this.formatErrorDetails(e), imgUrl }

@@ -19,7 +19,6 @@ export const create = mutation({
     tenant_id: v.id('tenant'),
     org_id: v.string(),
     type: ExceptionScheduleType,
-    week: dayOfWeekType,
     date: v.string(),
     notes: v.optional(v.string()),
   },
@@ -59,7 +58,6 @@ export const update = mutation({
   args: {
     exceptionScheduleId: v.id('exception_schedule'),
     type: ExceptionScheduleType,
-    week: dayOfWeekType,
     date: v.string(),
     notes: v.optional(v.string()),
   },
@@ -115,7 +113,6 @@ export const upsert = mutation({
     tenant_id: v.id('tenant'),
     org_id: v.string(),
     type: ExceptionScheduleType,
-    week: dayOfWeekType,
     date: v.string(),
     notes: v.optional(v.string()),
   },

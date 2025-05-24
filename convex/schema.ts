@@ -350,6 +350,9 @@ const tenant_referral = defineTable({
   referral_code: v.optional(v.string()),   // 例: "ABCD1234"
   referral_point: v.optional(v.number()),  // 所持している紹介ポイントの数
   total_referral_count: v.optional(v.number()), // 総紹介数
+  last_processed_event_id: v.optional(v.string()), // 最後に処理したStripeイベントID（冪等性用）
+  last_discount_applied_month: v.optional(v.string()), // 最後に割引を適用した月（YYYY-MM形式、冪等性用）
+  last_discount_transaction_id: v.optional(v.string()), // 最後の割引処理のトランザクションID（冪等性用）
   ...CommonFields,
 })
 .index('by_referral_code_archive', ['referral_code', 'is_archive']) // referral_code から 1レコード取得
@@ -365,6 +368,7 @@ const tenant_referral = defineTable({
  */
 const organization = defineTable({
   tenant_id: v.id('tenant'),
+  user_id: v.string(), // Clerkの User ID
   org_id: v.string(),                // Clerkの Organization ID
   org_name: v.string(),              // 店舗名
   org_email: v.string(),     // 組織のメール
@@ -373,6 +377,7 @@ const organization = defineTable({
   stripe_connect_created_at: v.optional(v.number()), // Stripe Connect 作成日時
   ...CommonFields,
 })
+.index('by_user_org_archive', ['user_id', 'org_id', 'is_archive']) // user_id で取得
 .index('by_stripe_connect_archive', ['stripe_connect_id', 'is_archive']) // user_idとstripe_connect_idで取得
 .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']); // org_id で取得
 
@@ -430,7 +435,7 @@ const config = defineTable({
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.string(), // Clerk の組織ID
   org_name: v.string(), // 店舗名
-  email: v.string(), // 代表メール
+  org_email: v.string(), // 代表メール
   phone: v.optional(v.string()), // 電話番号
   postal_code: v.optional(v.string()), // 郵便番号
   address: v.optional(v.string()), // 住所
@@ -450,11 +455,11 @@ const config = defineTable({
 const reservation_config = defineTable({
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.string(), // Clerk の組織ID
-  available_sheet: v.optional(v.number()),         // 同時受付可能席数
-  reservation_limit_days: v.optional(v.number()),  // 何日先まで予約可
-  available_cancel_days: v.optional(v.number()),   // 何日前までキャンセル可
-  today_first_later_minutes: v.optional(v.number()), // 当日の最短予約時の開始時間を何分後にするか
-  reservation_interval_minutes: v.optional(reservationIntervalMinutesType), // 予約間隔
+  available_sheet: v.number(),         // 同時受付可能席数
+  reservation_limit_days: v.number(),  // 何日先まで予約可
+  available_cancel_days: v.number(),   // 何日前までキャンセル可
+  today_first_later_minutes: v.number(), // 当日の最短予約時の開始時間を何分後にするか
+  reservation_interval_minutes: reservationIntervalMinutesType, // 予約間隔
   ...CommonFields,
 })
 .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']); // org_id で取得
@@ -716,7 +721,7 @@ const reservation = defineTable({
   )
   // ③ 日付＋ステータス（全ステータス取得・空き枠・カレンダー用）
   .index(
-    'by_tenant_org_date_start_archive',
+    'by_tenant_org_date_status_archive',
     ['tenant_id', 'org_id','date','status','is_archive']
   )
   // ④ 顧客＋日付（顧客別履歴）
@@ -791,6 +796,23 @@ const point_exclusion_menu = defineTable({
 );
 
 /**
+ * =========================
+ * Webhook イベント記録
+ * =========================
+ * 冪等性を確保するためにイベントIDを記録
+ */
+const webhook_events = defineTable({
+  event_id: v.string(),        // 冪等性を確保するためのイベントID
+  event_type: v.string(),             // イベントタイプ
+  processed_at: v.number(),           // 処理完了時刻（Unix timestamp）
+  processing_result: v.string(),      // "success" | "error" | "skipped"
+  error_message: v.optional(v.string()), // エラー発生時のメッセージ
+  ...CommonFields,
+})
+.index('by_event_id', ['event_id'])  // 重複チェック用
+.index('by_event_type_archive', ['event_type', 'is_archive']); // イベントタイプ別検索用
+
+/**
  * =============================================================
  * スキーマエクスポート
  * ============================================================= */
@@ -821,4 +843,5 @@ export default defineSchema({
   reservation_detail,
   point_config,
   point_exclusion_menu,
+  webhook_events,
 });

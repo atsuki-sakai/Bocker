@@ -8,14 +8,15 @@ import { Loading } from '@/components/common'
 import { Id } from '@/convex/_generated/dataModel'
 
 // ストレージキー（サロンIDごとに異なるキーを生成）
-const getStorageKey = (salonId: Id<'salon'>) => `liff_id_${salonId}`
+const getStorageKey = (org_id: string) => `liff_id_org_${org_id}`
 
 interface DynamicLiffProviderProps {
   children: React.ReactNode
-  salonId: Id<'salon'>
+  tenantId: Id<'tenant'>
+  orgId: string
 }
 
-export function DynamicLiffProvider({ children, salonId }: DynamicLiffProviderProps) {
+export function DynamicLiffProvider({ children, tenantId, orgId }: DynamicLiffProviderProps) {
   const [liffId, setLiffId] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const [showError, setShowError] = useState(false)
@@ -27,15 +28,15 @@ export function DynamicLiffProvider({ children, salonId }: DynamicLiffProviderPr
 
   // 1. 初期化時にキャッシュから読み込み
   useEffect(() => {
-    if (!salonId) {
-      setErrorMessage('サロンIDが不明です')
+    if (!orgId) {
+      setErrorMessage('組織IDが不明です')
       setShowError(true)
       return
     }
 
     try {
       // まずキャッシュされたLIFF IDを確認
-      const storageKey = getStorageKey(salonId)
+      const storageKey = getStorageKey(orgId)
       const cachedData = localStorage.getItem(storageKey)
       if (cachedData) {
         const parsed = JSON.parse(cachedData)
@@ -51,13 +52,16 @@ export function DynamicLiffProvider({ children, salonId }: DynamicLiffProviderPr
     } catch (err) {
       console.error('キャッシュ読み込みエラー:', err)
     }
-  }, [salonId])
+  }, [orgId])
 
   // 2. Convex接続状態とクエリの実行
   // 接続状態を確認（connectionStateの型エラーを回避するため同値チェックではなく接続状態の存在確認に変更）
 
   // 3. 接続状態に関わらずクエリを実行（効率的なリトライ処理に任せる）
-  const dbLiffId = useQuery(api.salon.api_config.query.getLiffId, salonId ? { salonId } : 'skip')
+  const dbLiffId = useQuery(
+    api.organization.api_config.query.getLiffId,
+    tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
+  )
 
   // 4. クエリ結果の処理とリトライロジック
   useEffect(() => {
@@ -86,7 +90,7 @@ export function DynamicLiffProvider({ children, salonId }: DynamicLiffProviderPr
 
       // キャッシュに保存
       try {
-        const storageKey = getStorageKey(salonId)
+        const storageKey = getStorageKey(orgId)
         localStorage.setItem(
           storageKey,
           JSON.stringify({
@@ -104,7 +108,7 @@ export function DynamicLiffProvider({ children, salonId }: DynamicLiffProviderPr
       setShowError(true)
     }
     return
-  }, [dbLiffId, retryCount, salonId])
+  }, [dbLiffId, retryCount, orgId])
 
   // エラー表示
   if (showError) {

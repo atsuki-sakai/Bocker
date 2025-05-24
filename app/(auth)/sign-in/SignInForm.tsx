@@ -19,6 +19,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 import {
   Mail,
@@ -29,7 +30,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { handleErrorToMsg } from '@/lib/error'
+
 
 const signInSchema = z.object({
   email: z.string().email({ message: 'メールアドレスが無効です' }),
@@ -41,6 +42,7 @@ export default function SignInForm() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
+  const { showErrorToast } = useErrorHandler()
 
   const {
     register,
@@ -71,10 +73,10 @@ export default function SignInForm() {
         router.push(`/dashboard`)
         toast.success('ログインに成功しました')
       } else {
-        toast.error(handleErrorToMsg(result))
+        showErrorToast(result)
       }
     } catch (err: unknown) {
-      toast.error(handleErrorToMsg(err))
+      showErrorToast(err)
     } finally {
       setIsSubmitted(true)
     }

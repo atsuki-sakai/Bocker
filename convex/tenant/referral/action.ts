@@ -184,21 +184,32 @@ export const applyReferralDiscount = internalAction({
               coupon: coupon.id,
             })
 
-            // 割引適用後に紹介数を減らす
+            // 割引適用後に紹介数を減らす（冪等性対応）
+            const appliedMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            const transactionId = `discount_${Date.now()}_${emailHash}`;
+            
             const isDecreaseSuccess = await ctx.runMutation(
               api.tenant.referral.mutation.decreaseBalanceReferralCount,
               {
                 user_email: email,
+                transaction_id: transactionId, // 冪等性確保用
+                applied_month: appliedMonth,    // 適用月（YYYY-MM形式）
               }
             )
 
             // クーポンを削除
             await stripe.coupons.del(coupon.id)
 
-            if (isDecreaseSuccess) {
+            if (isDecreaseSuccess.success && !isDecreaseSuccess.alreadyProcessed) {
               results.push({
                 email,
                 success: true,
+              })
+            } else if (isDecreaseSuccess.alreadyProcessed) {
+              results.push({
+                email,
+                success: true,
+                error: `Already processed: ${isDecreaseSuccess.message}`,
               })
             } else {
               results.push({
@@ -402,27 +413,38 @@ export const cronApplyReferralDiscount = internalAction({
               coupon: coupon.id,
             })
 
-            // 割引適用後に紹介数を減らす
+            // 割引適用後に紹介数を減らす（冪等性対応）
+            const appliedMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            const transactionId = `discount_${Date.now()}_${emailHash}`;
+            
             const isDecreaseSuccess = await ctx.runMutation(
               api.tenant.referral.mutation.decreaseBalanceReferralCount,
               {
                 user_email: email,
+                transaction_id: transactionId, // 冪等性確保用
+                applied_month: appliedMonth,    // 適用月（YYYY-MM形式）
               }
             )
 
             // クーポンを削除
             await stripe.coupons.del(coupon.id)
 
-            if (isDecreaseSuccess) {
+            if (isDecreaseSuccess.success && !isDecreaseSuccess.alreadyProcessed) {
               results.push({
                 email,
                 success: true,
+              })
+            } else if (isDecreaseSuccess.alreadyProcessed) {
+              results.push({
+                email,
+                success: true,
+                error: `Already processed: ${isDecreaseSuccess.message}`,
               })
             } else {
               results.push({
                 email,
                 success: false,
-                error: '紹介数の更新に失敗しました。' + email,
+                error: 'Failed to update referral count',
               })
               // クーポンを削除（ロールバック）
               await stripe.coupons.del(couponId)

@@ -1,3 +1,17 @@
+/**
+ * ■ 責任範囲
+ *   - 効率的な予約データ取得（複合インデックス最適利用）
+ *   - is_archive考慮で論理削除レコードを自動除外
+ *   - フロント・管理画面用途に応じた柔軟なフィルタ/ソート/ページネーション
+ * 
+ * ■ 非責任範囲
+ *   - 同時間帯重複排除
+ *   - 同時利用席数チェック
+ *   - 業務バリデーション
+ *   → これらは必ずmutation/helpers（checkDoubleBooking）側で担保すること
+ * ---------------------------------------------------------------
+ */
+
 import { paginationOptsValidator } from 'convex/server';
 import { reservationStatusType } from '@/convex/types';
 import { checkAuth } from '@/convex/utils/auth';
@@ -11,6 +25,13 @@ import { validateDateStrToDate, validateNumberLength } from '@/convex/utils/vali
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { ConvexError } from 'convex/values';
 
+/**
+ * 予約IDによる単一予約取得
+ * - 主に詳細画面や個別予約表示用途
+ * - 論理削除(is_archive)は考慮しないため利用時は注意
+ * - 取得のみで、重複や席数バリデーションはmutation側で実施
+ * データ取得専用でバリデーションはmutationで担保
+ */
 export const getById = query({
   args: {
     id: v.id('reservation'),
@@ -20,7 +41,15 @@ export const getById = query({
   },
 });
 
-// TenantIDとOrgIDから予約一覧を取得
+/**
+ * 指定テナント・組織・予約ステータスでの予約一覧取得
+ * - 管理画面/予約カレンダー等の一覧用途
+ * - is_archive: false のみ対象
+ * - target_status指定で柔軟なフィルタ
+ * - ページネーション・昇降順指定可
+ * - 重複/席数バリデーションはmutation/helpersで必須
+ * データ取得専用でバリデーションはmutationで担保
+ */
 export const list = query({
   args: {
     tenant_id: v.id('tenant'),
@@ -46,7 +75,14 @@ export const list = query({
 })
 
 
-// 顧客IDから予約一覧を取得
+/**
+ * 顧客IDからの予約一覧取得
+ * - 顧客マイページや予約履歴画面用途
+ * - is_archive: false のみ対象
+ * - 昇降順・ページネーション対応
+ * - バリデーション/競合判定はmutationで担保
+ * データ取得専用でバリデーションはmutationで担保
+ */
 export const listByCustomerId = query({
   args: {
     tenant_id: v.id('tenant'),
@@ -74,7 +110,13 @@ export const listByCustomerId = query({
   },
 });
 
-// スタッフIDから予約一覧を取得
+/**
+ * スタッフIDによる予約一覧取得
+ * - スタッフ毎の予約確認・シフト管理等の用途
+ * - is_archive: false のみ対象
+ * - バリデーション/重複管理はmutationで担保
+ * データ取得専用でバリデーションはmutationで担保
+ */
 export const listByStaffId = query({
   args: {
     tenant_id: v.id('tenant'),
@@ -101,7 +143,13 @@ export const listByStaffId = query({
 })
 
 
-// ステータスから予約一覧を取得
+/**
+ * ステータス指定での予約一覧取得
+ * - キャンセル/未完了/完了等の抽出用途
+ * - 論理削除は未考慮なので利用時は注意
+ * - 業務ロジックはmutation側で担保
+ * データ取得専用でバリデーションはmutationで担保
+ */
 export const listByStatus = query({
   args: {
     tenant_id: v.id('tenant'),
@@ -126,7 +174,14 @@ export const listByStatus = query({
   },
 })
 
-// 日付から予約一覧を取得
+/**
+ * 日付指定による予約一覧取得
+ * - 特定日付の予約確認・日次集計等に活用
+ * - is_archive: false のみ対象
+ * - 認証必須
+ * - 重複/バリデーションはmutationで担保
+ * データ取得専用でバリデーションはmutationで担保
+ */
 export const listByDate = query({
   args: {
     tenant_id: v.id('tenant'),
@@ -141,7 +196,7 @@ export const listByDate = query({
     validateDateStrFormat(args.date, 'date');
     return await ctx.db
       .query('reservation')
-      .withIndex('by_tenant_org_date_start_archive', (q) =>
+      .withIndex('by_tenant_org_date_status_archive', (q) =>
         q
           .eq('tenant_id', args.tenant_id)
           .eq('org_id', args.org_id)
@@ -153,7 +208,14 @@ export const listByDate = query({
   },
 })
 
-// スタッフIDと日付から予約一覧を取得
+/**
+ * スタッフID＋日付での予約一覧取得
+ * - シフト表や日次確認用途
+ * - is_archive: false のみ対象
+ * - 認証必須
+ * - 重複/席数判定はmutation/helpersで
+ * データ取得専用でバリデーションはmutationで担保
+ */
 export const listByStaffAndDate = query({
   args: {
     tenant_id: v.id('tenant'),
@@ -182,7 +244,14 @@ export const listByStaffAndDate = query({
   },
 })
 
-// 顧客IDと日付から予約一覧を取得
+/**
+ * 顧客ID＋日付での予約取得
+ * - マイページでの本日予約確認等に利用
+ * - is_archive: false のみ抽出
+ * - 認証必須
+ * - 重複排除はmutationで担保
+ * データ取得専用でバリデーションはmutationで担保
+ */
 export const findByCustomerAndDate = query({
   args: {
     tenant_id: v.id('tenant'),
@@ -214,16 +283,11 @@ export const findByCustomerAndDate = query({
 })
 
 /**
- * サロン・スタッフ・日付から、その日の予約受付可能時間帯を取得するクエリハンドラ。
- * サロンとスタッフの営業日毎の営業時間を取得し、その時間帯から予約可能な時間帯を計算して返す。
- * @param ctx  Convex のクエリコンテキスト
- * @param args.salonId  対象サロンの ID
- * @param args.staffId  対象スタッフの ID
- * @param args.date     取得対象の日付（"YYYY-MM-DD"）
- * @returns           { startHour: string, endHour: string }
- *                      startHour: 受付開始時刻 ("HH:mm")
- *                      endHour:   受付終了時刻 ("HH:mm")
- * @throws  日付形式不正、サロン未設定、非営業日、例外休業日、スタッフ非出勤など
+ * サロン・スタッフ・日付から当日の予約受付可能時間帯を算出
+ * - サロン・スタッフ・例外休業を考慮し予約枠を算出
+ * - 重複・席数・既存予約考慮はmutation/helpersに委譲
+ * - 本関数は「予約可能な時間帯」の情報のみ返す
+ * データ取得専用でバリデーションはmutationで担保
  */
 export const findAvailableTimeSlots = query({
   args: {
@@ -413,22 +477,11 @@ export const findAvailableTimeSlots = query({
 })
 
 /**
- * 指定サロン・スタッフ・日付のスタッフスケジュールを取得するクエリハンドラ。
- *
- *
- * @param ctx  Convex のクエリコンテキスト
- * @param args.salonId   対象サロンの ID
- * @param args.staffId   対象スタッフの ID
- * @param args.date      取得対象の日付（"YYYY-MM-DD"）
- * @param args.isAllDay  true: 終日のスケジュールのみ、false: 部分スケジュールのみ
- * @returns             Array<{
- *                        date: string,
- *                        isAllDay: boolean,
- *                        type: string,
- *                        startTime: number,  // UNIX タイムスタンプ（秒単位）
- *                        endTime:   number
- *                      }>
- * @throws              日付形式不正
+ * スタッフの例外スケジュール取得
+ * - is_all_day指定で終日・部分取得
+ * - 予約バリデーションや重複判定はmutationで必須
+ * - 取得専用
+ * データ取得専用でバリデーションはmutationで担保
  */
 export const findStaffSchedules = query({
   args: {
@@ -483,19 +536,10 @@ export const findStaffSchedules = query({
 })
 
 /**
- * 指定サロン・スタッフ・日付の予約データを取得するクエリハンドラ。
- *
- * @param ctx     Convex のクエリコンテキスト
- * @param args    { salonId: string, staffId: string, date: string }
- * @param args.date  取得対象の日付（"YYYY-MM-DD"）
- * @returns       Array<{
- *                  date:     string,
- *                  isAllDay: boolean,       // 常に false
- *                  type:     'reservation',
- *                  startTime: number,       // UNIX タイムスタンプ（秒単位）
- *                  endTime:   number
- *                }>
- * @throws        日付形式不正
+ * スタッフの当日予約（confirmedのみ）を取得
+ * - スケジュールやダッシュボード向け
+ * - 予約バリデーションはmutation側で担保
+ * データ取得専用でバリデーションはmutationで担保
  */
 export const findStaffReservations = query({
   args: {
@@ -696,16 +740,11 @@ function generateTimeSlotsWithAlignment(
 }
 
 /**
- * 予約可能時間帯とスタッフ予定・既存予約をもとに、
- * 与えられた施術時間で予約可能な時間スロットのリストを返す。
- *
- * @param ctx          Convex のクエリコンテキスト
- * @param args.salonId   対象サロンの ID
- * @param args.staffId   対象スタッフの ID
- * @param args.date      対象日付 ("YYYY-MM-DD")
- * @param args.durationMin  施術時間（分）
- * @returns            TimeRange[] （予約可能スロットの配列）
- * @throws             日付形式不正、終日スケジュールあり
+ * 指定スタッフ・日付・施術時間で予約可能スロットを計算
+ * - 空き枠計算ロジックの中心
+ * - 実際の予約確保や重複排除はmutation/helpersで厳格管理
+ * - 本関数は「計算上の予約可能スロット」提示のみ
+ * データ取得専用でバリデーションはmutationで担保
  */
 export const calculateReservationTime = query({
   args: {
@@ -806,61 +845,13 @@ export const calculateReservationTime = query({
   },
 })
 
-// 指定した時間帯に重複している予約件数を取得し、
-// 同時利用可能席数(availableSheet)を超えている場合はエラーを返す
-export const countAvailableSheetInTimeRange = query({
-  args: {
-    tenant_id: v.id('tenant'),
-    org_id: v.string(),
-    date: v.string(), // "YYYY-MM-DD"
-    start_time_unix: v.number(), // 予約開始 UNIX 秒
-    end_time_unix: v.number(), // 予約終了 UNIX 秒
-  },
-  handler: async (ctx, args) => {
-    validateStringLength(args.org_id, 'org_id')
-    validateDateStrToDate(args.date, 'countAvailableSheetInTimeRange')
-    validateNumberLength(args.start_time_unix, 'start_time_unix')
-    validateNumberLength(args.end_time_unix, 'end_time_unix')
 
-    // 1. 組織設定から同時予約可能席数を取得
-    const reservationConfig = await ctx.db
-      .query('reservation_config')
-      .withIndex('by_tenant_org_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false))
-      .first()
-
-    const availableSheet = reservationConfig?.available_sheet ?? null // null → 上限無し
-
-    // 2. 指定時間帯と重複する予約を取得
-    //    (予約開始 < 検索終了) かつ (予約終了 > 検索開始) で重複判定
-    const overlapping = await ctx.db
-      .query('reservation')
-      .withIndex('by_tenant_org_status_date_start_archive', (q) =>
-        q
-          .eq('tenant_id', args.tenant_id)
-          .eq('org_id', args.org_id)
-          .eq('status', 'confirmed')
-          .eq('date', args.date)
-          .eq('is_archive', false)
-      )
-      .filter((q) => q.gte(q.field('start_time_unix'), args.start_time_unix))
-      .filter((q) => q.lt(q.field('end_time_unix'), args.end_time_unix))
-      .collect()
-
-    const overlapCount = overlapping.length
-
-    // 3. 上限を超えていれば「利用不可」を返す
-    const isAvailable =
-      availableSheet === null || availableSheet === 0 || overlapCount < availableSheet
-
-    // 4. 結果を返却（エラーはスローしない）
-    return {
-      operationCount: overlapCount,
-      availableSheet,
-      isAvailable, // ← 追加フィールド
-    }
-  },
-})
-
+/**
+ * Supabaseアーカイブ連携用クエリ
+ * - 完了済み予約のバッチ同期用
+ * - 取得・ページネーションのみでバリデーションは行わない
+ * データ取得専用でバリデーションはmutationで担保
+ */
 export const syncReservationToSupabase = query({
   args: {
     // paginate が期待するカーソルの型に変更
@@ -891,43 +882,3 @@ export const syncReservationToSupabase = query({
     return { reservations, nextCursor, isDone };
   },
 });
-
-
-export const checkDoubleBooking = query({
-  args: {
-    tenant_id: v.id('tenant'), // テナントID
-    org_id: v.string(), // 組織ID
-    staff_id: v.id('staff'), // スタッフID 予約がないか確認したいスタッフの_id
-    date: v.string(), // 予約がないか確認したい日付
-    start_time_unix: v.number(), // 予約がないか確認したい時間の範囲の開始時間
-    end_time_unix: v.number(), // 予約がないか確認したい時間の範囲の終了時間
-  },
-  handler: async (ctx, args) => {
-    validateStringLength(args.org_id, 'org_id')
-    validateRequiredNumber(args.start_time_unix, 'start_time_unix')
-    validateRequiredNumber(args.end_time_unix, 'end_time_unix')
-
-    // Add date range filtering if possible
-    const reservations = await ctx.db
-      .query('reservation')
-      .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
-        q
-          .eq('tenant_id', args.tenant_id)
-          .eq('org_id', args.org_id)
-          .eq('staff_id', args.staff_id)
-          .eq('date', args.date)
-          .eq('status', 'confirmed')
-          .eq('is_archive', false)
-      )
-      .filter((q) => q.gte(q.field('start_time_unix'), args.start_time_unix))
-      .filter((q) => q.lt(q.field('end_time_unix'), args.end_time_unix))
-      .first()
-    if (reservations) {
-      return {
-        isOverlapping: true,
-        overlappingReservation: reservations,
-      };
-    }
-    return { isOverlapping: false };
-  },
-})

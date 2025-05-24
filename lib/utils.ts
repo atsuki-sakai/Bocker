@@ -27,7 +27,7 @@ export function checkAllowedUrl(checkUrl: string) {
     if (!ALLOWED_DOMAINS.includes(returnUrlObject.hostname)) {
       throw new SystemError(
         "URLのドメインが許可されていません。",{
-        statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+        statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'tenant.subscription.createBillingPortalSession',
         message: '無効なURLです。',
@@ -42,7 +42,7 @@ export function checkAllowedUrl(checkUrl: string) {
     // URLのパースに失敗した場合も無効なURLとみなす
     throw new SystemError(
       "URLのパースに失敗しました。",{
-      statusCode: ERROR_STATUS_CODE.INVALID_ARGUMENT,
+      statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
       severity: ERROR_SEVERITY.ERROR,
       callFunc: 'tenant.subscription.createBillingPortalSession',
       message: '無効なリダイレクトURL形式です。',

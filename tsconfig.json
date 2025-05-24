@@ -29,7 +29,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "supabase/functions/**/*.ts",
-    "app/(salon)/dashboard/timeline/page.tsx"
+    "app/(dashboard)/dashboard/timeline/page.tsx"
   ],
   "exclude": ["node_modules"]
 }

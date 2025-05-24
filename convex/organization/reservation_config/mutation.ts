@@ -11,11 +11,11 @@ export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.string(),
-    reservation_limit_days: v.optional(v.number()), // 予約可能日数
-    available_cancel_days: v.optional(v.number()), // 予約キャンセル可能日数
-    reservation_interval_minutes: v.optional(reservationIntervalMinutesType) || 0, // 予約時間間隔(分)
-    available_sheet: v.optional(v.number()), // 予約可能席数
-    today_first_later_minutes: v.optional(v.number()), // 本日の場合、何分後から予約可能か？
+    reservation_limit_days: v.number(), // 予約可能日数
+    available_cancel_days: v.number(), // 予約キャンセル可能日数
+    reservation_interval_minutes: reservationIntervalMinutesType, // 予約時間間隔(分)
+    available_sheet: v.number(), // 予約可能席数
+    today_first_later_minutes: v.number(), // 本日の場合、何分後から予約可能か？
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)

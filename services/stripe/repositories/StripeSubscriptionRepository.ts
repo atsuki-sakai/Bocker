@@ -160,196 +160,263 @@ export class StripeSubscriptionRepository {
   }
 
   /**
-   * Webhookイベントを処理
+   * Webhookイベントを処理（冪等性対応版）
    */
   async handleWebhookEvent(event: Stripe.Event): Promise<{ success: boolean; message?: string }> {
-    console.log(`Processing Stripe subscription event: ${event.type}`);
+    console.log(`Processing Stripe subscription event: ${event.type} (ID: ${event.id})`);
 
-    
     try {
-      switch (event.type) {
-        
-        case 'customer.subscription.created':
-          const customer_id = event?.data?.object.customer;
-          const inviteSubscriptionId = event?.data?.object.id;
-          if (customer_id) {
-            try {
-              // 新規ユーザーのStripe顧客情報を取得して紹介コードを抽出
-              const customer = await this.stripe.customers.retrieve(customer_id as string);
+      // 1. 冪等性チェック: 既に処理済みのイベントかどうか確認
+      const processedCheck = await this.convex.mutation(api.webhook_events.mutation.checkProcessedEvent, {
+        event_id: event.id,
+      });
 
-              // 削除されていない顧客からreferralCodeを取得
-              const referralCode = !customer.deleted ? customer.metadata?.referralCode : undefined;
+      if (processedCheck.isProcessed) {
+        console.log(`イベント ${event.id} は既に処理済みです。スキップします。`);
+        return { 
+          success: true, 
+          message: `イベント ${event.id} は既に処理済みです (結果: ${processedCheck.result})` 
+        };
+      }
 
-              // 招待されたユーザーのサブスクリプション情報
-              console.log('新規ユーザーのサブスクリプションID:', inviteSubscriptionId);
-              console.log('紹介コード:', referralCode);
+      // 2. イベント処理開始を記録
+      await this.convex.mutation(api.webhook_events.mutation.recordEvent, {
+        event_id: event.id,
+        event_type: event.type,
+        processing_result: 'processing',
+      });
 
-              const referral = await this.convex.query(api.tenant.referral.query.findByReferralCode, {
-                referral_code: referralCode as string,
-              });
-              const inviteTenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
-                stripe_customer_id: customer_id as string,
-              });
-              if (!inviteTenant) {
-                console.log('招待されたユーザーのテナント情報が見つかりません');
-                return { success: true, message: '招待されたユーザーのテナント情報が見つかりません' };
-              }
-              const inviteReferral = await this.convex.query(api.tenant.referral.query.findByTenantId, {
-                tenant_id: inviteTenant._id,
-              });
+      let processingResult = 'success';
+      let errorMessage: string | undefined;
 
-              if (!inviteReferral) {
-                console.log('紹介コードがありません - 通常のサブスクリプション作成');
-                return { success: true, message: '紹介コードがありません' };
-              }
+      try {
+        switch (event.type) {
+          case 'customer.subscription.created':
+            const customer_id = event?.data?.object.customer;
+            const inviteSubscriptionId = event?.data?.object.id;
+            if (customer_id) {
+              try {
+                // 新規ユーザーのStripe顧客情報を取得して紹介コードを抽出
+                const customer = await this.stripe.customers.retrieve(customer_id as string);
 
-              if (referral) {
-                await this.convex.mutation(api.tenant.referral.mutation.incrementReferralCount, {
-                  referral_id: inviteReferral._id,
+                // 削除されていない顧客からreferralCodeを取得
+                const referralCode = !customer.deleted ? customer.metadata?.referralCode : undefined;
+
+                // 招待されたユーザーのサブスクリプション情報
+                console.log('新規ユーザーのサブスクリプションID:', inviteSubscriptionId);
+                console.log('紹介コード:', referralCode);
+
+                const referral = await this.convex.query(api.tenant.referral.query.findByReferralCode, {
+                  referral_code: referralCode as string,
+                });
+                const inviteTenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
+                  stripe_customer_id: customer_id as string,
+                });
+                if (!inviteTenant) {
+                  console.log('招待されたユーザーのテナント情報が見つかりません');
+                  return { success: true, message: '招待されたユーザーのテナント情報が見つかりません' };
+                }
+                const inviteReferral = await this.convex.query(api.tenant.referral.query.findByTenantId, {
+                  tenant_id: inviteTenant._id,
                 });
 
-                if (referralCode) {
-                  const referralBySalon = await retryOperation(() =>
-                    this.convex.query(api.tenant.referral.query.findByReferralCode, {
-                      referral_code: referralCode,
-                    })
-                  );
-                  if (referralBySalon) {
-                    await retryOperation(() =>
-                      this.convex.mutation(api.tenant.referral.mutation.incrementReferralCount, {
-                        referral_id: referralBySalon._id,
+                if (!inviteReferral) {
+                  console.log('紹介コードがありません - 通常のサブスクリプション作成');
+                  return { success: true, message: '紹介コードがありません' };
+                }
+
+                if (referral) {
+                  // 冪等性対応: イベントIDを渡して重複防止
+                  await this.convex.mutation(api.tenant.referral.mutation.incrementReferralCount, {
+                    referral_id: inviteReferral._id,
+                    idempotency_key: event.id, // StripeイベントIDを冪等キーとして使用
+                  });
+
+                  if (referralCode) {
+                    const referralBySalon = await retryOperation(() =>
+                      this.convex.query(api.tenant.referral.query.findByReferralCode, {
+                        referral_code: referralCode,
                       })
                     );
+                    if (referralBySalon) {
+                      // 冪等性対応: イベントIDを渡して重複防止
+                      await retryOperation(() =>
+                        this.convex.mutation(api.tenant.referral.mutation.incrementReferralCount, {
+                          referral_id: referralBySalon._id,
+                          idempotency_key: event.id, // StripeイベントIDを冪等キーとして使用
+                        })
+                      );
+                    }
                   }
+                } else {
+                  console.log('紹介コードがありません - 通常のサブスクリプション作成');
                 }
-              } else {
-                console.log('紹介コードがありません - 通常のサブスクリプション作成');
+              } catch (error) {
+                console.error('紹介情報の取得に失敗しました:', error);
+                Sentry.captureException(error, {
+                  level: 'error',
+                  tags: {
+                    function: 'getReferralInfo',
+                  },
+                });
               }
-            } catch (error) {
-              console.error('紹介情報の取得に失敗しました:', error);
-              Sentry.captureException(error, {
-                level: 'error',
-                tags: {
-                  function: 'getReferralInfo',
-                },
-              });
             }
+
+            const subscription = event.data.object as Stripe.Subscription;
+            const priceId = subscription.items.data[0].plan.id;
+            const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
+              stripe_customer_id: customer_id as string,
+            });
+           
+            if (!tenant) {
+              console.log('テナント情報が見つかりません');
+              return { success: true, message: 'テナント情報が見つかりません' };
+            }
+            const result = await this.syncSubscription(tenant._id, subscription, priceId);
+            if (!result.success) {
+              throw new Error(result.error || 'syncSubscription failed');
+            }
+            break;
+
+          case 'customer.subscription.updated': {
+            const subscriptionUpdated = event.data.object as Stripe.Subscription;
+            const priceIdUpdated = subscriptionUpdated.items.data[0].plan.id;
+            const customer_id = event?.data?.object.customer;
+            const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
+              stripe_customer_id: customer_id as string,
+            });
+            if (!tenant) {
+              console.log('テナント情報が見つかりません');
+              return { success: true, message: 'テナント情報が見つかりません' };
+            }
+            const resultUpdated = await this.syncSubscription(tenant._id, subscriptionUpdated, priceIdUpdated);
+            if (!resultUpdated.success) {
+              throw new Error(resultUpdated.error || 'syncSubscription failed');
+            }
+            break;
           }
 
-          const subscription = event.data.object as Stripe.Subscription;
-          const priceId = subscription.items.data[0].plan.id;
-          const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
-            stripe_customer_id: customer_id as string,
-          });
-         
-          if (!tenant) {
-            console.log('テナント情報が見つかりません');
-            return { success: true, message: 'テナント情報が見つかりません' };
-          }
-          const result = await this.syncSubscription(tenant._id, subscription, priceId);
-          return { success: result.success, message: result.error };
+          case 'invoice.payment_succeeded': {
+            const invoice = event.data.object as Stripe.Invoice;
+            const subId =
+              typeof invoice.subscription === 'string'
+                ? invoice.subscription
+                : invoice.subscription?.toString();
 
-        case 'customer.subscription.updated': {
-          const subscriptionUpdated = event.data.object as Stripe.Subscription;
-          const priceIdUpdated = subscriptionUpdated.items.data[0].plan.id;
-          const customer_id = event?.data?.object.customer;
-          const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
-            stripe_customer_id: customer_id as string,
-          });
-          if (!tenant) {
-            console.log('テナント情報が見つかりません');
-            return { success: true, message: 'テナント情報が見つかりません' };
-          }
-          const resultUpdated = await this.syncSubscription(tenant._id, subscriptionUpdated, priceIdUpdated);
-          return { success: resultUpdated.success, message: resultUpdated.error };
-        }
-
-        case 'invoice.payment_succeeded': {
-          const invoice = event.data.object as Stripe.Invoice;
-          const subId =
-            typeof invoice.subscription === 'string'
-              ? invoice.subscription
-              : invoice.subscription?.toString();
-
-          if (subId) {
-            try {
-              const subscription = await this.stripe.subscriptions.retrieve(subId);
-              const customer_id = event?.data?.object.customer;
-              const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
-                stripe_customer_id: customer_id as string,
-              });
-              if (!tenant) {
-                console.log('テナント情報が見つかりません');
-                return { success: true, message: 'テナント情報が見つかりません' };
+            if (subId) {
+              try {
+                const subscription = await this.stripe.subscriptions.retrieve(subId);
+                const customer_id = event?.data?.object.customer;
+                const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
+                  stripe_customer_id: customer_id as string,
+                });
+                if (!tenant) {
+                  console.log('テナント情報が見つかりません');
+                  return { success: true, message: 'テナント情報が見つかりません' };
+                }
+                const result = await this.syncSubscription(tenant._id, subscription);
+                if (!result.success) {
+                  throw new Error(result.error || 'syncSubscription failed');
+                }
+              } catch (error) {
+                console.error(`請求書 ${invoice.id} のサブスクリプション取得に失敗しました:`, error);
+                Sentry.captureException(error, {
+                  level: 'error',
+                  tags: {
+                    function: 'handleWebhookEvent_invoice_payment_succeeded',
+                  },
+                });
+                throw error;
               }
-              const result = await this.syncSubscription(tenant._id, subscription);
-              return { success: result.success, message: result.error };
-            } catch (error) {
-              console.error(`請求書 ${invoice.id} のサブスクリプション取得に失敗しました:`, error);
-              Sentry.captureException(error, {
-                level: 'error',
-                tags: {
-                  function: 'handleWebhookEvent_invoice_payment_succeeded',
-                },
-              });
-              throw error;
             }
+            break;
           }
-          return { success: true, message: 'サブスクリプションIDなし' };
-        }
 
-        case 'customer.subscription.deleted': {
-          const canceledSub = event.data.object as Stripe.Subscription;
-          await this.convex.mutation(api.tenant.subscription.mutation.kill, {
-            stripe_subscription_id: canceledSub.id,
-          });
-          return { success: true, message: 'サブスクリプションIDなし' };
-        }
+          case 'customer.subscription.deleted': {
+            const canceledSub = event.data.object as Stripe.Subscription;
+            await this.convex.mutation(api.tenant.subscription.mutation.kill, {
+              stripe_subscription_id: canceledSub.id,
+            });
+            break;
+          }
 
-        case 'invoice.payment_failed': {
-          const invoice = event.data.object as Stripe.Invoice;
-          const subId =
-            typeof invoice.subscription === 'string'
-              ? invoice.subscription
-              : invoice.subscription?.toString();
+          case 'invoice.payment_failed': {
+            const invoice = event.data.object as Stripe.Invoice;
+            const subId =
+              typeof invoice.subscription === 'string'
+                ? invoice.subscription
+                : invoice.subscription?.toString();
 
-          if (subId) {
-            try {
-              // サブスクリプションの詳細を取得
-              const subscription = await this.stripe.subscriptions.retrieve(subId);
-              const customerId =
-                typeof subscription.customer === 'string'
-                  ? subscription.customer
-                  : subscription.customer.id;
+            if (subId) {
+              try {
+                // サブスクリプションの詳細を取得
+                const subscription = await this.stripe.subscriptions.retrieve(subId);
+                const customerId =
+                  typeof subscription.customer === 'string'
+                    ? subscription.customer
+                    : subscription.customer.id;
 
-              const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
-                stripe_customer_id: customerId as string,
-              });
-              if (!tenant) {
-                console.log('テナント情報が見つかりません');
-                return { success: true, message: 'テナント情報が見つかりません' };
+                const tenant = await this.convex.query(api.tenant.query.findByStripeCustomerId, {
+                  stripe_customer_id: customerId as string,
+                });
+                if (!tenant) {
+                  console.log('テナント情報が見つかりません');
+                  return { success: true, message: 'テナント情報が見つかりません' };
+                }
+
+                const result = await this.handlePaymentFailed(tenant._id, subId, customerId);
+                if (!result.success) {
+                  throw new Error(result.error || 'handlePaymentFailed failed');
+                }
+              } catch (error) {
+                console.error(`サブスクリプション ${subId} の支払い失敗処理に失敗しました:`, error);
+                Sentry.captureException(error, {
+                  level: 'error',
+                  tags: {
+                    function: 'handleWebhookEvent_invoice_payment_failed',
+                  },
+                });
+                throw error;
               }
-
-              const result = await this.handlePaymentFailed(tenant._id, subId, customerId);
-              return { success: result.success, message: result.error };
-            } catch (error) {
-              console.error(`サブスクリプション ${subId} の支払い失敗処理に失敗しました:`, error);
-              Sentry.captureException(error, {
-                level: 'error',
-                tags: {
-                  function: 'handleWebhookEvent_invoice_payment_failed',
-                },
-              });
-              throw error;
             }
+            break;
           }
-          return { success: true, message: 'サブスクリプションIDなし' };
-        }
 
-        default:
-          return { success: true, message: `未対応のStripeイベントタイプ: ${event.type}` };
+          default:
+            console.log(`未対応のStripeイベントタイプ: ${event.type}`);
+            processingResult = 'skipped';
+            break;
+        }
+      } catch (error) {
+        processingResult = 'error';
+        errorMessage = error instanceof Error ? error.message : '不明なエラー';
+        console.error(`イベント ${event.id} の処理中にエラーが発生しました:`, error);
+        throw error;
+      } finally {
+        // 3. 処理結果を記録
+        await this.convex.mutation(api.webhook_events.mutation.updateEventResult, {
+          event_id: event.id,
+          processing_result: processingResult,
+          error_message: errorMessage,
+        });
       }
+
+      return { success: true, message: `イベント ${event.id} の処理が完了しました` };
+
     } catch (error) {
+      console.error(`Webhook event ${event.id} 処理で致命的エラー:`, error);
+      
+      // エラー時も記録を更新
+      try {
+        await this.convex.mutation(api.webhook_events.mutation.updateEventResult, {
+          event_id: event.id,
+          processing_result: 'error',
+          error_message: error instanceof Error ? error.message : '不明なエラー',
+        });
+      } catch (recordError) {
+        console.error('イベント結果の記録中にエラーが発生しました:', recordError);
+      }
+
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
         severity: ERROR_SEVERITY.ERROR,
@@ -358,6 +425,8 @@ export class StripeSubscriptionRepository {
         code: 'INTERNAL_SERVER_ERROR',
         status: 500,
         details: {
+          eventId: event.id,
+          eventType: event.type,
           error: error instanceof Error ? error.message : '不明なエラー',
         },
       });

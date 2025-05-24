@@ -4,7 +4,7 @@ import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
 import { Id } from '@/convex/_generated/dataModel';
 import { StripeResult } from '@/services/stripe/types';
-import { ConvexError } from 'convex/values';
+import { SystemError } from '@/lib/errors/custom_errors';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { BASE_URL } from '@/lib/constants';
 
@@ -54,19 +54,31 @@ export class StripeConnectRepository {
     const accountId = account.id;
 
     // Stripe ConnectアカウントIDから組織を検索
-    const organization = await this.convex.query(api.organization.stripe_connect.query.findOrganizationByStripeConnectId, {
+    const organization = await this.convex.query(api.organization.query.findOrganizationByStripeConnectId, {
       stripe_connect_id: accountId,
     });
 
     if (!organization) {
-      throw new Error(`No organization found for Connect account ${accountId}`);
+      throw new SystemError(
+        '組織が見つかりません',
+        {
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'StripeConnectRepository.handleAccountUpdatedEvent',
+        message: '組織が見つかりません',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: {
+          stripe_connect_id: accountId,
+        },
+      });
     }
 
     // ステータスを判定
     const status = this.determineAccountStatus(account);
 
     // ステータスを更新
-    await this.convex.mutation(api.organization.stripe_connect.mutation.updateConnectStatus, {
+    await this.convex.mutation(api.organization.mutation.updateConnectStatus, {
       tenant_id: organization.tenant_id,
       org_id: organization.org_id,
       stripe_connect_id: accountId,
@@ -108,30 +120,97 @@ export class StripeConnectRepository {
   }
 
   /**
-   * Webhookイベントを処理
+   * Webhookイベントを処理（冪等性対応版）
    */
   async handleWebhookEvent(event: Stripe.Event): Promise<{ success: boolean; message?: string }> {
+    console.log(`Processing Stripe Connect event: ${event.type} (ID: ${event.id})`);
+
     try {
-      switch (event.type) {
-        case 'account.updated':
-          return await this.handleAccountUpdatedEvent(event.data.object as Stripe.Account);
-        case 'checkout.session.completed':
-          return await this.handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
-        default:
-          return { success: true, message: `未処理のイベントタイプ: ${event.type}` };
-      }
-    } catch (error) {
-      throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'StripeConnectRepository.handleWebhookEvent',
-        message: 'Webhookイベントの処理に失敗しました',
-        code: 'INTERNAL_SERVER_ERROR',
-        status: 500,
-        details: {
-          error: error instanceof Error ? error.message : '不明なエラー',
-        },
+      // 🆕 1. 冪等性チェック: 既に処理済みのイベントかどうか確認
+      const processedCheck = await this.convex.mutation(api.webhook_events.mutation.checkProcessedEvent, {
+        event_id: event.id,
       });
+
+      if (processedCheck.isProcessed) {
+        console.log(`Connect イベント ${event.id} は既に処理済みです。スキップします。`);
+        return { 
+          success: true, 
+          message: `イベント ${event.id} は既に処理済みです (結果: ${processedCheck.result})` 
+        };
+      }
+
+      // 🆕 2. イベント処理開始を記録
+      await this.convex.mutation(api.webhook_events.mutation.recordEvent, {
+        event_id: event.id,
+        event_type: event.type,
+        processing_result: 'processing',
+      });
+
+      let processingResult = 'success';
+      let errorMessage: string | undefined;
+
+      try {
+        switch (event.type) {
+          case 'account.updated':
+            await this.handleAccountUpdatedEvent(event.data.object as Stripe.Account);
+            break;
+          case 'checkout.session.completed':
+            await this.handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+            break;
+          default:
+            processingResult = 'skipped';
+            console.log(`未処理のイベントタイプ: ${event.type}`);
+            break;
+        }
+      } catch (error) {
+        processingResult = 'error';
+        errorMessage = error instanceof Error ? error.message : '不明なエラー';
+        console.error(`Connect イベント ${event.id} の処理中にエラーが発生しました:`, error);
+        throw error;
+      } finally {
+        // 🆕 3. 処理結果を記録
+        await this.convex.mutation(api.webhook_events.mutation.updateEventResult, {
+          event_id: event.id,
+          processing_result: processingResult,
+          error_message: errorMessage,
+        });
+      }
+
+      return { 
+        success: true, 
+        message: `Connect イベント ${event.id} の処理が完了しました` 
+      };
+
+    } catch (error) {
+      console.error(`Connect Webhook event ${event.id} 処理で致命的エラー:`, error);
+      
+      // エラー時も記録を更新
+      try {
+        await this.convex.mutation(api.webhook_events.mutation.updateEventResult, {
+          event_id: event.id,
+          processing_result: 'error',
+          error_message: error instanceof Error ? error.message : '不明なエラー',
+        });
+      } catch (recordError) {
+        console.error('Connect イベント結果の記録中にエラーが発生しました:', recordError);
+      }
+
+      throw new SystemError(
+        'Connect Webhookイベントの処理に失敗しました',
+        {
+          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'StripeConnectRepository.handleWebhookEvent',
+          message: 'Connect Webhookイベントの処理に失敗しました',
+          code: 'INTERNAL_SERVER_ERROR',
+          status: 500,
+          details: {
+            eventId: event.id,
+            eventType: event.type,
+            error: error instanceof Error ? error.message : '不明なエラー',
+          },
+        }
+      );
     }
   }
 
@@ -164,7 +243,7 @@ export class StripeConnectRepository {
       const status = this.determineAccountStatus(account);
 
       // Convexにステータスを保存
-      await this.convex.mutation(api.organization.stripe_connect.mutation.updateConnectStatus, {
+      await this.convex.mutation(api.organization.mutation.updateConnectStatus, {
         tenant_id,
         org_id,
         stripe_connect_id,
@@ -204,7 +283,7 @@ export class StripeConnectRepository {
     try {
       // 既存のアカウントを検索
       const existingOrganization = await this.convex.query(
-        api.organization.stripe_connect.query.findByTenantAndOrg,
+        api.organization.query.findByTenantAndOrg,
         {
           tenant_id,
           org_id,
@@ -217,7 +296,19 @@ export class StripeConnectRepository {
           // Stripeアカウントを削除
           await this.stripe.accounts.del(existingOrganization.stripe_connect_id);
         } catch (deleteError) {
-          //削除に失敗しても続行する
+          throw new SystemError(
+            'Stripeアカウントの削除に失敗しました。既存のアカウントがある場合は削除してください。',
+            {
+            statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+            severity: ERROR_SEVERITY.ERROR,
+            callFunc: 'StripeConnectRepository.createConnectAccountLink',
+            message: 'Stripeアカウントの削除に失敗しました。既存のアカウントがある場合は削除してください。',
+            code: 'INTERNAL_SERVER_ERROR',
+            status: 500,
+            details: {
+              error: deleteError instanceof Error ? deleteError.message : '不明なエラー',
+            },
+          });
         }
       }
 
@@ -240,7 +331,7 @@ export class StripeConnectRepository {
               interval: 'monthly',
               monthly_anchor: 25,
             },
-            statement_descriptor: 'BOCKER STRIPE PAYMENT',
+            statement_descriptor: 'BOCKER PAYMENT',
           },
         },
         metadata: {
@@ -250,7 +341,7 @@ export class StripeConnectRepository {
       })
 
       // Convexに接続情報を保存
-      await this.convex.mutation(api.organization.stripe_connect.mutation.createConnectAccount, {
+      await this.convex.mutation(api.organization.mutation.createConnectAccount, {
         tenant_id: tenant_id,
         org_id: org_id,
         user_id: '',
