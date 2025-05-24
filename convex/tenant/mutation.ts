@@ -48,7 +48,6 @@ export const upsert = mutation({
     stripe_customer_id: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-      checkAuth(ctx);
       validateStringLength(args.user_id,'user_id');
       validateStringLength(args.user_email,'user_email');
       validateStringLength(args.stripe_customer_id,'stripe_customer_id');
