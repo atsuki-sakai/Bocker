@@ -1,6 +1,5 @@
 // app/api/private-metadata/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { clerkClient } from '@clerk/nextjs/server';
 import { verifyToken } from '@clerk/clerk-sdk-node'; // Clerk公式SDKのverify推奨
 
 interface ClerkJwtPayload {

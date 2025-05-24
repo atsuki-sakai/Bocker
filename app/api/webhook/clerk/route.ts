@@ -164,7 +164,7 @@ export async function POST(req: Request) {
                 })
               );
 
-              const user = await clerk.users.getUser(id);
+          
               // 既存のroleを取得（存在する場合）
               await clerk.users.updateUserMetadata(id, {
                 privateMetadata: {
