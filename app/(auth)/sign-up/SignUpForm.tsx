@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as Sentry from '@sentry/nextjs'
 import { useSearchParams } from 'next/navigation'
-import { CreateOrganization } from '@clerk/nextjs'
 import {
   Card,
   CardContent,
@@ -180,7 +179,6 @@ export default function SignUpPage() {
   const { isLoaded, signUp, setActive } = useSignUp()
   const [pendingVerification, setPendingVerification] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
-  const [isCreatingOrganization, setIsCreatingOrganization] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [password, setPassword] = useState('')
   const [showReferralCode, setShowReferralCode] = useState(paramsReferralCode ? true : false)
@@ -429,11 +427,10 @@ export default function SignUpPage() {
       })
 
       if (result.status === 'complete') {
-        toast.success('認証に成功しました')
         if (result.createdSessionId) {
           await setActive({ session: result.createdSessionId })
+          toast.success('認証に成功しました')
         }
-        setIsCreatingOrganization(true)
       } else {
         toast.error('認証に失敗しました')
       }
@@ -481,9 +478,7 @@ export default function SignUpPage() {
 
           <CardContent>
             <AnimatePresence mode="wait">
-              {isCreatingOrganization ? (
-                <CreateOrganization afterCreateOrganizationUrl={'/dashboard'} />
-              ) : !pendingVerification ? (
+              {!pendingVerification ? (
                 <motion.form
                   key="signup-form"
                   initial={{ opacity: 0, x: -10 }}

@@ -1,76 +1,62 @@
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
 import { Id } from "@/convex/_generated/dataModel";
-import type { Role } from "@/convex/types";
-import { Loading } from "@/components/common";
 
-// Clerk JWT の型定義（必要に応じて追加）
-type ClerkConvexTokenPayload = {
-  tenant_id: Id<'tenant'>;
-};
 
 export function useTenantAndOrganization() {
   const { getToken, orgRole, orgId, userId, isLoaded, isSignedIn } = useAuth();
   const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null);
-  const [role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  
   useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    
     const fetchTenantData = async () => {
-      if (!isLoaded) return;
-
-      if (!isSignedIn) {
-        setError("ユーザーがサインインしていません");
-        setIsLoading(false);
-        return;
-      }
+      setIsLoading(true);
+      setError(null);
 
       try {
-        const token = await getToken({ template: "convex" });
+        if (!isSignedIn) {
+          setError('Not signed in');
+          setIsLoading(false);
+          return;
+        }
+
+        const token = await getToken();
         if (!token) {
-          setError("認証トークンが見つかりませんでした");
+          setError('No token');
           setIsLoading(false);
           return;
         }
 
         
-        // jwt-decodeで安全にデコード
-        const payload = jwtDecode<ClerkConvexTokenPayload>(token);
-
-        console.log('payload', payload)
-        if (!payload.tenant_id) {
-          setError("トークンにtenant_idが含まれていません");
-          setIsLoading(false);
-          return;
-        }
-
-        setTenantId(payload.tenant_id);
+        const res = await fetch('/api/clerk/private-metadata', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         
-        setError(null);
-
-        if(orgRole) {
-          // clerkのroleをconvexのroleに変換
-          setRole(orgRole.split(':')[1] as Role);
-        }
-      } catch (err) {
-        setError("トークンの取得またはデコードに失敗しました");
+        const data = await res.json();
+        console.log('data', data)
+        setTenantId(data.tenant_id);
+      } catch (e) {
+        setError('Error fetching metadata');
       } finally {
         setIsLoading(false);
       }
-    };
+    }
 
     fetchTenantData();
     // 依存配列にorgIdやorgRoleも含めると、組織切り替え時も再取得されます
-  }, [getToken, isLoaded, isSignedIn, orgId, orgRole, userId]);
+  },  [isLoaded, isSignedIn, getToken, orgId, orgRole, userId]);
 
   // FIXME: Roleの型を合わせる
   return {
     tenantId,
     orgId,
-    role,
     userId,
+    orgRole,
     isLoading,
     error,
   };
