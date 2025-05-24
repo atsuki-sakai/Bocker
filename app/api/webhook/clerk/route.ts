@@ -112,8 +112,8 @@ export async function POST(req: Request) {
     try {
       if (eventType === 'user.created') {
         const { id, email_addresses = [] } = data;
-        const org_name = payload.data.unsafe_metadata.orgName;
-        const referral_code = payload.data.unsafe_metadata.referralCode;
+        const org_name = payload.data.unsafe_metadata.orgName as string;
+        const use_referral_code = payload.data.unsafe_metadata.useReferralCode as string;
         const email = email_addresses[0]?.email_address || 'no-email';
         
         // クリティカルな操作は再試行付きで実行
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
             const customer = await retryOperation(() =>
               stripe.customers.create({
                 email: email || undefined,
-                metadata: { user_id: id, referral_code },
+                metadata: { user_id: id, use_referral_code: use_referral_code },
               }, {
                 idempotencyKey: `clerk_user_${id}_${eventId}`, // 🆕 冪等性キー追加
               })
@@ -152,6 +152,7 @@ export async function POST(req: Request) {
                   createdBy: id,
                 })
               );
+              
               if (!org) {
                 throw new Error('Organization creation failed');
               }
@@ -163,19 +164,20 @@ export async function POST(req: Request) {
                 })
               );
 
+              const user = await clerk.users.getUser(id);
+              // 既存のroleを取得（存在する場合）
+              const existingRole = user.privateMetadata?.role || 'org:admin';
               await clerk.users.updateUserMetadata(id, {
                 privateMetadata: {
                   tenant_id: tenantId,
                   org_id: org.id,
+                  role: existingRole,
                 },
               })
-
-  
 
               await retryOperation(() =>
                 fetchMutation(api.organization.config.mutation.create, {
                   tenant_id: tenantId,
-                  user_id: id,
                   org_id: org.id,
                   org_name: org_name,
                   org_email: email,

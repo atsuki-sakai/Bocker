@@ -12,7 +12,6 @@ import { ConvexError } from 'convex/values';
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    user_id: v.string(),
     org_id: v.string(),
     org_name: v.string(),
     org_email: v.string(),

@@ -74,7 +74,6 @@ export const archive = mutation({
     tenant_id: v.id('tenant'),
   },
   handler: async (ctx, args) => {
-      checkAuth(ctx);
       await archiveRecord(ctx,args.tenant_id);
   },
 });

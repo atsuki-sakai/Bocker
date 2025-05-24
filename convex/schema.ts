@@ -368,7 +368,6 @@ const tenant_referral = defineTable({
  */
 const organization = defineTable({
   tenant_id: v.id('tenant'),
-  user_id: v.string(), // Clerkの User ID
   org_id: v.string(),                // Clerkの Organization ID
   org_name: v.string(),              // 店舗名
   org_email: v.string(),     // 組織のメール
@@ -377,7 +376,6 @@ const organization = defineTable({
   stripe_connect_created_at: v.optional(v.number()), // Stripe Connect 作成日時
   ...CommonFields,
 })
-.index('by_user_org_archive', ['user_id', 'org_id', 'is_archive']) // user_id で取得
 .index('by_stripe_connect_archive', ['stripe_connect_id', 'is_archive']) // user_idとstripe_connect_idで取得
 .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']); // org_id で取得
 
