@@ -29,7 +29,6 @@ import { z } from 'zod'
 import { api } from '@/convex/_generated/api'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { MAX_REFERRAL_COUNT } from '@/lib/constants'
-import { useOrganization } from '@clerk/nextjs'
 
 export const signUpSchema = z
   .object({
