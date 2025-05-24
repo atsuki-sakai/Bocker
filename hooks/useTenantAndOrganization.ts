@@ -2,7 +2,8 @@ import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { Id } from "@/convex/_generated/dataModel";
-// import type { Role } from "@/convex/types";
+import type { Role } from "@/convex/types";
+import { Loading } from "@/components/common";
 
 // Clerk JWT の型定義（必要に応じて追加）
 type ClerkConvexTokenPayload = {
@@ -12,6 +13,7 @@ type ClerkConvexTokenPayload = {
 export function useTenantAndOrganization() {
   const { getToken, orgRole, orgId, userId, isLoaded, isSignedIn } = useAuth();
   const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,9 +35,11 @@ export function useTenantAndOrganization() {
           return;
         }
 
+        
         // jwt-decodeで安全にデコード
         const payload = jwtDecode<ClerkConvexTokenPayload>(token);
 
+        console.log('payload', payload)
         if (!payload.tenant_id) {
           setError("トークンにtenant_idが含まれていません");
           setIsLoading(false);
@@ -43,7 +47,13 @@ export function useTenantAndOrganization() {
         }
 
         setTenantId(payload.tenant_id);
+        
         setError(null);
+
+        if(orgRole) {
+          // clerkのroleをconvexのroleに変換
+          setRole(orgRole.split(':')[1] as Role);
+        }
       } catch (err) {
         setError("トークンの取得またはデコードに失敗しました");
       } finally {
@@ -59,7 +69,7 @@ export function useTenantAndOrganization() {
   return {
     tenantId,
     orgId,
-    role:orgRole,
+    role,
     userId,
     isLoading,
     error,

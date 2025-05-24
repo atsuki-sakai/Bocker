@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ConvexClientProvider } from '@/components/providers'
 import { ClerkProvider } from '@clerk/nextjs'
+import { jaJP } from '@clerk/localizations'
 import { Toaster } from 'sonner'
 import { Noto_Sans_JP, Allerta_Stencil } from 'next/font/google'
 import { ThemeProvider } from 'next-themes'
@@ -39,7 +40,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={`${notoJP.variable} ${allertaStencil.variable} antialiased`}>
-        <ClerkProvider dynamic>
+        <ClerkProvider dynamic localization={jaJP}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

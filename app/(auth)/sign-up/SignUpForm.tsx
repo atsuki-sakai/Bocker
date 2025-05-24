@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { fetchQuery } from 'convex/nextjs';
 import { useSignUp, useClerk } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as Sentry from '@sentry/nextjs'
 import { useSearchParams } from 'next/navigation'
+import { CreateOrganization } from '@clerk/nextjs'
 import {
   Card,
   CardContent,
@@ -136,7 +136,7 @@ const PasswordInput = ({
           variant="ghost"
           size="icon"
           onClick={toggleShowPassword}
-          className="absolute right-3 top-3 text  -muted-foreground focus:outline-none transition-colors"
+          className="absolute right-0 top-1/2 -translate-y-1/2 text  -muted-foreground focus:outline-none transition-colors"
           aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
         >
           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -176,12 +176,11 @@ export default function SignUpPage() {
   const searchParams = useSearchParams()
   const paramsReferralCode = searchParams.get('referral_code')
   const { showErrorToast } = useErrorHandler()
-  const router = useRouter()
   const clerk = useClerk()
-  const [createdUserId, setCreatedUserId] = useState('')
   const { isLoaded, signUp, setActive } = useSignUp()
   const [pendingVerification, setPendingVerification] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
+  const [isCreatingOrganization, setIsCreatingOrganization] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [password, setPassword] = useState('')
   const [showReferralCode, setShowReferralCode] = useState(paramsReferralCode ? true : false)
@@ -400,7 +399,7 @@ export default function SignUpPage() {
       }
 
       // Clerkでユーザー作成
-      const result = await signUp?.create({
+      await signUp?.create({
         emailAddress: data.email,
         password: data.password,
         unsafeMetadata: {
@@ -408,7 +407,6 @@ export default function SignUpPage() {
           useReferralCode: referralCode,
         },
       })
-      setCreatedUserId(result?.createdUserId || '')
 
       // メール確認コードを送信
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
@@ -430,10 +428,12 @@ export default function SignUpPage() {
         code: verificationCode,
       })
 
-      if (result.status === 'complete' && createdUserId !== '') {
-        await setActive({ session: result.createdSessionId })
+      if (result.status === 'complete') {
         toast.success('認証に成功しました')
-        router.push(`/dashboard`)
+        if (result.createdSessionId) {
+          await setActive({ session: result.createdSessionId })
+        }
+        setIsCreatingOrganization(true)
       } else {
         toast.error('認証に失敗しました')
       }
@@ -481,7 +481,9 @@ export default function SignUpPage() {
 
           <CardContent>
             <AnimatePresence mode="wait">
-              {!pendingVerification ? (
+              {isCreatingOrganization ? (
+                <CreateOrganization afterCreateOrganizationUrl={'/dashboard'} />
+              ) : !pendingVerification ? (
                 <motion.form
                   key="signup-form"
                   initial={{ opacity: 0, x: -10 }}

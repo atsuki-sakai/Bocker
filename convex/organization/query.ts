@@ -6,6 +6,16 @@ import { ConvexError } from "convex/values";
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from "@/lib/errors/constants";
 import { validateStringLength } from "@/convex/utils/validations";
 
+export const findByOrgId = query({
+  args: {
+    org_id: v.string(),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx, true);
+    validateStringLength(args.org_id, 'org_id');
+    return await ctx.db.query('organization').withIndex('by_org_archive', q => q.eq('org_id', args.org_id).eq('is_archive', false)).first();
+  },
+});
 
 export const findByTenantAndOrg = query({
   args: {
@@ -67,3 +77,4 @@ export const getConnectAccountDetails = query({
 
   },
 });
+

@@ -376,6 +376,7 @@ const organization = defineTable({
   stripe_connect_created_at: v.optional(v.number()), // Stripe Connect 作成日時
   ...CommonFields,
 })
+.index('by_org_archive', ['org_id', 'is_archive'])
 .index('by_stripe_connect_archive', ['stripe_connect_id', 'is_archive']) // user_idとstripe_connect_idで取得
 .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']); // org_id で取得
 

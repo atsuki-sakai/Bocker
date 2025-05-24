@@ -2,11 +2,8 @@
 
 import { ModeToggle } from './'
 import { usePathname } from 'next/navigation'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { usePreloadedQuery } from 'convex/react'
-import { Loading } from '@/components/common'
 import { Separator } from '@/components/ui/separator'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
@@ -40,9 +37,8 @@ import {
   CloudIcon,
 } from 'lucide-react'
 import { useClerk } from '@clerk/nextjs'
-import { api } from '@/convex/_generated/api'
-import { Preloaded } from 'convex/react'
 import { useOrganizationList } from '@clerk/nextjs'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
@@ -50,29 +46,19 @@ function classNames(...classes: string[]) {
 
 interface SidebarProps {
   children: React.ReactNode
-  preloadedTenant: Preloaded<typeof api.tenant.query.findByUserId>
-  preloadedOrganization: Preloaded<typeof api.organization.query.findByTenantAndOrg>
 }
 
-export default function Sidebar({
-  children,
-  preloadedOrganization,
-  preloadedTenant,
-}: SidebarProps) {
+export default function Sidebar({ children }: SidebarProps) {
   const { resolvedTheme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isLinkClicked, setIsLinkClicked] = useState(false)
   const [mounted, setMounted] = useState(false)
   const { signOut } = useClerk()
-  const { setActive, isLoaded, userMemberships } = useOrganizationList({
-    userMemberships: true,
-  })
-  const organization = usePreloadedQuery(
-    preloadedOrganization as Preloaded<typeof api.organization.query.findByTenantAndOrg>
-  )
-  const tenant = usePreloadedQuery(
-    preloadedTenant as Preloaded<typeof api.tenant.query.findByUserId>
-  )
+  const { isLoaded, userMemberships, setActive } = useOrganizationList()
+  const { tenantId, orgId } = useTenantAndOrganization()
+
+  console.log('tenantId', tenantId)
+  console.log('orgId', orgId)
 
   const pathname = usePathname() // 現在のパスを取得
 
@@ -157,21 +143,6 @@ export default function Sidebar({
     },
   ]
 
-  const [timeOut, setTimeOut] = useState(false)
-  useEffect(() => {
-    if (!timeOut && !organization) {
-      setTimeout(() => {
-        setTimeOut(true)
-      }, 5000)
-    }
-
-    if (timeOut) {
-      signOut(() => {
-        window.location.href = '/sign-in'
-      })
-    }
-  }, [organization, timeOut, signOut])
-
   useEffect(() => {
     if (isLinkClicked) {
       setSidebarOpen(false)
@@ -188,15 +159,6 @@ export default function Sidebar({
       setActive({ organization: userMemberships.data[0].organization.id })
     }
   }, [isLoaded, userMemberships, setActive])
-
-  if (!organization) {
-    return <Loading />
-  }
-
-  // サブスクリプションがアクティブでない場合はリダイレクト
-  if (tenant?.subscription_status !== 'active' && pathname !== '/dashboard/subscription') {
-    return redirect('/dashboard/subscription')
-  }
 
   return (
     <>
@@ -254,7 +216,7 @@ export default function Sidebar({
                 <Separator className="my-2 w-2/3 mx-auto" />
 
                 <nav className="flex flex-1 flex-col">
-                  {tenant?.subscription_status !== 'active' && (
+                  {/* {tenant?.subscription_status !== 'active' && (
                     <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
                       <p className="text-xs text-muted-foreground">
                         <span className="inline-block font-bold mb-2">
@@ -264,7 +226,7 @@ export default function Sidebar({
                         以下のリンクから契約後にプラン毎の機能をご利用いただけます。
                       </p>
                     </div>
-                  )}
+                  )} */}
                   <ul role="list" className="flex flex-1 flex-col gap-y-1">
                     {navigation.map((item) => {
                       const isCurrent = pathname === item.href
@@ -327,7 +289,7 @@ export default function Sidebar({
             </div>
             <Separator className="my-2" />
             <nav className="flex flex-1 flex-col">
-              {tenant?.subscription_status !== 'active' && (
+              {/* {tenant?.subscription_status !== 'active' && (
                 <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
                   <p className="text-xs text-muted-foreground">
                     <span className="inline-block font-bold mb-2">
@@ -337,7 +299,7 @@ export default function Sidebar({
                     以下のリンクから契約後にプラン毎の機能をご利用いただけます。
                   </p>
                 </div>
-              )}
+              )} */}
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
                 <li>
                   <ul role="list" className="-mx-2 space-y-1">
@@ -396,7 +358,7 @@ export default function Sidebar({
               <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                 <div className="flex items-center justify-start w-full"></div>
                 <div className="flex items-center gap-x-4 lg:gap-x-6">
-                  {/* プランバッジ表示 */}
+                  {/* プランバッジ表示
                   {tenant?.plan_name && (
                     <div className="flex items-center gap-x-4 lg:gap-x-6">
                       <p className="text-xs tracking-widest w-fit text-center font-bold border border-muted-foreground rounded-full px-4 py-1 bg-primary text-primary-foreground">
@@ -407,7 +369,7 @@ export default function Sidebar({
 
                   <span className="text-xs tracking-wider text-muted-foreground">
                     {organization?.org_email || tenant?.user_email}
-                  </span>
+                  </span> */}
 
                   <div aria-hidden="true" className="hidden lg:block lg:h-6 lg:w-px" />
                   <div className="relative hidden lg:block">
@@ -417,9 +379,9 @@ export default function Sidebar({
                     <MenuButton className="-m-1.5 flex items-center p-1.5">
                       <span className="sr-only">ユーザーメニューを開く</span>
                       <span className="flex lg:items-center">
-                        <h5 className="text-sm text-muted-foreground">
+                        {/* <h5 className="text-sm text-muted-foreground">
                           {organization?.org_name || 'ユーザー'}
-                        </h5>
+                        </h5> */}
                         <ChevronDownIcon
                           aria-hidden="true"
                           className="ml-2 size-5 text-muted-foreground"

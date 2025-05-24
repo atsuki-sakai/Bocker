@@ -1,6 +1,10 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { clerkMiddleware } from '@clerk/nextjs/server'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
+import { api } from '@/convex/_generated/api'
+import { fetchQuery } from 'convex/nextjs'
+import { fetchMutation } from 'convex/nextjs'
+import { Id } from '@/convex/_generated/dataModel'
 
 // メンテナンスモードが有効かどうか
 const isMaintenance = false
@@ -114,16 +118,6 @@ export default clerkMiddleware(async (auth, req) => {
 
   let response: NextResponse // 生成するレスポンスを格納する変数
 
-  // 訪問者IDの管理
-  let sessionId = req.cookies.get('_bkr_session_id')?.value
-  let newSessionIdCookieSet = false
-  if (!sessionId) {
-    sessionId = crypto.randomUUID() // Node.jsのcryptoモジュールではなく、Web Crypto APIを使用
-    newSessionIdCookieSet = true // 新しいCookieがセットされることを示すフラグ
-    console.log(`[Middleware] New session ID generated: ${sessionId}`)
-  } else {
-    console.log(`[Middleware] Existing session ID found: ${sessionId}`)
-  }
 
   // サインイン/サインアップページへの特別処理
   // Clerkでログイン済みの場合はダッシュボードへリダイレクト
@@ -142,6 +136,8 @@ export default clerkMiddleware(async (auth, req) => {
       // Clerk middleware will handle rendering the auth page for non-authenticated users
     }
   }
+
+
   // 保護されたAPIエンドポイントへのアクセス
   // ClerkユーザーIDがなく、認証セッションもない場合は認証エラー
   else if (isProtectedApi && !userId && !lineSessionCookie) {
@@ -177,7 +173,6 @@ export default clerkMiddleware(async (auth, req) => {
     response = NextResponse.next() // レスポンスを設定
   }
 
-
   console.log(`[Middleware] Final response determined.`)
   // 決定し、必要に応じてクッキー設定関数で修正された response を返す
   return response
@@ -188,6 +183,3 @@ export const config = {
     '/((?!api/|_next/static/|_next/image/|images/|img/|assets/|favicon.ico|sw.js).*)',
   ],
 }
-
-
-
