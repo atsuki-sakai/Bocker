@@ -38,7 +38,7 @@ import {
 } from 'lucide-react'
 import { useClerk } from '@clerk/nextjs'
 import { useOrganizationList } from '@clerk/nextjs'
-import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import { useAuth } from '@clerk/nextjs'
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
@@ -55,9 +55,9 @@ export default function Sidebar({ children }: SidebarProps) {
   const [mounted, setMounted] = useState(false)
   const { signOut } = useClerk()
   const { isLoaded, userMemberships, setActive } = useOrganizationList()
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { userId, orgId } = useAuth()
 
-  console.log('tenantId', tenantId)
+  console.log('userId', userId)
   console.log('orgId', orgId)
 
   const pathname = usePathname() // 現在のパスを取得
