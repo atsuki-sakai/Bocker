@@ -379,6 +379,25 @@ const organization = defineTable({
 .index('by_stripe_connect_archive', ['stripe_connect_id', 'is_archive']) // user_idとstripe_connect_idで取得
 .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']); // org_id で取得
 
+/**
+ * =========================
+ * 店舗基本設定
+ * =========================
+ * 組織の分だけレコードを作成される。
+ */
+const config = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.string(), // Clerk の組織ID
+  phone: v.optional(v.string()), // 電話番号
+  postal_code: v.optional(v.string()), // 郵便番号
+  address: v.optional(v.string()), // 住所
+  reservation_rules: v.optional(v.string()), // 予約ルール
+  images: v.array(imageType), // 画像
+  description: v.optional(v.string()), // 店舗説明
+  ...CommonFields,
+})
+.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive'])
+
 
 /**
  * =========================
@@ -422,27 +441,6 @@ const api_config = defineTable({
   ...CommonFields,
 })
 .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']);
-
-/**
- * =========================
- * 店舗基本設定
- * =========================
- * 組織の分だけレコードを作成される。
- */
-const config = defineTable({
-  tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // Clerk の組織ID
-  org_name: v.string(), // 店舗名
-  org_email: v.string(), // 代表メール
-  phone: v.optional(v.string()), // 電話番号
-  postal_code: v.optional(v.string()), // 郵便番号
-  address: v.optional(v.string()), // 住所
-  reservation_rules: v.optional(v.string()), // 予約ルール
-  images: v.array(imageType), // 画像
-  description: v.optional(v.string()), // 店舗説明
-  ...CommonFields,
-})
-.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive'])
 
 /**
  * =========================

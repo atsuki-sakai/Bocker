@@ -176,7 +176,7 @@ export async function POST(req: Request) {
               })
 
               await retryOperation(() =>
-                fetchMutation(api.organization.config.mutation.create, {
+                fetchMutation(api.organization.mutation.create, {
                   tenant_id: tenantId,
                   org_id: org.id,
                   org_name: org_name,

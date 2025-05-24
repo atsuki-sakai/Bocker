@@ -5,6 +5,20 @@ import { createRecord, updateRecord } from "@/convex/utils/helpers";
 import { ConvexError } from "convex/values";
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from "@/lib/errors/constants";
 
+export const create = mutation({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.string(),
+    org_name: v.string(),
+    org_email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    validateRequired(args.org_id, 'org_id');
+    validateStringLength(args.org_name, 'org_name');
+    validateStringLength(args.org_email, 'org_email');
+    return await createRecord(ctx, 'organization', args);
+  },
+});
 
 export const createConnectAccount = mutation({
     args: {

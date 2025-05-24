@@ -91,7 +91,7 @@ const getStrengthText = (strength: PasswordStrength) => {
 const CheckIcon = ({ fulfilled }: { fulfilled: boolean }) => (
   <div
     className={`flex items-center justify-center w-4 h-4 rounded-full transition-colors duration-300 
-      ${fulfilled ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
+      ${fulfilled ? 'bg-active-foreground text-active-background border border-active' : 'bg-muted border border-border'}`}
   >
     {fulfilled && <CheckCircle className="w-3 h-3" />}
   </div>
@@ -120,7 +120,7 @@ const PasswordInput = ({
         </Label>
       </div>
       <div className="relative">
-        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input
           id="password"
           type={showPassword ? 'text' : 'password'}
@@ -132,14 +132,15 @@ const PasswordInput = ({
           aria-describedby={errors.password ? 'password-error' : undefined}
           autoComplete="new-password"
         />
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={toggleShowPassword}
-          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
+          className="absolute right-3 top-3 text  -muted-foreground focus:outline-none transition-colors"
           aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
         >
           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
+        </Button>
       </div>
       {errors.password && (
         <p id="password-error" className="text-xs text-red-600" role="alert">

@@ -6,6 +6,7 @@ import { imageType } from '@/convex/types';
 import { createRecord, updateRecord } from '@/convex/utils/helpers';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { ConvexError } from 'convex/values';
+import { MAX_NOTES_LENGTH, MAX_POSTAL_CODE_LENGTH, MAX_ADDRESS_LENGTH, MAX_PHONE_LENGTH } from '@/convex/constants';
 
 
 
@@ -13,15 +14,23 @@ export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.string(),
-    org_name: v.string(),
-    org_email: v.string(),
+    phone: v.optional(v.string()), // 電話番号
+    postal_code: v.optional(v.string()), // 郵便番号
+    address: v.optional(v.string()), // 住所
+    reservation_rules: v.optional(v.string()), // 予約ルール
+    images: v.array(imageType), // 画像
+    description: v.optional(v.string()), // 店舗説明
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true);
  
     validateRequired(args.org_id, 'org_id');
-    validateRequired(args.org_name, 'org_name');
-    validateStringLength(args.org_email, 'org_email', 255);
+    validateStringLength(args.phone, 'phone', MAX_PHONE_LENGTH);
+    validateStringLength(args.postal_code, 'postal_code', MAX_POSTAL_CODE_LENGTH);
+    validateStringLength(args.address, 'address', MAX_ADDRESS_LENGTH);
+    validateStringLength(args.reservation_rules, 'reservation_rules', MAX_NOTES_LENGTH);
+    validateStringLength(args.description, 'description', MAX_NOTES_LENGTH);
+
     return await createRecord(ctx, 'config', {
       ...args,
       images: [],
@@ -79,13 +88,11 @@ export const upsert = mutation({
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateRequired(args.org_id, 'org_id');
-    validateStringLength(args.org_name, 'org_name');
-    validateStringLength(args.org_email, 'org_email');
-    validateStringLength(args.phone, 'phone');
-    validateStringLength(args.postal_code, 'postal_code');
-    validateStringLength(args.address, 'address');
-    validateStringLength(args.reservation_rules, 'reservation_rules');
-    validateStringLength(args.description, 'description');
+    validateStringLength(args.phone, 'phone', MAX_PHONE_LENGTH);
+    validateStringLength(args.postal_code, 'postal_code', MAX_POSTAL_CODE_LENGTH);
+    validateStringLength(args.address, 'address', MAX_ADDRESS_LENGTH);
+    validateStringLength(args.reservation_rules, 'reservation_rules', MAX_NOTES_LENGTH);
+    validateStringLength(args.description, 'description', MAX_NOTES_LENGTH);
 
     const existing = await ctx.db.query('config')
     .withIndex('by_tenant_org_archive', q => 
@@ -100,8 +107,6 @@ export const upsert = mutation({
       return await createRecord(ctx, 'config', {
         ...args,
         org_id: args.org_id,
-        org_name: args.org_name || "",
-        org_email: args.org_email || "",
         phone: args.phone,
         postal_code: args.postal_code,
         address: args.address,
