@@ -370,7 +370,7 @@ const organization = defineTable({
   tenant_id: v.id('tenant'),
   org_id: v.string(),                // Clerkの Organization ID
   org_name: v.string(),              // 店舗名
-  org_email: v.string(),     // 組織のメール
+  org_email: v.optional(v.string()),     // 組織のメール
   stripe_connect_id: v.optional(v.string()), // Stripe Connect Account ID
   stripe_connect_status: v.optional(v.string()), // Stripe Connect ステータス
   stripe_connect_created_at: v.optional(v.number()), // Stripe Connect 作成日時

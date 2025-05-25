@@ -91,7 +91,7 @@ export const SALON_RESERVATION_LIMIT_DAYS = [
 ];
 
 // トライアル期間
-export const PLAN_TRIAL_DAYS = 3
+export const PLAN_TRIAL_DAYS = 30
 // --- 設定 ---
 const PLAN_CHARGE_MONTHS_YEARLY = 10    // 年額プランで請求する月数
 

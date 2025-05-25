@@ -60,7 +60,7 @@ export function checkAllowedUrl(checkUrl: string) {
 export async function retryOperation<T>(
   operation: () => Promise<T>,
   maxRetries = 3,
-  baseDelay = 500
+  baseDelay = 300
 ): Promise<T> {
   let retries = 0
 

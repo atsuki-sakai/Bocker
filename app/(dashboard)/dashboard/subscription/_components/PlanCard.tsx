@@ -2,7 +2,7 @@
 
 // PlanCard Component
 // ------------------------------------------------------
-
+import { PLAN_TRIAL_DAYS } from '@/lib/constants'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -207,7 +207,7 @@ export default function PlanCard({
         </CardContent>
 
         <CardFooter className="pt-2 pb-4 px-6 text-xs text-muted-foreground text-center">
-          <p>※30日間の無料トライアル付き</p>
+          <p>※{PLAN_TRIAL_DAYS}日間の無料トライアル付き</p>
         </CardFooter>
       </Card>
     </motion.div>

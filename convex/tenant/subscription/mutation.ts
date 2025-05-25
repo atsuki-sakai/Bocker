@@ -38,7 +38,6 @@ export const syncSubscription = mutation({
     validateStringLength(args.subscription.stripe_customer_id, 'stripe_customer_id');
     validateStringLength(args.subscription.status, 'status');
     validateStringLength(args.subscription.price_id, 'price_id');
-    validateNumberLength(args.subscription.current_period_end, 'current_period_end');
     validateStringLength(args.subscription.plan_name, 'plan_name');
     validateStringLength(args.subscription.billing_period, 'billing_period');
 

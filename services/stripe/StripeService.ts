@@ -1,3 +1,4 @@
+
 'use node';
 
 import Stripe from 'stripe';
@@ -5,6 +6,7 @@ import { STRIPE_API_VERSION } from './constants';
 import {
   StripeConnectRepository,
   StripeSubscriptionRepository,
+  StripeWebhookRepository,
 } from '@/services/stripe/repositories';
 import { Id } from '@/convex/_generated/dataModel';
 import { StripeResult } from '@/services/stripe/types';
@@ -23,6 +25,7 @@ class StripeService {
   private stripe: Stripe;
   private connectRepo: StripeConnectRepository;
   private subscriptionRepo: StripeSubscriptionRepository;
+  private webhookRepo: StripeWebhookRepository;
 
   private constructor() {
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -49,6 +52,7 @@ class StripeService {
     // リポジトリの初期化
     this.connectRepo = StripeConnectRepository.getInstance(this.stripe);
     this.subscriptionRepo = StripeSubscriptionRepository.getInstance(this.stripe);
+    this.webhookRepo = StripeWebhookRepository.getInstance(this.stripe);
   }
 
   public static getInstance(): StripeService {
@@ -192,7 +196,7 @@ class StripeService {
   async handleSubscriptionWebhookEvent(
     event: Stripe.Event
   ): Promise<{ success: boolean; message?: string }> {
-    return await this.subscriptionRepo.handleWebhookEvent(event);
+    return await this.webhookRepo.handleWebhookEvent(event);
   }
 
   /**
@@ -203,7 +207,7 @@ class StripeService {
     stripe_subscription_id: string,
     stripe_customer_id: string
   ): Promise<StripeResult<{ success: boolean }>> {
-    return await this.subscriptionRepo.handlePaymentFailed(tenant_id, stripe_subscription_id, stripe_customer_id);
+    return await this.webhookRepo.handlePaymentFailed(tenant_id, stripe_subscription_id, stripe_customer_id);
   }
 
   /**

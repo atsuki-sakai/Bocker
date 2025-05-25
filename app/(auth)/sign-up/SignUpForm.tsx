@@ -31,7 +31,6 @@ import { MAX_REFERRAL_COUNT } from '@/lib/constants'
 
 export const signUpSchema = z
   .object({
-    orgName: z.string().min(1, { message: '店舗名を入力してください' }),
     referralCode: z.string().optional(),
     email: z
       .string()
@@ -193,7 +192,6 @@ export default function SignUpPage() {
     setValue,
   } = useZodForm(signUpSchema)
 
-  const orgName = watch('orgName')
   const referralCode = watch('referralCode')
 
   const email = watch('email')
@@ -401,8 +399,7 @@ export default function SignUpPage() {
         emailAddress: data.email,
         password: data.password,
         unsafeMetadata: {
-          orgName: orgName,
-          useReferralCode: referralCode,
+          referralCode: referralCode,
         },
       })
 
@@ -489,27 +486,6 @@ export default function SignUpPage() {
                   className="space-y-4"
                   noValidate
                 >
-                  <motion.div variants={itemVariants} className="space-y-2">
-                    <Label htmlFor="orgName" className="text-sm font-medium">
-                      店舗名
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="orgName"
-                        type="text"
-                        {...register('orgName')}
-                        placeholder="店舗名を入力"
-                        className="pl-3"
-                        required
-                        autoFocus
-                      />
-                    </div>
-                    {errors.orgName && (
-                      <p id="orgName-error" className="text-xs text-red-600" role="alert">
-                        {errors.orgName.message}
-                      </p>
-                    )}
-                  </motion.div>
                   <motion.div variants={itemVariants} className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
                       メールアドレス

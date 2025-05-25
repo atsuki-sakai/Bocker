@@ -51,7 +51,7 @@ export default function Sidebar({ children }: SidebarProps) {
   const [isLinkClicked, setIsLinkClicked] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [showOrgProfile, setShowOrgProfile] = useState(false)
-  const { isLoaded: listLoaded, userMemberships, setActive } = useOrganizationList()
+  const { userMemberships } = useOrganizationList()
   const { tenantId, orgId, orgRole, isLoaded } = useTenantAndOrganization()
   const { organization } = useOrganization()
 
@@ -164,15 +164,6 @@ export default function Sidebar({ children }: SidebarProps) {
   useEffect(() => setMounted(true), [])
 
   console.log('orgRole: ', orgRole)
-
-  useEffect(() => {
-    if (!listLoaded || !isLoaded) return
-
-    // アクティブ組織が無い時だけ実行
-    if (userMemberships.data.length > 0) {
-      void setActive({ organization: userMemberships.data[0].organization.id })
-    }
-  }, [listLoaded, isLoaded, orgId, userMemberships, setActive])
 
   if (!organization) {
     return (
