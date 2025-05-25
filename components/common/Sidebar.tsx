@@ -25,7 +25,9 @@ import {
   UsersIcon,
   CloudIcon,
   Building2,
-} from 'lucide-react'
+} from 'lucide-react';
+import { NAV_ITEMS } from '../../constants/navigation';
+import { hasAccess } from '../../utils/acl';
 import { OrganizationProfile } from '@clerk/nextjs'
 import { useOrganizationList } from '@clerk/nextjs'
 import { useOrganization } from '@clerk/nextjs'
@@ -55,105 +57,10 @@ export default function Sidebar({ children }: SidebarProps) {
   const { tenantId, orgId, orgRole, isLoaded } = useTenantAndOrganization()
   const { organization } = useOrganization()
 
-  console.log('orgRole: ', orgRole)
-  console.log('tenantId: ', tenantId)
-  console.log('orgId: ', orgId)
-  console.log('isLoaded: ', isLoaded)
-  console.log('userMemberships: ', userMemberships.data)
-  console.log('organization: ', organization)
-
   const pathname = usePathname() // 現在のパスを取得
   const { resolvedTheme } = useTheme()
 
   const tenant = useQuery(api.tenant.query.findById, tenantId ? { id: tenantId } : 'skip')
-
-  // 全てのナビゲーション項目を統合
-  const navigation = [
-    {
-      name: 'ダッシュボード',
-      href: `/dashboard`,
-      icon: HomeIcon,
-      role: 'staff',
-    },
-    {
-      name: '予約作成',
-      href: `/dashboard/reservation/add`,
-      icon: BookIcon,
-      role: 'staff',
-    },
-    {
-      name: '予約ボード',
-      href: `/dashboard/reservation`,
-      icon: CalendarIcon,
-      role: 'staff',
-    },
-    {
-      name: '予約タイムライン',
-      href: `/dashboard/timeline`,
-      icon: TimerIcon,
-      role: 'staff',
-    },
-    {
-      name: '完了済みの予約',
-      href: `/dashboard/reservations`,
-      icon: CheckIcon,
-      role: 'staff',
-    },
-    {
-      name: 'スタッフ管理',
-      href: `/dashboard/staff`,
-      icon: UsersIcon,
-      role: 'owner',
-    },
-    {
-      name: 'メニュー管理',
-      href: `/dashboard/menu`,
-      icon: FileIcon,
-      role: 'manager',
-    },
-    {
-      name: '顧客管理',
-      href: `/dashboard/customer`,
-      icon: UserCircleIcon,
-      role: 'staff',
-    },
-    {
-      name: '顧客カルテ管理',
-      href: `/dashboard/carte`,
-      icon: CloudIcon,
-      role: 'staff',
-    },
-    {
-      name: 'オプション管理',
-      href: `/dashboard/option`,
-      icon: MenuSquareIcon,
-      role: 'manager',
-    },
-    {
-      name: 'クーポン管理',
-      href: `/dashboard/coupon`,
-      icon: GiftIcon,
-      role: 'manager',
-    },
-    {
-      name: 'ポイント設定',
-      href: `/dashboard/point`,
-      icon: TicketIcon,
-      role: 'owner',
-    },
-    {
-      name: 'サブスクリプション',
-      href: `/dashboard/subscription`,
-      icon: CreditCardIcon,
-      role: 'admin',
-    },
-    {
-      name: '設定',
-      href: `/dashboard/setting`,
-      icon: SettingsIcon,
-      role: 'owner',
-    },
-  ]
 
   useEffect(() => {
     if (isLinkClicked) {
@@ -162,8 +69,6 @@ export default function Sidebar({ children }: SidebarProps) {
     }
   }, [pathname, isLinkClicked, setSidebarOpen])
   useEffect(() => setMounted(true), [])
-
-  console.log('orgRole: ', orgRole)
 
   useEffect(() => {
     if (!listLoaded || !isLoaded) return
@@ -187,6 +92,8 @@ export default function Sidebar({ children }: SidebarProps) {
       </div>
     )
   }
+
+  const filteredNav = isLoaded ? NAV_ITEMS.filter(item => hasAccess(orgRole, item.minRole)) : [];
 
   return (
     <>
@@ -255,8 +162,11 @@ export default function Sidebar({ children }: SidebarProps) {
                       </p>
                     </div>
                   )}
+                  {!isLoaded ? (
+                    <div className="p-2 text-sm text-muted-foreground">Loading sidebar...</div>
+                  ) : (
                   <ul role="list" className="flex flex-1 flex-col gap-y-1">
-                    {navigation.map((item) => {
+                    {filteredNav.map((item) => {
                       const isCurrent = pathname === item.href
 
                       return (
@@ -289,6 +199,7 @@ export default function Sidebar({ children }: SidebarProps) {
                       )
                     })}
                   </ul>
+                  )}
                 </nav>
               </div>
             </DialogPanel>
@@ -330,8 +241,11 @@ export default function Sidebar({ children }: SidebarProps) {
               )}
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
                 <li>
+                  {!isLoaded ? (
+                    <div className="p-2 text-sm text-muted-foreground">Loading sidebar...</div>
+                  ) : (
                   <ul role="list" className="-mx-2 space-y-1">
-                    {navigation.map((item) => {
+                    {filteredNav.map((item) => {
                       const isCurrent = pathname === item.href
 
                       return (
@@ -364,6 +278,7 @@ export default function Sidebar({ children }: SidebarProps) {
                       )
                     })}
                   </ul>
+                  )}
                 </li>
               </ul>
             </nav>
