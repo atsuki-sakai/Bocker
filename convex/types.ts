@@ -181,7 +181,7 @@ export const convertMenuPaymentMethod = (method: MenuPaymentMethod): string => {
 }
 
 // スタッフロールの型定義
-export const ROLE_VALUES = ['owner', 'manager', 'staff'] as const
+export const ROLE_VALUES = ['admin', 'owner', 'manager', 'staff'] as const
 export const roleType = v.union(...ROLE_VALUES.map((role) => v.literal(role)))
 export type Role = Infer<typeof roleType>
 

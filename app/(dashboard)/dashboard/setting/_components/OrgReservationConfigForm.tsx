@@ -69,7 +69,7 @@ const defaultReservationConfig = {
 }
 
 export default function OrgReservationConfigForm() {
-  const { tenantId, orgId, isLoading: isLoadingTenantAndOrganization } = useTenantAndOrganization()
+  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const reservationConfig = useQuery(
     api.organization.reservation_config.query.findByTenantAndOrg,
@@ -239,7 +239,7 @@ export default function OrgReservationConfigForm() {
   if (reservationConfig === undefined) {
     return <Loading />
   }
-  if (isLoadingTenantAndOrganization) {
+  if (!isLoaded) {
     return <Loading />
   }
 

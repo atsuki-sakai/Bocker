@@ -36,7 +36,7 @@ const organizationApiConfigFormSchema = z.object({
 type OrganizationApiConfigFormValues = z.infer<typeof organizationApiConfigFormSchema>
 
 const ApiSettingsCard = () => {
-  const { tenantId, orgId, isLoading } = useTenantAndOrganization()
+  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [showFields, setShowFields] = useState<{ [key: string]: boolean }>({
@@ -104,7 +104,7 @@ const ApiSettingsCard = () => {
   if (organizationApiConfig === undefined) {
     return <Loading />
   }
-  if (isLoading) {
+  if (!isLoaded) {
     return <Loading />
   }
 

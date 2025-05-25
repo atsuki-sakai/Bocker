@@ -165,7 +165,7 @@ export async function POST(req: Request) {
                 await clerk.organizations.createOrganizationMembership({
                   organizationId: org.id,
                   userId: id,
-                  role: 'admin'
+                  role: 'org:admin'
                 });
               }
               const tenantId = await retryOperation(() =>

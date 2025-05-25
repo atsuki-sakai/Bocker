@@ -1,74 +1,50 @@
-import { useAuth } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
-import { Id } from "@/convex/_generated/dataModel";
+'use client';
 
+import { useUser, useAuth } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
+import { Id } from '@/convex/_generated/dataModel';
+import type { Role } from '@/convex/types';
 
-export function useTenantAndOrganization() {
-  const { getToken, orgRole, orgId, userId, isLoaded, isSignedIn } = useAuth();
-  const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
+type UseTenantAndOrganization = {
+  tenantId: Id<'tenant'> | null;
+  orgId: string | null;
+  userId: string | null;
+  orgRole: Role | null;
+  isLoaded: boolean;
+  isSignedIn: boolean;
+};
+
+export function useTenantAndOrganization(): UseTenantAndOrganization {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user } = useUser();
+  const { orgRole, orgId, userId, isLoaded, isSignedIn } = useAuth();
+  // 未ログインなら /sign-in へ
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
-    
-    const fetchTenantData = async () => {
-      setIsLoading(true);
-      setError(null);
-      console.log('start')
-
-      try {
-        console.log('try')
-        if (!isSignedIn) {
-          console.log('!isSignedIn')
-          setError('Not signed in');
-          setIsLoading(false);
-          return;
-        }
-        console.log('isSignedIn2', isSignedIn)
-
-        const token = await getToken({ template: process.env.NEXT_PUBLIC_CONVEX_AUD ?? 'convex' });
-        if (!token) {
-          console.log('No token')
-          setError('No token');
-          setIsLoading(false);
-          return;
-        }
-        console.log('token', token)
-
-        const res = await fetch('/api/clerk/private-metadata', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        console.log('res', res)
-        const data = await res.json();
-        console.log('data', data)
-        setTenantId(data.tenant_id);
-      } catch (e) {
-        setError('Error fetching metadata');
-      } finally {
-        setIsLoading(false);
-      }
+    if (isLoaded && !isSignedIn && pathname !== '/sign-in') {
+      router.replace('/sign-in');
     }
+  }, [isLoaded, isSignedIn, pathname, router]);
 
-    fetchTenantData();
-    // 依存配列にorgIdやorgRoleも含めると、組織切り替え時も再取得されます
-  },  [isLoaded, isSignedIn, getToken, orgId, orgRole, userId]);
+  // user ロード後にメタデータを読む
+  const tenantId = useMemo(
+    () => (isLoaded ? (user?.publicMetadata?.tenant_id as string | null) : null),
+    [isLoaded, user]
+  );
 
-  // FIXME: Roleの型を合わせる
-  console.log('tenantId', tenantId)
-  console.log('orgId', orgId)
-  console.log('userId', userId)
-  console.log('orgRole', orgRole)
-  console.log('isLoading', isLoading)
-  console.log('error', error)
+  let formattedOrgRole: Role | null = null
+  if(orgRole) {
+    formattedOrgRole = orgRole.split(':')[1] as Role
+  }
+
   return {
-    tenantId,
-    orgId,
-    userId,
-    orgRole,
-    isLoading,
-    error,
+    tenantId: tenantId as Id<'tenant'> | null,
+    orgId: orgId as string | null,
+    userId: userId as string | null,
+    orgRole: formattedOrgRole || null,
+    isLoaded,
+    isSignedIn: isSignedIn as boolean,
   };
 }

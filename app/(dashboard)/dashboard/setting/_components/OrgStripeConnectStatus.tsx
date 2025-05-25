@@ -56,7 +56,7 @@ const statusDescriptionMap: Record<string, string> = {
 }
 
 export default function StripeConnectStatus() {
-  const { tenantId, orgId, isLoading: isLoadingTenantAndOrganization } = useTenantAndOrganization()
+  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -164,7 +164,7 @@ export default function StripeConnectStatus() {
   if (connectAccount === undefined) {
     return <Loading />
   }
-  if (isLoadingTenantAndOrganization) {
+  if (!isLoaded) {
     return <Loading />
   }
 

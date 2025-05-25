@@ -39,7 +39,7 @@ const orgConfigFormSchema = z.object({
 })
 
 export default function OrgConfigForm() {
-  const { tenantId, orgId, isLoading } = useTenantAndOrganization()
+  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [currentFile, setCurrentFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -193,7 +193,7 @@ export default function OrgConfigForm() {
   if (orgConfig === undefined) {
     return <Loading />
   }
-  if (isLoading) {
+  if (!isLoaded) {
     return <Loading />
   }
 

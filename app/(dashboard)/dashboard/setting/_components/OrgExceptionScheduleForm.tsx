@@ -29,7 +29,7 @@ const formatDate = (date: Date): string => {
 }
 
 export default function OrgExceptionScheduleForm() {
-  const { tenantId, orgId, isLoading: isLoadingTenantAndOrganization } = useTenantAndOrganization()
+  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const [isSaving, setIsSaving] = useState<boolean>(false)
@@ -205,7 +205,7 @@ export default function OrgExceptionScheduleForm() {
   if (exceptionSchedules === undefined) {
     return <Loading />
   }
-  if (isLoadingTenantAndOrganization) {
+  if (!isLoaded) {
     return <Loading />
   }
 

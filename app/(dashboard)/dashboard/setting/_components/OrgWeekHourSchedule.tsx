@@ -125,7 +125,7 @@ export interface WeekScheduleData {
 const defaultScheduleHour = { startHour: '08:00', endHour: '19:00' }
 
 export default function WeekHourSchedule() {
-  const { tenantId, orgId, isLoading: isLoadingTenantAndOrganization } = useTenantAndOrganization()
+  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const [isSaving, setIsSaving] = useState(false)
   const [scheduleTab, setScheduleTab] = useState('common')
   const { showErrorToast } = useErrorHandler()
@@ -460,7 +460,7 @@ export default function WeekHourSchedule() {
   if (salonWeekSchedules === undefined) {
     return <Loading />
   }
-  if (isLoadingTenantAndOrganization) {
+  if (!isLoaded) {
     return <Loading />
   }
 

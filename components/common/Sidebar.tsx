@@ -3,20 +3,10 @@
 import { ModeToggle } from './'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { Separator } from '@/components/ui/separator'
-import { useTheme } from 'next-themes'
 import Image from 'next/image'
-import {
-  Dialog,
-  DialogBackdrop,
-  DialogPanel,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-  TransitionChild,
-} from '@headlessui/react'
+import { Dialog, DialogBackdrop, DialogPanel, TransitionChild } from '@headlessui/react'
 import {
   MenuIcon,
   CalendarIcon,
@@ -29,17 +19,24 @@ import {
   HomeIcon,
   XIcon,
   CreditCardIcon,
-  ChevronDownIcon,
   TicketIcon,
   GiftIcon,
   TimerIcon,
   UsersIcon,
   CloudIcon,
+  Building2,
 } from 'lucide-react'
-import { useClerk } from '@clerk/nextjs'
+import { OrganizationProfile } from '@clerk/nextjs'
 import { useOrganizationList } from '@clerk/nextjs'
-import { useAuth, useUser } from '@clerk/nextjs'
 import { useOrganization } from '@clerk/nextjs'
+import { OrganizationSwitcher, UserButton } from '@clerk/nextjs'
+import { dark } from '@clerk/themes'
+import { useTheme } from 'next-themes'
+import { CreateOrganization } from '@clerk/nextjs'
+import { Button } from '@/components/ui/button'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import { api } from '@/convex/_generated/api'
+import { useQuery } from 'convex/react'
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
@@ -50,29 +47,25 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ children }: SidebarProps) {
-  const { resolvedTheme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isLinkClicked, setIsLinkClicked] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const { signOut } = useClerk()
+  const [showOrgProfile, setShowOrgProfile] = useState(false)
   const { isLoaded: listLoaded, userMemberships, setActive } = useOrganizationList()
-  const { isLoaded: authLoaded, userId, orgId } = useAuth()
-  const { user } = useUser()
+  const { tenantId, orgId, orgRole, isLoaded } = useTenantAndOrganization()
   const { organization } = useOrganization()
 
-  console.log('organization: ', organization)
-  console.log('user.tenant_id: ', user?.publicMetadata?.tenant_id)
+  console.log('orgRole: ', orgRole)
+  console.log('tenantId: ', tenantId)
   console.log('orgId: ', orgId)
-  console.log('userId: ', userId)
+  console.log('isLoaded: ', isLoaded)
+  console.log('userMemberships: ', userMemberships.data)
+  console.log('organization: ', organization)
 
   const pathname = usePathname() // 現在のパスを取得
+  const { resolvedTheme } = useTheme()
 
-  // ログアウト処理
-  const handleSignOut = () => {
-    signOut(() => {
-      window.location.href = '/sign-in'
-    })
-  }
+  const tenant = useQuery(api.tenant.query.findById, tenantId ? { id: tenantId } : 'skip')
 
   // 全てのナビゲーション項目を統合
   const navigation = [
@@ -80,71 +73,85 @@ export default function Sidebar({ children }: SidebarProps) {
       name: 'ダッシュボード',
       href: `/dashboard`,
       icon: HomeIcon,
+      role: 'staff',
     },
     {
       name: '予約作成',
       href: `/dashboard/reservation/add`,
       icon: BookIcon,
+      role: 'staff',
     },
     {
       name: '予約ボード',
       href: `/dashboard/reservation`,
       icon: CalendarIcon,
+      role: 'staff',
     },
     {
       name: '予約タイムライン',
       href: `/dashboard/timeline`,
       icon: TimerIcon,
+      role: 'staff',
     },
     {
       name: '完了済みの予約',
       href: `/dashboard/reservations`,
       icon: CheckIcon,
+      role: 'staff',
     },
     {
       name: 'スタッフ管理',
       href: `/dashboard/staff`,
       icon: UsersIcon,
+      role: 'owner',
     },
     {
       name: 'メニュー管理',
       href: `/dashboard/menu`,
       icon: FileIcon,
+      role: 'manager',
     },
     {
       name: '顧客管理',
       href: `/dashboard/customer`,
       icon: UserCircleIcon,
+      role: 'staff',
     },
     {
       name: '顧客カルテ管理',
       href: `/dashboard/carte`,
       icon: CloudIcon,
+      role: 'staff',
     },
     {
       name: 'オプション管理',
       href: `/dashboard/option`,
       icon: MenuSquareIcon,
+      role: 'manager',
     },
     {
       name: 'クーポン管理',
       href: `/dashboard/coupon`,
       icon: GiftIcon,
+      role: 'manager',
     },
     {
       name: 'ポイント設定',
       href: `/dashboard/point`,
       icon: TicketIcon,
+      role: 'owner',
     },
     {
       name: 'サブスクリプション',
       href: `/dashboard/subscription`,
       icon: CreditCardIcon,
+      role: 'admin',
     },
     {
       name: '設定',
       href: `/dashboard/setting`,
       icon: SettingsIcon,
+      role: 'owner',
     },
   ]
 
@@ -156,14 +163,30 @@ export default function Sidebar({ children }: SidebarProps) {
   }, [pathname, isLinkClicked, setSidebarOpen])
   useEffect(() => setMounted(true), [])
 
+  console.log('orgRole: ', orgRole)
+
   useEffect(() => {
-    if (!listLoaded || !authLoaded) return
+    if (!listLoaded || !isLoaded) return
 
     // アクティブ組織が無い時だけ実行
-    if (!orgId && userMemberships.data.length > 0) {
+    if (userMemberships.data.length > 0) {
       void setActive({ organization: userMemberships.data[0].organization.id })
     }
-  }, [listLoaded, authLoaded, orgId, userMemberships, setActive])
+  }, [listLoaded, isLoaded, orgId, userMemberships, setActive])
+
+  if (!organization) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <CreateOrganization
+          hideSlug={true}
+          afterCreateOrganizationUrl="/dashboard"
+          appearance={{
+            baseTheme: resolvedTheme === 'dark' ? dark : undefined,
+          }}
+        />
+      </div>
+    )
+  }
 
   return (
     <>
@@ -221,7 +244,7 @@ export default function Sidebar({ children }: SidebarProps) {
                 <Separator className="my-2 w-2/3 mx-auto" />
 
                 <nav className="flex flex-1 flex-col">
-                  {/* {tenant?.subscription_status !== 'active' && (
+                  {tenant?.subscription_status !== 'active' && (
                     <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
                       <p className="text-xs text-muted-foreground">
                         <span className="inline-block font-bold mb-2">
@@ -231,7 +254,7 @@ export default function Sidebar({ children }: SidebarProps) {
                         以下のリンクから契約後にプラン毎の機能をご利用いただけます。
                       </p>
                     </div>
-                  )} */}
+                  )}
                   <ul role="list" className="flex flex-1 flex-col gap-y-1">
                     {navigation.map((item) => {
                       const isCurrent = pathname === item.href
@@ -294,7 +317,7 @@ export default function Sidebar({ children }: SidebarProps) {
             </div>
             <Separator className="my-2" />
             <nav className="flex flex-1 flex-col">
-              {/* {tenant?.subscription_status !== 'active' && (
+              {tenant?.subscription_status !== 'active' && (
                 <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
                   <p className="text-xs text-muted-foreground">
                     <span className="inline-block font-bold mb-2">
@@ -304,7 +327,7 @@ export default function Sidebar({ children }: SidebarProps) {
                     以下のリンクから契約後にプラン毎の機能をご利用いただけます。
                   </p>
                 </div>
-              )} */}
+              )}
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
                 <li>
                   <ul role="list" className="-mx-2 space-y-1">
@@ -363,7 +386,6 @@ export default function Sidebar({ children }: SidebarProps) {
               <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                 <div className="flex items-center justify-start w-full"></div>
                 <div className="flex items-center gap-x-4 lg:gap-x-6">
-                  {/* プランバッジ表示
                   {tenant?.plan_name && (
                     <div className="flex items-center gap-x-4 lg:gap-x-6">
                       <p className="text-xs tracking-widest w-fit text-center font-bold border border-muted-foreground rounded-full px-4 py-1 bg-primary text-primary-foreground">
@@ -372,65 +394,30 @@ export default function Sidebar({ children }: SidebarProps) {
                     </div>
                   )}
 
-                  <span className="text-xs tracking-wider text-muted-foreground">
-                    {organization?.org_email || tenant?.user_email}
-                  </span> */}
-
                   <div aria-hidden="true" className="hidden lg:block lg:h-6 lg:w-px" />
+
+                  <UserButton
+                    appearance={{
+                      baseTheme: resolvedTheme === 'dark' ? dark : undefined,
+                    }}
+                  />
+                  {tenant?.subscription_status === 'active' && (
+                    <>
+                      <OrganizationSwitcher
+                        hidePersonal={true}
+                        afterCreateOrganizationUrl="/dashboard"
+                        appearance={{
+                          baseTheme: resolvedTheme === 'dark' ? dark : undefined,
+                        }}
+                      />
+                      <Button variant="outline" size="icon" onClick={() => setShowOrgProfile(true)}>
+                        <Building2 className="size-4" />
+                      </Button>
+                    </>
+                  )}
                   <div className="relative hidden lg:block">
                     <ModeToggle />
                   </div>
-                  <Menu as="div" className="relative">
-                    <MenuButton className="-m-1.5 flex items-center p-1.5">
-                      <span className="sr-only">ユーザーメニューを開く</span>
-                      <span className="flex lg:items-center">
-                        {/* <h5 className="text-sm text-muted-foreground">
-                          {organization?.org_name || 'ユーザー'}
-                        </h5> */}
-                        <ChevronDownIcon
-                          aria-hidden="true"
-                          className="ml-2 size-5 text-muted-foreground"
-                        />
-                      </span>
-                    </MenuButton>
-                    <MenuItems
-                      transition
-                      className="absolute right-0 z-10 mt-2.5 w-52 origin-top-right rounded-md bg-background py-2 shadow-lg border border-ring transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
-                    >
-                      <MenuItem key="emailPreferences">
-                        <Link
-                          href={`/dashboard/setting/email-preferences`}
-                          className="block px-3 py-1 text-sm/6 text-primary data-focus:bg-gray-50 data-focus:outline-hidden hover:opacity-80 hover:bg-muted"
-                        >
-                          メールアドレス設定
-                        </Link>
-                      </MenuItem>
-                      <MenuItem key="changeEmail">
-                        <Link
-                          href={`/dashboard/setting/change-email`}
-                          className="block px-3 py-1 text-sm/6 text-primary data-focus:bg-gray-50 data-focus:outline-hidden hover:opacity-80 hover:bg-muted"
-                        >
-                          メールアドレス変更
-                        </Link>
-                      </MenuItem>
-                      <MenuItem key="changePassword">
-                        <Link
-                          href={`/dashboard/setting/change-password`}
-                          className="block px-3 py-1 text-sm/6 text-primary data-focus:bg-muted data-focus:outline-hidden hover:opacity-80 hover:bg-muted"
-                        >
-                          パスワード変更
-                        </Link>
-                      </MenuItem>
-                      <MenuItem key="signOut">
-                        <a
-                          onClick={handleSignOut}
-                          className="block px-3 py-1 text-sm/6 text-primary data-focus:bg-gray-50 data-focus:outline-hidden cursor-pointer hover:opacity-80 hover:bg-muted"
-                        >
-                          ログアウト
-                        </a>
-                      </MenuItem>
-                    </MenuItems>
-                  </Menu>
                 </div>
               </div>
             </div>
@@ -439,6 +426,50 @@ export default function Sidebar({ children }: SidebarProps) {
             <div className="mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
           </main>
         </div>
+        <Dialog
+          className="fixed inset-0 w-full h-full z-50 flex flex-col justify-center items-center"
+          open={showOrgProfile}
+          onClose={() => setShowOrgProfile(false)}
+        >
+          <TransitionChild
+            as={Fragment}
+            enter="transition-opacity duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="transition-opacity duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <DialogBackdrop className="fixed inset-0 bg-background/50 backdrop-blur-sm" />
+          </TransitionChild>
+          <TransitionChild
+            as={Fragment}
+            enter="transition-all duration-300 ease-out"
+            enterFrom="opacity-0 scale-95"
+            enterTo="opacity-100 scale-100"
+            leave="transition-all duration-200 ease-in"
+            leaveFrom="opacity-100 scale-100"
+            leaveTo="opacity-0 scale-95"
+          >
+            <div className="relative w-full h-full flex flex-col">
+              <div className="w-full h-full flex justify-center items-center relative">
+                {/* Close button (X) positioned inside the modal content */}
+                <Button
+                  onClick={() => setShowOrgProfile(false)}
+                  className="absolute top-5 right-5 z-10 border-background border h-10 w-10 rounded-full p-3 "
+                >
+                  <XIcon className="size-5 text-background" aria-hidden="true" />
+                  <span className="sr-only">閉じる</span>
+                </Button>
+
+                <OrganizationProfile
+                  routing="hash"
+                  appearance={{ baseTheme: resolvedTheme === 'dark' ? dark : undefined }}
+                />
+              </div>
+            </div>
+          </TransitionChild>
+        </Dialog>
       </div>
     </>
   )
