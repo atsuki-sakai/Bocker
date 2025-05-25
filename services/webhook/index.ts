@@ -1,16 +1,15 @@
-import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { WebhookEvent, verifyWebhook } from '@clerk/nextjs/webhooks';
 import Stripe from 'stripe';
 import { api } from '@/convex/_generated/api';
-import { fetchMutation } from 'convex/nextjs';
+// Removed fetchMutation as it's now handled in baseProcessor
 import * as Sentry from '@sentry/nextjs';
 import { STRIPE_API_VERSION } from '@/services/stripe/constants';
 import { retryOperation } from '@/lib/utils';
 import type { UserJSON, OrganizationJSON } from '@clerk/nextjs/server';
 import { z } from 'zod';
 
-// 🔧 依存性とハンドラーのインポート
+import { WebhookProcessor } from './baseProcessor'; // Added
 import type { WebhookDependencies, ProcessingResult } from './types';
 import { isUserEvent, isOrganizationEvent } from './types';
 import { WebhookMetricsCollector } from './metrics';
@@ -30,11 +29,12 @@ const env = z.object({
 }).parse(process.env);
 
 // 🎯 Webhook処理のメインクラス
-export class ClerkWebhookProcessor {
+export class ClerkWebhookProcessor extends WebhookProcessor {
   private stripe: Stripe;
   private dependencies: WebhookDependencies;
 
   constructor() {
+    // super(); // WebhookProcessor does not have an explicit constructor.
     this.stripe = new Stripe(env.STRIPE_SECRET_KEY!, {
       apiVersion: STRIPE_API_VERSION,
     });
@@ -46,210 +46,100 @@ export class ClerkWebhookProcessor {
     };
   }
 
-  // 🔐 Webhook署名の検証
-  async verifyWebhookSignature(req: NextRequest): Promise<WebhookEvent> {
-    const SIGNING_SECRET = env.CLERK_WEBHOOK_SIGNING_SECRET;
-    if (!SIGNING_SECRET) {
-      throw new Error('Clerk署名用シークレットが設定されていません');
+  // 🔐 Webhook署名の検証 (Adapted from verifyWebhookSignature)
+  protected async verifySignature(req: NextRequest, secret: string): Promise<WebhookEvent> {
+    if (!secret) {
+      // This error will be caught by the main error handler in baseProcessor.process
+      // and result in a 400 or 500 response.
+      throw new Error('Clerk signing secret is not provided to verifySignature method.');
     }
-
     try {
       return await verifyWebhook(req, {
-        signingSecret: SIGNING_SECRET,
+        signingSecret: secret,
       });
-    } catch (err) {
-      Sentry.captureMessage('Clerk webhook署名の検証に失敗', { level: 'error' });
-      throw new Error('Invalid signature');
+    } catch (err: any) {
+      // Log specifics for debugging, but throw a generic message for the client
+      // The base processor will handle Sentry capture for this re-thrown error.
+      console.error('Clerk webhook signature verification failed:', err);
+      Sentry.captureMessage('Clerk webhook signature verification failed', { level: 'error' });
+      throw new Error('Clerk webhook signature verification failed: ' + (err.message || 'Unknown error'));
     }
   }
 
-  // 🔄 冪等性チェック
-  async checkIdempotency(eventId: string, eventType: string): Promise<boolean> {
-    const processedCheck = await fetchMutation(api.webhook_events.mutation.checkProcessedEvent, {
-      event_id: eventId,
-    });
-
-    if (processedCheck.isProcessed) {
-      console.log(`Clerkイベント ${eventId} は既に処理済みです。スキップします。`);
-      return true;
+  // 🆔 イベントIDの生成
+  protected makeEventId(evt: WebhookEvent, req: NextRequest): string {
+    const svixId = req.headers.get('svix-id');
+    const svixTimestamp = req.headers.get('svix-timestamp');
+    if (!svixId || !svixTimestamp) {
+      // This error will be caught by the main error handler in baseProcessor.process
+      throw new Error('Missing svix-id or svix-timestamp headers for Clerk event ID generation.');
     }
-
-    // イベント処理開始を記録
-    await fetchMutation(api.webhook_events.mutation.recordEvent, {
-      event_id: eventId,
-      event_type: eventType,
-      processing_result: 'processing',
-    });
-
-    return false;
+    return `clerk_${svixId}_${svixTimestamp}`;
   }
 
-  // 🎯 イベント処理のディスパッチ
-  async processEvent(
-    eventType: string,
-    data: any,
+  // 📊 メトリクス用メタデータの取得
+  protected getMetricsMetadata(evt: WebhookEvent): { userId?: string, organizationId?: string } {
+    if (isUserEvent(evt.data)) {
+      return { userId: evt.data.id };
+    }
+    if (isOrganizationEvent(evt.data)) {
+      return { organizationId: evt.data.id };
+    }
+    return {};
+  }
+
+  // 🎯 イベント処理のディスパッチ (Adapted from old processEvent)
+  protected async dispatch(
+    evt: WebhookEvent,
     eventId: string,
-    metrics: WebhookMetricsCollector
+    metrics: WebhookMetricsCollector,
+    req: NextRequest // req is part of the abstract signature, kept for compliance
   ): Promise<ProcessingResult> {
-    console.log(`🎯 イベント処理開始: ${eventType} (ID: ${eventId})`);
-
+    console.log(`🎯 Clerk event dispatch: ${evt.type} (ID: ${eventId})`);
+    // req is available if needed by handlers, but currently they don't use it directly.
     try {
-      switch (eventType) {
+      switch (evt.type) {
         case 'user.created':
-          if (!isUserEvent(data)) {
-            throw new Error('Invalid user event data');
-          }
-          const createResult = await handleUserCreated(data, eventId, this.dependencies, metrics);
-          return createResult.result;
+          if (!isUserEvent(evt.data)) throw new Error('Invalid user event data for user.created');
+          return (await handleUserCreated(evt.data, eventId, this.dependencies, metrics)).result;
 
         case 'user.updated':
-          if (!isUserEvent(data)) {
-            throw new Error('Invalid user event data');
-          }
-          const updateResult = await handleUserUpdated(data, eventId, this.dependencies, metrics);
-          return updateResult.result;
+          if (!isUserEvent(evt.data)) throw new Error('Invalid user event data for user.updated');
+          return (await handleUserUpdated(evt.data, eventId, this.dependencies, metrics)).result;
 
         case 'user.deleted':
-          if (!isUserEvent(data)) {
-            throw new Error('Invalid user event data');
-          }
-          const deleteResult = await handleUserDeleted(data, eventId, this.dependencies, metrics);
-          return deleteResult.result;
+          // As per type WebhookEvent<UserJSON, 'user.deleted'>, evt.data is UserJSON.
+          if (!isUserEvent(evt.data)) throw new Error('Invalid user event data for user.deleted');
+          return (await handleUserDeleted(evt.data as UserJSON, eventId, this.dependencies, metrics)).result;
 
         case 'organization.created':
-          if (!isOrganizationEvent(data)) {
-            throw new Error('Invalid organization event data');
-          }
-          const orgCreateResult = await handleOrganizationCreated(data, eventId, this.dependencies, metrics);
-          return orgCreateResult.result;
+          if (!isOrganizationEvent(evt.data)) throw new Error('Invalid org event data for organization.created');
+          return (await handleOrganizationCreated(evt.data, eventId, this.dependencies, metrics)).result;
 
         case 'organization.updated':
-          if (!isOrganizationEvent(data)) {
-            throw new Error('Invalid organization event data');
-          }
-          const orgUpdateResult = await handleOrganizationUpdated(data, eventId, this.dependencies, metrics);
-          return orgUpdateResult.result;
+          if (!isOrganizationEvent(evt.data)) throw new Error('Invalid org event data for organization.updated');
+          return (await handleOrganizationUpdated(evt.data, eventId, this.dependencies, metrics)).result;
 
         case 'organization.deleted':
-          if (!isOrganizationEvent(data)) {
-            throw new Error('Invalid organization event data');
-          }
-          const orgDeleteResult = await handleOrganizationDeleted(data, eventId, this.dependencies, metrics);
-          return orgDeleteResult.result;
+          // As per type WebhookEvent<OrganizationJSON, 'organization.deleted'>, evt.data is OrganizationJSON.
+          if (!isOrganizationEvent(evt.data)) throw new Error('Invalid org event data for organization.deleted');
+          return (await handleOrganizationDeleted(evt.data as OrganizationJSON, eventId, this.dependencies, metrics)).result;
 
         default:
-          console.log(`未対応のClerkイベントタイプ: ${eventType}`);
+          console.log(`Unsupported Clerk event type: ${evt.type}`);
           return 'skipped';
       }
     } catch (error) {
-      console.error(`イベント処理エラー: ${eventType}`, error);
+      console.error(`Error dispatching Clerk event ${evt.type} (ID: ${eventId}):`, error);
+      // This error will be caught by baseProcessor.process, which will log to Sentry
+      // and record the processing result.
       throw error;
     }
   }
 
-  // 📝 処理結果の記録
-  async recordProcessingResult(
-    eventId: string,
-    result: ProcessingResult,
-    errorMessage?: string
-  ): Promise<void> {
-    try {
-      await fetchMutation(api.webhook_events.mutation.updateEventResult, {
-        event_id: eventId,
-        processing_result: result,
-        error_message: errorMessage,
-      });
-    } catch (recordError) {
-      console.error('イベント結果の記録中にエラーが発生しました:', recordError);
-    }
-  }
-
-  // 🎯 メインの処理エントリーポイント
-  async processWebhook(req: NextRequest): Promise<NextResponse> {
-    let eventId = '';
-    let eventType = '';
-
-    try {
-      // 1. 署名検証
-      const evt = await this.verifyWebhookSignature(req);
-      
-      // 2. イベントIDの生成
-      const svixId = req.headers.get('svix-id');
-      if (!svixId) {
-        return NextResponse.json({ error: 'Missing svix-id' }, { status: 400 });
-      }
-      
-      const headerPayload = await headers();
-      const svixTimestamp = headerPayload.get('svix-timestamp');
-      eventId = `clerk_${svixId}_${svixTimestamp}`;
-      eventType = evt.type;
-
-      // 3. 冪等性チェック
-      const isAlreadyProcessed = await this.checkIdempotency(eventId, eventType);
-      if (isAlreadyProcessed) {
-        return NextResponse.json({ 
-          received: true, 
-          message: `イベント ${eventId} は既に処理済みです` 
-        }, { status: 200 });
-      }
-
-      // 4. メトリクス収集開始
-      const metrics = new WebhookMetricsCollector({
-        eventId,
-        eventType,
-        userId: isUserEvent(evt.data) ? evt.data.id : undefined,
-        organizationId: isOrganizationEvent(evt.data) ? evt.data.id : undefined,
-      });
-
-      // 5. イベント処理
-      let processingResult: ProcessingResult = 'success';
-      let errorMessage: string | undefined;
-
-      try {
-        processingResult = await this.processEvent(eventType, evt.data, eventId, metrics);
-      } catch (error) {
-        processingResult = 'error';
-        errorMessage = error instanceof Error ? error.message : '不明なエラー';
-        throw error;
-      } finally {
-        // 6. 結果記録とメトリクス送信
-        await this.recordProcessingResult(eventId, processingResult, errorMessage);
-        await metrics.collectAndSend(processingResult);
-      }
-
-      return NextResponse.json({ 
-        received: true, 
-        message: `Clerk イベント ${eventId} の処理が完了しました` 
-      }, { status: 200 });
-
-    } catch (error) {
-      console.error(`Clerk webhook event ${eventId} 処理で致命的エラー:`, error);
-      
-      // エラー時も記録を更新
-      if (eventId) {
-        await this.recordProcessingResult(
-          eventId, 
-          'error', 
-          error instanceof Error ? error.message : '不明なエラー'
-        );
-      }
-
-      // 全体的なエラーハンドリング
-      Sentry.captureException(error, {
-        level: 'error',
-        tags: {
-          eventType,
-          eventId,
-          source: 'clerk_webhook',
-        },
-      });
-
-      return NextResponse.json(
-        { error: 'Internal server error processing webhook' },
-        { status: 500 }
-      );
-    }
-  }
+  // Removed processWebhook method
+  // Removed checkIdempotency method
+  // Removed recordProcessingResult method
 }
 
 // 🎯 シングルトンインスタンス
@@ -257,5 +147,13 @@ const webhookProcessor = new ClerkWebhookProcessor();
 
 // 🚀 エクスポート用のヘルパー関数
 export async function processClerkWebhook(req: NextRequest): Promise<NextResponse> {
-  return webhookProcessor.processWebhook(req);
+  const SIGNING_SECRET = env.CLERK_WEBHOOK_SIGNING_SECRET;
+  if (!SIGNING_SECRET) {
+    console.error('Clerk signing secret is not set in environment variables.');
+    // Critical error: webhook processing cannot proceed.
+    Sentry.captureMessage('Clerk signing secret not configured', { level: 'critical' });
+    return NextResponse.json({ error: 'Clerk signing secret not configured. Webhook processing aborted.' }, { status: 500 });
+  }
+  // The 'process' method is inherited from WebhookProcessor.
+  return webhookProcessor.process(req, SIGNING_SECRET);
 } 

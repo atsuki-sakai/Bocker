@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@stripe/webhook/*": ["services/stripe/webhook/*"]
     },
     "types": ["next", "@types/node"]
   },
