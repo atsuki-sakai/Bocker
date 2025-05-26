@@ -178,14 +178,14 @@ export class StripeConnectRepository {
       console.log('StripeConnectRepository.createConnectAccountLink: Using DEPLOY_URL ->', process.env.NEXT_PUBLIC_DEPLOY_URL);
       console.log('StripeConnectRepository.createConnectAccountLink: accountLinks.create params ->', {
         account: account.id,
-        refresh_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/setting?refresh=true`,
-        return_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/setting?success=true`,
+        refresh_url: `${BASE_URL}/dashboard/setting?refresh=true`,
+        return_url: `${BASE_URL}/dashboard/setting?success=true`,
         type: 'account_onboarding',
       });
       const accountLink = await this.stripe.accountLinks.create({
         account: account.id,
-        refresh_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/setting?refresh=true`,
-        return_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000'}/dashboard/setting?success=true`,
+        refresh_url: `${BASE_URL}/dashboard/setting?refresh=true`,
+        return_url: `${BASE_URL}/dashboard/setting?success=true`,
         type: 'account_onboarding',
       });
 
