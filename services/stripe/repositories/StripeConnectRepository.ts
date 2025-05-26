@@ -1,5 +1,6 @@
 'use node';
 import Stripe from 'stripe';
+import { randomUUID } from 'crypto';
 import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
 import { Id } from '@/convex/_generated/dataModel';
@@ -7,7 +8,7 @@ import { StripeResult } from '@/services/stripe/types';
 import { SystemError } from '@/lib/errors/custom_errors';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { BASE_URL } from '@/lib/constants';
-import { StripeConnectStatus } from '@/convex/types';
+import { determineAccountStatus } from '../../webhook/stripe/handlers.connect';
 
 /**
  * Stripe Connect APIを扱うリポジトリクラス
@@ -31,33 +32,13 @@ export class StripeConnectRepository {
     }
     return StripeConnectRepository.instance;
   }
+
   /**
-   * アカウントのステータスを判定するためのヘルパーメソッド
+   * セキュアなクーポンIDを生成
    */
-  private determineAccountStatus(account: Stripe.Account): StripeConnectStatus {
-    const { details_submitted, charges_enabled, payouts_enabled, requirements } = account;
-  
-    if (requirements?.past_due && requirements?.past_due?.length > 0) {
-      return 'restricted';
-    }
-  
-    if (requirements?.currently_due && requirements?.currently_due?.length > 0) {
-      return 'incomplete';
-    }
-  
-    if (!details_submitted) {
-      return 'pending';
-    }
-  
-    if (charges_enabled && payouts_enabled) {
-      return 'active';
-    }
-  
-    if (charges_enabled && !payouts_enabled) {
-      return 'restricted';
-    }
-  
-    return 'incomplete';
+  private generateSecureCouponId(): string {
+    // 128bit UUID から “‐” を除去して先頭24桁を使用
+    return `referral_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
   }
 
   /**
@@ -84,7 +65,7 @@ export class StripeConnectRepository {
       const account = await this.stripe.accounts.retrieve(stripe_account_id);
 
       // ステータスを判定
-      const status = this.determineAccountStatus(account);
+      const status = determineAccountStatus(account);
 
       // Convexにステータスを保存
       await this.convex.mutation(api.organization.mutation.updateConnectStatus, {
@@ -340,5 +321,92 @@ export class StripeConnectRepository {
         error: error instanceof Error ? error.message : '不明なエラー',
       };
     }
+  }
+
+  /**
+   * 割引を適用
+   */
+  async applyDiscount(
+    stripeSubscriptionId: string,
+    couponId: string
+  ): Promise<StripeResult<{ verificationResult: { before: number; after: number; discountApplied: boolean; couponId: string } }>> {
+    try {
+      // 1. 割引適用前のサブスクリプション情報を取得
+      const subscriptionBefore = await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
+      const amountBefore = subscriptionBefore.items.data.reduce((sum, item) => sum + (item.price.unit_amount || 0), 0);
+
+      // 既に割引が適用されている場合はスキップ
+      if (subscriptionBefore.discount) {
+        console.log(
+          `[applyDiscount] 既存クーポンが存在するためスキップ: sub=${stripeSubscriptionId}, coupon=${subscriptionBefore.discount.coupon.id}`
+        );
+        return {
+          success: true,
+          data: {
+            verificationResult: {
+              before: amountBefore / 100,
+              after: amountBefore / 100,
+              discountApplied: false,
+              couponId: subscriptionBefore.discount.coupon.id,
+            },
+          },
+        };
+      }
+
+      // 2. クーポンをサブスクリプションに適用
+      await this.stripe.subscriptions.update(stripeSubscriptionId, {
+        coupon: couponId,
+      });
+
+      // 3. 適用後のサブスクリプション情報を取得
+      const subscriptionAfter = await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
+
+      // 4. 割引適用検証
+      const verificationResult = this.verifyDiscountApplication(subscriptionBefore, subscriptionAfter, couponId);
+
+      return {
+        success: true,
+        data: {
+          verificationResult: {
+            ...verificationResult,
+            couponId,
+          },
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '不明なエラー',
+      };
+    }
+  }
+
+  /**
+   * 割引適用の検証を行う
+   */
+  private verifyDiscountApplication(
+    subscriptionBefore: Stripe.Subscription,
+    subscriptionAfter: Stripe.Subscription,
+    couponId: string
+  ): { before: number; after: number; discountApplied: boolean } {
+    const amountBefore = subscriptionBefore.items.data.reduce((sum, item) => sum + (item.price.unit_amount || 0), 0);
+
+    const discountInfo = subscriptionAfter.discount;
+    const isDiscountApplied = !!discountInfo && discountInfo.coupon.id === couponId;
+
+    // 割引後金額 = 適用前 – amount_off または percent_off
+    let amountAfterYen = amountBefore;
+    if (discountInfo?.coupon.amount_off) {
+      amountAfterYen = amountBefore - discountInfo.coupon.amount_off;
+    } else if (discountInfo?.coupon.percent_off) {
+      amountAfterYen = Math.round(amountBefore * (1 - discountInfo.coupon.percent_off / 100));
+    }
+    const amountAfter = amountAfterYen;
+
+    return {
+      before: amountBefore / 100,
+      after: amountAfter / 100,
+      discountApplied: isDiscountApplied,
+    };
   }
 }

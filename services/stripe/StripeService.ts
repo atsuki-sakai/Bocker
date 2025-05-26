@@ -1,7 +1,7 @@
-
 'use node';
 
 import Stripe from 'stripe';
+import { randomUUID } from 'crypto';
 import { STRIPE_API_VERSION } from './constants';
 import {
   StripeConnectRepository,
@@ -47,9 +47,9 @@ class StripeService {
       apiVersion: STRIPE_API_VERSION,
     });
 
-    // リポジトリの初期化
+    // リポジトリの初期化（依存性注入パターン）
     this.connectRepo = StripeConnectRepository.getInstance(this.stripe);
-    this.subscriptionRepo = StripeSubscriptionRepository.getInstance(this.stripe);
+    this.subscriptionRepo = new StripeSubscriptionRepository(this.stripe);
   }
 
   public static getInstance(): StripeService {
@@ -126,7 +126,7 @@ class StripeService {
   async applyDiscount(
     stripe_subscription_id: string,
     discount_amount: number
-  ): Promise<StripeResult<{ success: boolean }>> {
+  ): Promise<StripeResult<{ verificationResult: { before: number; after: number; discountApplied: boolean; couponId: string } }>> {
     return await this.subscriptionRepo.applyDiscount(stripe_subscription_id, discount_amount);
   }
 

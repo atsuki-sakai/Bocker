@@ -142,8 +142,6 @@ export default function StripeConnectStatus() {
       const { data } = await fetchApi<{ url: string; isOnboarding: boolean }>(
         '/api/stripe/connect/login',
         {
-          tenant_id: tenantId,
-          org_id: orgId,
           stripe_account_id: connectAccount.stripe_account_id,
         }
       )
