@@ -54,10 +54,8 @@ export default function SubscriptionForm({
 
   // データの準備
   const currentPlanStr = subscription?.plan_name || null
-  const isActive =
-    subscription?.subscription_status === 'active' ||
-    subscription?.subscription_status === 'trialing' ||
-    false
+
+  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing' || false
 
   // メモ化したbillingPeriod設定関数
   const setBillingPeriodAction = useCallback((period: BillingPeriod) => {
