@@ -7,6 +7,7 @@ export const CommonFields = {
   deleted_at: v.optional(v.number()), // 論理削除日時 (UNIXタイム)
 }
 
+
 // 曜日の型定義
 export const DAY_OF_WEEK_VALUES = [
   'monday',
@@ -26,6 +27,32 @@ export const imageType = v.object({
 })
 export type ImageType = Infer<typeof imageType>
 
+export const SUBSCRIPTION_STATUS_VALUES = [
+  'incomplete',
+  'incomplete_expired',
+  'trialing',
+  'active',
+  'past_due',
+  'canceled',
+  'unpaid',
+  'paused',
+] as const
+export const subscriptionStatusType = v.union(
+  ...SUBSCRIPTION_STATUS_VALUES.map((status) => v.literal(status))
+)
+export type SubscriptionStatus = Infer<typeof subscriptionStatusType>
+
+export const STRIPE_CONNECT_STATUS_VALUES = [
+  'pending', // 未接続
+  'incomplete', // 未完了
+  'restricted', // 制限付き
+  'active', // 有効
+  'external_account_removed', // 外部口座削除
+  'payouts_disabled', // 出金不可
+  'bank_account_missing', // 銀行口座未設定
+] as const
+export const stripeConnectStatusType = v.union(...STRIPE_CONNECT_STATUS_VALUES.map((status) => v.literal(status)))
+export type StripeConnectStatus = Infer<typeof stripeConnectStatusType>
 
 export const reservationMenuOrOptionType = v.object({
   id: v.union(v.id('option'), v.literal('menu')),

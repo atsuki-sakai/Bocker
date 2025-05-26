@@ -5,9 +5,9 @@ import type {
   WebhookDependencies, 
   EventProcessingResult, 
   LogContext 
-} from './types';
-import { executeInParallel, createTask } from './parallel';
-import { WebhookMetricsCollector } from './metrics';
+} from '../types';
+import { executeInParallel, createTask } from '../parallel';
+import { WebhookMetricsCollector } from '../metrics';
 
 /**
  * `user.created` Webhookイベントを処理するハンドラー関数。
@@ -301,8 +301,13 @@ export async function handleUserDeleted(
   metrics: WebhookMetricsCollector
 ): Promise<EventProcessingResult> {
   const { id } = data;
+  const context: LogContext = {
+    eventId,
+    eventType: 'user.deleted',
+    userId: id,
+  };
 
-  console.log(`🗑️ [${eventId}] User Deleted処理開始: user_id=${id}`);
+  console.log(`🗑️ [${eventId}] User Deleted処理開始: user_id=${id}`, context);
 
   try {
     // テナント情報の取得
@@ -354,12 +359,6 @@ export async function handleUserDeleted(
       )
     ];
 
-    const context: LogContext = {
-      eventId,
-      eventType: 'user.deleted',
-      userId: id,
-    };
-
     await executeInParallel(deleteTasks, context);
 
     return {
@@ -368,11 +367,6 @@ export async function handleUserDeleted(
     };
 
   } catch (error) {
-    const context: LogContext = {
-      eventId,
-      eventType: 'user.deleted',
-      userId: id,
-    };
     console.error(`❌ [${eventId}] User Deleted処理中に致命的なエラーが発生: user_id=${id}`, { ...context, error });
     
     Sentry.captureException(error, {

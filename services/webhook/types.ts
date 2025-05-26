@@ -1,4 +1,4 @@
-import type { UserJSON, OrganizationJSON } from '@clerk/nextjs/server';
+
 import type Stripe from 'stripe';
 import type { api } from '@/convex/_generated/api';
 import type { retryOperation } from '@/lib/utils';
@@ -31,6 +31,9 @@ export interface LogContext {
   eventType: string;      // Webhookイベントのタイプ (例: 'user.created')
   userId?: string;         // 関連するユーザーID (ユーザー関連イベントの場合)
   organizationId?: string; // 関連する組織ID (組織関連イベントの場合)
+  stripeAccountId?: string; // 関連するStripeアカウントID (Stripe Connect関連イベントの場合)
+  stripeCustomerId?: string; // 関連するStripe顧客ID (Stripe Connect関連イベントの場合)
+  stripeSubscriptionId?: string; // 関連するStripeサブスクリプションID (Stripe Connect関連イベントの場合)
 }
 
 // 🔄 並列処理フレームワークで使用するタスク定義の型
@@ -50,17 +53,7 @@ export interface WebhookMetrics {
   retryCount?: number; // リトライ回数 (リトライが発生した場合のみ)
   externalApiCalls: { // 外部API呼び出しの回数
     stripe: number; // Stripe API呼び出し回数
+    clerk: number; // Clerk API呼び出し回数
     convex: number; // Convex API呼び出し回数
   };
 }
-
-// 🎨 ClerkのWebhookイベントデータに対する型ガード関数
-// dataオブジェクトがUserJSON型であるかを安全にチェックする。
-export const isUserEvent = (data: any): data is UserJSON => {
-  return data && typeof data.id === 'string' && Array.isArray(data.email_addresses);
-};
-
-// dataオブジェクトがOrganizationJSON型であるかを安全にチェックする。
-export const isOrganizationEvent = (data: any): data is OrganizationJSON => {
-  return data && typeof data.id === 'string' && typeof data.name === 'string';
-}; 

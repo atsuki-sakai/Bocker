@@ -7,7 +7,7 @@ import type { WebhookMetrics, LogContext, ProcessingResult } from './types';
  */
 export class WebhookMetricsCollector {
   private startTime: number; // 処理開始時刻のタイムスタンプ
-  private externalApiCalls = { stripe: 0, convex: 0 }; // 外部API呼び出し回数のカウンター
+  private externalApiCalls = { stripe: 0, convex: 0, clerk: 0 }; // 外部API呼び出し回数のカウンター
   private retryCount = 0; // リトライ処理の実行回数カウンター
 
   /**

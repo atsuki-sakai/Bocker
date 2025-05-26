@@ -9,9 +9,8 @@
 
 import { mutation } from '../_generated/server';
 import { v } from 'convex/values';
-import { validateStringLength } from '@/convex/utils/validations';
-import { checkAuth } from '@/convex/utils/auth';  
-import { billingPeriodType } from '@/convex/types';
+import { validateStringLength } from '@/convex/utils/validations'; 
+import { billingPeriodType, subscriptionStatusType } from '@/convex/types';
 import { archiveRecord, createRecord, updateRecord } from '@/convex/utils/helpers';
 
 export const create = mutation({
@@ -20,7 +19,7 @@ export const create = mutation({
     user_email: v.string(), // Clerkのユーザーのメールアドレス
     stripe_customer_id: v.optional(v.string()), // Stripe顧客ID
     subscription_id: v.optional(v.string()), // 現在のサブスクリプションID
-    subscription_status: v.optional(v.string()), // サブスクリプション状態
+    subscription_status: v.optional(subscriptionStatusType), // サブスクリプション状態
     plan_name: v.optional(v.string()), // プラン名 ("lite", "pro")
     price_id: v.optional(v.string()), // 購読プランID (Price ID)
     billing_period: v.optional(billingPeriodType), // 課金期間 (月額 or 年額)

@@ -7,6 +7,7 @@ import { StripeResult } from '@/services/stripe/types';
 import { SystemError } from '@/lib/errors/custom_errors';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { BASE_URL } from '@/lib/constants';
+import { StripeConnectStatus } from '@/convex/types';
 
 /**
  * Stripe Connect APIを扱うリポジトリクラス
@@ -33,194 +34,37 @@ export class StripeConnectRepository {
   /**
    * アカウントのステータスを判定するためのヘルパーメソッド
    */
-  private determineAccountStatus(account: Stripe.Account): string {
-    if (account.details_submitted) {
-      if (account.charges_enabled && account.payouts_enabled) {
-        return 'active';
-      } else if (account.charges_enabled) {
-        return 'restricted';
-      } else {
-        return 'incomplete';
-      }
-    } else {
+  private determineAccountStatus(account: Stripe.Account): StripeConnectStatus {
+    const { details_submitted, charges_enabled, payouts_enabled, requirements } = account;
+  
+    if (requirements?.past_due && requirements?.past_due?.length > 0) {
+      return 'restricted';
+    }
+  
+    if (requirements?.currently_due && requirements?.currently_due?.length > 0) {
+      return 'incomplete';
+    }
+  
+    if (!details_submitted) {
       return 'pending';
     }
-  }
-
-  /**
-   * アカウント更新イベントを処理
-   */
-  async handleAccountUpdatedEvent(account: Stripe.Account): Promise<{ success: boolean }> {
-    const accountId = account.id;
-
-    // Stripe ConnectアカウントIDから組織を検索
-    const organization = await this.convex.query(api.organization.query.findOrganizationByStripeConnectId, {
-      stripe_connect_id: accountId,
-    });
-
-    if (!organization) {
-      throw new SystemError(
-        '組織が見つかりません',
-        {
-        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'StripeConnectRepository.handleAccountUpdatedEvent',
-        message: '組織が見つかりません',
-        code: 'NOT_FOUND',
-        status: 404,
-        details: {
-          stripe_connect_id: accountId,
-        },
-      });
+  
+    if (charges_enabled && payouts_enabled) {
+      return 'active';
     }
-
-    // ステータスを判定
-    const status = this.determineAccountStatus(account);
-
-    // ステータスを更新
-    await this.convex.mutation(api.organization.mutation.updateConnectStatus, {
-      tenant_id: organization.tenant_id,
-      org_id: organization.org_id,
-      stripe_connect_id: accountId,
-      status,
-    });
-
-    return { success: true };
-  }
-
-  /**
-   * checkout.session.completed イベントを処理
-   */
-  async handleCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<{ success: boolean }> {
-    try {
-      const reservationId = session.client_reference_id as Id<'reservation'> | undefined;
-      const stripeConnectId = session.metadata?.stripeConnectId as string | undefined;
-      const orgId = session.metadata?.orgId as string | undefined;
-
-      if (!reservationId || !stripeConnectId || !orgId) {
-        console.error('必要なメタデータが不足しています。', { reservationId, stripeConnectId, orgId });
-        // 失敗として扱うが、エラーは投げずにStripeに200を返すことで再試行を防ぐ
-        return { success: false };
-      }
-      
-      // ここでConvexのミューテーションを呼び出し、予約ステータスを更新する
-      // 例: reservation.paymentCompleted
-      await this.convex.mutation(api.reservation.mutation.updateReservationPaymentStatus, {
-        reservation_id: reservationId,
-        payment_status: 'paid', // 仮のステータス。スキーマに合わせてください。
-        stripe_checkout_session_id: session.id,
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('checkout.session.completedの処理中にエラー:', error);
-      // 失敗として扱うが、エラーは投げずにStripeに200を返すことで再試行を防ぐ
-      return { success: false };
+  
+    if (charges_enabled && !payouts_enabled) {
+      return 'restricted';
     }
-  }
-
-  /**
-   * Webhookイベントを処理（冪等性対応版）
-   */
-  async handleWebhookEvent(event: Stripe.Event): Promise<{ success: boolean; message?: string }> {
-    console.log(`Processing Stripe Connect event: ${event.type} (ID: ${event.id})`);
-
-    try {
-      // 🆕 1. 冪等性チェック: 既に処理済みのイベントかどうか確認
-      const processedCheck = await this.convex.mutation(api.webhook_events.mutation.checkProcessedEvent, {
-        event_id: event.id,
-      });
-
-      if (processedCheck.isProcessed) {
-        console.log(`Connect イベント ${event.id} は既に処理済みです。スキップします。`);
-        return { 
-          success: true, 
-          message: `イベント ${event.id} は既に処理済みです (結果: ${processedCheck.result})` 
-        };
-      }
-
-      // 🆕 2. イベント処理開始を記録
-      await this.convex.mutation(api.webhook_events.mutation.recordEvent, {
-        event_id: event.id,
-        event_type: event.type,
-        processing_result: 'processing',
-      });
-
-      let processingResult = 'success';
-      let errorMessage: string | undefined;
-
-      try {
-        switch (event.type) {
-          case 'account.updated':
-            await this.handleAccountUpdatedEvent(event.data.object as Stripe.Account);
-            break;
-          case 'checkout.session.completed':
-            await this.handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
-            break;
-          default:
-            processingResult = 'skipped';
-            console.log(`未処理のイベントタイプ: ${event.type}`);
-            break;
-        }
-      } catch (error) {
-        processingResult = 'error';
-        errorMessage = error instanceof Error ? error.message : '不明なエラー';
-        console.error(`Connect イベント ${event.id} の処理中にエラーが発生しました:`, error);
-        throw error;
-      } finally {
-        // 🆕 3. 処理結果を記録
-        await this.convex.mutation(api.webhook_events.mutation.updateEventResult, {
-          event_id: event.id,
-          processing_result: processingResult,
-          error_message: errorMessage,
-        });
-      }
-
-      return { 
-        success: true, 
-        message: `Connect イベント ${event.id} の処理が完了しました` 
-      };
-
-    } catch (error) {
-      console.error(`Connect Webhook event ${event.id} 処理で致命的エラー:`, error);
-      
-      // エラー時も記録を更新
-      try {
-        await this.convex.mutation(api.webhook_events.mutation.updateEventResult, {
-          event_id: event.id,
-          processing_result: 'error',
-          error_message: error instanceof Error ? error.message : '不明なエラー',
-        });
-      } catch (recordError) {
-        console.error('Connect イベント結果の記録中にエラーが発生しました:', recordError);
-      }
-
-      throw new SystemError(
-        'Connect Webhookイベントの処理に失敗しました',
-        {
-          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
-          severity: ERROR_SEVERITY.ERROR,
-          callFunc: 'StripeConnectRepository.handleWebhookEvent',
-          message: 'Connect Webhookイベントの処理に失敗しました',
-          code: 'INTERNAL_SERVER_ERROR',
-          status: 500,
-          details: {
-            eventId: event.id,
-            eventType: event.type,
-            error: error instanceof Error ? error.message : '不明なエラー',
-          },
-        }
-      );
-    }
+  
+    return 'incomplete';
   }
 
   /**
    * 手動でアカウントステータスを確認・更新
    */
-  async checkAndUpdateAccountStatus(
-    tenant_id: Id<'tenant'>,
-    org_id: string,
-    stripe_connect_id: string
+  async checkAndUpdateConnectAccountStatus(
+    stripe_account_id: string
   ): Promise<
     StripeResult<{
       status: string;
@@ -237,16 +81,14 @@ export class StripeConnectRepository {
   > {
     try {
       // Stripeからアカウント情報を取得
-      const account = await this.stripe.accounts.retrieve(stripe_connect_id);
+      const account = await this.stripe.accounts.retrieve(stripe_account_id);
 
       // ステータスを判定
       const status = this.determineAccountStatus(account);
 
       // Convexにステータスを保存
       await this.convex.mutation(api.organization.mutation.updateConnectStatus, {
-        tenant_id,
-        org_id,
-        stripe_connect_id,
+        stripe_account_id,
         status,
       });
 
@@ -274,7 +116,7 @@ export class StripeConnectRepository {
   }
 
   /**
-   * Stripeアカウント連携用のアカウントリンクを生成
+   * StripeConアカウント連携用のアカウントリンクを生成
    */
   async createConnectAccountLink(
     tenant_id: Id<'tenant'>,
@@ -291,10 +133,10 @@ export class StripeConnectRepository {
       );
 
       // 既存のアカウントがあれば削除
-      if (existingOrganization && existingOrganization.stripe_connect_id) {
+      if (existingOrganization && existingOrganization.stripe_account_id) {
         try {
           // Stripeアカウントを削除
-          await this.stripe.accounts.del(existingOrganization.stripe_connect_id);
+          await this.stripe.accounts.del(existingOrganization.stripe_account_id);
         } catch (deleteError) {
           throw new SystemError(
             'Stripeアカウントの削除に失敗しました。既存のアカウントがある場合は削除してください。',
@@ -347,7 +189,7 @@ export class StripeConnectRepository {
         user_id: '',
         org_name: '',
         org_email: '',
-        stripe_connect_id: account.id,
+        stripe_account_id: account.id,
         status: 'pending',
       });
 
@@ -378,7 +220,7 @@ export class StripeConnectRepository {
   /**
    * Stripe Expressダッシュボードへのログインリンクを生成
    */
-  async createDashboardLoginLink(
+  async createConnectAccountDashboardLink(
     accountId: string
   ): Promise<StripeResult<{ url: string; isOnboarding?: boolean }>> {
     try {
@@ -433,7 +275,7 @@ export class StripeConnectRepository {
    * Stripe Checkoutセッションを作成
    */
   async createCheckoutSession(params: {
-    stripe_connect_id: string; // 支払いを受け取るStripe ConnectアカウントID
+    stripe_account_id: string; // 支払いを受け取るStripe ConnectアカウントID
     tenant_id: Id<'tenant'>;
     org_id: string;
     reservation_id: Id<'reservation'>;
@@ -444,7 +286,7 @@ export class StripeConnectRepository {
     metadata?: Record<string, string>;
   }): Promise<StripeResult<{ sessionId: string; url: string | null }>> {
     const {
-      stripe_connect_id,
+      stripe_account_id,
       tenant_id,
       org_id,
       reservation_id,
@@ -470,13 +312,13 @@ export class StripeConnectRepository {
         payment_intent_data: {
           application_fee_amount: fee_amount,
           transfer_data: {
-            destination: stripe_connect_id,
+            destination: stripe_account_id,
           },
         },
         metadata: {
           ...metadata,
           reservation_id: reservation_id,
-          stripe_connect_id: stripe_connect_id,
+          stripe_account_id: stripe_account_id,
           tenant_id: tenant_id,
           org_id: org_id,
         },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processClerkWebhook } from '@/services/webhook';
+import { processClerkWebhook } from '@/services/webhook/clerk/ClerkWebhookProcessor';
 
 // 🎯 Clerk Webhook エンドポイント
 // 新しいアーキテクチャを使用した改善版実装

@@ -39,7 +39,7 @@ export const MAX_POSTAL_CODE_LENGTH = 7;
 // 住所の最大文字数
 export const MAX_ADDRESS_LENGTH = 200;
 // ピンコードの最大文字数
-export const MAX_PIN_CODE_LENGTH = 20;
+export const MAX_PIN_CODE_LENGTH = 6;
 // ハッシュ化されたピンコードの最大文字数
 export const MAX_HASH_PIN_CODE_LENGTH = 256;
 // 指名料金の最大値

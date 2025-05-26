@@ -69,14 +69,14 @@ export default function StripeConnectStatus() {
   // API呼び出しの共通処理
   const fetchApi = async <T,>(
     url: string,
-    data: Record<string, unknown>
+    body: Record<string, unknown>
   ): Promise<{ data?: T; error?: string }> => {
     setIsLoading(true)
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(body),
       })
 
       const responseData = await response.json()
@@ -135,7 +135,7 @@ export default function StripeConnectStatus() {
   const handleViewDashboard = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    if (!connectAccount?.stripe_connect_id) return
+    if (!connectAccount?.stripe_account_id) return
 
     try {
       // FIXME: このAPIはまだ作成していない
@@ -144,7 +144,7 @@ export default function StripeConnectStatus() {
         {
           tenant_id: tenantId,
           org_id: orgId,
-          stripe_connect_id: connectAccount.stripe_connect_id,
+          stripe_account_id: connectAccount.stripe_account_id,
         }
       )
 
@@ -169,7 +169,8 @@ export default function StripeConnectStatus() {
   }
 
   const status = connectAccount?.stripe_connect_status || 'not_connected'
-  const isConnected = status !== 'not_connected' && status !== 'deauthorized'
+  // FIXME: 変更されたステータスで切り分ける
+  const isConnected = status !== 'not_connected'
 
   return (
     <div>

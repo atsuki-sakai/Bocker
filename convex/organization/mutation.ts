@@ -5,6 +5,7 @@ import { validateRequired, validateStringLength } from "@/convex/utils/validatio
 import { createRecord, updateRecord, killRecord } from "@/convex/utils/helpers";
 import { ConvexError } from "convex/values";
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from "@/lib/errors/constants";
+import { stripeConnectStatusType } from "@/convex/types";
 
 export const create = mutation({
   args: {
@@ -62,7 +63,7 @@ export const createConnectAccount = mutation({
     args: {
       tenant_id: v.id('tenant'),
       org_id: v.string(),
-      stripe_connect_id: v.string(),
+      stripe_account_id: v.string(),
       status: v.string(),
       user_id: v.string(),
       org_name: v.string(),
@@ -71,7 +72,7 @@ export const createConnectAccount = mutation({
     handler: async (ctx, args) => {
 
       validateRequired(args.org_id, 'org_id');
-      validateStringLength(args.stripe_connect_id, 'stripe_connect_id');
+      validateStringLength(args.stripe_account_id, 'stripe_account_id');
       validateStringLength(args.status, 'status');
       validateStringLength(args.user_id, 'user_id');
       validateStringLength(args.org_name, 'org_name');
@@ -109,22 +110,16 @@ export const createConnectAccount = mutation({
 
 export const updateConnectStatus = mutation({
   args: {
-    tenant_id: v.id('tenant'),
-    org_id: v.string(),
-    status: v.string(),
-    stripe_connect_id: v.string(),
+    status: stripeConnectStatusType,
+    stripe_account_id: v.string(),
   },
   handler: async (ctx, args) => {
-   
-    validateRequired(args.org_id, 'org_id');
     validateRequired(args.status, 'status');
-    validateRequired(args.stripe_connect_id, 'stripe_connect_id');
+    validateRequired(args.stripe_account_id, 'stripe_account_id');
 
     const organization = await ctx.db.query('organization')
-    .withIndex('by_tenant_org_archive', q => 
-      q.eq('tenant_id', args.tenant_id)
-      .eq('org_id', args.org_id)
-      .eq('is_archive', false)
+    .withIndex('by_stripe_account_archive', q => 
+      q.eq('stripe_account_id', args.stripe_account_id)
     )
     .first();
 
@@ -137,8 +132,7 @@ export const updateConnectStatus = mutation({
         code: 'NOT_FOUND',
         status: 404,
         details: {
-          tenant_id: args.tenant_id,
-          org_id: args.org_id,
+          stripe_account_id: args.stripe_account_id,
         },
       });
     }

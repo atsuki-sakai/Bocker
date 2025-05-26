@@ -31,15 +31,14 @@ export const findByTenantAndOrg = query({
 
 export const findOrganizationByStripeConnectId = query({
   args: {
-    stripe_connect_id: v.string(),
+    stripe_account_id: v.string(),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true);
-    validateStringLength(args.stripe_connect_id, 'stripe_connect_id');
-    validateRequired(args.stripe_connect_id, 'stripe_connect_id');
+    validateStringLength(args.stripe_account_id, 'stripe_account_id');
 
-    return await ctx.db.query('organization').withIndex('by_stripe_connect_archive', q => 
-      q.eq('stripe_connect_id', args.stripe_connect_id)
+    return await ctx.db.query('organization').withIndex('by_stripe_account_archive', q => 
+      q.eq('stripe_account_id', args.stripe_account_id)
       .eq('is_archive', false)
     )
     .first();
@@ -70,7 +69,7 @@ export const getConnectAccountDetails = query({
       });
     }
     return {
-      stripe_connect_id: organization.stripe_connect_id,
+      stripe_account_id: organization.stripe_account_id,
       stripe_connect_status: organization.stripe_connect_status,
       stripe_connect_created_at: organization.stripe_connect_created_at,
     };

@@ -8,15 +8,14 @@
 import { mutation } from '../../_generated/server';
 import { v } from 'convex/values';
 import {
-  validateStringLength,
-  validateNumberLength
+  validateStringLength
 } from '@/convex/utils/validations';
 import { ConvexError } from 'convex/values';
 import { archiveRecord, updateRecord, killRecord } from '@/convex/utils/helpers';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { checkAuth } from "@/convex/utils/auth";
 
-import { billingPeriodType } from '@/convex/types';
+import { billingPeriodType, subscriptionStatusType } from '@/convex/types';
 
 
 export const syncSubscription = mutation({
@@ -25,7 +24,7 @@ export const syncSubscription = mutation({
       tenant_id: v.id('tenant'),
       stripe_subscription_id: v.string(),
       stripe_customer_id: v.string(),
-      status: v.string(),
+      status: subscriptionStatusType,
       price_id: v.string(),
       current_period_end: v.number(),
       plan_name: v.string(),
@@ -67,17 +66,14 @@ export const syncSubscription = mutation({
 export const updateSubscription = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
     stripe_subscription_id: v.string(),
-    subscription_status: v.string(),
+    subscription_status: subscriptionStatusType,
     stripe_customer_id: v.string(),
   },
   handler: async (ctx, args) => {
-      validateStringLength(args.org_id, 'org_id');
       validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
       validateStringLength(args.stripe_subscription_id, 'stripe_subscription_id');
-      validateStringLength(args.subscription_status, 'subscription_status');
-
+      
       const updateSubscription = await ctx.db.query('subscription')
       .withIndex('by_tenant_archive', q => 
         q.eq('tenant_id', args.tenant_id)
@@ -115,18 +111,17 @@ export const paymentFailed = mutation({
   args: {
     tenant_id: v.id('tenant'),
     stripe_customer_id: v.string(),
+    status: subscriptionStatusType,
     transaction_id: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
     
     // サブスクリプションを検索
-    let subscription = await ctx.db.query('subscription').withIndex('by_tenant_stripe_customer_archive', q => 
-      q.eq('tenant_id', args.tenant_id)
-      .eq('stripe_customer_id', args.stripe_customer_id)
+    let subscription = await ctx.db.query('subscription').withIndex('by_stripe_customer_archive', q => 
+      q.eq('stripe_customer_id', args.stripe_customer_id)
       .eq('is_archive', false)
-    )
-    .first();
+    ).first();
 
     // 冪等性対応: サブスクリプションが見つからない場合もエラーではなく成功として扱う
     if (!subscription) {
@@ -139,7 +134,7 @@ export const paymentFailed = mutation({
     }
 
     // 既に支払い失敗状態の場合は冪等性により何もしない
-    if (subscription.status === 'payment_failed') {
+    if (subscription.status !== 'active') {
       console.log(`支払い失敗処理: 既に支払い失敗状態です（冪等性により成功扱い）: ${subscription.stripe_subscription_id}`);
       return { 
         success: true, 
@@ -150,7 +145,7 @@ export const paymentFailed = mutation({
 
     // ステータスを更新
     const subscriptionResult = await ctx.db.patch(subscription._id, {
-      status: 'payment_failed',
+      status: args.status,
     });
 
     // 関連するテナントも更新
@@ -163,7 +158,7 @@ export const paymentFailed = mutation({
 
     if (tenant) {
       await updateRecord(ctx, tenant._id, {
-        subscription_status: 'payment_failed',
+        subscription_status: args.status,
       });
     }
 

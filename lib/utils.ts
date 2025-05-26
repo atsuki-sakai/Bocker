@@ -2,14 +2,13 @@ import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import Stripe from 'stripe'
 import { PLAN_MONTHLY_PRICES, PLAN_YEARLY_PRICES } from '@/lib/constants'
-import { BillingPeriod } from '@/convex/types'
-// FIXME: エラーハンドリングをカスタムエラーに変更する
-// import { ApplicationError, SystemError } from '@/lib/errors/custom_errors'
+import { BillingPeriod, SubscriptionStatus } from '@/convex/types'
 import imageCompression from 'browser-image-compression'
 import CryptoJS from 'crypto-js' // CryptoJSをインポート
 import { SystemError } from '@/lib/errors/custom_errors'
 import { ALLOWED_DOMAINS } from '@/lib/constants'
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
+import { MAX_PIN_CODE_LENGTH } from '@/convex/constants'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -56,41 +55,93 @@ export function checkAllowedUrl(checkUrl: string) {
   }
 }
 
-// 指数バックオフで再試行を行う関数
+/**
+ * 汎用リトライユーティリティ（指数バックオフ + フルジッター）
+ *
+ * 旧シグネチャ `(operation, maxRetries?, baseDelay?)` との互換性を保ちつつ、
+ * 拡張オプションを受け取れるようにした。
+ */
+export interface RetryOptions {
+  /** 最大リトライ回数（デフォルト3回） */
+  maxRetries?: number;
+  /** 初回遅延ミリ秒（デフォルト300ms） */
+  baseDelayMs?: number;
+  /** 最小遅延ミリ秒（デフォルト1_000ms） */
+  minDelayMs?: number;
+  /** 最大遅延ミリ秒（デフォルト30_000ms） */
+  maxDelayMs?: number;
+  /** 累積遅延上限（ミリ秒）。超過で打ち切り */
+  maxTotalTimeMs?: number;
+  /**
+   * 指定したエラーがリトライ対象か判定するコールバック。
+   * `false` を返すと直ちにエラーをスローする
+   */
+  shouldRetry?: (err: unknown, attempt: number) => boolean;
+  /** AbortController で中断したい場合に渡す */
+  signal?: AbortSignal;
+  /** リトライ毎に呼ばれるフック */
+  onRetry?: (err: unknown, attempt: number, delay: number) => void;
+}
+
 export async function retryOperation<T>(
   operation: () => Promise<T>,
-  maxRetries = 3,
-  baseDelay = 300
+  optionsOrMaxRetries: number | RetryOptions = {},
+  legacyBaseDelay?: number,
 ): Promise<T> {
-  let retries = 0
+  // 旧 API との互換レイヤー
+  const opts: RetryOptions =
+    typeof optionsOrMaxRetries === 'number'
+      ? { maxRetries: optionsOrMaxRetries, baseDelayMs: legacyBaseDelay }
+      : optionsOrMaxRetries;
 
-  while (true) {
+  const {
+    maxRetries = 3,
+    baseDelayMs = 300,
+    minDelayMs = 1_000,
+    maxDelayMs = 30_000,
+    maxTotalTimeMs,
+    shouldRetry = () => true,
+    signal,
+    onRetry,
+  } = opts;
+
+  const startAt = Date.now();
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    if (signal?.aborted) {
+      throw new Error('retryOperation: aborted by signal');
+    }
+
     try {
-      return await operation()
-    } catch (error) {
-      retries++
-      if (retries > maxRetries) {
-        console.error(`最大${maxRetries}回の再試行後、処理に失敗しました:`, error)
-        throw error
+      return await operation();
+    } catch (err) {
+      if (attempt >= maxRetries || !shouldRetry(err, attempt)) {
+        throw err;
       }
-      // 指数バックオフ + ランダム要素（ジッター）を適用
-      const exponentialDelay = Math.min(5000, Math.pow(2, retries - 1) * baseDelay)
-      // ジッター適用後に最小1秒、最大5秒の範囲に収める
-      // const jitter = Math.random(); // このジッター計算だと最小値が保証されない
-      // 遅延時間は baseDelay から exponentialDelay の範囲でランダムに調整
-      const delay = Math.max(
-        baseDelay, // 最低遅延時間
-        Math.floor(exponentialDelay * (0.5 + Math.random() * 0.5)) // baseDelayから指数遅延の間でランダムに
-      )
 
-      console.log(`処理を ${delay}ms 後に再試行します (試行回数: ${retries}/${maxRetries})`)
-      await new Promise((resolve) => setTimeout(resolve, delay))
+      // Full‑Jitter (AWS 推奨アルゴリズム)
+      const expo = baseDelayMs * 2 ** (attempt - 1);
+      const delay = Math.max(
+        minDelayMs,
+        Math.min(Math.random() * expo, maxDelayMs),
+      );
+
+      if (maxTotalTimeMs && Date.now() - startAt + delay > maxTotalTimeMs) {
+        throw err;
+      }
+
+      onRetry?.(err, attempt, delay);
+      console.log(`retryOperation: attempt ${attempt}/${maxRetries} – retry in ${delay}ms`);
+      await new Promise((r) => setTimeout(r, delay));
     }
   }
+
+  // 通常ここへは到達しない
+  throw new Error('retryOperation: unexpected exit');
 }
 
 // Stripeのサブスクリプションステータスを正規化する関数
-export function normalizeSubscriptionStatus(subscription: Stripe.Subscription): string {
+export function normalizeSubscriptionStatus(subscription: Stripe.Subscription): SubscriptionStatus {
   const { status } = subscription
 
   // Status handling for business logic
@@ -122,10 +173,9 @@ export function normalizeSubscriptionStatus(subscription: Stripe.Subscription): 
   }
 }
 
+
 export const generatePinCode = () => {
   // ピンコードの最小長を定義（6文字以上）
-  const PIN_LENGTH = 6
-
   const upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   const lowerChars = 'abcdefghijklmnopqrstuvwxyz'
   const numberChars = '0123456789'
@@ -139,7 +189,7 @@ export const generatePinCode = () => {
   ]
 
   // 残りの文字数分だけランダムに取得
-  const remainingCount = PIN_LENGTH - requiredChars.length
+  const remainingCount = MAX_PIN_CODE_LENGTH - requiredChars.length
   if (remainingCount < 0) {
     // PIN_LENGTH が3未満の場合、エラーまたはPIN_LENGTHを増やすなどの対応が必要
     // 今回のコードではPIN_LENGTH=6なので問題ないが、念のため
@@ -159,6 +209,17 @@ export const generatePinCode = () => {
 
   const pinCode = pinArray.join('')
   return pinCode
+}
+
+ /**
+   * Stripeの課金期間("month"/"year")をConvexスキーマ形式("monthly"/"yearly")に変換
+   */
+export function convertIntervalToBillingPeriod(interval: string): string {
+  const intervalMapping: Record<string, string> = {
+    month: 'monthly',
+    year: 'yearly',
+  };
+  return intervalMapping[interval] || 'monthly';
 }
 
 // Stripeの課金期間をConvexの課金期間に変換
@@ -774,3 +835,5 @@ export function sanitizeFileName(fileName: string): string {
   if (!sanitizedName) return 'file'
   return sanitizedName + (ext || '')
 }
+
+

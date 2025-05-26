@@ -292,6 +292,8 @@ import {
   imageType,
   reservationPaymentStatusType,
   couponDiscountType,
+  subscriptionStatusType,
+  stripeConnectStatusType,
 } from './types';
 
 /**
@@ -305,7 +307,7 @@ const tenant = defineTable({
   user_email: v.string(),                  // Clerk のメール
   stripe_customer_id: v.optional(v.string()),
   subscription_id: v.optional(v.string()), // 現契約サブスクリプション
-  subscription_status: v.optional(v.string()),
+  subscription_status: v.optional(subscriptionStatusType),  // incomplete, incomplete_expired, trialing, active, past_due, canceled, unpaid, or paused
   plan_name: v.optional(v.string()),       // "lite" | "pro"
   price_id: v.optional(v.string()),        // Stripe Price ID
   billing_period: v.optional(billingPeriodType), // 課金期間
@@ -327,16 +329,17 @@ const subscription = defineTable({
   tenant_id: v.id('tenant'),          // 契約元のテナントID
   stripe_subscription_id: v.optional(v.string()),  // Stripe Subscription ID
   stripe_customer_id: v.optional(v.string()),// Stripe Customer ID（Clerkユーザ単位ではなくテナント単位）
-  status: v.optional(v.string()),           // "active" | "past_due" | "canceled" ...
+  status: v.optional(subscriptionStatusType),
   price_id: v.optional(v.string()),         // Stripe Price ID
   plan_name: v.optional(v.string()),        // "Lite" | "Pro" | "Enterprise"
   billing_period: v.optional(billingPeriodType), // "monthly" | "yearly"
   current_period_end: v.optional(v.number()),    // 現在の課金期間終了UNIX
+  cancel_at: v.optional(v.number()),    // キャンセル日UNIX
   ...CommonFields,
 })
 .index('by_tenant_archive',            ['tenant_id', 'is_archive']) // テナントから 1レコード取得
-.index('by_tenant_stripe_subscription_archive',      ['tenant_id', 'stripe_subscription_id', 'is_archive']) // Stripe Webhook 用
-.index('by_tenant_stripe_customer_archive',   ['tenant_id', 'stripe_customer_id', 'is_archive']); // Stripe Customer ID で取得
+.index('by_stripe_subscription_archive',      ['stripe_subscription_id', 'is_archive']) // Stripe Webhook 用
+.index('by_stripe_customer_archive',   ['stripe_customer_id', 'is_archive']); // Stripe Customer ID で取得
 
 /**
  * =========================
@@ -371,13 +374,13 @@ const organization = defineTable({
   org_id: v.string(),                // Clerkの Organization ID
   org_name: v.string(),              // 店舗名
   org_email: v.optional(v.string()),     // 組織のメール
-  stripe_connect_id: v.optional(v.string()), // Stripe Connect Account ID
-  stripe_connect_status: v.optional(v.string()), // Stripe Connect ステータス
+  stripe_account_id: v.optional(v.string()), // Stripe Connect Account ID
+  stripe_connect_status: v.optional(stripeConnectStatusType), // Stripe Connect ステータス
   stripe_connect_created_at: v.optional(v.number()), // Stripe Connect 作成日時
   ...CommonFields,
 })
 .index('by_org_archive', ['org_id', 'is_archive'])
-.index('by_stripe_connect_archive', ['stripe_connect_id', 'is_archive']) // user_idとstripe_connect_idで取得
+.index('by_stripe_account_archive', ['stripe_account_id', 'is_archive']) // user_idとstripe_account_idで取得
 .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']); // org_id で取得
 
 /**

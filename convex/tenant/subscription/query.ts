@@ -42,12 +42,9 @@ export const findByStripeCustomerId = query({
   },
   handler: async (ctx, args) => {
     validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
-
     return await ctx.db
-      .query('tenant')
-      .withIndex('by_stripe_customer_archive', (q) =>
-        q.eq('stripe_customer_id', args.stripe_customer_id).eq('is_archive', false)
-      )
+      .query('subscription')
+      .withIndex('by_stripe_customer_archive', (q) => q.eq('stripe_customer_id', args.stripe_customer_id).eq('is_archive', false))
       .first();
   },
 });
@@ -95,7 +92,7 @@ export const getByUserEmail = query({
     }
     const subscription = await ctx.db
       .query('subscription')
-      .withIndex('by_tenant_stripe_customer_archive', (q) => q.eq('tenant_id', tenant._id).eq('stripe_customer_id', tenant.stripe_customer_id).eq('is_archive', false))
+      .withIndex('by_stripe_customer_archive', (q) => q.eq('stripe_customer_id', tenant.stripe_customer_id).eq('is_archive', false))
       .first();
     return subscription;
   },
