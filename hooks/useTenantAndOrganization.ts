@@ -1,6 +1,7 @@
 'use client';
 
 import { useUser, useAuth } from '@clerk/nextjs';
+import { useClerk } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
@@ -14,6 +15,7 @@ type UseTenantAndOrganization = {
   role: Role | null;
   isLoaded: boolean;
   isSignedIn: boolean;
+  ready: boolean;
 };
 
 export function useTenantAndOrganization(): UseTenantAndOrganization {
@@ -21,12 +23,7 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
   const pathname = usePathname();
   const { user } = useUser();
   const { userId, isLoaded, isSignedIn } = useAuth();
-  
-  useEffect(() => {
-    if (isLoaded && !isSignedIn && pathname !== '/sign-in') {
-      router.replace('/sign-in');
-    }
-  }, [isLoaded, isSignedIn, pathname, router, user]);
+  const { session } = useClerk();
 
   // user ロード後にメタデータを読む
   const tenantId = useMemo(
@@ -44,6 +41,24 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
     [isLoaded, user]
   );
 
+  const ready = isLoaded && !!tenantId && !!orgId && !!role;
+
+  useEffect(() => {
+    // 未サインインならサインインページへリダイレクト
+    if (isLoaded && !isSignedIn && pathname !== '/sign-in') {
+      router.replace('/sign-in');
+      return;
+    }
+
+    // メタデータが揃うまで Clerk セッションを 3 秒ごとにリロード
+    if (isLoaded && isSignedIn && !ready) {
+      const id = setInterval(() => {
+        session?.reload();
+      }, 3_000);
+
+      return () => clearInterval(id);
+    }
+  }, [isLoaded, isSignedIn, pathname, ready, session]);
 
   return {
     tenantId: tenantId,
@@ -52,5 +67,6 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
     role: role,
     isLoaded,
     isSignedIn: isSignedIn as boolean,
+    ready,
   };
 }

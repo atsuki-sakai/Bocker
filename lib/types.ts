@@ -1,4 +1,5 @@
 // Stripe types
+import { Role, ROLE_VALUES } from "@/convex/types";
 export interface StripeLineItem {
   id: string;
   description: string | null;
@@ -46,3 +47,13 @@ export type TimeRange = {
   startHour: string; // 開始時刻 "HH:mm"
   endHour: string; // 終了時刻 "HH:mm"
 };
+
+// ロールのレベルを定義
+export const ROLE_LEVEL: Record<Role, number> = {
+  admin: 4,
+  owner: 3,
+  manager: 2,
+  staff: 1,
+};
+
+

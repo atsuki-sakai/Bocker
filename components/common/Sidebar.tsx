@@ -8,30 +8,15 @@ import { Separator } from '@/components/ui/separator'
 import { Loading } from './'
 import Image from 'next/image'
 import { Dialog, DialogBackdrop, DialogPanel, TransitionChild } from '@headlessui/react'
-import {
-  MenuIcon,
-  CalendarIcon,
-  BookIcon,
-  CheckIcon,
-  SettingsIcon,
-  UserCircleIcon,
-  FileIcon,
-  MenuSquareIcon,
-  HomeIcon,
-  XIcon,
-  CreditCardIcon,
-  TicketIcon,
-  GiftIcon,
-  TimerIcon,
-  UsersIcon,
-  CloudIcon,
-} from 'lucide-react'
+import { MenuIcon, XIcon } from 'lucide-react'
 import { UserButton } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
 import { useTheme } from 'next-themes'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { api } from '@/convex/_generated/api'
 import { useQuery } from 'convex/react'
+import { hasAccess } from '@/lib/utils'
+import { NAV_ITEMS } from '@/lib/constants'
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
@@ -45,7 +30,7 @@ export default function Sidebar({ children }: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isLinkClicked, setIsLinkClicked] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const { tenantId, orgId, role, isLoaded } = useTenantAndOrganization()
+  const { tenantId, orgId, role, isLoaded, ready } = useTenantAndOrganization()
 
   console.log('role: ', role)
   console.log('tenantId: ', tenantId)
@@ -57,93 +42,7 @@ export default function Sidebar({ children }: SidebarProps) {
 
   const tenant = useQuery(api.tenant.query.findById, tenantId ? { id: tenantId } : 'skip')
 
-  // 全てのナビゲーション項目を統合
-  const navigation = [
-    {
-      name: 'ダッシュボード',
-      href: `/dashboard`,
-      icon: HomeIcon,
-      role: 'staff',
-    },
-    {
-      name: '予約作成',
-      href: `/dashboard/reservation/add`,
-      icon: BookIcon,
-      role: 'staff',
-    },
-    {
-      name: '予約ボード',
-      href: `/dashboard/reservation`,
-      icon: CalendarIcon,
-      role: 'staff',
-    },
-    {
-      name: '予約タイムライン',
-      href: `/dashboard/timeline`,
-      icon: TimerIcon,
-      role: 'staff',
-    },
-    {
-      name: '完了済みの予約',
-      href: `/dashboard/reservations`,
-      icon: CheckIcon,
-      role: 'staff',
-    },
-    {
-      name: 'スタッフ管理',
-      href: `/dashboard/staff`,
-      icon: UsersIcon,
-      role: 'owner',
-    },
-    {
-      name: 'メニュー管理',
-      href: `/dashboard/menu`,
-      icon: FileIcon,
-      role: 'manager',
-    },
-    {
-      name: '顧客管理',
-      href: `/dashboard/customer`,
-      icon: UserCircleIcon,
-      role: 'staff',
-    },
-    {
-      name: '顧客カルテ管理',
-      href: `/dashboard/carte`,
-      icon: CloudIcon,
-      role: 'staff',
-    },
-    {
-      name: 'オプション管理',
-      href: `/dashboard/option`,
-      icon: MenuSquareIcon,
-      role: 'manager',
-    },
-    {
-      name: 'クーポン管理',
-      href: `/dashboard/coupon`,
-      icon: GiftIcon,
-      role: 'manager',
-    },
-    {
-      name: 'ポイント設定',
-      href: `/dashboard/point`,
-      icon: TicketIcon,
-      role: 'owner',
-    },
-    {
-      name: 'サブスクリプション',
-      href: `/dashboard/subscription`,
-      icon: CreditCardIcon,
-      role: 'admin',
-    },
-    {
-      name: '設定',
-      href: `/dashboard/setting`,
-      icon: SettingsIcon,
-      role: 'owner',
-    },
-  ]
+  const filteredNav = isLoaded ? NAV_ITEMS.filter((item) => hasAccess(role, item.minRole)) : []
 
   useEffect(() => {
     if (isLinkClicked) {
@@ -153,7 +52,7 @@ export default function Sidebar({ children }: SidebarProps) {
   }, [pathname, isLinkClicked, setSidebarOpen])
   useEffect(() => setMounted(true), [])
 
-  if (!orgId) {
+  if (!ready) {
     return <Loading />
   }
 
@@ -225,7 +124,7 @@ export default function Sidebar({ children }: SidebarProps) {
                     </div>
                   )}
                   <ul role="list" className="flex flex-1 flex-col gap-y-1">
-                    {navigation.map((item) => {
+                    {filteredNav.map((item) => {
                       const isCurrent = pathname === item.href
 
                       return (
@@ -300,7 +199,7 @@ export default function Sidebar({ children }: SidebarProps) {
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
                 <li>
                   <ul role="list" className="-mx-2 space-y-1">
-                    {navigation.map((item) => {
+                    {filteredNav.map((item) => {
                       const isCurrent = pathname === item.href
 
                       return (

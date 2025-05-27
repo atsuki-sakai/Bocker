@@ -17,7 +17,6 @@ export const create = mutation({
     destination_id: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx)
     validateRequired(args.org_id, 'org_id');
     validateStringLength(args.line_access_token, 'line_access_token', 512);
     validateStringLength(args.line_channel_secret, 'line_channel_secret', 512);
@@ -39,7 +38,6 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
-    
     validateStringLength(args.line_access_token, 'line_access_token', 512);
     validateStringLength(args.line_channel_secret, 'line_channel_secret', 512);
     validateStringLength(args.liff_id, 'liff_id', 512);

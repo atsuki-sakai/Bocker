@@ -109,14 +109,14 @@ export default function SignInForm() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex items-center justify-center min-h-screen bg-muted">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
         className="w-full max-w-md p-2"
       >
-        <Card className="border-0 shadow-lg shadow-blue-100/20 dark:shadow-gray-900/40 backdrop-blur-sm bg-white/90 dark:bg-gray-900/80">
+        <Card className="border-0 shadow-lg ">
           <CardHeader className="space-y-1">
             <motion.div variants={itemVariants}>
               <CardTitle className="text-2xl font-bold text-center">
@@ -124,7 +124,7 @@ export default function SignInForm() {
               </CardTitle>
             </motion.div>
             <motion.div variants={itemVariants}>
-              <p className="text-sm text-center text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-center text-muted-foreground">
                 アカウントにサインインして続行
               </p>
             </motion.div>
@@ -136,7 +136,7 @@ export default function SignInForm() {
                   メールアドレス
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
@@ -146,7 +146,7 @@ export default function SignInForm() {
                     required
                   />
                 </div>
-                {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
               </motion.div>
 
               <motion.div variants={itemVariants} className="space-y-2">
@@ -154,7 +154,7 @@ export default function SignInForm() {
                   パスワード
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
@@ -166,14 +166,14 @@ export default function SignInForm() {
                   <button
                     type="button"
                     onClick={togglePasswordVisibility}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
+                    className="absolute right-3 top-3 text-muted-foreground hover:opacity-80 focus:outline-none transition-colors"
                     aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-sm text-red-500">{errors.password.message}</p>
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
                 )}
               </motion.div>
 
@@ -197,7 +197,7 @@ export default function SignInForm() {
                 >
                   <Link
                     href={`/sign-in/reset-password?email=${email}`}
-                    className="text-sm text-blue-500"
+                    className="text-sm text-link-foreground"
                   >
                     パスワードをお忘れですか？
                   </Link>
@@ -207,14 +207,14 @@ export default function SignInForm() {
           </CardContent>
 
           <CardFooter className="flex flex-col space-y-4">
-            <Separator className="bg-gray-200 dark:bg-gray-700 w-1/2 mx-auto my-2" />
+            <Separator className="bg-muted w-1/2 mx-auto my-2" />
             <motion.div
               variants={itemVariants}
               className="flex items-center justify-between w-full text-right text-xs"
             >
               <Link
                 href="/staff/sign-in"
-                className="inline-flex items-center text-xs text-blue-500"
+                className="inline-flex items-center text-xs text-link-foreground"
               >
                 スタッフの方はこちら
                 <ArrowRight className="ml-1 h-3 w-3" />

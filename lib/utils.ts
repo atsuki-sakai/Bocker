@@ -10,6 +10,10 @@ import { ALLOWED_DOMAINS } from '@/lib/constants'
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
 import { MAX_PIN_CODE_LENGTH } from '@/convex/constants'
 
+import type { Role } from '@/convex/types';
+import { ROLE_LEVEL } from '@/lib/types';
+
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -834,6 +838,13 @@ export function sanitizeFileName(fileName: string): string {
 
   if (!sanitizedName) return 'file'
   return sanitizedName + (ext || '')
+}
+
+export function hasAccess(userRole: Role | null | undefined, requiredRole: Role): boolean {
+  if (!userRole) {
+    return false;
+  }
+  return ROLE_LEVEL[userRole] >= ROLE_LEVEL[requiredRole];
 }
 
 

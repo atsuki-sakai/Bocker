@@ -192,3 +192,118 @@ export const POINT_EXPIRATION_DAYS = [
 // Referral Discount
 export const BASE_REFERRAL_DISCOUNT_AMOUNT = 2000
 export const MAX_REFERRAL_COUNT = 10
+
+import {
+  Home as HomeIcon,
+  Book as BookIcon,
+  Calendar as CalendarIcon,
+  Users as UsersIcon,
+  CreditCard as CreditCardIcon,
+  Timer as TimerIcon,
+  Check as CheckIcon,
+  File as FileIcon,
+  UserCircle as UserCircleIcon,
+  Cloud as CloudIcon,
+  MenuSquare as MenuSquareIcon,
+  Gift as GiftIcon,
+  Ticket as TicketIcon,
+  Settings as SettingsIcon,
+  type LucideIcon
+} from 'lucide-react';
+import type { Role } from '@/convex/types';
+
+export type NavItem = {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+  minRole: Role;
+};
+
+
+
+export const NAV_ITEMS: NavItem[] = [
+  {
+    name: 'ダッシュボード',
+    href: `/dashboard`,
+    icon: HomeIcon,
+    minRole: 'staff',
+  },
+  {
+    name: '予約作成',
+    href: `/dashboard/reservation/add`,
+    icon: BookIcon,
+    minRole: 'staff',
+  },
+  {
+    name: '予約ボード',
+    href: `/dashboard/reservation`,
+    icon: CalendarIcon,
+    minRole: 'staff',
+  },
+  {
+    name: '予約タイムライン',
+    href: `/dashboard/timeline`,
+    icon: TimerIcon,
+    minRole: 'staff',
+  },
+  {
+    name: '完了済みの予約',
+    href: `/dashboard/reservations`,
+    icon: CheckIcon,
+    minRole: 'staff',
+  },
+  {
+    name: 'スタッフ管理',
+    href: `/dashboard/staff`,
+    icon: UsersIcon,
+    minRole: 'owner',
+  },
+  {
+    name: 'メニュー管理',
+    href: `/dashboard/menu`,
+    icon: FileIcon,
+    minRole: 'manager',
+  },
+  {
+    name: '顧客管理',
+    href: `/dashboard/customer`,
+    icon: UserCircleIcon,
+    minRole: 'staff',
+  },
+  {
+    name: '顧客カルテ管理',
+    href: `/dashboard/carte`,
+    icon: CloudIcon,
+    minRole: 'staff',
+  },
+  {
+    name: 'オプション管理',
+    href: `/dashboard/option`,
+    icon: MenuSquareIcon,
+    minRole: 'manager',
+  },
+  {
+    name: 'クーポン管理',
+    href: `/dashboard/coupon`,
+    icon: GiftIcon,
+    minRole: 'manager',
+  },
+  {
+    name: 'ポイント設定',
+    href: `/dashboard/point`,
+    icon: TicketIcon,
+    minRole: 'owner',
+  },
+  {
+    name: 'サブスクリプション',
+    href: `/dashboard/subscription`,
+    icon: CreditCardIcon,
+    minRole: 'admin',
+  },
+  {
+    name: '設定',
+    href: `/dashboard/setting`,
+    icon: SettingsIcon,
+    minRole: 'owner',
+  },
+]
