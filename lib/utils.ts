@@ -8,10 +8,11 @@ import CryptoJS from 'crypto-js' // CryptoJSをインポート
 import { SystemError } from '@/lib/errors/custom_errors'
 import { ALLOWED_DOMAINS } from '@/lib/constants'
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
-import { MAX_PIN_CODE_LENGTH } from '@/convex/constants'
+import { MAX_PIN_CODE_LENGTH } from '@/convex/constants'  
+import { SubscriptionPlanName } from '@/convex/types'
+import { ROLE_LEVEL } from '@/lib/types'
 
 import type { Role } from '@/convex/types';
-import { ROLE_LEVEL } from '@/lib/types';
 
 
 export function cn(...inputs: ClassValue[]) {
@@ -227,29 +228,33 @@ export function convertIntervalToBillingPeriod(interval: string): string {
 }
 
 // Stripeの課金期間をConvexの課金期間に変換
-export function priceIdToPlanInfo(priceId: string) {
+export function priceIdToPlanInfo(priceId: string): {
+  name: SubscriptionPlanName;
+  price: number;
+  billing_period: BillingPeriod;
+} {
   switch (priceId) {
     case process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID:
       return {
-        name: 'Lite',
+        name: 'LITE',
         price: PLAN_MONTHLY_PRICES.LITE,
         billing_period: 'month' as BillingPeriod,
       }
     case process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID:
       return {
-        name: 'Lite',
+        name: 'LITE',
         price: PLAN_YEARLY_PRICES.LITE.price,
         billing_period: 'year' as BillingPeriod,
       }
     case process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID:
       return {
-        name: 'Pro',
+        name: 'PRO',
         price: PLAN_MONTHLY_PRICES.PRO,
         billing_period: 'month' as BillingPeriod,
       }
     case process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID:
       return {
-        name: 'Pro',
+        name: 'PRO',
         price: PLAN_YEARLY_PRICES.PRO.price,
         billing_period: 'year' as BillingPeriod,
       }
@@ -257,7 +262,7 @@ export function priceIdToPlanInfo(priceId: string) {
       // 無効なpriceIdの場合はデフォルト値を返す
       console.warn(`Unknown priceId: ${priceId}, returning default plan info`)
       return {
-        name: 'Unknown',
+        name: 'UNKNOWN',
         price: 0,
         billing_period: 'month' as BillingPeriod,
       }
@@ -267,25 +272,23 @@ export function priceIdToPlanInfo(priceId: string) {
 /**
  * priceIDからプラン名のみを取得するヘルパー関数
  * @param priceId Stripe価格ID
- * @returns プラン名 ('Lite' | 'Pro' | 'Unknown')
+ * @returns プラン名 ('LITE' | 'PRO' | 'UNKNOWN')
  */
-export function getPlanNameFromPriceId(priceId: string): string {
+export function getPlanNameFromPriceId(priceId: string): SubscriptionPlanName {
   const planInfo = priceIdToPlanInfo(priceId)
   return planInfo.name
 }
 
 // プラン名と課金期間から価格IDを取得する関数
-export function getPriceNameFromPlanName(planName: string, period: BillingPeriod): string {
-  planName = planName.toLowerCase()
-
+export function getPriceNameFromPlanName(planName: SubscriptionPlanName, period: BillingPeriod): string {
   let priceId: string | undefined
 
   if (period === 'month') {
     switch (planName) {
-      case 'lite':
+      case 'LITE':
         priceId = process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID
         break
-      case 'pro':
+      case 'PRO':
         priceId = process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID
         break
       default:
@@ -294,10 +297,10 @@ export function getPriceNameFromPlanName(planName: string, period: BillingPeriod
   } else if (period === 'year') {
     // period === 'year'
     switch (planName) {
-      case 'lite':
+      case 'LITE':
         priceId = process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID
         break
-      case 'pro':
+      case 'PRO':
         priceId = process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID
         break
       default:

@@ -87,7 +87,7 @@ export async function handleAccountUpdated(
 
   try {
 
-    const stripeAccountId = evt.data.object.id;
+    const stripeAccountId = evt.data.object.id as string;
     let updateStatus = determineAccountStatus(evt.data.object);
     // ステータスを更新
     await deps.retry(() =>

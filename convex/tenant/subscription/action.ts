@@ -321,7 +321,7 @@ export const confirmSubscriptionUpdate = action({
         billingPeriod = intervalMapping[recurring.interval] || 'month';
       }
 
-      await ctx.runMutation(api.tenant.subscription.mutation.updateSubscription, {
+      await ctx.runMutation(api.tenant.subscription.mutation.upsertSubscription, {
         stripe_subscription_id: updatedSubscription.id,
         price_id: updatedSubscription.items.data[0]?.price?.id,
         billing_period: billingPeriod,

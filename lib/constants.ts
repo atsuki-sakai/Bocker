@@ -115,18 +115,18 @@ export const PLAN_YEARLY_PRICES = {
     price: PLAN_MONTHLY_PRICES.LITE * PLAN_DURATION_MONTHS.YEARLY,
     // 割引率 = (本来の年間総額 − 請求額) ÷ 本来の年間総額 × 100
     savingPercent:
-      ((PLAN_MONTHLY_PRICES.LITE * 12 -
+      (((PLAN_MONTHLY_PRICES.LITE * 12 -
         PLAN_MONTHLY_PRICES.LITE * PLAN_DURATION_MONTHS.YEARLY) /
         (PLAN_MONTHLY_PRICES.LITE * 12)) *
-      100,
+      100).toFixed(0),
   },
   PRO: {
     price: PLAN_MONTHLY_PRICES.PRO * PLAN_DURATION_MONTHS.YEARLY,
     savingPercent:
-      ((PLAN_MONTHLY_PRICES.PRO * 12 -
+      (((PLAN_MONTHLY_PRICES.PRO * 12 -
         PLAN_MONTHLY_PRICES.PRO * PLAN_DURATION_MONTHS.YEARLY) /
         (PLAN_MONTHLY_PRICES.PRO * 12)) *
-      100,
+      100).toFixed(0),
   },
 }
 

@@ -16,6 +16,7 @@ import { StripePreviewData } from '@/lib/types'
 import { Id } from '@/convex/_generated/dataModel'
 import { PLAN_TRIAL_DAYS } from '@/lib/constants'
 import { BASE_URL } from '@/lib/constants'
+import { SubscriptionPlanName } from '@/convex/types'
 
 interface SubscriptionFormProps {
   tenantId: Id<'tenant'>
@@ -38,7 +39,7 @@ export default function SubscriptionForm({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('month')
-  const [updatePlanId, setUpdatePlanId] = useState<string | null>(null)
+  const [updatePlanId, setUpdatePlanId] = useState<SubscriptionPlanName | null>(null)
 
   const createSession = useAction(api.tenant.subscription.action.createSubscriptionSession)
   const createBillingPortal = useAction(api.tenant.subscription.action.createBillingPortalSession)
@@ -83,7 +84,11 @@ export default function SubscriptionForm({
 
   // プレビュー取得関数をメモ化
   const handleGetPreview = useCallback(
-    async (planName: string, billingPeriod: BillingPeriod, overrideSubscriptionId?: string) => {
+    async (
+      planName: SubscriptionPlanName,
+      billingPeriod: BillingPeriod,
+      overrideSubscriptionId?: string
+    ) => {
       console.log('🔍 handleGetPreview開始:', { planName, billingPeriod, overrideSubscriptionId })
 
       try {
@@ -215,7 +220,7 @@ export default function SubscriptionForm({
 
   // サブスクリプション作成関数をメモ化
   const handleSubscribe = useCallback(
-    async (planName: string, billingPeriod: BillingPeriod) => {
+    async (planName: SubscriptionPlanName, billingPeriod: BillingPeriod) => {
       console.log('🔥 handleSubscribe called with:', {
         planName,
         billingPeriod,
@@ -323,12 +328,12 @@ export default function SubscriptionForm({
   // 各プラン用のサブスクリプションハンドラをメモ化
   const handleLiteSubscribe = useCallback(() => {
     console.log('🟦 Liteプランボタンがクリックされました', { billingPeriod })
-    handleSubscribe('Lite', billingPeriod)
+    handleSubscribe('LITE', billingPeriod)
   }, [handleSubscribe, billingPeriod])
 
   const handleProSubscribe = useCallback(() => {
     console.log('🟪 Proプランボタンがクリックされました', { billingPeriod })
-    handleSubscribe('Pro', billingPeriod)
+    handleSubscribe('PRO', billingPeriod)
   }, [handleSubscribe, billingPeriod])
 
   return (
@@ -364,7 +369,7 @@ export default function SubscriptionForm({
         previewData={previewData}
         billingPeriod={billingPeriod}
         currentPlanName={currentPlanName}
-        updatePlanName={updatePlanId as string}
+        updatePlanName={updatePlanId ?? 'UNKNOWN'}
         tenant={tenant as Doc<'tenant'> | null}
         subscriptionId={subscription?.stripe_subscription_id || tenant?.subscription_id || null}
         isSubmitting={isSubmitting}
@@ -384,7 +389,7 @@ export default function SubscriptionForm({
           }
           savingPercent={
             billingPeriod === 'year'
-              ? (SUBSCRIPTION_PLANS.LITE.yearly.savingPercent ?? 0)
+              ? (Number(SUBSCRIPTION_PLANS.LITE.yearly.savingPercent) ?? 0)
               : undefined
           }
           features={SUBSCRIPTION_PLANS.LITE.features}
@@ -411,7 +416,7 @@ export default function SubscriptionForm({
           }
           savingPercent={
             billingPeriod === 'year'
-              ? (SUBSCRIPTION_PLANS.PRO.yearly.savingPercent ?? 0)
+              ? (Number(SUBSCRIPTION_PLANS.PRO.yearly.savingPercent) ?? 0)
               : undefined
           }
           features={SUBSCRIPTION_PLANS.PRO.features}

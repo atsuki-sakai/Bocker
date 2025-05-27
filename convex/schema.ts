@@ -295,6 +295,7 @@ import {
   subscriptionStatusType,
   stripeConnectStatusType,
   webhookEventProcessingResultType,
+  subscriptionPlanNameType,
 } from './types';
 
 /**
@@ -309,7 +310,7 @@ const tenant = defineTable({
   stripe_customer_id: v.optional(v.string()),
   subscription_id: v.optional(v.string()), // 現契約サブスクリプション
   subscription_status: v.optional(subscriptionStatusType),  // incomplete, incomplete_expired, trialing, active, past_due, canceled, unpaid, or paused
-  plan_name: v.optional(v.string()),       // "lite" | "pro"
+  plan_name: v.optional(subscriptionPlanNameType),       // "lite" | "pro"
   price_id: v.optional(v.string()),        // Stripe Price ID
   billing_period: v.optional(billingPeriodType), // 課金期間
   ...CommonFields,
@@ -332,7 +333,7 @@ const subscription = defineTable({
   stripe_customer_id: v.string(),// Stripe Customer ID（Clerkユーザ単位ではなくテナント単位）
   status: subscriptionStatusType,
   price_id: v.string(),         // Stripe Price ID
-  plan_name: v.string(),        // "Lite" | "Pro" | "Enterprise"
+  plan_name: subscriptionPlanNameType,        // "Lite" | "Pro" | "Enterprise"
   billing_period: billingPeriodType, // "monthly" | "yearly"
   current_period_start: v.number(),    // 現在の課金期間開始UNIX
   current_period_end: v.number(),    // 現在の課金期間終了UNIX

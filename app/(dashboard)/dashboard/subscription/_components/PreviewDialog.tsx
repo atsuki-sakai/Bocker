@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { Doc } from '@/convex/_generated/dataModel'
 import { StripePreviewData } from '@/lib/types'
+import { SubscriptionPlanName } from '@/convex/types'
 import { useMemo } from 'react'
 
 // Utility functions
@@ -79,8 +80,8 @@ interface PreviewDialogProps {
   setOpenAction: (open: boolean) => void
   previewData: StripePreviewData | null
   billingPeriod: BillingPeriod
-  currentPlanName: string | null // プラン名（'Lite', 'Pro'）
-  updatePlanName: string // プラン名（'Lite', 'Pro'）
+  currentPlanName: SubscriptionPlanName | null // プラン名（'Lite', 'Pro'）
+  updatePlanName: SubscriptionPlanName // プラン名（'Lite', 'Pro'）
   tenant: Doc<'tenant'> | null
   subscriptionId: string | null
   isSubmitting: boolean
@@ -108,7 +109,7 @@ export default function PreviewDialog({
       subscriptionId,
       updatePlanName,
       billingPeriod,
-      newPriceId: getPriceNameFromPlanName(updatePlanName || '', billingPeriod),
+      newPriceId: getPriceNameFromPlanName(updatePlanName as SubscriptionPlanName, billingPeriod),
     })
 
     if (!subscriptionId || !updatePlanName) {

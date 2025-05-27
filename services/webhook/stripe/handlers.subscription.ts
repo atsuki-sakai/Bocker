@@ -39,9 +39,11 @@ export async function handleSubscriptionUpdated(
   console.log(`👤 [${eventId}] CustomerSubscriptionUpdated処理開始: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`, context);
 
   try {
-    const tenant_id = evt.data.object.metadata?.tenant_id as Id<'tenant'>;
+
+    const customer = await deps.stripe.customers.retrieve(evt.data.object.customer as string) as Stripe.Customer;
+    const tenant_id = customer.metadata?.tenant_id as Id<'tenant'>;
     await deps.retry(() =>
-      fetchMutation(deps.convex.tenant.subscription.mutation.updateSubscription, {
+      fetchMutation(deps.convex.tenant.subscription.mutation.upsertSubscription, {
         tenant_id: tenant_id,
         stripe_subscription_id: evt.data.object.id as string,
         stripe_customer_id: evt.data.object.customer as string,
@@ -271,9 +273,9 @@ export async function handleInvoicePaymentSucceeded(
             stripe_subscription_id: subscriptionId,
             stripe_customer_id: evt.data.object.customer as string,
             status: subscriptionStatus,
-            price_id: evt.data.object.lines.data[0].price?.id as string,
+            price_id: evt.data.object.lines.data[0].price?.id as string, // planは旧式のため、priceオブジェクトを推奨
             plan_name: getPlanNameFromPriceId(evt.data.object.lines.data[0].price?.id as string),
-            billing_period: evt.data.object.lines.data[0].plan?.interval as BillingPeriod,
+            billing_period: evt.data.object.lines.data[0].price?.recurring?.interval as BillingPeriod,
             current_period_start: evt.data.object.lines.data[0].period?.start as number,
             current_period_end: evt.data.object.lines.data[0].period?.end as number,
           })
@@ -351,7 +353,10 @@ export async function handleInvoicePaymentFailed(
     metrics.incrementApiCall("stripe");
     if (subscriptionId) {
       // tenant_id をメタデータから取得。存在しない場合はエラー処理。
-      const tenant_id = evt.data.object.metadata?.tenant_id as Id<'tenant'> ?? subscription.metadata?.tenant_id as Id<'tenant'>;
+      const customer = await deps.stripe.customers.retrieve(
+        evt.data.object.customer as string
+      ) as Stripe.Customer;
+      const tenant_id = customer.metadata?.tenant_id as Id<'tenant'>;
       if (!tenant_id) {
         console.error(`[${eventId}] Webhook (invoice.payment_failed) のメタデータにtenant_idが含まれていません。subscriptionId: ${subscriptionId}`);
         Sentry.captureMessage('Webhook (invoice.payment_failed) のメタデータにtenant_idが含まれていません', {
@@ -370,7 +375,7 @@ export async function handleInvoicePaymentFailed(
         };
       }
       await deps.retry(() =>
-        fetchMutation(deps.convex.tenant.subscription.mutation.updateSubscription, {
+        fetchMutation(deps.convex.tenant.subscription.mutation.upsertSubscription, {
           tenant_id: tenant_id, // 取得した tenant_id を使用
           stripe_subscription_id: subscriptionId,
           stripe_customer_id: evt.data.object.customer as string,
