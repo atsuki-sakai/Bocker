@@ -56,6 +56,7 @@ export async function handleSubscriptionUpdated(
       })
     );
     metrics.incrementApiCall("convex");
+
     return {
       result: 'success',
       metadata: {
@@ -110,6 +111,10 @@ export async function handleSubscriptionDeleted(
 
   try {
 
+    const customer = await deps.stripe.customers.retrieve(evt.data.object.customer as string) as Stripe.Customer;
+    metrics.incrementApiCall("stripe");
+    const tenant_id = customer.metadata?.tenant_id as Id<'tenant'>;
+
     const subscription = await deps.retry(() =>
       fetchQuery(deps.convex.tenant.subscription.query.findByStripeCustomerId, {
         stripe_customer_id: evt.data.object.customer as string,
@@ -133,7 +138,7 @@ export async function handleSubscriptionDeleted(
       })
     );
     metrics.incrementApiCall("convex");
-
+    
     return {
       result: 'success',
       metadata: {
@@ -261,12 +266,7 @@ export async function handleInvoicePaymentSucceeded(
       try {
 
         // 1.サブスクリプションを取得するstripeのcustomer.idを元に一致するsubscriptionテーブルを取得
-        let subscription = await deps.retry(() =>
-          fetchQuery(deps.convex.tenant.subscription.query.findByStripeCustomerId, {
-            stripe_customer_id: evt.data.object.customer as string,
-          })
-        );
-        metrics.incrementApiCall("convex");
+
         await deps.retry(() =>
           fetchMutation(deps.convex.tenant.subscription.mutation.upsertSubscription, {
             tenant_id: tenant_id, // 取得した tenant_id を使用
@@ -281,6 +281,7 @@ export async function handleInvoicePaymentSucceeded(
           })
         );
         metrics.incrementApiCall("convex");
+        console.log(`👤 [${eventId}] InvoicePaymentSucceeded処理完了: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.subscription}`, context);
       
       } catch (error) {
         console.error(`請求書 ${evt.data.object.id} のサブスクリプション取得に失敗しました:`, error);
@@ -374,20 +375,33 @@ export async function handleInvoicePaymentFailed(
             }
         };
       }
-      await deps.retry(() =>
-        fetchMutation(deps.convex.tenant.subscription.mutation.upsertSubscription, {
-          tenant_id: tenant_id, // 取得した tenant_id を使用
-          stripe_subscription_id: subscriptionId,
-          stripe_customer_id: evt.data.object.customer as string,
-          status: subscriptionStatus,
-          price_id: subscription.items.data[0].price.id as string,
-          plan_name: getPlanNameFromPriceId(subscription.items.data[0].price.id as string),
-          billing_period: subscription.items.data[0].plan.interval,
-          current_period_start: subscription.current_period_start,
-          current_period_end: subscription.current_period_end,
-        })
-      );
-      metrics.incrementApiCall("convex");
+      try{
+        await deps.retry(() =>
+          fetchMutation(deps.convex.tenant.subscription.mutation.upsertSubscription, {
+            tenant_id: tenant_id, // 取得した tenant_id を使用
+            stripe_subscription_id: subscriptionId,
+            stripe_customer_id: evt.data.object.customer as string,
+            status: subscriptionStatus,
+            price_id: subscription.items.data[0].price.id as string,
+            plan_name: getPlanNameFromPriceId(subscription.items.data[0].price.id as string),
+            billing_period: subscription.items.data[0].plan.interval,
+            current_period_start: subscription.current_period_start,
+            current_period_end: subscription.current_period_end,
+          })
+        );
+        metrics.incrementApiCall("convex");
+        
+      } catch (error) {
+        console.error(`❌ [${eventId}] InvoicePaymentFailed処理中に致命的なエラーが発生: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.subscription}`, { ...context, error });
+        Sentry.captureException(error, {
+          level: 'error',
+          tags: { ...context, operation: 'handleInvoicePaymentFailed_main_catch' },
+        });
+        return {
+          result: 'error',
+          errorMessage: error instanceof Error ? `InvoicePaymentFailed処理中に致命的なエラーが発生、サブスクリプション状態が同期されてませんでした。: ${error.message}` : '不明なエラー'
+        };
+      }
     }
     return {
       result: 'success',

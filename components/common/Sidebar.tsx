@@ -41,8 +41,12 @@ export default function Sidebar({ children }: SidebarProps) {
   const { resolvedTheme } = useTheme()
 
   const tenant = useQuery(api.tenant.query.findById, tenantId ? { id: tenantId } : 'skip')
+  const subscription = useQuery(
+    api.tenant.subscription.query.findByStripeCustomerId,
+    tenant?.stripe_customer_id ? { stripe_customer_id: tenant.stripe_customer_id } : 'skip'
+  )
 
-  const filteredNav = isLoaded ? NAV_ITEMS.filter((item) => hasAccess(role, item.minRole)) : []
+  const filteredNav = isLoaded ? NAV_ITEMS.filter((item) => hasAccess(role!, item.minRole)) : []
 
   useEffect(() => {
     if (isLinkClicked) {
@@ -112,7 +116,7 @@ export default function Sidebar({ children }: SidebarProps) {
                 <Separator className="my-2 w-2/3 mx-auto" />
 
                 <nav className="flex flex-1 flex-col">
-                  {tenant?.subscription_status !== 'active' && (
+                  {subscription?.status !== 'active' && (
                     <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
                       <p className="text-xs text-muted-foreground">
                         <span className="inline-block font-bold mb-2">
@@ -185,7 +189,7 @@ export default function Sidebar({ children }: SidebarProps) {
             </div>
             <Separator className="my-2" />
             <nav className="flex flex-1 flex-col">
-              {tenant?.subscription_status !== 'active' && (
+              {subscription?.status !== 'active' && (
                 <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
                   <p className="text-xs text-muted-foreground">
                     <span className="inline-block font-bold mb-2">
@@ -254,10 +258,10 @@ export default function Sidebar({ children }: SidebarProps) {
               <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                 <div className="flex items-center justify-start w-full"></div>
                 <div className="flex items-center gap-x-4 lg:gap-x-6">
-                  {tenant?.plan_name && (
+                  {subscription?.plan_name && (
                     <div className="flex items-center gap-x-4 lg:gap-x-6">
                       <p className="text-xs tracking-widest w-fit text-center font-bold border border-muted-foreground rounded-full px-4 py-1 bg-primary text-primary-foreground">
-                        {tenant.plan_name}
+                        {subscription.plan_name}
                       </p>
                     </div>
                   )}

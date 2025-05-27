@@ -861,10 +861,7 @@ export function sanitizeFileName(fileName: string): string {
   return sanitizedName + (ext || '')
 }
 
-export function hasAccess(userRole: Role | null | undefined, requiredRole: Role): boolean {
-  if (!userRole) {
-    return false;
-  }
+export function hasAccess(userRole: Role, requiredRole: Role): boolean {
   return ROLE_LEVEL[userRole] >= ROLE_LEVEL[requiredRole];
 }
 

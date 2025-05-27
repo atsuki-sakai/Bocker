@@ -7,31 +7,11 @@
 
 import { v } from 'convex/values';
 import { validateStringLength } from '@/convex/utils/validations';
-import { checkAuth } from '@/convex/utils/auth';
 import { query } from '../../_generated/server';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 
-/**
- * サブスクリプションが存在するかどうかを確認
- */
-export const isSubscribed = query({
-  args: {
-    tenant_id: v.id('tenant'),
-  },
-  handler: async (ctx, args) => {
-    checkAuth(ctx);
-    const tenant = await ctx.db.get(args.tenant_id);
 
-    if (!tenant || tenant.is_archive === true) {
-      return false;
-    }
-
-    // 有効なサブスクリプションステータスをチェック active, trialing
-    const validStatuses = ['active', 'trialing'];
-    return validStatuses.includes(tenant.subscription_status || '');
-  },
-});
 
 /**
  * Stripe顧客IDでサブスクリプションを検索

@@ -71,7 +71,7 @@ export default function SubscriptionForm({
       updatePlanId,
       currentPlanName,
       billingPeriod,
-      tenantSubscriptionId: tenant?.subscription_id,
+      tenantSubscriptionId: subscription?.stripe_subscription_id,
     })
   }, [
     showConfirmDialog,
@@ -79,7 +79,7 @@ export default function SubscriptionForm({
     updatePlanId,
     currentPlanName,
     billingPeriod,
-    tenant?.subscription_id,
+    subscription?.stripe_subscription_id,
   ])
 
   // プレビュー取得関数をメモ化
@@ -96,8 +96,7 @@ export default function SubscriptionForm({
         console.log('⏳ isSubmittingをtrueに設定')
 
         // より厳密なバリデーション - 引数で渡されたIDを優先
-        const subscriptionId =
-          overrideSubscriptionId || subscription?.stripe_subscription_id || tenant?.subscription_id
+        const subscriptionId = overrideSubscriptionId || subscription?.stripe_subscription_id
         const customerId = tenant?.stripe_customer_id
 
         // デバッグ情報をログに出力
@@ -157,7 +156,6 @@ export default function SubscriptionForm({
     [
       getSubscriptionUpdatePreview,
       subscription?.stripe_subscription_id,
-      tenant?.subscription_id,
       tenant?.stripe_customer_id,
       tenant?._id,
       orgId,
@@ -224,16 +222,16 @@ export default function SubscriptionForm({
       console.log('🔥 handleSubscribe called with:', {
         planName,
         billingPeriod,
-        tenantSubscriptionId: tenant?.subscription_id,
+        tenantSubscriptionId: subscription?.stripe_subscription_id,
         subscriptionStripeId: subscription?.stripe_subscription_id,
-        tenantSubscriptionStatus: tenant?.subscription_status,
+        tenantSubscriptionStatus: subscription?.status,
         subscriptionStatus: subscription?.status,
-        hasSubscriptionId: !!tenant?.subscription_id,
+        hasSubscriptionId: !!subscription?.stripe_subscription_id,
         hasSubscriptionFromQuery: !!subscription?.stripe_subscription_id,
       })
 
       // subscriptionオブジェクトからサブスクリプションIDを取得
-      const subscriptionId = subscription?.stripe_subscription_id || tenant?.subscription_id
+      const subscriptionId = subscription?.stripe_subscription_id
 
       if (
         subscriptionId &&
@@ -250,7 +248,7 @@ export default function SubscriptionForm({
         try {
           setIsSubmitting(true)
           const priceId = getPriceNameFromPlanName(planName, billingPeriod)
-          const isTrial = !tenant?.subscription_status
+          const isTrial = !subscription
 
           console.log('💳 チェックアウトセッション作成中:', {
             priceId,
@@ -371,7 +369,7 @@ export default function SubscriptionForm({
         currentPlanName={currentPlanName}
         updatePlanName={updatePlanId ?? 'UNKNOWN'}
         tenant={tenant as Doc<'tenant'> | null}
-        subscriptionId={subscription?.stripe_subscription_id || tenant?.subscription_id || null}
+        subscriptionId={subscription?.stripe_subscription_id || null}
         isSubmitting={isSubmitting}
         onConfirmAction={handleConfirmUpdate}
       />

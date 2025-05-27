@@ -308,11 +308,6 @@ const tenant = defineTable({
   user_id: v.string(),                     // Clerk ユーザーID（オーナー）
   user_email: v.string(),                  // Clerk のメール
   stripe_customer_id: v.optional(v.string()),
-  subscription_id: v.optional(v.string()), // 現契約サブスクリプション
-  subscription_status: v.optional(subscriptionStatusType),  // incomplete, incomplete_expired, trialing, active, past_due, canceled, unpaid, or paused
-  plan_name: v.optional(subscriptionPlanNameType),       // "lite" | "pro"
-  price_id: v.optional(v.string()),        // Stripe Price ID
-  billing_period: v.optional(billingPeriodType), // 課金期間
   ...CommonFields,
 })
 .index('by_user_archive',              ['user_id', 'is_archive']) // Clerk ユーザーID から取得

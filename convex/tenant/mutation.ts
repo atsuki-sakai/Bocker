@@ -10,7 +10,6 @@
 import { mutation } from '../_generated/server';
 import { v } from 'convex/values';
 import { validateStringLength } from '@/convex/utils/validations'; 
-import { billingPeriodType, subscriptionPlanNameType, subscriptionStatusType } from '@/convex/types';
 import { archiveRecord, createRecord, updateRecord } from '@/convex/utils/helpers';
 
 export const create = mutation({
@@ -18,20 +17,11 @@ export const create = mutation({
     user_id: v.string(), // ClerkのユーザーID
     user_email: v.string(), // Clerkのユーザーのメールアドレス
     stripe_customer_id: v.optional(v.string()), // Stripe顧客ID
-    subscription_id: v.optional(v.string()), // 現在のサブスクリプションID
-    subscription_status: v.optional(subscriptionStatusType), // サブスクリプション状態
-    plan_name: v.optional(subscriptionPlanNameType), // プラン名 ("lite", "pro")
-    price_id: v.optional(v.string()), // 購読プランID (Price ID)
-    billing_period: v.optional(billingPeriodType), // 課金期間 (月額 or 年額)
   },
   handler: async (ctx, args) => {
       validateStringLength(args.user_id,'user_id');
       validateStringLength(args.user_email,'user_email');
       validateStringLength(args.stripe_customer_id,'stripe_customer_id');
-      validateStringLength(args.subscription_id,'subscription_id');
-      validateStringLength(args.subscription_status,'subscription_status');
-      validateStringLength(args.plan_name,'plan_name');
-      validateStringLength(args.price_id,'price_id');
 
       return await createRecord(ctx, 'tenant', {
         ...args,

@@ -105,20 +105,6 @@ export const paymentFailed = mutation({
     // ステータスを更新
     const subscriptionResult = await ctx.db.patch(subscription._id, args);
 
-    // 関連するテナントも更新
-    const tenant = await ctx.db.query('tenant')
-      .withIndex('by_stripe_customer_archive', q => 
-        q.eq('stripe_customer_id', args.stripe_customer_id)
-        .eq('is_archive', false)
-      )
-      .first();
-
-    if (tenant) {
-      await updateRecord(ctx, tenant._id, {
-        subscription_status: args.status,
-      });
-    }
-
     return { 
       success: true, 
       alreadyProcessed: false,
@@ -159,31 +145,6 @@ export const kill = mutation({
         message: 'サブスクリプションが既に削除済みまたは存在しません' 
       };
     }
-
-    const tenant = await ctx.db
-      .query('tenant')
-      .withIndex('by_stripe_customer_archive')
-      .filter((q) => q.eq(q.field('stripe_customer_id'), subscription.stripe_customer_id))
-      .first();
-
-    // 冪等性対応: テナントが見つからない場合もエラーではなく成功として扱う  
-    if (!tenant) {
-      console.log(`kill処理: テナントが見つかりません（冪等性により成功扱い）: ${subscription.stripe_customer_id}`);
-      return { 
-        success: true, 
-        alreadyProcessed: true,
-        message: 'テナントが既に削除済みまたは存在しません' 
-      };
-    }
-
-    // テナント情報を更新
-    await updateRecord(ctx, tenant._id, {
-      subscription_status: 'canceled',
-      billing_period: undefined,
-      price_id: undefined,
-      plan_name: undefined,
-      subscription_id: undefined
-    });
 
     // サブスクリプションを削除
     await killRecord(ctx, subscription._id);
