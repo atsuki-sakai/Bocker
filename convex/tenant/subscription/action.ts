@@ -18,7 +18,7 @@ import { STRIPE_API_VERSION } from '@/services/stripe/constants';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { BASE_URL, PLAN_TRIAL_DAYS } from '@/lib/constants';
-import { BillingPeriod } from '@/lib/types';
+import { BillingPeriod } from '@/convex/types';
 import { checkAllowedUrl } from '@/lib/utils';
 
 /**
@@ -313,13 +313,13 @@ export const confirmSubscriptionUpdate = action({
 
       // 更新後の課金周期を判定
       const intervalMapping: Record<string, BillingPeriod> = {
-        month: 'monthly',
-        year: 'yearly',
+        month: 'month',
+        year: 'year',
       };
-      let billingPeriod: BillingPeriod = 'monthly';
+      let billingPeriod: BillingPeriod = 'month';
       const recurring = updatedSubscription.items.data[0]?.price?.recurring;
       if (recurring?.interval) {
-        billingPeriod = intervalMapping[recurring.interval] || 'monthly';
+        billingPeriod = intervalMapping[recurring.interval] || 'month';
       }
 
       return {
