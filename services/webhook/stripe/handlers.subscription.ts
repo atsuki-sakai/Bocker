@@ -252,23 +252,45 @@ export async function handleInvoicePaymentSucceeded(
 
       try {
 
-        // 1.サブスクリプションを取得するstripeのsubscription.idを元に一致するsubscriptionテーブルを取得
-        // 2 . 一致サブスクリプションが存在しない場合は新規作成
-        // 3 . 一致サブスクリプションが存在する場合は更新
-        // 4 . 更新する場合はsubscription_statusを更新
-        // 5 . 新規作成する場合はsubscription_statusを更新
-        // 6 . 更新する場合はsubscription_statusを更新
-        // 7 . 新規作成する場合はsubscription_statusを更新
-        
-        // await deps.retry(() =>
-        //   fetchMutation(deps.convex.tenant.subscription.mutation.updateSubscription, {
-        //     tenant_id: tenant_id, // 取得した tenant_id を使用
-        //     stripe_subscription_id: subscriptionId,
-        //     stripe_customer_id: evt.data.object.customer as string,
-        //     subscription_status: subscriptionStatus,
-        //   })
-        // );
-        // metrics.incrementApiCall("convex");
+        // 1.サブスクリプションを取得するstripeのcustomer.idを元に一致するsubscriptionテーブルを取得
+        let subscription = await deps.retry(() =>
+          fetchQuery(deps.convex.tenant.subscription.query.findByStripeCustomerId, {
+            stripe_customer_id: evt.data.object.customer as string,
+          })
+        );
+        metrics.incrementApiCall("convex");
+
+        if(subscription) {
+          // サブスクリプションが存在しない場合は新規作成
+          await deps.retry(() =>
+            fetchMutation(deps.convex.tenant.subscription.mutation.create, {
+              tenant_id: tenant_id, // 取得した tenant_id を使用
+              stripe_subscription_id: subscription.stripe_subscription_id!,
+              stripe_customer_id: evt.data.object.customer as string,
+              status: subscriptionStatus,
+              price_id: subscription.price_id ?? "",
+              plan_name: subscription.plan_name ?? "",
+              billing_period: subscription.billing_period ?? "month",
+              current_period_end: subscription.current_period_end ?? 0,
+            })
+          );
+          metrics.incrementApiCall("convex");
+        }else{
+          // Stripeのsubscriptionが存在する場合は更新する
+          await deps.retry(() =>
+            fetchMutation(deps.convex.tenant.subscription.mutation.updateSubscription, {
+              tenant_id: tenant_id, // 取得した tenant_id を使用
+              stripe_subscription_id: subscriptionId,
+              stripe_customer_id: evt.data.object.customer as string,
+              subscription_status: subscriptionStatus,
+              price_id: evt.data.object.lines.data[0].price?.id as string,
+              plan_name: evt.data.object.lines.data[0].plan?.nickname as string,
+              billing_period: evt.data.object.lines.data[0].plan?.interval ?? "month",
+              current_period_end: evt.data.object.lines.data[0].period?.end as number,
+            })
+          );
+          metrics.incrementApiCall("convex");
+        }
       } catch (error) {
         console.error(`請求書 ${evt.data.object.id} のサブスクリプション取得に失敗しました:`, error);
         Sentry.captureException(error, {

@@ -14,9 +14,24 @@ import { ConvexError } from 'convex/values';
 import { archiveRecord, updateRecord, killRecord } from '@/convex/utils/helpers';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { checkAuth } from "@/convex/utils/auth";
-
+import { createRecord } from '@/convex/utils/helpers';
 import { billingPeriodType, subscriptionStatusType } from '@/convex/types';
 
+export const create = mutation({
+  args: {
+    tenant_id: v.id('tenant'),
+    stripe_subscription_id: v.string(),
+    stripe_customer_id: v.string(),
+    status: subscriptionStatusType,
+    price_id: v.string(),
+    plan_name: v.string(),
+    billing_period: billingPeriodType,
+    current_period_end: v.number(),
+  },
+  handler: async (ctx, args) => {
+    return await createRecord(ctx,"subscription", args);
+  },
+});
 
 export const syncSubscription = mutation({
   args: {
