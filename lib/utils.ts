@@ -228,32 +228,50 @@ export function convertIntervalToBillingPeriod(interval: string): string {
 
 // Stripeの課金期間をConvexの課金期間に変換
 export function priceIdToPlanInfo(priceId: string) {
-
   switch (priceId) {
     case process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID:
       return {
         name: 'Lite',
         price: PLAN_MONTHLY_PRICES.LITE,
+        billing_period: 'month' as BillingPeriod,
       }
     case process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID:
       return {
         name: 'Lite',
-        price: PLAN_YEARLY_PRICES.LITE,
+        price: PLAN_YEARLY_PRICES.LITE.price,
+        billing_period: 'year' as BillingPeriod,
       }
     case process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID:
       return {
         name: 'Pro',
         price: PLAN_MONTHLY_PRICES.PRO,
+        billing_period: 'month' as BillingPeriod,
       }
     case process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID:
       return {
         name: 'Pro',
-        price: PLAN_YEARLY_PRICES.PRO,
+        price: PLAN_YEARLY_PRICES.PRO.price,
+        billing_period: 'year' as BillingPeriod,
       }
     default:
-      // 無効なpriceIdの場合は明確なエラーを返す
-      return new Error(`Invalid or unknown priceId: ${priceId}`)
+      // 無効なpriceIdの場合はデフォルト値を返す
+      console.warn(`Unknown priceId: ${priceId}, returning default plan info`)
+      return {
+        name: 'Unknown',
+        price: 0,
+        billing_period: 'month' as BillingPeriod,
+      }
   }
+}
+
+/**
+ * priceIDからプラン名のみを取得するヘルパー関数
+ * @param priceId Stripe価格ID
+ * @returns プラン名 ('Lite' | 'Pro' | 'Unknown')
+ */
+export function getPlanNameFromPriceId(priceId: string): string {
+  const planInfo = priceIdToPlanInfo(priceId)
+  return planInfo.name
 }
 
 // プランと課金期間から価格IDを取得する関数

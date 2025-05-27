@@ -160,6 +160,13 @@ export default function SubscriptionForm({
   const handleConfirmUpdate = useCallback(
     async (subscriptionId: string, newPriceId: string) => {
       try {
+        console.log('🔍 handleConfirmUpdate開始:', {
+          subscriptionId,
+          newPriceId,
+          previewData,
+          tenantId,
+          orgId,
+        })
         setIsSubmitting(true)
         const result = await confirmSubscriptionUpdate({
           tenant_id: tenantId,
@@ -170,8 +177,23 @@ export default function SubscriptionForm({
           proration_date: previewData?.prorationDate || 0,
         })
 
+        console.log('📊 confirmSubscriptionUpdate結果:', result)
+
         if (result.success) {
+          console.log('✅ サブスクリプション更新成功!')
           toast.success('サブスクリプションを更新しました')
+
+          // ダイアログを閉じる
+          setShowConfirmDialog(false)
+
+          // プレビューデータをクリア
+          setPreviewData(null)
+          setupdatePlanIdStr(null)
+        } else {
+          console.error('❌ サブスクリプション更新失敗:', result)
+          const errorMessage = 'サブスクリプションの更新に失敗しました'
+          setError(errorMessage)
+          toast.error(errorMessage)
         }
       } catch (err) {
         console.error('Update confirmation error:', err)
@@ -339,6 +361,7 @@ export default function SubscriptionForm({
         currentPlanStr={currentPlanStr}
         updatePlanIdStr={updatePlanIdStr}
         tenant={tenant as Doc<'tenant'> | null}
+        subscriptionId={subscription?.stripe_subscription_id || tenant?.subscription_id || null}
         isSubmitting={isSubmitting}
         onConfirmAction={handleConfirmUpdate}
       />

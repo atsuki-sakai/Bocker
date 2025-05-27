@@ -9,6 +9,7 @@
 
 import { action } from '../../_generated/server';
 import { v } from 'convex/values';
+import { api } from '../../_generated/api';
 import {
   validateStringLength
 } from '@/convex/utils/validations';
@@ -319,6 +320,18 @@ export const confirmSubscriptionUpdate = action({
       if (recurring?.interval) {
         billingPeriod = intervalMapping[recurring.interval] || 'month';
       }
+
+      await ctx.runMutation(api.tenant.subscription.mutation.updateSubscription, {
+        stripe_subscription_id: updatedSubscription.id,
+        price_id: updatedSubscription.items.data[0]?.price?.id,
+        billing_period: billingPeriod,
+        tenant_id: args.tenant_id,
+        stripe_customer_id: updatedSubscription.customer as string,
+        plan_name: updatedSubscription.description as string,
+        current_period_start: updatedSubscription.current_period_start,
+        current_period_end: updatedSubscription.current_period_end,
+        status: updatedSubscription.status,
+      })
 
       return {
         success: true,

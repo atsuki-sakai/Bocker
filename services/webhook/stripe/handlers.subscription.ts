@@ -1,4 +1,3 @@
-
 import type Stripe from 'stripe';
 import type { WebhookDependencies, EventProcessingResult, LogContext } from '../types';
 import type { WebhookMetricsCollector } from '../metrics';
@@ -6,6 +5,7 @@ import * as Sentry from '@sentry/nextjs';
 import { fetchAction, fetchMutation, fetchQuery } from 'convex/nextjs';
 import type { BillingPeriod, SubscriptionStatus } from '@/convex/types';
 import { Id } from '@/convex/_generated/dataModel'
+import { getPlanNameFromPriceId } from '@/lib/utils'
 
 export async function handleSubscriptionUpdated(
   /**
@@ -45,9 +45,9 @@ export async function handleSubscriptionUpdated(
         tenant_id: tenant_id,
         stripe_subscription_id: evt.data.object.id as string,
         stripe_customer_id: evt.data.object.customer as string,
-        subscription_status: evt.data.object.status as SubscriptionStatus,
+        status: evt.data.object.status as SubscriptionStatus,
         price_id: evt.data.object.items.data[0].price.id as string,
-        plan_name: evt.data.object.items.data[0].plan.nickname as string,
+        plan_name: getPlanNameFromPriceId(evt.data.object.items.data[0].price.id as string),
         billing_period: evt.data.object.items.data[0].plan.interval as 'month' | 'year',
         current_period_start: evt.data.object.current_period_start,
         current_period_end: evt.data.object.current_period_end,
@@ -272,7 +272,7 @@ export async function handleInvoicePaymentSucceeded(
             stripe_customer_id: evt.data.object.customer as string,
             status: subscriptionStatus,
             price_id: evt.data.object.lines.data[0].price?.id as string,
-            plan_name: evt.data.object.lines.data[0].description as string,
+            plan_name: getPlanNameFromPriceId(evt.data.object.lines.data[0].price?.id as string),
             billing_period: evt.data.object.lines.data[0].plan?.interval as BillingPeriod,
             current_period_start: evt.data.object.lines.data[0].period?.start as number,
             current_period_end: evt.data.object.lines.data[0].period?.end as number,
@@ -374,9 +374,9 @@ export async function handleInvoicePaymentFailed(
           tenant_id: tenant_id, // 取得した tenant_id を使用
           stripe_subscription_id: subscriptionId,
           stripe_customer_id: evt.data.object.customer as string,
-          subscription_status: subscriptionStatus,
+          status: subscriptionStatus,
           price_id: subscription.items.data[0].price.id as string,
-          plan_name: subscription.items.data[0].plan.nickname as string,
+          plan_name: getPlanNameFromPriceId(subscription.items.data[0].price.id as string),
           billing_period: subscription.items.data[0].plan.interval,
           current_period_start: subscription.current_period_start,
           current_period_end: subscription.current_period_end,

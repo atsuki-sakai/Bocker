@@ -83,13 +83,7 @@ export const syncSubscription = mutation({
     
     if (existingTenant) {
       // テナントのサブスクリプション情報も更新
-      await ctx.db.patch(existingTenant._id, {
-        subscription_id: args.subscription.stripe_subscription_id,
-        subscription_status: args.subscription.status,
-        price_id: args.subscription.price_id,
-        plan_name: args.subscription.plan_name,
-        billing_period: args.subscription.billing_period,
-      });
+      await updateRecord(ctx, existingTenant._id, args.subscription);
     }
 
     return args.subscription;
@@ -100,7 +94,7 @@ export const updateSubscription = mutation({
   args: {
     tenant_id: v.id('tenant'),
     stripe_subscription_id: v.string(),
-    subscription_status: subscriptionStatusType,
+    status: subscriptionStatusType,
     stripe_customer_id: v.string(),
     price_id: v.string(),
     plan_name: v.string(),
@@ -113,8 +107,8 @@ export const updateSubscription = mutation({
       validateStringLength(args.stripe_subscription_id, 'stripe_subscription_id');
       
       const updateSubscription = await ctx.db.query('subscription')
-      .withIndex('by_tenant_archive', q => 
-        q.eq('tenant_id', args.tenant_id)
+      .withIndex('by_stripe_subscription_archive', q => 
+        q.eq('stripe_subscription_id', args.stripe_subscription_id)
         .eq('is_archive', false)
       )
       .first();
@@ -133,10 +127,7 @@ export const updateSubscription = mutation({
         });
       }
 
-      await updateRecord(ctx, updateSubscription._id, {
-        stripe_subscription_id: args.stripe_subscription_id,
-        status: args.subscription_status,
-      });
+      await updateRecord(ctx, updateSubscription._id, args);
 
       return updateSubscription.stripe_subscription_id;
   },
@@ -188,9 +179,7 @@ export const paymentFailed = mutation({
     }
 
     // ステータスを更新
-    const subscriptionResult = await ctx.db.patch(subscription._id, {
-      status: args.status,
-    });
+    const subscriptionResult = await ctx.db.patch(subscription._id, args);
 
     // 関連するテナントも更新
     const tenant = await ctx.db.query('tenant')

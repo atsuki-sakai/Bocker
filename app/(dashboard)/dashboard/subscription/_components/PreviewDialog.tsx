@@ -82,6 +82,7 @@ interface PreviewDialogProps {
   currentPlanStr: string | null
   updatePlanIdStr: string | null
   tenant: Doc<'tenant'> | null
+  subscriptionId: string | null
   isSubmitting: boolean
   onConfirmAction: (subscriptionId: string, newPriceId: string) => Promise<void>
 }
@@ -94,6 +95,7 @@ export default function PreviewDialog({
   currentPlanStr,
   updatePlanIdStr,
   tenant,
+  subscriptionId,
   isSubmitting,
   onConfirmAction,
 }: PreviewDialogProps) {
@@ -102,11 +104,19 @@ export default function PreviewDialog({
 
   // 確認ボタン
   const handleConfirm = () => {
-    if (!tenant?.subscription_id || !updatePlanIdStr) return
-    onConfirmAction(
-      tenant.subscription_id,
-      getPriceStrFromPlanAndPeriod(updatePlanIdStr, billingPeriod)
-    )
+    console.log('🔘 PreviewDialog確認ボタンクリック:', {
+      subscriptionId,
+      updatePlanIdStr,
+      billingPeriod,
+      newPriceId: getPriceStrFromPlanAndPeriod(updatePlanIdStr || '', billingPeriod),
+    })
+
+    if (!subscriptionId || !updatePlanIdStr) {
+      console.error('❌ 必要なパラメータが不足:', { subscriptionId, updatePlanIdStr })
+      return
+    }
+
+    onConfirmAction(subscriptionId, getPriceStrFromPlanAndPeriod(updatePlanIdStr, billingPeriod))
   }
 
   // キャンセルボタン
