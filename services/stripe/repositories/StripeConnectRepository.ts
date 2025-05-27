@@ -34,14 +34,6 @@ export class StripeConnectRepository {
   }
 
   /**
-   * セキュアなクーポンIDを生成
-   */
-  private generateSecureCouponId(): string {
-    // 128bit UUID から “‐” を除去して先頭24桁を使用
-    return `referral_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
-  }
-
-  /**
    * 手動でアカウントステータスを確認・更新
    */
   async checkAndUpdateConnectAccountStatus(
@@ -166,12 +158,7 @@ export class StripeConnectRepository {
       await this.convex.mutation(api.organization.mutation.createConnectAccount, {
         tenant_id: tenant_id,
         org_id: org_id,
-        is_active: true,
-        user_id: '',
-        org_name: '',
-        org_email: '',
         stripe_account_id: account.id,
-        status: 'pending',
       });
 
       // アカウント連携用のリンクを生成

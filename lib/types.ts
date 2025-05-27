@@ -1,5 +1,5 @@
 // Stripe types
-import { Role } from "@/convex/types";
+import { Role, SubscriptionPlanName } from "@/convex/types";
 
 export interface StripeLineItem {
   id: string;
@@ -53,6 +53,12 @@ export const ROLE_LEVEL: Record<Role, number> = {
   owner: 3,
   manager: 2,
   staff: 1,
+};
+
+export const PLAN_LEVEL: Record<SubscriptionPlanName, number> = {
+  UNKNOWN: 0,
+  LITE: 1,
+  PRO: 2,
 };
 
 

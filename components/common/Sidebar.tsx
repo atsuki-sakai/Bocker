@@ -16,6 +16,7 @@ import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { api } from '@/convex/_generated/api'
 import { useQuery } from 'convex/react'
 import { hasAccess } from '@/lib/utils'
+import type { SubscriptionPlanName } from '@/convex/types'
 import { NAV_ITEMS } from '@/lib/constants'
 
 function classNames(...classes: string[]) {
@@ -30,13 +31,7 @@ export default function Sidebar({ children }: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isLinkClicked, setIsLinkClicked] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const { tenantId, orgId, role, isLoaded, ready } = useTenantAndOrganization()
-
-  console.log('role: ', role)
-  console.log('tenantId: ', tenantId)
-  console.log('orgId: ', orgId)
-  console.log('isLoaded: ', isLoaded)
-
+  const { tenantId, role, isLoaded, ready } = useTenantAndOrganization()
   const pathname = usePathname() // 現在のパスを取得
   const { resolvedTheme } = useTheme()
 
@@ -46,7 +41,12 @@ export default function Sidebar({ children }: SidebarProps) {
     tenant?.stripe_customer_id ? { stripe_customer_id: tenant.stripe_customer_id } : 'skip'
   )
 
-  const filteredNav = isLoaded ? NAV_ITEMS.filter((item) => hasAccess(role!, item.minRole)) : []
+  const currentPlan: SubscriptionPlanName = (subscription?.plan_name ??
+    'UNKNOWN') as SubscriptionPlanName
+
+  const filteredNav = isLoaded
+    ? NAV_ITEMS.filter((item) => hasAccess(role!, currentPlan, item.minRole, item.minPlan))
+    : []
 
   useEffect(() => {
     if (isLinkClicked) {

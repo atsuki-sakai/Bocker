@@ -125,8 +125,7 @@ export async function handleUserCreated(
       fetchMutation(deps.convex.organization.mutation.create, {
         tenant_id: tenantId,
         org_name: org_name ? org_name : '',
-        org_email: email,
-        is_active: true,
+        org_email: email
       })
     );
     console.log(`🏢 [${eventId}] 店舗作成成功: org_id=${orgId}`, { ...context, orgId });

@@ -2,7 +2,7 @@
 
 // PlanCard Component
 // ------------------------------------------------------
-import { PLAN_TRIAL_DAYS } from '@/lib/constants'
+import { PLAN_TRIAL_DAYS, PLAN_CHARGE_MONTHS_YEARLY } from '@/lib/constants'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -90,7 +90,9 @@ export default function PlanCard({
   // 月額換算価格をメモ化
   const monthlyEquivalent = useMemo(() => {
     if (billingPeriod === 'year') {
-      return Math.floor(price / 12).toLocaleString()
+      return Math.floor(
+        (((price + price * 0.2) / 12) * (12 - PLAN_CHARGE_MONTHS_YEARLY)) / 12
+      ).toLocaleString()
     }
     return null
   }, [billingPeriod, price])
@@ -169,7 +171,7 @@ export default function PlanCard({
             )}
             {billingPeriod === 'year' && (
               <div className="text-xs text-muted-foreground mt-1">
-                (月あたり ¥{monthlyEquivalent})
+                (月あたり {monthlyEquivalent}円)
               </div>
             )}
           </div>

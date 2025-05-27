@@ -1,4 +1,5 @@
 import { v, Infer } from 'convex/values'
+import { Stripe } from 'stripe'
 
 // 共通の型定義
 export const CommonFields = {
@@ -42,7 +43,7 @@ export const subscriptionStatusType = v.union(
 )
 export type SubscriptionStatus = Infer<typeof subscriptionStatusType>
 
-export const STRIPE_CONNECT_STATUS_VALUES = [
+export const STRIPE_SUBSCRIPTION_STATUS_VALUES = [
   'pending', // 未接続
   'incomplete', // 未完了
   'restricted', // 制限付き
@@ -51,8 +52,8 @@ export const STRIPE_CONNECT_STATUS_VALUES = [
   'payouts_disabled', // 出金不可
   'bank_account_missing', // 銀行口座未設定
 ] as const
-export const stripeConnectStatusType = v.union(...STRIPE_CONNECT_STATUS_VALUES.map((status) => v.literal(status)))
-export type StripeConnectStatus = Infer<typeof stripeConnectStatusType>
+export const stripeSubscriptionStatusType = v.union(...STRIPE_SUBSCRIPTION_STATUS_VALUES.map((status) => v.literal(status)))
+export type StripeSubscriptionStatus = Infer<typeof stripeSubscriptionStatusType>
 
 export const reservationMenuOrOptionType = v.object({
   id: v.union(v.id('option'), v.literal('menu')),
@@ -305,3 +306,24 @@ export type WebhookEventProcessingResult = Infer<typeof webhookEventProcessingRe
 export const SUBSCRIPTION_PLAN_NAME_VALUES = ['LITE', 'PRO', 'UNKNOWN'] as const
 export const subscriptionPlanNameType = v.union(...SUBSCRIPTION_PLAN_NAME_VALUES.map((name) => v.literal(name)))
 export type SubscriptionPlanName = Infer<typeof subscriptionPlanNameType>
+
+// Stripe Connectアカウントのステータスの型定義
+// Restricted: アカウントの主要な機能の少なくとも1つが非アクティブな状態。追加情報の収集が必要な場合があります。
+// Restricted soon: 現在期日のある要件があり、追加情報を提供する期限が迫っている状態。
+// In review: Stripeがアカウント情報の確認や検証を行っている状態。通常24-48時間程度かかります。
+// Enabled: アカウントが良好な状態で、すべての主要機能が有効になっている状態。
+// Rejected: プラットフォームまたはStripeによってアカウントが拒否された状態。
+export const STRIPE_CONNECT_STATUS_VALUES = [
+  'restricted',
+  'deauthorized',
+  'pending',
+  'incomplete',
+  'active',
+  'not_connected',
+  'bank_account_missing',
+  'payouts_disabled',
+  'external_account_removed',
+] as const
+
+export const stripeConnectStatusType = v.union(...STRIPE_CONNECT_STATUS_VALUES.map((status) => v.literal(status)))
+export type StripeConnectStatus = Infer<typeof stripeConnectStatusType>

@@ -66,6 +66,9 @@ export default function StripeConnectStatus() {
     tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
   )
 
+  console.log('tenantId', tenantId)
+  console.log('orgId', orgId)
+
   // API呼び出しの共通処理
   const fetchApi = async <T,>(
     url: string,
@@ -124,7 +127,7 @@ export default function StripeConnectStatus() {
 
       if (data && data.account && data.accountLink) {
         console.log(data.accountLink)
-        // window.location.href = data.accountLink
+        window.location.href = data.accountLink
       }
     } catch (error) {
       showErrorToast(error)

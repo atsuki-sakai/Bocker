@@ -23,7 +23,7 @@ export function determineAccountStatus(account: Stripe.Account): StripeConnectSt
     charges_enabled,
     payouts_enabled,
     requirements,
-    external_accounts,
+    external_accounts
   } = account;
 
   // 1. 銀行口座が未登録の場合（最優先で判定）

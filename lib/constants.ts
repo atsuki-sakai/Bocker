@@ -93,7 +93,7 @@ export const SALON_RESERVATION_LIMIT_DAYS = [
 // トライアル期間
 export const PLAN_TRIAL_DAYS = 30
 // --- 設定 ---
-const PLAN_CHARGE_MONTHS_YEARLY = 10    // 年額プランで請求する月数
+export const PLAN_CHARGE_MONTHS_YEARLY = 10   // 年額プランで請求する月数
 
 /**
  * プラン期間（月数）定義。
@@ -210,13 +210,14 @@ import {
   Settings as SettingsIcon,
   type LucideIcon
 } from 'lucide-react';
-import type { Role } from '@/convex/types';
+import type { Role, SubscriptionPlanName } from '@/convex/types';
 
 export type NavItem = {
   name: string;
   href: string;
   icon: LucideIcon;
   minRole: Role;
+  minPlan: SubscriptionPlanName;
 };
 
 
@@ -227,83 +228,97 @@ export const NAV_ITEMS: NavItem[] = [
     href: `/dashboard`,
     icon: HomeIcon,
     minRole: 'staff',
+    minPlan: 'LITE',
   },
   {
     name: '予約作成',
     href: `/dashboard/reservation/add`,
     icon: BookIcon,
     minRole: 'staff',
+    minPlan: 'LITE',
   },
   {
     name: '予約ボード',
     href: `/dashboard/reservation`,
     icon: CalendarIcon,
     minRole: 'staff',
+    minPlan: 'LITE',
   },
   {
     name: '予約タイムライン',
     href: `/dashboard/timeline`,
     icon: TimerIcon,
     minRole: 'staff',
+    minPlan: 'LITE',
   },
   {
     name: '完了済みの予約',
     href: `/dashboard/reservations`,
     icon: CheckIcon,
     minRole: 'staff',
+    minPlan: 'LITE',
   },
   {
     name: 'スタッフ管理',
     href: `/dashboard/staff`,
     icon: UsersIcon,
     minRole: 'owner',
+    minPlan: 'LITE',
   },
   {
     name: 'メニュー管理',
     href: `/dashboard/menu`,
     icon: FileIcon,
     minRole: 'manager',
+    minPlan: 'LITE',
   },
   {
     name: '顧客管理',
     href: `/dashboard/customer`,
     icon: UserCircleIcon,
     minRole: 'staff',
+    minPlan: 'LITE',
   },
   {
     name: '顧客カルテ管理',
     href: `/dashboard/carte`,
     icon: CloudIcon,
     minRole: 'staff',
+    minPlan: 'PRO',
   },
   {
     name: 'オプション管理',
     href: `/dashboard/option`,
     icon: MenuSquareIcon,
     minRole: 'manager',
+    minPlan: 'LITE',
   },
   {
     name: 'クーポン管理',
     href: `/dashboard/coupon`,
     icon: GiftIcon,
     minRole: 'manager',
+    minPlan: 'PRO',
   },
   {
     name: 'ポイント設定',
     href: `/dashboard/point`,
     icon: TicketIcon,
     minRole: 'owner',
+    minPlan: 'PRO',
   },
   {
     name: 'サブスクリプション',
     href: `/dashboard/subscription`,
     icon: CreditCardIcon,
     minRole: 'admin',
+    minPlan: 'LITE',
   },
   {
     name: '設定',
     href: `/dashboard/setting`,
     icon: SettingsIcon,
     minRole: 'owner',
+    minPlan: 'LITE',
   },
 ]

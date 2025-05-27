@@ -10,7 +10,7 @@ import { ALLOWED_DOMAINS } from '@/lib/constants'
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
 import { MAX_PIN_CODE_LENGTH } from '@/convex/constants'  
 import { SubscriptionPlanName } from '@/convex/types'
-import { ROLE_LEVEL } from '@/lib/types'
+import { ROLE_LEVEL, PLAN_LEVEL } from '@/lib/types'
 
 import type { Role } from '@/convex/types';
 
@@ -861,8 +861,26 @@ export function sanitizeFileName(fileName: string): string {
   return sanitizedName + (ext || '')
 }
 
-export function hasAccess(userRole: Role, requiredRole: Role): boolean {
-  return ROLE_LEVEL[userRole] >= ROLE_LEVEL[requiredRole];
+
+/**
+ * ユーザーのロールと契約プランの両方でアクセス権限を判定する
+ *
+ * @param userRole        現在のユーザーロール
+ * @param userPlan        現在のユーザープラン名
+ * @param requiredRole    対象画面に必要な最低ロール
+ * @param requiredPlan    対象画面に必要な最低プラン
+ * @returns               アクセス可能かどうか
+ */
+export function hasAccess(
+  userRole: Role,
+  userPlan: SubscriptionPlanName,
+  requiredRole: Role,
+  requiredPlan: SubscriptionPlanName,
+): boolean {
+  return (
+    ROLE_LEVEL[userRole] >= ROLE_LEVEL[requiredRole] &&
+    PLAN_LEVEL[userPlan] >= PLAN_LEVEL[requiredPlan]
+  )
 }
 
 

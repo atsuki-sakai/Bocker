@@ -10,14 +10,25 @@ import { stripeConnectStatusType } from "@/convex/types";
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    is_active: v.boolean(),
     org_name: v.string(),
     org_email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     validateStringLength(args.org_name, 'org_name');
     validateStringLength(args.org_email, 'org_email');
-    return await createRecord(ctx, 'organization', args);
+    const tenant = await ctx.db.get(args.tenant_id);
+    if(!tenant){
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'organization.mutation.create',
+        message: 'テナントが見つかりません',
+      });
+    }
+    return await createRecord(ctx, 'organization', {
+      ...args,
+      is_active: true
+    });
   },
 });
 
@@ -25,14 +36,11 @@ export const update = mutation({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    is_active: v.boolean(),
-    org_name: v.string(),
-    org_email: v.optional(v.string()),
+    is_active: v.optional(v.boolean())
   },
   handler: async (ctx, args) => {
-    validateRequired(args.org_id, 'org_id');
-    validateStringLength(args.org_name, 'org_name');
-    validateStringLength(args.org_email, 'org_email');
+
+
 
     const organization = await ctx.db.get(args.org_id);
     if(!organization){
@@ -57,21 +65,12 @@ export const createConnectAccount = mutation({
     args: {
       tenant_id: v.id('tenant'),
       org_id: v.id('organization'),
-      is_active: v.boolean(),
       stripe_account_id: v.string(),
-      status: v.string(),
-      user_id: v.string(),
-      org_name: v.string(),
-      org_email: v.string(),
     },
     handler: async (ctx, args) => {
 
       validateRequired(args.org_id, 'org_id');
       validateStringLength(args.stripe_account_id, 'stripe_account_id');
-      validateStringLength(args.status, 'status');
-      validateStringLength(args.user_id, 'user_id');
-      validateStringLength(args.org_name, 'org_name');
-      validateStringLength(args.org_email, 'org_email');
   
       // 組織を取得
       const organization = await ctx.db.get(args.org_id);
@@ -90,7 +89,12 @@ export const createConnectAccount = mutation({
         });
       }
 
-      return await createRecord(ctx, 'organization', args);
+      return await updateRecord(ctx, organization._id, {
+        ...args,
+        stripe_account_id: args.stripe_account_id,
+        stripe_connect_status: 'pending',
+        stripe_connect_created_at: new Date().getTime() * 1000,
+      });
     }
   },
 );
