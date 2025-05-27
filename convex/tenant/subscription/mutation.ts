@@ -8,16 +8,16 @@
 import { mutation } from '../../_generated/server';
 import { v } from 'convex/values';
 import {
-  validateStringLength
+  validateStringLength,
+  validateRequiredNumber,
 } from '@/convex/utils/validations';
 import { ConvexError } from 'convex/values';
-import { archiveRecord, updateRecord, killRecord } from '@/convex/utils/helpers';
+import { archiveRecord, updateRecord, killRecord, createRecord } from '@/convex/utils/helpers';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { checkAuth } from "@/convex/utils/auth";
-import { createRecord } from '@/convex/utils/helpers';
 import { billingPeriodType, subscriptionStatusType } from '@/convex/types';
 
-export const create = mutation({
+export const upsertSubscription = mutation({
   args: {
     tenant_id: v.id('tenant'),
     stripe_subscription_id: v.string(),
@@ -29,7 +29,26 @@ export const create = mutation({
     current_period_end: v.number(),
   },
   handler: async (ctx, args) => {
-    return await createRecord(ctx,"subscription", args);
+    
+    validateStringLength(args.stripe_subscription_id, 'stripe_subscription_id');
+    validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
+    validateStringLength(args.price_id, 'price_id');
+    validateStringLength(args.plan_name, 'plan_name');
+    validateStringLength(args.billing_period, 'billing_period');
+    validateRequiredNumber(args.current_period_end, 'current_period_end');
+
+    // サブスクリプションが存在する場合は更新、存在しない場合は新規作成
+    const existingSubscription = await ctx.db.query('subscription')
+      .withIndex('by_stripe_subscription_archive', q =>
+        q.eq('stripe_subscription_id', args.stripe_subscription_id)
+        .eq('is_archive', false)
+      )
+      .first();
+    if (existingSubscription) {
+      return await updateRecord(ctx, existingSubscription._id, args);
+    }else{
+      return await createRecord(ctx,"subscription", args);
+    }
   },
 });
 

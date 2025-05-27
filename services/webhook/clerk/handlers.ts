@@ -131,7 +131,7 @@ export async function handleUserCreated(
     );
     console.log(`🏢 [${eventId}] 店舗作成成功: org_id=${orgId}`, { ...context, orgId });
 
-      // 6. ユーザーメタデータ更新
+      // 6. Stripe顧客のメタデータ更新
       try{
         await deps.stripe.customers.update(stripeCustomer.id, {
           metadata: {
@@ -147,6 +147,7 @@ export async function handleUserCreated(
           tags: { ...context, operation: 'update_stripe_customer_metadata', stripeCustomerId: stripeCustomer.id },
         });
       }
+      // クラークユーザーのメタデータ更新
       try {
         const clerk = await clerkClient();
         await clerk.users.updateUserMetadata(id, {
