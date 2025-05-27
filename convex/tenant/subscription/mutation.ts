@@ -8,8 +8,7 @@
 import { mutation } from '../../_generated/server';
 import { v } from 'convex/values';
 import {
-  validateStringLength,
-  validateRequiredNumber,
+  validateStringLength
 } from '@/convex/utils/validations';
 import { ConvexError } from 'convex/values';
 import { archiveRecord, updateRecord, killRecord, createRecord } from '@/convex/utils/helpers';
@@ -36,7 +35,6 @@ export const upsertSubscription = mutation({
     validateStringLength(args.price_id, 'price_id');
     validateStringLength(args.plan_name, 'plan_name');
     validateStringLength(args.billing_period, 'billing_period');
-    validateRequiredNumber(args.current_period_end, 'current_period_end');
 
     // サブスクリプションが存在する場合は更新、存在しない場合は新規作成
     const existingSubscription = await ctx.db.query('subscription')
