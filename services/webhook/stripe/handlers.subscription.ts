@@ -202,6 +202,7 @@ export async function handleInvoicePaymentSucceeded(
     const isFirstInvoice = evt.data.object.billing_reason === 'subscription_create';
     // tenant_id をメタデータから取得。存在しない場合はエラー処理。
     const tenant_id = customer.metadata?.tenant_id as Id<'tenant'> | null;
+    console.log("metadata: ", customer.metadata)
     if (isFirstInvoice) {
       // Stripe Customer から referral_code を取得
       const customer = await deps.stripe.customers.retrieve(
