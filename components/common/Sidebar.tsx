@@ -46,7 +46,7 @@ export default function Sidebar({ children }: SidebarProps) {
 
   const filteredNav = isLoaded
     ? NAV_ITEMS.filter((item) => hasAccess(role!, currentPlan, item.minRole, item.minPlan))
-    : []
+    : [NAV_ITEMS[0]] // [NAV_ITEMS[0]はサブスクリプションの為常に表示する
 
   useEffect(() => {
     if (isLinkClicked) {
