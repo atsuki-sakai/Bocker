@@ -274,14 +274,14 @@ export function getPlanNameFromPriceId(priceId: string): string {
   return planInfo.name
 }
 
-// プランと課金期間から価格IDを取得する関数
-export function getPriceStrFromPlanAndPeriod(planStr: string, period: BillingPeriod): string {
-  planStr = planStr.toLowerCase()
+// プラン名と課金期間から価格IDを取得する関数
+export function getPriceNameFromPlanName(planName: string, period: BillingPeriod): string {
+  planName = planName.toLowerCase()
 
   let priceId: string | undefined
 
   if (period === 'month') {
-    switch (planStr) {
+    switch (planName) {
       case 'lite':
         priceId = process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID
         break
@@ -289,11 +289,11 @@ export function getPriceStrFromPlanAndPeriod(planStr: string, period: BillingPer
         priceId = process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID
         break
       default:
-        throw new Error(`Invalid plan ID: ${planStr}`)
+        throw new Error(`Invalid plan name: ${planName}`)
     }
   } else if (period === 'year') {
     // period === 'year'
-    switch (planStr) {
+    switch (planName) {
       case 'lite':
         priceId = process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID
         break
@@ -301,14 +301,14 @@ export function getPriceStrFromPlanAndPeriod(planStr: string, period: BillingPer
         priceId = process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID
         break
       default:
-        throw new Error(`Invalid plan ID: ${planStr}`)
+        throw new Error(`Invalid plan name: ${planName}`)
     }
   }
 
   // 環境変数が設定されているかチェック
   if (!priceId) {
     throw new Error(
-      `Price ID not configured for plan "${planStr}" and period "${period}". Check environment variables.`
+      `Price ID not configured for plan "${planName}" and period "${period}". Check environment variables.`
     )
   }
 

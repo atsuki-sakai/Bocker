@@ -2,7 +2,7 @@
 // PreviewDialog Component
 // ------------------------------------------------------
 
-import { cn, getPriceStrFromPlanAndPeriod } from '@/lib/utils'
+import { cn, getPriceNameFromPlanName, getPlanNameFromPriceId } from '@/lib/utils'
 import { BillingPeriod } from '@/convex/types'
 import {
   Dialog,
@@ -79,8 +79,8 @@ interface PreviewDialogProps {
   setOpenAction: (open: boolean) => void
   previewData: StripePreviewData | null
   billingPeriod: BillingPeriod
-  currentPlanStr: string | null
-  updatePlanIdStr: string | null
+  currentPlanName: string | null // プラン名（'Lite', 'Pro'）
+  updatePlanName: string // プラン名（'Lite', 'Pro'）
   tenant: Doc<'tenant'> | null
   subscriptionId: string | null
   isSubmitting: boolean
@@ -92,8 +92,8 @@ export default function PreviewDialog({
   setOpenAction,
   previewData,
   billingPeriod,
-  currentPlanStr,
-  updatePlanIdStr,
+  currentPlanName,
+  updatePlanName,
   tenant,
   subscriptionId,
   isSubmitting,
@@ -106,17 +106,17 @@ export default function PreviewDialog({
   const handleConfirm = () => {
     console.log('🔘 PreviewDialog確認ボタンクリック:', {
       subscriptionId,
-      updatePlanIdStr,
+      updatePlanName,
       billingPeriod,
-      newPriceId: getPriceStrFromPlanAndPeriod(updatePlanIdStr || '', billingPeriod),
+      newPriceId: getPriceNameFromPlanName(updatePlanName || '', billingPeriod),
     })
 
-    if (!subscriptionId || !updatePlanIdStr) {
-      console.error('❌ 必要なパラメータが不足:', { subscriptionId, updatePlanIdStr })
+    if (!subscriptionId || !updatePlanName) {
+      console.error('❌ 必要なパラメータが不足:', { subscriptionId, updatePlanName })
       return
     }
 
-    onConfirmAction(subscriptionId, getPriceStrFromPlanAndPeriod(updatePlanIdStr, billingPeriod))
+    onConfirmAction(subscriptionId, getPriceNameFromPlanName(updatePlanName, billingPeriod))
   }
 
   // キャンセルボタン
@@ -182,14 +182,16 @@ export default function PreviewDialog({
           <div className="p-4 rounded-lg bg-muted">
             <h3 className="font-medium text-xs mb-2">サブスクリプション変更内容</h3>
             <div className="flex justify-between items-center">
-              <div>
-                <div className="text-sm text-muted-foreground">現在のプラン</div>
-                <div className="font-medium">{currentPlanStr}</div>
-              </div>
+              {currentPlanName && (
+                <div>
+                  <div className="text-sm text-muted-foreground">現在のプラン</div>
+                  <div className="font-medium">{currentPlanName}</div>
+                </div>
+              )}
               <div className="text-muted-foreground">→</div>
               <div>
                 <div className="text-sm text-muted-foreground">新しいプラン</div>
-                <div className="font-medium">{updatePlanIdStr}</div>
+                <div className="font-medium">{updatePlanName}</div>
               </div>
             </div>
           </div>

@@ -41,8 +41,8 @@ interface PlanCardProps {
   price: number
   savingPercent?: number
   features: string[]
-  currentPlanStr: string | null
-  planId: string
+  currentPlanName: string | null // 現在のプラン名（'Lite', 'Pro'）
+  planName: string // このカードのプラン名（'Lite', 'Pro'）
   billingPeriod: BillingPeriod
   currentBillingPeriod?: BillingPeriod
   isActive: boolean
@@ -60,8 +60,8 @@ export default function PlanCard({
   price,
   savingPercent,
   features,
-  currentPlanStr,
-  planId,
+  currentPlanName,
+  planName,
   billingPeriod,
   currentBillingPeriod,
   isActive,
@@ -72,18 +72,15 @@ export default function PlanCard({
   highlightColor,
   delay,
 }: PlanCardProps) {
-  // 現在のプランかどうかのチェックをメモ化（大文字小文字を無視して Pro / Lite を含むか判定）
+  // 現在のプランかどうかのチェックをメモ化
   const isCurrentPlan = useMemo(() => {
-    return currentPlanStr?.toLowerCase().includes(title.toLowerCase()) ?? false
-  }, [currentPlanStr, title])
+    return currentPlanName === planName
+  }, [currentPlanName, planName])
 
-  // 支払い期間が変更されているかのチェックをメモ化（プラン名に Pro / Lite を含むかを判定）
+  // 支払い期間が変更されているかのチェックをメモ化
   const isBillingPeriodChange = useMemo(() => {
-    return (
-      currentPlanStr?.toLowerCase().includes(planId.toLowerCase()) &&
-      currentBillingPeriod !== billingPeriod
-    )
-  }, [currentPlanStr, planId, currentBillingPeriod, billingPeriod])
+    return currentPlanName === planName && currentBillingPeriod !== billingPeriod
+  }, [currentPlanName, planName, currentBillingPeriod, billingPeriod])
 
   // 月額換算価格をメモ化
   const monthlyEquivalent = useMemo(() => {
@@ -198,8 +195,8 @@ export default function PlanCard({
             isActive={isActive}
             isCurrentPlan={isCurrentPlan}
             isBillingPeriodChange={isBillingPeriodChange ?? false}
-            currentPlanStr={currentPlanStr}
-            planId={planId}
+            currentPlanName={currentPlanName}
+            planName={planName}
             currentBillingPeriod={currentBillingPeriod}
             billingPeriod={billingPeriod}
             onSubscribeAction={handleSubscribe}
@@ -221,8 +218,8 @@ interface PlanActionButtonProps {
   isActive: boolean
   isCurrentPlan: boolean
   isBillingPeriodChange: boolean
-  currentPlanStr: string | null
-  planId: string
+  currentPlanName: string | null
+  planName: string
   currentBillingPeriod?: BillingPeriod
   billingPeriod: BillingPeriod
   onSubscribeAction: () => void
@@ -235,8 +232,8 @@ function PlanActionButton({
   isActive,
   isCurrentPlan,
   isBillingPeriodChange,
-  currentPlanStr,
-  planId,
+  currentPlanName,
+  planName,
   currentBillingPeriod,
   billingPeriod,
   onSubscribeAction,
@@ -273,20 +270,17 @@ function PlanActionButton({
           {billingPeriod === 'year' ? '年払いに変更' : '月払いに変更'}
         </span>
       )
-    } else if (currentPlanStr?.toLowerCase().includes(planId.toLowerCase())) {
+    } else if (currentPlanName === planName) {
       return <span className="flex items-center gap-1">現在のプラン</span>
     } else {
       return <span className="flex items-center gap-1">プランを変更</span>
     }
-  }, [isBillingPeriodChange, billingPeriod, currentPlanStr, planId])
+  }, [isBillingPeriodChange, billingPeriod, currentPlanName, planName])
 
   // ボタンが無効かどうかをメモ化
   const isButtonDisabled = useMemo(() => {
-    return (
-      currentPlanStr?.toLowerCase().includes(planId.toLowerCase()) &&
-      currentBillingPeriod === billingPeriod
-    )
-  }, [currentPlanStr, planId, currentBillingPeriod, billingPeriod])
+    return currentPlanName === planName && currentBillingPeriod === billingPeriod
+  }, [currentPlanName, planName, currentBillingPeriod, billingPeriod])
 
   if (isSubmitting) return loadingButton
 

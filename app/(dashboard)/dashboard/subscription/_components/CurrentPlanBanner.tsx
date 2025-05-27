@@ -1,42 +1,29 @@
-"use client";
+'use client'
 
 // CurrentPlanBanner Component
 // ------------------------------------------------------
 
-import { Check, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { SUBSCRIPTION_PLANS } from '@/lib/constants';
-import { useMemo, useCallback } from 'react';
+import { Check, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useMemo, useCallback } from 'react'
 
 interface CurrentPlanBannerProps {
-  currentPlanStr: string | null;
-  isActive: boolean;
-  onPortalAction: () => void;
-  isSubmitting: boolean;
+  currentPlanName: string // プラン名（'Lite', 'Pro'）
+  isActive: boolean
+  onPortalAction: () => void
+  isSubmitting: boolean
 }
 
 export default function CurrentPlanBanner({
-  currentPlanStr,
+  currentPlanName,
   isActive,
   onPortalAction,
   isSubmitting,
 }: CurrentPlanBannerProps) {
-  console.log('currentPlanStr: ', currentPlanStr)
-  // 現在のプラン名をメモ化（大文字小文字を無視して Pro / Lite を検出）
+  // 現在のプラン名をメモ化（currentPlanNameは既にプラン名）
   const planName = useMemo(() => {
-    if (!currentPlanStr) return 'Standard'
-    const lower = currentPlanStr.toLowerCase()
-    let plan: 'Lite' | 'Pro' | null = null
-    if (lower.includes('lite')) {
-      plan = 'Lite'
-    } else if (lower.includes('pro')) {
-      plan = 'Pro'
-    }
-    return plan
-      ? SUBSCRIPTION_PLANS[plan.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS]?.name ||
-          'Standard'
-      : 'Standard'
-  }, [currentPlanStr])
+    return currentPlanName
+  }, [currentPlanName])
 
   // ボタンコンテンツをメモ化
   const buttonContent = useMemo(() => {

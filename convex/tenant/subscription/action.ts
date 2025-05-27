@@ -19,7 +19,7 @@ import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { BASE_URL, PLAN_TRIAL_DAYS } from '@/lib/constants';
 import { BillingPeriod } from '@/convex/types';
-import { checkAllowedUrl } from '@/lib/utils';
+import { checkAllowedUrl, getPlanNameFromPriceId } from '@/lib/utils';
 
 /**
  * 1. サブスクリプション用Checkout Sessionを作成
@@ -327,7 +327,7 @@ export const confirmSubscriptionUpdate = action({
         billing_period: billingPeriod,
         tenant_id: args.tenant_id,
         stripe_customer_id: updatedSubscription.customer as string,
-        plan_name: updatedSubscription.description as string,
+        plan_name: getPlanNameFromPriceId(updatedSubscription.items.data[0]?.price?.id),
         current_period_start: updatedSubscription.current_period_start,
         current_period_end: updatedSubscription.current_period_end,
         status: updatedSubscription.status,

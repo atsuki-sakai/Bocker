@@ -10,7 +10,7 @@ import { BillingPeriod } from '@/convex/types'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { SUBSCRIPTION_PLANS } from '@/lib/constants'
-import { getPriceStrFromPlanAndPeriod } from '@/lib/utils'
+import { getPriceNameFromPlanName, getPlanNameFromPriceId } from '@/lib/utils'
 import { Doc } from '@/convex/_generated/dataModel'
 import { StripePreviewData } from '@/lib/types'
 import { Id } from '@/convex/_generated/dataModel'
@@ -38,7 +38,7 @@ export default function SubscriptionForm({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('month')
-  const [updatePlanIdStr, setupdatePlanIdStr] = useState<string | null>(null)
+  const [updatePlanId, setUpdatePlanId] = useState<string | null>(null)
 
   const createSession = useAction(api.tenant.subscription.action.createSubscriptionSession)
   const createBillingPortal = useAction(api.tenant.subscription.action.createBillingPortalSession)
@@ -50,7 +50,10 @@ export default function SubscriptionForm({
   )
 
   // データの準備
-  const currentPlanStr = subscription?.plan_name || null
+  // 現在のプラン名を取得（price_idからプラン名に変換）
+  const currentPlanName = subscription?.price_id
+    ? getPlanNameFromPriceId(subscription.price_id)
+    : null
 
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing' || false
 
@@ -64,16 +67,16 @@ export default function SubscriptionForm({
     console.log('🎭 PreviewDialog状態変化:', {
       showConfirmDialog,
       hasPreviewData: !!previewData,
-      updatePlanIdStr,
-      currentPlanStr,
+      updatePlanId,
+      currentPlanName,
       billingPeriod,
       tenantSubscriptionId: tenant?.subscription_id,
     })
   }, [
     showConfirmDialog,
     previewData,
-    updatePlanIdStr,
-    currentPlanStr,
+    updatePlanId,
+    currentPlanName,
     billingPeriod,
     tenant?.subscription_id,
   ])
@@ -100,7 +103,7 @@ export default function SubscriptionForm({
           customerId,
           tenantId: tenant?._id,
           orgId,
-          newPriceId: getPriceStrFromPlanAndPeriod(planStr, billingPeriod),
+          newPriceId: getPriceNameFromPlanName(planStr, billingPeriod),
         })
 
         if (!subscriptionId || subscriptionId === '') {
@@ -120,7 +123,7 @@ export default function SubscriptionForm({
           tenant_id: tenant?._id,
           subscription_id: subscriptionId,
           org_id: orgId,
-          new_price_id: getPriceStrFromPlanAndPeriod(planStr, billingPeriod),
+          new_price_id: getPriceNameFromPlanName(planStr, billingPeriod),
           stripe_customer_id: customerId,
         })
 
@@ -188,7 +191,7 @@ export default function SubscriptionForm({
 
           // プレビューデータをクリア
           setPreviewData(null)
-          setupdatePlanIdStr(null)
+          setUpdatePlanId(null)
         } else {
           console.error('❌ サブスクリプション更新失敗:', result)
           const errorMessage = 'サブスクリプションの更新に失敗しました'
@@ -212,9 +215,9 @@ export default function SubscriptionForm({
 
   // サブスクリプション作成関数をメモ化
   const handleSubscribe = useCallback(
-    async (planStr: string, billingPeriod: BillingPeriod) => {
+    async (planName: string, billingPeriod: BillingPeriod) => {
       console.log('🔥 handleSubscribe called with:', {
-        planStr,
+        planName,
         billingPeriod,
         tenantSubscriptionId: tenant?.subscription_id,
         subscriptionStripeId: subscription?.stripe_subscription_id,
@@ -233,15 +236,15 @@ export default function SubscriptionForm({
       ) {
         // 既契約あり → プレビュー
         console.log('✅ 既存契約あり - プレビューを表示します')
-        await handleGetPreview(planStr, billingPeriod, subscriptionId)
-        setupdatePlanIdStr(planStr)
-        console.log('✅ プレビュー処理完了、updatePlanIdStrを設定:', planStr)
+        await handleGetPreview(planName, billingPeriod, subscriptionId)
+        setUpdatePlanId(planName)
+        console.log('✅ プレビュー処理完了、updatePlanIdStrを設定:', planName)
       } else {
         // 新規 → Checkout
         console.log('🆕 新規契約 - チェックアウトページに遷移します')
         try {
           setIsSubmitting(true)
-          const priceId = getPriceStrFromPlanAndPeriod(planStr, billingPeriod)
+          const priceId = getPriceNameFromPlanName(planName, billingPeriod)
           const isTrial = !tenant?.subscription_status
 
           console.log('💳 チェックアウトセッション作成中:', {
@@ -344,12 +347,14 @@ export default function SubscriptionForm({
       </div>
 
       {/* 現在のプラン表示 */}
-      <CurrentPlanBanner
-        currentPlanStr={currentPlanStr}
-        isActive={isActive}
-        onPortalAction={handleBillingPortal}
-        isSubmitting={isSubmitting}
-      />
+      {currentPlanName && (
+        <CurrentPlanBanner
+          currentPlanName={currentPlanName}
+          isActive={isActive}
+          onPortalAction={handleBillingPortal}
+          isSubmitting={isSubmitting}
+        />
+      )}
       <Separator className="mb-10 md:mb-16 mt-4 w-1/4" />
 
       {/* プレビューダイアログ */}
@@ -358,8 +363,8 @@ export default function SubscriptionForm({
         setOpenAction={setShowConfirmDialog}
         previewData={previewData}
         billingPeriod={billingPeriod}
-        currentPlanStr={currentPlanStr}
-        updatePlanIdStr={updatePlanIdStr}
+        currentPlanName={currentPlanName}
+        updatePlanName={updatePlanId as string}
         tenant={tenant as Doc<'tenant'> | null}
         subscriptionId={subscription?.stripe_subscription_id || tenant?.subscription_id || null}
         isSubmitting={isSubmitting}
@@ -383,8 +388,8 @@ export default function SubscriptionForm({
               : undefined
           }
           features={SUBSCRIPTION_PLANS.LITE.features}
-          currentPlanStr={currentPlanStr}
-          planId="Lite"
+          currentPlanName={currentPlanName}
+          planName="Lite"
           billingPeriod={billingPeriod}
           currentBillingPeriod={subscription?.billing_period as BillingPeriod | undefined}
           isActive={isActive}
@@ -410,8 +415,8 @@ export default function SubscriptionForm({
               : undefined
           }
           features={SUBSCRIPTION_PLANS.PRO.features}
-          currentPlanStr={currentPlanStr}
-          planId="Pro"
+          currentPlanName={currentPlanName}
+          planName="Pro"
           billingPeriod={billingPeriod}
           currentBillingPeriod={subscription?.billing_period as BillingPeriod | undefined}
           isActive={isActive}
