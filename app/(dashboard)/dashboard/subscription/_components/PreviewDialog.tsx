@@ -2,7 +2,7 @@
 // PreviewDialog Component
 // ------------------------------------------------------
 
-import { cn, getPriceNameFromPlanName, getPlanNameFromPriceId } from '@/lib/utils'
+import { cn, getPriceNameFromPlanName } from '@/lib/utils'
 import { BillingPeriod } from '@/convex/types'
 import {
   Dialog,

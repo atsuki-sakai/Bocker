@@ -83,8 +83,8 @@ export default function SubscriptionForm({
 
   // プレビュー取得関数をメモ化
   const handleGetPreview = useCallback(
-    async (planStr: string, billingPeriod: BillingPeriod, overrideSubscriptionId?: string) => {
-      console.log('🔍 handleGetPreview開始:', { planStr, billingPeriod, overrideSubscriptionId })
+    async (planName: string, billingPeriod: BillingPeriod, overrideSubscriptionId?: string) => {
+      console.log('🔍 handleGetPreview開始:', { planName, billingPeriod, overrideSubscriptionId })
 
       try {
         setIsSubmitting(true)
@@ -97,13 +97,13 @@ export default function SubscriptionForm({
 
         // デバッグ情報をログに出力
         console.log('📋 Preview request params:', {
-          planStr,
+          planName,
           billingPeriod,
           subscriptionId,
           customerId,
           tenantId: tenant?._id,
           orgId,
-          newPriceId: getPriceNameFromPlanName(planStr, billingPeriod),
+          newPriceId: getPriceNameFromPlanName(planName, billingPeriod),
         })
 
         if (!subscriptionId || subscriptionId === '') {
@@ -123,7 +123,7 @@ export default function SubscriptionForm({
           tenant_id: tenant?._id,
           subscription_id: subscriptionId,
           org_id: orgId,
-          new_price_id: getPriceNameFromPlanName(planStr, billingPeriod),
+          new_price_id: getPriceNameFromPlanName(planName, billingPeriod),
           stripe_customer_id: customerId,
         })
 
