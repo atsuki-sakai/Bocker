@@ -17,7 +17,7 @@ export const MAX_POINTS = 100000;
 // クーポンの最大利用回数
 export const LIMIT_USE_COUPON_COUNT = 10000;
 // 数値の最大値
-export const MAX_NUM = 9999999;
+export const MAX_NUM = 9999999999999999;
 // テキストの最大文字数
 export const MAX_TEXT_LENGTH = 256;
 // クーポン識別IDの文字数
