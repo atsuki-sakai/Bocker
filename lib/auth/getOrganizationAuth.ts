@@ -12,6 +12,7 @@ import { Role } from '@/convex/types'
  * FIXME: tenantIdを取得する方法を考える。初回にwebhookで作成されるため、その時に取得したいがどうするか。。。
  */
 export async function getOrganizationAuth(): Promise<{
+    tenantId: Id<'tenant'>
     userId: string
     orgId: Id<'organization'>
     role: Role
@@ -27,9 +28,10 @@ export async function getOrganizationAuth(): Promise<{
   
     const metadata = user.publicMetadata as UserMetadata
   
-    if (!metadata.org_id || !metadata.role) {
-      redirect('/dashboard')
+    if (!metadata.org_id || !metadata.tenant_id || metadata.role === null) {
+      console.error('ユーザー情報が不正です。必要なメタデータが不足しています')
+      redirect('/sign-in')
     }
 
-    return { userId, orgId: metadata.org_id, role: metadata.role, token }
+    return { userId, orgId: metadata.org_id, role: metadata.role, token, tenantId: metadata.tenant_id }
   }

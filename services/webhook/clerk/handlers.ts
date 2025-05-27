@@ -154,7 +154,65 @@ export async function handleUserCreated(
         }
       }
 
-    
+      // 7. サロン設定の作成
+      console.log(`🏢 [${eventId}] サロン設定作成開始: org_id=${orgId}`, { ...context, orgId });
+     try{
+      metrics.incrementApiCall('convex');
+      await deps.retry(() =>
+        fetchMutation(deps.convex.organization.config.mutation.create, {
+          org_id: orgId,
+          tenant_id: tenantId,
+          images: [],
+        })
+      );
+     }catch(error){
+      console.warn(`⚠️ [${eventId}] サロン設定作成失敗（非クリティカル）: org_id=${orgId}`, { ...context, orgId, error });
+      Sentry.captureException(error, {
+        level: 'warning',
+        tags: { ...context, operation: 'create_organization_config', orgId },
+      });
+     }
+
+      // 8. サロンAPI設定を作成
+      try{
+        console.log(`🏢 [${eventId}] サロンAPI設定の画像を作成開始: org_id=${orgId}`, { ...context, orgId });
+      metrics.incrementApiCall('convex');
+      await deps.retry(() =>
+        fetchMutation(deps.convex.organization.api_config.mutation.create, {
+          org_id: orgId,
+          tenant_id: tenantId,
+        })
+      );
+      }catch(error){
+        console.warn(`⚠️ [${eventId}] サロンAPI設定作成失敗（非クリティカル）: org_id=${orgId}`, { ...context, orgId, error });
+        Sentry.captureException(error, {
+          level: 'warning',
+          tags: { ...context, operation: 'create_organization_api_config', orgId },
+        });
+      }
+
+      // 9. サロン予約設定を作成
+     try{
+      console.log(`🏢 [${eventId}] サロン予約設定作成開始: org_id=${orgId}`, { ...context, orgId });
+      metrics.incrementApiCall('convex');
+      await deps.retry(() =>
+        fetchMutation(deps.convex.organization.reservation_config.mutation.create, {
+          org_id: orgId,
+          tenant_id: tenantId,
+          reservation_interval_minutes: 30,
+          available_sheet: 2,
+          reservation_limit_days: 30,
+          available_cancel_days: 3,
+          today_first_later_minutes: 30,
+        })
+      );
+     }catch(error){
+      console.warn(`⚠️ [${eventId}] サロン予約設定作成失敗（非クリティカル）: org_id=${orgId}`, { ...context, orgId, error });
+      Sentry.captureException(error, {
+        level: 'warning',
+        tags: { ...context, operation: 'create_organization_reservation_config', orgId },
+      });
+     }
     console.log(`✅ [${eventId}] User Created処理完了。`, { ...context, tenantId, stripeCustomerId: stripeCustomer.id });
     return {
       result: 'success',

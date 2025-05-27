@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useQuery, useMutation } from 'convex/react'
+import { useQuery, useMutation, useAction } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { ImageDrop, Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
@@ -19,14 +19,19 @@ import { Mail, Phone, MapPin, Save, Upload, Building } from 'lucide-react'
 
 const orgConfigFormSchema = z.object({
   orgName: z.string().max(120, 'サロン名は120文字以内で入力してください'), // サロン名
-  email: z.string().email('メールアドレスの形式が正しくありません').optional(), // メールアドレス（入力された場合はメール形式をチェック）
+  email: z
+    .string()
+    .optional()
+    .refine(
+      (val) => val === undefined || val === '' || /^[\w\-._]+@[\w\-._]+\.[A-Za-z]{2,}$/.test(val),
+      { message: 'メールアドレスの形式が正しくありません' }
+    ),
   phone: z
     .string()
     .optional()
     .refine((val) => val === undefined || val === '' || /^\d{8,11}$/.test(val), {
       message: '電話番号は8-11桁の数字で入力してください',
     }),
-
   postalCode: z
     .string()
     .optional()
@@ -47,6 +52,9 @@ export default function OrgConfigForm() {
     api.organization.config.query.findByTenantAndOrg,
     tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
   )
+
+  const updateWithThumbnail = useAction(api.storage.action.uploadWithThumbnail)
+  const killWithThumbnail = useAction(api.storage.action.killWithThumbnail)
   const updateImages = useMutation(api.organization.config.mutation.updateImages)
   const upsert = useMutation(api.organization.config.mutation.upsert)
 
@@ -98,7 +106,7 @@ export default function OrgConfigForm() {
   const handleSaveImg = useCallback(
     async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault()
-      if (!currentFile) return
+      if (!currentFile || !orgId) return
 
       let uploadedOriginalUrl: string | null = null
       let uploadedThumbnailUrl: string | null = null
@@ -107,48 +115,38 @@ export default function OrgConfigForm() {
 
         const originalBase64 = await fileToBase64(currentFile)
 
-        // FIXME: API を作成する
-        const result = await fetch('/api/storage', {
-          method: 'POST',
-          body: JSON.stringify({
-            base64Data: originalBase64,
-            fileName: currentFile!.name,
-            directory: 'setting',
-            tenantId,
-            quality: 'high',
-          }),
+        const result = await updateWithThumbnail({
+          base64Data: originalBase64,
+          fileName: currentFile!.name,
+          directory: 'setting/original',
+          quality: 'high',
+          orgId: orgId,
         })
-        const data = await result.json()
-        uploadedOriginalUrl = data.imgUrl
-        uploadedThumbnailUrl = data.thumbnailUrl
 
-        if (result.ok) {
-          // サロン設定の画像パスを更新
-          if (uploadedOriginalUrl && uploadedThumbnailUrl && tenantId && orgId) {
-            await updateImages({
-              tenant_id: tenantId,
-              org_id: orgId,
-              images: [
-                {
-                  original_url: uploadedOriginalUrl,
-                  thumbnail_url: uploadedThumbnailUrl,
-                },
-              ],
-            })
-          }
-          if (orgConfig?.images) {
-            await fetch('/api/storage/kill', {
-              method: 'DELETE',
-              body: JSON.stringify({
-                imgUrl: orgConfig.images[0].original_url,
-                withThumbnail: true,
-              }),
-            })
-          }
+        uploadedOriginalUrl = result.imgUrl
+        uploadedThumbnailUrl = result.thumbnailUrl
 
-          setCurrentFile(null)
-          toast.success('画像を保存しました')
+        // サロン設定の画像パスを更新
+        if (uploadedOriginalUrl && uploadedThumbnailUrl && tenantId && orgId) {
+          await updateImages({
+            tenant_id: tenantId,
+            org_id: orgId,
+            images: [
+              {
+                original_url: uploadedOriginalUrl,
+                thumbnail_url: uploadedThumbnailUrl,
+              },
+            ],
+          })
         }
+        if (orgConfig?.images) {
+          await killWithThumbnail({
+            imgUrl: orgConfig.images[0].original_url || '',
+          })
+        }
+
+        setCurrentFile(null)
+        toast.success('画像を保存しました')
       } catch (error) {
         showErrorToast(error)
       } finally {
@@ -173,7 +171,6 @@ export default function OrgConfigForm() {
           address: data.address,
           reservation_rules: data.reservationRules,
           description: data.description,
-          images: [],
         })
 
         toast.success('サロン設定を保存しました')
@@ -229,7 +226,6 @@ export default function OrgConfigForm() {
                 placeholder="例: salon@example.com"
                 icon={<Mail className="h-4 w-4 text-muted-foreground" />}
                 errors={errors}
-                readOnly={true}
               />
             </div>
 

@@ -82,7 +82,7 @@ export const upsert = mutation({
     postal_code: v.optional(v.string()), // 郵便番号
     address: v.optional(v.string()), // 住所
     reservation_rules: v.optional(v.string()), // 予約ルール
-    images: v.array(imageType),
+    images: v.optional(v.array(imageType)),
     description: v.optional(v.string()), // 説明
   },
   handler: async (ctx, args) => {

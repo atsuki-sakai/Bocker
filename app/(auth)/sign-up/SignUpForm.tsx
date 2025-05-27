@@ -384,7 +384,7 @@ export default function SignUpPage() {
       }
 
       // 招待コードが存在する場合は、招待コードをチェック
-      if (referralCode) {
+      if (referralCode && showReferralCode) {
         const referral = await fetchQuery(api.tenant.referral.query.findByReferralCode, {
           referral_code: referralCode,
         })
@@ -492,6 +492,31 @@ export default function SignUpPage() {
                   className="space-y-4"
                   noValidate
                 >
+                  <motion.div variants={itemVariants} className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium">
+                      店舗名
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="org_name"
+                        type="text"
+                        {...register('org_name')}
+                        placeholder="店舗名を入力"
+                        className="pl-10"
+                        required
+                        aria-invalid={errors.org_name ? 'true' : 'false'}
+                        aria-describedby={errors.org_name ? 'org_name-error' : undefined}
+                        autoComplete="org_name"
+                        autoFocus
+                      />
+                    </div>
+                    {errors.org_name && (
+                      <p id="org_name-error" className="text-xs text-red-600" role="alert">
+                        {errors.org_name.message}
+                      </p>
+                    )}
+                  </motion.div>
                   <motion.div variants={itemVariants} className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
                       メールアドレス

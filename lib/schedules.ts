@@ -7,14 +7,18 @@ const DAYS_JA = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日'
 type DayOfWeekEN = typeof DAYS_EN[number];
 
 /**
- * 現在の Unix タイムスタンプ（秒単位）を取得する
+ * 現在の Unix タイムスタンプ（ミリ秒単位）を取得する
  *
- * @param addHours オプション。加算する時間（整数）を指定します。0も有効です。
- * @returns 現在の Unix タイムスタンプ（秒単位）
+ * @param addHours オプション。加算する時間（整数）を指定します。0 も有効です。
+ * @returns 現在の Unix タイムスタンプ（ミリ秒単位）
  */
 export function getCurrentUnixTime(addHours?: number): number {
-  const currentTimeSec = Math.floor(Date.now() / 1000);
-  return addHours !== undefined ? currentTimeSec + addHours * 3600 : currentTimeSec;
+  // Date.now() はすでにミリ秒単位のタイムスタンプを返す
+  const currentTimeMs = Date.now();
+  // addHours が指定されていれば、その分だけミリ秒に変換して加算
+  return addHours !== undefined
+    ? currentTimeMs + addHours * 3600 * 1000
+    : currentTimeMs;
 }
 
 

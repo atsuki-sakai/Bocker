@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useState, useEffect, Fragment } from 'react'
 import { Separator } from '@/components/ui/separator'
+import { Loading } from './'
 import Image from 'next/image'
 import { Dialog, DialogBackdrop, DialogPanel, TransitionChild } from '@headlessui/react'
 import {
@@ -24,16 +25,10 @@ import {
   TimerIcon,
   UsersIcon,
   CloudIcon,
-  Building2,
 } from 'lucide-react'
-import { OrganizationProfile } from '@clerk/nextjs'
-import { useOrganizationList } from '@clerk/nextjs'
-import { useOrganization } from '@clerk/nextjs'
-import { OrganizationSwitcher, UserButton } from '@clerk/nextjs'
+import { UserButton } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
 import { useTheme } from 'next-themes'
-import { CreateOrganization } from '@clerk/nextjs'
-import { Button } from '@/components/ui/button'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { api } from '@/convex/_generated/api'
 import { useQuery } from 'convex/react'
@@ -50,17 +45,12 @@ export default function Sidebar({ children }: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isLinkClicked, setIsLinkClicked] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [showOrgProfile, setShowOrgProfile] = useState(false)
-  const { userMemberships } = useOrganizationList()
   const { tenantId, orgId, role, isLoaded } = useTenantAndOrganization()
-  const { organization } = useOrganization()
 
   console.log('role: ', role)
   console.log('tenantId: ', tenantId)
   console.log('orgId: ', orgId)
   console.log('isLoaded: ', isLoaded)
-  console.log('userMemberships: ', userMemberships.data)
-  console.log('organization: ', organization)
 
   const pathname = usePathname() // 現在のパスを取得
   const { resolvedTheme } = useTheme()
@@ -163,18 +153,8 @@ export default function Sidebar({ children }: SidebarProps) {
   }, [pathname, isLinkClicked, setSidebarOpen])
   useEffect(() => setMounted(true), [])
 
-  if (!organization) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <CreateOrganization
-          hideSlug={true}
-          afterCreateOrganizationUrl="/dashboard"
-          appearance={{
-            baseTheme: resolvedTheme === 'dark' ? dark : undefined,
-          }}
-        />
-      </div>
-    )
+  if (!orgId) {
+    return <Loading />
   }
 
   return (
@@ -390,20 +370,7 @@ export default function Sidebar({ children }: SidebarProps) {
                       baseTheme: resolvedTheme === 'dark' ? dark : undefined,
                     }}
                   />
-                  {tenant?.subscription_status === 'active' && (
-                    <>
-                      <OrganizationSwitcher
-                        hidePersonal={true}
-                        afterCreateOrganizationUrl="/dashboard"
-                        appearance={{
-                          baseTheme: resolvedTheme === 'dark' ? dark : undefined,
-                        }}
-                      />
-                      <Button variant="outline" size="icon" onClick={() => setShowOrgProfile(true)}>
-                        <Building2 className="size-4" />
-                      </Button>
-                    </>
-                  )}
+
                   <div className="relative hidden lg:block">
                     <ModeToggle />
                   </div>
@@ -415,50 +382,6 @@ export default function Sidebar({ children }: SidebarProps) {
             <div className="mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
           </main>
         </div>
-        <Dialog
-          className="fixed inset-0 w-full h-full z-50 flex flex-col justify-center items-center"
-          open={showOrgProfile}
-          onClose={() => setShowOrgProfile(false)}
-        >
-          <TransitionChild
-            as={Fragment}
-            enter="transition-opacity duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="transition-opacity duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <DialogBackdrop className="fixed inset-0 bg-background/50 backdrop-blur-sm" />
-          </TransitionChild>
-          <TransitionChild
-            as={Fragment}
-            enter="transition-all duration-300 ease-out"
-            enterFrom="opacity-0 scale-95"
-            enterTo="opacity-100 scale-100"
-            leave="transition-all duration-200 ease-in"
-            leaveFrom="opacity-100 scale-100"
-            leaveTo="opacity-0 scale-95"
-          >
-            <div className="relative w-full h-full flex flex-col">
-              <div className="w-full h-full flex justify-center items-center relative">
-                {/* Close button (X) positioned inside the modal content */}
-                <Button
-                  onClick={() => setShowOrgProfile(false)}
-                  className="absolute top-5 right-5 z-10 border-background border h-10 w-10 rounded-full p-3 "
-                >
-                  <XIcon className="size-5 text-background" aria-hidden="true" />
-                  <span className="sr-only">閉じる</span>
-                </Button>
-
-                <OrganizationProfile
-                  routing="hash"
-                  appearance={{ baseTheme: resolvedTheme === 'dark' ? dark : undefined }}
-                />
-              </div>
-            </div>
-          </TransitionChild>
-        </Dialog>
       </div>
     </>
   )
