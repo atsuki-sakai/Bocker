@@ -5,8 +5,8 @@ export const BASE_URL =
     ? process.env.NEXT_PUBLIC_DEVELOP_URL || 'http://localhost:3000'
     : process.env.NEXT_PUBLIC_DEPLOY_URL || 'https://bocker.jp'
 
-    // 許可するリダイレクト先のドメインリスト
-export const ALLOWED_DOMAINS = [new URL(BASE_URL).hostname]; // 例: ['app.example.com']
+// ✅ ここで許可リストを定義
+export const ALLOWED_DOMAINS = ['localhost', 'bocker.jp'];
 
 /**
  * サロンの営業時間（24時間表記）を格納する配列。

@@ -21,13 +21,22 @@ export default function CurrentPlanBanner({
   onPortalAction,
   isSubmitting,
 }: CurrentPlanBannerProps) {
-  // 現在のプラン名をメモ化
+  console.log('currentPlanStr: ', currentPlanStr)
+  // 現在のプラン名をメモ化（大文字小文字を無視して Pro / Lite を検出）
   const planName = useMemo(() => {
-    return currentPlanStr
-      ? SUBSCRIPTION_PLANS[currentPlanStr.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS]?.name ||
+    if (!currentPlanStr) return 'Standard'
+    const lower = currentPlanStr.toLowerCase()
+    let plan: 'Lite' | 'Pro' | null = null
+    if (lower.includes('lite')) {
+      plan = 'Lite'
+    } else if (lower.includes('pro')) {
+      plan = 'Pro'
+    }
+    return plan
+      ? SUBSCRIPTION_PLANS[plan.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS]?.name ||
           'Standard'
-      : 'Standard';
-  }, [currentPlanStr]);
+      : 'Standard'
+  }, [currentPlanStr])
 
   // ボタンコンテンツをメモ化
   const buttonContent = useMemo(() => {
@@ -37,17 +46,17 @@ export default function CurrentPlanBanner({
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           処理中...
         </>
-      );
+      )
     }
-    return 'サブスクリプション管理';
-  }, [isSubmitting]);
+    return 'サブスクリプション管理'
+  }, [isSubmitting])
 
   // ポータルボタンクリックハンドラをメモ化
   const handlePortalClick = useCallback(() => {
-    onPortalAction();
-  }, [onPortalAction]);
+    onPortalAction()
+  }, [onPortalAction])
 
-  if (!isActive) return null;
+  if (!isActive) return null
 
   return (
     <div className="w-full max-w-xl mb-8 border border-active p-4 rounded-lg">

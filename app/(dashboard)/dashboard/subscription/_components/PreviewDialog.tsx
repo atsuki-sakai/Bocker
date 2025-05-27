@@ -97,36 +97,26 @@ export default function PreviewDialog({
   isSubmitting,
   onConfirmAction,
 }: PreviewDialogProps) {
-  // Dialogのcloseハンドラをメモ化
-  const handleDialogClose = useCallback(
-    (open: boolean) => {
-      setOpenAction(open)
-    },
-    [setOpenAction]
-  )
+  // Dialogのcloseハンドラ
+  const handleDialogClose = (open: boolean) => setOpenAction(open)
 
-  // 確認ボタンのクリックハンドラをメモ化
-  const handleConfirm = useCallback(() => {
+  // 確認ボタン
+  const handleConfirm = () => {
     if (!tenant?.subscription_id || !updatePlanIdStr) return
-
     onConfirmAction(
       tenant.subscription_id,
       getPriceStrFromPlanAndPeriod(updatePlanIdStr, billingPeriod)
     )
-    setOpenAction(false)
-  }, [tenant, updatePlanIdStr, billingPeriod, onConfirmAction, setOpenAction])
+  }
 
-  // キャンセルボタンのクリックハンドラをメモ化
-  const handleCancel = useCallback(() => {
-    setOpenAction(false)
-  }, [setOpenAction])
+  // キャンセルボタン
+  const handleCancel = () => setOpenAction(false)
 
-  // 請求書の品目をメモ化
+  // 請求書アイテム
   const invoiceLines = useMemo(() => {
     if (!previewData) return []
-
-    return previewData.previewInvoice.lines.data.map((item, index) => (
-      <div key={index} className="flex justify-between text-sm">
+    return previewData.previewInvoice.lines.data.map((item, idx) => (
+      <div key={idx} className="flex justify-between text-sm">
         <span className="flex-1">{translateDescription(item.description)}</span>
         <span
           className={cn(
@@ -141,50 +131,30 @@ export default function PreviewDialog({
     ))
   }, [previewData])
 
-  // 合計金額をメモ化
   const totalAmount = useMemo(() => {
     if (!previewData) return '0'
-
-    return previewData.status && previewData.status === 'trialing'
-      ? 0
-      : previewData.previewInvoice.total.toLocaleString()
+    return previewData.status === 'trialing' ? 0 : previewData.previewInvoice.total.toLocaleString()
   }, [previewData])
 
-  // 次回の支払い情報をメモ化
   const nextPaymentInfo = useMemo(() => {
     if (!previewData) return null
-
-    if (!previewData.previewInvoice.lines.data.some((item) => item.type === 'subscription')) {
-      return null
-    }
-
-    // 次回のサブスクリプション料金を取得
     const subItem = previewData.previewInvoice.lines.data.find(
       (item) => !item.proration && item.type === 'subscription'
     )
-
-    // ユーザーのJSONデータ構造に合わせて、金額を取得する方法
-    let amount = 0
-    if (subItem?.plan) {
-      // @ts-expect-error 年の払いの場合planのamountに価格が入っているので
-      amount = subItem?.plan?.amount || 0
-    }
-
+    if (!subItem) return null
+    // @ts-expect-error 年払いの場合 amount が plan 内にある
+    const amount = subItem?.plan?.amount || 0
     return `次回の定期支払い: ¥${amount.toLocaleString()}/${billingPeriod === 'month' ? '月' : '年'}`
   }, [previewData, billingPeriod])
 
-  // ボタンのコンテンツをメモ化
-  const confirmButtonContent = useMemo(() => {
-    if (isSubmitting) {
-      return (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          処理中...
-        </>
-      )
-    }
-    return '変更を確定する'
-  }, [isSubmitting])
+  const confirmButtonContent = isSubmitting ? (
+    <>
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      処理中...
+    </>
+  ) : (
+    '変更を確定する'
+  )
 
   if (!previewData || !tenant) return null
 
@@ -198,9 +168,9 @@ export default function PreviewDialog({
         </DialogHeader>
 
         <div className="space-y-4 my-4">
-          {/* プラン変更の概要 */}
+          {/* 概要 */}
           <div className="p-4 rounded-lg bg-muted">
-            <h3 className="font-medium text-xs  mb-2">サブスクリプション変更内容</h3>
+            <h3 className="font-medium text-xs mb-2">サブスクリプション変更内容</h3>
             <div className="flex justify-between items-center">
               <div>
                 <div className="text-sm text-muted-foreground">現在のプラン</div>
@@ -214,25 +184,22 @@ export default function PreviewDialog({
             </div>
           </div>
 
-          {/* 料金変更の詳細 */}
+          {/* 料金詳細 */}
           <div className="border rounded-lg overflow-hidden">
             <div className="bg-background p-3 font-medium">料金の詳細</div>
             <div className="p-4 space-y-3">
               {invoiceLines}
-
               <div className="border-t pt-2 mt-2 flex justify-between font-bold">
                 <span>今回のお支払い金額</span>
                 <span>¥{totalAmount}</span>
               </div>
-
-              {/* 次回のお支払い情報 */}
               {nextPaymentInfo && (
                 <div className="text-xs text-muted-foreground">{nextPaymentInfo}</div>
               )}
             </div>
           </div>
 
-          {/* 注意事項 */}
+          {/* 注意 */}
           <div className="text-sm text-muted-foreground">
             <p>※ 日割り計算により、既に支払い済みの金額から調整されます。</p>
             <p>※ プラン変更は即時に適用されます。</p>
@@ -248,7 +215,7 @@ export default function PreviewDialog({
           <Button variant="outline" className="flex-1" onClick={handleCancel}>
             キャンセル
           </Button>
-          <Button className="flex-1 " onClick={handleConfirm} disabled={isSubmitting}>
+          <Button className="flex-1" onClick={handleConfirm} disabled={isSubmitting}>
             {confirmButtonContent}
           </Button>
         </DialogFooter>

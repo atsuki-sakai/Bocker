@@ -72,14 +72,17 @@ export default function PlanCard({
   highlightColor,
   delay,
 }: PlanCardProps) {
-  // 現在のプランかどうかのチェックをメモ化
+  // 現在のプランかどうかのチェックをメモ化（大文字小文字を無視して Pro / Lite を含むか判定）
   const isCurrentPlan = useMemo(() => {
-    return currentPlanStr === planId && (!isActive || currentBillingPeriod === billingPeriod)
-  }, [currentPlanStr, planId, isActive, currentBillingPeriod, billingPeriod])
+    return currentPlanStr?.toLowerCase().includes(title.toLowerCase()) ?? false
+  }, [currentPlanStr, title])
 
-  // 支払い期間が変更されているかのチェックをメモ化
+  // 支払い期間が変更されているかのチェックをメモ化（プラン名に Pro / Lite を含むかを判定）
   const isBillingPeriodChange = useMemo(() => {
-    return currentPlanStr === planId && currentBillingPeriod !== billingPeriod
+    return (
+      currentPlanStr?.toLowerCase().includes(planId.toLowerCase()) &&
+      currentBillingPeriod !== billingPeriod
+    )
   }, [currentPlanStr, planId, currentBillingPeriod, billingPeriod])
 
   // 月額換算価格をメモ化
@@ -194,7 +197,7 @@ export default function PlanCard({
           <PlanActionButton
             isActive={isActive}
             isCurrentPlan={isCurrentPlan}
-            isBillingPeriodChange={isBillingPeriodChange}
+            isBillingPeriodChange={isBillingPeriodChange ?? false}
             currentPlanStr={currentPlanStr}
             planId={planId}
             currentBillingPeriod={currentBillingPeriod}
@@ -270,7 +273,7 @@ function PlanActionButton({
           {billingPeriod === 'year' ? '年払いに変更' : '月払いに変更'}
         </span>
       )
-    } else if (currentPlanStr?.toLowerCase() === planId.toLowerCase()) {
+    } else if (currentPlanStr?.toLowerCase().includes(planId.toLowerCase())) {
       return <span className="flex items-center gap-1">現在のプラン</span>
     } else {
       return <span className="flex items-center gap-1">プランを変更</span>
@@ -280,7 +283,7 @@ function PlanActionButton({
   // ボタンが無効かどうかをメモ化
   const isButtonDisabled = useMemo(() => {
     return (
-      currentPlanStr?.toLowerCase() === planId.toLowerCase() &&
+      currentPlanStr?.toLowerCase().includes(planId.toLowerCase()) &&
       currentBillingPeriod === billingPeriod
     )
   }, [currentPlanStr, planId, currentBillingPeriod, billingPeriod])

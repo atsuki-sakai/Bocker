@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAction, Preloaded, usePreloadedQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { PlanCard, BillingPeriodToggle, PreviewDialog, CurrentPlanBanner } from './_components'
@@ -15,11 +15,7 @@ import { Doc } from '@/convex/_generated/dataModel'
 import { StripePreviewData } from '@/lib/types'
 import { Id } from '@/convex/_generated/dataModel'
 import { PLAN_TRIAL_DAYS } from '@/lib/constants'
-
-const baseUrl =
-  process.env.NEXT_PUBLIC_NODE_ENV === 'development'
-    ? process.env.NEXT_PUBLIC_DEVELOP_URL
-    : process.env.NEXT_PUBLIC_DEPLOY_URL
+import { BASE_URL } from '@/lib/constants'
 
 interface SubscriptionFormProps {
   tenantId: Id<'tenant'>
@@ -63,30 +59,61 @@ export default function SubscriptionForm({
     setBillingPeriod(period)
   }, [])
 
+  // ダイアログ状態の変化をログに出力
+  useEffect(() => {
+    console.log('🎭 PreviewDialog状態変化:', {
+      showConfirmDialog,
+      hasPreviewData: !!previewData,
+      updatePlanIdStr,
+      currentPlanStr,
+      billingPeriod,
+      tenantSubscriptionId: tenant?.subscription_id,
+    })
+  }, [
+    showConfirmDialog,
+    previewData,
+    updatePlanIdStr,
+    currentPlanStr,
+    billingPeriod,
+    tenant?.subscription_id,
+  ])
+
   // プレビュー取得関数をメモ化
   const handleGetPreview = useCallback(
-    async (planStr: string, billingPeriod: BillingPeriod) => {
+    async (planStr: string, billingPeriod: BillingPeriod, overrideSubscriptionId?: string) => {
+      console.log('🔍 handleGetPreview開始:', { planStr, billingPeriod, overrideSubscriptionId })
+
       try {
         setIsSubmitting(true)
+        console.log('⏳ isSubmittingをtrueに設定')
 
-        // より厳密なバリデーション
-        const subscriptionId = tenant?.subscription_id
+        // より厳密なバリデーション - 引数で渡されたIDを優先
+        const subscriptionId =
+          overrideSubscriptionId || subscription?.stripe_subscription_id || tenant?.subscription_id
         const customerId = tenant?.stripe_customer_id
 
         // デバッグ情報をログに出力
-        console.log('Preview request params:', {
+        console.log('📋 Preview request params:', {
+          planStr,
+          billingPeriod,
           subscriptionId,
           customerId,
+          tenantId: tenant?._id,
+          orgId,
           newPriceId: getPriceStrFromPlanAndPeriod(planStr, billingPeriod),
         })
 
         if (!subscriptionId || subscriptionId === '') {
+          console.error('❌ サブスクリプションIDが見つかりません')
           throw new Error('サブスクリプションIDが見つかりません')
         }
 
         if (!customerId || customerId === '') {
+          console.error('❌ Stripe顧客IDが見つかりません')
           throw new Error('Stripe顧客IDが見つかりません')
         }
+
+        console.log('🚀 getSubscriptionUpdatePreview API呼び出し中...')
 
         // previewデータを取得し状態を更新
         const result = await getSubscriptionUpdatePreview({
@@ -97,12 +124,17 @@ export default function SubscriptionForm({
           stripe_customer_id: customerId,
         })
 
+        console.log('📊 プレビューデータ取得成功:', result)
+
         // プレビューデータを設定
         setPreviewData(result as StripePreviewData)
+        console.log('✅ setPreviewData完了')
+
         // ダイアログを表示
         setShowConfirmDialog(true)
+        console.log('✅ setShowConfirmDialog(true)完了 - ダイアログが表示されるはずです')
       } catch (err) {
-        console.error('Preview error details:', err)
+        console.error('❌ Preview error details:', err)
         const errorMessage =
           err instanceof Error
             ? `プレビュー取得エラー: ${err.message}`
@@ -111,10 +143,12 @@ export default function SubscriptionForm({
         toast.error(errorMessage)
       } finally {
         setIsSubmitting(false)
+        console.log('🏁 handleGetPreview終了 - isSubmittingをfalseに設定')
       }
     },
     [
       getSubscriptionUpdatePreview,
+      subscription?.stripe_subscription_id,
       tenant?.subscription_id,
       tenant?.stripe_customer_id,
       tenant?._id,
@@ -156,18 +190,44 @@ export default function SubscriptionForm({
 
   // サブスクリプション作成関数をメモ化
   const handleSubscribe = useCallback(
-    async (planStr: string) => {
-      try {
-        setIsSubmitting(true)
+    async (planStr: string, billingPeriod: BillingPeriod) => {
+      console.log('🔥 handleSubscribe called with:', {
+        planStr,
+        billingPeriod,
+        tenantSubscriptionId: tenant?.subscription_id,
+        subscriptionStripeId: subscription?.stripe_subscription_id,
+        tenantSubscriptionStatus: tenant?.subscription_status,
+        subscriptionStatus: subscription?.status,
+        hasSubscriptionId: !!tenant?.subscription_id,
+        hasSubscriptionFromQuery: !!subscription?.stripe_subscription_id,
+      })
 
-        if (tenant?.subscription_id && tenant?.subscription_status !== 'canceled') {
-          // 既存サブスクリプションの更新処理
-          handleGetPreview(planStr, billingPeriod)
-          setupdatePlanIdStr(planStr)
-        } else {
-          // 新規サブスクリプション作成処理
+      // subscriptionオブジェクトからサブスクリプションIDを取得
+      const subscriptionId = subscription?.stripe_subscription_id || tenant?.subscription_id
+
+      if (
+        subscriptionId &&
+        (subscription?.status === 'active' || subscription?.status === 'trialing')
+      ) {
+        // 既契約あり → プレビュー
+        console.log('✅ 既存契約あり - プレビューを表示します')
+        await handleGetPreview(planStr, billingPeriod, subscriptionId)
+        setupdatePlanIdStr(planStr)
+        console.log('✅ プレビュー処理完了、updatePlanIdStrを設定:', planStr)
+      } else {
+        // 新規 → Checkout
+        console.log('🆕 新規契約 - チェックアウトページに遷移します')
+        try {
+          setIsSubmitting(true)
           const priceId = getPriceStrFromPlanAndPeriod(planStr, billingPeriod)
           const isTrial = !tenant?.subscription_status
+
+          console.log('💳 チェックアウトセッション作成中:', {
+            priceId,
+            isTrial,
+            tenantId,
+            orgId,
+          })
 
           const result = await createSession({
             tenant_id: tenantId,
@@ -179,26 +239,28 @@ export default function SubscriptionForm({
           })
 
           if (result?.checkoutUrl) {
+            console.log('✅ チェックアウトURLを取得、リダイレクト中:', result.checkoutUrl)
             window.location.href = result.checkoutUrl
           } else {
             const errorMessage = 'チェックアウトURLの取得に失敗しました'
+            console.error('❌ チェックアウトURL取得失敗:', result)
             setError(errorMessage)
             toast.error(errorMessage)
           }
+        } catch (err: unknown) {
+          console.error('❌ Subscription error:', err)
+          const errorMessage =
+            err instanceof Error
+              ? `サブスクリプションエラー: ${err.message}`
+              : 'サブスクリプションの処理中に予期せぬエラーが発生しました'
+          setError(errorMessage)
+          toast.error(errorMessage)
+        } finally {
+          setIsSubmitting(false)
         }
-      } catch (err: unknown) {
-        console.error('Subscription error:', err)
-        const errorMessage =
-          err instanceof Error
-            ? `サブスクリプションエラー: ${err.message}`
-            : 'サブスクリプションの処理中に予期せぬエラーが発生しました'
-        setError(errorMessage)
-        toast.error(errorMessage)
-      } finally {
-        setIsSubmitting(false)
       }
     },
-    [tenant, billingPeriod, createSession, handleGetPreview, tenantId, orgId]
+    [tenant, subscription, createSession, handleGetPreview, tenantId, orgId]
   )
 
   // 請求ポータル表示関数をメモ化
@@ -210,7 +272,7 @@ export default function SubscriptionForm({
         tenant_id: tenantId,
         org_id: orgId,
         stripe_customer_id: tenant?.stripe_customer_id ?? '',
-        return_url: `${baseUrl}/dashboard/subscription`,
+        return_url: `${BASE_URL}/dashboard/subscription`,
       })
 
       if (result?.portalUrl) {
@@ -235,34 +297,14 @@ export default function SubscriptionForm({
 
   // 各プラン用のサブスクリプションハンドラをメモ化
   const handleLiteSubscribe = useCallback(() => {
-    if (tenant?.subscription_id && tenant?.subscription_status !== 'canceled') {
-      handleGetPreview('Lite', billingPeriod)
-      setupdatePlanIdStr('Lite')
-    } else {
-      handleSubscribe('Lite')
-    }
-  }, [
-    tenant?.subscription_id,
-    tenant?.subscription_status,
-    billingPeriod,
-    handleGetPreview,
-    handleSubscribe,
-  ])
+    console.log('🟦 Liteプランボタンがクリックされました', { billingPeriod })
+    handleSubscribe('Lite', billingPeriod)
+  }, [handleSubscribe, billingPeriod])
 
   const handleProSubscribe = useCallback(() => {
-    if (tenant?.subscription_id && tenant?.subscription_status !== 'canceled') {
-      handleGetPreview('Pro', billingPeriod)
-      setupdatePlanIdStr('Pro')
-    } else {
-      handleSubscribe('Pro')
-    }
-  }, [
-    tenant?.subscription_id,
-    tenant?.subscription_status,
-    billingPeriod,
-    handleGetPreview,
-    handleSubscribe,
-  ])
+    console.log('🟪 Proプランボタンがクリックされました', { billingPeriod })
+    handleSubscribe('Pro', billingPeriod)
+  }, [handleSubscribe, billingPeriod])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-20vh)]">
