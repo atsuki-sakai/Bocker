@@ -17,7 +17,7 @@ export const runtime = 'nodejs'; // 指示書通り nodejs を指定
 export async function POST(req: NextRequest) {
   // 環境変数から Subscription 用の Webhook シークレットを取得
   // process.env.STRIPE_WEBHOOK_SECRET_SUBS! のように `!` をつけて非nullであることを明示
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_SUBS;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
     console.error('STRIPE_WEBHOOK_SECRET_SUBS is not set in environment variables.');
     // Sentry でのエラー報告は processor 内で行われるため、ここではログ出力に留めるか、

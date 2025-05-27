@@ -8,12 +8,12 @@ import { Loading } from '@/components/common'
 import { Id } from '@/convex/_generated/dataModel'
 
 // ストレージキー（サロンIDごとに異なるキーを生成）
-const getStorageKey = (org_id: string) => `liff_id_org_${org_id}`
+const getStorageKey = (org_id: Id<'organization'>) => `liff_id_org_${org_id}`
 
 interface DynamicLiffProviderProps {
   children: React.ReactNode
   tenantId: Id<'tenant'>
-  orgId: string
+  orgId: Id<'organization'>
 }
 
 export function DynamicLiffProvider({ children, tenantId, orgId }: DynamicLiffProviderProps) {

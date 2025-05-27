@@ -53,7 +53,7 @@ export const getById = query({
 export const list = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     pagination_opts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
     target_status: v.optional(reservationStatusType),
@@ -86,7 +86,7 @@ export const list = query({
 export const listByCustomerId = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     customer_id: v.string(),
     pagination_opts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc')))
@@ -120,7 +120,7 @@ export const listByCustomerId = query({
 export const listByStaffId = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization')  ,
     staff_id: v.id('staff'),
     pagination_opts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
@@ -153,7 +153,7 @@ export const listByStaffId = query({
 export const listByStatus = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     status: reservationStatusType,
     pagination_opts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
@@ -185,7 +185,7 @@ export const listByStatus = query({
 export const listByDate = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     date: v.string(),
     pagination_opts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc')))
@@ -219,7 +219,7 @@ export const listByDate = query({
 export const listByStaffAndDate = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     staff_id: v.id('staff'),
     date: v.string(),
     pagination_opts: paginationOptsValidator,
@@ -255,7 +255,7 @@ export const listByStaffAndDate = query({
 export const findByCustomerAndDate = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     customer_id: v.string(),
     date: v.string(),
     pagination_opts: paginationOptsValidator,
@@ -292,7 +292,7 @@ export const findByCustomerAndDate = query({
 export const findAvailableTimeSlots = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     staff_id: v.id('staff'),
     date: v.string(), // "YYYY-MM-DD"
   },
@@ -486,7 +486,7 @@ export const findAvailableTimeSlots = query({
 export const findStaffSchedules = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     staff_id: v.id('staff'),
     date: v.string(), // "YYYY-MM-DD"
     is_all_day: v.boolean(),
@@ -544,7 +544,7 @@ export const findStaffSchedules = query({
 export const findStaffReservations = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     staff_id: v.id('staff'),
     date: v.string(), // "YYYY-MM-DD"
   },
@@ -749,7 +749,7 @@ function generateTimeSlotsWithAlignment(
 export const calculateReservationTime = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     staff_id: v.id('staff'),
     date: v.string(), // "YYYY-MM-DD"
     duration_min: v.number(), // 50分などの施術時間 数値のみ

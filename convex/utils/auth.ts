@@ -61,7 +61,7 @@ export async function checkAuth(
 export async function checkTenantAndOrgAccess(
   ctx: MutationCtx | QueryCtx,
   tenant_id: Id<'tenant'>,
-  org_id: string,
+  org_id: Id<'organization'>,
   skip_check: boolean = false
 ): Promise<boolean> {
   // skipCheckがtrueの場合は認証チェックをスキップ  
@@ -85,7 +85,7 @@ export async function checkTenantAndOrgAccess(
       )
     }
    
-    const tenantOrganization = await ctx.db.query('organization').withIndex('by_tenant_org_archive', q => q.eq('tenant_id', tenant_id).eq('org_id', org_id).eq('is_archive', false)).first();
+    const tenantOrganization = await ctx.db.get(org_id);
     if (!tenantOrganization) {
       throw new ConvexError({
         message: '組織が見つかりません',

@@ -8,7 +8,7 @@ import { retryOperation } from '@/lib/utils'; // リトライ依存用
 import { STRIPE_API_VERSION } from '@/services/stripe/constants';
 
 import { handleAccountUpdated, handleAccountExternalAccountDeleted, handleCapabilityUpdated } from './handlers.connect';
-import { handleCheckoutSessionCompleted, handleSubscriptionUpdated, handleSubscriptionDeleted, handleInvoicePaymentSucceeded, handleInvoicePaymentFailed } from './handlers.subscription';
+import { handleSubscriptionUpdated, handleSubscriptionDeleted, handleInvoicePaymentSucceeded, handleInvoicePaymentFailed } from './handlers.subscription';
 
 /**
  * Stripeウェブフックを処理するプロセッサー。
@@ -79,9 +79,7 @@ export class StripeWebhookProcessor extends WebhookProcessor {
    * @returns 一意のイベントIDを表す文字列。
    */
   protected makeEventId(evt: Stripe.Event, req: NextRequest): string {
-    // フォーマット: stripe_eventID_timestamp (例: stripe_evt_12345_1678886400)
-    // StripeのイベントID(evt.id)は一意であり、作成日時と組み合わせることで文脈を追加します。
-    return `stripe_${evt.id}_${evt.created}`;
+    return evt.id;
   }
 
   /**
@@ -101,10 +99,6 @@ export class StripeWebhookProcessor extends WebhookProcessor {
     let stripeCustomerId;
     let stripeSubscriptionId;
     // Subscription
-    if(evt.type === 'checkout.session.completed'){
-      stripeCustomerId = evt.data.object.customer as string;
-      stripeSubscriptionId = evt.data.object.subscription as string;
-    }
     if(evt.type === 'customer.deleted'){
       stripeCustomerId = evt.data.object.id;
     }
@@ -162,10 +156,7 @@ export class StripeWebhookProcessor extends WebhookProcessor {
 
     try {
       switch (evt.type) {
-        // サブスクリプション購入時
-        case 'checkout.session.completed':
-          return (await handleCheckoutSessionCompleted(evt, eventId, this.dependencies, metrics)).result;
-        // サブスクリプションが削除された場合
+        // サブスクリプション更新時
         case 'customer.subscription.updated':
           // As per type WebhookEvent<OrganizationJSON, 'organization.deleted'>, evt.data is OrganizationJSON.
           return (await handleSubscriptionUpdated(evt, eventId, this.dependencies, metrics)).result;

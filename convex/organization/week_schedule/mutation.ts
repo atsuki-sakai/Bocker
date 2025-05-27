@@ -11,7 +11,7 @@ import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     is_open: v.boolean(),
     day_of_week: dayOfWeekType,
     start_hour: v.string(),
@@ -23,20 +23,14 @@ export const create = mutation({
     validateHourMinuteFormat(args.start_hour, 'start_hour');
     validateHourMinuteFormat(args.end_hour, 'end_hour');
 
-    // サロンの存在確認
-    const org = await ctx.db.query('organization')
-    .withIndex('by_tenant_org_archive', q => 
-      q.eq('tenant_id', args.tenant_id)
-       .eq('org_id', args.org_id)
-       .eq('is_archive', false)
-    )
-    .first();
+    // 店舗の存在確認
+    const org = await ctx.db.get(args.org_id);
     if (!org) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.NOT_FOUND,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'schedule.week_schedule.create',
-        message: '指定されたサロンが存在しません',
+        message: '指定された店舗が存在しません',
         code: 'NOT_FOUND',
         status: 404,
         details: { ...args },
@@ -94,7 +88,7 @@ export const archive = mutation({
 export const upsert = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     is_open: v.boolean(),
     day_of_week: dayOfWeekType,
     start_hour: v.string(),
@@ -136,7 +130,7 @@ export const kill = mutation({
 export const updateWeekSchedule = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     schedule_settings: v.record(
       v.string(),
       v.object({

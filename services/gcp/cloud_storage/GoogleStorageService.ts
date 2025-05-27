@@ -6,6 +6,7 @@ import { sanitizeFileName } from '@/lib/utils'
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import sharp from 'sharp';
+import { Id } from '@/convex/_generated/dataModel';
 import { ImageDirectory, ImageQuality, ProcessedImageResult, UploadedFileResult } from './types';
 /**
  * GCSクライアントとバケット設定を管理し、画像処理機能も提供するクラス
@@ -214,7 +215,7 @@ class GoogleStorageService {
     fileName: string, // ここで渡されるfileNameは拡張子を含むことを期待
     contentType: string, // このcontentTypeは圧縮後のもの(this.mimeType)を期待
     directory: string,
-    org_id: string,
+    org_id: Id<'organization'>,
     isHotSpot: boolean = false
   ): Promise<UploadedFileResult> {
     this.initializeIfNeeded()
@@ -336,7 +337,7 @@ class GoogleStorageService {
     base64Data: string,
     originalFileName: string, // 元のファイル名 (拡張子含む)
     directory: ImageDirectory,
-    org_id: string,
+    org_id: Id<'organization'>,
     quality?: ImageQuality,
     isHotSpot: boolean = false
   ): Promise<ProcessedImageResult> {

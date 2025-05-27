@@ -1,4 +1,4 @@
-import type { UserJSON, OrganizationJSON } from '@clerk/nextjs/server';
+import type { UserJSON } from '@clerk/nextjs/server';
 import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import * as Sentry from '@sentry/nextjs';
 import type { 
@@ -8,6 +8,7 @@ import type {
 } from '../types';
 import { executeInParallel, createTask } from '../parallel';
 import { WebhookMetricsCollector } from '../metrics';
+import { clerkClient } from '@clerk/nextjs/server';
 
 /**
  * `user.created` Webhookイベントを処理するハンドラー関数。
@@ -26,9 +27,10 @@ export async function handleUserCreated(
   metrics: WebhookMetricsCollector
 ): Promise<EventProcessingResult> {
   const { id, email_addresses = [], unsafe_metadata } = data;
-  const referral_code = unsafe_metadata?.referralCode as string;
+  const referral_code = unsafe_metadata?.referralCode as string | undefined;
+  const org_name = unsafe_metadata?.orgName as string | undefined;
   const email = email_addresses[0]?.email_address || 'no-email';
-  
+
   const context: LogContext = {
     eventId,
     eventType: 'user.created',
@@ -74,7 +76,10 @@ export async function handleUserCreated(
     const stripeCustomer = await deps.retry(() =>
       deps.stripe.customers.create({
         email: email || undefined,
-        metadata: { user_id: id, referral_code: referral_code },
+        metadata: { 
+          user_id: id, 
+          referral_code: referral_code ? referral_code : null
+        },
       }, {
         idempotencyKey: `clerk_user_${id}_${eventId}`,
       })
@@ -113,6 +118,46 @@ export async function handleUserCreated(
       });
     }
 
+    // 5. 店舗の作成
+    try{
+      console.log(`🏢 [${eventId}] 店舗作成開始: user_id=${id}, stripeCustomerId=${stripeCustomer.id}`, { ...context, stripeCustomerId: stripeCustomer.id });
+      metrics.incrementApiCall('convex');
+      const orgId = await deps.retry(() =>
+        fetchMutation(deps.convex.organization.mutation.create, {
+          tenant_id: tenantId,
+          org_name: org_name ? org_name : '',
+          org_email: email,
+          is_active: true,
+        })
+      );
+      console.log(`🏢 [${eventId}] 店舗作成成功: org_id=${orgId}`, { ...context, orgId });
+
+      // 6. ユーザーメタデータ更新
+      try {
+        const clerk = await clerkClient();
+        await clerk.users.updateUserMetadata(id, {
+          publicMetadata: {
+            org_id: orgId,
+            role: 'admin',
+            tenant_id: tenantId,
+          },
+        })
+        metrics.incrementApiCall('clerk');
+      } catch (error) {
+        console.warn(`⚠️ [${eventId}] ユーザーメタデータ更新失敗（非クリティカル）: user_id=${id}`, { ...context, error });
+        Sentry.captureException(error, {
+          level: 'warning',
+          tags: { ...context, operation: 'update_user_metadata', userId: id },
+        });
+      }
+
+    }catch(error){
+      console.warn(`⚠️ [${eventId}] 店舗作成失敗（クリティカル）: user_id=${id}`, { ...context, error });
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: { ...context, operation: 'create_organization', userId: id },
+      });
+    }
     console.log(`✅ [${eventId}] User Created処理完了。`, { ...context, tenantId, stripeCustomerId: stripeCustomer.id });
     return {
       result: 'success',
@@ -325,42 +370,48 @@ export async function handleUserDeleted(
       };
     }
 
-    // 並列でStripeとConvexから削除
-    const deleteTasks = [
-      createTask(
-        'stripe_customer_deletion',
-        async () => {
-          if (tenantRecord.stripe_customer_id && typeof tenantRecord.stripe_customer_id === 'string') {
-            console.log(`💳 [${eventId}] Stripe顧客削除開始: customerId=${tenantRecord.stripe_customer_id}`, { ...context, stripeCustomerId: tenantRecord.stripe_customer_id });
-            metrics.incrementApiCall('stripe');
-            
-            return deps.retry(() => 
-              deps.stripe.customers.del(tenantRecord.stripe_customer_id!)
+    try{
+      // 並列でStripeとConvexから削除
+      const deleteTasks = [
+        createTask(
+          'stripe_customer_deletion',
+          async () => {
+            if (tenantRecord.stripe_customer_id && typeof tenantRecord.stripe_customer_id === 'string') {
+              console.log(`💳 [${eventId}] Stripe顧客削除開始: customerId=${tenantRecord.stripe_customer_id}`, { ...context, stripeCustomerId: tenantRecord.stripe_customer_id });
+              metrics.incrementApiCall('stripe');
+              
+              return deps.retry(() => 
+                deps.stripe.customers.del(tenantRecord.stripe_customer_id!)
+              );
+            }
+            console.log(`ℹ️ [${eventId}] Stripe顧客IDが存在しないため、Stripe顧客削除をスキップ。user_id=${id}`, { ...context, tenantId: tenantRecord._id });
+            return null;
+          },
+          false // 非クリティカル
+        ),
+        createTask(
+          'convex_tenant_archive',
+          async () => {
+            console.log(`🏢 [${eventId}] テナントアーカイブ開始: tenant_id=${tenantRecord._id}`, { ...context, tenantId: tenantRecord._id });
+            metrics.incrementApiCall('convex');
+            return deps.retry(() =>
+              fetchMutation(deps.convex.tenant.mutation.archive, {
+                tenant_id: tenantRecord._id,
+              })
             );
-          }
-          console.log(`ℹ️ [${eventId}] Stripe顧客IDが存在しないため、Stripe顧客削除をスキップ。user_id=${id}`, { ...context, tenantId: tenantRecord._id });
-          return null;
-        },
-        false // 非クリティカル
-      ),
-      createTask(
-        'convex_tenant_archive',
-        async () => {
-          console.log(`🏢 [${eventId}] テナントアーカイブ開始: tenant_id=${tenantRecord._id}`, { ...context, tenantId: tenantRecord._id });
-          metrics.incrementApiCall('convex');
-          
-          return deps.retry(() =>
-            fetchMutation(deps.convex.tenant.mutation.archive, {
-              tenant_id: tenantRecord._id,
-            })
-          );
-        },
-        true // クリティカル
-      )
-    ];
+          },
+          true // クリティカル
+        )
+      ];
+      await executeInParallel(deleteTasks, context);
 
-    await executeInParallel(deleteTasks, context);
-
+    }catch(error){
+      console.warn(`⚠️ [${eventId}] テナント削除失敗（クリティカル）: user_id=${id}`, { ...context, error });
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: { ...context, operation: 'delete_tenant', userId: id },
+      });
+    }
     return {
       result: 'success',
       metadata: { action: 'user_deleted', tenantId: tenantRecord._id }
@@ -381,178 +432,178 @@ export async function handleUserDeleted(
   }
 }
 
-/**
- * `organization.created` Webhookイベントを処理するハンドラー関数。
- * 新規組織の情報をConvexに登録する。
- * @param data OrganizationJSON - Clerkから送信された組織データ
- * @param eventId string - Webhookイベントの一意なID
- * @param deps WebhookDependencies - 外部サービスへの依存関係
- * @param metrics WebhookMetricsCollector - メトリクス収集用インスタンス
- * @returns Promise<EventProcessingResult> - 処理結果
- */
-export async function handleOrganizationCreated(
-  data: OrganizationJSON,
-  eventId: string,
-  deps: WebhookDependencies,
-  metrics: WebhookMetricsCollector
-): Promise<EventProcessingResult> {
-  const { id, name, created_by } = data;
+// /**
+//  * `organization.created` Webhookイベントを処理するハンドラー関数。
+//  * 新規組織の情報をConvexに登録する。
+//  * @param data OrganizationJSON - Clerkから送信された組織データ
+//  * @param eventId string - Webhookイベントの一意なID
+//  * @param deps WebhookDependencies - 外部サービスへの依存関係
+//  * @param metrics WebhookMetricsCollector - メトリクス収集用インスタンス
+//  * @returns Promise<EventProcessingResult> - 処理結果
+//  */
+// export async function handleOrganizationCreated(
+//   data: OrganizationJSON,
+//   eventId: string,
+//   deps: WebhookDependencies,
+//   metrics: WebhookMetricsCollector
+// ): Promise<EventProcessingResult> {
+//   const { id, name, created_by } = data;
 
-  if (!created_by) {
-    console.warn(`⚠️ [${eventId}] 組織の作成者が見つかりません: org_id=${id}`);
-    return {
-      result: 'skipped',
-      metadata: { action: 'no_creator' }
-    };
-  }
+//   if (!created_by) {
+//     console.warn(`⚠️ [${eventId}] 組織の作成者が見つかりません: org_id=${id}`);
+//     return {
+//       result: 'skipped',
+//       metadata: { action: 'no_creator' }
+//     };
+//   }
 
-  console.log(`🏢 [${eventId}] Organization Created処理開始: org_id=${id}, name=${name}, creator=${created_by}`);
+//   console.log(`🏢 [${eventId}] Organization Created処理開始: org_id=${id}, name=${name}, creator=${created_by}`);
 
-  try {
-    // 作成者のテナント確認
-    const existingTenant = await deps.retry(() =>
-      fetchQuery(deps.convex.tenant.query.findByUserId, { user_id: created_by })
-    ).catch(() => null);
+//   try {
+//     // 作成者のテナント確認
+//     const existingTenant = await deps.retry(() =>
+//       fetchQuery(deps.convex.tenant.query.findByUserId, { user_id: created_by })
+//     ).catch(() => null);
 
-    metrics.incrementApiCall('convex');
+//     metrics.incrementApiCall('convex');
 
-    if (!existingTenant) {
-      console.warn(`⚠️ [${eventId}] 組織作成者のテナントが見つかりません: creator=${created_by}`);
-      return {
-        result: 'skipped',
-        metadata: { action: 'no_tenant_for_creator' }
-      };
-    }
+//     if (!existingTenant) {
+//       console.warn(`⚠️ [${eventId}] 組織作成者のテナントが見つかりません: creator=${created_by}`);
+//       return {
+//         result: 'skipped',
+//         metadata: { action: 'no_tenant_for_creator' }
+//       };
+//     }
 
-    // 組織作成
-    await deps.retry(() =>
-      fetchMutation(deps.convex.organization.mutation.create, {
-        tenant_id: existingTenant._id,
-        org_id: id,
-        org_name: name,
-      })
-    );
+//     // 組織作成
+//     await deps.retry(() =>
+//       fetchMutation(deps.convex.organization.mutation.create, {
+//         tenant_id: existingTenant._id,
+//         org_id: id,
+//         org_name: name,
+//       })
+//     );
 
-    metrics.incrementApiCall('convex');
+//     metrics.incrementApiCall('convex');
 
-    return {
-      result: 'success',
-      metadata: { action: 'organization_created', orgId: id, tenantId: existingTenant._id }
-    };
+//     return {
+//       result: 'success',
+//       metadata: { action: 'organization_created', orgId: id, tenantId: existingTenant._id }
+//     };
 
-  } catch (error) {
-    console.error(`❌ Organization Created処理失敗: org_id=${id}`, error);
+//   } catch (error) {
+//     console.error(`❌ Organization Created処理失敗: org_id=${id}`, error);
     
-    Sentry.captureException(error, {
-      level: 'error',
-      tags: { eventId, organizationId: id, operation: 'organization_created' },
-    });
+//     Sentry.captureException(error, {
+//       level: 'error',
+//       tags: { eventId, organizationId: id, operation: 'organization_created' },
+//     });
 
-    return {
-      result: 'error',
-      errorMessage: error instanceof Error ? error.message : '不明なエラー'
-    };
-  }
-}
+//     return {
+//       result: 'error',
+//       errorMessage: error instanceof Error ? error.message : '不明なエラー'
+//     };
+//   }
+// }
 
-// 🔄 Organization Updated イベントハンドラー（Pure Function）
-export async function handleOrganizationUpdated(
-  data: OrganizationJSON,
-  eventId: string,
-  deps: WebhookDependencies,
-  metrics: WebhookMetricsCollector
-): Promise<EventProcessingResult> {
-  const { id, name, created_by } = data;
+// // 🔄 Organization Updated イベントハンドラー（Pure Function）
+// export async function handleOrganizationUpdated(
+//   data: OrganizationJSON,
+//   eventId: string,
+//   deps: WebhookDependencies,
+//   metrics: WebhookMetricsCollector
+// ): Promise<EventProcessingResult> {
+//   const { id, name, created_by } = data;
 
-  if (!created_by) {
-    console.warn(`⚠️ 組織の作成者が見つかりません: org_id=${id}`);
-    return {
-      result: 'skipped',
-      metadata: { action: 'no_creator' }
-    };
-  }
+//   if (!created_by) {
+//     console.warn(`⚠️ 組織の作成者が見つかりません: org_id=${id}`);
+//     return {
+//       result: 'skipped',
+//       metadata: { action: 'no_creator' }
+//     };
+//   }
 
-  console.log(`🔄 Organization Updated処理開始: org_id=${id}, name=${name}`);
+//   console.log(`🔄 Organization Updated処理開始: org_id=${id}, name=${name}`);
 
-  try {
-    const existingTenant = await deps.retry(() =>
-      fetchQuery(deps.convex.tenant.query.findByUserId, { user_id: created_by })
-    ).catch(() => null);
+//   try {
+//     const existingTenant = await deps.retry(() =>
+//       fetchQuery(deps.convex.tenant.query.findByUserId, { user_id: created_by })
+//     ).catch(() => null);
 
-    metrics.incrementApiCall('convex');
+//     metrics.incrementApiCall('convex');
 
-    if (!existingTenant) {
-      console.warn(`⚠️ 組織更新: テナントが見つかりません: creator=${created_by}`);
-      return {
-        result: 'skipped',
-        metadata: { action: 'no_tenant_for_creator' }
-      };
-    }
+//     if (!existingTenant) {
+//       console.warn(`⚠️ 組織更新: テナントが見つかりません: creator=${created_by}`);
+//       return {
+//         result: 'skipped',
+//         metadata: { action: 'no_tenant_for_creator' }
+//       };
+//     }
 
-    await deps.retry(() =>
-      fetchMutation(deps.convex.organization.mutation.update, {
-        tenant_id: existingTenant._id,
-        org_id: id,
-        org_name: name,
-      })
-    );
+//     await deps.retry(() =>
+//       fetchMutation(deps.convex.organization.mutation.update, {
+//         tenant_id: existingTenant._id,
+//         org_id: id,
+//         org_name: name,
+//       })
+//     );
 
-    metrics.incrementApiCall('convex');
+//     metrics.incrementApiCall('convex');
 
-    return {
-      result: 'success',
-      metadata: { action: 'organization_updated', orgId: id }
-    };
+//     return {
+//       result: 'success',
+//       metadata: { action: 'organization_updated', orgId: id }
+//     };
 
-  } catch (error) {
-    console.error(`❌ Organization Updated処理失敗: org_id=${id}`, error);
+//   } catch (error) {
+//     console.error(`❌ Organization Updated処理失敗: org_id=${id}`, error);
     
-    Sentry.captureException(error, {
-      level: 'error',
-      tags: { eventId, organizationId: id, operation: 'organization_updated' },
-    });
+//     Sentry.captureException(error, {
+//       level: 'error',
+//       tags: { eventId, organizationId: id, operation: 'organization_updated' },
+//     });
 
-    return {
-      result: 'error',
-      errorMessage: error instanceof Error ? error.message : '不明なエラー'
-    };
-  }
-}
+//     return {
+//       result: 'error',
+//       errorMessage: error instanceof Error ? error.message : '不明なエラー'
+//     };
+//   }
+// }
 
-// 🗑️ Organization Deleted イベントハンドラー（Pure Function）
-export async function handleOrganizationDeleted(
-  data: OrganizationJSON,
-  eventId: string,
-  deps: WebhookDependencies,
-  metrics: WebhookMetricsCollector
-): Promise<EventProcessingResult> {
-  const { id } = data;
+// // 🗑️ Organization Deleted イベントハンドラー（Pure Function）
+// export async function handleOrganizationDeleted(
+//   data: OrganizationJSON,
+//   eventId: string,
+//   deps: WebhookDependencies,
+//   metrics: WebhookMetricsCollector
+// ): Promise<EventProcessingResult> {
+//   const { id } = data;
 
-  console.log(`🗑️ Organization Deleted処理開始: org_id=${id}`);
+//   console.log(`🗑️ Organization Deleted処理開始: org_id=${id}`);
 
-  try {
-    await deps.retry(() =>
-      fetchMutation(deps.convex.organization.mutation.kill, { org_id: id })
-    );
+//   try {
+//     await deps.retry(() =>
+//       fetchMutation(deps.convex.organization.mutation.kill, { org_id: id })
+//     );
 
-    metrics.incrementApiCall('convex');
+//     metrics.incrementApiCall('convex');
 
-    return {
-      result: 'success',
-      metadata: { action: 'organization_deleted', orgId: id }
-    };
+//     return {
+//       result: 'success',
+//       metadata: { action: 'organization_deleted', orgId: id }
+//     };
 
-  } catch (error) {
-    console.error(`❌ Organization Deleted処理失敗: org_id=${id}`, error);
+//   } catch (error) {
+//     console.error(`❌ Organization Deleted処理失敗: org_id=${id}`, error);
     
-    Sentry.captureException(error, {
-      level: 'error',
-      tags: { eventId, organizationId: id, operation: 'organization_deleted' },
-    });
+//     Sentry.captureException(error, {
+//       level: 'error',
+//       tags: { eventId, organizationId: id, operation: 'organization_deleted' },
+//     });
 
-    return {
-      result: 'error',
-      errorMessage: error instanceof Error ? error.message : '不明なエラー'
-    };
-  }
-} 
+//     return {
+//       result: 'error',
+//       errorMessage: error instanceof Error ? error.message : '不明なエラー'
+//     };
+//   }
+// } 

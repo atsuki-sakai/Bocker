@@ -18,8 +18,8 @@ export const upload = action({
     contentType: v.string(),
     // 保存先のディレクトリ
     directory: imgDirectoryType,
-    // サロンID
-    tenantId: v.id('tenant'),
+    // 店舗ID
+    orgId: v.id('organization'),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
@@ -75,7 +75,7 @@ export const upload = action({
       args.filePath,
       args.contentType,
       args.directory,
-        args.tenantId
+      args.orgId
       )
     } catch (error) {
       throw error
@@ -88,7 +88,7 @@ export const uploadWithThumbnail = action({
     base64Data: v.string(),
     fileName: v.string(),
     directory: imgDirectoryType,
-    tenantId: v.id('tenant'),
+    orgId: v.id('organization'),
     quality: imageQualityType,
   },
   returns: v.object({
@@ -129,7 +129,7 @@ export const uploadWithThumbnail = action({
         args.base64Data,
         args.fileName,
         args.directory,
-        args.tenantId,
+        args.orgId,
         args.quality,
       );
       return result;

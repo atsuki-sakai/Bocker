@@ -4,6 +4,7 @@ import { validateStringLength, validateRequired } from '@/convex/utils/validatio
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { createRecord } from '@/convex/utils/helpers';
+import { webhookEventProcessingResultType } from '@/convex/types';
 
 /**
  * Stripe Webhook イベント管理用mutation
@@ -41,7 +42,7 @@ export const recordEvent = mutation({
   args: {
     event_id: v.string(),
     event_type: v.string(),
-    processing_result: v.string(), // "success" | "error" | "skipped"
+    processing_result: webhookEventProcessingResultType,
     error_message: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -87,7 +88,7 @@ export const recordEvent = mutation({
 export const updateEventResult = mutation({
   args: {
     event_id: v.string(),
-    processing_result: v.string(),
+    processing_result: webhookEventProcessingResultType,
     error_message: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

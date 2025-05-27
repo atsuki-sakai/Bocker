@@ -10,12 +10,11 @@ import { stripeConnectStatusType } from "@/convex/types";
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    is_active: v.boolean(),
     org_name: v.string(),
     org_email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    validateRequired(args.org_id, 'org_id');
     validateStringLength(args.org_name, 'org_name');
     validateStringLength(args.org_email, 'org_email');
     return await createRecord(ctx, 'organization', args);
@@ -25,7 +24,8 @@ export const create = mutation({
 export const update = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
+    is_active: v.boolean(),
     org_name: v.string(),
     org_email: v.optional(v.string()),
   },
@@ -34,13 +34,7 @@ export const update = mutation({
     validateStringLength(args.org_name, 'org_name');
     validateStringLength(args.org_email, 'org_email');
 
-    const organization = await ctx.db.query('organization')
-    .withIndex('by_tenant_org_archive', q => 
-      q.eq('tenant_id', args.tenant_id)
-      .eq('org_id', args.org_id)
-      .eq('is_archive', false)
-    )
-    .first();
+    const organization = await ctx.db.get(args.org_id);
     if(!organization){
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.NOT_FOUND,
@@ -62,7 +56,8 @@ export const update = mutation({
 export const createConnectAccount = mutation({
     args: {
       tenant_id: v.id('tenant'),
-      org_id: v.string(),
+      org_id: v.id('organization'),
+      is_active: v.boolean(),
       stripe_account_id: v.string(),
       status: v.string(),
       user_id: v.string(),
@@ -79,14 +74,7 @@ export const createConnectAccount = mutation({
       validateStringLength(args.org_email, 'org_email');
   
       // 組織を取得
-      const organization = await ctx.db.query('organization')
-      .withIndex('by_tenant_org_archive', q => 
-        q.eq('tenant_id', args.tenant_id)
-        .eq('org_id', args.org_id)
-        .eq('is_archive', false)
-      )
-      .first();
-
+      const organization = await ctx.db.get(args.org_id);
       if (!organization) {
         throw new ConvexError({
           statusCode: ERROR_STATUS_CODE.NOT_FOUND,
@@ -144,16 +132,11 @@ export const updateConnectStatus = mutation({
 
 export const kill = mutation({
   args: {
-    org_id: v.string(),
+    org_id: v.id('organization')
   },
   handler: async (ctx, args) => {
     validateRequired(args.org_id, 'org_id');
-    const organization = await ctx.db.query('organization')
-    .withIndex('by_org_archive', q => 
-      q.eq('org_id', args.org_id)
-      .eq('is_archive', true)
-    )
-    .first();
+    const organization = await ctx.db.get(args.org_id);
     if(!organization){
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.NOT_FOUND,

@@ -14,7 +14,7 @@ export const runtime = 'nodejs'; // 指示書通り nodejs を指定
  */
 export async function POST(req: NextRequest) {
   // 環境変数から Connect 用の Webhook シークレットを取得
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_CONNECT;
+  const webhookSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
   if (!webhookSecret) {
     console.error('STRIPE_WEBHOOK_SECRET_CONNECT is not set in environment variables.');
     return new Response('STRIPE_WEBHOOK_SECRET_CONNECT is not configured.', { status: 500 });

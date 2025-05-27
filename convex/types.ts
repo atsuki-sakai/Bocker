@@ -295,3 +295,9 @@ export const paymentStatusType = v.union(
   ...PAYMENT_STATUS_VALUES.map((status) => v.literal(status))
 )
 export type PaymentStatus = Infer<typeof paymentStatusType>
+
+export const WEBHOOK_EVENT_PROCESSING_RESULT_VALUES = ['processing', 'success', 'error', 'skipped'] as const
+export const webhookEventProcessingResultType = v.union(
+  ...WEBHOOK_EVENT_PROCESSING_RESULT_VALUES.map((result) => v.literal(result))
+)
+export type WebhookEventProcessingResult = Infer<typeof webhookEventProcessingResultType>

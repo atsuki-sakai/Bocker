@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { mutation } from '@/convex/_generated/server';
 import { generateReferralCode } from '@/lib/utils';
-import { validateStringLength } from '@/convex/utils/validations';
+import { validateStringLength, validateDateStrFormat } from '@/convex/utils/validations';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { updateRecord, createRecord } from '@/convex/utils/helpers';
@@ -29,6 +29,8 @@ export const create = mutation({
   },
 });
 
+
+
 /**
  * 紹介カウント増加（冪等性対応版）
  * 同一のイベントIDによる重複実行を防止
@@ -37,9 +39,14 @@ export const incrementReferralCount = mutation({
   args: {
     referral_id: v.id('tenant_referral'),
     idempotency_key: v.optional(v.string()), // Stripeイベントid等、重複防止用キー
+    last_processed_event_id:v.string(), // 最後に処理したStripeイベントID（冪等性用）
+    last_processed_key: v.string(), // 最後に処理した複合キー (event_id + role)
+    last_discount_transaction_id: v.string(), // 最後の割引処理のトランザクションID（冪等性用）
+    last_discount_applied_month: v.string(), // 最後に割引を適用した月（YYYY-MM形式、冪等性用）
   },
   handler: async (ctx, args) => {
     const referral = await ctx.db.get(args.referral_id);
+    validateDateStrFormat(args.last_discount_applied_month, 'last_discount_applied_month');
     if (!referral) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.NOT_FOUND,
@@ -57,13 +64,16 @@ export const incrementReferralCount = mutation({
     // 冪等性対応: idempotency_keyが提供されている場合は重複チェック
     if (args.idempotency_key) {
       // idempotency_keyをlast_processed_event_idのようなフィールドで記録・チェック
-      if (referral.last_processed_event_id === args.idempotency_key) {
+      if (referral.last_processed_event_id === args.idempotency_key && referral.last_processed_key === args.last_processed_key) {
         console.log(`紹介カウント増加: 既に処理済みのイベントです（冪等性により成功扱い）: ${args.idempotency_key}`);
         return {
           success: true,
           alreadyProcessed: true,
           referral_point: referral.referral_point,
           total_referral_count: referral.total_referral_count,
+          last_processed_event_id: referral.last_processed_event_id || args.idempotency_key,
+          last_discount_transaction_id: referral.last_discount_transaction_id,
+          last_discount_applied_month: referral.last_discount_applied_month,
         };
       }
     }
@@ -76,6 +86,8 @@ export const incrementReferralCount = mutation({
       referral_point: newReferralPoint,
       total_referral_count: newTotalReferralCount,
       last_processed_event_id: args.idempotency_key, // 処理済みイベントIDを記録
+      last_discount_transaction_id: args.last_discount_transaction_id,
+      last_discount_applied_month: args.last_discount_applied_month,
     });
 
     console.log(`紹介カウント増加完了: referral_id=${args.referral_id}, new_point=${newReferralPoint}, event_id=${args.idempotency_key}`);

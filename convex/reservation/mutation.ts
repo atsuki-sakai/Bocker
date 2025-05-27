@@ -20,7 +20,7 @@ import {
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'), // テナントID
-    org_id: v.string(), // 組織ID
+    org_id: v.id('organization'), // 組織ID
     customer_id: v.string(), // Supabase 側の customer.id
     staff_id: v.id('staff'), // スタッフID
     customer_name: v.string(), // 顧客名
@@ -65,14 +65,14 @@ export const create = mutation({
       })
     }
 
-    // 組織が存在し、かつアーカイブされていないことを確認する
-    const organization = await ctx.db.query('organization').withIndex('by_tenant_org_archive', q => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)).first()
+    // アクティブな組織が存在し、かつアーカイブされていないことを確認する
+    const organization = await ctx.db.query('organization').withIndex('by_tenant_active_archive', q => q.eq('tenant_id', args.tenant_id).eq('is_active', true).eq('is_archive', false)).first()
     if (!organization) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'reservation.create',
-        message: '指定された組織が存在しません',
+        message: '指定された有効な組織が存在しません',
         code: 'NOT_FOUND',
         status: 404,
         details: {
@@ -118,7 +118,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     reservation_id: v.id('reservation'),
     customer_id: v.string(),
     customer_name: v.string(),

@@ -52,10 +52,10 @@ export default function Sidebar({ children }: SidebarProps) {
   const [mounted, setMounted] = useState(false)
   const [showOrgProfile, setShowOrgProfile] = useState(false)
   const { userMemberships } = useOrganizationList()
-  const { tenantId, orgId, orgRole, isLoaded } = useTenantAndOrganization()
+  const { tenantId, orgId, role, isLoaded } = useTenantAndOrganization()
   const { organization } = useOrganization()
 
-  console.log('orgRole: ', orgRole)
+  console.log('role: ', role)
   console.log('tenantId: ', tenantId)
   console.log('orgId: ', orgId)
   console.log('isLoaded: ', isLoaded)
@@ -162,8 +162,6 @@ export default function Sidebar({ children }: SidebarProps) {
     }
   }, [pathname, isLinkClicked, setSidebarOpen])
   useEffect(() => setMounted(true), [])
-
-  console.log('orgRole: ', orgRole)
 
   if (!organization) {
     return (

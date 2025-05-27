@@ -85,7 +85,7 @@ class StripeService {
    */
   async createConnectAccountLink(
     tenant_id: Id<'tenant'>,
-    org_id: string
+    org_id: Id<'organization'>
   ): Promise<StripeResult<{ account: Stripe.Account; accountLink: Stripe.AccountLink }>> {
     return await this.connectRepo.createConnectAccountLink(tenant_id, org_id);
   }
@@ -105,7 +105,7 @@ class StripeService {
   async createCheckoutSession(params: {
     stripe_account_id: string;
     tenant_id: Id<'tenant'>;
-    org_id: string;
+    org_id: Id<'organization'>;
     reservation_id: Id<'reservation'>;
     line_items: Stripe.Checkout.SessionCreateParams.LineItem[];
     customer_email?: string;

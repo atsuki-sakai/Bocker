@@ -132,7 +132,7 @@ export default function OrgExceptionScheduleForm() {
           // 新規追加する日付を収集
           const datesToAdd: Array<{
             tenant_id: Id<'tenant'>
-            org_id: string
+            org_id: Id<'organization'>
             type: 'holiday'
             date: string
           }> = []

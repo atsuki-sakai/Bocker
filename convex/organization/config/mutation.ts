@@ -13,7 +13,7 @@ import { MAX_NOTES_LENGTH, MAX_POSTAL_CODE_LENGTH, MAX_ADDRESS_LENGTH, MAX_PHONE
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     phone: v.optional(v.string()), // 電話番号
     postal_code: v.optional(v.string()), // 郵便番号
     address: v.optional(v.string()), // 住所
@@ -41,7 +41,7 @@ export const create = mutation({
 export const updateImages = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     images: v.array(imageType),
   },
   handler: async (ctx, args) => {
@@ -75,7 +75,7 @@ export const updateImages = mutation({
 export const upsert = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     org_name: v.optional(v.string()), // サロン名
     org_email: v.optional(v.string()), // メールアドレス
     phone: v.optional(v.string()), // 電話番号

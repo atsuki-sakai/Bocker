@@ -97,18 +97,17 @@ export class StripeConnectRepository {
   }
 
   /**
-   * StripeConアカウント連携用のアカウントリンクを生成
+   * StripeConnectアカウント連携用のアカウントリンクを生成
    */
   async createConnectAccountLink(
     tenant_id: Id<'tenant'>,
-    org_id: string,
+    org_id: Id<'organization'>,
   ): Promise<StripeResult<{ account: Stripe.Account; accountLink: Stripe.AccountLink }>> {
     try {
       // 既存のアカウントを検索
       const existingOrganization = await this.convex.query(
-        api.organization.query.findByTenantAndOrg,
+        api.organization.query.findByOrgId,
         {
-          tenant_id,
           org_id,
         }
       );
@@ -167,6 +166,7 @@ export class StripeConnectRepository {
       await this.convex.mutation(api.organization.mutation.createConnectAccount, {
         tenant_id: tenant_id,
         org_id: org_id,
+        is_active: true,
         user_id: '',
         org_name: '',
         org_email: '',
@@ -258,7 +258,7 @@ export class StripeConnectRepository {
   async createCheckoutSession(params: {
     stripe_account_id: string; // 支払いを受け取るStripe ConnectアカウントID
     tenant_id: Id<'tenant'>;
-    org_id: string;
+    org_id: Id<'organization'>;
     reservation_id: Id<'reservation'>;
     line_items: Stripe.Checkout.SessionCreateParams.LineItem[];
     customer_email?: string;

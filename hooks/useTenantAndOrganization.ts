@@ -9,9 +9,9 @@ import type { Role } from '@/convex/types';
 
 type UseTenantAndOrganization = {
   tenantId: Id<'tenant'> | null;
-  orgId: string | null;
+  orgId: Id<'organization'> | null;
   userId: string | null;
-  orgRole: Role | null;
+  role: Role | null;
   isLoaded: boolean;
   isSignedIn: boolean;
 };
@@ -20,7 +20,7 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useUser();
-  const { orgRole, orgId, userId, isLoaded, isSignedIn } = useAuth();
+  const { userId, isLoaded, isSignedIn } = useAuth();
   // 未ログインなら /sign-in へ
   useEffect(() => {
     if (isLoaded && !isSignedIn && pathname !== '/sign-in') {
@@ -30,20 +30,25 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
 
   // user ロード後にメタデータを読む
   const tenantId = useMemo(
-    () => (isLoaded ? (user?.publicMetadata?.tenant_id as string | null) : null),
+    () => (isLoaded ? (user?.publicMetadata?.tenant_id as Id<'tenant'> | null) : null),
     [isLoaded, user]
   );
 
-  let formattedOrgRole: Role | null = null
-  if(orgRole) {
-    formattedOrgRole = orgRole.split(':')[1] as Role
-  }
+  const orgId = useMemo(
+    () => (isLoaded ? (user?.publicMetadata?.org_id as Id<'organization'> | null) : null),
+    [isLoaded, user]
+  );
+
+  const role = useMemo(
+    () => (isLoaded ? (user?.publicMetadata?.role as Role | null) : null),
+    [isLoaded, user]
+  );
 
   return {
-    tenantId: tenantId as Id<'tenant'> | null,
-    orgId: orgId as string | null,
+    tenantId: tenantId,
+    orgId: orgId,
     userId: userId as string | null,
-    orgRole: formattedOrgRole || null,
+    role: role,
     isLoaded,
     isSignedIn: isSignedIn as boolean,
   };

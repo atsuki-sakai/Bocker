@@ -29,7 +29,7 @@ import { checkAllowedUrl } from '@/lib/utils';
 export const createSubscriptionSession = action({
   args: {
     tenant_id: v.id('tenant'),          // テナントID
-    org_id: v.string(),                // 組織ID
+    org_id: v.id('organization'),                 // 組織ID
     user_id: v.string(),               // ユーザーID（クライアント参照用）
     stripe_customer_id: v.string(),    // Stripe顧客ID
     price_id: v.string(),              // Stripeの価格ID
@@ -37,7 +37,6 @@ export const createSubscriptionSession = action({
   },
   handler: async (ctx, args) => {
     // パラメータ検証
-    validateStringLength(args.org_id, 'org_id');
     validateStringLength(args.user_id, 'user_id');
     validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
     validateStringLength(args.price_id, 'price_id');
@@ -156,7 +155,7 @@ export const getRealStripeCustomer = action({
 export const getSubscriptionUpdatePreview = action({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     subscription_id: v.string(),      // 既存サブスクリプションID
     new_price_id: v.string(),         // 新プランの価格ID
     stripe_customer_id: v.string(),   // Stripe顧客ID
@@ -164,7 +163,6 @@ export const getSubscriptionUpdatePreview = action({
   handler: async (ctx, args) => {
     try {
       // パラメータ検証
-      validateStringLength(args.org_id, 'org_id');
       validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
       validateStringLength(args.subscription_id, 'subscription_id');
       validateStringLength(args.new_price_id, 'new_price_id');
@@ -243,13 +241,12 @@ export const getSubscriptionUpdatePreview = action({
 export const createBillingPortalSession = action({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     stripe_customer_id: v.string(),
     return_url: v.string(),            // ポータル終了後のリダイレクト先
   },
   handler: async (ctx, args) => {
     try {
-      validateStringLength(args.org_id, 'org_id');
       validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
       validateStringLength(args.return_url, 'return_url');
       // 許可ドメインチェック
@@ -289,7 +286,7 @@ export const createBillingPortalSession = action({
 export const confirmSubscriptionUpdate = action({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     subscription_id: v.string(),
     new_price_id: v.string(),
     items: v.array(v.object({ id: v.string(), price: v.string() })),
@@ -297,7 +294,6 @@ export const confirmSubscriptionUpdate = action({
   },
   handler: async (ctx, args) => {
     try {
-      validateStringLength(args.org_id, 'org_id');
       validateStringLength(args.subscription_id, 'subscription_id');
       validateStringLength(args.new_price_id, 'new_price_id');
       validateNumberLength(args.proration_date, 'proration_date');

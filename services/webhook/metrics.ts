@@ -25,7 +25,7 @@ export class WebhookMetricsCollector {
    * 外部API（StripeまたはConvex）の呼び出し回数をインクリメントする。
    * @param service 'stripe' | 'convex' - 呼び出されたサービス名
    */
-  incrementApiCall(service: 'stripe' | 'convex'): void {
+  incrementApiCall(service: 'stripe' | 'convex' | 'clerk'): void {
     this.externalApiCalls[service]++;
     console.log(`📞 API Call: ${service} (total: ${this.externalApiCalls[service]})`, this.context);
   }

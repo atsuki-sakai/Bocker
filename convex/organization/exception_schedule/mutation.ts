@@ -17,7 +17,7 @@ import { excludeFields } from '@/convex/utils/helpers';
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     type: ExceptionScheduleType,
     date: v.string(),
     notes: v.optional(v.string()),
@@ -29,9 +29,9 @@ export const create = mutation({
     validateStringLength(args.notes, 'notes', MAX_NOTES_LENGTH);
     // 組織の存在確認
     const org = await ctx.db.query('organization')
-    .withIndex('by_tenant_org_archive', q => 
+    .withIndex('by_tenant_active_archive', q => 
       q.eq('tenant_id', args.tenant_id)
-       .eq('org_id', args.org_id)
+       .eq('is_active', true)
        .eq('is_archive', false)
     )
     .first();
@@ -40,7 +40,7 @@ export const create = mutation({
         statusCode: ERROR_STATUS_CODE.NOT_FOUND,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'schedule.org_exception_day.create',
-        message: '指定された組織が存在しません',
+        message: '指定された有効な組織が存在しません',
         code: 'NOT_FOUND',
         status: 404,
         details: { ...args },
@@ -111,7 +111,7 @@ export const upsert = mutation({
   args: {
     exceptionScheduleId: v.id('exception_schedule'),
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     type: ExceptionScheduleType,
     date: v.string(),
     notes: v.optional(v.string()),

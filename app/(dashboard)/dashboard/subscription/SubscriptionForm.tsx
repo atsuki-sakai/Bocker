@@ -22,7 +22,7 @@ const baseUrl =
 
 interface SubscriptionFormProps {
   tenantId: Id<'tenant'>
-  orgId: string
+  orgId: Id<'organization'>
   tenantPreloaded: Preloaded<typeof api.tenant.query.findByUserId>
   subscriptionPreloaded: Preloaded<typeof api.tenant.subscription.query.findByStripeCustomerId>
 }

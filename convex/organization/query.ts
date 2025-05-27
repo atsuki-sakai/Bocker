@@ -8,26 +8,14 @@ import { validateStringLength } from "@/convex/utils/validations";
 
 export const findByOrgId = query({
   args: {
-    org_id: v.string(),
+    org_id: v.id('organization')
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true);
-    validateStringLength(args.org_id, 'org_id');
-    return await ctx.db.query('organization').withIndex('by_org_archive', q => q.eq('org_id', args.org_id).eq('is_archive', false)).first();
+    return await ctx.db.get(args.org_id);
   },
 });
 
-export const findByTenantAndOrg = query({
-  args: {
-    tenant_id: v.id('tenant'),
-    org_id: v.string(),
-  },
-  handler: async (ctx, args) => {
-    checkAuth(ctx, true);
-    validateRequired(args.org_id, 'org_id');
-    return await ctx.db.query('organization').withIndex('by_tenant_org_archive', q => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)).first();
-  },
-});
 
 export const findOrganizationByStripeConnectId = query({
   args: {
@@ -48,13 +36,13 @@ export const findOrganizationByStripeConnectId = query({
 export const getConnectAccountDetails = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization')
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true);
     validateStringLength(args.org_id, 'org_id');
 
-    const organization = await ctx.db.query('organization').withIndex('by_tenant_org_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)).first();
+    const organization = await ctx.db.get(args.org_id);
     if (!organization) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.NOT_FOUND,

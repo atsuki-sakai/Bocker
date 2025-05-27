@@ -8,7 +8,7 @@ import { checkAuth } from '@/convex/utils/auth';
 export const get = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization')
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -24,7 +24,7 @@ export const get = query({
 export const getAllByTenantAndOrg = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization')
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)
@@ -40,7 +40,7 @@ export const getAllByTenantAndOrg = query({
 export const getByTenantAndOrgToWeekSchedule = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     day_of_week: dayOfWeekType,
     is_open: v.optional(v.boolean()),
   },

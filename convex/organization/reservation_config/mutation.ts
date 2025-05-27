@@ -10,7 +10,7 @@ import { createRecord, updateRecord } from '@/convex/utils/helpers';
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     reservation_limit_days: v.number(), // 予約可能日数
     available_cancel_days: v.number(), // 予約キャンセル可能日数
     reservation_interval_minutes: reservationIntervalMinutesType, // 予約時間間隔(分)

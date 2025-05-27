@@ -30,7 +30,7 @@ export async function createReservationWithDetails(
   ctx: MutationCtx,
   args: {
     tenant_id: Id<'tenant'>;
-    org_id: string;
+    org_id: Id<'organization'>;
     customer_id: string;
     staff_id: Id<'staff'>;
     customer_name: string;
@@ -176,7 +176,7 @@ export async function checkDoubleBooking(
   ctx: MutationCtx,
   args: {
     tenant_id: Id<'tenant'>;
-    org_id: string;
+    org_id: Id<'organization'>;
     staff_id: Id<'staff'>;
     date: string;
     start_time_unix: number;

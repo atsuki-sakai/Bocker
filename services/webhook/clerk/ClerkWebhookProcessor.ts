@@ -11,15 +11,15 @@ import { z } from 'zod';
 
 import { WebhookProcessor } from '../BaseProcessor'; // Added
 import type { WebhookDependencies, ProcessingResult } from '../types';
-import { isUserEvent, isOrganizationEvent } from './types';
+import { isUserEvent } from './types';
 import { WebhookMetricsCollector } from '../metrics';
 import {
   handleUserCreated,
   handleUserUpdated,
   handleUserDeleted,
-  handleOrganizationCreated,
-  handleOrganizationUpdated,
-  handleOrganizationDeleted,
+  // handleOrganizationCreated,
+  // handleOrganizationUpdated,
+  // handleOrganizationDeleted,
 } from './handlers';
 
 // 🔒 環境変数の検証
@@ -69,21 +69,17 @@ export class ClerkWebhookProcessor extends WebhookProcessor {
   // 🆔 イベントIDの生成
   protected makeEventId(evt: WebhookEvent, req: NextRequest): string {
     const svixId = req.headers.get('svix-id');
-    const svixTimestamp = req.headers.get('svix-timestamp');
-    if (!svixId || !svixTimestamp) {
+    if (!svixId) {
       // This error will be caught by the main error handler in baseProcessor.process
       throw new Error('Missing svix-id or svix-timestamp headers for Clerk event ID generation.');
     }
-    return `clerk_${svixId}_${svixTimestamp}`;
+    return svixId;
   }
 
   // 📊 メトリクス用メタデータの取得
   protected getMetricsMetadata(evt: WebhookEvent): { userId?: string, organizationId?: string } {
     if (isUserEvent(evt.data)) {
       return { userId: evt.data.id };
-    }
-    if (isOrganizationEvent(evt.data)) {
-      return { organizationId: evt.data.id };
     }
     return {};
   }
@@ -111,20 +107,6 @@ export class ClerkWebhookProcessor extends WebhookProcessor {
           // As per type WebhookEvent<UserJSON, 'user.deleted'>, evt.data is UserJSON.
           if (!isUserEvent(evt.data)) throw new Error('Invalid user event data for user.deleted');
           return (await handleUserDeleted(evt.data as UserJSON, eventId, this.dependencies, metrics)).result;
-
-        case 'organization.created':
-          if (!isOrganizationEvent(evt.data)) throw new Error('Invalid org event data for organization.created');
-          return (await handleOrganizationCreated(evt.data, eventId, this.dependencies, metrics)).result;
-
-        case 'organization.updated':
-          if (!isOrganizationEvent(evt.data)) throw new Error('Invalid org event data for organization.updated');
-          return (await handleOrganizationUpdated(evt.data, eventId, this.dependencies, metrics)).result;
-
-        case 'organization.deleted':
-          // As per type WebhookEvent<OrganizationJSON, 'organization.deleted'>, evt.data is OrganizationJSON.
-          if (!isOrganizationEvent(evt.data)) throw new Error('Invalid org event data for organization.deleted');
-          return (await handleOrganizationDeleted(evt.data as OrganizationJSON, eventId, this.dependencies, metrics)).result;
-
         default:
           console.log(`Unsupported Clerk event type: ${evt.type}`);
           return 'skipped';

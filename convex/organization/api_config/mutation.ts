@@ -9,7 +9,7 @@ import { createRecord, updateRecord } from '@/convex/utils/helpers';
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     line_access_token: v.optional(v.string()),
     line_channel_secret: v.optional(v.string()),
     liff_id: v.optional(v.string()),
@@ -66,7 +66,7 @@ export const update = mutation({
 export const upsert = mutation({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     line_access_token: v.optional(v.string()),
     line_channel_secret: v.optional(v.string()),
     liff_id: v.optional(v.string()),

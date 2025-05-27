@@ -85,7 +85,7 @@ export default clerkMiddleware(async (auth, req) => {
     return maintenanceResponse
   }
 
-  const { userId, orgId } = await auth()
+  const { userId } = await auth()
   const { searchParams, origin } = req.nextUrl
 
   console.log(`[Middleware] -----------------------------------------------------`)
@@ -93,7 +93,7 @@ export default clerkMiddleware(async (auth, req) => {
     `[Middleware] Request: ${req.method} ${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
   )
   console.log(`[Middleware] Origin: ${origin}`)
-  console.log(`[Middleware] Clerk userId: ${userId}, orgId: ${orgId}`)
+  console.log(`[Middleware] Clerk userId: ${userId}`)
 
   // LINEセッションCookieの確認 (Assuming LINE_LOGIN_SESSION_KEY is used for both LINE and potentially other auth sessions)
   const lineSessionCookie = req.cookies.get(LINE_LOGIN_SESSION_KEY)

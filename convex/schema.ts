@@ -294,6 +294,7 @@ import {
   couponDiscountType,
   subscriptionStatusType,
   stripeConnectStatusType,
+  webhookEventProcessingResultType,
 } from './types';
 
 /**
@@ -350,12 +351,13 @@ const subscription = defineTable({
  */
 const tenant_referral = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  referral_code: v.optional(v.string()),   // 例: "ABCD1234"
-  referral_point: v.optional(v.number()),  // 所持している紹介ポイントの数
+  referral_code: v.string(),   // 例: "ABCD1234"
+  referral_point: v.number(),  // 所持している紹介ポイントの数
   total_referral_count: v.optional(v.number()), // 総紹介数
+  last_processed_key: v.optional(v.string()), // 最後に処理した複合キー (event_id + role)
   last_processed_event_id: v.optional(v.string()), // 最後に処理したStripeイベントID（冪等性用）
-  last_discount_applied_month: v.optional(v.string()), // 最後に割引を適用した月（YYYY-MM形式、冪等性用）
   last_discount_transaction_id: v.optional(v.string()), // 最後の割引処理のトランザクションID（冪等性用）
+  last_discount_applied_month: v.optional(v.string()), // 最後に割引を適用した月（YYYY-MM形式、冪等性用）
   ...CommonFields,
 })
 .index('by_referral_code_archive', ['referral_code', 'is_archive']) // referral_code から 1レコード取得
@@ -366,32 +368,31 @@ const tenant_referral = defineTable({
  * =========================
  * Organization（店舗・支社など）
  * =========================
- * テナントの持つ一つの組織に対応。
- * テナントの持つ組織の分だけレコードを作成する。
+ * テナントの持つ一つの店舗に対応。
+ * テナントの持つ店舗の分だけレコードを作成する。
  */
 const organization = defineTable({
   tenant_id: v.id('tenant'),
-  org_id: v.string(),                // Clerkの Organization ID
+  is_active: v.boolean(), // 有効/無効
   org_name: v.string(),              // 店舗名
-  org_email: v.optional(v.string()),     // 組織のメール
+  org_email: v.optional(v.string()),     // 店舗のメール
   stripe_account_id: v.optional(v.string()), // Stripe Connect Account ID
   stripe_connect_status: v.optional(stripeConnectStatusType), // Stripe Connect ステータス
   stripe_connect_created_at: v.optional(v.number()), // Stripe Connect 作成日時
   ...CommonFields,
 })
-.index('by_org_archive', ['org_id', 'is_archive'])
 .index('by_stripe_account_archive', ['stripe_account_id', 'is_archive']) // user_idとstripe_account_idで取得
-.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']); // org_id で取得
+.index('by_tenant_active_archive', ['tenant_id', 'is_active', 'is_archive']); // tenant_idと有効/無効で取得
 
 /**
  * =========================
  * 店舗基本設定
  * =========================
- * 組織の分だけレコードを作成される。
+ * 店舗の分だけレコードを作成される。
  */
 const config = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // Clerk の組織ID
+  org_id: v.id('organization'), // 店舗ID
   phone: v.optional(v.string()), // 電話番号
   postal_code: v.optional(v.string()), // 郵便番号
   address: v.optional(v.string()), // 住所
@@ -408,11 +409,10 @@ const config = defineTable({
  * Option（物販・追加オプション）
  * =========================
  * menu と区別し、在庫や注文制限を持つ汎用商品テーブル。
- * 複数の組織で同じ商品を持つことが可能。
  */
 const option = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // Clerk の組織ID
+  org_id: v.id('organization'), // 店舗ID
   name: v.string(), // 商品名
   unit_price: v.number(), // 単価
   sale_price: v.optional(v.number()), // セール価格
@@ -431,12 +431,12 @@ const option = defineTable({
  * =========================
  * API 設定（LINE/Firebase 等）
  * =========================
- * 組織単位での外部サービス認証情報。
- * 組織の分だけレコードを作成される。
+ * 店舗単位での外部サービス認証情報。
+ * 店舗の分だけレコードを作成される。
  */
 const api_config = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // Clerk の組織ID
+  org_id: v.id('organization'), // 店舗ID
   line_access_token: v.optional(v.string()), // LINE Access Token
   line_channel_secret: v.optional(v.string()), // LINE Channel Secret
   liff_id: v.optional(v.string()), // LIFF ID
@@ -450,11 +450,11 @@ const api_config = defineTable({
  * =========================
  * 店舗の予約設定
  * =========================
- * 組織の分だけレコードを作成される。
+ * 店舗の分だけレコードを作成される。
  */
 const reservation_config = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // Clerk の組織ID
+  org_id: v.id('organization'), // 店舗ID
   available_sheet: v.number(),         // 同時受付可能席数
   reservation_limit_days: v.number(),  // 何日先まで予約可
   available_cancel_days: v.number(),   // 何日前までキャンセル可
@@ -468,11 +468,11 @@ const reservation_config = defineTable({
  * =========================
  * 店舗営業スケジュール（曜日ベース）
  * =========================
- * 組織の分だけレコードを作成される。一つの組織につき7レコード作成される。
+ * 店舗の分だけレコードを作成される。一つの店舗につき7レコード作成される。
  */
 const week_schedule = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // 組織ID
+  org_id: v.id('organization'), // 店舗ID
   is_open: v.boolean(), // 営業/休業
   day_of_week: dayOfWeekType, // 曜日
   start_hour: v.optional(v.string()), // 開始時間
@@ -486,11 +486,11 @@ const week_schedule = defineTable({
  * =========================
  * 休業日（祝日・臨時休業など）
  * =========================
- * 組織の分だけレコードを作成される。組織は最大で0〜30日分のレコードを作成できる。
+ * 店舗の分だけレコードを作成される。店舗は最大で0〜30日分のレコードを作成できる。
  */
 const exception_schedule = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // Clerk の組織ID
+  org_id: v.id('organization'), // 店舗ID
   type: ExceptionScheduleType, // スケジュール例外タイプ
   date: v.string(), // 日付 YYYY-MM-DD
   ...CommonFields,
@@ -504,7 +504,7 @@ const exception_schedule = defineTable({
  */
 const staff_week_schedule = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // 組織ID
+  org_id: v.id('organization'), // 店舗ID
   staff_id: v.id('staff'), // スタッフID
   is_open: v.boolean(), // 営業/休業
   day_of_week: dayOfWeekType, // 曜日
@@ -522,7 +522,7 @@ const staff_week_schedule = defineTable({
  */
 const staff_exception_schedule = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // 組織ID
+  org_id: v.id('organization'), // 店舗ID
   staff_id: v.id('staff'), // スタッフID
   date: v.string(), // 日付 YYYY-MM-DD
   start_time_unix: v.optional(v.number()), // 開始時間
@@ -542,7 +542,7 @@ const staff_exception_schedule = defineTable({
  */
 const staff = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // 組織ID
+  org_id: v.id('organization'), // 店舗ID
   name: v.string(), // スタッフ名
   age: v.optional(v.number()), // 年齢
   email: v.string(), // メールアドレス
@@ -565,8 +565,7 @@ const staff = defineTable({
  */
 const staff_auth = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  user_id: v.optional(v.string()),               // Clerk User ID
-  org_id: v.string(), // Clerk Organization ID
+  org_id: v.id('organization'), // 店舗ID
   staff_id: v.id('staff'), // スタッフID
   pin_code: v.optional(v.string()), // PINコード
   role: roleType, // ロール
@@ -582,7 +581,7 @@ const staff_auth = defineTable({
  */
 const staff_config = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // 組織ID
+  org_id: v.id('organization'), // 店舗ID
   staff_id: v.id('staff'), // スタッフID
   extra_charge: v.optional(v.number()), // 追加料金
   priority: v.optional(v.number()), // 優先度
@@ -598,7 +597,7 @@ const staff_config = defineTable({
  */
 const menu = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // 組織ID
+  org_id: v.id('organization'), // 店舗ID
   name: v.string(), // メニュー名
   unit_price: v.number(), // 単価
   sale_price: v.optional(v.number()), // セール価格
@@ -623,7 +622,7 @@ const menu = defineTable({
  */
 const menu_exclusion_staff = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // Clerk の組織ID
+  org_id: v.id('organization'), // 店舗ID
   menu_id: v.id('menu'), // メニューID
   staff_id: v.id('staff'), // スタッフID
   ...CommonFields,
@@ -641,7 +640,7 @@ const menu_exclusion_staff = defineTable({
  */
 const coupon = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // Clerk の組織ID
+  org_id: v.id('organization'), // 店舗ID
   coupon_uid: v.string(), // クーポンUID
   name: v.string(), // クーポン名
   discount_type: couponDiscountType, // 割引タイプ
@@ -661,7 +660,7 @@ const coupon = defineTable({
  */
 const coupon_exclusion_menu = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // Clerk の組織ID
+  org_id: v.id('organization'), // 店舗ID
   coupon_id: v.id('coupon'), // クーポンID
   menu_id: v.id('menu'), // メニューID
   ...CommonFields
@@ -679,7 +678,7 @@ const coupon_exclusion_menu = defineTable({
  */
 const coupon_config = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // Clerk の組織ID
+  org_id: v.id('organization'), // 店舗ID
   coupon_id: v.id('coupon'), // クーポンID
   start_date_unix: v.optional(v.number()), // 開始日時
   end_date_unix: v.optional(v.number()), // 終了日時
@@ -699,7 +698,7 @@ const coupon_config = defineTable({
 const reservation = defineTable({
   master_id: v.string(),         // Convex & Supabase 共通識別子
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // 組織ID
+  org_id: v.id('organization'), // 店舗ID
   customer_id: v.optional(v.string()), // Supabase 側の customer.id
   staff_id: v.id('staff'), // スタッフID
   customer_name: v.string(), // 顧客名
@@ -744,7 +743,7 @@ const reservation = defineTable({
  */
 const reservation_detail = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  org_id: v.string(), // 組織ID
+  org_id: v.id('organization'), // 店舗ID
   reservation_id: v.id('reservation'), // 予約ID
   coupon_id: v.optional(v.id('coupon')), // クーポンID
   payment_method: paymentMethodType, // 支払方法
@@ -767,7 +766,7 @@ const reservation_detail = defineTable({
  */
 const point_config = defineTable({
   tenant_id: v.id('tenant'),
-  org_id: v.string(),
+  org_id: v.id('organization'),
   is_active: v.optional(v.boolean()),
   is_fixed_point: v.optional(v.boolean()),
   point_rate: v.optional(v.number()),
@@ -786,7 +785,7 @@ const point_config = defineTable({
 const point_exclusion_menu = defineTable({
   point_config_id: v.id('point_config'),
   tenant_id: v.id('tenant'),
-  org_id: v.string(),
+  org_id: v.id('organization'),
   menu_id: v.id('menu'),
   ...CommonFields,
 })
@@ -805,7 +804,7 @@ const webhook_events = defineTable({
   event_id: v.string(),        // 冪等性を確保するためのイベントID
   event_type: v.string(),             // イベントタイプ
   processed_at: v.number(),           // 処理完了時刻（Unix timestamp）
-  processing_result: v.string(),      // "success" | "error" | "skipped"
+  processing_result: webhookEventProcessingResultType,
   error_message: v.optional(v.string()), // エラー発生時のメッセージ
   ...CommonFields,
 })

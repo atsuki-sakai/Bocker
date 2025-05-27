@@ -60,9 +60,8 @@ export function validateRequired(
  * @param org_id 組織ID
  * @throws バリデーションエラー
  */
-export async function checkOrganization(ctx: QueryCtx | MutationCtx,tenant_id: Id<'tenant'>, org_id: string) {
-  validateStringLength(org_id, '組織');
-  const org = await ctx.db.query('organization').withIndex('by_tenant_org_archive', q => q.eq('tenant_id', tenant_id).eq('org_id', org_id).eq('is_archive', false)).first();
+export async function checkOrganization(ctx: QueryCtx | MutationCtx,tenant_id: Id<'tenant'>, org_id: Id<'organization'>) {
+  const org = await ctx.db.get(org_id);
   if (!org) {
     throw new ConvexError({
       statusCode: ERROR_STATUS_CODE.NOT_FOUND,

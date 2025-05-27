@@ -8,7 +8,7 @@ import { checkAuth } from '@/convex/utils/auth';
 export const displayExceptionSchedule = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     date: v.string(),
     take: v.optional(v.number()),
   },
@@ -28,7 +28,7 @@ export const displayExceptionSchedule = query({
 export const getByScheduleList = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     type: ExceptionScheduleType
   },
   handler: async (ctx, args) => {
@@ -58,7 +58,7 @@ export const getByScheduleList = query({
 export const getByOrgAndDate = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization'),
     date: v.string(),
     type: ExceptionScheduleType,
     pagination_opts: paginationOptsValidator

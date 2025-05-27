@@ -31,6 +31,10 @@ import { MAX_REFERRAL_COUNT } from '@/lib/constants'
 
 export const signUpSchema = z
   .object({
+    org_name: z
+      .string({ required_error: '組織名を入力してください' })
+      .min(1, { message: '組織名を入力してください' })
+      .max(40, { message: '組織名は40文字以下で入力してください' }),
     referralCode: z.string().optional(),
     email: z
       .string()
@@ -194,6 +198,7 @@ export default function SignUpPage() {
 
   const referralCode = watch('referralCode')
 
+  const orgName = watch('org_name')
   const email = watch('email')
 
   // メモ化されたトグル関数
@@ -400,6 +405,7 @@ export default function SignUpPage() {
         password: data.password,
         unsafeMetadata: {
           referralCode: referralCode,
+          orgName: orgName,
         },
       })
 

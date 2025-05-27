@@ -6,7 +6,7 @@ import { validateStringLength } from '@/convex/utils/validations';
 export const findByTenantAndOrg = query({
   args: {
     tenant_id: v.id('tenant'),
-    org_id: v.string(),
+    org_id: v.id('organization')
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
