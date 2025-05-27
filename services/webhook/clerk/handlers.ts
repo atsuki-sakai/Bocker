@@ -98,7 +98,7 @@ export async function handleUserCreated(
       })
     );
     console.log(`🏢 [${eventId}] テナント作成成功: tenant_id=${tenantId}`, { ...context, tenantId });
-
+    
     // 4. Referral作成（非クリティカル）
     try {
       console.log(`🎁 [${eventId}] Referral作成開始: tenant_id=${tenantId}`, { ...context, tenantId });
@@ -132,6 +132,21 @@ export async function handleUserCreated(
     console.log(`🏢 [${eventId}] 店舗作成成功: org_id=${orgId}`, { ...context, orgId });
 
       // 6. ユーザーメタデータ更新
+      try{
+        await deps.stripe.customers.update(stripeCustomer.id, {
+          metadata: {
+            tenant_id: tenantId,
+            org_id: orgId,
+          },
+        });
+        metrics.incrementApiCall('stripe');
+      }catch(error){
+        console.warn(`⚠️ [${eventId}] Stripe顧客メタデータ更新失敗（非クリティカル）: customerId=${stripeCustomer.id}`, { ...context, stripeCustomerId: stripeCustomer.id, error });
+        Sentry.captureException(error, {
+          level: 'warning',
+          tags: { ...context, operation: 'update_stripe_customer_metadata', stripeCustomerId: stripeCustomer.id },
+        });
+      }
       try {
         const clerk = await clerkClient();
         await clerk.users.updateUserMetadata(id, {
