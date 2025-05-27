@@ -190,13 +190,18 @@ export async function handleInvoicePaymentSucceeded(
     const subscriptionStatus = subscription.status;
     metrics.incrementApiCall("stripe");
 
+    const customer = await deps.stripe.customers.retrieve(
+      evt.data.object.customer as string
+    ) as Stripe.Customer;
+    metrics.incrementApiCall("stripe");
+
 
     // --- リファラルボーナス処理 (初回請求のみ) -------------------------
     // NOTE: 初回の invoice （billing_reason === 'subscription_create'）のみを対象とします。
     // Convex 側では invoice_id をユニークキーとして冪等性を担保してください。
     const isFirstInvoice = evt.data.object.billing_reason === 'subscription_create';
     // tenant_id をメタデータから取得。存在しない場合はエラー処理。
-    const tenant_id = evt.data.object.metadata?.tenant_id as Id<'tenant'> ?? subscription.metadata?.tenant_id as Id<'tenant'>; 
+    const tenant_id = customer.metadata?.tenant_id as Id<'tenant'> | null;
     if (isFirstInvoice) {
       // Stripe Customer から referral_code を取得
       const customer = await deps.stripe.customers.retrieve(
@@ -206,7 +211,7 @@ export async function handleInvoicePaymentSucceeded(
       metrics.incrementApiCall("stripe");
 
       // 未入力の場合は null になる想定
-      if (referralCode) {
+      if (referralCode && tenant_id) {
         try {
           await deps.retry(() =>
             fetchAction(
@@ -249,7 +254,6 @@ export async function handleInvoicePaymentSucceeded(
               }
           };
       }
-
       try {
 
         // 1.サブスクリプションを取得するstripeのcustomer.idを元に一致するsubscriptionテーブルを取得
