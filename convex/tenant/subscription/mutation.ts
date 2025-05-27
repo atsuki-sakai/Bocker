@@ -26,6 +26,7 @@ export const upsertSubscription = mutation({
     price_id: v.string(),
     plan_name: v.string(),
     billing_period: billingPeriodType,
+    current_period_start: v.number(),
     current_period_end: v.number(),
   },
   handler: async (ctx, args) => {
@@ -60,6 +61,7 @@ export const syncSubscription = mutation({
       stripe_customer_id: v.string(),
       status: subscriptionStatusType,
       price_id: v.string(),
+      current_period_start: v.number(),
       current_period_end: v.number(),
       plan_name: v.string(),
       billing_period: billingPeriodType,
@@ -106,6 +108,7 @@ export const updateSubscription = mutation({
     price_id: v.string(),
     plan_name: v.string(),
     billing_period: billingPeriodType,
+    current_period_start: v.number(),
     current_period_end: v.number(),
   },
   handler: async (ctx, args) => {
@@ -154,6 +157,7 @@ export const paymentFailed = mutation({
     price_id: v.string(),
     plan_name: v.string(),
     billing_period: billingPeriodType,
+    current_period_start: v.number(),
     current_period_end: v.number(),
     cancel_at: v.optional(v.number()),
   },
@@ -268,7 +272,7 @@ export const kill = mutation({
       billing_period: undefined,
       price_id: undefined,
       plan_name: undefined,
-      subscription_id: undefined,
+      subscription_id: undefined
     });
 
     // サブスクリプションを削除

@@ -4,7 +4,7 @@ import type { WebhookDependencies, EventProcessingResult, LogContext } from '../
 import type { WebhookMetricsCollector } from '../metrics';
 import * as Sentry from '@sentry/nextjs';
 import { fetchAction, fetchMutation, fetchQuery } from 'convex/nextjs';
-import type { SubscriptionStatus } from '@/convex/types';
+import type { BillingPeriod, SubscriptionStatus } from '@/convex/types';
 import { Id } from '@/convex/_generated/dataModel'
 
 export async function handleSubscriptionUpdated(
@@ -49,6 +49,7 @@ export async function handleSubscriptionUpdated(
         price_id: evt.data.object.items.data[0].price.id as string,
         plan_name: evt.data.object.items.data[0].plan.nickname as string,
         billing_period: evt.data.object.items.data[0].plan.interval as 'month' | 'year',
+        current_period_start: evt.data.object.current_period_start,
         current_period_end: evt.data.object.current_period_end,
       })
     );
@@ -272,7 +273,8 @@ export async function handleInvoicePaymentSucceeded(
             status: subscriptionStatus,
             price_id: evt.data.object.lines.data[0].price?.id as string,
             plan_name: evt.data.object.lines.data[0].description as string,
-            billing_period: evt.data.object.lines.data[0].plan?.interval as 'month' | 'year',
+            billing_period: evt.data.object.lines.data[0].plan?.interval as BillingPeriod,
+            current_period_start: evt.data.object.lines.data[0].period?.start as number,
             current_period_end: evt.data.object.lines.data[0].period?.end as number,
           })
         );
@@ -376,6 +378,7 @@ export async function handleInvoicePaymentFailed(
           price_id: subscription.items.data[0].price.id as string,
           plan_name: subscription.items.data[0].plan.nickname as string,
           billing_period: subscription.items.data[0].plan.interval,
+          current_period_start: subscription.current_period_start,
           current_period_end: subscription.current_period_end,
         })
       );

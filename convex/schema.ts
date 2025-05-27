@@ -334,6 +334,7 @@ const subscription = defineTable({
   price_id: v.string(),         // Stripe Price ID
   plan_name: v.string(),        // "Lite" | "Pro" | "Enterprise"
   billing_period: billingPeriodType, // "monthly" | "yearly"
+  current_period_start: v.number(),    // 現在の課金期間開始UNIX
   current_period_end: v.number(),    // 現在の課金期間終了UNIX
   cancel_at: v.optional(v.number()),    // キャンセル日UNIX
   ...CommonFields,
