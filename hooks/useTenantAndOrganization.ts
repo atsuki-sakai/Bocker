@@ -21,12 +21,12 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
   const pathname = usePathname();
   const { user } = useUser();
   const { userId, isLoaded, isSignedIn } = useAuth();
-  // 未ログインなら /sign-in へ
+  
   useEffect(() => {
     if (isLoaded && !isSignedIn && pathname !== '/sign-in') {
       router.replace('/sign-in');
     }
-  }, [isLoaded, isSignedIn, pathname, router]);
+  }, [isLoaded, isSignedIn, pathname, router, user]);
 
   // user ロード後にメタデータを読む
   const tenantId = useMemo(
@@ -43,6 +43,7 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
     () => (isLoaded ? (user?.publicMetadata?.role as Role | null) : null),
     [isLoaded, user]
   );
+
 
   return {
     tenantId: tenantId,
