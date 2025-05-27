@@ -153,7 +153,7 @@ export default function OrgConfigForm() {
         setIsUploading(false)
       }
     },
-    [currentFile, orgConfig, updateImages, orgId, showErrorToast, tenantId]
+    [currentFile, orgConfig, updateImages, orgId, showErrorToast, tenantId, killWithThumbnail]
   )
 
   // フォーム送信処理（useCallbackでメモ化）

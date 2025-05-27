@@ -1,5 +1,5 @@
 // Stripe types
-import { Role, ROLE_VALUES } from "@/convex/types";
+import { Role } from "@/convex/types";
 export interface StripeLineItem {
   id: string;
   description: string | null;
