@@ -1,3 +1,4 @@
+
 import type Stripe from 'stripe';
 import type { WebhookDependencies, EventProcessingResult, LogContext } from '../types';
 import type { WebhookMetricsCollector } from '../metrics';
@@ -5,8 +6,6 @@ import * as Sentry from '@sentry/nextjs';
 import { fetchAction, fetchMutation, fetchQuery } from 'convex/nextjs';
 import type { SubscriptionStatus } from '@/convex/types';
 import { Id } from '@/convex/_generated/dataModel'
-import { auth } from '@clerk/nextjs/server';
-import { getCurrentUnixTime } from '@/lib/schedules';
 
 export async function handleSubscriptionUpdated(
   /**
@@ -47,6 +46,10 @@ export async function handleSubscriptionUpdated(
         stripe_subscription_id: evt.data.object.id as string,
         stripe_customer_id: evt.data.object.customer as string,
         subscription_status: evt.data.object.status as SubscriptionStatus,
+        price_id: evt.data.object.items.data[0].price.id as string,
+        plan_name: evt.data.object.items.data[0].plan.nickname as string,
+        billing_period: evt.data.object.items.data[0].plan.interval as 'month' | 'year',
+        current_period_end: evt.data.object.current_period_end,
       })
     );
     metrics.incrementApiCall("convex");
@@ -248,15 +251,24 @@ export async function handleInvoicePaymentSucceeded(
       }
 
       try {
-        await deps.retry(() =>
-          fetchMutation(deps.convex.tenant.subscription.mutation.updateSubscription, {
-            tenant_id: tenant_id, // 取得した tenant_id を使用
-            stripe_subscription_id: subscriptionId,
-            stripe_customer_id: evt.data.object.customer as string,
-            subscription_status: subscriptionStatus,
-          })
-        );
-        metrics.incrementApiCall("convex");
+
+        // 1.サブスクリプションを取得するstripeのsubscription.idを元に一致するsubscriptionテーブルを取得
+        // 2 . 一致サブスクリプションが存在しない場合は新規作成
+        // 3 . 一致サブスクリプションが存在する場合は更新
+        // 4 . 更新する場合はsubscription_statusを更新
+        // 5 . 新規作成する場合はsubscription_statusを更新
+        // 6 . 更新する場合はsubscription_statusを更新
+        // 7 . 新規作成する場合はsubscription_statusを更新
+        
+        // await deps.retry(() =>
+        //   fetchMutation(deps.convex.tenant.subscription.mutation.updateSubscription, {
+        //     tenant_id: tenant_id, // 取得した tenant_id を使用
+        //     stripe_subscription_id: subscriptionId,
+        //     stripe_customer_id: evt.data.object.customer as string,
+        //     subscription_status: subscriptionStatus,
+        //   })
+        // );
+        // metrics.incrementApiCall("convex");
       } catch (error) {
         console.error(`請求書 ${evt.data.object.id} のサブスクリプション取得に失敗しました:`, error);
         Sentry.captureException(error, {
@@ -352,6 +364,10 @@ export async function handleInvoicePaymentFailed(
           stripe_subscription_id: subscriptionId,
           stripe_customer_id: evt.data.object.customer as string,
           subscription_status: subscriptionStatus,
+          price_id: subscription.items.data[0].price.id as string,
+          plan_name: subscription.items.data[0].plan.nickname as string,
+          billing_period: subscription.items.data[0].plan.interval,
+          current_period_end: subscription.current_period_end,
         })
       );
       metrics.incrementApiCall("convex");

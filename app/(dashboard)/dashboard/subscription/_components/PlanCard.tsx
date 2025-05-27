@@ -84,7 +84,7 @@ export default function PlanCard({
 
   // 月額換算価格をメモ化
   const monthlyEquivalent = useMemo(() => {
-    if (billingPeriod === 'yearly') {
+    if (billingPeriod === 'year') {
       return Math.floor(price / 12).toLocaleString()
     }
     return null
@@ -154,15 +154,15 @@ export default function PlanCard({
             <div className="flex items-baseline">
               <span className="text-3xl font-bold">¥{price.toLocaleString()}</span>
               <span className="text-sm text-muted-foreground ml-1">
-                /{billingPeriod === 'monthly' ? '月' : '年'}
+                /{billingPeriod === 'month' ? '月' : '年'}
               </span>
             </div>
-            {billingPeriod === 'yearly' && savingPercent && (
+            {billingPeriod === 'year' && savingPercent && (
               <div className="text-xs text-active font-medium mt-1">
                 年間契約で{savingPercent}%お得
               </div>
             )}
-            {billingPeriod === 'yearly' && (
+            {billingPeriod === 'year' && (
               <div className="text-xs text-muted-foreground mt-1">
                 (月あたり ¥{monthlyEquivalent})
               </div>
@@ -267,7 +267,7 @@ function PlanActionButton({
     if (isBillingPeriodChange) {
       return (
         <span className="flex items-center gap-1">
-          {billingPeriod === 'yearly' ? '年払いに変更' : '月払いに変更'}
+          {billingPeriod === 'year' ? '年払いに変更' : '月払いに変更'}
         </span>
       )
     } else if (currentPlanStr?.toLowerCase() === planId.toLowerCase()) {

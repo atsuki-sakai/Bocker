@@ -6,12 +6,13 @@ import { api } from '@/convex/_generated/api'
 import { PlanCard, BillingPeriodToggle, PreviewDialog, CurrentPlanBanner } from './_components'
 import { AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { BillingPeriod } from '@/convex/types'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { SUBSCRIPTION_PLANS } from '@/lib/constants'
 import { getPriceStrFromPlanAndPeriod } from '@/lib/utils'
 import { Doc } from '@/convex/_generated/dataModel'
-import { StripePreviewData, BillingPeriod } from '@/lib/types'
+import { StripePreviewData } from '@/lib/types'
 import { Id } from '@/convex/_generated/dataModel'
 import { PLAN_TRIAL_DAYS } from '@/lib/constants'
 
@@ -40,7 +41,7 @@ export default function SubscriptionForm({
   const [previewData, setPreviewData] = useState<StripePreviewData | null>(null)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly')
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('month')
   const [updatePlanIdStr, setupdatePlanIdStr] = useState<string | null>(null)
 
   const createSession = useAction(api.tenant.subscription.action.createSubscriptionSession)
@@ -307,12 +308,12 @@ export default function SubscriptionForm({
           title="Lite"
           description="スモールサロン向けの基本プラン"
           price={
-            billingPeriod === 'monthly'
+            billingPeriod === 'month'
               ? (SUBSCRIPTION_PLANS.LITE.monthly.price ?? 0)
               : (SUBSCRIPTION_PLANS.LITE.yearly.price ?? 0)
           }
           savingPercent={
-            billingPeriod === 'yearly'
+            billingPeriod === 'year'
               ? (SUBSCRIPTION_PLANS.LITE.yearly.savingPercent ?? 0)
               : undefined
           }
@@ -334,12 +335,12 @@ export default function SubscriptionForm({
           title="Pro"
           description="中規模サロン向けの標準プラン"
           price={
-            billingPeriod === 'monthly'
+            billingPeriod === 'month'
               ? (SUBSCRIPTION_PLANS.PRO.monthly.price ?? 0)
               : (SUBSCRIPTION_PLANS.PRO.yearly.price ?? 0)
           }
           savingPercent={
-            billingPeriod === 'yearly'
+            billingPeriod === 'year'
               ? (SUBSCRIPTION_PLANS.PRO.yearly.savingPercent ?? 0)
               : undefined
           }

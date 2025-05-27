@@ -69,6 +69,10 @@ export const updateSubscription = mutation({
     stripe_subscription_id: v.string(),
     subscription_status: subscriptionStatusType,
     stripe_customer_id: v.string(),
+    price_id: v.string(),
+    plan_name: v.string(),
+    billing_period: billingPeriodType,
+    current_period_end: v.number(),
   },
   handler: async (ctx, args) => {
       validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
@@ -113,6 +117,11 @@ export const paymentFailed = mutation({
     stripe_customer_id: v.string(),
     status: subscriptionStatusType,
     transaction_id: v.optional(v.string()),
+    price_id: v.string(),
+    plan_name: v.string(),
+    billing_period: billingPeriodType,
+    current_period_end: v.number(),
+    cancel_at: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     validateStringLength(args.stripe_customer_id, 'stripe_customer_id');

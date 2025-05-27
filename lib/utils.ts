@@ -262,7 +262,7 @@ export function getPriceStrFromPlanAndPeriod(planStr: string, period: BillingPer
 
   let priceId: string | undefined
 
-  if (period === 'monthly') {
+  if (period === 'month') {
     switch (planStr) {
       case 'lite':
         priceId = process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID
@@ -273,8 +273,8 @@ export function getPriceStrFromPlanAndPeriod(planStr: string, period: BillingPer
       default:
         throw new Error(`Invalid plan ID: ${planStr}`)
     }
-  } else {
-    // period === 'yearly'
+  } else if (period === 'year') {
+    // period === 'year'
     switch (planStr) {
       case 'lite':
         priceId = process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID

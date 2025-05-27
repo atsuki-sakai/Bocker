@@ -106,7 +106,7 @@ export const convertTarget = (target: Target): string => {
 }
 
 // サブスクリプション関連の型定義
-export const BILLING_PERIOD_VALUES = ['monthly', 'yearly'] as const
+export const BILLING_PERIOD_VALUES = ['day', 'week', 'month', 'year'] as const
 export const billingPeriodType = v.union(
   ...BILLING_PERIOD_VALUES.map((period) => v.literal(period))
 )

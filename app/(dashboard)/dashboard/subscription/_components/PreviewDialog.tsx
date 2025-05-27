@@ -3,7 +3,7 @@
 // ------------------------------------------------------
 
 import { cn, getPriceStrFromPlanAndPeriod } from '@/lib/utils'
-import { BillingPeriod } from '@/lib/types'
+import { BillingPeriod } from '@/convex/types'
 import {
   Dialog,
   DialogContent,
@@ -170,7 +170,7 @@ export default function PreviewDialog({
       amount = subItem?.plan?.amount || 0
     }
 
-    return `次回の定期支払い: ¥${amount.toLocaleString()}/${billingPeriod === 'monthly' ? '月' : '年'}`
+    return `次回の定期支払い: ¥${amount.toLocaleString()}/${billingPeriod === 'month' ? '月' : '年'}`
   }, [previewData, billingPeriod])
 
   // ボタンのコンテンツをメモ化

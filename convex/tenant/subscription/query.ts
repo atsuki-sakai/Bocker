@@ -77,7 +77,7 @@ export const getByUserEmail = query({
       });
     }
 
-    if (!tenant.stripe_customer_id) {
+    if (!tenant.stripe_customer_id || tenant.stripe_customer_id === '') {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.NOT_FOUND,
         severity: ERROR_SEVERITY.ERROR,
@@ -92,7 +92,7 @@ export const getByUserEmail = query({
     }
     const subscription = await ctx.db
       .query('subscription')
-      .withIndex('by_stripe_customer_archive', (q) => q.eq('stripe_customer_id', tenant.stripe_customer_id).eq('is_archive', false))
+      .withIndex('by_stripe_customer_archive', (q) => q.eq('stripe_customer_id', tenant.stripe_customer_id!).eq('is_archive', false))
       .first();
     return subscription;
   },

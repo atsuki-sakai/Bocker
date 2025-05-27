@@ -4,7 +4,7 @@
 // ------------------------------------------------------
 
 import { cn } from '@/lib/utils'
-import { BillingPeriod } from '@/lib/types'
+import { BillingPeriod } from '@/convex/types'
 import { useMemo, useCallback } from 'react'
 
 interface BillingPeriodToggleProps {
@@ -17,12 +17,12 @@ export default function BillingPeriodToggle({
   setBillingPeriodAction,
 }: BillingPeriodToggleProps) {
   const monthlyClickHandler = useCallback(
-    () => setBillingPeriodAction('monthly'),
+    () => setBillingPeriodAction('month'),
     [setBillingPeriodAction]
   )
 
   const yearlyClickHandler = useCallback(
-    () => setBillingPeriodAction('yearly'),
+    () => setBillingPeriodAction('year'),
     [setBillingPeriodAction]
   )
 
@@ -30,7 +30,7 @@ export default function BillingPeriodToggle({
     () =>
       cn(
         'px-4 py-2 rounded-full text-sm font-bold transition-all duration-200',
-        billingPeriod === 'monthly'
+        billingPeriod === 'month'
           ? 'bg-accent shadow-sm text-accent-foreground'
           : 'text-secondary-foreground hover:text-secondary-foreground'
       ),
@@ -41,7 +41,7 @@ export default function BillingPeriodToggle({
     () =>
       cn(
         'px-4 py-2 rounded-full text-sm font-bold transition-all duration-200',
-        billingPeriod === 'yearly'
+        billingPeriod === 'year'
           ? 'bg-accent shadow-sm text-accent-foreground'
           : 'text-secondary-foreground hover:text-secondary-foreground'
       ),

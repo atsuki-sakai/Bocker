@@ -30,8 +30,6 @@ export interface StripePreviewData {
   success: boolean;
 }
 
-export type BillingPeriod = 'monthly' | 'yearly';
-
 // Clerk
 export type ClerkEmailAddress = {
   id: string;

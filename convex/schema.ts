@@ -328,13 +328,13 @@ const tenant = defineTable({
  */
 const subscription = defineTable({
   tenant_id: v.id('tenant'),          // 契約元のテナントID
-  stripe_subscription_id: v.optional(v.string()),  // Stripe Subscription ID
-  stripe_customer_id: v.optional(v.string()),// Stripe Customer ID（Clerkユーザ単位ではなくテナント単位）
-  status: v.optional(subscriptionStatusType),
-  price_id: v.optional(v.string()),         // Stripe Price ID
-  plan_name: v.optional(v.string()),        // "Lite" | "Pro" | "Enterprise"
-  billing_period: v.optional(billingPeriodType), // "monthly" | "yearly"
-  current_period_end: v.optional(v.number()),    // 現在の課金期間終了UNIX
+  stripe_subscription_id: v.string(),  // Stripe Subscription ID
+  stripe_customer_id: v.string(),// Stripe Customer ID（Clerkユーザ単位ではなくテナント単位）
+  status: subscriptionStatusType,
+  price_id: v.string(),         // Stripe Price ID
+  plan_name: v.string(),        // "Lite" | "Pro" | "Enterprise"
+  billing_period: billingPeriodType, // "monthly" | "yearly"
+  current_period_end: v.number(),    // 現在の課金期間終了UNIX
   cancel_at: v.optional(v.number()),    // キャンセル日UNIX
   ...CommonFields,
 })
