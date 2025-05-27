@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import { Loading } from './'
 import Image from 'next/image'
 import { Dialog, DialogBackdrop, DialogPanel, TransitionChild } from '@headlessui/react'
-import { MenuIcon, XIcon } from 'lucide-react'
+import { MenuIcon, XIcon, CreditCard as CreditCardIcon } from 'lucide-react'
 import { UserButton } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
 import { useTheme } from 'next-themes'
@@ -46,7 +46,14 @@ export default function Sidebar({ children }: SidebarProps) {
 
   const filteredNav = isLoaded
     ? NAV_ITEMS.filter((item) => hasAccess(role!, currentPlan, item.minRole, item.minPlan))
-    : [NAV_ITEMS[0]] // [NAV_ITEMS[0]はサブスクリプションの為常に表示する
+    : []
+  filteredNav.push({
+    name: 'サブスクリプション',
+    href: `/dashboard/subscription`,
+    icon: CreditCardIcon,
+    minRole: 'admin',
+    minPlan: 'LITE',
+  })
 
   useEffect(() => {
     if (isLinkClicked) {
@@ -56,7 +63,8 @@ export default function Sidebar({ children }: SidebarProps) {
   }, [pathname, isLinkClicked, setSidebarOpen])
   useEffect(() => setMounted(true), [])
 
-  if (!ready) {
+  // テナント情報とサブスクリプション情報が読み込まれるまでローディングを表示
+  if (!ready || !isLoaded || subscription === undefined) {
     return <Loading />
   }
 

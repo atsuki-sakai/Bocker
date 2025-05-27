@@ -3,7 +3,6 @@ import { twMerge } from 'tailwind-merge'
 import Stripe from 'stripe'
 import { PLAN_MONTHLY_PRICES, PLAN_YEARLY_PRICES } from '@/lib/constants'
 import { BillingPeriod, SubscriptionStatus } from '@/convex/types'
-import imageCompression from 'browser-image-compression'
 import CryptoJS from 'crypto-js' // CryptoJSをインポート
 import { SystemError } from '@/lib/errors/custom_errors'
 import { ALLOWED_DOMAINS } from '@/lib/constants'
@@ -216,16 +215,6 @@ export const generatePinCode = () => {
   return pinCode
 }
 
- /**
-   * Stripeの課金期間("month"/"year")をConvexスキーマ形式("monthly"/"yearly")に変換
-   */
-export function convertIntervalToBillingPeriod(interval: string): string {
-  const intervalMapping: Record<string, string> = {
-    month: 'monthly',
-    year: 'yearly',
-  };
-  return intervalMapping[interval] || 'monthly';
-}
 
 // Stripeの課金期間をConvexの課金期間に変換
 export function priceIdToPlanInfo(priceId: string): {
@@ -352,303 +341,34 @@ export async function fileToBase64(file: File): Promise<string> {
   return base64Promise
 }
 
+
 /**
- * 画像ファイルからオリジナル画像とサムネイル画像を同時に生成する
- * @param file アップロードする画像ファイル
- * @returns オリジナル画像とサムネイル画像のFileオブジェクト
+ * 指定バイト長のランダム値を 16 進数文字列で生成する
+ * @param byteLength 出力するランダムバイト数（デフォルト 32 バイト）
+ * @returns 16 進数文字列（長さ = byteLength * 2）
  */
-export async function createImageWithThumbnail(
-  file: File
-): Promise<{ original: File; thumbnail: File }> {
-  // 画像ファイルの形式を確認
-  if (!file.type.startsWith('image/')) {
-    throw new Error('画像ファイルのみ対応しています')
-  }
+export function generateRandomHex(byteLength = 32): string {
+  // Web Crypto API でセキュアなランダム値を生成
+  const bytes = new Uint8Array(byteLength);
+  crypto.getRandomValues(bytes);
 
-  try {
-    // オリジナル画像の生成（最適化）
-    const originalOptions = {
-      maxSizeMB: 0.1, // 約100KB
-      maxWidthOrHeight: 1280,
-      webpQuality: 75, // 品質 (0-100) なので、0.75ではなく75
-      useWebWorker: true,
-    }
-    const originalFile = await compressAndConvertToWebP(file, originalOptions)
-
-    // サムネイル画像の生成
-    const thumbnailOptions = {
-      maxSizeMB: 0.1,
-      maxWidthOrHeight: 250,
-      webpQuality: 50,
-      useWebWorker: true,
-    }
-    const thumbnailFile = await compressAndConvertToWebP(file, thumbnailOptions)
-
-    // ファイル名にサフィックスを追加（サムネイル）
-    const thumbnailFileName = file.name.replace(/(\.[^.]+)$/, '-thumbnail$1')
-    const renamedThumbnail = new File([thumbnailFile], thumbnailFileName, {
-      type: thumbnailFile.type,
-    })
-
-    return {
-      original: originalFile,
-      thumbnail: renamedThumbnail,
-    }
-  } catch (error) {
-    console.error('画像処理エラー:', error)
-    throw new Error('画像の処理中にエラーが発生しました')
-  }
+  // 各バイトを 2 桁の 16 進数に変換して結合
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
-
-// 画像圧縮とWebP変換の関数を追加
-export async function compressAndConvertToWebP(
-  file: File,
-  options?: {
-    maxSizeMB?: number
-    maxWidthOrHeight?: number
-    webpQuality?: number
-    useWebWorker?: boolean
-  }
-): Promise<File> {
-  // ブラウザ環境でのみ実行可能であることを確認
-  if (
-    typeof window === 'undefined' ||
-    !window.FileReader ||
-    !window.Image ||
-    !window.HTMLCanvasElement
-  ) {
-    throw new Error('compressAndConvertToWebP can only be used in a browser environment.')
-  }
-  if (!imageCompression) {
-    throw new Error('imageCompression library is not loaded.')
-  }
-
-  try {
-    // 画像を圧縮（デフォルト値を改善）
-    const compressionOptions = {
-      maxSizeMB: options?.maxSizeMB ?? 0.1, // 最大サイズを0.1MB（デフォルト 100KB）
-      maxWidthOrHeight: options?.maxWidthOrHeight ?? 1280, // 最大幅/高さを1280px（デフォルト）
-      useWebWorker: options?.useWebWorker ?? true,
-      // fileType: 'image/webp', // imageCompression側でWebPを指定するオプションもあるが、ここではcanvasで変換
-      signal: undefined, // 必要に応じてAbortControllerからのSignalを渡す
-    }
-
-    // オリジナルファイルがWebPの場合は圧縮のみ実行し、変換はスキップ
-    if (file.type === 'image/webp') {
-      console.log('元のファイルがWebP形式のため、圧縮のみ実行します。')
-      return await imageCompression(file, compressionOptions)
-    }
-
-    const compressedFile = await imageCompression(file, compressionOptions)
-
-    // WebP形式に変換
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        if (!event.target?.result) {
-          reject(new Error('画像の読み込みに失敗しました'))
-          return
-        }
-
-        const img = new Image()
-        img.onload = () => {
-          const canvas = document.createElement('canvas')
-          canvas.width = img.width
-          canvas.height = img.height
-
-          const ctx = canvas.getContext('2d')
-          if (!ctx) {
-            reject(new Error('Canvasコンテキストの取得に失敗しました'))
-            return
-          }
-
-          ctx.drawImage(img, 0, 0)
-
-          // WebP形式に変換（品質を指定）
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) {
-                reject(new Error('WebP変換に失敗しました'))
-                return
-              }
-
-              // 新しいファイル名を生成（元のファイル名の拡張子をwebpに変更）
-              // 元ファイル名に拡張子がない場合の考慮も追加
-              const fileName = file.name.replace(/\.[^/.]+$/, '') + '.webp'
-
-              // Blobから新しいFileオブジェクトを作成
-              const webpFile = new File([blob], fileName, { type: 'image/webp' })
-              resolve(webpFile)
-            },
-            'image/webp',
-            options?.webpQuality ?? 0.75 // 品質を0.75（デフォルト 75%）、必要に応じて変更
-          )
-        }
-
-        img.onerror = () => reject(new Error('画像の読み込みに失敗しました'))
-        // imageCompressionはBlobを返す可能性があるため、URL.createObjectURLを使用
-        // もしcompressedFileがFile/BlobならURL.createObjectURLがより適切
-        // imageCompressionはFileオブジェクトを返すので、そのままreadAsDataURLでOK
-        img.src = event.target.result as string
-      }
-
-      reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'))
-      // 圧縮後のファイルを読み込む
-      reader.readAsDataURL(compressedFile)
-    })
-  } catch (error) {
-    console.error('画像圧縮/変換エラー:', error)
-    // エラーメッセージをより詳細にする
-    if (error instanceof Error) {
-      throw new Error(`画像の圧縮または変換に失敗しました: ${error.message}`)
-    }
-    throw new Error('画像の圧縮または変換に失敗しました')
-  }
-}
-
-// Web Crypto API を使用した暗号化/復号化関数（非同期、より安全）
-// ただし、ブラウザ環境のみで動作します。
-
-// 文字列を暗号化する関数
-export async function encryptString(text: string, secret: string): Promise<string> {
-  // ブラウザ環境かつWeb Crypto APIが利用可能かチェック
-  if (typeof window === 'undefined' || !window.crypto || !window.crypto.subtle) {
-    throw new Error('Web Crypto API is not available in this environment.')
-  }
-
-  try {
-    // パスワードからキーを生成
-    // 注意: 本番環境では、秘密鍵自体をソースコードに含めるべきではありません。
-    // 安全な方法（環境変数など）で管理し、サーバーサイドでの暗号化/復号化を推奨します。
-    // クライアントサイドでの秘密鍵使用はセキュリティリスクを伴います。
-    const keyMaterial = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(secret),
-      { name: 'PBKDF2' },
-      false,
-      ['deriveKey']
-    )
-
-    // ランダムなソルトとIVを生成
-    const salt = crypto.getRandomValues(new Uint8Array(16))
-    const iv = crypto.getRandomValues(new Uint8Array(12)) // GCMには12バイトが推奨
-
-    // 派生キーを生成
-    const key = await crypto.subtle.deriveKey(
-      {
-        name: 'PBKDF2',
-        salt,
-        iterations: 100000, // 十分な繰り返し回数
-        hash: 'SHA-256',
-      },
-      keyMaterial,
-      { name: 'AES-GCM', length: 256 }, // 256ビットキー
-      false,
-      ['encrypt', 'decrypt']
-    )
-
-    // テキストを暗号化
-    const encodedText = new TextEncoder().encode(text)
-    const encryptedBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encodedText)
-
-    // 暗号化されたデータとIV、ソルトを結合して保存
-    // Base64に変換して文字列として扱う
-    const encryptedArray = new Uint8Array(encryptedBuffer)
-    // ソルト(16) + IV(12) + 暗号文
-    const resultBuffer = new Uint8Array(salt.length + iv.length + encryptedArray.length)
-    resultBuffer.set(salt, 0)
-    resultBuffer.set(iv, salt.length)
-    resultBuffer.set(encryptedArray, salt.length + iv.length)
-
-    // Base64に変換して返す
-    // btoa はバイナリデータをBase64文字列に変換するが、入力は文字列である必要があるため、
-    // Uint8ArrayをString.fromCharCodeを使って文字列に変換する
-    return btoa(String.fromCharCode(...resultBuffer))
-  } catch (error) {
-    console.error('文字列暗号化エラー:', error)
-    if (error instanceof Error) {
-      throw new Error(`文字列の暗号化に失敗しました: ${error.message}`)
-    }
-    throw new Error('文字列の暗号化に失敗しました')
-  }
-}
-
-// 暗号化された文字列を復号する関数
-export async function decryptString(encryptedText: string, secret: string): Promise<string> {
-  // ブラウザ環境かつWeb Crypto APIが利用可能かチェック
-  if (typeof window === 'undefined' || !window.crypto || !window.crypto.subtle) {
-    throw new Error('Web Crypto API is not available in this environment.')
-  }
-
-  try {
-    // Base64からバイナリデータ（Uint8Array）に復元
-    const dataBuffer = new Uint8Array(
-      atob(encryptedText) // Base64デコード
-        .split('')
-        .map((char) => char.charCodeAt(0)) // 各文字コードを数値配列に
-    )
-
-    // 最小限のデータ長チェック (ソルト16 + IV12 = 28バイト)
-    if (dataBuffer.length < 28) {
-      throw new Error('無効な暗号化データ長です。')
-    }
-
-    // ソルト、IV、暗号文を分離
-    const salt = dataBuffer.slice(0, 16)
-    const iv = dataBuffer.slice(16, 16 + 12)
-    const ciphertext = dataBuffer.slice(16 + 12) // 残りが暗号文
-
-    // パスワードからキーを再生成
-    const keyMaterial = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(secret),
-      { name: 'PBKDF2' },
-      false,
-      ['deriveKey']
-    )
-
-    // 派生キーを再生成
-    const key = await crypto.subtle.deriveKey(
-      {
-        name: 'PBKDF2',
-        salt, // 保存されたソルトを使用
-        iterations: 100000,
-        hash: 'SHA-256',
-      },
-      keyMaterial,
-      { name: 'AES-GCM', length: 256 },
-      false,
-      ['encrypt', 'decrypt']
-    )
-
-    // 復号
-    const decryptedBuffer = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv }, // 保存されたIVを使用
-      key,
-      ciphertext // 分離した暗号文
-    )
-
-    // 復号されたテキストを返す
-    return new TextDecoder().decode(decryptedBuffer)
-  } catch (error) {
-    console.error('文字列復号化エラー:', error)
-    if (error instanceof Error) {
-      // 復号化失敗の一般的なエラーメッセージを返す（セキュリティのため詳細なエラーは出さない）
-      throw new Error(`文字列の復号化に失敗しました: ${error.message}`)
-    }
-    throw new Error('文字列の復号化に失敗しました')
-  }
-}
-
-// CryptoJS を使用した暗号化/復号化関数（同期、ブラウザ/Node.js 両方で動作可能）
-// Web Crypto API より手軽ですが、PBKDF2の繰り返し回数などセキュリティ設定に注意が必要です。
 
 // 文字列を暗号化する関数 (CryptoJS版)
-export function encryptStringCryptoJS(text: string, secret: string): string {
-  if (!secret) {
-    console.warn('Cookie暗号化キーが設定されていません。暗号化せずに返します。')
-    return text // シークレットがない場合はそのまま返す
+export function encryptStringCryptoJS(text: string): string {
+  if (!process.env.NEXT_PUBLIC_APP_COOKIE_SECRET) {
+    throw new SystemError("Cookie暗号化キーが設定されていません。",{
+      statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+      severity: ERROR_SEVERITY.ERROR,
+      callFunc: 'encryptStringCryptoJS',
+      message: 'Cookie暗号化キーが設定されていません。'
+    })
   }
+  let secret = process.env.NEXT_PUBLIC_APP_COOKIE_SECRET!
   try {
     const ciphertext = CryptoJS.AES.encrypt(text, secret).toString()
     return ciphertext
@@ -662,12 +382,13 @@ export function encryptStringCryptoJS(text: string, secret: string): string {
 }
 
 // 暗号化された文字列を復号する関数 (CryptoJS版)
-export function decryptStringCryptoJS(encryptedText: string, secret: string): string | null {
-  if (!secret) {
+export function decryptStringCryptoJS(encryptedText: string): string | null {
+  if (!process.env.NEXT_PUBLIC_APP_COOKIE_SECRET) {
     console.warn('Cookie暗号化キーが設定されていません。復号化せずに返します。')
     return encryptedText // シークレットがない場合はそのまま返す
   }
   try {
+    let secret = process.env.NEXT_PUBLIC_APP_COOKIE_SECRET!
     const bytes = CryptoJS.AES.decrypt(encryptedText, secret)
     const decryptedData = bytes.toString(CryptoJS.enc.Utf8)
     // 復号結果が空文字になる場合がある（パスワード違いなど）
@@ -685,18 +406,17 @@ export function decryptStringCryptoJS(encryptedText: string, secret: string): st
   }
 }
 
-export function generateReferralCode() {
-  // ランダムな文字列を生成。衝突の可能性は低いがゼロではない。
-  // より確実にユニークなコードが必要な場合は、UUIDなど別の方法を検討。
-  // Math.random().toString(36) は "0." + ランダムな文字列 を返す
-  // substring(2, 15) で "0." を除き、13文字を取得
-  return Math.random().toString(36).substring(2, 15).toLowerCase()
+/**
+ * CryptoJS でランダムなリファラルコードを生成する
+ * @param byteLength バイト単位の長さ（デフォルト 8 バイト → 16 文字の16進数コード）
+ * @returns 小文字の16進数文字列
+ */
+export function generateReferralCode(byteLength = 8): string {
+  // byteLength バイト分のランダムワード配列を生成
+  const wordArray = CryptoJS.lib.WordArray.random(byteLength);
+  // 16進数文字列に変換して小文字化
+  return wordArray.toString(CryptoJS.enc.Hex).toLowerCase();
 }
-
-// セッション秘密鍵 (環境変数から取得)
-// クライアントサイドに秘密鍵を置くのはセキュリティリスクがあるため、注意が必要です。
-// サーバーサイドでの処理（APIルートなど）を推奨します。
-const SESSION_SECRET = process.env.NEXT_PUBLIC_COOKIE_SECRET || ''
 
 export const setCookie = (name: string, value: string, days: number) => {
   // クライアントサイド (ブラウザ) 環境でのみ実行
@@ -709,10 +429,10 @@ export const setCookie = (name: string, value: string, days: number) => {
     let cookieValue = value
 
     // シークレットキーが設定されていれば暗号化
-    if (SESSION_SECRET) {
+    if (process.env.NEXT_PUBLIC_APP_COOKIE_SECRET) {
       try {
         // CryptoJSで暗号化
-        cookieValue = encryptStringCryptoJS(value, SESSION_SECRET)
+        cookieValue = encryptStringCryptoJS(value)
       } catch (error) {
         console.error('Cookie暗号化中にエラーが発生しました。平文で保存します。', error)
         // 暗号化に失敗した場合、平文のvalueを使用する
@@ -720,7 +440,7 @@ export const setCookie = (name: string, value: string, days: number) => {
       }
     } else {
       console.warn(
-        'Cookie暗号化キー(NEXT_PUBLIC_COOKIE_SECRET)が設定されていません。平文で保存します。'
+        'Cookie暗号化キー(NEXT_PUBLIC_APP_COOKIE_SECRET)が設定されていません。平文で保存します。'
       )
     }
 
@@ -783,14 +503,8 @@ export const getCookie = (name: string) => {
         decodedValue = rawValue // デコード失敗時は元の値を使う
       }
 
-      // シークレットキーが設定されていない場合
-      if (!SESSION_SECRET) {
-        console.warn('Cookie暗号化キーが設定されていません。平文として処理します。')
-        return decodedValue // デコードした値をそのまま返す
-      }
-
       // 暗号化されたデータとして復号を試みる
-      const decryptedData = decryptStringCryptoJS(decodedValue, SESSION_SECRET)
+      const decryptedData = decryptStringCryptoJS(decodedValue)
 
       // 正常に復号できた場合 (null以外)
       if (decryptedData !== null) {

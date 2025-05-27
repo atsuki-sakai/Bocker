@@ -224,13 +224,6 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   {
-    name: 'サブスクリプション',
-    href: `/dashboard/subscription`,
-    icon: CreditCardIcon,
-    minRole: 'admin',
-    minPlan: 'LITE',
-  },
-  {
     name: 'ダッシュボード',
     href: `/dashboard`,
     icon: HomeIcon,
