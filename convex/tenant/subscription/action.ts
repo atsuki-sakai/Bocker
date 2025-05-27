@@ -10,8 +10,7 @@
 import { action } from '../../_generated/server';
 import { v } from 'convex/values';
 import {
-  validateStringLength,
-  validateNumberLength
+  validateStringLength
 } from '@/convex/utils/validations';
 import { Stripe } from 'stripe';
 import { STRIPE_API_VERSION } from '@/services/stripe/constants';
@@ -43,7 +42,7 @@ export const createSubscriptionSession = action({
 
     // トライアル日数の範囲チェック
     if (args.trial_days && (args.trial_days < 0 || args.trial_days > PLAN_TRIAL_DAYS)) {
-      validateNumberLength(args.trial_days, 'trial_days');
+      
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
@@ -296,7 +295,6 @@ export const confirmSubscriptionUpdate = action({
     try {
       validateStringLength(args.subscription_id, 'subscription_id');
       validateStringLength(args.new_price_id, 'new_price_id');
-      validateNumberLength(args.proration_date, 'proration_date');
 
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
         apiVersion: STRIPE_API_VERSION,

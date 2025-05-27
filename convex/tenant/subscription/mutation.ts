@@ -34,7 +34,6 @@ export const upsertSubscription = mutation({
     validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
     validateStringLength(args.price_id, 'price_id');
     validateStringLength(args.plan_name, 'plan_name');
-    validateStringLength(args.billing_period, 'billing_period');
 
     // サブスクリプションが存在する場合は更新、存在しない場合は新規作成
     const existingSubscription = await ctx.db.query('subscription')
