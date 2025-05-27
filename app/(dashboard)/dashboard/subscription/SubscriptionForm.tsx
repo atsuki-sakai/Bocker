@@ -378,7 +378,7 @@ export default function SubscriptionForm({
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Lite プラン */}
         <PlanCard
-          title="Lite"
+          title="LITE"
           description="スモールサロン向けの基本プラン"
           price={
             billingPeriod === 'month'
@@ -392,7 +392,7 @@ export default function SubscriptionForm({
           }
           features={SUBSCRIPTION_PLANS.LITE.features}
           currentPlanName={currentPlanName}
-          planName="Lite"
+          planName="LITE"
           billingPeriod={billingPeriod}
           currentBillingPeriod={subscription?.billing_period as BillingPeriod | undefined}
           isActive={isActive}
@@ -405,7 +405,7 @@ export default function SubscriptionForm({
 
         {/* Pro プラン */}
         <PlanCard
-          title="Pro"
+          title="PRO"
           description="中規模サロン向けの標準プラン"
           price={
             billingPeriod === 'month'
@@ -419,7 +419,7 @@ export default function SubscriptionForm({
           }
           features={SUBSCRIPTION_PLANS.PRO.features}
           currentPlanName={currentPlanName}
-          planName="Pro"
+          planName="PRO"
           billingPeriod={billingPeriod}
           currentBillingPeriod={subscription?.billing_period as BillingPeriod | undefined}
           isActive={isActive}

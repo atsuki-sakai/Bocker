@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { SubscriptionPlanName } from '@/convex/types'
 import { Check, Star, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { BillingPeriod } from '@/convex/types'
@@ -41,8 +42,8 @@ interface PlanCardProps {
   price: number
   savingPercent?: number
   features: string[]
-  currentPlanName: string | null // 現在のプラン名（'Lite', 'Pro'）
-  planName: string // このカードのプラン名（'Lite', 'Pro'）
+  currentPlanName: SubscriptionPlanName | null // 現在のプラン名（'Lite', 'Pro'）
+  planName: SubscriptionPlanName // このカードのプラン名（'Lite', 'Pro'）
   billingPeriod: BillingPeriod
   currentBillingPeriod?: BillingPeriod
   isActive: boolean
@@ -79,6 +80,10 @@ export default function PlanCard({
 
   // 支払い期間が変更されているかのチェックをメモ化
   const isBillingPeriodChange = useMemo(() => {
+    console.log('currentPlanName', currentPlanName)
+    console.log('planName', planName)
+    console.log('currentBillingPeriod', currentBillingPeriod)
+    console.log('billingPeriod', billingPeriod)
     return currentPlanName === planName && currentBillingPeriod !== billingPeriod
   }, [currentPlanName, planName, currentBillingPeriod, billingPeriod])
 

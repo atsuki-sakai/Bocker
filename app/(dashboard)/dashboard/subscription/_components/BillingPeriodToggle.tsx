@@ -6,7 +6,7 @@
 import { cn } from '@/lib/utils'
 import { BillingPeriod } from '@/convex/types'
 import { useMemo, useCallback } from 'react'
-
+import { SUBSCRIPTION_PLANS } from '@/lib/constants'
 interface BillingPeriodToggleProps {
   billingPeriod: BillingPeriod
   setBillingPeriodAction: (period: BillingPeriod) => void
@@ -54,7 +54,10 @@ export default function BillingPeriodToggle({
         月払い
       </button>
       <button onClick={yearlyClickHandler} className={yearlyButtonClasses}>
-        年払い <span className="text-xs text-active font-bold">17%~20%お得</span>
+        年払い{' '}
+        <span className="text-xs text-active font-bold">
+          {SUBSCRIPTION_PLANS.PRO.yearly.savingPercent}%お得
+        </span>
       </button>
     </div>
   )
