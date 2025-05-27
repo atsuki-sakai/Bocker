@@ -351,15 +351,15 @@ const subscription = defineTable({
  */
 const tenant_referral = defineTable({
   tenant_id: v.id('tenant'), // テナントID
-  referral_code: v.string(),   // 例: "ABCD1234"
-  referral_point: v.number(),  // 所持している紹介ポイントの数
+  subscriber_tenant_id: v.optional(v.id('tenant')), // 紹介を受けたテナントID (紹介を受けていない場合は無い)
+  referral_code: v.string(),   // 例: "ABCD1234" 自身の持つ紹介コード
+  referral_point: v.number(),  // 所持している紹介ポイントの数 / 月に一度割引が適用できる
   total_referral_count: v.optional(v.number()), // 総紹介数
-  last_processed_key: v.optional(v.string()), // 最後に処理した複合キー (event_id + role)
-  last_processed_event_id: v.optional(v.string()), // 最後に処理したStripeイベントID（冪等性用）
-  last_discount_transaction_id: v.optional(v.string()), // 最後の割引処理のトランザクションID（冪等性用）
-  last_discount_applied_month: v.optional(v.string()), // 最後に割引を適用した月（YYYY-MM形式、冪等性用）
+  last_bonus_invoice_id: v.optional(v.string()), // 初回ボーナス処理用 Invoice ID (冪等性用)
+  last_discount_applied_month: v.optional(v.string()), // 最後に割引を適用した月（YYYY-MM形式、二重割引防止用）
   ...CommonFields,
 })
+.index('by_last_bonus_invoice_archive', ['last_bonus_invoice_id', 'is_archive']) // last_bonus_invoice_id から 1レコード取得
 .index('by_referral_code_archive', ['referral_code', 'is_archive']) // referral_code から 1レコード取得
 .index('by_tenant_archive', ['tenant_id', 'is_archive']); // tenant から 1レコード取得
 

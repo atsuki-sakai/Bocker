@@ -27,7 +27,7 @@ export async function handleUserCreated(
   metrics: WebhookMetricsCollector
 ): Promise<EventProcessingResult> {
   const { id, email_addresses = [], unsafe_metadata } = data;
-  const referral_code = unsafe_metadata?.referralCode as string | undefined;
+  const referral_code = unsafe_metadata?.referralCode as string | null;
   const org_name = unsafe_metadata?.orgName as string | undefined;
   const email = email_addresses[0]?.email_address || 'no-email';
 
@@ -77,8 +77,8 @@ export async function handleUserCreated(
       deps.stripe.customers.create({
         email: email || undefined,
         metadata: { 
-          user_id: id, 
-          referral_code: referral_code ? referral_code : null
+          user_id: id,
+          referral_code: referral_code
         },
       }, {
         idempotencyKey: `clerk_user_${id}_${eventId}`,

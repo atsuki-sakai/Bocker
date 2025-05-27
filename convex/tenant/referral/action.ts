@@ -1,6 +1,7 @@
+
 "use node"
 
-import { internalAction } from '@/convex/_generated/server'
+import { internalAction, action } from '@/convex/_generated/server'
 import { v } from 'convex/values'
 import { api } from '@/convex/_generated/api'
 import {
@@ -8,6 +9,7 @@ import {
   MAX_REFERRAL_COUNT,
 } from '@/lib/constants'
 import { Stripe } from 'stripe'
+import { Id } from '@/convex/_generated/dataModel'
 import { STRIPE_API_VERSION } from '@/services/stripe/constants'
 /**
  * テナント紹介割引適用アクション
@@ -488,3 +490,88 @@ export const cronApplyReferralDiscount = internalAction({
     }
   },
 })
+
+/**
+ * ------------------------------------------------------------
+ * applyReferralBonus
+ * サブスク初回決済時の紹介ボーナスを招待者・加入者の両方に付与する。
+ * - 引数:
+ *     referral_code          招待コード
+ *     subscriber_tenant_id   新規加入テナント ID
+ *     invoice_id             Stripe Invoice ID (冪等性キー)
+ * - 振る舞い:
+ *   1. invoice_id が referral_redemptions に存在すれば早期 return
+ *   2. referral_code で招待者テナントを検索
+ *   3. 招待者と加入者が同一ならスキップ
+ *   4. 双方の referral_point を +1, total_referral_count を +1
+ *   5. 処理履歴を referral_redemptions に保存
+ * ------------------------------------------------------------
+ */
+export const applyReferralBonus = action({
+  args: {
+    referral_code: v.string(),
+    subscriber_tenant_id: v.id("tenant"),
+    invoice_id: v.string(), // Stripe Invoice ID (冪等性キー)
+  },
+  handler: async (ctx, args) => {
+    // 1. 二重処理チェック // 冪等性確保　一度の購入で二重にボーナスを付与しないようにする
+    // すでに適応されているかチェック
+    const already = await ctx.runQuery(
+      api.tenant.referral.query.findByLastBonusInvoiceId,
+      {
+        last_bonus_invoice_id: args.invoice_id,
+      }
+    )
+    if (already) return { skipped: true };
+
+    // 2. 招待者取得
+    const inviterRef = await ctx.runQuery(
+      api.tenant.referral.query.findByReferralCode,
+      {
+        referral_code: args.referral_code,
+      }
+    )
+    if (!inviterRef) return { skipped: true, reason: "invalid_code" };
+
+    // 3. 紹介を受けたテナント
+    const subscriberTenant = await ctx.runQuery(
+      api.tenant.query.findById,
+      {
+        id: args.subscriber_tenant_id,
+      }
+    )
+    // 4. 同一テナント判定
+    if (inviterRef.tenant_id === subscriberTenant?._id) {
+      return { skipped: true, reason: "self_referral_blocked" };
+    }
+
+    // 紹介ポイントを増やすユーティリティ
+    const addPoint = async (tenantId: Id<"tenant">) => {
+      // 既存の referral ドキュメントを取得
+      const existing = await ctx.runQuery(
+        api.tenant.referral.query.findByTenantId,
+        {
+          tenant_id: tenantId,
+        }
+      )
+
+      if (existing) {
+        // 既存の場合はポイントを加算して更新
+        await ctx.runMutation(
+          api.tenant.referral.mutation.incrementReferralCount,
+          {
+            referral_id: existing._id,
+            invoice_id: args.invoice_id,
+          }
+        );
+      } else {
+        // アカウント作成時に本来は作成されているはずなのでログにだけ残す
+        console.error(`[${args.invoice_id}] tenant_referral not found for tenant_id: ${tenantId}`);
+      }
+    };
+    await addPoint(inviterRef.tenant_id);
+    await addPoint(args.subscriber_tenant_id);
+
+    return { success: true };
+  },
+});

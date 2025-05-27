@@ -61,13 +61,13 @@ type PasswordStrength = 'empty' | 'weak' | 'medium' | 'strong' | 'veryStrong'
 const getStrengthColor = (strength: PasswordStrength) => {
   switch (strength) {
     case 'weak':
-      return 'bg-red-500'
+      return 'bg-pallet-1'
     case 'medium':
-      return 'bg-yellow-500'
+      return 'bg-pallet-2'
     case 'strong':
-      return 'bg-green-500'
+      return 'bg-pallet-3'
     case 'veryStrong':
-      return 'bg-emerald-600'
+      return 'bg-pallet-4'
     default:
       return 'bg-gray-200'
   }
@@ -145,7 +145,7 @@ const PasswordInput = ({
         </Button>
       </div>
       {errors.password && (
-        <p id="password-error" className="text-xs text-red-600" role="alert">
+        <p id="password-error" className="text-xs text-destructive" role="alert">
           {errors.password.message}
         </p>
       )}
@@ -271,24 +271,24 @@ export default function SignUpPage() {
         className="mt-2"
       >
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-gray-600">パスワード強度:</span>
+          <span className="text-xs text-primary">パスワード強度:</span>
           <span
             className={`text-xs font-medium ${
               passwordStrength === 'weak'
-                ? 'text-red-700'
+                ? 'text-pallet-1'
                 : passwordStrength === 'medium'
-                  ? 'text-yellow-700'
+                  ? 'text-pallet-2'
                   : passwordStrength === 'strong'
-                    ? 'text-green-700'
+                    ? 'text-pallet-3'
                     : passwordStrength === 'veryStrong'
-                      ? 'text-emerald-700'
+                      ? 'text-pallet-4'
                       : ''
             }`}
           >
             {getStrengthText(passwordStrength)}
           </span>
         </div>
-        <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{
@@ -320,13 +320,13 @@ export default function SignUpPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, delay: 0.1 }}
-        className="mt-3 space-y-1 bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"
+        className="mt-3 space-y-1 bg-background p-3 rounded-lg border border-border shadow-sm"
       >
         <div className="grid grid-cols-1 gap-2">
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.length} />
             <span
-              className={`text-xs ${passwordCriteria.length ? 'text-green-700 font-medium' : 'text-gray-500'}`}
+              className={`text-xs ${passwordCriteria.length ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
               8文字以上
             </span>
@@ -335,7 +335,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.uppercase} />
             <span
-              className={`text-xs ${passwordCriteria.uppercase ? 'text-green-700 font-medium' : 'text-gray-500'}`}
+              className={`text-xs ${passwordCriteria.uppercase ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
               大文字を含む
             </span>
@@ -344,7 +344,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.lowercase} />
             <span
-              className={`text-xs ${passwordCriteria.lowercase ? 'text-green-700 font-medium' : 'text-gray-500'}`}
+              className={`text-xs ${passwordCriteria.lowercase ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
               小文字を含む
             </span>
@@ -353,7 +353,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.number} />
             <span
-              className={`text-xs ${passwordCriteria.number ? 'text-green-700 font-medium' : 'text-gray-500'}`}
+              className={`text-xs ${passwordCriteria.number ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
               数字を含む
             </span>
@@ -362,7 +362,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.special} />
             <span
-              className={`text-xs ${passwordCriteria.special ? 'text-green-700 font-medium' : 'text-gray-500'}`}
+              className={`text-xs ${passwordCriteria.special ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
               特殊文字を含む (例: !@#$%^&*)
             </span>
@@ -404,7 +404,7 @@ export default function SignUpPage() {
         emailAddress: data.email,
         password: data.password,
         unsafeMetadata: {
-          referralCode: referralCode,
+          referralCode: showReferralCode && referralCode ? referralCode : null,
           orgName: orgName,
         },
       })
@@ -458,14 +458,14 @@ export default function SignUpPage() {
   }, [paramsReferralCode, setValue])
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex items-center justify-center min-h-screen bg-muted">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
         className="w-full max-w-md p-2"
       >
-        <Card className="border-0 shadow-lg shadow-blue-100/20 dark:shadow-gray-900/40 backdrop-blur-sm bg-white/90 dark:bg-gray-900/80">
+        <Card className="border-0 shadow-lg shadow-blue-100/20">
           <CardHeader className="space-y-1">
             <motion.div variants={itemVariants}>
               <CardTitle className="text-2xl font-bold text-center">
@@ -473,7 +473,7 @@ export default function SignUpPage() {
               </CardTitle>
             </motion.div>
             <motion.div variants={itemVariants}>
-              <CardDescription className="text-center text-gray-500 dark:text-gray-400">
+              <CardDescription className="text-center text-muted-foreground">
                 アカウントを作成して始めましょう
               </CardDescription>
             </motion.div>
@@ -497,7 +497,7 @@ export default function SignUpPage() {
                       店舗名
                     </Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="org_name"
                         type="text"
@@ -512,7 +512,7 @@ export default function SignUpPage() {
                       />
                     </div>
                     {errors.org_name && (
-                      <p id="org_name-error" className="text-xs text-red-600" role="alert">
+                      <p id="org_name-error" className="text-xs text-destructive" role="alert">
                         {errors.org_name.message}
                       </p>
                     )}
@@ -522,7 +522,7 @@ export default function SignUpPage() {
                       メールアドレス
                     </Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="email"
                         type="email"
@@ -537,7 +537,7 @@ export default function SignUpPage() {
                       />
                     </div>
                     {errors.email && (
-                      <p id="email-error" className="text-xs text-red-600" role="alert">
+                      <p id="email-error" className="text-xs text-destructive" role="alert">
                         {errors.email.message}
                       </p>
                     )}
@@ -557,7 +557,7 @@ export default function SignUpPage() {
                       確認用パスワード
                     </Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="confirmPassword"
                         type="password"
@@ -571,7 +571,11 @@ export default function SignUpPage() {
                       />
                     </div>
                     {errors.confirmPassword && (
-                      <p id="confirmPassword-error" className="text-xs text-red-600" role="alert">
+                      <p
+                        id="confirmPassword-error"
+                        className="text-xs text-destructive"
+                        role="alert"
+                      >
                         {errors.confirmPassword.message}
                       </p>
                     )}
@@ -612,7 +616,11 @@ export default function SignUpPage() {
                           />
                         </div>
                         {errors.referralCode && (
-                          <p id="referralCode-error" className="text-xs text-red-600" role="alert">
+                          <p
+                            id="referralCode-error"
+                            className="text-xs text-destructive"
+                            role="alert"
+                          >
                             {errors.referralCode.message}
                           </p>
                         )}
@@ -657,9 +665,9 @@ export default function SignUpPage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800"
+                    className="p-4 bg-link rounded-lg border border-link-foreground"
                   >
-                    <p className="text-center text-xs text-blue-500">
+                    <p className="text-center text-xs text-link-foreground">
                       登録したメールアドレスに認証コードを送信しました。
                       メールの受信ボックスを確認して、認証コード(6桁の数字)を入力してください。
                     </p>
@@ -694,7 +702,7 @@ export default function SignUpPage() {
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                         >
-                          <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
+                          <svg className="h-4 w-4 text-background" viewBox="0 0 24 24">
                             <circle
                               className="opacity-25"
                               cx="12"
@@ -718,11 +726,11 @@ export default function SignUpPage() {
                     )}
                   </Button>
 
-                  <div className="text-center text-sm text-gray-500">
+                  <div className="text-center text-sm text-muted-foreground">
                     認証コードが届きませんか？
                     <button
                       type="button"
-                      className="ml-1 text-indigo-600 hover:text-indigo-800 underline focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 rounded"
+                      className="ml-1 text-link-foreground hover:opacity-80 underline focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-link-foreground rounded"
                       onClick={async () => {
                         try {
                           await signUp?.prepareEmailAddressVerification({
@@ -750,13 +758,13 @@ export default function SignUpPage() {
           </CardContent>
 
           <CardFooter className="flex flex-col space-y-4">
-            <Separator className="bg-gray-200 dark:bg-gray-700 w-1/2 mx-auto my-2" />
+            <Separator className="bg-muted w-1/2 mx-auto my-2" />
             <motion.div variants={itemVariants} className="w-full text-center">
               <p className="text-xs text-gray-600 dark:text-gray-400">
                 すでにアカウントをお持ちですか？{' '}
                 <Link
                   href="/sign-in"
-                  className="inline-flex items-center text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
+                  className="inline-flex items-center text-link-foreground hover:opacity-80 font-medium transition-colors"
                 >
                   ログインする
                   <ArrowRight className="ml-1 h-3 w-3" />

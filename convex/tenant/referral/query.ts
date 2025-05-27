@@ -6,6 +6,14 @@ import { checkAuth } from '@/convex/utils/auth';
 import { MAX_REFERRAL_COUNT } from '@/lib/constants';
 import { validateStringLength } from '@/convex/utils/validations';
 
+export const findByLastBonusInvoiceId = query({
+  args: {
+    last_bonus_invoice_id: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.query('tenant_referral').withIndex('by_last_bonus_invoice_archive', (q) => q.eq('last_bonus_invoice_id', args.last_bonus_invoice_id).eq('is_archive', false)).first();
+  },
+});
 export const findReferralCodeByCustomerId = query({
   args: {
     stripe_customer_id: v.string(),

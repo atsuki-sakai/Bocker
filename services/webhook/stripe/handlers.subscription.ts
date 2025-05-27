@@ -2,9 +2,11 @@ import type Stripe from 'stripe';
 import type { WebhookDependencies, EventProcessingResult, LogContext } from '../types';
 import type { WebhookMetricsCollector } from '../metrics';
 import * as Sentry from '@sentry/nextjs';
-import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import { fetchAction, fetchMutation, fetchQuery } from 'convex/nextjs';
 import type { SubscriptionStatus } from '@/convex/types';
 import { Id } from '@/convex/_generated/dataModel'
+import { auth } from '@clerk/nextjs/server';
+import { getCurrentUnixTime } from '@/lib/schedules';
 
 export async function handleSubscriptionUpdated(
   /**
@@ -185,48 +187,87 @@ export async function handleInvoicePaymentSucceeded(
     const subscriptionStatus = subscription.status;
     metrics.incrementApiCall("stripe");
 
-      if (subscriptionId && subscriptionStatus) {
-        // tenant_id をメタデータから取得。存在しない場合はエラー処理。
-        const tenant_id = evt.data.object.metadata?.tenant_id as Id<'tenant'> ?? subscription.metadata?.tenant_id as Id<'tenant'>; 
-        if (!tenant_id) {
-            console.error(`[${eventId}] Webhook (invoice.payment_succeeded) のメタデータにtenant_idが含まれていません。subscriptionId: ${subscriptionId}`);
-            Sentry.captureMessage('Webhook (invoice.payment_succeeded) のメタデータにtenant_idが含まれていません', {
-                level: 'error',
-                tags: { ...context, operation: 'handleInvoicePaymentSucceeded_tenant_id_missing' },
-                extra: { metadata: evt.data.object.metadata, subscription_metadata: subscription.metadata }
-            });
-            return {
-                result: 'error',
-                errorMessage: '必要なtenant_idがメタデータに存在しません。',
-                metadata: {
-                    action: 'invoice_payment_succeeded',
-                    stripeCustomerId: evt.data.object.customer as string,
-                    stripeSubscriptionId: subscriptionId,
-                }
-            };
-        }
 
+    // --- リファラルボーナス処理 (初回請求のみ) -------------------------
+    // NOTE: 初回の invoice （billing_reason === 'subscription_create'）のみを対象とします。
+    // Convex 側では invoice_id をユニークキーとして冪等性を担保してください。
+    const isFirstInvoice = evt.data.object.billing_reason === 'subscription_create';
+    // tenant_id をメタデータから取得。存在しない場合はエラー処理。
+    const tenant_id = evt.data.object.metadata?.tenant_id as Id<'tenant'> ?? subscription.metadata?.tenant_id as Id<'tenant'>; 
+    if (isFirstInvoice) {
+      // Stripe Customer から referral_code を取得
+      const customer = await deps.stripe.customers.retrieve(
+        evt.data.object.customer as string
+      ) as Stripe.Customer;
+      const referralCode = customer.metadata.referral_code as string | null;
+      metrics.incrementApiCall("stripe");
+
+      // 未入力の場合は null になる想定
+      if (referralCode) {
         try {
           await deps.retry(() =>
-            fetchMutation(deps.convex.tenant.subscription.mutation.updateSubscription, {
-              tenant_id: tenant_id, // 取得した tenant_id を使用
-              stripe_subscription_id: subscriptionId,
-              stripe_customer_id: evt.data.object.customer as string,
-              subscription_status: subscriptionStatus,
-            })
+            fetchAction(
+              deps.convex.tenant.referral.action.applyReferralBonus,
+              {
+                referral_code: referralCode,
+                subscriber_tenant_id: tenant_id,
+                invoice_id: evt.data.object.id,
+              }
+            )
           );
           metrics.incrementApiCall("convex");
-        } catch (error) {
-          console.error(`請求書 ${evt.data.object.id} のサブスクリプション取得に失敗しました:`, error);
-          Sentry.captureException(error, {
-            level: 'error',
-            tags: {
-              function: 'handleWebhookEvent_invoice_payment_succeeded',
-            },
+        } catch (bonusErr) {
+          // ボーナス処理失敗 → ログのみ、Subscription 更新は継続
+          console.error(`[${eventId}] applyReferralBonus failed`, bonusErr);
+          Sentry.captureException(bonusErr, {
+            level: 'warning',
+            tags: { ...context, operation: 'applyReferralBonus' },
           });
-          throw error;
         }
       }
+    }
+    // --------------------------------------------------------------
+
+    if (subscriptionId && subscriptionStatus) {
+      if (!tenant_id) {
+          console.error(`[${eventId}] Webhook (invoice.payment_succeeded) のメタデータにtenant_idが含まれていません。subscriptionId: ${subscriptionId}`);
+          Sentry.captureMessage('Webhook (invoice.payment_succeeded) のメタデータにtenant_idが含まれていません', {
+              level: 'error',
+              tags: { ...context, operation: 'handleInvoicePaymentSucceeded_tenant_id_missing' },
+              extra: { metadata: evt.data.object.metadata, subscription_metadata: subscription.metadata }
+          });
+          return {
+              result: 'error',
+              errorMessage: '必要なtenant_idがメタデータに存在しません。',
+              metadata: {
+                  action: 'invoice_payment_succeeded',
+                  stripeCustomerId: evt.data.object.customer as string,
+                  stripeSubscriptionId: subscriptionId,
+              }
+          };
+      }
+
+      try {
+        await deps.retry(() =>
+          fetchMutation(deps.convex.tenant.subscription.mutation.updateSubscription, {
+            tenant_id: tenant_id, // 取得した tenant_id を使用
+            stripe_subscription_id: subscriptionId,
+            stripe_customer_id: evt.data.object.customer as string,
+            subscription_status: subscriptionStatus,
+          })
+        );
+        metrics.incrementApiCall("convex");
+      } catch (error) {
+        console.error(`請求書 ${evt.data.object.id} のサブスクリプション取得に失敗しました:`, error);
+        Sentry.captureException(error, {
+          level: 'error',
+          tags: {
+            function: 'handleWebhookEvent_invoice_payment_succeeded',
+          },
+        });
+        throw error;
+      }
+    }
     return {
       result: 'success',
       metadata: {
