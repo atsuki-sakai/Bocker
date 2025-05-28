@@ -229,18 +229,12 @@ export type CouponDiscountType = Infer<typeof couponDiscountType>
 
 // ファイルのパスの型定義
 export const IMG_DIRECTORY_VALUES = [
-  'setting/original',
-  'setting/thumbnail',
-  'staff/original',
-  'staff/thumbnail',
-  'menu/original',
-  'menu/thumbnail',
-  'option/original',
-  'option/thumbnail',
-  'carte/original',
-  'carte/thumbnail',
-  'customer/original',
-  'customer/thumbnail',
+  'setting',
+  'staff',
+  'menu',
+  'option',
+  'carte',
+  'customer',
   'other',
 ] as const
 export const imgDirectoryType = v.union(

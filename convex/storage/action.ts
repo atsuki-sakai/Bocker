@@ -2,7 +2,6 @@
 
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
-import { auth } from '@clerk/nextjs/server';
 import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService';
 import { checkAuth } from '@/convex/utils/auth';
 import { imgDirectoryType, imageQualityType } from '@/convex/types';

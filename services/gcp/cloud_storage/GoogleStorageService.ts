@@ -463,7 +463,7 @@ class GoogleStorageService {
           originalCompressedBuffer,
           finalOriginalName,      // 拡張子(this.extension) を含んだユニークなファイル名
           this.mimeType,          // 圧縮後のMIMEタイプ (this.mimeType)
-          `${directory}/original`, // GCS上の具体的なディレクトリパス
+          directory + '/original', // GCS上の具体的なディレクトリパス
           org_id,
           isHotSpot
         ),
@@ -471,7 +471,7 @@ class GoogleStorageService {
           thumbnailCompressedBuffer,
           finalThumbnailName,     // 拡張子(this.extension) を含んだユニークなファイル名 (サムネイル用)
           this.mimeType,          // 圧縮後のMIMEタイプ (this.mimeType)
-          `${directory}/thumbnail`,// GCS上の具体的なディレクトリパス
+          directory + '/thumbnail',// GCS上の具体的なディレクトリパス
           org_id,
           isHotSpot             // サムネイルも同様にホットスポット対策を適用
         ),

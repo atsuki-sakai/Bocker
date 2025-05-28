@@ -106,7 +106,7 @@ export default function OrgConfigForm() {
         const result = await updateWithThumbnail({
           base64Data: originalBase64,
           fileName: currentFile!.name,
-          directory: 'setting/original',
+          directory: 'setting',
           quality: 'high',
           orgId: orgId,
         })
@@ -269,7 +269,8 @@ export default function OrgConfigForm() {
                   ? orgConfig.images.map((image) => image.original_url || '')
                   : []
               }
-              maxSizeMB={4}
+              multiple={false}
+              maxSizeMB={6}
               onFileSelect={(files) => {
                 setCurrentFile(files[0] ?? null)
               }}

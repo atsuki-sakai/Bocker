@@ -35,18 +35,18 @@ import { CSS } from '@dnd-kit/utilities'
  */
 
 interface ImageDropProps {
-  onFileSelect?: (files: File[]) => void
-  onPreviewChange?: (previewUrls: string[]) => void
-  onUploadComplete?: (filePath: string) => void
-  maxSizeMB?: number
-  previewWidth?: number
-  previewHeight?: number
-  className?: string
-  placeholderText?: string
-  accept?: string
-  initialImageUrls?: string[]
-  multiple?: boolean
-  maxFiles?: number
+  onFileSelect?: (files: File[]) => void // ファイル選択時のコールバック
+  onPreviewChange?: (previewUrls: string[]) => void // プレビュー画像変更時のコールバック
+  onUploadComplete?: (filePath: string) => void // アップロード完了時のコールバック
+  maxSizeMB?: number // 最大サイズ(MB)
+  previewWidth?: number // プレビュー幅
+  previewHeight?: number // プレビュー高さ
+  className?: string // クラス名
+  placeholderText?: string // プレースホルダーテキスト
+  accept?: string // 受け入れるファイルタイプ
+  initialImageUrls?: string[] // 初期画像URLs
+  multiple?: boolean // 複数選択可能かどうか
+  maxFiles?: number // 最大選択可能枚数
 }
 
 // null 除去のヘルパ
@@ -55,8 +55,8 @@ const filterNonNull = <T,>(arr: (T | null)[]): T[] => arr.filter(Boolean) as T[]
 export default function ImageDrop({
   onFileSelect,
   onPreviewChange,
-  maxSizeMB = 5,
-  previewWidth = 2016,
+  maxSizeMB = 6,
+  previewWidth = 1512,
   previewHeight = 1512,
   className = '',
   placeholderText = '画像をドラッグするか、クリックして選択',
@@ -222,37 +222,37 @@ export default function ImageDrop({
     }
   }
 
-  /* ------------------------------------------------------------------
-   * プレビュー削除
-   * ------------------------------------------------------------------*/
-  const clearPreview = (index?: number) => {
-    let files = [...selectedFiles]
-    let urls = [...previewImageUrls]
+  // /* ------------------------------------------------------------------
+  //  * プレビュー削除
+  //  * ------------------------------------------------------------------*/
+  // const clearPreview = (index?: number) => {
+  //   let files = [...selectedFiles]
+  //   let urls = [...previewImageUrls]
 
-    if (multiple && typeof index === 'number') {
-      const removedUrl = urls.splice(index, 1)[0]
-      files.splice(index, 1)
-      if (removedUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(removedUrl)
-      }
-    } else if (!multiple) {
-      if (urls[0]?.startsWith('blob:')) {
-        URL.revokeObjectURL(urls[0])
-      }
-      files = []
-      urls = initialImageUrls ? [initialImageUrls[0]] : []
-    }
+  //   if (multiple && typeof index === 'number') {
+  //     const removedUrl = urls.splice(index, 1)[0]
+  //     files.splice(index, 1)
+  //     if (removedUrl?.startsWith('blob:')) {
+  //       URL.revokeObjectURL(removedUrl)
+  //     }
+  //   } else if (!multiple) {
+  //     if (urls[0]?.startsWith('blob:')) {
+  //       URL.revokeObjectURL(urls[0])
+  //     }
+  //     files = []
+  //     urls = initialImageUrls ? [initialImageUrls[0]] : []
+  //   }
 
-    setSelectedFiles(files)
-    setPreviewImageUrls(urls)
-    setIsDirty(true)
+  //   setSelectedFiles(files)
+  //   setPreviewImageUrls(urls)
+  //   setIsDirty(true)
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-    onFileSelect?.(filterNonNull(files))
-    onPreviewChange?.(urls)
-  }
+  //   if (fileInputRef.current) {
+  //     fileInputRef.current.value = ''
+  //   }
+  //   onFileSelect?.(filterNonNull(files))
+  //   onPreviewChange?.(urls)
+  // }
 
   /* ------------------------------------------------------------------
    * 並べ替え用サムネイル
@@ -290,15 +290,7 @@ export default function ImageDrop({
           width={150}
           height={150}
         />
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon"
-          className="absolute top-1 right-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 z-10"
-          onClick={() => clearPreview(index)}
-        >
-          <X className="h-3 w-3" />
-        </Button>
+
         {selectedFiles[index] && (
           <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 truncate pointer-events-none">
             {selectedFiles[index]?.name}
@@ -382,14 +374,16 @@ export default function ImageDrop({
             width={previewWidth}
             height={previewHeight}
           />
+
+          {/* ★ここに差し替えボタンを追加 */}
           <Button
             type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute top-0 right-0 rounded-full bg-gradient-to-r from-green-800 to-green-600 text-white shadow-md"
-            onClick={() => clearPreview()}
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            onClick={() => fileInputRef.current?.click()}
           >
-            <X className="h-4 w-4" />
+            画像を変更
           </Button>
           {selectedFiles[0] && (
             <div className="flex items-center justify-start w-full gap-4 text-xs text-muted-foreground mt-2 text-start">
