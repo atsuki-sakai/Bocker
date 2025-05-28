@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { FileImage, X } from 'lucide-react'
+import { FileImage } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import {

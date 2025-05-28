@@ -205,7 +205,15 @@ export default function OrgReservationConfigForm() {
         showErrorToast(error)
       }
     },
-    [upsertReservationConfig, orgId, tenantId, reservationConfig, reset, showErrorToast]
+    [
+      upsertReservationConfig,
+      orgId,
+      tenantId,
+      reservationConfig,
+      reset,
+      showErrorToast,
+      reservationConfig,
+    ]
   )
 
   if (reservationConfig === undefined) {

@@ -178,7 +178,7 @@ export default function OrgConfigForm() {
         showErrorToast(error)
       }
     },
-    [upsertOrgAndConfig, tenantId, orgId, showErrorToast]
+    [upsertOrgAndConfig, tenantId, orgId, showErrorToast, orgAndConfig]
   )
   // orgConfigが変更されたらフォームをリセット
   useEffect(() => {
