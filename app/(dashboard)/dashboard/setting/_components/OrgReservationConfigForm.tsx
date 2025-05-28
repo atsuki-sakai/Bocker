@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Button } from '@/components/ui/button'
 import { Save } from 'lucide-react'
-import { SALON_RESERVATION_LIMIT_DAYS, SALON_RESERVATION_CANCEL_LIMIT_DAYS } from '@/lib/constants'
+import { RESERVATION_CANCEL_LIMIT_DAYS, RESERVATION_LIMIT_DAYS } from '@/lib/constants'
 import { RESERVATION_INTERVAL_MINUTES_VALUES } from '@/convex/types'
 import type { ReservationIntervalMinutes } from '@/convex/types'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
@@ -31,29 +31,25 @@ import {
 import { Loader2 } from 'lucide-react'
 
 const orgReservationConfigFormSchema = z.object({
-  tenantId: z.string(),
-  orgId: z.string(),
-  reservationConfigId: z
+  tenant_id: z.string(),
+  org_id: z.string(),
+  reservation_limit_days: z
     .string()
     .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
     .optional(),
-  reservationLimitDays: z
+  available_cancel_days: z
     .string()
     .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
     .optional(),
-  availableCancelDays: z
+  reservation_interval_minutes: z
     .string()
     .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
     .optional(),
-  reservationIntervalMinutes: z
+  available_sheet: z
     .string()
     .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
     .optional(),
-  availableSheet: z
-    .string()
-    .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
-    .optional(),
-  todayFirstLaterMinutes: z
+  today_first_later_minutes: z
     .string()
     .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
     .optional(),
@@ -76,8 +72,7 @@ export default function OrgReservationConfigForm() {
     tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
   )
 
-  const addReservationConfig = useMutation(api.organization.reservation_config.mutation.create)
-  const updateReservationConfig = useMutation(api.organization.reservation_config.mutation.update)
+  const upsertReservationConfig = useMutation(api.organization.reservation_config.mutation.upsert)
 
   const {
     handleSubmit,
@@ -87,11 +82,11 @@ export default function OrgReservationConfigForm() {
     formState: { errors, isSubmitting, isDirty },
   } = useZodForm(orgReservationConfigFormSchema)
 
-  const reservationLimitDaysValue = watch('reservationLimitDays')
-  const availableCancelDaysValue = watch('availableCancelDays')
-  const reservationIntervalMinutesValue = watch('reservationIntervalMinutes')
-  const availableSheetValue = watch('availableSheet')
-  const todayFirstLaterMinutesValue = watch('todayFirstLaterMinutes')
+  const reservationLimitDaysValue = watch('reservation_limit_days')
+  const availableCancelDaysValue = watch('available_cancel_days')
+  const reservationIntervalMinutesValue = watch('reservation_interval_minutes')
+  const availableSheetValue = watch('available_sheet')
+  const todayFirstLaterMinutesValue = watch('today_first_later_minutes')
 
   // スケジュール設定が変更されたらフォームをリセット
   useEffect(() => {
@@ -133,14 +128,13 @@ export default function OrgReservationConfigForm() {
 
       // 少し遅延させてから値を設定
       setTimeout(() => {
-        setValue('tenantId', tenantId!)
-        setValue('orgId', orgId!)
-        setValue('reservationConfigId', reservationConfig._id)
-        setValue('reservationLimitDays', limitDays)
-        setValue('availableCancelDays', cancelDays)
-        setValue('reservationIntervalMinutes', intervalMinutes)
-        setValue('availableSheet', availableSheet)
-        setValue('todayFirstLaterMinutes', todayFirstLaterMinutes)
+        setValue('tenant_id', tenantId!)
+        setValue('org_id', orgId!)
+        setValue('reservation_limit_days', limitDays)
+        setValue('available_cancel_days', cancelDays)
+        setValue('reservation_interval_minutes', intervalMinutes)
+        setValue('available_sheet', availableSheet)
+        setValue('today_first_later_minutes', todayFirstLaterMinutes)
       }, 0)
     } else {
       // 初期値設定
@@ -148,17 +142,16 @@ export default function OrgReservationConfigForm() {
 
       // 少し遅延させてから値を設定
       setTimeout(() => {
-        setValue('tenantId', tenantId!)
-        setValue('orgId', orgId!)
-        setValue('reservationConfigId', undefined)
-        setValue('reservationLimitDays', defaultReservationConfig.reservation_limit_days)
-        setValue('availableCancelDays', defaultReservationConfig.available_cancel_days)
+        setValue('tenant_id', tenantId!)
+        setValue('org_id', orgId!)
+        setValue('reservation_limit_days', defaultReservationConfig.reservation_limit_days)
+        setValue('available_cancel_days', defaultReservationConfig.available_cancel_days)
         setValue(
-          'reservationIntervalMinutes',
+          'reservation_interval_minutes',
           defaultReservationConfig.reservation_interval_minutes
         )
-        setValue('availableSheet', defaultReservationConfig.available_sheet)
-        setValue('todayFirstLaterMinutes', defaultReservationConfig.today_first_later_minutes)
+        setValue('available_sheet', defaultReservationConfig.available_sheet)
+        setValue('today_first_later_minutes', defaultReservationConfig.today_first_later_minutes)
       }, 0)
     }
   }, [reservationConfig, reset, setValue, orgId, tenantId])
@@ -171,53 +164,40 @@ export default function OrgReservationConfigForm() {
       try {
         // 送信データの整形
         const limitDays = Number(
-          data.reservationLimitDays || defaultReservationConfig.reservation_limit_days
+          data.reservation_limit_days || defaultReservationConfig.reservation_limit_days
         )
         const cancelDays = Number(
-          data.availableCancelDays || defaultReservationConfig.available_cancel_days
+          data.available_cancel_days || defaultReservationConfig.available_cancel_days
         )
         const intervalMinutes = Number(
-          data.reservationIntervalMinutes || defaultReservationConfig.reservation_interval_minutes
+          data.reservation_interval_minutes || defaultReservationConfig.reservation_interval_minutes
         ) as ReservationIntervalMinutes
         const availableSheet = Number(
-          data.availableSheet || defaultReservationConfig.available_sheet
+          data.available_sheet || defaultReservationConfig.available_sheet
         )
         const todayFirstLaterMinutes = Number(
-          data.todayFirstLaterMinutes || defaultReservationConfig.today_first_later_minutes
+          data.today_first_later_minutes || defaultReservationConfig.today_first_later_minutes
         )
-        if (reservationConfig?._id) {
-          // 既存のデータを更新する場合
-          await updateReservationConfig({
-            reservation_config_id: reservationConfig._id,
-            available_cancel_days: cancelDays,
-            reservation_interval_minutes: intervalMinutes,
-            reservation_limit_days: limitDays,
-            available_sheet: availableSheet,
-            today_first_later_minutes: todayFirstLaterMinutes,
-          })
-        } else {
-          // 新規作成の場合
-          await addReservationConfig({
-            tenant_id: tenantId!,
-            org_id: orgId!,
-            available_cancel_days: cancelDays,
-            reservation_interval_minutes: intervalMinutes,
-            reservation_limit_days: limitDays,
-            available_sheet: availableSheet,
-            today_first_later_minutes: todayFirstLaterMinutes,
-          })
-        }
+        await upsertReservationConfig({
+          tenant_id: tenantId!,
+          org_id: orgId!,
+          reservation_limit_days: limitDays,
+          available_cancel_days: cancelDays,
+          reservation_interval_minutes: intervalMinutes,
+          available_sheet: availableSheet,
+          today_first_later_minutes: todayFirstLaterMinutes,
+        })
 
         toast.success('スケジュール設定を保存しました')
 
         // フォームのdirty状態をリセット
         reset(
           {
-            reservationConfigId: reservationConfig?._id,
-            reservationLimitDays: data.reservationLimitDays,
-            availableCancelDays: data.availableCancelDays,
-            reservationIntervalMinutes: data.reservationIntervalMinutes,
-            availableSheet: data.availableSheet,
+            reservation_limit_days: data.reservation_limit_days,
+            available_cancel_days: data.available_cancel_days,
+            reservation_interval_minutes: data.reservation_interval_minutes,
+            available_sheet: data.available_sheet,
+            today_first_later_minutes: data.today_first_later_minutes,
           },
           { keepDirty: false }
         )
@@ -225,15 +205,7 @@ export default function OrgReservationConfigForm() {
         showErrorToast(error)
       }
     },
-    [
-      addReservationConfig,
-      updateReservationConfig,
-      orgId,
-      tenantId,
-      reservationConfig,
-      reset,
-      showErrorToast,
-    ]
+    [upsertReservationConfig, orgId, tenantId, reservationConfig, reset, showErrorToast]
   )
 
   if (reservationConfig === undefined) {
@@ -266,14 +238,14 @@ export default function OrgReservationConfigForm() {
               <Select
                 value={reservationLimitDaysValue || defaultReservationConfig.reservation_limit_days}
                 onValueChange={(value) =>
-                  setValue('reservationLimitDays', value, { shouldDirty: true })
+                  setValue('reservation_limit_days', value, { shouldDirty: true })
                 }
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="予約受付最大日数を選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SALON_RESERVATION_LIMIT_DAYS.map((value) => (
+                  {RESERVATION_LIMIT_DAYS.map((value) => (
                     <SelectItem key={value} value={value}>
                       {value}日
                     </SelectItem>
@@ -283,22 +255,24 @@ export default function OrgReservationConfigForm() {
               <p className="text-xs text-muted-foreground">
                 何日先まで予約を受付可能にするかの設定
               </p>
-              {errors.reservationLimitDays && (
-                <p className="text-xs text-red-500 mt-1">{errors.reservationLimitDays.message}</p>
+              {errors.reservation_limit_days && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.reservation_limit_days.message}
+                </p>
               )}
             </div>
             <div className="w-full md:w-1/2">
               <Select
                 value={availableCancelDaysValue || defaultReservationConfig.available_cancel_days}
                 onValueChange={(value) =>
-                  setValue('availableCancelDays', value, { shouldDirty: true })
+                  setValue('available_cancel_days', value, { shouldDirty: true })
                 }
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="キャンセル可能日数を選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SALON_RESERVATION_CANCEL_LIMIT_DAYS.map((value) => (
+                  {RESERVATION_CANCEL_LIMIT_DAYS.map((value) => (
                     <SelectItem key={value} value={value}>
                       {value}日
                     </SelectItem>
@@ -308,8 +282,10 @@ export default function OrgReservationConfigForm() {
               <p className="text-xs text-muted-foreground">
                 予約日の何日前までキャンセル可能かの設定
               </p>
-              {errors.availableCancelDays && (
-                <p className="text-xs text-red-500 mt-1">{errors.availableCancelDays.message}</p>
+              {errors.available_cancel_days && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.available_cancel_days.message}
+                </p>
               )}
             </div>
           </div>
@@ -323,7 +299,7 @@ export default function OrgReservationConfigForm() {
                 }
                 onValueChange={(value) => {
                   const validValue = value || defaultReservationConfig.reservation_interval_minutes
-                  setValue('reservationIntervalMinutes', validValue, { shouldDirty: true })
+                  setValue('reservation_interval_minutes', validValue, { shouldDirty: true })
                 }}
               >
                 <SelectTrigger className="w-full">
@@ -338,9 +314,9 @@ export default function OrgReservationConfigForm() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">予約枠を生成する間隔を設定</p>
-              {errors.reservationIntervalMinutes && (
-                <p className="text-xs text-red-500 mt-1">
-                  {errors.reservationIntervalMinutes.message}
+              {errors.reservation_interval_minutes && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.reservation_interval_minutes.message}
                 </p>
               )}
             </div>
@@ -351,7 +327,7 @@ export default function OrgReservationConfigForm() {
                 onValueChange={(value) => {
                   // 空の値の場合はデフォルト値の'30'を設定
                   const validValue = value || defaultReservationConfig.available_sheet
-                  setValue('availableSheet', validValue, { shouldDirty: true })
+                  setValue('available_sheet', validValue, { shouldDirty: true })
                 }}
               >
                 <SelectTrigger className="w-full">
@@ -366,8 +342,8 @@ export default function OrgReservationConfigForm() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">同一時間帯に予約可能な席数を設定</p>
-              {errors.availableSheet && (
-                <p className="text-xs text-red-500 mt-1">{errors.availableSheet.message}</p>
+              {errors.available_sheet && (
+                <p className="text-xs text-destructive mt-1">{errors.available_sheet.message}</p>
               )}
             </div>
           </div>
@@ -379,7 +355,7 @@ export default function OrgReservationConfigForm() {
                 }
                 onValueChange={(value) => {
                   const validValue = value || defaultReservationConfig.today_first_later_minutes
-                  setValue('todayFirstLaterMinutes', validValue, { shouldDirty: true })
+                  setValue('today_first_later_minutes', validValue, { shouldDirty: true })
                 }}
               >
                 <SelectTrigger className="w-full">
@@ -396,8 +372,10 @@ export default function OrgReservationConfigForm() {
               <p className="text-xs text-muted-foreground">
                 当日予約でかつ現在空き枠がある場合に最短で何分後から予約を受け付けるかを設定
               </p>
-              {errors.todayFirstLaterMinutes && (
-                <p className="text-xs text-red-500 mt-1">{errors.todayFirstLaterMinutes.message}</p>
+              {errors.today_first_later_minutes && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.today_first_later_minutes.message}
+                </p>
               )}
             </div>
           </div>
@@ -433,7 +411,7 @@ export default function OrgReservationConfigForm() {
                 <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
                   <li>
                     今日を含めて
-                    <span className="font-semibold"> {watch('reservationLimitDays')} 日先</span>
+                    <span className="font-semibold"> {watch('reservation_limit_days')} 日先</span>
                     まで予約を許可します。
                   </li>
                   <li>
@@ -471,7 +449,7 @@ export default function OrgReservationConfigForm() {
               <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
                 <li>
                   予約日の{' '}
-                  <span className="font-semibold">{watch('availableCancelDays')} 日前</span>{' '}
+                  <span className="font-semibold">{watch('available_cancel_days')} 日前</span>{' '}
                   までキャンセルを許可します。
                 </li>
                 <li>
@@ -513,7 +491,7 @@ export default function OrgReservationConfigForm() {
                 <li>
                   生成される予約枠の間隔は施術時間との時間か予約間隔のどちらか大きい方になります。
                   現在、予約間隔は
-                  <span className="font-semibold"> {watch('reservationIntervalMinutes')} 分</span>
+                  <span className="font-semibold"> {watch('reservation_interval_minutes')} 分</span>
                   に設定されています。
                 </li>
                 <li>
@@ -574,7 +552,7 @@ export default function OrgReservationConfigForm() {
 
               <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
                 <li>
-                  現在、同一時間帯に<strong>{watch('availableSheet')} 席</strong>
+                  現在、同一時間帯に<strong>{watch('available_sheet')} 席</strong>
                   まで予約を受け付ける設定です。
                 </li>
                 <li>
@@ -582,11 +560,6 @@ export default function OrgReservationConfigForm() {
                   に設定した場合、08:00〜09:00 の枠では最大<strong>5 件</strong>
                   まで同時予約できます。すでに同一時間帯に席が全て埋まっておりスタッフに空きがあっても08:00〜09:00
                   は表示されなくなり選択できなくなります。
-                </li>
-                <li>
-                  パーマやカラーの<strong>放置時間</strong>
-                  でスタッフの待機が発生し席に空きが出れば、その時間帯に
-                  新しい予約枠が自動で開放されます。
                 </li>
               </ul>
 
@@ -613,14 +586,14 @@ export default function OrgReservationConfigForm() {
 
             <p>
               「最短の予約開始時間」は、当日予約の際に現在時刻から何分後以降の予約を受け付けるかを設定するものです。
-              例えば <strong>{watch('todayFirstLaterMinutes')} 分</strong>{' '}
+              例えば <strong>{watch('today_first_later_minutes')} 分</strong>{' '}
               に設定されている場合、現在時刻からその時間が経過した以降の予約枠のみ表示されます。
               急な来店による対応負荷を避けるために活用できます。
             </p>
             <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 当日予約を受け付ける際に当日予約でかつ現在空き枠がある場合に
-                <strong>{watch('todayFirstLaterMinutes')} 分</strong>
+                <strong>{watch('today_first_later_minutes')} 分</strong>
                 後から予約を受け付ける設定です。
                 <br />
                 <span className="text-muted-foreground">

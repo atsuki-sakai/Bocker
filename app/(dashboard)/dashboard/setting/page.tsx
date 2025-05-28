@@ -7,6 +7,7 @@ import OrgApiConfigForm from './_components/OrgApiConfigForm'
 import OrgReservationConfigForm from './_components/OrgReservationConfigForm'
 import OrgExceptionScheduleForm from './_components/OrgExceptionScheduleForm'
 import OrgStripeConnectStatus from './_components/OrgStripeConnectStatus'
+import OrgWeekHourSchedule from './_components/OrgWeekHourSchedule'
 
 export default function SettingPage() {
   const [currentTab, setCurrentTab] = useState('basic')
@@ -34,7 +35,7 @@ export default function SettingPage() {
         <OrgReservationConfigForm />
       </TabsContent>
       <TabsContent value="week-schedule">
-        <OrgExceptionScheduleForm />
+        <OrgWeekHourSchedule />
       </TabsContent>
       <TabsContent value="exception-schedule">
         <OrgExceptionScheduleForm />

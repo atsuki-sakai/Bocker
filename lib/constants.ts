@@ -11,7 +11,7 @@ export const ALLOWED_DOMAINS = ['localhost', 'bocker.jp'];
 /**
  * サロンの営業時間（24時間表記）を格納する配列。
  */
-export const SALON_SCHEDULE_HOURS = [
+export const SCHEDULE_HOURS = [
   '00:00',
   '01:00',
   '02:00',
@@ -40,7 +40,7 @@ export const SALON_SCHEDULE_HOURS = [
 /**
  * 予約キャンセル可能期限（日数）選択肢。
  */
-export const SALON_RESERVATION_CANCEL_LIMIT_DAYS = [
+export const RESERVATION_CANCEL_LIMIT_DAYS = [
   '1',
   '2',
   '3',
@@ -75,7 +75,7 @@ export const SALON_RESERVATION_CANCEL_LIMIT_DAYS = [
 /**
  * 予約可能期限（日数）選択肢。
  */
-export const SALON_RESERVATION_LIMIT_DAYS = [
+export const RESERVATION_LIMIT_DAYS = [
   '30',
   '60',
   '90',

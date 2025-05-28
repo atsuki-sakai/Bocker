@@ -60,6 +60,46 @@ export const update = mutation({
         },
       });
     }
-    return await updateRecord(ctx, existing._id, args)
+    return await updateRecord(ctx, existing._id, {
+      reservation_limit_days: args.reservation_limit_days,
+      available_cancel_days: args.available_cancel_days,
+      reservation_interval_minutes: args.reservation_interval_minutes,
+      available_sheet: args.available_sheet,
+      today_first_later_minutes: args.today_first_later_minutes,
+    })
   },
+})
+
+
+export const upsert = mutation({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    reservation_limit_days: v.number(), // 予約可能日数
+    available_cancel_days: v.number(), // 予約キャンセル可能日数
+    reservation_interval_minutes: reservationIntervalMinutesType, // 予約時間間隔(分)
+    available_sheet: v.number(), // 予約可能席数
+    today_first_later_minutes: v.number(), // 本日の場合、何分後から予約可能か？
+  },
+  handler: async (ctx, args) => {
+    validateNumberLength(args.reservation_limit_days, 'reservation_limit_days');
+    validateNumberLength(args.available_cancel_days, 'available_cancel_days');
+    validateNumberLength(args.reservation_interval_minutes, 'reservation_interval_minutes');
+    validateNumberLength(args.available_sheet, 'available_sheet');
+    validateNumberLength(args.today_first_later_minutes, 'today_first_later_minutes');
+
+    const existing = await ctx.db.query('reservation_config').withIndex('by_tenant_org_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)).first();
+  
+    if (existing) {
+      return await updateRecord(ctx, existing._id, {
+        reservation_limit_days: args.reservation_limit_days,
+        available_cancel_days: args.available_cancel_days,
+        reservation_interval_minutes: args.reservation_interval_minutes,
+        available_sheet: args.available_sheet,
+        today_first_later_minutes: args.today_first_later_minutes,
+      })
+    }else{
+      return await createRecord(ctx, 'reservation_config', args)
+    }
+  }
 })

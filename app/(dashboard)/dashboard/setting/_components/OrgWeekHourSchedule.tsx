@@ -124,7 +124,7 @@ export interface WeekScheduleData {
 
 const defaultScheduleHour = { startHour: '08:00', endHour: '19:00' }
 
-export default function WeekHourSchedule() {
+export default function OrgWeekHourSchedule() {
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const [isSaving, setIsSaving] = useState(false)
   const [scheduleTab, setScheduleTab] = useState('common')

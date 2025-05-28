@@ -135,7 +135,7 @@ const ApiSettingsCard = () => {
         <div className="space-y-4">
           <div className="p-1">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              <div className="flex items-center w-full">
+              <div className="flex items-center w-full relative">
                 <ZodTextField
                   label="LINE アクセストークン"
                   icon={<Key className="h-4 w-4 text-primary" />}
@@ -143,9 +143,10 @@ const ApiSettingsCard = () => {
                   register={register}
                   name="line_access_token"
                   className="w-full pr-10"
+                  type={showFields.line_access_token ? 'text' : 'password'}
                 />
                 <Button
-                  className=""
+                  className="absolute right-0 bottom-0"
                   variant="ghost"
                   size="icon"
                   onClick={(e) => handleShowFields(e, 'line_access_token')}
@@ -158,7 +159,7 @@ const ApiSettingsCard = () => {
                 </Button>
               </div>
 
-              <div className="flex items-center w-full">
+              <div className="flex items-center w-full relative">
                 <ZodTextField
                   label="LINE チャンネルシークレット"
                   icon={<Key className="h-4 w-4 text-primary" />}
@@ -166,9 +167,10 @@ const ApiSettingsCard = () => {
                   register={register}
                   name="line_channel_secret"
                   className="w-full pr-10"
+                  type={showFields.line_channel_secret ? 'text' : 'password'}
                 />
                 <Button
-                  className=""
+                  className="absolute right-0 bottom-0"
                   variant="ghost"
                   size="icon"
                   onClick={(e) => handleShowFields(e, 'line_channel_secret')}
@@ -181,17 +183,18 @@ const ApiSettingsCard = () => {
                 </Button>
               </div>
 
-              <div className="flex items-center w-full">
+              <div className="flex items-center w-full relative">
                 <ZodTextField
                   label="LIFF ID"
                   icon={<Key className="h-4 w-4 text-primary" />}
                   errors={errors}
                   register={register}
                   name="liff_id"
+                  type={showFields.liff_id ? 'text' : 'password'}
                   className="w-full pr-10"
                 />
                 <Button
-                  className=""
+                  className="absolute right-0 bottom-0"
                   variant="ghost"
                   size="icon"
                   onClick={(e) => handleShowFields(e, 'liff_id')}
@@ -204,17 +207,18 @@ const ApiSettingsCard = () => {
                 </Button>
               </div>
 
-              <div className="flex items-center w-full">
+              <div className="flex items-center w-full relative">
                 <ZodTextField
                   label="LINE チャンネルID"
                   icon={<Key className="h-4 w-4 text-primary" />}
                   errors={errors}
                   register={register}
                   name="line_channel_id"
+                  type={showFields.line_channel_id ? 'text' : 'password'}
                   className="w-full pr-10"
                 />
                 <Button
-                  className=""
+                  className="absolute right-0 bottom-0"
                   variant="ghost"
                   size="icon"
                   onClick={(e) => handleShowFields(e, 'line_channel_id')}
@@ -228,10 +232,7 @@ const ApiSettingsCard = () => {
               </div>
 
               <div className="hidden">
-                <p className="text-sm text-muted-foreground mb-2 bg-yellow-50 border border-yellow-400 rounded-md p-1 text-yellow-600 w-fit">
-                  近日実装予定
-                </p>
-                <div className="flex items-center w-full">
+                <div className="flex items-center w-full relative">
                   <ZodTextField
                     label="LINE Destination ID"
                     icon={<Key className="h-4 w-4 text-primary" />}
@@ -241,7 +242,7 @@ const ApiSettingsCard = () => {
                     className="w-full pr-10"
                   />
                   <Button
-                    className=""
+                    className="absolute right-0 bottom-0"
                     variant="ghost"
                     size="icon"
                     onClick={(e) => handleShowFields(e, 'destination_id')}

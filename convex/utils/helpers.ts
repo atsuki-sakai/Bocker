@@ -101,6 +101,8 @@ export async function updateRecord<T extends keyof DataModel>(
       },
     });
   }
+
+
   await ctx.db.patch(id, {
     ...patch,
     updated_at: getCurrentUnixTime(),

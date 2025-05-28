@@ -18,9 +18,9 @@ import { ZodTextField } from '@/components/common'
 import { Loader2 } from 'lucide-react'
 import { Mail, Phone, MapPin, Save, Upload, Building } from 'lucide-react'
 
-const orgConfigFormSchema = z.object({
-  orgName: z.string().max(120, 'サロン名は120文字以内で入力してください'), // サロン名
-  email: z
+const orgAndConfigFormSchema = z.object({
+  org_name: z.string().max(120, 'サロン名は120文字以内で入力してください'), // サロン名
+  org_email: z
     .string()
     .optional()
     .refine(
@@ -33,14 +33,14 @@ const orgConfigFormSchema = z.object({
     .refine((val) => val === undefined || val === '' || /^\d{8,11}$/.test(val), {
       message: '電話番号は8-11桁の数字で入力してください',
     }),
-  postalCode: z
+  postal_code: z
     .string()
     .optional()
     .refine((val) => val === undefined || val === '' || /^\d{3}-?\d{4}$/.test(val), {
       message: '郵便番号は7桁の数字（ハイフンあり/なし）で入力してください',
     }),
   address: z.string().max(200, '住所は200文字以内で入力してください').optional(), // 住所（入力された場合は最低1文字必要）
-  reservationRules: z.string().max(2000, '予約ルールは2000文字以内で入力してください').optional(), // 予約ルール（入力された場合は最大500文字）
+  reservation_rules: z.string().max(2000, '予約ルールは2000文字以内で入力してください').optional(), // 予約ルール（入力された場合は最大500文字）
   description: z.string().max(2000, '説明は2000文字以内で入力してください').optional(), // 説明（入力された場合は最大500文字）
 })
 
@@ -49,15 +49,16 @@ export default function OrgConfigForm() {
   const { showErrorToast } = useErrorHandler()
   const [currentFile, setCurrentFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const orgConfig = useQuery(
-    api.organization.config.query.findByTenantAndOrg,
+
+  const orgAndConfig = useQuery(
+    api.organization.query.getOrgAndConfig,
     tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
   )
 
   const updateWithThumbnail = useAction(api.storage.action.uploadWithThumbnail)
   const killWithThumbnail = useAction(api.storage.action.killWithThumbnail)
   const updateImages = useMutation(api.organization.config.mutation.updateImages)
-  const upsert = useMutation(api.organization.config.mutation.upsert)
+  const upsertOrgAndConfig = useMutation(api.organization.mutation.upsertOrgAndConfig)
 
   const {
     register,
@@ -66,9 +67,9 @@ export default function OrgConfigForm() {
     setValue,
     watch,
     formState: { errors, isSubmitting, isDirty },
-  } = useZodForm(orgConfigFormSchema)
+  } = useZodForm(orgAndConfigFormSchema)
 
-  const postalCode = watch('postalCode')
+  const postalCode = watch('postal_code')
 
   // 郵便番号から住所を取得する関数（useCallbackでメモ化）
   const fetchAddress = useCallback(
@@ -127,9 +128,9 @@ export default function OrgConfigForm() {
             ],
           })
         }
-        if (orgConfig?.images) {
+        if (orgAndConfig?.config?.images) {
           await killWithThumbnail({
-            imgUrl: orgConfig.images[0].original_url || '',
+            imgUrl: orgAndConfig.config.images[0].original_url || '',
           })
         }
 
@@ -143,7 +144,7 @@ export default function OrgConfigForm() {
     },
     [
       currentFile,
-      orgConfig,
+      orgAndConfig,
       updateImages,
       orgId,
       showErrorToast,
@@ -155,18 +156,20 @@ export default function OrgConfigForm() {
 
   // フォーム送信処理（useCallbackでメモ化）
   const onSubmit = useCallback(
-    async (data: z.infer<typeof orgConfigFormSchema>) => {
+    async (data: z.infer<typeof orgAndConfigFormSchema>) => {
       try {
+        console.log('data', data)
         if (!tenantId || !orgId) return
-        await upsert({
+        await upsertOrgAndConfig({
           tenant_id: tenantId,
           org_id: orgId,
-          org_name: data.orgName ?? '',
-          org_email: data.email,
+          org_name: data.org_name ?? '',
+          org_email: data.org_email ?? '',
+          is_active: orgAndConfig?.organization?.is_active ?? true,
           phone: data.phone,
-          postal_code: data.postalCode,
+          postal_code: data.postal_code,
           address: data.address,
-          reservation_rules: data.reservationRules,
+          reservation_rules: data.reservation_rules,
           description: data.description,
         })
 
@@ -175,16 +178,24 @@ export default function OrgConfigForm() {
         showErrorToast(error)
       }
     },
-    [upsert, tenantId, orgId, showErrorToast]
+    [upsertOrgAndConfig, tenantId, orgId, showErrorToast]
   )
-  // salonConfigが変更されたらフォームをリセット
+  // orgConfigが変更されたらフォームをリセット
   useEffect(() => {
-    if (orgConfig) {
-      reset(orgConfig)
+    if (orgAndConfig) {
+      reset({
+        org_name: orgAndConfig.organization.org_name,
+        org_email: orgAndConfig.organization.org_email,
+        phone: orgAndConfig.config?.phone,
+        postal_code: orgAndConfig.config?.postal_code,
+        address: orgAndConfig.config?.address,
+        reservation_rules: orgAndConfig.config?.reservation_rules,
+        description: orgAndConfig.config?.description,
+      })
     }
-  }, [orgConfig, reset])
+  }, [orgAndConfig, reset])
 
-  if (orgConfig === undefined) {
+  if (orgAndConfig === undefined) {
     return <Loading />
   }
   if (!isLoaded) {
@@ -208,7 +219,7 @@ export default function OrgConfigForm() {
         <div className="pt-4">
           <div className="flex flex-col gap-3 space-y-2">
             <ZodTextField
-              name="salonName"
+              name="org_name"
               register={register}
               label="サロン名"
               placeholder="例: ブライダルサロン"
@@ -217,7 +228,7 @@ export default function OrgConfigForm() {
             />
             <div>
               <ZodTextField
-                name="email"
+                name="org_email"
                 register={register}
                 label="メールアドレス"
                 placeholder="例: salon@example.com"
@@ -237,7 +248,7 @@ export default function OrgConfigForm() {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="w-full md:w-1/3">
                 <ZodTextField
-                  name="postalCode"
+                  name="postal_code"
                   register={register}
                   label="郵便番号"
                   placeholder="例: 273-5521"
@@ -265,8 +276,8 @@ export default function OrgConfigForm() {
             <h4 className="text-2xl font-bold">店舗画像</h4>
             <ImageDrop
               initialImageUrls={
-                orgConfig && orgConfig.images
-                  ? orgConfig.images.map((image) => image.original_url || '')
+                orgAndConfig?.config?.images
+                  ? orgAndConfig.config.images.map((image) => image.original_url || '')
                   : []
               }
               multiple={false}
@@ -321,7 +332,7 @@ export default function OrgConfigForm() {
             />
 
             <Textarea
-              {...register('reservationRules')}
+              {...register('reservation_rules')}
               placeholder="予約時のルールやご注意点を入力してください"
               rows={12}
             />

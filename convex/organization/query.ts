@@ -1,10 +1,11 @@
+import { get } from './week_schedule/query'
 import { query } from "@/convex/_generated/server";
 import { checkAuth } from "@/convex/utils/auth";
-import { validateRequired } from "@/convex/utils/validations";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from "@/lib/errors/constants";
 import { validateStringLength } from "@/convex/utils/validations";
+import { imageType } from "@/convex/types";
 
 export const findByOrgId = query({
   args: {
@@ -65,3 +66,39 @@ export const getConnectAccountDetails = query({
   },
 });
 
+
+
+export const getOrgAndConfig = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization')
+  },
+  handler: async (ctx, args) => {
+    const organization = await ctx.db.get(args.org_id);
+    if(!organization){
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'organization.query.getOrgAndConfig',
+        message: '組織が見つかりません',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: {
+          ...args,
+        },
+      });
+    }
+    const config = await ctx.db.query('config')
+      .withIndex('by_tenant_org_archive', q => 
+        q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('is_archive', false)
+      )
+      .first();
+
+    return {
+      organization,
+      config,
+    };
+  },
+});
