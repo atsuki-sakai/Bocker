@@ -11,6 +11,7 @@ import { fileToBase64 } from '@/lib/utils'
 import { useZodForm } from '@/hooks/useZodForm'
 import { Separator } from '@/components/ui/separator'
 import { z } from 'zod'
+import { fetchAddressByPostalCode } from '@/lib/helpers'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { ZodTextField } from '@/components/common'
@@ -70,24 +71,11 @@ export default function OrgConfigForm() {
   const postalCode = watch('postalCode')
 
   // 郵便番号から住所を取得する関数（useCallbackでメモ化）
-  const fetchAddressByPostalCode = useCallback(
-    async (code: string) => {
-      const digits = code.replace(/-/g, '')
-      if (!digits || digits.length !== 7) return
-
+  const fetchAddress = useCallback(
+    async (postalCode: string) => {
       try {
-        const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${digits}`)
-        const data = await response.json()
-
-        if (data.results && data.results.length > 0) {
-          const result = data.results[0]
-          const fullAddress = `${result.address1}${result.address2}${result.address3}`
-          setValue('address', fullAddress, { shouldDirty: true })
-        } else if (data.message) {
-          toast.error(data.message)
-        } else {
-          toast.error('住所が見つかりませんでした')
-        }
+        const address = await fetchAddressByPostalCode(postalCode)
+        setValue('address', address, { shouldDirty: true })
       } catch (error) {
         showErrorToast(error)
       }
@@ -97,10 +85,10 @@ export default function OrgConfigForm() {
 
   // 郵便番号が7桁になったら自動的に住所を検索する
   useEffect(() => {
-    if (postalCode) {
-      fetchAddressByPostalCode(postalCode)
+    if (postalCode && postalCode.length === 7) {
+      fetchAddress(postalCode)
     }
-  }, [postalCode, fetchAddressByPostalCode])
+  }, [postalCode, fetchAddress])
 
   // 画像アップロード処理（useCallbackでメモ化）
   const handleSaveImg = useCallback(

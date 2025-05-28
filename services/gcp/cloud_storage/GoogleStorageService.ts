@@ -282,12 +282,6 @@ class GoogleStorageService {
         },
       })
 
-      try {
-        await blob.makePublic()
-      } catch (publicError) {
-        console.warn('GCSファイルの公開に失敗しました:', publicError);
-      }
-
       const publicUrl = `${STORAGE_URL}/${this.bucketName}/${encodeURI(gcsFilePath)}`
 
       return {

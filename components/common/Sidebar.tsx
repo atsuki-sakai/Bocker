@@ -68,6 +68,10 @@ export default function Sidebar({ children }: SidebarProps) {
     return <Loading />
   }
 
+  // アクティブとトライアル中のみ有効と判断する
+  const isSubscriptionActive =
+    subscription?.status === 'active' || subscription?.status === 'trialing'
+
   return (
     <>
       <div>
@@ -124,7 +128,7 @@ export default function Sidebar({ children }: SidebarProps) {
                 <Separator className="my-2 w-2/3 mx-auto" />
 
                 <nav className="flex flex-1 flex-col">
-                  {subscription?.status !== 'active' && (
+                  {!isSubscriptionActive && (
                     <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
                       <p className="text-xs text-muted-foreground">
                         <span className="inline-block font-bold mb-2">
@@ -197,7 +201,7 @@ export default function Sidebar({ children }: SidebarProps) {
             </div>
             <Separator className="my-2" />
             <nav className="flex flex-1 flex-col">
-              {subscription?.status !== 'active' && (
+              {!isSubscriptionActive && (
                 <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
                   <p className="text-xs text-muted-foreground">
                     <span className="inline-block font-bold mb-2">
