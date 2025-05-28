@@ -62,7 +62,7 @@ export class StripeConnectRepository {
       // Convexにステータスを保存
       await this.convex.mutation(api.organization.mutation.updateConnectStatus, {
         stripe_account_id,
-        status,
+        stripe_connect_status: status,
       });
 
       return {
@@ -137,7 +137,7 @@ export class StripeConnectRepository {
         business_type: 'individual',
         business_profile: {
           mcc: '7230', // Beauty salon & barber shops
-          url: `${BASE_URL}`,
+          url: process.env.NEXT_PUBLIC_DEPLOY_URL,
         },
         settings: {
           payouts: {
@@ -161,18 +161,10 @@ export class StripeConnectRepository {
         stripe_account_id: account.id,
       });
 
-      // アカウント連携用のリンクを生成
-      console.log('StripeConnectRepository.createConnectAccountLink: Using DEPLOY_URL ->', process.env.NEXT_PUBLIC_DEPLOY_URL);
-      console.log('StripeConnectRepository.createConnectAccountLink: accountLinks.create params ->', {
-        account: account.id,
-        refresh_url: `${BASE_URL}/dashboard/setting?refresh=true`,
-        return_url: `${BASE_URL}/dashboard/setting?success=true`,
-        type: 'account_onboarding',
-      });
       const accountLink = await this.stripe.accountLinks.create({
         account: account.id,
-        refresh_url: `${BASE_URL}/dashboard/setting?refresh=true`,
-        return_url: `${BASE_URL}/dashboard/setting?success=true`,
+        refresh_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL}/dashboard/setting?refresh=true`,
+        return_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL}/dashboard/setting?success=true`,
         type: 'account_onboarding',
       });
 

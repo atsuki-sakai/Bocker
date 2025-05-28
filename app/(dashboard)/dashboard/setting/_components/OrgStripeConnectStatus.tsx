@@ -118,7 +118,6 @@ export default function StripeConnectStatus() {
   // Stripe Connectアカウントを作成する処理
   const handleConnectStripe = async () => {
     try {
-      console.log('handleConnectStripe')
       const { data } = await fetchApi<{ account: string; accountLink: string }>(
         '/api/stripe/connect',
         { tenant_id: tenantId, org_id: orgId }

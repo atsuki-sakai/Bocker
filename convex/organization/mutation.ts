@@ -99,7 +99,6 @@ export const createConnectAccount = mutation({
       }
 
       return await updateRecord(ctx, organization._id, {
-        ...args,
         stripe_account_id: args.stripe_account_id,
         stripe_connect_status: 'pending',
         stripe_connect_created_at: new Date().getTime() * 1000,
@@ -111,11 +110,11 @@ export const createConnectAccount = mutation({
 
 export const updateConnectStatus = mutation({
   args: {
-    status: stripeConnectStatusType,
+    stripe_connect_status: stripeConnectStatusType,
     stripe_account_id: v.string(),
   },
   handler: async (ctx, args) => {
-    validateRequired(args.status, 'status');
+    validateRequired(args.stripe_connect_status, 'stripe_connect_status');
     validateRequired(args.stripe_account_id, 'stripe_account_id');
 
     const organization = await ctx.db.query('organization')

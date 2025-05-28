@@ -93,7 +93,7 @@ export async function handleAccountUpdated(
     await deps.retry(() =>
       fetchMutation(api.organization.mutation.updateConnectStatus, {
         stripe_account_id: stripeAccountId,
-        status: updateStatus,
+        stripe_connect_status: updateStatus,
       })
     );
     metrics.incrementApiCall('convex')
@@ -160,7 +160,7 @@ export async function handleAccountExternalAccountDeleted(
     await deps.retry(() => 
       fetchMutation(api.organization.mutation.updateConnectStatus, {
         stripe_account_id: stripeAccountId,
-        status: "external_account_removed",
+        stripe_connect_status: "external_account_removed",
       })
     );
     metrics.incrementApiCall('convex');
@@ -249,7 +249,7 @@ export async function handleCapabilityUpdated(
     await deps.retry(() => 
       fetchMutation(api.organization.mutation.updateConnectStatus, {
         stripe_account_id: stripeAccountId,
-        status: accountStatus,
+        stripe_connect_status: accountStatus,
       })
     );
     metrics.incrementApiCall('convex');
