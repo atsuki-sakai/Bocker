@@ -75,8 +75,8 @@ export default function PlanCard({
 }: PlanCardProps) {
   // 現在のプランかどうかのチェックをメモ化
   const isCurrentPlan = useMemo(() => {
-    return currentPlanName === planName
-  }, [currentPlanName, planName])
+    return currentPlanName === planName && currentBillingPeriod === billingPeriod
+  }, [currentPlanName, planName, currentBillingPeriod, billingPeriod])
 
   // 支払い期間が変更されているかのチェックをメモ化
   const isBillingPeriodChange = useMemo(() => {
