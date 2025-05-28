@@ -368,7 +368,7 @@ export function encryptStringCryptoJS(text: string): string {
       message: 'Cookie暗号化キーが設定されていません。'
     })
   }
-  let secret = process.env.NEXT_PUBLIC_APP_COOKIE_SECRET!
+  const secret = process.env.NEXT_PUBLIC_APP_COOKIE_SECRET!
   try {
     const ciphertext = CryptoJS.AES.encrypt(text, secret).toString()
     return ciphertext
@@ -388,7 +388,7 @@ export function decryptStringCryptoJS(encryptedText: string): string | null {
     return encryptedText // シークレットがない場合はそのまま返す
   }
   try {
-    let secret = process.env.NEXT_PUBLIC_APP_COOKIE_SECRET!
+    const secret = process.env.NEXT_PUBLIC_APP_COOKIE_SECRET!
     const bytes = CryptoJS.AES.decrypt(encryptedText, secret)
     const decryptedData = bytes.toString(CryptoJS.enc.Utf8)
     // 復号結果が空文字になる場合がある（パスワード違いなど）

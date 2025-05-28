@@ -198,7 +198,6 @@ import {
   Book as BookIcon,
   Calendar as CalendarIcon,
   Users as UsersIcon,
-  CreditCard as CreditCardIcon,
   Timer as TimerIcon,
   Check as CheckIcon,
   File as FileIcon,
