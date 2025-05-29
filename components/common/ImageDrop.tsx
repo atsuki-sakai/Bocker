@@ -21,7 +21,7 @@ import {
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-
+import type { ImageType } from '@/convex/types'
 /**
  * 変更点概要
  * ------------------------------------------------------------
@@ -44,7 +44,7 @@ interface ImageDropProps {
   className?: string // クラス名
   placeholderText?: string // プレースホルダーテキスト
   accept?: string // 受け入れるファイルタイプ
-  initialImageUrls?: string[] // 初期画像URLs
+  initialImages?: ImageType[] // 初期画像URLs
   multiple?: boolean // 複数選択可能かどうか
   maxFiles?: number // 最大選択可能枚数
 }
@@ -61,7 +61,7 @@ export default function ImageDrop({
   className = '',
   placeholderText = '画像をドラッグするか、クリックして選択',
   accept = 'image/*',
-  initialImageUrls,
+  initialImages,
   multiple = false,
   maxFiles = 4,
 }: ImageDropProps) {
@@ -70,11 +70,11 @@ export default function ImageDrop({
    * ------------------------------------------------------------------*/
   const [isDragging, setIsDragging] = useState(false)
   const [previewImageUrls, setPreviewImageUrls] = useState<string[]>(() => {
-    if (multiple) return initialImageUrls || []
-    return initialImageUrls ? [initialImageUrls[0]] : []
+    if (multiple) return initialImages?.map((img) => img.original_url || '').filter(Boolean) || []
+    return initialImages?.[0]?.original_url ? [initialImages[0].original_url] : []
   })
   const [selectedFiles, setSelectedFiles] = useState<(File | null)[]>(() =>
-    multiple && initialImageUrls ? Array(initialImageUrls.length).fill(null) : []
+    multiple && initialImages ? Array(initialImages.length).fill(null) : []
   )
   // ユーザーが操作したら true
   const [isDirty, setIsDirty] = useState(false)
@@ -120,12 +120,13 @@ export default function ImageDrop({
     if (isDirty) return // 一度でも操作したら reset しない
 
     if (multiple) {
-      setPreviewImageUrls(initialImageUrls || [])
-      setSelectedFiles(initialImageUrls ? Array(initialImageUrls.length).fill(null) : [])
+      setPreviewImageUrls(initialImages?.map((img) => img.original_url || '').filter(Boolean) || [])
+      setSelectedFiles(initialImages ? Array(initialImages.length).fill(null) : [])
     } else {
-      setPreviewImageUrls(initialImageUrls ? [initialImageUrls[0]] : [])
+      setPreviewImageUrls(initialImages?.[0]?.original_url ? [initialImages[0].original_url] : [])
+      setSelectedFiles([])
     }
-  }, [initialImageUrls, multiple, isDirty])
+  }, [initialImages, multiple, isDirty])
 
   /* ------------------------------------------------------------------
    * ファイル選択/ドロップ時の共通処理
@@ -222,38 +223,6 @@ export default function ImageDrop({
     }
   }
 
-  // /* ------------------------------------------------------------------
-  //  * プレビュー削除
-  //  * ------------------------------------------------------------------*/
-  // const clearPreview = (index?: number) => {
-  //   let files = [...selectedFiles]
-  //   let urls = [...previewImageUrls]
-
-  //   if (multiple && typeof index === 'number') {
-  //     const removedUrl = urls.splice(index, 1)[0]
-  //     files.splice(index, 1)
-  //     if (removedUrl?.startsWith('blob:')) {
-  //       URL.revokeObjectURL(removedUrl)
-  //     }
-  //   } else if (!multiple) {
-  //     if (urls[0]?.startsWith('blob:')) {
-  //       URL.revokeObjectURL(urls[0])
-  //     }
-  //     files = []
-  //     urls = initialImageUrls ? [initialImageUrls[0]] : []
-  //   }
-
-  //   setSelectedFiles(files)
-  //   setPreviewImageUrls(urls)
-  //   setIsDirty(true)
-
-  //   if (fileInputRef.current) {
-  //     fileInputRef.current.value = ''
-  //   }
-  //   onFileSelect?.(filterNonNull(files))
-  //   onPreviewChange?.(urls)
-  // }
-
   /* ------------------------------------------------------------------
    * 並べ替え用サムネイル
    * ------------------------------------------------------------------*/
@@ -319,6 +288,35 @@ export default function ImageDrop({
 
   const displayImageUrl = !multiple && previewImageUrls.length > 0 ? previewImageUrls[0] : null
 
+  // const clearPreview = (index?: number) => {
+  //   let files = [...selectedFiles]
+  //   let urls = [...previewImageUrls]
+
+  //   if (multiple && typeof index === 'number') {
+  //     const removedUrl = urls.splice(index, 1)[0]
+  //     files.splice(index, 1)
+  //     if (removedUrl?.startsWith('blob:')) {
+  //       URL.revokeObjectURL(removedUrl)
+  //     }
+  //   } else if (!multiple) {
+  //     if (urls[0]?.startsWith('blob:')) {
+  //       URL.revokeObjectURL(urls[0])
+  //     }
+  //     files = []
+  //     urls = initialImages?.[0]?.original_url ? [initialImages[0].original_url] : []
+  //   }
+
+  //   setSelectedFiles(files)
+  //   setPreviewImageUrls(urls)
+  //   setIsDirty(true)
+
+  //   if (fileInputRef.current) {
+  //     fileInputRef.current.value = ''
+  //   }
+  //   onFileSelect?.(filterNonNull(files))
+  //   onPreviewChange?.(urls)
+  // }
+
   return (
     <div
       className={`relative border border-dashed rounded-lg p-4 bg-background text-center overflow-hidden border-border h-fit hover:bg-muted ${className}`}
@@ -375,16 +373,26 @@ export default function ImageDrop({
             height={previewHeight}
           />
 
-          {/* ★ここに差し替えボタンを追加 */}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-2"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            画像を変更
-          </Button>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              画像を変更
+            </Button>
+            {/* <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="mt-2 ml-2"
+              onClick={() => clearPreview()}
+            >
+              画像を削除
+            </Button> */}
+          </div>
           {selectedFiles[0] && (
             <div className="flex items-center justify-start w-full gap-4 text-xs text-muted-foreground mt-2 text-start">
               <p>
@@ -401,7 +409,6 @@ export default function ImageDrop({
         renderDragAreaPlaceholder()
       )}
 
-      {/* hidden input */}
       <Input
         type="file"
         multiple={multiple}
@@ -415,6 +422,37 @@ export default function ImageDrop({
             : 'hidden'
         }
       />
+
+      {multiple && previewImageUrls.length > 0 && (
+        <div className="mt-2 text-center">
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              previewImageUrls.forEach((url) => {
+                if (url.startsWith('blob:')) {
+                  URL.revokeObjectURL(url)
+                }
+              })
+              setPreviewImageUrls(
+                initialImages?.map((img) => img.original_url || '').filter(Boolean) || []
+              )
+              setSelectedFiles(initialImages ? Array(initialImages.length).fill(null) : [])
+              setIsDirty(true)
+              if (fileInputRef.current) {
+                fileInputRef.current.value = ''
+              }
+              onFileSelect?.([])
+              onPreviewChange?.(
+                initialImages?.map((img) => img.original_url || '').filter(Boolean) || []
+              )
+            }}
+          >
+            すべての画像をクリア
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

@@ -448,12 +448,12 @@ class GoogleStorageService {
       if (isHotSpot) {
         // ホットスポット回避: UUIDベースのファイル名 + 圧縮後の拡張子 (this.extension)
         finalOriginalName = `${uuidv4()}${this.extension}`;
-        finalThumbnailName = `${uuidv4()}_thumb${this.extension}`;
+        finalThumbnailName = `${uuidv4()}${this.extension}`;
       } else {
         // 通常: タイムスタンプ + サニタイズされたベース名 + 圧縮後の拡張子 (this.extension)
         const timestamp = new Date().toISOString().replace(/[-:Z]/g, '').split('.')[0];
         finalOriginalName = `${timestamp}_${baseName}${this.extension}`;
-        finalThumbnailName = `${timestamp}_${baseName}_thumb${this.extension}`;
+        finalThumbnailName = `${timestamp}_${baseName}${this.extension}`;
       }
 
       // GCSへのアップロード (Promise.allで並列処理)
@@ -480,7 +480,7 @@ class GoogleStorageService {
       uploadedThumbnailFile = thumbnailResult;
 
       return {
-        imgUrl: uploadedOriginalFile.publicUrl,
+        originalUrl: uploadedOriginalFile.publicUrl,
         thumbnailUrl: uploadedThumbnailFile.publicUrl,
       };
     } catch (error) {

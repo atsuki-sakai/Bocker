@@ -99,8 +99,8 @@ export const uploadWithThumbnail = action({
     quality: imageQualityType,
   },
   returns: v.object({
-    imgUrl: v.string(),
-    thumbnailUrl: v.string(),
+    uploadedOriginalUrl: v.string(),
+    uploadedThumbnailUrl: v.string(),
   }),
   handler: async (ctx, args) => {
     checkAuth(ctx)
@@ -139,7 +139,10 @@ export const uploadWithThumbnail = action({
         args.orgId,
         args.quality,
       );
-      return result;
+      return {
+        uploadedOriginalUrl: result.originalUrl,
+        uploadedThumbnailUrl: result.thumbnailUrl,
+      };
     } catch (error) {
       throw error;
     }
@@ -178,12 +181,12 @@ export const kill = action({
 export const killWithThumbnail = action({
   args: {
     // 削除するファイルのURL（オリジナル画像のURL）
-    imgUrl: v.string(),
+    originalUrl: v.string(),
   },
   handler: async (ctx, args) => {
     
     checkAuth(ctx)
-    if (!args.imgUrl) {
+    if (!args.originalUrl) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
@@ -197,7 +200,7 @@ export const killWithThumbnail = action({
       });
     }
     try {
-      await gcsService.deleteImageWithThumbnail(args.imgUrl)
+      await gcsService.deleteImageWithThumbnail(args.originalUrl)
       return { success: true }
     } catch (error) {
       throw error
@@ -228,8 +231,8 @@ export const bulkUploadWithThumbnails = action({
     // アップロードに成功した画像の情報
     successfulUploads: v.array(
       v.object({
-        imgUrl: v.string(),
-        thumbnailUrl: v.string(),
+        uploadedOriginalUrl: v.string(),
+        uploadedThumbnailUrl: v.string(),
       })
     ),
     // アップロードに失敗した画像の情報
@@ -299,7 +302,7 @@ export const bulkUploadWithThumbnails = action({
     }
 
     // アップロード結果を格納する配列
-    const successfulUploads: { imgUrl: string; thumbnailUrl: string }[] = [];
+    const successfulUploads: { uploadedOriginalUrl: string; uploadedThumbnailUrl: string }[] = [];
     const failedUploadsInfo: { fileName: string; error: string }[] = [];
 
     // 同時実行数を抑えるため逐次処理
@@ -312,7 +315,10 @@ export const bulkUploadWithThumbnails = action({
           image.orgId,
           image.quality,
         );
-        successfulUploads.push(uploaded);
+        successfulUploads.push({
+          uploadedOriginalUrl: uploaded.originalUrl,
+          uploadedThumbnailUrl: uploaded.thumbnailUrl,
+        });
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         failedUploadsInfo.push({ fileName: image.fileName, error: errorMessage });
@@ -325,9 +331,9 @@ export const bulkUploadWithThumbnails = action({
     if (failedUploadsInfo.length > 0) {
       for (const uploaded of successfulUploads) {
         try {
-          await gcsService.deleteImageWithThumbnail(uploaded.imgUrl);
+          await gcsService.deleteImageWithThumbnail(uploaded.uploadedOriginalUrl);
         } catch (deleteErr) {
-          console.error(`Rollback deletion failed for ${uploaded.imgUrl}:`, deleteErr);
+          console.error(`Rollback deletion failed for ${uploaded.uploadedOriginalUrl}:`, deleteErr);
         }
       }
 

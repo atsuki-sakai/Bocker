@@ -61,7 +61,7 @@ export const getByOrgAndDate = query({
     org_id: v.id('organization'),
     date: v.string(),
     type: ExceptionScheduleType,
-    pagination_opts: paginationOptsValidator
+    paginationOpts: paginationOptsValidator
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -77,6 +77,6 @@ export const getByOrgAndDate = query({
           .eq('type', args.type)
           .eq('is_archive', false)
       )
-      .paginate(args.pagination_opts);
+      .paginate(args.paginationOpts);
   },
 });

@@ -5,7 +5,7 @@ export type ImageDirectory = Infer<typeof imgDirectoryType>;
 export type ImageQuality = Infer<typeof imageQualityType>;
 
 export interface ProcessedImageResult {
-  imgUrl: string;
+  originalUrl: string;
   thumbnailUrl: string;
 }
 

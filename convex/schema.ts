@@ -625,8 +625,8 @@ const menu_exclusion_staff = defineTable({
   ...CommonFields,
 })
 .index(
-  'by_tenant_org_menu_staff_archive',
-  ['tenant_id', 'org_id', 'menu_id', 'staff_id', 'is_archive']
+  'by_tenant_org_staff_menu_archive',
+  ['tenant_id', 'org_id', 'staff_id', 'menu_id', 'is_archive']
 );
 
 /**
@@ -681,7 +681,7 @@ const coupon_config = defineTable({
   end_date_unix: v.optional(v.number()), // 終了日時
   max_use_count: v.optional(v.number()), // 最大利用回数
   number_of_use: v.optional(v.number()), // 利用回数
-  active_customer_type: v.optional(activeCustomerType), // 適用対象(初回/リピート/全て)
+  active_customer_type: activeCustomerType, // 適用対象(初回/リピート/全て)
   ...CommonFields,
 })
 .index('by_tenant_org_coupon_archive', ['tenant_id', 'org_id', 'coupon_id', 'is_archive'])
@@ -773,6 +773,19 @@ const point_config = defineTable({
 })
 .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']);
 
+
+const point_queue = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.id('organization'), // 店舗ID
+  reservation_id: v.id('reservation'), // 予約ID
+  customer_id: v.string(), // 顧客ID
+  points: v.optional(v.number()), // 付与予定のポイント数
+  scheduled_for_unix: v.optional(v.number()), // ポイント付与予定日時(Unix timestamp)
+  ...CommonFields,
+})
+.index('by_scheduled_for', ['scheduled_for_unix', 'is_archive'])
+.index('by_tenant_org_reservation_archive', ['tenant_id', 'org_id', 'reservation_id', 'is_archive']);
+
 /**
  * =========================
  * ポイント対象外メニュー
@@ -838,6 +851,7 @@ export default defineSchema({
   reservation,
   reservation_detail,
   point_config,
+  point_queue,
   point_exclusion_menu,
   webhook_events,
 });

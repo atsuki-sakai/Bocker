@@ -191,7 +191,7 @@ export const updateWeekSchedule = mutation({
 
         if (existingSchedule) {
           // 既存のレコードを更新
-          await ctx.db.patch(existingSchedule._id, {
+          await updateRecord(ctx, existingSchedule._id, {
             is_open,
             start_hour,
             end_hour,

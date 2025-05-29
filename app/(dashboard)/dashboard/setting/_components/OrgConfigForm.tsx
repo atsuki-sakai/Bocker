@@ -112,8 +112,8 @@ export default function OrgConfigForm() {
           orgId: orgId,
         })
 
-        uploadedOriginalUrl = result.imgUrl
-        uploadedThumbnailUrl = result.thumbnailUrl
+        uploadedOriginalUrl = result.uploadedOriginalUrl
+        uploadedThumbnailUrl = result.uploadedThumbnailUrl
 
         // サロン設定の画像パスを更新
         if (uploadedOriginalUrl && uploadedThumbnailUrl && tenantId && orgId) {
@@ -128,9 +128,9 @@ export default function OrgConfigForm() {
             ],
           })
         }
-        if (orgAndConfig?.config?.images) {
+        if (orgAndConfig?.config?.images[0]?.original_url) {
           await killWithThumbnail({
-            imgUrl: orgAndConfig.config.images[0].original_url || '',
+            originalUrl: orgAndConfig.config.images[0].original_url || '',
           })
         }
 
@@ -275,9 +275,14 @@ export default function OrgConfigForm() {
           <div className="w-full md:w-1/2 flex flex-col gap-4">
             <h4 className="text-2xl font-bold">店舗画像</h4>
             <ImageDrop
-              initialImageUrls={
-                orgAndConfig?.config?.images
-                  ? orgAndConfig.config.images.map((image) => image.original_url || '')
+              initialImages={
+                orgAndConfig?.config?.images[0]?.original_url
+                  ? [
+                      {
+                        original_url: orgAndConfig.config.images[0].original_url || '',
+                        thumbnail_url: orgAndConfig.config.images[0].thumbnail_url || '',
+                      },
+                    ]
                   : []
               }
               multiple={false}

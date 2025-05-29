@@ -54,7 +54,7 @@ export const list = query({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    pagination_opts: paginationOptsValidator,
+    paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
     target_status: v.optional(reservationStatusType),
   },
@@ -70,7 +70,7 @@ export const list = query({
       )
       .filter((q) => q.eq(q.field('is_archive'), false))
 
-    return reservationQuery.order(args.sort || 'desc').paginate(args.pagination_opts)
+    return reservationQuery.order(args.sort || 'desc').paginate(args.paginationOpts)
   },
 })
 
@@ -88,7 +88,7 @@ export const listByCustomerId = query({
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
     customer_id: v.string(),
-    pagination_opts: paginationOptsValidator,
+    paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc')))
   },
   handler: async (ctx, args) => {
@@ -106,7 +106,7 @@ export const listByCustomerId = query({
       .filter((q) => q.eq(q.field('is_archive'), false))
 
       return reservationQuery.order(args.sort || 'asc')
-      .paginate(args.pagination_opts);
+      .paginate(args.paginationOpts);
   },
 });
 
@@ -122,7 +122,7 @@ export const listByStaffId = query({
     tenant_id: v.id('tenant'),
     org_id: v.id('organization')  ,
     staff_id: v.id('staff'),
-    pagination_opts: paginationOptsValidator,
+    paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
@@ -138,7 +138,7 @@ export const listByStaffId = query({
       )
       .filter((q) => q.eq(q.field('is_archive'), false))
 
-    return reservationQuery.order(args.sort || 'desc').paginate(args.pagination_opts)
+    return reservationQuery.order(args.sort || 'desc').paginate(args.paginationOpts)
   },
 })
 
@@ -155,7 +155,7 @@ export const listByStatus = query({
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
     status: reservationStatusType,
-    pagination_opts: paginationOptsValidator,
+    paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
@@ -170,7 +170,7 @@ export const listByStatus = query({
           .eq('status', args.status)
       )
       .order(args.sort || 'desc')
-      .paginate(args.pagination_opts)
+      .paginate(args.paginationOpts)
   },
 })
 
@@ -187,7 +187,7 @@ export const listByDate = query({
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
     date: v.string(),
-    pagination_opts: paginationOptsValidator,
+    paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc')))
   },
   handler: async (ctx, args) => {
@@ -204,7 +204,7 @@ export const listByDate = query({
       )
       .filter((q) => q.eq(q.field('is_archive'), false))
       .order(args.sort || 'desc')
-      .paginate(args.pagination_opts)
+      .paginate(args.paginationOpts)
   },
 })
 
@@ -222,7 +222,7 @@ export const listByStaffAndDate = query({
     org_id: v.id('organization'),
     staff_id: v.id('staff'),
     date: v.string(),
-    pagination_opts: paginationOptsValidator,
+    paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc')))
   },
   handler: async (ctx, args) => {
@@ -240,7 +240,7 @@ export const listByStaffAndDate = query({
       )
       .filter((q) => q.eq(q.field('is_archive'), false))
       .order(args.sort || 'desc')
-      .paginate(args.pagination_opts)
+      .paginate(args.paginationOpts)
   },
 })
 
@@ -258,7 +258,7 @@ export const findByCustomerAndDate = query({
     org_id: v.id('organization'),
     customer_id: v.string(),
     date: v.string(),
-    pagination_opts: paginationOptsValidator,
+    paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
     includeArchive: v.optional(v.boolean()),
   },
@@ -278,7 +278,7 @@ export const findByCustomerAndDate = query({
           .eq('is_archive', false)
       )
       .order(args.sort || 'desc')
-      .paginate(args.pagination_opts)
+      .paginate(args.paginationOpts)
   },
 })
 

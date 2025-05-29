@@ -5,7 +5,21 @@ import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from "@/lib/errors/constants";
 import { validateStringLength } from "@/convex/utils/validations";
-import { imageType } from "@/convex/types";
+
+
+export const getActiveOrganization = query({
+  args: {
+    tenant_id: v.id('tenant'),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.query('organization').withIndex('by_tenant_active_archive', q => 
+      q.eq('tenant_id', args.tenant_id)
+      .eq('is_active', true)
+      .eq('is_archive', false)
+    )
+    .first();
+  },
+});
 
 export const findByOrgId = query({
   args: {

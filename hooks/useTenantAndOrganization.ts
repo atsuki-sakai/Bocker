@@ -7,6 +7,8 @@ import { useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { Id } from '@/convex/_generated/dataModel';
 import type { Role } from '@/convex/types';
+import { api } from '@/convex/_generated/api';
+import { useQuery } from 'convex/react';
 
 type UseTenantAndOrganization = {
   tenantId: Id<'tenant'> | null;
@@ -31,17 +33,16 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
     [isLoaded, user]
   );
 
-  const orgId = useMemo(
-    () => (isLoaded ? (user?.publicMetadata?.org_id as Id<'organization'> | null) : null),
-    [isLoaded, user]
-  );
-
   const role = useMemo(
     () => (isLoaded ? (user?.publicMetadata?.role as Role | null) : null),
     [isLoaded, user]
   );
 
-  const ready = isLoaded && !!tenantId && !!orgId && !!role;
+  const org = useQuery(api.organization.query.getActiveOrganization, tenantId ? {
+    tenant_id: tenantId,
+  } : 'skip');
+
+  const ready = isLoaded && !!tenantId && !!org?._id && !!role;
 
   useEffect(() => {
     // 未サインインならサインインページへリダイレクト
@@ -62,7 +63,7 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
 
   return {
     tenantId: tenantId,
-    orgId: orgId,
+    orgId: org?._id ?? null,
     userId: userId as string | null,
     role: role,
     isLoaded,

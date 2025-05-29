@@ -28,6 +28,9 @@ const statusNameMap: Record<string, string> = {
   incomplete: '登録未完了',
   restricted: '一部制限あり',
   active: '有効',
+  payouts_disabled: '振込停止中',
+  external_account_removed: '口座削除',
+  bank_account_missing: '口座未登録',
   deauthorized: '連携解除済み',
 }
 
@@ -36,23 +39,42 @@ const statusColorMap: Record<string, string> = {
   pending: 'border border-palette-2-foreground text-palette-2-foreground bg-palette-2',
   incomplete: 'border border-palette-3-foreground text-palette-3-foreground bg-palette-3',
   restricted: 'border border-palette-4-foreground text-palette-4-foreground bg-palette-4',
+  payouts_disabled: 'border border-palette-4-foreground text-palette-4-foreground bg-palette-4',
+  external_account_removed:
+    'border border-palette-3-foreground text-palette-3-foreground bg-palette-3',
+  bank_account_missing: 'border border-palette-2-foreground text-palette-2-foreground bg-palette-2',
   active: 'border border-palette-5-foreground text-palette-5-foreground bg-palette-5',
+  deauthorized: 'border border-palette-1-foreground text-palette-1-foreground bg-palette-1',
 }
 
 // ステータスの説明
 const statusDescriptionMap: Record<string, string> = {
   not_connected:
     'Stripeアカウントがまだ連携されていません。右上の「Stripeと連携する」ボタンからビジネス情報登録を開始してください。',
+
   pending:
-    '連携プロセスは開始されていますが、登録が完了していません。届いたメールか「設定を完了する」ボタンから残りの手続きを行ってください。',
+    'Stripeアカウントの設定フォームがまだ提出されていません。「Stripeで設定を続ける」から基本情報の入力・提出を完了してください。',
+
   incomplete:
-    'Stripeから追加書類または情報の提出を求められています。「設定を完了する」をクリックしてダッシュボードで不足項目を入力してください。',
+    'Stripeから追加書類または情報の提出が求められています。期限内に不足項目を提出してください。未対応の場合は決済・振込が制限される可能性があります。',
+
   restricted:
-    '決済は利用できますが、入金（振込）が制限されています。ダッシュボードで銀行口座の確認や追加情報を提出し、制限を解除してください。',
+    '過去に提出が必要とされた書類が未提出のため、一部機能（振込・入金など）が制限されています。Stripeダッシュボードで案内されている書類を提出してください。',
+
+  payouts_disabled:
+    'カード決済機能は有効ですが、売上の振込（入金）が一時的に停止されています。銀行口座の登録状況や追加提出書類の有無をご確認ください。',
+
+  external_account_removed:
+    '登録済みの銀行口座が削除されたため、振込ができません。Stripeダッシュボードで新しい銀行口座を登録してください。',
+
+  bank_account_missing:
+    '銀行口座情報が未登録です。売上金を受け取るために、Stripeダッシュボードから銀行口座を登録してください。',
+
   active:
-    'Stripeアカウント連携が完了し、決済と振込機能をすべて利用できます。ダッシュボードで取引状況や残高を確認できます。',
+    'Stripeアカウントの審査と全ての設定が完了し、決済・振込機能が有効になっています。ダッシュボードで売上・入金状況を確認できます。',
+
   deauthorized:
-    'Stripeとの連携が解除されています。売上を受け取るには「Stripeと連携する」ボタンから再接続を行ってください。',
+    'Stripeとの連携が解除されています。再度連携するには「Stripeと連携する」ボタンから設定をやり直してください。',
 }
 
 export default function StripeConnectStatus() {

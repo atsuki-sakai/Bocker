@@ -86,7 +86,7 @@ export async function updateRecord<T extends keyof DataModel>(
   ctx: MutationCtx,
   id: Id<T>,
   patch: Partial<Doc<T>>
-): Promise<void> {
+): Promise<Id<T>> {
   const record = await ctx.db.get(id);
   if (!record) {
     throw new ConvexError({
@@ -107,6 +107,7 @@ export async function updateRecord<T extends keyof DataModel>(
     ...patch,
     updated_at: getCurrentUnixTime(),
   });
+  return id;
 }
 
 export async function archiveRecord<T extends keyof DataModel>(ctx: MutationCtx, id: Id<T>) {

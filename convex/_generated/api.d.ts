@@ -14,8 +14,20 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as constants from "../constants.js";
+import type * as coupon_config_mutation from "../coupon/config/mutation.js";
+import type * as coupon_config_query from "../coupon/config/query.js";
+import type * as coupon_exclusion_menu_mutation from "../coupon/exclusion_menu/mutation.js";
+import type * as coupon_exclusion_menu_query from "../coupon/exclusion_menu/query.js";
+import type * as coupon_mutation from "../coupon/mutation.js";
+import type * as coupon_query from "../coupon/query.js";
 import type * as crons from "../crons.js";
+import type * as menu_menu_exclusion_staff_mutation from "../menu/menu_exclusion_staff/mutation.js";
+import type * as menu_menu_exclusion_staff_query from "../menu/menu_exclusion_staff/query.js";
+import type * as menu_mutation from "../menu/mutation.js";
+import type * as menu_query from "../menu/query.js";
 import type * as migrations from "../migrations.js";
+import type * as option_mutation from "../option/mutation.js";
+import type * as option_query from "../option/query.js";
 import type * as organization_api_config_mutation from "../organization/api_config/mutation.js";
 import type * as organization_api_config_query from "../organization/api_config/query.js";
 import type * as organization_config_mutation from "../organization/config/mutation.js";
@@ -28,6 +40,12 @@ import type * as organization_reservation_config_mutation from "../organization/
 import type * as organization_reservation_config_query from "../organization/reservation_config/query.js";
 import type * as organization_week_schedule_mutation from "../organization/week_schedule/mutation.js";
 import type * as organization_week_schedule_query from "../organization/week_schedule/query.js";
+import type * as point_exclusion_menu_mutation from "../point/exclusion_menu/mutation.js";
+import type * as point_exclusion_menu_query from "../point/exclusion_menu/query.js";
+import type * as point_mutation from "../point/mutation.js";
+import type * as point_query from "../point/query.js";
+import type * as point_queue_mutation from "../point/queue/mutation.js";
+import type * as point_queue_query from "../point/queue/query.js";
 import type * as reservation_action from "../reservation/action.js";
 import type * as reservation_mutation from "../reservation/mutation.js";
 import type * as reservation_query from "../reservation/query.js";
@@ -56,8 +74,20 @@ import type * as webhook_events_mutation from "../webhook_events/mutation.js";
  */
 declare const fullApi: ApiFromModules<{
   constants: typeof constants;
+  "coupon/config/mutation": typeof coupon_config_mutation;
+  "coupon/config/query": typeof coupon_config_query;
+  "coupon/exclusion_menu/mutation": typeof coupon_exclusion_menu_mutation;
+  "coupon/exclusion_menu/query": typeof coupon_exclusion_menu_query;
+  "coupon/mutation": typeof coupon_mutation;
+  "coupon/query": typeof coupon_query;
   crons: typeof crons;
+  "menu/menu_exclusion_staff/mutation": typeof menu_menu_exclusion_staff_mutation;
+  "menu/menu_exclusion_staff/query": typeof menu_menu_exclusion_staff_query;
+  "menu/mutation": typeof menu_mutation;
+  "menu/query": typeof menu_query;
   migrations: typeof migrations;
+  "option/mutation": typeof option_mutation;
+  "option/query": typeof option_query;
   "organization/api_config/mutation": typeof organization_api_config_mutation;
   "organization/api_config/query": typeof organization_api_config_query;
   "organization/config/mutation": typeof organization_config_mutation;
@@ -70,6 +100,12 @@ declare const fullApi: ApiFromModules<{
   "organization/reservation_config/query": typeof organization_reservation_config_query;
   "organization/week_schedule/mutation": typeof organization_week_schedule_mutation;
   "organization/week_schedule/query": typeof organization_week_schedule_query;
+  "point/exclusion_menu/mutation": typeof point_exclusion_menu_mutation;
+  "point/exclusion_menu/query": typeof point_exclusion_menu_query;
+  "point/mutation": typeof point_mutation;
+  "point/query": typeof point_query;
+  "point/queue/mutation": typeof point_queue_mutation;
+  "point/queue/query": typeof point_queue_query;
   "reservation/action": typeof reservation_action;
   "reservation/mutation": typeof reservation_mutation;
   "reservation/query": typeof reservation_query;
