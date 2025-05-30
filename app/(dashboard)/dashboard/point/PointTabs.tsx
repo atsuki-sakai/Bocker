@@ -77,6 +77,7 @@ export default function PointTabs() {
   const [activeTab, setActiveTab] = useState('basic')
   const [exclusionMenuChanged, setExclusionMenuChanged] = useState(false)
   const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([])
+  const [isSaving, setIsSaving] = useState(false)
   const { showErrorToast } = useErrorHandler()
 
   const pointConfig = useQuery(
@@ -124,9 +125,11 @@ export default function PointTabs() {
   }, [pointConfig, initialExclusionIds, reset])
 
   const onSubmit = async (data: z.infer<typeof pointConfigSchema>) => {
+    setIsSaving(true)
     try {
       if (!tenantId || !orgId) {
         toast.error('テナントまたは店舗が見つかりません')
+        setIsSaving(false)
         return
       }
       const pointConfigId = await upsertPointConfig({
@@ -147,11 +150,14 @@ export default function PointTabs() {
       })
       toast.success('設定を保存しました')
       setExclusionMenuChanged(false)
+      setTimeout(() => setIsSaving(false), 300)
     } catch (error) {
       showErrorToast(error)
+      setIsSaving(false)
     }
   }
 
+  if (isSaving) return <Loading />
   if (!tenantId || !orgId) {
     return <Loading />
   }

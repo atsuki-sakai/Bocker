@@ -5,7 +5,7 @@ import { Info } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { useZodForm } from '@/hooks/useZodForm'
 import { api } from '@/convex/_generated/api'
-import { useAction, useMutation } from 'convex/react'
+import { useMutation } from 'convex/react'
 import { TagInput, SingleImageDrop } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { ZodTextField } from '@/components/common'
@@ -34,6 +34,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { fileToBase64 } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MAX_NUM, MAX_TEXT_LENGTH } from '@/convex/constants'
+import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 
 // 施術時間：0〜360分の5分刻みをキャッシュ
 // 0分を許容する事で物販にも対応する
@@ -168,8 +169,6 @@ function OptionAddForm() {
   const [isUploading, setIsUploading] = useState(false)
 
   const addOption = useMutation(api.option.mutation.create)
-  const uploadWithThumbnail = useAction(api.storage.action.uploadWithThumbnail)
-  const deleteWithThumbnail = useAction(api.storage.action.killWithThumbnail)
 
   const {
     register,
@@ -184,8 +183,7 @@ function OptionAddForm() {
 
   const onSubmit = async (data: z.infer<typeof optionSchema>) => {
     // 画像がある場合はアップロード処理を行う
-    let uploadedOriginalUrl: string | undefined = undefined
-    let uploadedThumbnailUrl: string | undefined = undefined
+    let newUploadedImageUrls: { original_url: string; thumbnail_url: string }[] = []
 
     try {
       if (!tenantId || !orgId) {
@@ -197,15 +195,34 @@ function OptionAddForm() {
         try {
           setIsUploading(true)
           const base64Data = await fileToBase64(currentFile!)
-          const result = await uploadWithThumbnail({
-            base64Data,
-            fileName: currentFile!.name,
-            directory: 'option',
-            orgId: orgId,
-            quality: 'low',
+          const response = await fetch('/api/storage', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              base64Data,
+              fileName: currentFile!.name,
+              directory: 'option',
+              orgId: orgId,
+              quality: 'low',
+            }),
           })
-          uploadedOriginalUrl = result.uploadedOriginalUrl
-          uploadedThumbnailUrl = result.uploadedThumbnailUrl
+
+          const responseData: ProcessedImageResult = await response.json()
+          if (responseData) {
+            newUploadedImageUrls = [
+              {
+                original_url: responseData.originalUrl,
+                thumbnail_url: responseData.thumbnailUrl,
+              },
+            ]
+          } else {
+            console.log(responseData)
+            // レスポンスの形式が期待と異なる場合
+            throw new Error('画像のアップロード形式が正しくありません')
+          }
+          setIsUploading(false)
         } catch (error) {
           showErrorToast(error)
           setIsUploading(false) // エラー時は uploading を解除
@@ -226,25 +243,21 @@ function OptionAddForm() {
         duration_min: Number(data.duration_min), // 時間(分)
         tags: data.tags, // タグ
         description: data.description, // 説明
-        images:
-          uploadedOriginalUrl && uploadedThumbnailUrl
-            ? [
-                {
-                  original_url: uploadedOriginalUrl,
-                  thumbnail_url: uploadedThumbnailUrl,
-                },
-              ]
-            : [],
+        images: newUploadedImageUrls.length > 0 ? newUploadedImageUrls : [],
         is_active: data.is_archive, // 有効/無効フラグ
       })
       toast.success('オプションメニューを登録しました')
       router.push('/dashboard/option')
     } catch (error) {
       // メニュー作成に失敗した場合、新しくアップロードした画像を削除
-      if (uploadedOriginalUrl && currentFile) {
+      if (newUploadedImageUrls.length > 0 && currentFile) {
         try {
-          await deleteWithThumbnail({
-            originalUrl: uploadedOriginalUrl,
+          await fetch('/api/storage', {
+            method: 'DELETE',
+            body: JSON.stringify({
+              originalUrl: newUploadedImageUrls[0].original_url,
+              withThumbnail: true,
+            }),
           })
         } catch (deleteErr) {
           console.error('Failed to delete new original image after update failure:', deleteErr)
@@ -252,10 +265,14 @@ function OptionAddForm() {
         }
       }
 
-      if (uploadedThumbnailUrl && currentFile) {
+      if (newUploadedImageUrls.length > 0 && currentFile) {
         try {
-          await deleteWithThumbnail({
-            originalUrl: uploadedThumbnailUrl,
+          await fetch('/api/storage', {
+            method: 'DELETE',
+            body: JSON.stringify({
+              originalUrl: newUploadedImageUrls[0].original_url,
+              withThumbnail: true,
+            }),
           })
         } catch (deleteErr) {
           console.error('Failed to delete new thumbnail image after update failure:', deleteErr)

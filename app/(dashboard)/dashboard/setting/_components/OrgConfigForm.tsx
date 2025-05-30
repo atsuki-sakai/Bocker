@@ -20,6 +20,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { ZodTextField } from '@/components/common'
 import { Loader2 } from 'lucide-react'
 import { Mail, Phone, MapPin, Save, Upload, Building } from 'lucide-react'
+import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 
 const orgAndConfigFormSchema = z.object({
   org_name: z.string().max(120, 'サロン名は120文字以内で入力してください'), // サロン名
@@ -59,8 +60,6 @@ export default function OrgConfigForm() {
     tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
   )
 
-  const updateWithThumbnail = useAction(api.storage.action.uploadWithThumbnail)
-  const killWithThumbnail = useAction(api.storage.action.killWithThumbnail)
   const updateImages = useMutation(api.organization.config.mutation.updateImages)
   const upsertOrgAndConfig = useMutation(api.organization.mutation.upsertOrgAndConfig)
 
@@ -101,9 +100,7 @@ export default function OrgConfigForm() {
       e.preventDefault()
       if (!currentFile || !orgId) return
 
-      console.log('currentFile', currentFile)
-      let uploadedOriginalUrl: string | null = null
-      let uploadedThumbnailUrl: string | null = null
+      let newUploadedImageUrls: { original_url: string; thumbnail_url: string }[] = []
       try {
         setIsUploading(true)
 
@@ -111,33 +108,45 @@ export default function OrgConfigForm() {
         const originalBase64 = await fileToBase64(currentFile)
 
         console.log('currentFile', currentFile)
-        const result = await updateWithThumbnail({
-          base64Data: originalBase64,
-          fileName: currentFile!.name,
-          directory: 'setting',
-          quality: 'high',
-          orgId: orgId,
+        const response = await fetch('/api/storage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            base64Data: originalBase64,
+            fileName: currentFile!.name,
+            directory: 'setting',
+            quality: 'high',
+            orgId: orgId,
+          }),
         })
 
-        uploadedOriginalUrl = result.uploadedOriginalUrl
-        uploadedThumbnailUrl = result.uploadedThumbnailUrl
+        const responseData: ProcessedImageResult = await response.json()
+        if (responseData) {
+          newUploadedImageUrls = [
+            {
+              original_url: responseData.originalUrl,
+              thumbnail_url: responseData.thumbnailUrl,
+            },
+          ]
+        }
 
         // サロン設定の画像パスを更新
-        if (uploadedOriginalUrl && uploadedThumbnailUrl && tenantId && orgId) {
+        if (newUploadedImageUrls.length > 0 && tenantId && orgId) {
           await updateImages({
             tenant_id: tenantId,
             org_id: orgId,
-            images: [
-              {
-                original_url: uploadedOriginalUrl,
-                thumbnail_url: uploadedThumbnailUrl,
-              },
-            ],
+            images: newUploadedImageUrls,
           })
         }
         if (orgAndConfig?.config?.images[0]?.original_url) {
-          await killWithThumbnail({
-            originalUrl: orgAndConfig.config.images[0].original_url || '',
+          await fetch('/api/storage', {
+            method: 'DELETE',
+            body: JSON.stringify({
+              originalUrl: orgAndConfig.config.images[0].original_url || '',
+              withThumbnail: true,
+            }),
           })
         }
 
@@ -150,17 +159,7 @@ export default function OrgConfigForm() {
         setIsUploading(false)
       }
     },
-    [
-      currentFile,
-      orgAndConfig,
-      updateImages,
-      orgId,
-      showErrorToast,
-      tenantId,
-      killWithThumbnail,
-      updateWithThumbnail,
-      router,
-    ]
+    [currentFile, orgAndConfig, updateImages, orgId, showErrorToast, tenantId, router]
   )
 
   // フォーム送信処理（useCallbackでメモ化）

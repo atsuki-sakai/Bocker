@@ -156,7 +156,7 @@ const schemaMenu = z
     },
     {
       message: 'セール価格は通常価格より低く設定してください',
-      path: ['salePrice'], // エラーメッセージをsalePriceフィールドに表示
+      path: ['sale_price'], // エラーメッセージをsalePriceフィールドに表示
     }
   )
 // エラーメッセージコンポーネント
@@ -388,11 +388,10 @@ export default function MenuAddForm() {
                   <PopoverContent
                     onOpenAutoFocus={(event) => event.preventDefault()}
                     onInteractOutside={() => setIsCategoryPopoverOpen(false)}
-                    className="w-[300px] p-0"
+                    className="w-[300px] p-0 relative"
                   >
                     <Command>
-                      <div className="flex items-center justify-between gap-2">
-                        <CommandInput className="w-full" placeholder="カテゴリを検索..." />
+                      <div className="absolute top-0 right-0 flex items-center justify-end gap-2 p-2 z-10">
                         <Button
                           variant="outline"
                           size="icon"
@@ -588,28 +587,13 @@ export default function MenuAddForm() {
         {org?.stripe_connect_status === 'active' ? (
           <ToggleGroup
             type="single"
-            className="w-full flex flex-wrap justify-start items-center gap-6"
+            className="w-full flex flex-wrap justify-start items-center gap-4"
             value={paymentMethod}
             onValueChange={(value) => handlePaymentMethod(value as MenuPaymentMethod)}
           >
-            <ToggleGroupItem
-              className="text-sm shadow-sm bg-muted hover:bg-muted-foreground hover:text-active-foreground p-4 data-[state=on]:bg-active data-[state=on]:text-active-foreground"
-              value="cash"
-            >
-              店舗決済のみ
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              className="text-sm shadow-sm bg-muted hover:bg-muted-foreground hover:text-active-foreground p-4 data-[state=on]:bg-active data-[state=on]:text-active-foreground"
-              value="credit_card"
-            >
-              オンライン決済のみ
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              className="text-sm shadow-sm bg-muted hover:bg-muted-foreground hover:text-active-foreground p-4 data-[state=on]:bg-active data-[state=on]:text-active-foreground"
-              value="all"
-            >
-              両方対応
-            </ToggleGroupItem>
+            <ToggleGroupItem value="cash">店舗決済のみ</ToggleGroupItem>
+            <ToggleGroupItem value="credit_card">オンライン決済のみ</ToggleGroupItem>
+            <ToggleGroupItem value="all">両方対応</ToggleGroupItem>
           </ToggleGroup>
         ) : (
           <div className="bg-warning border border-warning-foreground rounded-md p-4">

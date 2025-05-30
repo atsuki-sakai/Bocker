@@ -49,7 +49,6 @@ export default function OptionList() {
   )
 
   const killOption = useMutation(api.option.mutation.kill)
-  const deleteWithThumbnail = useAction(api.storage.action.killWithThumbnail)
 
   const showDeleteDialog = (optionId: Id<'option'>) => {
     setIsDialogOpen(true)
@@ -65,8 +64,12 @@ export default function OptionList() {
       if (option.images[0].original_url) {
         console.log('option.images[0].original_url', option.images[0].original_url)
         console.log('option.images[0].thumbnail_url', option.images[0].thumbnail_url)
-        await deleteWithThumbnail({
-          originalUrl: option.images[0].original_url as string,
+        await fetch('/api/storage', {
+          method: 'DELETE',
+          body: JSON.stringify({
+            originalUrl: option.images[0].original_url as string,
+            withThumbnail: true,
+          }),
         })
       }
       toast.success('オプションを削除しました')

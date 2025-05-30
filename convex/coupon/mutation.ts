@@ -200,6 +200,8 @@ export const createCouponRelatedTables = mutation({
       number_of_use: args.number_of_use, // 利用回数
       active_customer_type: args.active_customer_type, // 適用対象(初回/リピート/全て)
     });
+
+    return couponId;
   },
 });
 

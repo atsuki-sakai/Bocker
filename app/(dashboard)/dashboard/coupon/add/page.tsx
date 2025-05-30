@@ -125,7 +125,7 @@ const couponSchema = z.object({
     .max(99999, '99999以下の値を入力してください')
     .optional(),
   active_customer_type: z.enum(ACTIVE_CUSTOMER_TYPE_VALUES),
-  selected_menus: z.array(z.string()).optional(),
+  selected_menu_ids: z.array(z.string()).optional(),
 })
 
 // アニメーション定義
@@ -197,7 +197,7 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
         </CardContent>
         <CardFooter className="bg-muted pt-2 pb-2 flex justify-between">
           <div className="text-xs text-muted-foreground">
-            対象メニュー: {data.selected_menus?.length || 0}件
+            対象メニュー: {data.selected_menu_ids?.length || 0}件
           </div>
           <Badge
             variant={data.is_active ? 'default' : 'destructive'}
@@ -221,6 +221,9 @@ function CouponForm() {
 
   const { showErrorToast } = useErrorHandler()
   const createCouponRelatedTables = useMutation(api.coupon.mutation.createCouponRelatedTables)
+  const upsertCouponExclusionMenu = useMutation(
+    api.coupon.exclusion_menu.mutation.upsertExclusionMenu
+  )
 
   // フォーム管理
   const {
@@ -229,6 +232,7 @@ function CouponForm() {
     control,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useZodForm(couponSchema)
 
@@ -250,7 +254,7 @@ function CouponForm() {
       const endDateUnix = data.end_date.getTime()
 
       // FIXME: active_customer_typeは仮でallを設定　設定できるように修正
-      await createCouponRelatedTables({
+      const couponId = await createCouponRelatedTables({
         tenant_id: tenantId,
         org_id: orgId,
         coupon_uid: data.coupon_uid,
@@ -265,6 +269,17 @@ function CouponForm() {
         number_of_use: 0,
         active_customer_type: data.active_customer_type,
       })
+
+      if (couponId) {
+        await upsertCouponExclusionMenu({
+          tenant_id: tenantId,
+          org_id: orgId,
+          coupon_id: couponId,
+          selected_menu_ids: selectedMenuIds,
+        })
+      } else {
+        throw new Error('クーポンの適応外メニューの作成に失敗しました')
+      }
 
       toast.success('クーポンを作成しました')
       router.push(`/dashboard/coupon`)
@@ -301,7 +316,7 @@ function CouponForm() {
       end_date: oneMonthLater,
       max_use_count: 100,
       number_of_use: 0,
-      selected_menus: [],
+      selected_menu_ids: [],
       active_customer_type: 'all',
     })
   }, [reset])
@@ -642,7 +657,10 @@ function CouponForm() {
             <ExclusionMenu
               title="クーポンを利用させないメニュー"
               selectedMenuIds={selectedMenuIds}
-              setSelectedMenuIdsAction={setSelectedMenuIds}
+              setSelectedMenuIdsAction={(menuIds: Id<'menu'>[]) => {
+                setSelectedMenuIds(menuIds)
+                setValue('selected_menu_ids', menuIds, { shouldValidate: true, shouldDirty: true })
+              }}
             />
           </TabsContent>
         </Tabs>

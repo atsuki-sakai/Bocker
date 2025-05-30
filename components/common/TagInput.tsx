@@ -86,11 +86,10 @@ const TagInput: React.FC<TagInputProps> = ({ tags, setTagsAction, error, example
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addTag(e)}
           placeholder="タグを入力（カンマ区切りで複数入力可）"
-          className="flex-1 px-3 py-2 bg-input border border-ring rounded-md text-sm focus:outline-none focus:border-primary transition-colors"
+          className="flex-1 py-2 px-1 bg-input border border-ring rounded-md text-sm focus:outline-none focus:border-primary transition-colors"
           disabled={tags.length >= 5}
         />
         <Button
-          type="button"
           variant="default"
           onClick={(e) => addTag(e)}
           disabled={tags.length >= 5 || !input.trim()}

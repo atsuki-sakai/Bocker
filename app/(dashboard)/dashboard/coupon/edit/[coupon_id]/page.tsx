@@ -90,21 +90,21 @@ const couponSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: '割引率を入力してください',
-          path: ['percentageDiscountValue'],
+          path: ['percentage_discount_value'],
         })
       } else {
         if (data.percentage_discount_value <= 0) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: '1%以上の値を入力してください',
-            path: ['percentageDiscountValue'],
+            path: ['percentage_discount_value'],
           })
         }
         if (data.percentage_discount_value > 100) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: '割引率は100%以下で入力してください',
-            path: ['percentageDiscountValue'],
+            path: ['percentage_discount_value'],
           })
         }
       }
@@ -113,21 +113,21 @@ const couponSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: '割引額を入力してください',
-          path: ['fixedDiscountValue'],
+          path: ['fixed_discount_value'],
         })
       } else {
         if (data.fixed_discount_value <= 0) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: '1円以上の値を入力してください',
-            path: ['fixedDiscountValue'],
+            path: ['fixed_discount_value'],
           })
         }
         if (data.fixed_discount_value > 99999) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: '割引額は99999円以下で入力してください',
-            path: ['fixedDiscountValue'],
+            path: ['fixed_discount_value'],
           })
         }
       }
@@ -169,7 +169,13 @@ export default function Page({ params }: CouponEditPageProps) {
 }
 
 // クーポンプレビューコンポーネント
-function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
+function CouponPreview({
+  data,
+  selectedMenuIds,
+}: {
+  data: z.infer<typeof couponSchema>
+  selectedMenuIds: Id<'menu'>[]
+}) {
   const formatDate = (date: Date | undefined) => {
     if (!date) return '未設定'
     try {
@@ -236,7 +242,7 @@ function CouponPreview({ data }: { data: z.infer<typeof couponSchema> }) {
         </CardContent>
         <CardFooter className="bg-muted pt-2 pb-2 flex justify-between">
           <div className="text-xs text-muted-foreground">
-            クーポン適用外メニュー: {data.selected_menu_ids?.length || 0}件
+            クーポン適用外メニュー: {selectedMenuIds.length || 0}件
           </div>
           <Badge
             variant={data.is_active ? 'default' : 'destructive'}
@@ -258,7 +264,11 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
   // 状態管理
   const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([])
   const [initialSelectedMenuIds, setInitialSelectedMenuIds] = useState<Id<'menu'>[]>([])
+  const [isSaving, setIsSaving] = useState(false)
   // Convex
+  const upsertCouponExclusionMenu = useMutation(
+    api.coupon.exclusion_menu.mutation.upsertExclusionMenu
+  )
   const updateCouponRelatedTables = useMutation(api.coupon.mutation.updateCouponRelatedTables)
   const couponCompleteData = useQuery(
     api.coupon.query.getCouponRelatedTablesAndExclusionMenus,
@@ -279,6 +289,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     control,
     reset,
     watch,
+    setValue,
     formState: { isSubmitting, errors, isDirty },
   } = useZodForm(couponSchema, { shouldUnregister: false })
 
@@ -288,14 +299,11 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
 
   // フォーム送信ハンドラー
   const onSubmit = async (data: z.infer<typeof couponSchema>) => {
-    // 選択されたメニューIDsを追加
-    const submitData = {
-      ...data,
-    }
-
+    setIsSaving(true)
     try {
       if (!tenantId || !orgId) {
         toast.error('テナントまたは店舗が存在しません')
+        setIsSaving(false)
         return
       }
       if (!couponConfig) {
@@ -317,26 +325,33 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         tenant_id: tenantId,
         org_id: orgId,
         coupon_id: couponId,
-        coupon_uid: submitData.coupon_uid,
-        name: submitData.name,
-        discount_type: submitData.discount_type,
+        coupon_uid: data.coupon_uid,
+        name: data.name,
+        discount_type: data.discount_type,
         percentage_discount_value:
-          submitData.percentage_discount_value === null
-            ? undefined
-            : submitData.percentage_discount_value,
+          data.percentage_discount_value === null ? undefined : data.percentage_discount_value,
         fixed_discount_value:
-          submitData.fixed_discount_value === null ? undefined : submitData.fixed_discount_value,
-        is_active: submitData.is_active,
-        start_date_unix: submitData.start_date.getTime(),
-        end_date_unix: submitData.end_date.getTime(),
-        max_use_count: submitData.max_use_count,
-        number_of_use: submitData.number_of_use,
-        active_customer_type: submitData.active_customer_type,
+          data.fixed_discount_value === null ? undefined : data.fixed_discount_value,
+        is_active: data.is_active,
+        start_date_unix: data.start_date.getTime(),
+        end_date_unix: data.end_date.getTime(),
+        max_use_count: data.max_use_count,
+        number_of_use: data.number_of_use,
+        active_customer_type: data.active_customer_type,
+      })
+      await upsertCouponExclusionMenu({
+        tenant_id: tenantId,
+        org_id: orgId,
+        coupon_id: couponId,
+        selected_menu_ids: selectedMenuIds,
       })
       toast.success('クーポンを更新しました')
-      router.push(`/dashboard/coupon`)
+      setTimeout(() => {
+        router.push(`/dashboard/coupon`)
+      }, 300)
     } catch (e) {
       showErrorToast(e)
+      setIsSaving(false)
     }
   }
 
@@ -372,10 +387,12 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
   const menuIdsChanged =
     JSON.stringify(selectedMenuIds.sort()) !== JSON.stringify(initialSelectedMenuIds.sort())
 
+  if (isSaving) return <Loading />
   if (!tenantId || !orgId || coupon === undefined || couponConfig === undefined) {
     return <Loading />
   }
 
+  console.log('errors', errors)
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
@@ -688,14 +705,17 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
             <ExclusionMenu
               title="適用しないメニュー"
               selectedMenuIds={selectedMenuIds}
-              setSelectedMenuIdsAction={(menuIds: Id<'menu'>[]) => setSelectedMenuIds(menuIds)}
+              setSelectedMenuIdsAction={(menuIds: Id<'menu'>[]) => {
+                setSelectedMenuIds(menuIds)
+                setValue('selected_menu_ids', menuIds, { shouldValidate: true, shouldDirty: true })
+              }}
             />
           </TabsContent>
         </Tabs>
         {/* プレビュー部分 */}
         <div className="md:col-span-1">
           <div className="sticky top-4 space-y-4">
-            <CouponPreview data={previewData} />
+            <CouponPreview data={previewData} selectedMenuIds={selectedMenuIds} />
 
             <div className="mt-6">
               <Button

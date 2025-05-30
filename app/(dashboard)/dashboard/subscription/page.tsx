@@ -3,6 +3,8 @@ import { preloadQuery, preloadedQueryResult } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { redirect } from 'next/navigation'
 import { getOrganizationAuth } from '@/lib/auth/getOrganizationAuth'
+import { Suspense } from 'react'
+import { Loading } from '@/components/common'
 
 export default async function SubscriptionPage() {
   const { userId, orgId, token } = await getOrganizationAuth()
@@ -24,11 +26,13 @@ export default async function SubscriptionPage() {
   )
 
   return (
-    <SubscriptionForm
-      tenantId={tenant._id}
-      orgId={orgId}
-      tenantPreloaded={tenantPreloaded}
-      subscriptionPreloaded={subscriptionPreloaded}
-    />
+    <Suspense fallback={<Loading />}>
+      <SubscriptionForm
+        tenantId={tenant._id}
+        orgId={orgId}
+        tenantPreloaded={tenantPreloaded}
+        subscriptionPreloaded={subscriptionPreloaded}
+      />
+    </Suspense>
   )
 }

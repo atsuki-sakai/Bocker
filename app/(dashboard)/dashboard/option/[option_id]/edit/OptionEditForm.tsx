@@ -50,6 +50,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { fileToBase64 } from '@/lib/utils'
 import { ImageType } from '@/convex/types'
 import { MAX_NUM } from '@/convex/constants'
+import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 
 // バリデーションスキーマ
 const optionSchema = z
@@ -148,7 +149,7 @@ const optionSchema = z
     },
     {
       message: 'セール価格は通常価格より低く設定してください',
-      path: ['salePrice'],
+      path: ['sale_price'],
     }
   )
 
@@ -191,9 +192,6 @@ export default function OptionEditForm() {
   const isActive = watch('is_active')
   const durationMin = watch('duration_min')
 
-  const uploadWithThumbnail = useAction(api.storage.action.uploadWithThumbnail)
-  const deleteWithThumbnail = useAction(api.storage.action.killWithThumbnail)
-
   // データ取得後にフォームを初期化
   useEffect(() => {
     if (optionData && !isInitialized) {
@@ -234,8 +232,7 @@ export default function OptionEditForm() {
       }
 
       setIsSubmitting(true)
-      let uploadedOriginalUrl: string | undefined = undefined
-      let uploadedThumbnailUrl: string | undefined = undefined
+      let newUploadedImageUrls: { original_url: string; thumbnail_url: string }[] = []
       let hasDeletedOldImages = false
 
       // 新しい画像がアップロードされた場合
@@ -243,15 +240,32 @@ export default function OptionEditForm() {
         try {
           setIsUploading(true)
           const base64Data = await fileToBase64(currentFile)
-          const result = await uploadWithThumbnail({
-            base64Data,
-            fileName: currentFile.name,
-            directory: 'option',
-            orgId: orgId,
-            quality: 'low',
+
+          const response = await fetch('/api/storage', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              base64Data,
+              fileName: currentFile.name,
+              directory: 'option',
+              orgId: orgId,
+              quality: 'low',
+            }),
           })
-          uploadedOriginalUrl = result.uploadedOriginalUrl
-          uploadedThumbnailUrl = result.uploadedThumbnailUrl
+
+          const responseData: { successfulUploads: ProcessedImageResult[] } = await response.json()
+          if (responseData.successfulUploads) {
+            newUploadedImageUrls = responseData.successfulUploads.map((item) => ({
+              original_url: item.originalUrl,
+              thumbnail_url: item.thumbnailUrl,
+            }))
+          } else {
+            // レスポンスの形式が期待と異なる場合
+            throw new Error('画像のアップロード結果の形式が正しくありません。')
+          }
+          setIsUploading(false)
         } catch (error) {
           console.error('Failed to upload image:', error)
           showErrorToast(error)
@@ -278,13 +292,8 @@ export default function OptionEditForm() {
           is_active: data.is_active,
           // 新しい画像がある場合は新しいパス、ない場合は existingImageUrl を維持するか、削除の場合は undefined
           images:
-            uploadedOriginalUrl && uploadedThumbnailUrl
-              ? [
-                  {
-                    original_url: uploadedOriginalUrl,
-                    thumbnail_url: uploadedThumbnailUrl,
-                  },
-                ]
+            newUploadedImageUrls.length > 0
+              ? newUploadedImageUrls
               : existingImageUrls.length > 0 && existingImageUrls[0]?.original_url
                 ? [
                     {
@@ -301,20 +310,24 @@ export default function OptionEditForm() {
         // に古い画像を削除
         if (
           (!currentFile &&
-            !uploadedOriginalUrl &&
+            !newUploadedImageUrls.length &&
             existingImageUrls.length > 0 &&
             existingImageUrls[0]?.original_url) || // 画像なしにするケース
-          (uploadedOriginalUrl &&
+          (newUploadedImageUrls.length > 0 &&
             existingImageUrls.length > 0 &&
             existingImageUrls[0]?.original_url) // 新しい画像に置き換えるケース
         ) {
           try {
-            await deleteWithThumbnail({
-              originalUrl: existingImageUrls[0].original_url,
+            await fetch('/api/storage', {
+              method: 'DELETE',
+              body: JSON.stringify({
+                originalUrl: existingImageUrls[0].original_url,
+                withThumbnail: true,
+              }),
             })
             hasDeletedOldImages = true
             // データベース更新用に images をクリア
-            if (!currentFile && !uploadedOriginalUrl) {
+            if (!currentFile && !newUploadedImageUrls.length) {
               updateData.images = []
             }
           } catch (deleteError) {
@@ -334,10 +347,14 @@ export default function OptionEditForm() {
         router.push('/dashboard/option')
       } catch (updateErr) {
         // メニュー更新に失敗した場合、新しくアップロードした画像を削除
-        if (uploadedOriginalUrl && !currentFile) {
+        if (newUploadedImageUrls.length > 0 && !currentFile) {
           try {
-            await deleteWithThumbnail({
-              originalUrl: uploadedOriginalUrl,
+            await fetch('/api/storage', {
+              method: 'DELETE',
+              body: JSON.stringify({
+                originalUrl: existingImageUrls[0].original_url,
+                withThumbnail: true,
+              }),
             })
             // DBの更新
             updateOption({

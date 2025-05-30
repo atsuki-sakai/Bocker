@@ -165,7 +165,7 @@ const schemaMenu = z
     },
     {
       message: 'セール価格は通常価格より低く設定してください',
-      path: ['salePrice'], // エラーメッセージをsalePriceフィールドに表示
+      path: ['sale_price'], // エラーメッセージをsalePriceフィールドに表示
     }
   )
 
@@ -698,24 +698,9 @@ export default function MenuEditForm() {
                     }
                   }}
                 >
-                  <ToggleGroupItem
-                    className="text-sm shadow-sm border border-border bg-muted text-muted-foreground hover:bg-muted-foreground hover:text-active p-4 data-[state=on]:bg-active-foreground data-[state=on]:border-active-foreground data-[state=on]:text-active"
-                    value="cash"
-                  >
-                    店舗決済のみ
-                  </ToggleGroupItem>
-                  <ToggleGroupItem
-                    className="text-sm shadow-sm border border-border bg-muted text-muted-foreground hover:bg-muted-foreground hover:text-active p-4 data-[state=on]:bg-active-foreground data-[state=on]:border-active-foreground data-[state=on]:text-active"
-                    value="credit_card"
-                  >
-                    オンライン決済のみ
-                  </ToggleGroupItem>
-                  <ToggleGroupItem
-                    className="text-sm shadow-sm border border-border bg-muted text-muted-foreground hover:bg-muted-foreground hover:text-active p-4 data-[state=on]:bg-active-foreground data-[state=on]:border-active-foreground data-[state=on]:text-active"
-                    value="all"
-                  >
-                    両方対応
-                  </ToggleGroupItem>
+                  <ToggleGroupItem value="cash">店舗決済のみ</ToggleGroupItem>
+                  <ToggleGroupItem value="credit_card">オンライン決済のみ</ToggleGroupItem>
+                  <ToggleGroupItem value="all">両方対応</ToggleGroupItem>
                 </ToggleGroup>
               ) : (
                 <div className="bg-warning border border-warning-foreground rounded-md p-4">
