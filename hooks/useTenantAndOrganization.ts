@@ -49,7 +49,7 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
     tenant_id: tenantId
   } : 'skip');
 
-  const ready = isLoaded && !!tenantId && !!org?._id && !!role && !!subscription;
+  const ready = isLoaded && !!tenantId && !!org?._id && !!role;
 
   useEffect(() => {
     // 未サインインならサインインページへリダイレクト
