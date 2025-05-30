@@ -64,7 +64,7 @@ export default function Sidebar({ children }: SidebarProps) {
   useEffect(() => setMounted(true), [])
 
   // テナント情報とサブスクリプション情報が読み込まれるまでローディングを表示
-  if (!ready || !isLoaded || subscription === undefined) {
+  if (!ready || !isLoaded) {
     return <Loading />
   }
 

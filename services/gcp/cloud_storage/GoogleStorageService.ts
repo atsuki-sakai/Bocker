@@ -133,78 +133,103 @@ class GoogleStorageService {
    * @returns 圧縮設定 (オリジナル品質、オリジナル幅、サムネイル品質、サムネイル幅)
    */
   private getCompressionSettings(quality?: ImageQuality) {
-    const originalQualityValue = quality === "low" ? 40 : quality === "medium" ? 60 : 75;
-    const originalWidth = quality === "low" ? 920 : quality === "medium" ? 1280 : 1920;
+    const originalQualityValue = quality === "low" ? 40 : quality === "medium" ? 55 : 75;
+    const originalWidth = quality === "low" ? 700 : quality === "medium" ? 1280 : 1920;
     const thumbnailQualityValue = quality === "low" ? 30 : quality === "medium" ? 40 : 50;
-    const thumbnailWidth = quality === "low" ? 180 : quality === "medium" ? 240 : 360;
+    const thumbnailWidth = quality === "low" ? 150 : quality === "medium" ? 240 : 360;
     return { originalQualityValue, originalWidth, thumbnailQualityValue, thumbnailWidth };
   }
 
   /**
-   * 指定された設定で画像を圧縮する
-   * @param inputBuffer 入力画像バッファ
-   * @param maxWidth 最大幅
-   * @param compressionQuality 圧縮品質
-   * @returns 圧縮された画像バッファ
-   */
-  private async compressImage(
-    inputBuffer: Buffer,
-    maxWidth: number,
-    compressionQuality: number,
-  ): Promise<Buffer> {
-    if (inputBuffer.length === 0) {
-      throw new SystemError(
-        '圧縮対象の画像バッファが空です。',
-        {
-          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
-          severity: ERROR_SEVERITY.ERROR,
-          callFunc: 'GoogleStorageService.compressImage',
-          message: '圧縮対象の画像バッファが空です。',
-          code: 'UNPROCESSABLE_ENTITY',
-          status: 400,
-          title: '空の画像データ',
-          details: {
-            error: 'Input buffer for image compression is empty.',
-            maxWidth,
-            compressionQuality,
-          },
-        }
-      )
-    }
-    try {
-      const sharpInstance = sharp(inputBuffer).withMetadata();
-      const metadata = await sharpInstance.metadata();
-
-      if (metadata.width && metadata.width > maxWidth) {
-        sharpInstance.resize({ width: maxWidth, withoutEnlargement: true });
+ * 指定された設定で画像を圧縮する
+ * @param inputBuffer 入力画像バッファ
+ * @param maxWidth 最大幅
+ * @param compressionQuality 圧縮品質
+ * @returns 圧縮された画像バッファ
+ */
+private async compressImage(
+  inputBuffer: Buffer,
+  maxWidth: number,
+  compressionQuality: number,
+): Promise<Buffer> {
+  if (inputBuffer.length === 0) {
+    throw new SystemError(
+      '圧縮対象の画像バッファが空です。',
+      {
+        statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'GoogleStorageService.compressImage',
+        message: '圧縮対象の画像バッファが空です。',
+        code: 'UNPROCESSABLE_ENTITY',
+        status: 400,
+        title: '空の画像データ',
+        details: {
+          error: 'Input buffer for image compression is empty.',
+          maxWidth,
+          compressionQuality,
+        },
       }
-
-      if (this.activeFormat === 'avif') {
-        return await sharpInstance.avif({ quality: compressionQuality, effort: 4 }).toBuffer();
-      } else {
-        return await sharpInstance.webp({ quality: compressionQuality }).toBuffer();
-      }
-    } catch (originalError) {
-      throw new SystemError(
-        '画像圧縮処理中にエラーが発生しました。',
-        {
-          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
-          severity: ERROR_SEVERITY.ERROR,
-          callFunc: 'GoogleStorageService.compressImage',
-          message: '画像圧縮処理中にエラーが発生しました。',
-          code: 'INTERNAL_SERVER_ERROR',
-          status: 500,
-          title: '画像圧縮失敗',
-          details: {
-            error: this.formatErrorDetails(originalError),
-            inputBufferSize: inputBuffer.length,
-            maxWidth,
-            compressionQuality,
-            activeFormat: this.activeFormat,
-          },
-      });
-    }
+    )
   }
+  try {
+    // 1. sharpインスタンス生成とメタデータ取得
+    const sharpInstance = sharp(inputBuffer).withMetadata();
+    const metadata = await sharpInstance.metadata();
+
+    // 2. アスペクト比2:3（4:6）で中央トリミング
+    let { width, height } = metadata;
+    if (!width || !height) {
+      throw new Error('画像サイズを取得できませんでした');
+    }
+    const targetAspect = 2 / 3; // 4:6 = 2:3
+    let cropWidth = width;
+    let cropHeight = height;
+
+    if (width / height > targetAspect) {
+      // 横長 → 横方向をカット
+      cropHeight = height;
+      cropWidth = Math.round(height * targetAspect);
+    } else {
+      // 縦長 → 縦方向をカット
+      cropWidth = width;
+      cropHeight = Math.round(width / targetAspect);
+    }
+
+    const left = Math.floor((width - cropWidth) / 2);
+    const top = Math.floor((height - cropHeight) / 2);
+
+    // 3. トリミング→リサイズ→圧縮
+    let processed = sharp(inputBuffer)
+      .extract({ left, top, width: cropWidth, height: cropHeight })
+      .resize({ width: maxWidth, withoutEnlargement: true });
+
+    // 4. 圧縮保存
+    if (this.activeFormat === 'avif') {
+      return await processed.avif({ quality: compressionQuality, effort: 4 }).toBuffer();
+    } else {
+      return await processed.webp({ quality: compressionQuality }).toBuffer();
+    }
+  } catch (originalError) {
+    throw new SystemError(
+      '画像圧縮処理中にエラーが発生しました。',
+      {
+        statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'GoogleStorageService.compressImage',
+        message: '画像圧縮処理中にエラーが発生しました。',
+        code: 'INTERNAL_SERVER_ERROR',
+        status: 500,
+        title: '画像圧縮失敗',
+        details: {
+          error: this.formatErrorDetails(originalError),
+          inputBufferSize: inputBuffer.length,
+          maxWidth,
+          compressionQuality,
+          activeFormat: this.activeFormat,
+        },
+    });
+  }
+}
 
   /**
    * バッファからファイルをアップロードする
