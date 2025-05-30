@@ -58,13 +58,7 @@ import {
   ActiveCustomerType,
 } from '@/convex/types'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from '@/components/ui/command'
+import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command'
 import { Check, ChevronDown } from 'lucide-react'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { MAX_NUM, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/convex/constants'
@@ -500,7 +494,6 @@ export default function MenuEditForm() {
                   </PopoverTrigger>
                   <PopoverContent className="w-[300px] p-0">
                     <Command>
-                      <CommandInput placeholder="カテゴリを検索..." />
                       <CommandEmpty>カテゴリが見つかりません</CommandEmpty>
                       <CommandGroup>
                         {MENU_CATEGORY_VALUES.map((category) => (

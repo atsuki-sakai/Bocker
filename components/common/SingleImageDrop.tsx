@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { FileImage } from 'lucide-react'
@@ -77,7 +77,7 @@ export default function SingleImageDrop({
   }
 
   // 画像クリア処理
-  const clearImage = () => {
+  const clearImage = useCallback(() => {
     if (previewImageUrl && previewImageUrl.startsWith('blob:')) {
       URL.revokeObjectURL(previewImageUrl)
     }
@@ -87,7 +87,7 @@ export default function SingleImageDrop({
       fileInputRef.current.value = ''
     }
     onFileSelect?.(null)
-  }
+  }, [previewImageUrl, onFileSelect])
 
   useEffect(() => {
     if (currentFile === null) {

@@ -52,7 +52,6 @@ import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
@@ -571,14 +570,7 @@ export default function MenuList() {
               </PopoverTrigger>
               <PopoverContent className="p-0 w-56" align="start">
                 <Command>
-                  <div className="flex items-center gap-2">
-                    <CommandInput
-                      placeholder="カテゴリを検索..."
-                      className="h-9"
-                      // キーボードが自動で開かないようにする
-                      autoFocus={false}
-                      inputMode="none"
-                    />
+                  <div className="flex items-center justify-end gap-2">
                     <Button
                       onClick={() => setOpenCategoryPopover(false)}
                       variant="ghost"
