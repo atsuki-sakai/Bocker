@@ -22,15 +22,22 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Doc } from '@/convex/_generated/dataModel'
 import Link from 'next/link'
-import { Dialog } from '@/components/common'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { handleErrorToMsg } from '@/lib/error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { convertGender } from '@/convex/shared/types/common'
+import { convertGender } from '@/convex/types'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 import {
   Carousel,
@@ -68,7 +75,8 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   const router = useRouter()
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const deleteMenu = useMutation(api.menu.core.mutation.kill)
+  const deleteMenu = useMutation(api.menu.mutation.kill)
+  const { showErrorToast } = useErrorHandler()
 
   // ADDED START: State and effect for Carousel
   const [mainCarouselApi, setMainCarouselApi] = useState<CarouselApi>()
@@ -106,15 +114,15 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
     return new Intl.NumberFormat('ja-JP', {
       style: 'currency',
       currency: 'JPY',
-    }).format(menu.unitPrice || 0)
+    }).format(menu.unit_price || 0)
   }, [menu])
 
   const formattedSalePrice = useMemo(() => {
-    if (!menu || !menu.salePrice) return null
+    if (!menu || !menu.sale_price) return null
     return new Intl.NumberFormat('ja-JP', {
       style: 'currency',
       currency: 'JPY',
-    }).format(menu.salePrice || 0)
+    }).format(menu.sale_price || 0)
   }, [menu])
 
   const getTargetTypeLabel = (type: string): string => {
@@ -143,11 +151,11 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
     }
 
     try {
-      await deleteMenu({ menuId: menu._id })
+      await deleteMenu({ menu_id: menu._id })
 
       // 画像削除処理をPromiseとして配列に格納
       const deleteImagePromises = menu.images
-        ?.filter((image) => image.imgPath) // imgPath が存在する画像のみを対象にする
+        ?.filter((image) => image.original_url) // imgPath が存在する画像のみを対象にする
         .map(async (image) => {
           try {
             const response = await fetch('/api/storage', {
@@ -156,7 +164,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                 'Content-Type': 'application/json', // JSON形式で送信することを指定
               },
               body: JSON.stringify({
-                imgUrl: image.imgPath,
+                originalUrl: image.original_url,
                 withThumbnail: true,
               }),
             })
@@ -171,11 +179,11 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
 
             // 成功した場合のレスポンスを返す（必要であれば）
             // return await response.json();
-            console.log(`画像削除成功: ${image.imgPath}`)
+            console.log(`画像削除成功: ${image.original_url}`)
             return { status: 'fulfilled', value: response.status } // Promise.allSettled の結果形式に合わせる
           } catch (error) {
             // エラーが発生した場合
-            console.error(`画像削除失敗: ${image.imgPath}`, error)
+            console.error(`画像削除失敗: ${image.original_url}`, error)
             // Promise.allSettled の結果形式に合わせる
             // reject ではなく catch ブロックでエラーを処理し、resolved with status:'rejected' のようなオブジェクトを返すことで、
             // Promise.allSettled が 'rejected' ステータスとして扱えるようにする
@@ -192,11 +200,14 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
         results.forEach((result, index) => {
           // results のインデックスは deleteImagePromises のインデックスに対応します
           // どの画像かが分かりやすいように、元の画像の imgPath などを使用すると良いでしょう
-          const originalImage = menu.images?.filter((img) => img.imgPath)[index] // 対応する元の画像オブジェクトを取得
+          const originalImage = menu.images?.filter((img) => img.original_url)[index] // 対応する元の画像オブェクトを取得
           if (result.status === 'fulfilled') {
-            console.log(`画像削除 (${originalImage?.imgPath || '不明'}) 成功:`, result.value)
+            console.log(`画像削除 (${originalImage?.original_url || '不明'}) 成功:`, result.value)
           } else {
-            console.error(`画像削除 (${originalImage?.imgPath || '不明'}) 失敗:`, result.reason)
+            console.error(
+              `画像削除 (${originalImage?.original_url || '不明'}) 失敗:`,
+              result.reason
+            )
           }
         })
       }
@@ -204,7 +215,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
       router.push('/dashboard/menu')
       toast.success('メニューを削除しました')
     } catch (error) {
-      toast.error(handleErrorToMsg(error))
+      showErrorToast(error)
     }
   }
 
@@ -258,7 +269,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                     <CarouselItem key={`main-${index}`}>
                       <div className="relative w-full aspect-[4/3] sm:aspect-[3/4] bg-muted group rounded-lg overflow-hidden">
                         <Image
-                          src={image.imgPath || ''}
+                          src={image.original_url || ''}
                           alt={`${menu.name || 'メニュー画像'} ${index + 1}`}
                           className="w-full h-full object-contain"
                           fill
@@ -278,7 +289,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                 </CarouselContent>
               </Carousel>
 
-              {menu.images && menu.images.length > 1 && (
+              {menu.images && menu.images[0].thumbnail_url && (
                 <div className="flex space-x-2 justify-center overflow-x-auto py-2">
                   {menu.images.map((image, index) => (
                     <button
@@ -293,7 +304,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                       aria-label={`画像 ${index + 1} を表示`}
                     >
                       <Image
-                        src={image.thumbnailPath || ''}
+                        src={image.thumbnail_url || ''}
                         alt={`サムネイル ${index + 1}`}
                         className="w-full h-full object-cover"
                         fill
@@ -369,7 +380,9 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                         <p className="text-sm font-medium text-muted-foreground">
                           トータル施術時間
                         </p>
-                        <p className="text-lg font-medium text-primary">{menu.timeToMin || 0}分</p>
+                        <p className="text-lg font-medium text-primary">
+                          {menu.duration_min || 0}分
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -381,8 +394,8 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                       <p className="text-sm font-medium text-muted-foreground">対象</p>
 
                       <p className="text-base text-primary">
-                        {menu.targetGender && menu.targetGender !== 'unselected'
-                          ? convertGender(menu.targetGender as 'unselected' | 'male' | 'female')
+                        {menu.target_gender && menu.target_gender !== 'unselected'
+                          ? convertGender(menu.target_gender as 'unselected' | 'male' | 'female')
                           : '全ての性別'}
                       </p>
                     </div>
@@ -394,7 +407,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">ターゲット</p>
                       <p className="text-base text-primary">
-                        {getTargetTypeLabel(menu.targetType || '')}
+                        {getTargetTypeLabel(menu.target_type || '')}
                       </p>
                     </div>
                   </div>
@@ -405,7 +418,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">支払い方法</p>
                       <p className="text-base text-primary">
-                        {getPaymentMethodLabel(menu.paymentMethod || '')}
+                        {getPaymentMethodLabel(menu.payment_method || '')}
                       </p>
                     </div>
                   </div>
@@ -483,17 +496,23 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
           </CardContent>
         </div>
       </div>
-
       {/* 削除確認ダイアログ */}
-      <Dialog
-        title="メニューの削除"
-        description="このメニューを削除してもよろしいですか？この操作は元に戻せません。"
-        confirmTitle="削除する"
-        cancelTitle="キャンセル"
-        onConfirmAction={handleDeleteMenu}
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      />
+      <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => setIsDeleteDialogOpen(open)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>メニューを削除しますか？</DialogTitle>
+            <DialogDescription>この操作は元に戻すことができません。</DialogDescription>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                キャンセル
+              </Button>
+              <Button variant="destructive" onClick={() => handleDeleteMenu()}>
+                削除する
+              </Button>
+            </DialogFooter>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

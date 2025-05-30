@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useZodForm } from '@/hooks/useZodForm'
 import { api } from '@/convex/_generated/api'
 import { useAction, useMutation } from 'convex/react'
-import { TagInput, ImageDrop } from '@/components/common'
+import { TagInput, SingleImageDrop } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { ZodTextField } from '@/components/common'
 import { Label } from '@/components/ui/label'
@@ -77,7 +77,6 @@ const optionSchema = z
       z
         .number()
         .max(MAX_NUM, { message: `セール価格は${MAX_NUM}円以下で入力してください` })
-        .nullable()
         .optional()
     ), // セール価格
     order_limit: z.preprocess(
@@ -227,14 +226,15 @@ function OptionAddForm() {
         duration_min: Number(data.duration_min), // 時間(分)
         tags: data.tags, // タグ
         description: data.description, // 説明
-        images: uploadedOriginalUrl
-          ? [
-              {
-                original_url: uploadedOriginalUrl,
-                thumbnail_url: uploadedThumbnailUrl,
-              },
-            ]
-          : [],
+        images:
+          uploadedOriginalUrl && uploadedThumbnailUrl
+            ? [
+                {
+                  original_url: uploadedOriginalUrl,
+                  thumbnail_url: uploadedThumbnailUrl,
+                },
+              ]
+            : [],
         is_active: data.is_archive, // 有効/無効フラグ
       })
       toast.success('オプションメニューを登録しました')
@@ -310,10 +310,11 @@ function OptionAddForm() {
               </CardHeader>
               <CardContent className="flex-grow flex items-center justify-center">
                 <div className="w-full">
-                  <ImageDrop
+                  <SingleImageDrop
+                    currentFile={currentFile}
                     maxSizeMB={5}
-                    onFileSelect={(files) => {
-                      setCurrentFile(files[0] ?? null)
+                    onFileSelect={(file) => {
+                      setCurrentFile(file ?? null)
                     }}
                     className="rounded-md"
                   />

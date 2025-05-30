@@ -97,10 +97,11 @@ CREATE TABLE public.customer (
   first_name                   TEXT,
   last_name                    TEXT,
   searchable_text              TEXT,
-  use_count                    INTEGER,
+  total_reservation_count      INTEGER,
   last_reservation_date_unix   BIGINT,
   tags                         TEXT[],
   initial_tracking             JSONB,
+  customer_type                TEXT,
   created_at                   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at                   TIMESTAMPTZ NOT NULL DEFAULT now(),
   is_archive                   BOOLEAN     NOT NULL DEFAULT FALSE,
@@ -284,7 +285,6 @@ import {
   menuPaymentMethodType,
   paymentMethodType,
   roleType,
-  targetType,
   genderType,
   reservationIntervalMinutesType,
   activeCustomerType,
@@ -296,6 +296,7 @@ import {
   stripeConnectStatusType,
   webhookEventProcessingResultType,
   subscriptionPlanNameType,
+  menuCategoryType,
 } from './types';
 
 /**
@@ -602,8 +603,8 @@ const menu = defineTable({
   images: v.array(imageType), // 画像
   description: v.optional(v.string()), // 説明
   target_gender: v.optional(genderType), // 対象性別
-  target_type: v.optional(targetType), // 対象タイプ
-  categories: v.array(v.string()), // カテゴリ
+  target_type: v.optional(activeCustomerType), // 対象タイプ
+  categories: v.array(menuCategoryType), // カテゴリ
   tags: v.array(v.string()), // タグ
   payment_method: menuPaymentMethodType, // 支払方法
   is_active: v.boolean(), // 有効/無効

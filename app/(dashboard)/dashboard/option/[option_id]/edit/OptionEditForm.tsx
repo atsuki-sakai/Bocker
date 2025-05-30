@@ -16,7 +16,7 @@ import { Trash2 } from 'lucide-react'
 import { Id } from '@/convex/_generated/dataModel'
 import { useZodForm } from '@/hooks/useZodForm'
 import { z } from 'zod'
-import { Loading, ZodTextField, ImageDrop, TagInput } from '@/components/common'
+import { Loading, ZodTextField, SingleImageDrop, TagInput } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -26,7 +26,7 @@ import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-
+import Image from 'next/image'
 import { getMinuteMultiples } from '@/lib/schedules' // getMinuteMultiplesを追加
 import {
   Tag,
@@ -38,7 +38,6 @@ import {
   Clock,
   Save,
   Loader2,
-  ImageIcon,
 } from 'lucide-react' // Clockを追加
 import {
   Select,
@@ -47,13 +46,10 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select' // Select関連を追加
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { fileToBase64 } from '@/lib/utils'
-import type { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import { ImageType } from '@/convex/types'
-
-// APIレスポンスの型定義
-type StorageApiResponse = ProcessedImageResult | { error: string }
+import { MAX_NUM } from '@/convex/constants'
 
 // バリデーションスキーマ
 const optionSchema = z
@@ -65,7 +61,7 @@ const optionSchema = z
     unit_price: z
       .number()
       .min(1, { message: '単価は必須です' })
-      .max(99999, { message: '単価は99999円以下で入力してください' })
+      .max(MAX_NUM, { message: `単価は${MAX_NUM}円以下で入力してください` })
       .nullable()
       .optional()
       .refine((val): val is number => val !== null && val !== undefined, {
@@ -73,14 +69,13 @@ const optionSchema = z
       }), // refineを更新
     sale_price: z.preprocess(
       (val) => {
-        if (val === '' || val === null || val === undefined) return null
+        if (val === '' || val === null || val === undefined) return undefined
         const num = Number(val)
-        return isNaN(num) ? null : num
+        return isNaN(num) ? undefined : num
       },
       z
         .number()
-        .max(99999, { message: 'セール価格は99999円以下で入力してください' })
-        .nullable()
+        .max(MAX_NUM, { message: `セール価格は${MAX_NUM}円以下で入力してください` })
         .optional()
     ),
     images: z.array(
@@ -93,20 +88,18 @@ const optionSchema = z
       .number()
       .min(1, { message: '最大注文数は1以上で入力してください' })
       .max(99, { message: '最大注文数は99個以下で入力してください' })
-      .nullable()
       .refine((val): val is number => val !== null && val !== undefined, {
         message: '最大注文数は必須です',
       }), // refineを更新
     in_stock: z.preprocess(
       (val) => {
-        if (val === '' || val === null || val === undefined) return null
+        if (val === '' || val === null || val === undefined) return undefined
         const num = Number(val)
-        return isNaN(num) ? null : num
+        return isNaN(num) ? undefined : num
       },
       z
         .number()
-        .max(1000, { message: '在庫数は1000個以下で入力してください' })
-        .nullable()
+        .max(MAX_NUM, { message: `在庫数は${MAX_NUM}個以下で入力してください` })
         .optional()
     ),
     duration_min: z // timeToMinのバリデーションを追加
@@ -183,7 +176,7 @@ export default function OptionEditForm() {
 
   const [isInitialized, setIsInitialized] = useState(false)
   const [currentTags, setCurrentTags] = useState<string[]>([])
-  const [currentFiles, setCurrentFile] = useState<File[]>([])
+  const [currentFile, setCurrentFile] = useState<File | null>(null)
   const [existingImageUrls, setExistingImageUrls] = useState<ImageType[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -207,6 +200,8 @@ export default function OptionEditForm() {
       const durationMinValueString = optionData.duration_min?.toString() || undefined
 
       const initialTags = optionData.tags || []
+
+      console.log('optionData', optionData)
 
       // 画像関連の状態を設定
       setExistingImageUrls(optionData.images)
@@ -244,23 +239,21 @@ export default function OptionEditForm() {
       let hasDeletedOldImages = false
 
       // 新しい画像がアップロードされた場合
-      if (currentFiles && currentFiles.length > 0) {
+      if (currentFile) {
         try {
           setIsUploading(true)
-          const base64Data = await fileToBase64(currentFiles[0])
+          const base64Data = await fileToBase64(currentFile)
           const result = await uploadWithThumbnail({
             base64Data,
-            fileName: currentFiles[0].name,
+            fileName: currentFile.name,
             directory: 'option',
             orgId: orgId,
             quality: 'low',
           })
           uploadedOriginalUrl = result.uploadedOriginalUrl
           uploadedThumbnailUrl = result.uploadedThumbnailUrl
-          setExistingImageUrls([
-            { original_url: uploadedOriginalUrl, thumbnail_url: uploadedThumbnailUrl },
-          ])
         } catch (error) {
+          console.error('Failed to upload image:', error)
           showErrorToast(error)
           setIsSubmitting(false) // エラー時は submitting を解除
           setIsUploading(false) // エラー時は uploading を解除
@@ -292,7 +285,14 @@ export default function OptionEditForm() {
                     thumbnail_url: uploadedThumbnailUrl,
                   },
                 ]
-              : existingImageUrls,
+              : existingImageUrls.length > 0 && existingImageUrls[0]?.original_url
+                ? [
+                    {
+                      original_url: existingImageUrls[0].original_url,
+                      thumbnail_url: existingImageUrls[0].thumbnail_url,
+                    },
+                  ]
+                : [], // 配列が空なら空配列を渡す
           option_id: optionId, // idは必須
         }
 
@@ -300,10 +300,13 @@ export default function OptionEditForm() {
         // または新しい画像に置き換える場合 (uploadedOriginalUrl が存在する)
         // に古い画像を削除
         if (
-          (currentFiles.length === 0 &&
+          (!currentFile &&
             !uploadedOriginalUrl &&
-            existingImageUrls[0].original_url) || // 画像なしにするケース
-          (uploadedOriginalUrl && existingImageUrls[0].original_url) // 新しい画像に置き換えるケース
+            existingImageUrls.length > 0 &&
+            existingImageUrls[0]?.original_url) || // 画像なしにするケース
+          (uploadedOriginalUrl &&
+            existingImageUrls.length > 0 &&
+            existingImageUrls[0]?.original_url) // 新しい画像に置き換えるケース
         ) {
           try {
             await deleteWithThumbnail({
@@ -311,7 +314,7 @@ export default function OptionEditForm() {
             })
             hasDeletedOldImages = true
             // データベース更新用に images をクリア
-            if (currentFiles.length === 0 && !uploadedOriginalUrl) {
+            if (!currentFile && !uploadedOriginalUrl) {
               updateData.images = []
             }
           } catch (deleteError) {
@@ -331,7 +334,7 @@ export default function OptionEditForm() {
         router.push('/dashboard/option')
       } catch (updateErr) {
         // メニュー更新に失敗した場合、新しくアップロードした画像を削除
-        if (uploadedOriginalUrl && currentFiles.length === 0) {
+        if (uploadedOriginalUrl && !currentFile) {
           try {
             await deleteWithThumbnail({
               originalUrl: uploadedOriginalUrl,
@@ -366,13 +369,13 @@ export default function OptionEditForm() {
     }
   }
 
-  const handleDeleteImage = async (imgUrl: string) => {
+  const handleDeleteImage = async (originalUrl: string) => {
     try {
       setIsUploading(true)
       // APIに削除リクエストを送信
       const response = await fetch('/api/storage', {
         method: 'DELETE',
-        body: JSON.stringify({ imgUrl, withThumbnail: true }),
+        body: JSON.stringify({ originalUrl: originalUrl, withThumbnail: true }),
       })
 
       if (!response.ok) {
@@ -390,7 +393,7 @@ export default function OptionEditForm() {
 
       toast.success('画像を削除しました')
       setExistingImageUrls([]) // 既存画像のURLをクリア
-      setCurrentFile([]) // 選択中のファイルをクリア
+      setCurrentFile(null) // 選択中のファイルをクリア
       setValue('images', [], { shouldDirty: true, shouldValidate: true }) // フォームの画像パスをクリア
       setIsDeleteImageModalOpen(false)
       router.push('/dashboard/option')
@@ -405,6 +408,10 @@ export default function OptionEditForm() {
     return <Loading />
   }
 
+  console.log('isDirty', isDirty)
+  console.log('currentFile', currentFile)
+  console.log('errors', errors)
+
   return (
     <div>
       <form
@@ -415,41 +422,57 @@ export default function OptionEditForm() {
           }
         }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="md:col-span-1">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
+          <div className="md:col-span-3">
             <Card className="border border-dashed h-full flex flex-col">
-              <CardHeader className="pb-0 flex flex-col mb-1 items-end">
-                {existingImageUrls[0]?.original_url && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        setIsDeleteImageModalOpen(true)
-                      }}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
-                )}
-              </CardHeader>
               <CardContent className="flex-grow flex items-center justify-center">
-                <div className="w-full">
-                  <ImageDrop
-                    initialImages={existingImageUrls}
-                    maxSizeMB={5}
-                    onFileSelect={(file) => {
-                      setCurrentFile(file)
-                    }}
-                    className="rounded-md"
-                  />
+                <div className="w-full flex flex-col lg:flex-row lg:gap-4 lg:items-start py-4">
+                  {existingImageUrls[0]?.original_url && (
+                    <div className="relative w-full lg:w-[50%] max-w-xs flex-shrink-0 mb-2 lg:mb-0">
+                      <Image
+                        src={existingImageUrls[0].original_url}
+                        alt="option image"
+                        width={1512}
+                        height={1512}
+                        className="w-full h-auto object-cover rounded-md border border-border"
+                      />
+                      <Button
+                        className="absolute top-2 right-2 z-10"
+                        variant="destructive"
+                        size="icon"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          setIsDeleteImageModalOpen(true)
+                        }}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  )}
+                  <div
+                    className={`w-full ${existingImageUrls[0]?.original_url ? 'lg:w-[50%]' : ''} flex items-center justify-center`}
+                  >
+                    <SingleImageDrop
+                      maxSizeMB={5}
+                      onFileSelect={(file) => {
+                        setCurrentFile(file)
+                        setValue(
+                          'images',
+                          file
+                            ? [{ original_url: '', thumbnail_url: '' }] // 仮の値
+                            : [],
+                          { shouldDirty: true }
+                        )
+                      }}
+                      className="rounded-md"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="md:col-span-2">
+          <div className="md:col-span-3">
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row gap-4 w-full">
                 <ZodTextField
@@ -464,7 +487,7 @@ export default function OptionEditForm() {
                 />
 
                 <ZodTextField
-                  name="orderLimit"
+                  name="order_limit"
                   label="最大注文数"
                   icon={<Boxes className="text-primary" />}
                   type="number"
@@ -475,7 +498,7 @@ export default function OptionEditForm() {
                   className="border-border min-w-[120px]"
                 />
                 <ZodTextField
-                  name="inStock"
+                  name="in_stock"
                   label="在庫数"
                   icon={<Boxes className="text-primary" />}
                   type="number"
@@ -489,7 +512,7 @@ export default function OptionEditForm() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <ZodTextField
-                  name="unitPrice"
+                  name="unit_price"
                   label="単価"
                   icon={<DollarSign className="text-primary" />}
                   type="number"
@@ -501,7 +524,7 @@ export default function OptionEditForm() {
                 />
 
                 <ZodTextField
-                  name="salePrice"
+                  name="sale_price"
                   label="セール価格"
                   type="number"
                   icon={<ShoppingBag className="text-primary" />}
@@ -606,7 +629,7 @@ export default function OptionEditForm() {
 
             <Button
               type="submit"
-              disabled={isSubmitting || isUploading || (!isDirty && currentFiles.length === 0)}
+              disabled={isSubmitting || isUploading || (!isDirty && !currentFile)}
             >
               {isSubmitting || isUploading || formIsSubmitting ? (
                 <>
@@ -640,6 +663,7 @@ export default function OptionEditForm() {
             <Button
               variant="destructive"
               onClick={() =>
+                existingImageUrls.length > 0 &&
                 existingImageUrls[0]?.original_url &&
                 handleDeleteImage(existingImageUrls[0].original_url)
               }

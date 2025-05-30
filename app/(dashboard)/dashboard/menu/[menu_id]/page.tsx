@@ -3,7 +3,7 @@ import { DashboardSection } from '@/components/common';
 import { Id } from '@/convex/_generated/dataModel';
 import { fetchQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
-import { serverConvexAuth } from '@/lib/auth/auth-server';
+import { getOrganizationAuth } from '@/lib/auth/getOrganizationAuth'
 import { MenuDetailContent } from './MenuDetailContent';
 
 interface MenuDetailPageProps {
@@ -14,17 +14,17 @@ interface MenuDetailPageProps {
 
 export default async function MenuDetailPage({ params }: MenuDetailPageProps) {
   const { menu_id } = await params;
-  const { token } = await serverConvexAuth();
+  const { token } = await getOrganizationAuth()
 
   let menu = null;
   try {
     menu = await fetchQuery(
-      api.menu.core.query.get,
+      api.menu.query.findById,
       {
-        menuId: menu_id as Id<'menu'>,
+        menu_id: menu_id as Id<'menu'>,
       },
       { token }
-    );
+    )
   } catch (error) {
     console.error('メニュー取得エラー:', error);
     // エラーハンドリングはここで行います

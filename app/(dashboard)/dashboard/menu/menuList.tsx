@@ -5,10 +5,17 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Dialog } from '@/components/common'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Doc } from '@/convex/_generated/dataModel'
-import type { MenuCategory } from '@/convex/shared/types/common'
-import { MENU_CATEGORY_VALUES } from '@/convex/shared/types/common'
+import type { MenuCategory } from '@/convex/types'
+import { MENU_CATEGORY_VALUES } from '@/convex/types'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,13 +40,13 @@ import {
   Check,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSalon } from '@/hooks/useSalon'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useMutation, useQuery } from 'convex/react'
 
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
-import { handleErrorToMsg } from '@/lib/error'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Id } from '@/convex/_generated/dataModel'
 import {
   Command,
@@ -65,9 +72,9 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
     <div className="col-span-1">
       <Card className="h-full overflow-hidden hover:shadow-md transition-all">
         <div className="relative h-32 md:h-48 w-full">
-          {menu.images && menu.images.length > 0 ? (
+          {menu.images && menu.images.length > 0 && menu.images[0]?.thumbnail_url ? (
             <Image
-              src={menu.images[0].thumbnailPath || ''}
+              src={menu.images[0]?.thumbnail_url || ''}
               alt={menu.name || ''}
               fill
               className="object-cover"
@@ -106,7 +113,7 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() =>
-                  onDelete(menu._id, menu.images?.map((image) => image.imgPath || '') || [])
+                  onDelete(menu._id, menu.images?.map((image) => image.original_url || '') || [])
                 }
                 className="text-destructive focus:text-destructive"
               >
@@ -131,28 +138,28 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
           <div className="mt-2 flex items-center justify-between">
             <div className="flex flex-col">
               <div className="text-sm text-muted-foreground">
-                {menu.salePrice ? (
+                {menu.sale_price ? (
                   <div className="flex items-center gap-2">
-                    <span className="line-through text-xs">{menu.unitPrice}円</span>
-                    <span className="font-bold text-primary">{menu.salePrice}円</span>
+                    <span className="line-through text-xs">{menu.unit_price}円</span>
+                    <span className="font-bold text-primary">{menu.sale_price}円</span>
                   </div>
                 ) : (
-                  <span className="font-medium">{menu.unitPrice}円</span>
+                  <span className="font-medium">{menu.unit_price}円</span>
                 )}
               </div>
               <div className="flex items-center text-sm text-muted-foreground mt-1">
                 <Clock className="h-3 w-3 mr-1" />
-                {menu.timeToMin}分
+                {menu.duration_min}分
               </div>
             </div>
           </div>
 
-          {menu.paymentMethod && (
+          {menu.payment_method && (
             <div className="mt-2 flex items-center text-xs text-muted-foreground">
               <CreditCard className="h-3 w-3 mr-1" />
-              {menu.paymentMethod === 'all'
+              {menu.payment_method === 'all'
                 ? '両方対応'
-                : menu.paymentMethod === 'credit_card'
+                : menu.payment_method === 'credit_card'
                   ? 'オンライン決済'
                   : '店舗決済'}
             </div>
@@ -203,7 +210,7 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
               layoutId={`menu-${menu._id}`}
             >
               <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 border-b border-gray-200 pb-4 mb-4">
-                {menu.isActive ? (
+                {menu.is_active ? (
                   <Badge variant="default" className=" bg-active text-active-foreground">
                     公開中
                   </Badge>
@@ -214,9 +221,9 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                 )}
                 <div className="flex items-center gap-2">
                   <div className="relative h-12 w-12 rounded-md overflow-hidden flex-shrink-0">
-                    {menu.images && menu.images.length > 0 ? (
+                    {menu.images && menu.images.length > 0 && menu.images[0]?.thumbnail_url ? (
                       <Image
-                        src={menu.images[0].thumbnailPath || ''}
+                        src={menu.images[0]?.thumbnail_url || ''}
                         alt={menu.name || ''}
                         fill
                         className="object-cover"
@@ -244,27 +251,27 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
                       <div className="flex items-center">
-                        {menu.salePrice ? (
+                        {menu.sale_price ? (
                           <div className="flex items-center gap-2">
-                            <span className="line-through text-xs">{menu.unitPrice}円</span>
-                            <span className="font-medium text-primary">{menu.salePrice}円</span>
+                            <span className="line-through text-xs">{menu.unit_price}円</span>
+                            <span className="font-medium text-primary">{menu.sale_price}円</span>
                           </div>
                         ) : (
-                          <span>{menu.unitPrice}円</span>
+                          <span>{menu.unit_price}円</span>
                         )}
                       </div>
 
                       <div className="flex items-center">
                         <Clock className="h-3 w-3 mr-1" />
-                        {menu.timeToMin}分{' '}
+                        {menu.duration_min}分{' '}
                       </div>
 
-                      {menu.paymentMethod && (
+                      {menu.payment_method && (
                         <div className="flex items-center">
                           <CreditCard className="h-3 w-3 mr-1" />
-                          {menu.paymentMethod === 'all'
+                          {menu.payment_method === 'all'
                             ? '両方対応'
-                            : menu.paymentMethod === 'credit_card'
+                            : menu.payment_method === 'credit_card'
                               ? 'オンライン決済'
                               : '店舗決済'}
                         </div>
@@ -299,7 +306,10 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                     size="icon"
                     className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                     onClick={() =>
-                      onDelete(menu._id, menu.images?.map((image) => image.imgPath || '') || [])
+                      onDelete(
+                        menu._id,
+                        menu.images?.map((image) => image.original_url || '') || []
+                      )
                     }
                   >
                     <Trash2 className="h-4 w-4" />
@@ -317,24 +327,27 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
 
 // メインコンポーネント
 export default function MenuList() {
-  const { salon } = useSalon()
+  const { tenantId, orgId } = useTenantAndOrganization()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
   const [deletingMenuId, setDeletingMenuId] = useState<Id<'menu'> | null>(null)
   const [deletingImgPaths, setDeletingImgPaths] = useState<string[]>([])
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false)
   const [selectedCategories, setSelectedCategories] = useState<MenuCategory[]>([])
   const [openCategoryPopover, setOpenCategoryPopover] = useState(false)
+  const { showErrorToast } = useErrorHandler()
 
   // APIリクエスト用フック
-  const killMenu = useMutation(api.menu.core.mutation.kill)
+  const killMenu = useMutation(api.menu.mutation.kill)
 
+  console.log('selectedCategories', selectedCategories)
   // カテゴリで絞り込むクエリと全てのメニューを取得するクエリ
   const filteredMenus = useQuery(
-    api.menu.core.query.getMenusByCategories,
-    salon?._id && selectedCategories.length > 0
-      ? { salonId: salon._id, categories: selectedCategories }
+    api.menu.query.getMenusByCategories,
+    tenantId && orgId && selectedCategories.length > 0
+      ? { tenant_id: tenantId, org_id: orgId, categories: selectedCategories }
       : 'skip'
   )
+  console.log('filteredMenus', filteredMenus)
 
   // カテゴリ選択がない場合は全てのメニューを取得
   const {
@@ -343,8 +356,8 @@ export default function MenuList() {
     loadMore,
     status,
   } = useStablePaginatedQuery(
-    api.menu.core.query.listBySalonId,
-    salon?._id ? { salonId: salon._id } : 'skip',
+    api.menu.query.listByTenantAndOrg,
+    tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip',
     {
       initialNumItems: numberOfMenus,
     }
@@ -385,12 +398,7 @@ export default function MenuList() {
     if (!deletingMenuId) return
 
     try {
-      if (deletingImgPaths.length === 0) {
-        toast.error('メニュー画像がありません')
-        // 画像がない場合はメニューの削除のみ実行する場合もあるので、returnはコメントアウトまたは削除検討
-        // return
-      }
-      await killMenu({ menuId: deletingMenuId })
+      await killMenu({ menu_id: deletingMenuId })
 
       // 画像を一括削除
       if (deletingImgPaths.length > 0) {
@@ -400,7 +408,7 @@ export default function MenuList() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ imgUrls: deletingImgPaths, withThumbnail: true }),
+            body: JSON.stringify({ originalUrls: deletingImgPaths, withThumbnail: true }),
           })
 
           const result = await response.json()
@@ -441,9 +449,9 @@ export default function MenuList() {
       toast.success('メニューを削除しました') // メニュー自体の削除成功メッセージ
       setIsDeleteDialogOpen(false)
     } catch (error) {
-      toast.error(handleErrorToMsg(error))
+      showErrorToast(error)
     }
-  }, [deletingMenuId, deletingImgPaths, killMenu])
+  }, [deletingMenuId, deletingImgPaths, killMenu, showErrorToast])
 
   const openDeleteDialog = useCallback((menuId: Id<'menu'>, imgPaths: string[]) => {
     setDeletingMenuId(menuId)
@@ -693,15 +701,24 @@ export default function MenuList() {
           )}
       </div>
 
-      <Dialog
-        title="メニューの削除"
-        description="このメニューを削除してもよろしいですか？この操作は元に戻せません。"
-        confirmTitle="削除する"
-        cancelTitle="キャンセル"
-        onConfirmAction={handleDeleteMenu}
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      />
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">メニューの削除</DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="text-muted-foreground">
+            この操作は元に戻すことができません。
+          </DialogDescription>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              キャンセル
+            </Button>
+            <Button variant="destructive" onClick={() => handleDeleteMenu()}>
+              削除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   )
 }

@@ -1,23 +1,24 @@
 'use client';
 
-import { MENU_CATEGORY_VALUES, MenuCategory } from '@/convex/shared/types/common'
-import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Loading, ZodTextField } from '@/components/common';
-import { z } from 'zod';
-import { useZodForm } from '@/hooks/useZodForm';
-import { useSalon } from '@/hooks/useSalon';
-import { ImageDrop } from '@/components/common';
+import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Loading, ZodTextField } from '@/components/common'
+import { z } from 'zod'
+import { useZodForm } from '@/hooks/useZodForm'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import { MultiImageDrop } from '@/components/common'
 import { fileToBase64 } from '@/lib/utils'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
-import { handleErrorToMsg } from '@/lib/error'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { TagInput } from '@/components/common'
-import { getMinuteMultiples } from '@/lib/schedule'
+import { getMinuteMultiples } from '@/lib/schedules'
+import { ImageType } from '@/convex/types'
+import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import {
   Accordion,
   AccordionItem,
@@ -52,7 +53,16 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import { motion } from 'framer-motion'
-import { Gender, Target, MenuPaymentMethod } from '@/convex/shared/types/common'
+import {
+  Gender,
+  ActiveCustomerType,
+  MenuPaymentMethod,
+  GENDER_VALUES,
+  MENU_CATEGORY_VALUES,
+  MENU_PAYMENT_METHOD_VALUES,
+  ACTIVE_CUSTOMER_TYPE_VALUES,
+  MenuCategory,
+} from '@/convex/types'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -63,11 +73,8 @@ import {
   CommandItem,
 } from '@/components/ui/command'
 import { Check, ChevronDown } from 'lucide-react'
-import { ProcessedImageResult } from '@/services/image/image.types'
+import { MAX_NOTES_LENGTH, MAX_NUM, MAX_TAG_LENGTH } from '@/convex/constants'
 
-const GenderList = ['unselected', 'male', 'female'] as const
-const TargetList = ['all', 'first', 'repeat'] as const
-const PaymentMethodList = ['cash', 'credit_card', 'all'] as const
 // バリデーションスキーマ
 const schemaMenu = z
   .object({
@@ -79,53 +86,50 @@ const schemaMenu = z
       .min(1, { message: 'メニュー名は必須です' })
       .max(100, { message: 'メニュー名は100文字以内で入力してください' }),
     categories: z.array(z.enum(MENU_CATEGORY_VALUES)).min(1, { message: 'カテゴリは必須です' }),
-    unitPrice: z
+    unit_price: z
       .number({
         required_error: '価格は必須です',
         invalid_type_error: '価格は数値で入力してください',
       })
       .min(1, { message: '価格は必須です' })
-      .max(99999, { message: '価格は99999円以下で入力してください' })
+      .max(MAX_NUM, { message: `価格は${MAX_NUM}円以下で入力してください` })
       .nullable()
       .optional()
       .refine((val) => val !== null, { message: '価格は必須です' }),
-    salePrice: z.preprocess(
+    sale_price: z.preprocess(
       (val) => {
         // 空文字列の場合はnullを返す
-        if (val === '' || val === null || val === undefined) return null
+        if (val === '' || val === null || val === undefined) return undefined
         // 数値に変換できない場合もnullを返す
         const num = Number(val)
-        return isNaN(num) ? null : num
+        return isNaN(num) ? undefined : num
       },
       z
         .number()
-        .max(99999, { message: 'セール価格は99999円以下で入力してください' })
-        .nullable()
+        .max(MAX_NUM, { message: `セール価格は${MAX_NUM}円以下で入力してください` })
         .optional()
     ),
-    timeToMin: z
+    duration_min: z
       .number({
         required_error: '時間は必須です',
       })
       .refine((val) => val !== 0 && val !== null && val !== undefined, {
         message: '時間は必須です',
       }),
-    imgPaths: z.array(z.string()).optional(),
-    thumbnailPaths: z.array(z.string()).optional(),
     description: z
       .string({
         required_error: '説明は必須です',
         invalid_type_error: '説明は文字列で入力してください',
       })
       .min(1, { message: '説明は必須です' })
-      .max(1000, { message: '説明は1000文字以内で入力してください' }),
-    targetGender: z.enum(GenderList, { message: '性別は必須です' }),
-    targetType: z.enum(TargetList, { message: '対象タイプは必須です' }),
+      .max(MAX_NOTES_LENGTH, { message: `説明は${MAX_NOTES_LENGTH}文字以内で入力してください` }),
+    target_gender: z.enum(GENDER_VALUES, { message: '性別は必須です' }),
+    target_type: z.enum(ACTIVE_CUSTOMER_TYPE_VALUES, { message: '対象タイプは必須です' }),
     tags: z.preprocess(
       (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
       z
         .string()
-        .max(100, { message: 'タグは合計100文字以内で入力してください' })
+        .max(MAX_TAG_LENGTH, { message: `タグは${MAX_TAG_LENGTH}文字以内で入力してください` })
         .transform((val) =>
           val
             ? val
@@ -137,15 +141,15 @@ const schemaMenu = z
         )
         .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
     ),
-    paymentMethod: z.enum(PaymentMethodList, {
+    payment_method: z.enum(MENU_PAYMENT_METHOD_VALUES, {
       message: '支払い方法は必須です',
     }),
-    isActive: z.boolean({ message: '有効/無効フラグは必須です' }),
+    is_active: z.boolean({ message: '有効/無効フラグは必須です' }),
   })
   .refine(
     (data) => {
       // salePriceが存在する場合のみ、unitPriceとの比較を行う
-      if (data.salePrice && data.unitPrice && data.salePrice >= data.unitPrice) {
+      if (data.sale_price && data.unit_price && data.sale_price >= data.unit_price) {
         return false
       }
       return true
@@ -169,18 +173,19 @@ const ErrorMessage = ({ message }: { message: string | undefined }) => (
 
 export default function MenuAddForm() {
   const router = useRouter()
-  const { salon } = useSalon()
+  const { tenantId, orgId } = useTenantAndOrganization()
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false)
   const [currentFiles, setCurrentFiles] = useState<File[]>([])
-
+  const { showErrorToast } = useErrorHandler()
   const [isUploading, setIsUploading] = useState(false)
-  const [targetType, setTargetType] = useState<Target>('all')
+  const [targetType, setTargetType] = useState<ActiveCustomerType>('all')
   const [targetGender, setTargetGender] = useState<Gender>('unselected')
   const [paymentMethod, setPaymentMethod] = useState<MenuPaymentMethod>('cash')
   const [currentTags, setCurrentTags] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const createMenu = useMutation(api.menu.core.mutation.create)
+  const createMenu = useMutation(api.menu.mutation.create)
+  const org = useQuery(api.organization.query.findByOrgId, orgId ? { org_id: orgId } : 'skip')
 
   const {
     register,
@@ -194,19 +199,19 @@ export default function MenuAddForm() {
   // 支払い方法の選択ロジック
   const handlePaymentMethod = (method: MenuPaymentMethod) => {
     setPaymentMethod(method)
-    setValue('paymentMethod', method, { shouldValidate: true })
+    setValue('payment_method', method, { shouldValidate: true })
   }
 
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
     try {
-      if (!salon?._id) {
-        toast.error('サロン情報が必要です')
+      if (!tenantId || !orgId) {
+        toast.error('テナント or 店舗情報が必要です')
         return
       }
 
       setIsSubmitting(true)
-      let newUploadedImageUrls: ProcessedImageResult[] = []
+      let newUploadedImageUrls: ImageType[] = []
 
       if (currentFiles.length > 0) {
         setIsUploading(true)
@@ -217,8 +222,8 @@ export default function MenuAddForm() {
               return {
                 base64Data: originalBase64,
                 fileName: file.name,
-                directory: 'menu' as const, // CompressCompressCompressCompressCompressCompressCompressImageService側で salonId が結合されることを期待
-                salonId: salon._id,
+                directory: 'menu' as const,
+                orgId: orgId,
                 quality: 'high',
               }
             })
@@ -237,9 +242,12 @@ export default function MenuAddForm() {
             throw new Error(errorData.error || '画像のアップロードに失敗しました')
           }
 
-          const responseData: { successfulUploads?: ProcessedImageResult[] } = await response.json()
+          const responseData: { successfulUploads: ProcessedImageResult[] } = await response.json()
           if (responseData.successfulUploads) {
-            newUploadedImageUrls = responseData.successfulUploads
+            newUploadedImageUrls = responseData.successfulUploads.map((item) => ({
+              original_url: item.originalUrl,
+              thumbnail_url: item.thumbnailUrl,
+            }))
           } else {
             // レスポンスの形式が期待と異なる場合
             throw new Error('画像のアップロード結果の形式が正しくありません。')
@@ -252,35 +260,27 @@ export default function MenuAddForm() {
 
           setIsUploading(false)
           setIsSubmitting(false)
-          toast.error(
-            err instanceof Error
-              ? err.message
-              : handleErrorToMsg(err) || '画像のアップロードに失敗しました'
-          )
+          showErrorToast(err)
           return
         }
       }
 
       try {
-        const images = newUploadedImageUrls.map((urlPair) => ({
-          imgPath: urlPair.imgUrl,
-          thumbnailPath: urlPair.thumbnailUrl,
-        }))
-
         const menuId = await createMenu({
-          salonId: salon._id,
+          tenant_id: tenantId,
+          org_id: orgId,
           name: data.name,
           categories: data.categories,
-          unitPrice: data.unitPrice,
-          salePrice: (data.salePrice as number) || undefined,
-          timeToMin: data.timeToMin,
-          images: images.length > 0 ? images : undefined,
+          unit_price: data.unit_price ?? 0,
+          sale_price: data.sale_price ?? undefined,
+          duration_min: data.duration_min,
+          images: newUploadedImageUrls,
           description: data.description,
-          targetGender: data.targetGender,
-          targetType: data.targetType,
+          target_gender: data.target_gender,
+          target_type: data.target_type,
           tags: data.tags,
-          paymentMethod: data.paymentMethod,
-          isActive: data.isActive,
+          payment_method: data.payment_method,
+          is_active: data.is_active,
         })
 
         toast.success('メニューを登録しました')
@@ -293,37 +293,36 @@ export default function MenuAddForm() {
         // 現状は、API側のロールバックに任せ、クライアント側ではStateのクリアのみ行う。
 
         setIsSubmitting(false)
-        toast.error(handleErrorToMsg(err) || 'メニュー登録に失敗しました')
+        showErrorToast(err)
       }
     } catch (err) {
       setIsSubmitting(false)
-      toast.error(handleErrorToMsg(err) || 'メニュー登録に失敗しました')
+      showErrorToast(err)
     }
   }
 
   // 初期化
   useEffect(() => {
-    if (salon?._id) {
+    if (tenantId && orgId) {
       reset({
         name: undefined as unknown as string,
         categories: [] as MenuCategory[],
-        unitPrice: undefined as unknown as number,
-        salePrice: undefined as unknown as number,
-        timeToMin: undefined as unknown as number,
-        // imgFilePath は削除したので不要
+        unit_price: undefined as unknown as number,
+        sale_price: undefined as unknown as number,
+        duration_min: undefined as unknown as number,
         description: undefined as unknown as string,
-        targetGender: 'unselected',
-        targetType: 'all',
+        target_gender: 'unselected',
+        target_type: 'all',
         tags: [] as string[],
-        paymentMethod: 'cash',
-        isActive: true,
+        payment_method: 'cash',
+        is_active: true,
       })
       setCurrentTags([])
       setCurrentFiles([]) // currentFilesも初期化
     }
-  }, [salon?._id, reset])
+  }, [tenantId, orgId, reset])
 
-  if (!salon) {
+  if (!tenantId || !orgId) {
     return <Loading />
   }
 
@@ -343,10 +342,10 @@ export default function MenuAddForm() {
               <ImageIcon size={18} className="text-muted-foreground" />
               メニュー画像 (4枚まで)
             </div>
-            <ImageDrop
-              multiple={true}
-              onFileSelect={(newFiles) => {
-                setCurrentFiles(newFiles)
+            <MultiImageDrop
+              currentFiles={currentFiles}
+              onFilesSelect={(newFiles) => {
+                setCurrentFiles(newFiles as File[])
               }}
             />
           </div>
@@ -455,7 +454,7 @@ export default function MenuAddForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ZodTextField
-                name="unitPrice"
+                name="unit_price"
                 label="通常価格"
                 icon={<DollarSign className="text-muted-foreground" />}
                 type="number"
@@ -467,7 +466,7 @@ export default function MenuAddForm() {
               />
 
               <ZodTextField
-                name="salePrice"
+                name="sale_price"
                 label="セール価格"
                 type="number"
                 icon={<ShoppingBag className="text-muted-foreground" />}
@@ -485,7 +484,7 @@ export default function MenuAddForm() {
                 </Label>
                 <Select
                   onValueChange={(value) => {
-                    setValue('timeToMin', parseInt(value), { shouldValidate: true })
+                    setValue('duration_min', parseInt(value), { shouldValidate: true })
                   }}
                 >
                   <SelectTrigger className="transition-colors">
@@ -499,7 +498,7 @@ export default function MenuAddForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.timeToMin && <ErrorMessage message={errors.timeToMin.message} />}
+                {errors.duration_min && <ErrorMessage message={errors.duration_min.message} />}
                 <span className="text-xs text-muted-foreground">
                   メニューのトータルの施術時間を設定します。
                 </span>
@@ -516,8 +515,8 @@ export default function MenuAddForm() {
                 <Select
                   value={targetType}
                   onValueChange={(value) => {
-                    setTargetType(value as Target)
-                    setValue('targetType', value as Target)
+                    setTargetType(value as ActiveCustomerType)
+                    setValue('target_type', value as ActiveCustomerType)
                   }}
                 >
                   <SelectTrigger className="transition-colors">
@@ -543,7 +542,7 @@ export default function MenuAddForm() {
                   value={targetGender}
                   onValueChange={(value) => {
                     setTargetGender(value as Gender)
-                    setValue('targetGender', value as Gender)
+                    setValue('target_gender', value as Gender)
                   }}
                 >
                   <SelectTrigger className="transition-colors">
@@ -586,7 +585,7 @@ export default function MenuAddForm() {
           支払い方法
         </Label>
 
-        {salon?.stripeConnectStatus === 'active' ? (
+        {org?.stripe_connect_status === 'active' ? (
           <ToggleGroup
             type="single"
             className="w-full flex flex-wrap justify-start items-center gap-6"
@@ -667,9 +666,9 @@ export default function MenuAddForm() {
             </p>
           </div>
           <Switch
-            id="isActive"
-            checked={watch('isActive')}
-            onCheckedChange={(checked) => setValue('isActive', checked)}
+            id="is_active"
+            checked={watch('is_active')}
+            onCheckedChange={(checked) => setValue('is_active', checked)}
             className="data-[state=checked]:bg-active"
           />
         </div>

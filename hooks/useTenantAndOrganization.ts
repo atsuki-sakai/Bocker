@@ -9,12 +9,15 @@ import { Id } from '@/convex/_generated/dataModel';
 import type { Role } from '@/convex/types';
 import { api } from '@/convex/_generated/api';
 import { useQuery } from 'convex/react';
+import { Doc } from '@/convex/_generated/dataModel';
+import { SubscriptionStatus } from '@/convex/types';
 
 type UseTenantAndOrganization = {
   tenantId: Id<'tenant'> | null;
   orgId: Id<'organization'> | null;
   userId: string | null;
   role: Role | null;
+  subscriptionStatus: SubscriptionStatus | null;
   isLoaded: boolean;
   isSignedIn: boolean;
   ready: boolean;
@@ -42,7 +45,11 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
     tenant_id: tenantId,
   } : 'skip');
 
-  const ready = isLoaded && !!tenantId && !!org?._id && !!role;
+  const subscription = useQuery(api.tenant.subscription.query.getSubscription, tenantId ? {
+    tenant_id: tenantId
+  } : 'skip');
+
+  const ready = isLoaded && !!tenantId && !!org?._id && !!role && !!subscription;
 
   useEffect(() => {
     // 未サインインならサインインページへリダイレクト
@@ -66,6 +73,7 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
     orgId: org?._id ?? null,
     userId: userId as string | null,
     role: role,
+    subscriptionStatus: subscription?.status ?? null,
     isLoaded,
     isSignedIn: isSignedIn as boolean,
     ready,

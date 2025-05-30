@@ -12,6 +12,14 @@ import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 
 
+export const getSubscription = query({
+  args: {
+    tenant_id: v.id('tenant')
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.query('subscription').withIndex('by_tenant_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('is_archive', false)).first();
+  },
+});
 
 /**
  * Stripe顧客IDでサブスクリプションを検索
@@ -30,7 +38,7 @@ export const findByStripeCustomerId = query({
 });
 
 /**
- * ClerkユーザーIDでサブスクリプションを検索
+ * ClerkユーザーEmailでサブスクリプションを検索
  */
 export const getByUserEmail = query({
   args: {

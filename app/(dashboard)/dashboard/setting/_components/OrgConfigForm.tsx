@@ -1,15 +1,18 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useAction } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import { ImageDrop, Loading } from '@/components/common'
+import { SingleImageDrop, Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Textarea } from '@/components/ui/textarea'
 import { fileToBase64 } from '@/lib/utils'
 import { useZodForm } from '@/hooks/useZodForm'
 import { Separator } from '@/components/ui/separator'
+import { Label } from '@/components/ui/label'
 import { z } from 'zod'
 import { fetchAddressByPostalCode } from '@/lib/helpers'
 import { toast } from 'sonner'
@@ -45,6 +48,7 @@ const orgAndConfigFormSchema = z.object({
 })
 
 export default function OrgConfigForm() {
+  const router = useRouter()
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [currentFile, setCurrentFile] = useState<File | null>(null)
@@ -97,13 +101,16 @@ export default function OrgConfigForm() {
       e.preventDefault()
       if (!currentFile || !orgId) return
 
+      console.log('currentFile', currentFile)
       let uploadedOriginalUrl: string | null = null
       let uploadedThumbnailUrl: string | null = null
       try {
         setIsUploading(true)
 
+        console.log('currentFile', currentFile)
         const originalBase64 = await fileToBase64(currentFile)
 
+        console.log('currentFile', currentFile)
         const result = await updateWithThumbnail({
           base64Data: originalBase64,
           fileName: currentFile!.name,
@@ -135,6 +142,7 @@ export default function OrgConfigForm() {
         }
 
         setCurrentFile(null)
+        router.push('/dashboard/setting')
         toast.success('画像を保存しました')
       } catch (error) {
         showErrorToast(error)
@@ -151,6 +159,7 @@ export default function OrgConfigForm() {
       tenantId,
       killWithThumbnail,
       updateWithThumbnail,
+      router,
     ]
   )
 
@@ -274,22 +283,22 @@ export default function OrgConfigForm() {
         <div className="flex flex-col md:flex-row gap-6 items-start my-4 mt-12">
           <div className="w-full md:w-1/2 flex flex-col gap-4">
             <h4 className="text-2xl font-bold">店舗画像</h4>
-            <ImageDrop
-              initialImages={
-                orgAndConfig?.config?.images[0]?.original_url
-                  ? [
-                      {
-                        original_url: orgAndConfig.config.images[0].original_url || '',
-                        thumbnail_url: orgAndConfig.config.images[0].thumbnail_url || '',
-                      },
-                    ]
-                  : []
-              }
-              multiple={false}
-              maxSizeMB={6}
-              onFileSelect={(files) => {
-                setCurrentFile(files[0] ?? null)
+            {orgAndConfig?.config?.images[0]?.original_url && (
+              <div className="w-full h-full">
+                <Image
+                  src={orgAndConfig.config.images[0].original_url}
+                  alt="店舗画像"
+                  width={1512}
+                  height={1512}
+                  className="w-full h-full object-cover rounded-md border border-border"
+                />
+              </div>
+            )}
+            <SingleImageDrop
+              onFileSelect={(file) => {
+                setCurrentFile(file)
               }}
+              currentFile={currentFile}
             />
             <Button
               onClick={handleSaveImg}
@@ -299,26 +308,7 @@ export default function OrgConfigForm() {
             >
               {isUploading ? (
                 <>
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-active"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   保存中...
                 </>
               ) : (
@@ -330,12 +320,14 @@ export default function OrgConfigForm() {
             </Button>
           </div>
           <div className="w-full md:w-1/2 flex flex-col gap-4 mt-5">
+            <Label>店舗説明</Label>
             <Textarea
               {...register('description')}
               placeholder="サロンの特徴や魅力を記入してください"
               rows={12}
             />
 
+            <Label>予約ルール</Label>
             <Textarea
               {...register('reservation_rules')}
               placeholder="予約時のルールやご注意点を入力してください"

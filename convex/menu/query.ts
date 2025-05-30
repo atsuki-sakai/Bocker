@@ -2,7 +2,7 @@ import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { checkAuth } from '@/convex/utils/auth';
 import { paginationOptsValidator } from 'convex/server';
-import { genderType, targetType, menuCategoryType, MenuCategory } from '@/convex/types';
+import { genderType, activeCustomerType, menuCategoryType, MenuCategory } from '@/convex/types';
 
 
 // メニューIDからメニューを取得
@@ -23,7 +23,6 @@ export const getDisplayByIds = query({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
-
     // Promise.allを使用して並列に取得
     const menus = await Promise.all(
       args.menu_ids.map(async (menu_id) => {
@@ -46,7 +45,8 @@ export const getDisplayByIds = query({
           unit_price: menu.unit_price,
           sale_price: menu.sale_price,
           duration_min: menu.duration_min,
-          categories: menu.categories || [],
+          categories: menu.categories,
+          target_type: menu.target_type,
         })),
       options: options
         .filter((option) => option !== null) // nullを除外
@@ -76,7 +76,7 @@ export const listByTenantAndOrg = query({
     return await ctx.db
       .query('menu')
       .withIndex('by_tenant_org_active_archive', (q) =>
-        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', args.activeOnly || false).eq('is_archive', args.includeArchive || false)
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', args.activeOnly ?? true).eq('is_archive', args.includeArchive ?? false)
       )
       .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
@@ -88,7 +88,7 @@ export const listByType = query({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    target_type: targetType,
+    target_type: activeCustomerType,
     paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
     active_only: v.optional(v.boolean())
@@ -143,16 +143,20 @@ export const getMenusByCategories = query({
     // サロンIDでフィルタリングしたメニューをすべて取得
     const allMenus = await ctx.db
       .query('menu')
-      .withIndex('by_tenant_org_active_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', true))
+      .withIndex('by_tenant_org_active_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id))
       .collect()
-
-    // カテゴリでフィルタリング
-    // 引数のcategoriesの少なくとも1つが、メニューのcategoriesに含まれているものを返す
-    return allMenus.filter((menu) => {
-      if (!menu.categories) return false
-      return args.categories.some(
-        (category) => menu.categories && menu.categories.includes(category as MenuCategory)
-      )
-    })
+  
+    console.log('allMenus', allMenus)
+    console.log('args.categories', args.categories)
+    if(args.categories.length === 0) {
+      return allMenus
+    }else{
+      return allMenus.filter((menu) => {
+        if (!menu.categories) return false
+        return args.categories.some(
+          (category) => menu.categories && menu.categories.includes(category as MenuCategory)
+        )
+      })
+    }
   },
 })

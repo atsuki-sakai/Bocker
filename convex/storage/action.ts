@@ -152,11 +152,11 @@ export const uploadWithThumbnail = action({
 export const kill = action({
   args: {
     // 削除するファイルのURL
-    imgUrl: v.string(),
+    originalUrl: v.string(),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
-    if (!args.imgUrl) {
+    if (!args.originalUrl) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
         severity: ERROR_SEVERITY.ERROR,
@@ -170,7 +170,7 @@ export const kill = action({
       });
     }
     try {
-      await gcsService.deleteImage(args.imgUrl)
+      await gcsService.deleteImage(args.originalUrl)
       return { success: true }
     } catch (error) {
       throw error

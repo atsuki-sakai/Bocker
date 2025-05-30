@@ -1,5 +1,4 @@
 import { v, Infer } from 'convex/values'
-import { Stripe } from 'stripe'
 
 // 共通の型定義
 export const CommonFields = {
@@ -23,8 +22,8 @@ export const dayOfWeekType = v.union(...DAY_OF_WEEK_VALUES.map((day) => v.litera
 export type DayOfWeek = Infer<typeof dayOfWeekType>
 
 export const imageType = v.object({
-  original_url: v.optional(v.string()),
-  thumbnail_url: v.optional(v.string()),
+  original_url: v.string(),
+  thumbnail_url: v.string(),
 })
 export type ImageType = Infer<typeof imageType>
 
@@ -88,24 +87,6 @@ export const convertGender = (gender: Gender, inUnselected: boolean = false): st
       return '不明'
   }
 }
-
-// 対象タイプの型定義
-export const TARGET_VALUES = ['all', 'first', 'repeat'] as const
-export const targetType = v.union(...TARGET_VALUES.map((target) => v.literal(target)))
-export type Target = Infer<typeof targetType>
-export const convertTarget = (target: Target): string => {
-  switch (target) {
-    case 'all':
-      return '全員'
-    case 'first':
-      return '初回'
-    case 'repeat':
-      return 'リピート'
-    default:
-      return '不明'
-  }
-}
-
 // サブスクリプション関連の型定義
 export const BILLING_PERIOD_VALUES = ['day', 'week', 'month', 'year'] as const
 export const billingPeriodType = v.union(
@@ -188,6 +169,19 @@ export const activeCustomerType = v.union(
   ...ACTIVE_CUSTOMER_TYPE_VALUES.map((type) => v.literal(type))
 )
 export type ActiveCustomerType = Infer<typeof activeCustomerType>
+export const convertActiveCustomerType = (activeCustomerType: ActiveCustomerType): string => {
+  switch (activeCustomerType) {
+    case 'all':
+      return '全員'
+    case 'first_time':
+      return '初回'
+    case 'repeat':
+      return 'リピート'
+    default:
+      return '不明'
+  }
+}
+
 
 // メニュー支払い方法の型定義
 export const MENU_PAYMENT_METHOD_VALUES = ['cash', 'credit_card', 'all'] as const

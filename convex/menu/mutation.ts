@@ -7,7 +7,7 @@ import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
 import {
   genderType,
-  targetType,
+  activeCustomerType,
   menuPaymentMethodType,
   menuCategoryType,
   imageType
@@ -21,12 +21,12 @@ export const create = mutation({
     name: v.string(),
     categories: v.array(menuCategoryType),
     unit_price: v.number(),
-    sale_price: v.number(),
+    sale_price: v.optional(v.number()),
     duration_min: v.number(),
     images: v.array(imageType),
     description: v.optional(v.string()),
     target_gender: genderType,
-    target_type: targetType,
+    target_type: activeCustomerType,
     tags: v.array(v.string()),
     payment_method: menuPaymentMethodType,
     is_active: v.boolean(),
@@ -84,7 +84,7 @@ export const update = mutation({
     images: v.optional(v.array(imageType)),
     description: v.optional(v.string()),
     target_gender: v.optional(genderType),
-    target_type: v.optional(targetType),
+    target_type: v.optional(activeCustomerType),
     tags: v.optional(v.array(v.string())),
     payment_method: v.optional(menuPaymentMethodType),
     is_active: v.optional(v.boolean()),

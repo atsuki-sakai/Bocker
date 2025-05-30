@@ -72,9 +72,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         // 失敗があった場合、成功した画像を削除 (ロールバック)
         for (const uploaded of successfulUploads) {
           try {
-            await gcsService.deleteImageWithThumbnail(uploaded.imgUrl);
+            await gcsService.deleteImageWithThumbnail(uploaded.originalUrl);
           } catch (deleteErr) {
-            console.error(`Failed to delete image ${uploaded.imgUrl} during rollback:`, deleteErr);
+            console.error(`Failed to delete image ${uploaded.originalUrl} during rollback:`, deleteErr);
           }
         }
         return NextResponse.json({
@@ -111,19 +111,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
   const body = await request.json();
 
-  // imgUrl (単数) と imgUrls (複数) の両方に対応できるようにする
-  const { imgUrl, imgUrls, withThumbnail } = body;
+  // originalUrl (単数) と originalUrls (複数) の両方に対応できるようにする
+  const { originalUrl, originalUrls, withThumbnail } = body;
 
-  if (!imgUrl && (!Array.isArray(imgUrls) || imgUrls.length === 0)) {
+  if (!originalUrl && (!Array.isArray(originalUrls) || originalUrls.length === 0)) {
     return NextResponse.json({ error: '画像URLが指定されていません。単数の場合は imgUrl、複数の場合は imgUrls を配列で指定してください。' }, { status: 400 });
   }
 
   try {
     let urlsToDelete: string[] = [];
-    if (imgUrl) {
-      urlsToDelete.push(imgUrl);
-    } else if (imgUrls) {
-      urlsToDelete = imgUrls;
+    if (originalUrl) {
+      urlsToDelete.push(originalUrl);
+    } else if (originalUrls) {
+      urlsToDelete = originalUrls;
     }
 
     const deletePromises = urlsToDelete.map(url => {

@@ -5,19 +5,19 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Loading, ZodTextField } from '@/components/common'
 import { Loader2 } from 'lucide-react'
-import { MENU_CATEGORY_VALUES } from '@/convex/shared/types/common'
+import { MENU_CATEGORY_VALUES } from '@/convex/types'
+import { SortableImageGrid } from '@/components/common'
 import { z } from 'zod'
 import { useZodForm } from '@/hooks/useZodForm'
-import { useSalon } from '@/hooks/useSalon'
-import { ImageDrop, TagInput } from '@/components/common'
+import { MultiImageDrop, TagInput } from '@/components/common'
 import { fileToBase64 } from '@/lib/utils'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
-import { handleErrorToMsg } from '@/lib/error'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { getMinuteMultiples } from '@/lib/schedule'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import {
   ImageIcon,
   DollarSign,
@@ -49,12 +49,14 @@ import { motion } from 'framer-motion'
 import { Id } from '@/convex/_generated/dataModel'
 import {
   GENDER_VALUES,
-  TARGET_VALUES,
+  ACTIVE_CUSTOMER_TYPE_VALUES,
   MENU_PAYMENT_METHOD_VALUES,
-  Target,
   Gender,
   MenuPaymentMethod,
-} from '@/convex/shared/types/common'
+  ImageType,
+  MenuCategory,
+  ActiveCustomerType,
+} from '@/convex/types'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Command,
@@ -64,6 +66,8 @@ import {
   CommandItem,
 } from '@/components/ui/command'
 import { Check, ChevronDown } from 'lucide-react'
+import { getMinuteMultiples } from '@/lib/schedules'
+import { MAX_NUM, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/convex/constants'
 
 // バリデーションスキーマ
 const schemaMenu = z
@@ -77,15 +81,15 @@ const schemaMenu = z
       .array(z.enum(MENU_CATEGORY_VALUES))
       .min(1, { message: 'カテゴリは必須です' })
       .optional(),
-    unitPrice: z
+    unit_price: z
       .number()
       .min(1, { message: '価格は必須です' })
-      .max(99999, { message: '価格は99999円以下で入力してください' })
+      .max(MAX_NUM, { message: `価格は${MAX_NUM}円以下で入力してください` })
       .nullable()
       .optional()
       .refine((val) => val !== null, { message: '価格は必須です' })
       .optional(),
-    salePrice: z.preprocess(
+    sale_price: z.preprocess(
       (val) => {
         // 空文字列の場合はundefinedを返す
         if (val === '' || val === null || val === undefined) return undefined
@@ -95,11 +99,10 @@ const schemaMenu = z
       },
       z
         .number()
-        .max(99999, { message: 'セール価格は99999円以下で入力してください' })
-        .nullable()
+        .max(MAX_NUM, { message: `セール価格は${MAX_NUM}円以下で入力してください` })
         .optional()
     ),
-    timeToMin: z
+    duration_min: z
       .number()
       .refine((val) => val !== null || val !== undefined || val !== 0, {
         message: '実際にスタッフが稼働する施術時間は必須です',
@@ -108,23 +111,33 @@ const schemaMenu = z
     images: z
       .array(
         z.object({
-          imgPath: z.string(),
-          thumbnailPath: z.string(),
+          original_url: z.string(),
+          thumbnail_url: z.string(),
+        })
+      )
+      .optional(),
+    remove_images: z
+      .array(
+        z.object({
+          original_url: z.string(),
+          thumbnail_url: z.string(),
         })
       )
       .optional(),
     description: z
       .string()
       .min(1, { message: '説明は必須です' })
-      .max(1000, { message: '説明は1000文字以内で入力してください' })
+      .max(MAX_NOTES_LENGTH, { message: `説明は${MAX_NOTES_LENGTH}文字以内で入力してください` })
       .optional(),
-    targetGender: z.enum(GENDER_VALUES, { message: '性別は必須です' }).optional(),
-    targetType: z.enum(TARGET_VALUES, { message: '対象タイプは必須です' }).optional(),
+    target_gender: z.enum(GENDER_VALUES, { message: '性別は必須です' }).optional(),
+    target_type: z
+      .enum(ACTIVE_CUSTOMER_TYPE_VALUES, { message: '対象タイプは必須です' })
+      .optional(),
     tags: z.preprocess(
       (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
       z
         .string()
-        .max(100, { message: 'タグは合計100文字以内で入力してください' })
+        .max(MAX_TAG_LENGTH, { message: `タグは${MAX_TAG_LENGTH}文字以内で入力してください` })
         .transform((val) =>
           val
             ? val
@@ -137,15 +150,15 @@ const schemaMenu = z
         .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
         .optional()
     ),
-    paymentMethod: z
+    payment_method: z
       .enum(MENU_PAYMENT_METHOD_VALUES, { message: '支払い方法は必須です' })
       .optional(),
-    isActive: z.boolean({ message: '有効/無効フラグは必須です' }).optional(),
+    is_active: z.boolean({ message: '有効/無効フラグは必須です' }).optional(),
   })
   .refine(
     (data) => {
       // salePriceが存在する場合のみ、priceとの比較を行う
-      if (data.salePrice && data.unitPrice && data.salePrice >= data.unitPrice) {
+      if (data.sale_price && data.unit_price && data.sale_price >= data.unit_price) {
         return false
       }
       return true
@@ -172,22 +185,21 @@ export default function MenuEditForm() {
   const router = useRouter()
   const params = useParams()
   const menuId = params.menu_id as Id<'menu'>
-  const { salon } = useSalon()
-  const menuData = useQuery(api.menu.core.query.get, { menuId })
+  const { orgId, tenantId, subscriptionStatus } = useTenantAndOrganization()
+  const menuData = useQuery(api.menu.query.findById, { menu_id: menuId })
 
+  const { showErrorToast } = useErrorHandler()
   const [newFiles, setNewFiles] = useState<File[]>([])
-  const [existingImages, setExistingImages] = useState<
-    { imgPath: string; thumbnailPath: string }[]
-  >([])
+  const [existingImages, setExistingImages] = useState<ImageType[]>([])
   const [isUploading, setIsUploading] = useState(false)
-  const [targetType, setTargetType] = useState<Target>('all')
+  const [targetType, setTargetType] = useState<ActiveCustomerType>('all')
   const [targetGender, setTargetGender] = useState<Gender>('unselected')
   const [paymentMethod, setPaymentMethod] = useState<MenuPaymentMethod>('cash')
   const [currentTags, setCurrentTags] = useState<string[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const updateMenu = useMutation(api.menu.core.mutation.update)
+  const updateMenu = useMutation(api.menu.mutation.update)
 
   const {
     register,
@@ -195,22 +207,22 @@ export default function MenuEditForm() {
     setValue,
     reset,
     watch,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useZodForm(schemaMenu)
   // データ取得後にフォームを初期化
   useEffect(() => {
     if (menuData && !isInitialized) {
       const categoriesValue = menuData.categories || []
-      const timeToMinValue = menuData.timeToMin || undefined
-      const targetGenderValue = menuData.targetGender || 'unselected'
-      const targetTypeValue = menuData.targetType || 'all'
-      const paymentMethodValue = menuData.paymentMethod || 'cash'
+      const durationMinValue = menuData.duration_min || undefined
+      const targetGenderValue = menuData.target_gender || 'unselected'
+      const targetTypeValue = menuData.target_type || 'all'
+      const paymentMethodValue = menuData.payment_method || 'cash'
 
       // ステート変数を設定
       setExistingImages(
         menuData.images?.map((image) => ({
-          imgPath: image.imgPath || '',
-          thumbnailPath: image.thumbnailPath || '',
+          original_url: image.original_url || '',
+          thumbnail_url: image.thumbnail_url || '',
         })) || []
       )
       setCurrentTags(menuData.tags || [])
@@ -221,23 +233,18 @@ export default function MenuEditForm() {
 
       // フォームを初期化
       reset({
-        name: menuData.name || (undefined as unknown as string),
+        name: menuData.name,
         categories: categoriesValue,
-        unitPrice: menuData.unitPrice ?? undefined,
-        salePrice: menuData.salePrice ?? undefined,
-        timeToMin: timeToMinValue ?? undefined,
-
-        description: menuData.description || (undefined as unknown as string),
-        targetGender: targetGenderValue,
-        targetType: targetTypeValue,
+        unit_price: menuData.unit_price ?? undefined,
+        sale_price: menuData.sale_price ?? undefined,
+        duration_min: durationMinValue ?? undefined,
+        description: menuData.description,
+        target_gender: targetGenderValue,
+        target_type: targetTypeValue,
         tags: menuData.tags ?? undefined,
-        paymentMethod: paymentMethodValue,
-        isActive: menuData.isActive ?? true,
-        images:
-          menuData.images?.map((image) => ({
-            imgPath: image.imgPath || '',
-            thumbnailPath: image.thumbnailPath || '',
-          })) || [],
+        payment_method: paymentMethodValue,
+        is_active: menuData.is_active ?? true,
+        images: menuData.images,
       })
 
       // 初期化完了フラグを設定
@@ -245,19 +252,16 @@ export default function MenuEditForm() {
     }
   }, [menuData, reset, setValue, isInitialized])
 
-  console.log('existingImages: ', existingImages)
-  console.log('newFiles: ', newFiles)
-
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
     try {
-      if (!salon?._id || !menuData) {
+      if (!orgId || !tenantId || !menuData) {
         toast.error('サロン情報または既存メニュー情報が見つかりません')
         return
       }
 
       setIsSubmitting(true)
-      let imagesToSave: { imgPath: string; thumbnailPath: string }[] = [...existingImages]
+      let imagesToSave: ImageType[] = [...existingImages]
 
       if (newFiles.length > 0 && newFiles[0] !== undefined) {
         setIsUploading(true)
@@ -269,27 +273,38 @@ export default function MenuEditForm() {
                 base64Data: originalBase64,
                 fileName: file.name,
                 directory: 'menu' as const,
-                salonId: salon._id,
+                orgId: orgId,
                 quality: 'high',
               }
             })
           )
+          console.log('imagePayloads: ', imagePayloads)
           const response = await fetch('/api/storage', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(imagePayloads),
           })
+          console.log('response: ', response)
           const imageResults = await response.json()
+          console.log('imageResults: ', imageResults)
           setIsUploading(false)
 
           if (imageResults && Array.isArray(imageResults.successfulUploads)) {
             const uploadedImages = imageResults.successfulUploads.map(
-              (upload: { imgUrl: string; thumbnailUrl: string }) => ({
-                imgPath: upload.imgUrl,
-                thumbnailPath: upload.thumbnailUrl,
+              (upload: { originalUrl: string; thumbnailUrl: string }) => ({
+                original_url: upload.originalUrl,
+                thumbnail_url: upload.thumbnailUrl,
               })
             )
+            console.log('--------------------------------')
+            console.log('uploadImages: ', uploadedImages)
+            console.log('既存画像(existingImages):', existingImages)
+            console.log('新規画像(newFiles):', newFiles)
+            console.log('アップロード結果(imageResults):', imageResults)
+            console.log('アップロードされた画像(uploadedImages):', uploadedImages)
+            console.log('保存対象画像(imagesToSave)　前:', imagesToSave)
             imagesToSave = [...existingImages, ...uploadedImages]
+            console.log('マージ後 imagesToSave:', imagesToSave)
           } else {
             console.error('画像アップロードのレスポンス形式が不正です:', imageResults)
             toast.error('画像アップロードのレスポンス形式が不正です。')
@@ -299,27 +314,35 @@ export default function MenuEditForm() {
         } catch (err) {
           setIsUploading(false)
           setIsSubmitting(false)
-          toast.error(handleErrorToMsg(err) || '画像処理に失敗しました')
+          showErrorToast(err)
           return
         }
       }
+      const finalImagesToDelete: { original_url: string; thumbnail_url: string }[] = []
 
-      const finalImagesToSavePaths = imagesToSave.map((img) => img.imgPath)
-      const finalImagesToDelete: { imgPath: string; thumbnailPath: string }[] = []
+      // FIXME: ここでmenuData.imagesに含まれていて、imagesToSaveに含まれていない画像をfinalImagesToDeleteに追加する
       menuData.images?.forEach((initialImage) => {
-        if (initialImage.imgPath && !finalImagesToSavePaths.includes(initialImage.imgPath)) {
+        // original_urlが存在し、imagesToSave（編集後の画像群）に含まれていなければ削除対象
+        if (
+          initialImage.original_url &&
+          !imagesToSave.some((img) => img.original_url === initialImage.original_url)
+        ) {
           finalImagesToDelete.push({
-            imgPath: initialImage.imgPath,
-            thumbnailPath: initialImage.thumbnailPath || '',
+            original_url: initialImage.original_url,
+            thumbnail_url: initialImage.thumbnail_url ?? '',
           })
         }
       })
 
       if (finalImagesToDelete.length > 0) {
         try {
+          const removeImages = watch('remove_images') || []
           // APIが期待する形式に合わせてペイロードを構築
           const deleteApiPayload = {
-            imgUrls: finalImagesToDelete.map((img) => img.imgPath), // imgPath の配列を imgUrls に設定
+            originalUrls: [
+              ...finalImagesToDelete.map((img) => img.original_url),
+              ...removeImages.map((img) => img.original_url),
+            ], // imgPath の配列を imgUrls に設定
             withThumbnail: true, // すべての画像に対してサムネイルも削除すると仮定
           }
           const deleteResponse = await fetch('/api/storage', {
@@ -375,42 +398,41 @@ export default function MenuEditForm() {
         }
       }
 
+      console.log('updateMenu直前 imagesToSave:', imagesToSave)
       await updateMenu({
-        menuId,
+        menu_id: menuId,
         name: data.name,
         categories: data.categories,
-        unitPrice: data.unitPrice,
-        salePrice: data.salePrice === null ? undefined : (data.salePrice as number | undefined),
-        timeToMin: data.timeToMin,
+        unit_price: data.unit_price,
+        sale_price: data.sale_price ?? undefined,
+        duration_min: data.duration_min,
         images: imagesToSave,
         description: data.description,
-        targetGender: data.targetGender,
-        targetType: data.targetType,
+        target_gender: data.target_gender,
+        target_type: data.target_type,
         tags: data.tags,
-        paymentMethod: data.paymentMethod,
-        isActive: data.isActive,
+        payment_method: data.payment_method,
+        is_active: data.is_active,
       })
       toast.success('メニューを更新しました')
       router.push(`/dashboard/menu/${menuId}`)
     } catch (err) {
       setIsSubmitting(false)
-      toast.error(handleErrorToMsg(err) || 'メニュー更新に失敗しました')
+      showErrorToast(err)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   // 確実に初期値がレンダリングされることを確認
-  const renderTargetType = targetType || menuData?.targetType || 'all'
-  const renderTargetGender = targetGender || menuData?.targetGender || 'unselected'
+  const renderTargetType = targetType || menuData?.target_type || 'all'
+  const renderTargetGender = targetGender || menuData?.target_gender || 'unselected'
   const renderCategories = watch('categories') || menuData?.categories || []
-  const renderTimeToMin = watch('timeToMin') || menuData?.timeToMin || undefined
+  const renderDurationMin = watch('duration_min') || menuData?.duration_min || undefined
 
-  if (!salon || !menuData || !isInitialized) {
+  if (!orgId || !tenantId || !menuData || !isInitialized) {
     return <Loading />
   }
-
-  console.log('existingImages: ', existingImages)
 
   return (
     <div>
@@ -422,8 +444,8 @@ export default function MenuEditForm() {
           }
         }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="md:col-span-1">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
+          <div className="md:col-span-2">
             <div className="h-full flex flex-col">
               <CardHeader className="pb-0">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -431,36 +453,26 @@ export default function MenuEditForm() {
                   メニュー画像
                 </CardTitle>
               </CardHeader>
-
-              <ImageDrop
-                multiple={true}
-                initialImageUrls={existingImages.map((image) => image.thumbnailPath)}
+              <SortableImageGrid
+                images={existingImages}
+                onChange={(images) => {
+                  setExistingImages(images)
+                  setValue('images', images, { shouldValidate: true, shouldDirty: true })
+                }}
+              />
+              <MultiImageDrop
+                currentFiles={newFiles}
                 maxSizeMB={6}
-                onFileSelect={(files: File[]) => {
+                onFilesSelect={(files: File[]) => {
                   setNewFiles(files)
                 }}
-                onPreviewChange={(previewUrlsFromDrop: string[]) => {
-                  const keptExistingImages = existingImages.filter((existingImg) =>
-                    previewUrlsFromDrop.includes(existingImg.thumbnailPath)
-                  )
-
-                  const orderedKeptExistingImages = keptExistingImages.sort((a, b) => {
-                    const indexA = previewUrlsFromDrop.indexOf(a.thumbnailPath)
-                    const indexB = previewUrlsFromDrop.indexOf(b.thumbnailPath)
-                    if (indexA === -1 && indexB === -1) return 0
-                    if (indexA === -1) return 1
-                    if (indexB === -1) return -1
-                    return indexA - indexB
-                  })
-
-                  setExistingImages(orderedKeptExistingImages)
-                  setValue('images', orderedKeptExistingImages, { shouldValidate: true })
-                }}
+                limitFiles={4}
+                hasSelected={existingImages.length}
               />
             </div>
           </div>
 
-          <div className="md:col-span-2 space-y-6">
+          <div className="md:col-span-4 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <ZodTextField
                 name="name"
@@ -499,7 +511,7 @@ export default function MenuEditForm() {
                               if (current.includes(category)) {
                                 setValue(
                                   'categories',
-                                  current.filter((c: string) => c !== category),
+                                  current.filter((c: MenuCategory) => c !== category),
                                   { shouldValidate: true }
                                 )
                               } else {
@@ -536,7 +548,7 @@ export default function MenuEditForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ZodTextField
-                name="unitPrice"
+                name="unit_price"
                 label="通常価格"
                 icon={<DollarSign className="text-muted-foreground" />}
                 type="number"
@@ -548,7 +560,7 @@ export default function MenuEditForm() {
               />
 
               <ZodTextField
-                name="salePrice"
+                name="sale_price"
                 label="セール価格"
                 type="number"
                 icon={<ShoppingBag className="text-muted-foreground" />}
@@ -566,15 +578,15 @@ export default function MenuEditForm() {
                   スタッフが稼働する施術時間 <span className="text-destructive ml-1">*</span>
                 </Label>
                 <Select
-                  value={watch('timeToMin')?.toString() ?? renderTimeToMin?.toString()}
+                  value={watch('duration_min')?.toString() ?? renderDurationMin?.toString()}
                   onValueChange={(value) => {
                     if (!value) {
-                      setValue('timeToMin', undefined, { shouldValidate: true })
+                      setValue('duration_min', undefined, { shouldValidate: true })
                       return
                     }
                     const n = parseInt(value, 10)
                     if (!Number.isNaN(n)) {
-                      setValue('timeToMin', n, { shouldValidate: true })
+                      setValue('duration_min', n, { shouldValidate: true })
                     }
                   }}
                 >
@@ -592,7 +604,7 @@ export default function MenuEditForm() {
                 <span className="text-xs text-muted-foreground">
                   メニューの実際の稼働時間を入力してください。
                 </span>
-                {errors.timeToMin && <ErrorMessage message={errors.timeToMin.message} />}
+                {errors.duration_min && <ErrorMessage message={errors.duration_min.message} />}
               </div>
             </div>
 
@@ -607,11 +619,11 @@ export default function MenuEditForm() {
                 </span>
                 <Select
                   value={renderTargetType}
-                  onValueChange={(value: Target) => {
+                  onValueChange={(value: ActiveCustomerType) => {
                     if (!value.trim()) return
                     const typedValue = value
                     setTargetType(typedValue)
-                    setValue('targetType', typedValue, { shouldValidate: true })
+                    setValue('target_type', typedValue, { shouldValidate: true })
                   }}
                 >
                   <SelectTrigger className="border-border focus:border-border transition-colors">
@@ -639,7 +651,7 @@ export default function MenuEditForm() {
                     if (!value.trim()) return
                     const typedValue = value
                     setTargetGender(typedValue)
-                    setValue('targetGender', typedValue, { shouldValidate: true })
+                    setValue('target_gender', typedValue, { shouldValidate: true })
                   }}
                 >
                   <SelectTrigger className="border-border focus:border-border transition-colors">
@@ -673,7 +685,7 @@ export default function MenuEditForm() {
                 <CreditCard size={16} className="text-muted-foreground" />
                 支払い方法
               </Label>
-              {salon?.stripeConnectStatus === 'active' ? (
+              {subscriptionStatus === 'active' || subscriptionStatus === 'trialing' ? (
                 <ToggleGroup
                   type="single"
                   className="w-full flex flex-wrap justify-start items-center gap-6"
@@ -682,7 +694,7 @@ export default function MenuEditForm() {
                     if (value) {
                       const typedValue = value as MenuPaymentMethod
                       setPaymentMethod(typedValue)
-                      setValue('paymentMethod', typedValue, { shouldValidate: true })
+                      setValue('payment_method', typedValue, { shouldValidate: true })
                     }
                   }}
                 >
@@ -750,7 +762,9 @@ export default function MenuEditForm() {
           id="description"
           placeholder="メニューの詳細説明を入力してください"
           {...register('description')}
-          onChange={(e) => setValue('description', e.target.value, { shouldValidate: true })}
+          onChange={(e) =>
+            setValue('description', e.target.value, { shouldValidate: true, shouldDirty: true })
+          }
           rows={8}
           className="border-border focus-visible:ring-border resize-none"
         />
@@ -765,8 +779,8 @@ export default function MenuEditForm() {
           </div>
           <Switch
             id="isActive"
-            checked={watch('isActive')}
-            onCheckedChange={(checked) => setValue('isActive', checked)}
+            checked={watch('is_active') ?? true}
+            onCheckedChange={(checked) => setValue('is_active', checked ?? true)}
           />
         </div>
 
@@ -780,7 +794,11 @@ export default function MenuEditForm() {
             >
               戻る
             </Button>
-            <Button type="submit" disabled={isSubmitting || isUploading}>
+
+            <Button
+              type="submit"
+              disabled={isSubmitting || isUploading || (!isDirty && newFiles.length === 0)}
+            >
               {isSubmitting || isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />

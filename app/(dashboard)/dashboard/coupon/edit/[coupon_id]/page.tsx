@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { Loading } from '@/components/common'
 import { ConvexError } from 'convex/values'
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
+import { ACTIVE_CUSTOMER_TYPE_VALUES } from '@/convex/types'
 import {
   CalendarIcon,
   Percent,
@@ -29,8 +30,9 @@ import {
   Hash,
   AlertCircle,
   Save,
+  User,
 } from 'lucide-react'
-
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Switch } from '@/components/ui/switch'
 import { Calendar as CalendarComponent } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -80,6 +82,7 @@ const couponSchema = z
     max_use_count: z.number().min(0, '0以上の値を入力してください'),
     number_of_use: z.number().min(0, '0以上の値を入力してください'),
     selected_menu_ids: z.array(z.string()).optional(),
+    active_customer_type: z.enum(ACTIVE_CUSTOMER_TYPE_VALUES),
   })
   .superRefine((data, ctx) => {
     if (data.discount_type === 'percentage') {
@@ -328,7 +331,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         end_date_unix: submitData.end_date.getTime(),
         max_use_count: submitData.max_use_count,
         number_of_use: submitData.number_of_use,
-        active_customer_type: 'all',
+        active_customer_type: submitData.active_customer_type,
       })
       toast.success('クーポンを更新しました')
       router.push(`/dashboard/coupon`)
@@ -351,6 +354,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         end_date: new Date(couponConfig.end_date_unix ?? Date.now()),
         max_use_count: couponConfig.max_use_count ?? 0,
         number_of_use: couponConfig.number_of_use ?? 0,
+        active_customer_type: couponConfig.active_customer_type ?? 'all',
       })
     }
     const initialIds = exclusionMenus?.map((menu) => menu.menu_id) ?? []
@@ -647,6 +651,35 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                       )}
                     />
                   </div>
+                </div>
+                <div className="space-y-4 py-2">
+                  <div className="flex flex-col gap-2 pt-2">
+                    <Controller
+                      control={control}
+                      name="active_customer_type"
+                      render={({ field }) => (
+                        <>
+                          <Label className="flex items-center gap-2 text-primary">
+                            <User size={14} />
+                            <span>対象顧客:</span>
+                          </Label>
+                          <ToggleGroup
+                            type="single"
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            className="flex items-center justify-start w-fit gap-4 bg-muted p-3 rounded-md"
+                          >
+                            <ToggleGroupItem value="all">全利用者</ToggleGroupItem>
+                            <ToggleGroupItem value="first_time">初回利用者</ToggleGroupItem>
+                            <ToggleGroupItem value="repeat">リピーター</ToggleGroupItem>
+                          </ToggleGroup>
+                        </>
+                      )}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    クーポンを利用できる対象顧客属性を選択してください。
+                  </span>
                 </div>
               </div>
             </div>
