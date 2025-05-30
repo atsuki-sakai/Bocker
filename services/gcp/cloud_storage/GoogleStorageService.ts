@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import sharp from 'sharp';
 import { Id } from '@/convex/_generated/dataModel';
+import { AspectType } from '@/convex/types';
 import { ImageDirectory, ImageQuality, ProcessedImageResult, UploadedFileResult } from './types';
 /**
  * GCSクライアントとバケット設定を管理し、画像処理機能も提供するクラス
@@ -150,6 +151,7 @@ class GoogleStorageService {
 private async compressImage(
   inputBuffer: Buffer,
   maxWidth: number,
+  aspectType: AspectType, // アスペクト比の種類 / デフォルトはsquare  landscape: 16:9, mobile: 9:16
   compressionQuality: number,
 ): Promise<Buffer> {
   if (inputBuffer.length === 0) {
@@ -181,9 +183,24 @@ private async compressImage(
     if (!width || !height) {
       throw new Error('画像サイズを取得できませんでした');
     }
-    const targetAspect = 2 / 3; // 4:6 = 2:3
+    let targetAspect: number;
+    switch (aspectType) {
+      case 'square':
+        targetAspect = 1;      // 1:1
+        break;
+      case 'landscape':
+        targetAspect = 16 / 9; // 16:9
+        break;
+      case 'mobile':
+        targetAspect = 4 / 6; // 4:6
+        break;
+      default:
+        targetAspect = 1;      // デフォルトは正方形
+    }
+
     let cropWidth = width;
     let cropHeight = height;
+
 
     if (width / height > targetAspect) {
       // 横長 → 横方向をカット
@@ -348,7 +365,9 @@ private async compressImage(
    * @param originalFileName 元のファイル名 (例: "myImage.jpg", "profile.png")。拡張子も含む。
    * @param directory 保存先ディレクトリ種別 (例: 'menu', 'staff')
    * @param org_id 組織ID
+   * @param aspectType アスペクト比の種類 (square, landscape, mobile)
    * @param quality 画像品質設定 ('low' | 'high')
+   * @param aspectType アスペクト比の種類 (square, landscape, mobile)
    * @param isHotSpot ホットスポット対策を適用するかどうか
    * @returns オリジナル画像とサムネイル画像の公開URLとGCSパス
    */
@@ -357,6 +376,7 @@ private async compressImage(
     originalFileName: string, // 元のファイル名 (拡張子含む)
     directory: ImageDirectory,
     org_id: Id<'organization'>,
+    aspectType: AspectType ,
     quality?: ImageQuality,
     isHotSpot: boolean = false
   ): Promise<ProcessedImageResult> {
@@ -437,8 +457,8 @@ private async compressImage(
 
     try {
       // 画像圧縮処理 (オリジナルとサムネイル)
-      const originalCompressedBuffer = await this.compressImage(imageBuffer, originalWidth, originalQualityValue);
-      const thumbnailCompressedBuffer = await this.compressImage(imageBuffer, thumbnailWidth, thumbnailQualityValue);
+      const originalCompressedBuffer = await this.compressImage(imageBuffer, originalWidth,  aspectType, originalQualityValue);
+      const thumbnailCompressedBuffer = await this.compressImage(imageBuffer, thumbnailWidth, aspectType, thumbnailQualityValue);
 
       if (originalCompressedBuffer.length === 0 || thumbnailCompressedBuffer.length === 0) {
         throw new SystemError(

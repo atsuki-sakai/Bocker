@@ -119,6 +119,7 @@ export default function OrgConfigForm() {
             directory: 'setting',
             quality: 'high',
             orgId: orgId,
+            aspectType: 'landscape',
           }),
         })
 
@@ -283,13 +284,13 @@ export default function OrgConfigForm() {
           <div className="w-full md:w-1/2 flex flex-col gap-4">
             <h4 className="text-2xl font-bold">店舗画像</h4>
             {orgAndConfig?.config?.images[0]?.original_url && (
-              <div className="w-full h-full">
+              <div className="w-full h-full aspect-square max-h-[350px]">
                 <Image
                   src={orgAndConfig.config.images[0].original_url}
                   alt="店舗画像"
                   width={1512}
                   height={1512}
-                  className="w-full h-full object-cover rounded-md border border-border"
+                  className="w-full h-full object-cover rounded-md border border-border aspect-[9/16]"
                 />
               </div>
             )}
@@ -298,6 +299,8 @@ export default function OrgConfigForm() {
                 setCurrentFile(file)
               }}
               currentFile={currentFile}
+              placeholderText="店舗画像を選択してください"
+              aspectType="landscape"
             />
             <Button
               onClick={handleSaveImg}

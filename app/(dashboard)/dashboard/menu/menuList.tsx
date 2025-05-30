@@ -568,18 +568,17 @@ export default function MenuList() {
                   <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0 w-56" align="start">
+              <PopoverContent className="relative p-0 w-56" align="start">
+                <div className="absolute top-0 right-0 flex items-center justify-end gap-2 p-2 z-10">
+                  <Button
+                    onClick={() => setOpenCategoryPopover(false)}
+                    variant="outline"
+                    size="icon"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
                 <Command>
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      onClick={() => setOpenCategoryPopover(false)}
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
                   <CommandList>
                     <CommandEmpty>カテゴリが見つかりません</CommandEmpty>
                     <CommandGroup>

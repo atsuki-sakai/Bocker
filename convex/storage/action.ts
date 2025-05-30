@@ -4,7 +4,7 @@ import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService';
 import { checkAuth } from '@/convex/utils/auth';
-import { imgDirectoryType, imageQualityType } from '@/convex/types';
+import { imgDirectoryType, imageQualityType, aspectType } from '@/convex/types';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 
@@ -96,6 +96,7 @@ export const uploadWithThumbnail = action({
     fileName: v.string(),
     directory: imgDirectoryType,
     orgId: v.id('organization'),
+    aspectType: aspectType,
     quality: imageQualityType,
   },
   returns: v.object({
@@ -137,6 +138,7 @@ export const uploadWithThumbnail = action({
         args.fileName,
         args.directory,
         args.orgId,
+        args.aspectType,
         args.quality,
       );
       return {
@@ -222,6 +224,8 @@ export const bulkUploadWithThumbnails = action({
         directory: imgDirectoryType,
         // 組織ID
         orgId: v.id('organization'),
+        // アスペクト比の種類
+        aspectType: aspectType,
         // 画像品質
         quality: imageQualityType,
       })
@@ -313,6 +317,7 @@ export const bulkUploadWithThumbnails = action({
           image.fileName,
           image.directory,
           image.orgId,
+          image.aspectType,
           image.quality,
         );
         successfulUploads.push({

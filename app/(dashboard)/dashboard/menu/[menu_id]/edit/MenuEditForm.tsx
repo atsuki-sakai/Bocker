@@ -31,6 +31,7 @@ import {
   AlertCircle,
   Info,
   Save,
+  X,
 } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
@@ -182,6 +183,7 @@ export default function MenuEditForm() {
   const { orgId, tenantId, subscriptionStatus } = useTenantAndOrganization()
   const menuData = useQuery(api.menu.query.findById, { menu_id: menuId })
 
+  const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false)
   const { showErrorToast } = useErrorHandler()
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [existingImages, setExistingImages] = useState<ImageType[]>([])
@@ -483,17 +485,33 @@ export default function MenuEditForm() {
                   <Label className="text-sm flex items-center gap-2">カテゴリー</Label>
                   <span className="text-destructive">*</span>
                 </div>
-                <Popover>
+                <Popover open={isCategoryPopoverOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" className="w-full justify-between">
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                      onClick={() => setIsCategoryPopoverOpen(true)}
+                    >
                       {renderCategories && renderCategories.length > 0
                         ? renderCategories.map((cat: string) => cat).join(', ')
                         : 'メニューのカテゴリを選択してください'}
                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0">
+                  <PopoverContent className="w-[300px] p-0 relative">
                     <Command>
+                      <div className="absolute top-0 right-0 flex items-center justify-end gap-2 p-2 z-10">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setIsCategoryPopoverOpen(false)
+                          }}
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
                       <CommandEmpty>カテゴリが見つかりません</CommandEmpty>
                       <CommandGroup>
                         {MENU_CATEGORY_VALUES.map((category) => (

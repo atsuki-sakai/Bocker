@@ -237,16 +237,15 @@ export default function MultiImageDrop({
           height={150}
         />
         <Button
-          type="button"
-          variant="ghost"
+          variant="outline"
           size="icon"
-          className="absolute top-1 right-1 z-10 bg-white/80 hover:bg-red-500/80 text-muted-foreground hover:text-white p-1 rounded-full shadow"
+          className="absolute top-1 right-1 z-10  text-muted-foreground hover:text-white p-0.5 rounded-full shadow"
           onClick={(e) => {
             e.stopPropagation()
             handleRemoveImage(index)
           }}
         >
-          <X size={16} />
+          <X size={10} />
         </Button>
 
         {selectedFiles[index] && (
@@ -314,10 +313,33 @@ export default function MultiImageDrop({
               </div>
             </SortableContext>
           </DndContext>
-          <div className="mt-auto pt-2 text-center space-x-2">
-            <Button type="button" onClick={() => fileInputRef.current?.click()}>
+          <div className="flex items-center justify-end gap-2 mt-auto  text-center">
+            <Button size="sm" onClick={() => fileInputRef.current?.click()}>
               ファイルを追加
             </Button>
+            {previewImageUrls.length > 0 && (
+              <div className="text-center">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    previewImageUrls.forEach((url) => {
+                      if (url.startsWith('blob:')) {
+                        URL.revokeObjectURL(url)
+                      }
+                    })
+                    setPreviewImageUrls([])
+                    setSelectedFiles([])
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = ''
+                    }
+                    onFilesSelect?.([])
+                  }}
+                >
+                  すべての画像をクリア
+                </Button>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -334,31 +356,6 @@ export default function MultiImageDrop({
             : 'hidden'
         }
       />
-
-      {previewImageUrls.length > 0 && (
-        <div className="mt-2 text-center">
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={() => {
-              previewImageUrls.forEach((url) => {
-                if (url.startsWith('blob:')) {
-                  URL.revokeObjectURL(url)
-                }
-              })
-              setPreviewImageUrls([])
-              setSelectedFiles([])
-              if (fileInputRef.current) {
-                fileInputRef.current.value = ''
-              }
-              onFilesSelect?.([])
-            }}
-          >
-            すべての画像をクリア
-          </Button>
-        </div>
-      )}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService'
 import { Id } from '@/convex/_generated/dataModel'
 import { ImageDirectory, ImageQuality, ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
+import { AspectType } from '@/convex/types';
 
 // 単数アップロード用のリクエストボディ型
 interface SingleUploadRequestBody {
@@ -9,6 +10,7 @@ interface SingleUploadRequestBody {
   fileName: string;
   directory: ImageDirectory;
   orgId: Id<'organization'>;
+  aspectType?: AspectType;
   quality?: ImageQuality;
 }
 
@@ -18,6 +20,7 @@ interface BulkUploadRequestBodyItem {
   fileName: string;
   directory: ImageDirectory;
   orgId: Id<'organization'>;
+  aspectType?: AspectType;
   quality?: ImageQuality;
   isHotSpot?: boolean;
 }
@@ -42,6 +45,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           item.fileName,
           item.directory,
           item.orgId,
+          item.aspectType ?? 'mobile',
           item.quality,
           item.isHotSpot
         )
@@ -92,12 +96,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   } else {
     // 単数アップロード処理 (既存のロジックを流用)
-    const { base64Data, fileName, directory, orgId, quality } = body as SingleUploadRequestBody;
+    const { base64Data, fileName, directory, orgId, quality, aspectType } = body as SingleUploadRequestBody;
     if (!base64Data || !fileName || !directory || !orgId) {
       return NextResponse.json({ error: '必要なパラメータが不足しています。' }, { status: 400 })
     }
     try {
-      const result = await gcsService.uploadCompressedImageWithThumbnail(base64Data, fileName, directory, orgId, quality);
+      const result = await gcsService.uploadCompressedImageWithThumbnail(base64Data, fileName, directory, orgId, aspectType ?? 'mobile', quality);
       return NextResponse.json(result);
     } catch (error) {
       console.error('Single image upload error:', error);

@@ -70,7 +70,7 @@ const optionSchema = z
     sale_price: z.preprocess(
       (val) => {
         // 空文字列、null、undefinedの場合はnullを返し、nullable()で許容
-        if (val === '' || val === null || val === undefined) return undefined
+        if (val === '' || val === null || val === undefined) return null
         // 数値に変換できない場合は元の値を返し、invalid_type_errorをトリガー
         const num = Number(val)
         return isNaN(num) ? val : num
@@ -78,6 +78,7 @@ const optionSchema = z
       z
         .number()
         .max(MAX_NUM, { message: `セール価格は${MAX_NUM}円以下で入力してください` })
+        .nullable()
         .optional()
     ), // セール価格
     order_limit: z.preprocess(
@@ -205,7 +206,8 @@ function OptionAddForm() {
               fileName: currentFile!.name,
               directory: 'option',
               orgId: orgId,
-              quality: 'low',
+              quality: 'medium',
+              aspectType: 'square',
             }),
           })
 
@@ -237,7 +239,7 @@ function OptionAddForm() {
         org_id: orgId,
         name: data.name,
         unit_price: data.unit_price, // 価格
-        sale_price: data.sale_price as number | undefined, // セール価格
+        sale_price: data.sale_price ? data.sale_price : undefined, // セール価格
         order_limit: data.order_limit as number, // 注文制限
         in_stock: data.in_stock as number, // 在庫数
         duration_min: Number(data.duration_min), // 時間(分)
@@ -334,6 +336,7 @@ function OptionAddForm() {
                       setCurrentFile(file ?? null)
                     }}
                     className="rounded-md"
+                    aspectType="square"
                   />
                 </div>
               </CardContent>
@@ -399,7 +402,7 @@ function OptionAddForm() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
               <div className="w-full">
                 <Label className="text-sm flex items-center gap-2 mb-2">
                   <Clock size={16} className="text-primary" />
@@ -429,16 +432,16 @@ function OptionAddForm() {
                 )}
               </div>
             </div>
+
+            <TagInput
+              tags={currentTags}
+              setTagsAction={setCurrentTags}
+              error={errors.tags?.message}
+              title="タグ"
+              exampleText="例: 期間限定、セール、デートなど"
+            />
           </div>
         </div>
-
-        <TagInput
-          tags={currentTags}
-          setTagsAction={setCurrentTags}
-          error={errors.tags?.message}
-          title="タグ"
-          exampleText="例: 期間限定、セール、デートなど"
-        />
 
         <Label className="flex items-center gap-2 text-sm mt-4">
           <Info size={16} className="text-primary" />

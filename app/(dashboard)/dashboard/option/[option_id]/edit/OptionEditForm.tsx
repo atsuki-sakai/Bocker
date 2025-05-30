@@ -251,7 +251,8 @@ export default function OptionEditForm() {
               fileName: currentFile.name,
               directory: 'option',
               orgId: orgId,
-              quality: 'low',
+              quality: 'medium',
+              aspectType: 'square',
             }),
           })
 
@@ -451,7 +452,7 @@ export default function OptionEditForm() {
                         alt="option image"
                         width={1512}
                         height={1512}
-                        className="w-full h-auto object-cover rounded-md border border-border"
+                        className="w-full h-auto object-cover rounded-md border border-border aspect-[1/1]"
                       />
                       <Button
                         className="absolute top-2 right-2 z-10"
@@ -482,6 +483,7 @@ export default function OptionEditForm() {
                         )
                       }}
                       className="rounded-md"
+                      aspectType="square"
                     />
                   </div>
                 </div>

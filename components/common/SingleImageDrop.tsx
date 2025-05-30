@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { FileImage } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import { AspectType } from '@/convex/types'
 
 interface SingleImageDropProps {
   currentFile?: File | null
@@ -17,6 +18,7 @@ interface SingleImageDropProps {
   className?: string // クラス名
   placeholderText?: string // プレースホルダーテキスト
   accept?: string // 受け入れるファイルタイプ
+  aspectType?: AspectType // アスペクト比の種類
 }
 
 export default function SingleImageDrop({
@@ -28,6 +30,7 @@ export default function SingleImageDrop({
   className = '',
   placeholderText = '画像をドラッグするか、クリックして選択',
   accept = 'image/*',
+  aspectType = 'square',
 }: SingleImageDropProps) {
   // 選択されたファイルとプレビューURLの状態管理
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -110,7 +113,7 @@ export default function SingleImageDrop({
 
   return (
     <div
-      className={`relative border border-dashed rounded-lg p-4 bg-background text-center overflow-hidden border-border h-fit  ${className}`}
+      className={`relative border border-dashed rounded-lg p-4 bg-background text-center overflow-hidden border-border h-fit transition-colors hover:bg-muted ${className}`}
       onDrop={handleDrop}
       onDragOver={(e) => {
         e.preventDefault()
@@ -125,7 +128,7 @@ export default function SingleImageDrop({
             alt="Preview"
             unoptimized
             loader={({ src }) => src}
-            className="mx-auto object-cover h-full w-full rounded-md overflow-hidden"
+            className={`mx-auto object-cover h-auto w-full rounded-md overflow-hidden ${aspectType === 'square' ? 'aspect-[1/1]' : aspectType === 'landscape' ? 'aspect-[16/9]' : 'aspect-49/6]'}`}
             width={previewWidth}
             height={previewHeight}
           />
@@ -146,13 +149,13 @@ export default function SingleImageDrop({
               className="mt-2"
               onClick={clearImage}
             >
-              画像をクリア
+              画像を削除
             </Button>
           </div>
           {selectedFile && (
             <div className="flex items-center justify-start w-full gap-4 text-xs text-muted-foreground mt-2 text-start">
               <p>
-                <span className="font-bold">ファイル名:</span> {selectedFile.name}
+                <span className="font-bold">ファイル名:</span> {selectedFile.name.slice(0, 10)}...
               </p>
               <p>
                 <span className="font-bold">サイズ:</span> {(selectedFile.size / 1024).toFixed(1)}{' '}
@@ -165,7 +168,7 @@ export default function SingleImageDrop({
         <>
           {renderDragAreaPlaceholder()}
           <div className="mt-4">
-            <Button type="button" onClick={() => fileInputRef.current?.click()}>
+            <Button type="button" onClick={() => fileInputRef.current?.click()} className="w-full">
               ファイルを選択
             </Button>
           </div>
@@ -184,6 +187,12 @@ export default function SingleImageDrop({
             : 'hidden'
         }
       />
+      <p className="text-xs scale-90 text-muted-foreground mt-2">
+        <span className="font-bold">
+          推奨のアスペクト比は
+          {aspectType === 'square' ? '1:1' : aspectType === 'landscape' ? '16:9' : '4:6'}です。
+        </span>
+      </p>
     </div>
   )
 }

@@ -315,3 +315,7 @@ export const STRIPE_CONNECT_STATUS_VALUES = [
 
 export const stripeConnectStatusType = v.union(...STRIPE_CONNECT_STATUS_VALUES.map((status) => v.literal(status)))
 export type StripeConnectStatus = Infer<typeof stripeConnectStatusType>
+
+export const ASPECT_TYPE_VALUES = ['square', 'landscape', 'mobile'] as const
+export const aspectType = v.union(...ASPECT_TYPE_VALUES.map((type) => v.literal(type)))
+export type AspectType = Infer<typeof aspectType>

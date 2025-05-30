@@ -214,7 +214,7 @@ export default function PointTabs() {
                       className={`px-2 py-1 rounded-md ${
                         watchedIsActive
                           ? 'text-active bg-active-foreground border border-active'
-                          : 'text-destructive bg-destructive-foreground border border-destructive'
+                          : 'text-destructive-foreground bg-destructive border border-destructive-foreground'
                       }`}
                     >
                       <p className="text-sm font-bold">
