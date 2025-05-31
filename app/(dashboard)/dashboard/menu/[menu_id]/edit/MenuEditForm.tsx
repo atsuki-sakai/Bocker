@@ -48,6 +48,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Separator } from '@/components/ui/separator'
 import { motion } from 'framer-motion'
 import { Id } from '@/convex/_generated/dataModel'
+import { zNumberFieldOptional } from '@/lib/zod/helpers'
 import {
   GENDER_VALUES,
   ACTIVE_CUSTOMER_TYPE_VALUES,
@@ -85,19 +86,7 @@ const schemaMenu = z
       .optional()
       .refine((val) => val !== null, { message: '価格は必須です' })
       .optional(),
-    sale_price: z.preprocess(
-      (val) => {
-        // 空文字列の場合はundefinedを返す
-        if (val === '' || val === null || val === undefined) return undefined
-        // 数値に変換できない場合もundefinedを返す
-        const num = Number(val)
-        return isNaN(num) ? undefined : num
-      },
-      z
-        .number()
-        .max(MAX_NUM, { message: `セール価格は${MAX_NUM}円以下で入力してください` })
-        .optional()
-    ),
+    sale_price: zNumberFieldOptional(MAX_NUM, `セール価格は${MAX_NUM}円以下で入力してください`),
     duration_min: z
       .number()
       .refine((val) => val !== null || val !== undefined || val !== 0, {
@@ -432,7 +421,7 @@ export default function MenuEditForm() {
   }
 
   if (isUploading) {
-    return <Uploader uploaded={isUploading} />
+    return <Uploader />
   }
 
   return (

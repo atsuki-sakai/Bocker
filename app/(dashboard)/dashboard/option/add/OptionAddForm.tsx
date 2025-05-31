@@ -27,6 +27,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
+import { zNumberFieldOptional } from '@/lib/zod/helpers'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { Loading } from '@/components/common'
 import { useRouter } from 'next/navigation'
@@ -68,20 +69,7 @@ const optionSchema = z
         .min(1, { message: '価格は1円以上で入力してください' })
         .max(MAX_NUM, { message: `価格は${MAX_NUM}円以下で入力してください` })
     ), // 価格
-    sale_price: z.preprocess(
-      (val) => {
-        // 空文字列、null、undefinedの場合はnullを返し、nullable()で許容
-        if (val === '' || val === null || val === undefined) return null
-        // 数値に変換できない場合は元の値を返し、invalid_type_errorをトリガー
-        const num = Number(val)
-        return isNaN(num) ? val : num
-      },
-      z
-        .number()
-        .max(MAX_NUM, { message: `セール価格は${MAX_NUM}円以下で入力してください` })
-        .nullable()
-        .optional()
-    ), // セール価格
+    sale_price: zNumberFieldOptional(MAX_NUM, `セール価格は${MAX_NUM}円以下で入力してください`), // セール価格
     order_limit: z.preprocess(
       (val) => {
         // 空文字列の場合はnullを返す
@@ -143,8 +131,8 @@ const optionSchema = z
     is_archive: z.boolean({ message: '有効/無効フラグは必須です' }), // 有効/無効フラグ
     images: z.array(
       z.object({
-        original_url: z.string().max(512),
-        thumbnail_url: z.string().max(512),
+        original_url: z.string(),
+        thumbnail_url: z.string(),
       })
     ),
   })
@@ -310,7 +298,7 @@ function OptionAddForm() {
   }
 
   if (isUploading) {
-    return <Uploader uploaded={isUploading} />
+    return <Uploader />
   }
 
   return (

@@ -3,47 +3,25 @@
 import { useEffect, useState } from 'react'
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
 
-interface ControlledProgressBarProps {
-  uploaded: boolean
-}
 
-export default function ControlledProgressBar({ uploaded }: ControlledProgressBarProps) {
+export default function ControlledProgressBar() {
   const [progress, setProgress] = useState<number>(0)
 
   useEffect(() => {
-    let interval: NodeJS.Timeout
-
-    if (!uploaded) {
-      interval = setInterval(() => {
-        setProgress((prev: number) => {
-          if (prev >= 80) {
-            clearInterval(interval)
-            return 80
-          }
-          return prev + 2
-        })
-      }, 100)
-    }
+    const interval = setInterval(() => {
+      setProgress((prev: number) => {
+        if (prev >= 90) {
+          clearInterval(interval)
+          return 90
+        }
+        return prev + 2
+      })
+    }, 100)
 
     return () => clearInterval(interval)
-  }, [uploaded])
-
-  useEffect(() => {
-    if (uploaded) {
-      setProgress(100)
-    }
-  }, [uploaded])
+  }, [])
 
   const getStatusIcon = () => {
-    if (uploaded) {
-      return (
-        <div className="relative">
-          <CheckCircle className="w-6 h-6 text-active animate-pulse" />
-          <div className="absolute inset-0 bg-active rounded-full animate-ping opacity-30" />
-        </div>
-      )
-    }
-
     return (
       <div className="relative">
         <div className="w-6 h-6 rounded-full bg-gradient-to-r from-link-foreground to-link flex items-center justify-center">
@@ -55,7 +33,7 @@ export default function ControlledProgressBar({ uploaded }: ControlledProgressBa
   }
 
   const getProgressColor = (): string => {
-    if (uploaded) return 'from-green-400 to-emerald-500'
+    if (progress === 80) return 'from-green-400 to-emerald-500'
     if (progress > 60) return 'from-blue-400 to-purple-500'
     if (progress > 30) return 'from-cyan-400 to-blue-500'
     return 'from-indigo-400 to-cyan-500'
@@ -70,10 +48,10 @@ export default function ControlledProgressBar({ uploaded }: ControlledProgressBa
           {getStatusIcon()}
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              {uploaded ? 'アップロード完了' : '画像をアップロード中'}
+              {progress === 100 ? '画像をアップロード中' : 'アップロード完了'}
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {uploaded ? '処理が完了しました' : `${progress}% 完了`}
+              {progress === 100 ? '処理が完了しました' : `${progress}% 完了`}
             </p>
           </div>
         </div>
@@ -100,7 +78,7 @@ export default function ControlledProgressBar({ uploaded }: ControlledProgressBa
         </div>
 
         {/* 警告メッセージ */}
-        {!uploaded && (
+        {progress !== 100 && (
           <div className="flex items-start gap-3 p-3 bg-destructive-foreground border border-destructive rounded-xl">
             <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
             <div className="text-xs text-destructive-foreground">
@@ -113,7 +91,7 @@ export default function ControlledProgressBar({ uploaded }: ControlledProgressBa
         )}
 
         {/* 完了メッセージ */}
-        {uploaded && (
+        {progress === 100 && (
           <div className="text-center p-4 bg-active-foreground border border-active rounded-xl">
             <div className="flex items-center justify-center gap-2 text-active">
               <CheckCircle className="w-5 h-5" />

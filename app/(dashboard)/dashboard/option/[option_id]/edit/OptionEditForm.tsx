@@ -28,6 +28,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import Image from 'next/image'
 import { getMinuteMultiples } from '@/lib/schedules' // getMinuteMultiplesを追加
+import { zNumberFieldOptional } from '@/lib/zod/helpers'
 import {
   Tag,
   DollarSign,
@@ -69,17 +70,7 @@ const optionSchema = z
       .refine((val): val is number => val !== null && val !== undefined, {
         message: '単価は必須です',
       }), // refineを更新
-    sale_price: z.preprocess(
-      (val) => {
-        if (val === '' || val === null || val === undefined) return undefined
-        const num = Number(val)
-        return isNaN(num) ? undefined : num
-      },
-      z
-        .number()
-        .max(MAX_NUM, { message: `セール価格は${MAX_NUM}円以下で入力してください` })
-        .optional()
-    ),
+    sale_price: zNumberFieldOptional(MAX_NUM, `セール価格は${MAX_NUM}円以下で入力してください`), // セール価格
     images: z.array(
       z.object({
         original_url: z.string().optional(),
@@ -428,7 +419,7 @@ export default function OptionEditForm() {
   }
 
   if (isUploading) {
-    return <Uploader uploaded={isUploading} />
+    return <Uploader />
   }
 
   console.log('isDirty', isDirty)

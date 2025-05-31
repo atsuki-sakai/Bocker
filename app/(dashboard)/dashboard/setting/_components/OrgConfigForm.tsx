@@ -213,7 +213,7 @@ export default function OrgConfigForm() {
   }
 
   if (isUploading) {
-    return <Uploader uploaded={isUploading} />
+    return <Uploader />
   }
 
   return (

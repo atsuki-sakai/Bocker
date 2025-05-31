@@ -69,6 +69,7 @@ import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/u
 import { Check, ChevronDown } from 'lucide-react'
 import { MAX_NOTES_LENGTH, MAX_NUM, MAX_TAG_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
+import { zNumberFieldOptional } from '@/lib/zod/helpers'
 
 // バリデーションスキーマ
 const schemaMenu = z
@@ -91,19 +92,7 @@ const schemaMenu = z
       .nullable()
       .optional()
       .refine((val) => val !== null, { message: '価格は必須です' }),
-    sale_price: z.preprocess(
-      (val) => {
-        // 空文字列の場合はnullを返す
-        if (val === '' || val === null || val === undefined) return undefined
-        // 数値に変換できない場合もnullを返す
-        const num = Number(val)
-        return isNaN(num) ? undefined : num
-      },
-      z
-        .number()
-        .max(MAX_NUM, { message: `セール価格は${MAX_NUM}円以下で入力してください` })
-        .optional()
-    ),
+    sale_price: zNumberFieldOptional(MAX_NUM, `セール価格は${MAX_NUM}円以下で入力してください`),
     duration_min: z
       .number({
         required_error: '時間は必須です',
@@ -322,7 +311,7 @@ export default function MenuAddForm() {
   }
 
   if (isUploading) {
-    return <Uploader uploaded={isUploading} />
+    return <Uploader />
   }
 
   return (

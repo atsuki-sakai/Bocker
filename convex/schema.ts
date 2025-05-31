@@ -549,7 +549,7 @@ const staff = defineTable({
   description: v.optional(v.string()), // 自己紹介
   images: v.array(imageType), // 画像
   tags: v.array(v.string()), // タグ
-  featured_hair_images: v.array(imageType), // フィーチャー画像
+  featured_hair_images: v.optional(v.array(imageType)), // フィーチャー画像
   is_active: v.boolean(), // 有効/無効
   ...CommonFields,
 })  
@@ -628,7 +628,8 @@ const menu_exclusion_staff = defineTable({
 .index(
   'by_tenant_org_staff_menu_archive',
   ['tenant_id', 'org_id', 'staff_id', 'menu_id', 'is_archive']
-);
+)
+.index('by_tenant_org_menu_archive', ['tenant_id', 'org_id', 'menu_id', 'is_archive']);
 
 /**
  * =========================
