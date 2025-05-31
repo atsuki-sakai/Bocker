@@ -33,7 +33,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MAX_NUM, MAX_TEXT_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
-import { createSingleImageFormData, uploadImages } from '@/lib/utils'
+import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
 
 // 施術時間：0〜360分の5分刻みをキャッシュ
 // 0分を許容する事で物販にも対応する
@@ -181,22 +181,20 @@ function OptionAddForm() {
       if (currentFile) {
         try {
           setIsUploading(true)
-          const formData = createSingleImageFormData(currentFile!, orgId, 'option', {
-            quality: 'medium',
-            aspectType: 'square',
-          })
-
-          const responseData = await uploadImages(formData)
-          if (responseData) {
-            newUploadedImageUrls = responseData.map((image) => ({
-              original_url: image.originalUrl,
-              thumbnail_url: image.thumbnailUrl,
-            }))
-          } else {
-            console.log(responseData)
-            // レスポンスの形式が期待と異なる場合
-            throw new Error('画像のアップロード形式が正しくありません')
-          }
+          const result = await uploadCompressedImageWithThumbnailSignedUrl(
+            currentFile!,
+            orgId,
+            'option',
+            'square', // aspectType: 'square' | 'landscape' | 'mobile'
+            'medium' // quality: 'low' | 'medium' | 'high'
+          )
+          // 新方式のレスポンス形式に合わせて修正
+          newUploadedImageUrls = [
+            {
+              original_url: result.original.publicUrl,
+              thumbnail_url: result.thumbnail.publicUrl,
+            },
+          ]
           setIsUploading(false)
         } catch (error) {
           showErrorToast(error)

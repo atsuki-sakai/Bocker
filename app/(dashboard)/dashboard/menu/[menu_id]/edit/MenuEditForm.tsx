@@ -64,7 +64,7 @@ import { Check, ChevronDown } from 'lucide-react'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { MAX_NUM, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
-import { createMultipleImageFormData, uploadImages } from '@/lib/utils'
+import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
 
 // バリデーションスキーマ
 const schemaMenu = z
@@ -252,37 +252,35 @@ export default function MenuEditForm() {
       if (newFiles.length > 0 && newFiles[0] !== undefined) {
         setIsUploading(true)
         try {
-          // FormDataを使って複数画像をアップロード
-          const formData = createMultipleImageFormData(newFiles, orgId, 'menu', {
-            quality: 'medium',
-            aspectType: 'mobile',
-          })
-          console.log('FormData作成完了 - ファイル数:', newFiles.length)
+          // Promise.allを使って複数の画像を並列アップロード
+          const uploadPromises = newFiles.map((file) =>
+            uploadCompressedImageWithThumbnailSignedUrl(
+              file,
+              orgId,
+              'menu',
+              'mobile', // aspectType: 'square' | 'landscape' | 'mobile'
+              'medium' // quality: 'low' | 'medium' | 'high'
+            )
+          )
+          console.log('アップロード開始 - ファイル数:', newFiles.length)
 
-          const imageResults = await uploadImages(formData)
-          console.log('imageResults: ', imageResults)
+          const uploadResults = await Promise.all(uploadPromises)
+          console.log('uploadResults: ', uploadResults)
           setIsUploading(false)
 
-          if (imageResults.length > 0) {
-            const uploadedImages = imageResults.map((image) => ({
-              original_url: image.originalUrl,
-              thumbnail_url: image.thumbnailUrl,
-            }))
-            console.log('--------------------------------')
-            console.log('uploadImages: ', uploadedImages)
-            console.log('既存画像(existingImages):', existingImages)
-            console.log('新規画像(newFiles):', newFiles)
-            console.log('アップロード結果(imageResults):', imageResults)
-            console.log('アップロードされた画像(uploadedImages):', uploadedImages)
-            console.log('保存対象画像(imagesToSave)　前:', imagesToSave)
-            imagesToSave = [...existingImages, ...uploadedImages]
-            console.log('マージ後 imagesToSave:', imagesToSave)
-          } else {
-            console.error('画像アップロードのレスポンス形式が不正です:', imageResults)
-            toast.error('画像アップロードのレスポンス形式が不正です。')
-            setIsSubmitting(false)
-            return
-          }
+          const uploadedImages = uploadResults.map((result) => ({
+            original_url: result.original.publicUrl,
+            thumbnail_url: result.thumbnail.publicUrl,
+          }))
+          console.log('--------------------------------')
+          console.log('uploadImages: ', uploadedImages)
+          console.log('既存画像(existingImages):', existingImages)
+          console.log('新規画像(newFiles):', newFiles)
+          console.log('アップロード結果(uploadResults):', uploadResults)
+          console.log('アップロードされた画像(uploadedImages):', uploadedImages)
+          console.log('保存対象画像(imagesToSave)　前:', imagesToSave)
+          imagesToSave = [...existingImages, ...uploadedImages]
+          console.log('マージ後 imagesToSave:', imagesToSave)
         } catch (err) {
           setIsUploading(false)
           setIsSubmitting(false)

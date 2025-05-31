@@ -9,9 +9,11 @@ import sharp from 'sharp';
 import { Id } from '@/convex/_generated/dataModel';
 import { AspectType } from '@/convex/types';
 import { ImageDirectory, ImageQuality, ProcessedImageResult, UploadedFileResult } from './types';
+import { compressAndCropImage } from './helpers';
 /**
  * GCSクライアントとバケット設定を管理し、画像処理機能も提供するクラス
  */
+
 class GoogleStorageService {
   private storage: Storage | null = null
   private bucketName: string | null = null
@@ -178,7 +180,7 @@ private async compressImage(
     const sharpInstance = sharp(inputBuffer).withMetadata();
     const metadata = await sharpInstance.metadata();
 
-    // 2. アスペクト比2:3（4:6）で中央トリミング
+    // 2. アスペクト比2:3で中央トリミング
     let { width, height } = metadata;
     if (!width || !height) {
       throw new Error('画像サイズを取得できませんでした');
@@ -192,7 +194,7 @@ private async compressImage(
         targetAspect = 16 / 9; // 16:9
         break;
       case 'mobile':
-        targetAspect = 4 / 6; // 4:6
+        targetAspect = 2 / 3; // 2:3
         break;
       default:
         targetAspect = 1;      // デフォルトは正方形
@@ -366,7 +368,7 @@ private async compressImage(
    * @param directory 保存先ディレクトリ種別 (例: 'menu', 'staff')
    * @param org_id 組織ID
    * @param aspectType アスペクト比の種類 (square, landscape, mobile)
-   * @param quality 画像品質設定 ('low' | 'high')
+   * @param quality 画像品質設定 ('low' | medium |  'high')
    * @param aspectType アスペクト比の種類 (square, landscape, mobile)
    * @param isHotSpot ホットスポット対策を適用するかどうか
    * @returns オリジナル画像とサムネイル画像の公開URLとGCSパス
@@ -751,6 +753,19 @@ private async compressImage(
         },
       })
     }
+  }
+
+  async getSignedUploadUrl(fileName: string, contentType: string, orgId: Id<'organization'>, directory: string): Promise<{ url: string; filePath: string }> {
+    this.initializeIfNeeded();
+    // ここでSDKを直接使って署名付きURLを発行
+    const bucket = this.storage!.bucket(this.bucketName!);
+    const filePath = `${orgId}/${directory}/${fileName}`;
+    const [url] = await bucket.file(filePath).getSignedUrl({
+      action: 'write',
+      expires: Date.now() + 10 * 60 * 1000, // 10分有効
+      contentType,
+    });
+    return { url, filePath };
   }
 }
 

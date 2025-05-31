@@ -8,7 +8,7 @@ import { z } from 'zod'
 import { useZodForm } from '@/hooks/useZodForm'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { MultiImageDrop } from '@/components/common'
-import { createMultipleImageFormData, uploadImages } from '@/lib/utils'
+import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
@@ -199,22 +199,22 @@ export default function MenuAddForm() {
       if (currentFiles.length > 0) {
         setIsUploading(true)
         try {
-          // FormDataを使って複数画像をアップロード
-          const formData = createMultipleImageFormData(currentFiles, orgId, 'menu', {
-            quality: 'medium',
-            aspectType: 'mobile',
-          })
+          // Promise.allを使って複数の画像を並列アップロード
+          const uploadPromises = currentFiles.map((file) =>
+            uploadCompressedImageWithThumbnailSignedUrl(
+              file,
+              orgId,
+              'menu',
+              'mobile', // aspectType: 'square' | 'landscape' | 'mobile'
+              'medium' // quality: 'low' | 'medium' | 'high'
+            )
+          )
 
-          const responseData = await uploadImages(formData)
-          if (responseData.length > 0) {
-            newUploadedImageUrls = responseData.map((item) => ({
-              original_url: item.originalUrl,
-              thumbnail_url: item.thumbnailUrl,
-            }))
-          } else {
-            // レスポンスの形式が期待と異なる場合
-            throw new Error('画像のアップロード結果の形式が正しくありません。')
-          }
+          const uploadResults = await Promise.all(uploadPromises)
+          newUploadedImageUrls = uploadResults.map((result) => ({
+            original_url: result.original.publicUrl,
+            thumbnail_url: result.thumbnail.publicUrl,
+          }))
 
           setIsUploading(false)
         } catch (err) {

@@ -190,7 +190,7 @@ export default function SingleImageDrop({
       <p className="text-xs scale-90 text-muted-foreground mt-2">
         <span className="font-bold">
           推奨のアスペクト比は
-          {aspectType === 'square' ? '1:1' : aspectType === 'landscape' ? '16:9' : '4:6'}です。
+          {aspectType === 'square' ? '1/1' : aspectType === 'landscape' ? '16/9' : '2/3'}です。
         </span>
       </p>
     </div>

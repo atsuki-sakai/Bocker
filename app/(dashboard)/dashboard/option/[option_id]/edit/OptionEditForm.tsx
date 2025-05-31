@@ -48,7 +48,7 @@ import {
   SelectItem,
 } from '@/components/ui/select' // Select関連を追加
 import { Card, CardContent } from '@/components/ui/card'
-import { createSingleImageFormData, uploadImages } from '@/lib/utils'
+import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
 import { ImageType } from '@/convex/types'
 import { MAX_NUM } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
@@ -230,21 +230,20 @@ export default function OptionEditForm() {
       if (currentFile) {
         try {
           setIsUploading(true)
-          const formData = createSingleImageFormData(currentFile, orgId, 'option', {
-            quality: 'medium',
-            aspectType: 'square',
-          })
+          const result = await uploadCompressedImageWithThumbnailSignedUrl(
+            currentFile,
+            orgId,
+            'option',
+            'square', // aspectType: 'square' | 'landscape' | 'mobile'
+            'medium' // quality: 'low' | 'medium' | 'high'
+          )
 
-          const responseData = await uploadImages(formData)
-          if (responseData) {
-            newUploadedImageUrls = responseData.map((image) => ({
-              original_url: image.originalUrl,
-              thumbnail_url: image.thumbnailUrl,
-            }))
-          } else {
-            // レスポンスの形式が期待と異なる場合
-            throw new Error('画像のアップロード結果の形式が正しくありません。')
-          }
+          newUploadedImageUrls = [
+            {
+              original_url: result.original.publicUrl,
+              thumbnail_url: result.thumbnail.publicUrl,
+            },
+          ]
           setIsUploading(false)
         } catch (error) {
           console.error('Failed to upload image:', error)

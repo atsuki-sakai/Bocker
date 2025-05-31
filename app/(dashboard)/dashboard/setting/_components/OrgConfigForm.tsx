@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation } from 'convex/react'
@@ -20,7 +21,6 @@ import { ZodTextField } from '@/components/common'
 import { Loader2 } from 'lucide-react'
 import { Mail, Phone, MapPin, Save, Upload, Building } from 'lucide-react'
 import Uploader from '@/components/common/Uploader'
-import { createSingleImageFormData, uploadImages } from '@/lib/utils'
 
 const orgAndConfigFormSchema = z.object({
   org_name: z.string().max(120, 'サロン名は120文字以内で入力してください'), // サロン名
@@ -104,37 +104,27 @@ export default function OrgConfigForm() {
       try {
         setIsUploading(true)
 
-        // [ログ] 開始
-        console.log('[画像アップロード] handleSaveImg開始', { currentFile, orgId })
-
-        // FormDataを作成してファイルを直接送信
-        const formData = createSingleImageFormData(currentFile, orgId, 'setting', {
-          quality: 'medium',
-          aspectType: 'landscape',
-        })
-
-        // [ログ] FormData作成完了
-        console.log('[画像アップロード] FormData作成完了', {
-          fileName: currentFile.name,
-          fileSize: currentFile.size,
-          fileType: currentFile.type,
-        })
-
-        // 画像アップロード実行
-        const responseData = await uploadImages(formData)
-
-        if (responseData.length > 0) {
-          newUploadedImageUrls = responseData.map((image) => ({
-            original_url: image.originalUrl,
-            thumbnail_url: image.thumbnailUrl,
-          }))
-        }
+        // ▼ ここで「フロント圧縮・署名URL・GCS直送」一括
+        const result = await uploadCompressedImageWithThumbnailSignedUrl(
+          currentFile,
+          orgId,
+          'setting', // 保存先ディレクトリ
+          'landscape', // aspectType: 'square' | 'landscape' | 'mobile'
+          'medium' // quality: 'low' | 'medium' | 'high'
+        )
+        // result.original.publicUrl, result.thumbnail.publicUrl を使ってConvex等に登録
+        newUploadedImageUrls = [
+          {
+            original_url: result.original.publicUrl,
+            thumbnail_url: result.thumbnail.publicUrl,
+          },
+        ]
 
         // [ログ] 生成された画像URLリスト
         console.log('[画像アップロード] 生成URLリスト', newUploadedImageUrls)
 
         // 空URLはエラー扱い
-        if (!responseData[0]?.originalUrl || !responseData[0]?.thumbnailUrl) {
+        if (!newUploadedImageUrls[0]?.original_url || !newUploadedImageUrls[0]?.thumbnail_url) {
           toast.error(
             '画像のアップロードに失敗しました。画像形式（HEIC不可）やサイズをご確認ください。'
           )
