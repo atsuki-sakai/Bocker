@@ -100,15 +100,21 @@ export default function OrgConfigForm() {
     async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault()
       if (!currentFile || !orgId) return
-
+  
       let newUploadedImageUrls: { original_url: string; thumbnail_url: string }[] = []
       try {
         setIsUploading(true)
 
-        console.log('currentFile', currentFile)
+        // [ログ] 開始
+        console.log('[画像アップロード] handleSaveImg開始', { currentFile, orgId })
+
         const originalBase64 = await fileToBase64(currentFile)
 
-        console.log('currentFile', currentFile)
+        // [ログ] base64生成
+        console.log('[画像アップロード] base64生成完了', {
+          originalBase64: originalBase64?.slice(0, 30) + '...',
+        })
+
         const response = await fetch('/api/storage', {
           method: 'POST',
           headers: {
@@ -124,7 +130,14 @@ export default function OrgConfigForm() {
           }),
         })
 
+        // [ログ] fetchレスポンス受信
+        console.log('[画像アップロード] /api/storage レスポンス受信', { status: response.status })
+
         const responseData: ProcessedImageResult = await response.json()
+
+        // [ログ] レスポンスボディ
+        console.log('[画像アップロード] /api/storage レスポンスボディ', responseData)
+
         if (responseData) {
           newUploadedImageUrls = [
             {
@@ -134,8 +147,26 @@ export default function OrgConfigForm() {
           ]
         }
 
+        // [ログ] 生成された画像URLリスト
+        console.log('[画像アップロード] 生成URLリスト', newUploadedImageUrls)
+
+        // 空URLはエラー扱い
+        if (!responseData?.originalUrl || !responseData?.thumbnailUrl) {
+          toast.error(
+            '画像のアップロードに失敗しました。画像形式（HEIC不可）やサイズをご確認ください。'
+          )
+          setIsUploading(false)
+          return
+        }
+
         // サロン設定の画像パスを更新
         if (newUploadedImageUrls.length > 0 && tenantId && orgId) {
+          // [ログ] updateImages呼び出し
+          console.log('[画像アップロード] updateImages呼び出し', {
+            tenantId,
+            orgId,
+            images: newUploadedImageUrls,
+          })
           await updateImages({
             tenant_id: tenantId,
             org_id: orgId,
@@ -143,6 +174,11 @@ export default function OrgConfigForm() {
           })
         }
         if (orgAndConfig?.config?.images[0]?.original_url) {
+          // [ログ] 既存画像削除リクエスト
+          console.log(
+            '[画像アップロード] 既存画像削除リクエスト',
+            orgAndConfig?.config?.images[0]?.original_url
+          )
           await fetch('/api/storage', {
             method: 'DELETE',
             body: JSON.stringify({
@@ -156,8 +192,12 @@ export default function OrgConfigForm() {
         router.push('/dashboard/setting')
         toast.success('画像を保存しました')
       } catch (error) {
+        // [ログ] エラー発生
+        console.error('[画像アップロード] エラー発生', error)
         showErrorToast(error)
       } finally {
+        // [ログ] 終了
+        console.log('[画像アップロード] handleSaveImg終了', { isUploading: false })
         setIsUploading(false)
       }
     },
