@@ -48,7 +48,7 @@ import {
   SelectItem,
 } from '@/components/ui/select' // Select関連を追加
 import { Card, CardContent } from '@/components/ui/card'
-import { fileToBase64 } from '@/lib/utils'
+import { createSingleImageFormData, uploadImages } from '@/lib/utils'
 import { ImageType } from '@/convex/types'
 import { MAX_NUM } from '@/convex/constants'
 import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
@@ -231,28 +231,16 @@ export default function OptionEditForm() {
       if (currentFile) {
         try {
           setIsUploading(true)
-          const base64Data = await fileToBase64(currentFile)
-
-          const response = await fetch('/api/storage', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              base64Data,
-              fileName: currentFile.name,
-              directory: 'option',
-              orgId: orgId,
-              quality: 'medium',
-              aspectType: 'square',
-            }),
+          const formData = createSingleImageFormData(currentFile, orgId, 'option', {
+            quality: 'medium',
+            aspectType: 'square',
           })
 
-          const responseData: { successfulUploads: ProcessedImageResult[] } = await response.json()
-          if (responseData.successfulUploads) {
-            newUploadedImageUrls = responseData.successfulUploads.map((item) => ({
-              original_url: item.originalUrl,
-              thumbnail_url: item.thumbnailUrl,
+          const responseData = await uploadImages(formData)
+          if (responseData) {
+            newUploadedImageUrls = responseData.map((image) => ({
+              original_url: image.originalUrl,
+              thumbnail_url: image.thumbnailUrl,
             }))
           } else {
             // レスポンスの形式が期待と異なる場合
@@ -313,6 +301,9 @@ export default function OptionEditForm() {
           try {
             await fetch('/api/storage', {
               method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+              },
               body: JSON.stringify({
                 originalUrl: existingImageUrls[0].original_url,
                 withThumbnail: true,
@@ -344,6 +335,9 @@ export default function OptionEditForm() {
           try {
             await fetch('/api/storage', {
               method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+              },
               body: JSON.stringify({
                 originalUrl: existingImageUrls[0].original_url,
                 withThumbnail: true,
@@ -385,6 +379,9 @@ export default function OptionEditForm() {
       // APIに削除リクエストを送信
       const response = await fetch('/api/storage', {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ originalUrl: originalUrl, withThumbnail: true }),
       })
 

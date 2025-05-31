@@ -6,9 +6,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { useZodForm } from '@/hooks/useZodForm'
 import { api } from '@/convex/_generated/api'
 import { useMutation } from 'convex/react'
-import { TagInput, SingleImageDrop } from '@/components/common'
+import { TagInput, SingleImageDrop, Loading, ZodTextField } from '@/components/common'
 import { Button } from '@/components/ui/button'
-import { ZodTextField } from '@/components/common'
 import { Label } from '@/components/ui/label'
 import {
   Accordion,
@@ -29,14 +28,13 @@ import {
 } from '@/components/ui/select'
 import { zNumberFieldOptional } from '@/lib/zod/helpers'
 import { getMinuteMultiples } from '@/lib/schedules'
-import { Loading } from '@/components/common'
 import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { fileToBase64 } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MAX_NUM, MAX_TEXT_LENGTH } from '@/convex/constants'
 import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import Uploader from '@/components/common/Uploader'
+import { createSingleImageFormData, uploadImages } from '@/lib/utils'
 
 // 施術時間：0〜360分の5分刻みをキャッシュ
 // 0分を許容する事で物販にも対応する
@@ -184,30 +182,17 @@ function OptionAddForm() {
       if (currentFile) {
         try {
           setIsUploading(true)
-          const base64Data = await fileToBase64(currentFile!)
-          const response = await fetch('/api/storage', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              base64Data,
-              fileName: currentFile!.name,
-              directory: 'option',
-              orgId: orgId,
-              quality: 'medium',
-              aspectType: 'square',
-            }),
+          const formData = createSingleImageFormData(currentFile!, orgId, 'option', {
+            quality: 'medium',
+            aspectType: 'square',
           })
 
-          const responseData: ProcessedImageResult = await response.json()
+          const responseData = await uploadImages(formData)
           if (responseData) {
-            newUploadedImageUrls = [
-              {
-                original_url: responseData.originalUrl,
-                thumbnail_url: responseData.thumbnailUrl,
-              },
-            ]
+            newUploadedImageUrls = responseData.map((image) => ({
+              original_url: image.originalUrl,
+              thumbnail_url: image.thumbnailUrl,
+            }))
           } else {
             console.log(responseData)
             // レスポンスの形式が期待と異なる場合
@@ -218,8 +203,6 @@ function OptionAddForm() {
           showErrorToast(error)
           setIsUploading(false) // エラー時は uploading を解除
           return
-        } finally {
-          setIsUploading(false)
         }
       }
 
@@ -245,6 +228,9 @@ function OptionAddForm() {
         try {
           await fetch('/api/storage', {
             method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
               originalUrl: newUploadedImageUrls[0].original_url,
               withThumbnail: true,

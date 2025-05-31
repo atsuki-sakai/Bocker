@@ -10,6 +10,7 @@ import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
 import { MAX_PIN_CODE_LENGTH } from '@/convex/constants'  
 import { SubscriptionPlanName } from '@/convex/types'
 import { ROLE_LEVEL, PLAN_LEVEL } from '@/lib/types'
+import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 
 import type { Role } from '@/convex/types';
 
@@ -308,6 +309,8 @@ export function getPriceNameFromPlanName(planName: SubscriptionPlanName, period:
 }
 
 // ファイルをBase64に変換する関数
+// 注意: 画像アップロード処理では使用しません。FormDataで直接送信してください。
+// この関数は他の用途（プレビュー表示など）でのみ使用します。
 export async function fileToBase64(file: File): Promise<string> {
   // ブラウザ環境でのみ実行可能であることを確認
   if (typeof window === 'undefined' || !window.FileReader) {
@@ -341,6 +344,101 @@ export async function fileToBase64(file: File): Promise<string> {
   return base64Promise
 }
 
+/**
+ * 単数画像アップロード用のFormDataを作成する関数
+ * @param file アップロードするファイル
+ * @param orgId 組織ID
+ * @param directory 保存先ディレクトリ
+ * @param options アップロードオプション
+ * @returns FormData
+ */
+export function createSingleImageFormData(
+  file: File,
+  orgId: string,
+  directory: string,
+  options: {
+    quality?: string;
+    aspectType?: string;
+    isHotSpot?: boolean;
+  } = {}
+): FormData {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('orgId', orgId);
+  formData.append('directory', directory);
+  
+  if (options.quality) {
+    formData.append('quality', options.quality);
+  }
+  if (options.aspectType) {
+    formData.append('aspectType', options.aspectType);
+  }
+  if (options.isHotSpot !== undefined) {
+    formData.append('isHotSpot', options.isHotSpot.toString());
+  }
+  
+  return formData;
+}
+
+/**
+ * 複数画像アップロード用のFormDataを作成する関数
+ * @param files アップロードするファイル配列
+ * @param orgId 組織ID
+ * @param directory 保存先ディレクトリ
+ * @param options アップロードオプション
+ * @returns FormData
+ */
+export function createMultipleImageFormData(
+  files: File[],
+  orgId: string,
+  directory: string,
+  options: {
+    quality?: string;
+    aspectType?: string;
+    isHotSpot?: boolean;
+  } = {}
+): FormData {
+  const formData = new FormData();
+  
+  // 複数ファイルをfiles[]として追加
+  files.forEach(file => {
+    formData.append('files[]', file);
+  });
+  
+  formData.append('orgId', orgId);
+  formData.append('directory', directory);
+  
+  if (options.quality) {
+    formData.append('quality', options.quality);
+  }
+  if (options.aspectType) {
+    formData.append('aspectType', options.aspectType);
+  }
+  if (options.isHotSpot !== undefined) {
+    formData.append('isHotSpot', options.isHotSpot.toString());
+  }
+  
+  return formData;
+}
+
+/**
+ * 画像アップロード処理を実行する関数
+ * @param formData FormData
+ * @returns ProcessedImageResult[] }
+ */
+export async function uploadImages(formData: FormData): Promise<ProcessedImageResult[]> {
+  const response = await fetch('/api/storage', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || '画像のアップロードに失敗しました');
+  }
+
+  return response.json();
+}
 
 /**
  * 指定バイト長のランダム値を 16 進数文字列で生成する

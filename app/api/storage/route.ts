@@ -3,55 +3,147 @@ import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService'
 import { Id } from '@/convex/_generated/dataModel'
 import { ImageDirectory, ImageQuality, ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import { AspectType } from '@/convex/types';
+import Busboy from 'busboy';
+import { Readable } from 'stream';
 
-// 単数アップロード用のリクエストボディ型
-interface SingleUploadRequestBody {
-  base64Data: string;
-  fileName: string;
-  directory: ImageDirectory;
-  orgId: Id<'organization'>;
-  aspectType?: AspectType;
-  quality?: ImageQuality;
+// Node.jsランタイムを使用（Edge FunctionではbusboyとStreamが使えないため）
+export const runtime = 'nodejs';
+
+// アップロードされたファイル情報の型
+interface UploadedFile {
+  filename: string;
+  mimeType: string;
+  buffer: Buffer;
 }
 
-// 複数アップロード用のリクエストボディ型
-interface BulkUploadRequestBodyItem {
-  base64Data: string;
-  fileName: string;
-  directory: ImageDirectory;
-  orgId: Id<'organization'>;
-  aspectType?: AspectType;
-  quality?: ImageQuality;
-  isHotSpot?: boolean;
+// FormDataから抽出される情報の型
+interface ParsedFormData {
+  files: UploadedFile[];
+  fields: Record<string, string>;
 }
-type BulkUploadRequestBody = BulkUploadRequestBodyItem[];
 
+// FormDataをパースする関数
+async function parseMultipartFormData(request: NextRequest): Promise<ParsedFormData> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const contentType = request.headers.get('content-type');
+      if (!contentType || !contentType.includes('multipart/form-data')) {
+        reject(new Error('Content-Type must be multipart/form-data'));
+        return;
+      }
+
+      const files: UploadedFile[] = [];
+      const fields: Record<string, string> = {};
+
+      const busboy = Busboy({ 
+        headers: { 
+          'content-type': contentType 
+        },
+        limits: {
+          fileSize: 10 * 1024 * 1024, // 10MB制限
+        }
+      });
+
+      // ファイルイベントハンドラ
+      busboy.on('file', (fieldname, file, { filename, mimeType }) => {
+        const chunks: Buffer[] = [];
+        
+        file.on('data', (data) => {
+          chunks.push(data);
+        });
+        
+        file.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          files.push({
+            filename: filename || `uploaded_file_${Date.now()}`,
+            mimeType: mimeType || 'application/octet-stream',
+            buffer
+          });
+        });
+      });
+
+      // フィールドイベントハンドラ
+      busboy.on('field', (fieldname, value) => {
+        fields[fieldname] = value;
+      });
+
+      // 完了イベントハンドラ
+      busboy.on('finish', () => {
+        resolve({ files, fields });
+      });
+
+      // エラーハンドラ
+      busboy.on('error', (error) => {
+        reject(error);
+      });
+
+      // リクエストボディをストリームとして処理
+      const reader = request.body?.getReader();
+      if (!reader) {
+        reject(new Error('Request body is not readable'));
+        return;
+      }
+
+      const stream = new Readable({
+        read() {}
+      });
+
+      stream.pipe(busboy);
+
+      // データを読み取ってストリームに送信
+      (async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            stream.push(Buffer.from(value));
+          }
+          stream.push(null); // ストリーム終了
+        } catch (error) {
+          stream.destroy(error as Error);
+        }
+      })();
+
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const body = await request.json();
-
-  // bodyが配列かどうかで処理を分岐
-  if (Array.isArray(body)) {
-    // 複数アップロード処理
-    const items = body as BulkUploadRequestBody;
-    if (items.length === 0) {
-      return NextResponse.json({ error: 'アップロードする画像データがありません。' }, { status: 400 });
+  try {
+    // マルチパート形式でFormDataをパース
+    const { files, fields } = await parseMultipartFormData(request);
+    
+    if (files.length === 0) {
+      return NextResponse.json({ error: 'アップロードするファイルが見つかりません。' }, { status: 400 });
     }
 
-    try {
-      const uploadPromises = items.map(item =>
-        gcsService.uploadCompressedImageWithThumbnail(
-          item.base64Data,
-          item.fileName,
-          item.directory,
-          item.orgId,
-          item.aspectType ?? 'mobile',
-          item.quality,
-          item.isHotSpot
-        )
-      );
+    // パラメータの取得
+    const orgId = fields.orgId;
+    const directory = fields.directory;
+    const aspectType = fields.aspectType || 'mobile';
+    const quality = fields.quality as ImageQuality;
+    const isHotSpot = fields.isHotSpot === 'true';
 
-      // Promise.allSettledで全てのプロミスが解決するのを待つ
+    if (!orgId || !directory) {
+      return NextResponse.json({ error: '必要なパラメータ（orgId, directory）が不足しています。' }, { status: 400 });
+    }
+
+    // 複数ファイルの処理
+    if (files.length > 1) {
+      const uploadPromises = files.map(async (file: UploadedFile) => {
+        return gcsService.uploadCompressedImageWithThumbnail(
+          file.buffer.toString('base64'), // 既存の関数はbase64を期待するため変換
+          file.filename,
+          directory as ImageDirectory,
+          orgId as Id<'organization'>,
+          aspectType as AspectType,
+          quality,
+          isHotSpot
+        );
+      });
+
       const results = await Promise.allSettled(uploadPromises);
 
       const successfulUploads: ProcessedImageResult[] = [];
@@ -63,10 +155,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           successfulUploads.push(result.value);
         } else {
           hasFailure = true;
-          // エラー詳細をログに出力
-          console.error(`Failed to upload ${items[index].fileName}:`, result.reason);
+          console.error(`Failed to upload ${files[index].filename}:`, result.reason);
           failedUploadsInfo.push({
-            fileName: items[index].fileName,
+            fileName: files[index].filename,
             error: result.reason instanceof Error ? result.reason.message : String(result.reason)
           });
         }
@@ -89,26 +180,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
       return NextResponse.json({ successfulUploads });
 
-    } catch (error) { // これは主に CompressImageService の外での予期せぬエラー
-      console.error('Bulk image upload processing error:', error);
-      return NextResponse.json({ error: '一括画像アップロード処理中に予期せぬエラーが発生しました。' }, { status: 500 });
+    } else {
+      // 単数ファイルの処理
+      const file = files[0];
+      
+      const result = await gcsService.uploadCompressedImageWithThumbnail(
+        file.buffer.toString('base64'), // 既存の関数はbase64を期待するため変換
+        file.filename,
+        directory as ImageDirectory,
+        orgId as Id<'organization'>,
+        aspectType as AspectType,
+        quality,
+        isHotSpot
+      );
+      
+      return NextResponse.json([result]);
     }
 
-  } else {
-    // 単数アップロード処理 (既存のロジックを流用)
-    const { base64Data, fileName, directory, orgId, quality, aspectType } = body as SingleUploadRequestBody;
-    if (!base64Data || !fileName || !directory || !orgId) {
-      return NextResponse.json({ error: '必要なパラメータが不足しています。' }, { status: 400 })
-    }
-    try {
-      const result = await gcsService.uploadCompressedImageWithThumbnail(base64Data, fileName, directory, orgId, aspectType ?? 'mobile', quality);
-      return NextResponse.json(result);
-    } catch (error) {
-      console.error('Single image upload error:', error);
-      // CompressImageServiceErrorなど、カスタムエラーの情報をより詳細に返すことも検討
-      const errorMessage = error instanceof Error ? error.message : '画像のアップロードに失敗しました。';
-      return NextResponse.json({ error: errorMessage }, { status: 500 });
-    }
+  } catch (error) {
+    console.error('FormData parsing or image upload error:', error);
+    const errorMessage = error instanceof Error ? error.message : '画像のアップロード処理中に予期せぬエラーが発生しました。';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 

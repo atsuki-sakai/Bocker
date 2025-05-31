@@ -10,7 +10,6 @@ import { SortableImageGrid } from '@/components/common'
 import { z } from 'zod'
 import { useZodForm } from '@/hooks/useZodForm'
 import { MultiImageDrop, TagInput } from '@/components/common'
-import { fileToBase64 } from '@/lib/utils'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
@@ -65,6 +64,8 @@ import { Check, ChevronDown } from 'lucide-react'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { MAX_NUM, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
+import { createMultipleImageFormData, uploadImages } from '@/lib/utils'
+import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 
 // バリデーションスキーマ
 const schemaMenu = z
@@ -252,36 +253,22 @@ export default function MenuEditForm() {
       if (newFiles.length > 0 && newFiles[0] !== undefined) {
         setIsUploading(true)
         try {
-          const imagePayloads = await Promise.all(
-            newFiles.map(async (file) => {
-              const originalBase64 = await fileToBase64(file)
-              return {
-                base64Data: originalBase64,
-                fileName: file.name,
-                directory: 'menu' as const,
-                orgId: orgId,
-                quality: 'high',
-              }
-            })
-          )
-          console.log('imagePayloads: ', imagePayloads)
-          const response = await fetch('/api/storage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(imagePayloads),
+          // FormDataを使って複数画像をアップロード
+          const formData = createMultipleImageFormData(newFiles, orgId, 'menu', {
+            quality: 'high',
+            aspectType: 'mobile',
           })
-          console.log('response: ', response)
-          const imageResults = await response.json()
+          console.log('FormData作成完了 - ファイル数:', newFiles.length)
+
+          const imageResults = await uploadImages(formData)
           console.log('imageResults: ', imageResults)
           setIsUploading(false)
 
-          if (imageResults && Array.isArray(imageResults.successfulUploads)) {
-            const uploadedImages = imageResults.successfulUploads.map(
-              (upload: { originalUrl: string; thumbnailUrl: string }) => ({
-                original_url: upload.originalUrl,
-                thumbnail_url: upload.thumbnailUrl,
-              })
-            )
+          if (imageResults.length > 0) {
+            const uploadedImages = imageResults.map((image) => ({
+              original_url: image.originalUrl,
+              thumbnail_url: image.thumbnailUrl,
+            }))
             console.log('--------------------------------')
             console.log('uploadImages: ', uploadedImages)
             console.log('既存画像(existingImages):', existingImages)

@@ -8,7 +8,7 @@ import { z } from 'zod'
 import { useZodForm } from '@/hooks/useZodForm'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { MultiImageDrop } from '@/components/common'
-import { fileToBase64 } from '@/lib/utils'
+import { createMultipleImageFormData, uploadImages } from '@/lib/utils'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
@@ -200,35 +200,15 @@ export default function MenuAddForm() {
       if (currentFiles.length > 0) {
         setIsUploading(true)
         try {
-          const imagePayloads = await Promise.all(
-            currentFiles.map(async (file) => {
-              const originalBase64 = await fileToBase64(file)
-              return {
-                base64Data: originalBase64,
-                fileName: file.name,
-                directory: 'menu' as const,
-                orgId: orgId,
-                quality: 'high',
-              }
-            })
-          )
-
-          const response = await fetch('/api/storage', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(imagePayloads),
+          // FormDataを使って複数画像をアップロード
+          const formData = createMultipleImageFormData(currentFiles, orgId, 'menu', {
+            quality: 'high',
+            aspectType: 'mobile',
           })
 
-          if (!response.ok) {
-            const errorData = await response.json()
-            throw new Error(errorData.error || '画像のアップロードに失敗しました')
-          }
-
-          const responseData: { successfulUploads: ProcessedImageResult[] } = await response.json()
-          if (responseData.successfulUploads) {
-            newUploadedImageUrls = responseData.successfulUploads.map((item) => ({
+          const responseData = await uploadImages(formData)
+          if (responseData.length > 0) {
+            newUploadedImageUrls = responseData.map((item) => ({
               original_url: item.originalUrl,
               thumbnail_url: item.thumbnailUrl,
             }))

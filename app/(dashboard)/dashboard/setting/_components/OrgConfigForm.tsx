@@ -9,7 +9,6 @@ import { SingleImageDrop, Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Textarea } from '@/components/ui/textarea'
-import { fileToBase64 } from '@/lib/utils'
 import { useZodForm } from '@/hooks/useZodForm'
 import { Separator } from '@/components/ui/separator'
 import { Label } from '@/components/ui/label'
@@ -22,6 +21,7 @@ import { Loader2 } from 'lucide-react'
 import { Mail, Phone, MapPin, Save, Upload, Building } from 'lucide-react'
 import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import Uploader from '@/components/common/Uploader'
+import { createSingleImageFormData, uploadImages } from '@/lib/utils'
 
 const orgAndConfigFormSchema = z.object({
   org_name: z.string().max(120, 'サロン名は120文字以内で入力してください'), // サロン名
@@ -100,7 +100,7 @@ export default function OrgConfigForm() {
     async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault()
       if (!currentFile || !orgId) return
-  
+
       let newUploadedImageUrls: { original_url: string; thumbnail_url: string }[] = []
       try {
         setIsUploading(true)
@@ -108,50 +108,34 @@ export default function OrgConfigForm() {
         // [ログ] 開始
         console.log('[画像アップロード] handleSaveImg開始', { currentFile, orgId })
 
-        const originalBase64 = await fileToBase64(currentFile)
-
-        // [ログ] base64生成
-        console.log('[画像アップロード] base64生成完了', {
-          originalBase64: originalBase64?.slice(0, 30) + '...',
+        // FormDataを作成してファイルを直接送信
+        const formData = createSingleImageFormData(currentFile, orgId, 'setting', {
+          quality: 'high',
+          aspectType: 'landscape',
         })
 
-        const response = await fetch('/api/storage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            base64Data: originalBase64,
-            fileName: currentFile!.name,
-            directory: 'setting',
-            quality: 'high',
-            orgId: orgId,
-            aspectType: 'landscape',
-          }),
+        // [ログ] FormData作成完了
+        console.log('[画像アップロード] FormData作成完了', {
+          fileName: currentFile.name,
+          fileSize: currentFile.size,
+          fileType: currentFile.type,
         })
 
-        // [ログ] fetchレスポンス受信
-        console.log('[画像アップロード] /api/storage レスポンス受信', { status: response.status })
+        // 画像アップロード実行
+        const responseData = await uploadImages(formData)
 
-        const responseData: ProcessedImageResult = await response.json()
-
-        // [ログ] レスポンスボディ
-        console.log('[画像アップロード] /api/storage レスポンスボディ', responseData)
-
-        if (responseData) {
-          newUploadedImageUrls = [
-            {
-              original_url: responseData.originalUrl,
-              thumbnail_url: responseData.thumbnailUrl,
-            },
-          ]
+        if (responseData.length > 0) {
+          newUploadedImageUrls = responseData.map((image) => ({
+            original_url: image.originalUrl,
+            thumbnail_url: image.thumbnailUrl,
+          }))
         }
 
         // [ログ] 生成された画像URLリスト
         console.log('[画像アップロード] 生成URLリスト', newUploadedImageUrls)
 
         // 空URLはエラー扱い
-        if (!responseData?.originalUrl || !responseData?.thumbnailUrl) {
+        if (!responseData[0]?.originalUrl || !responseData[0]?.thumbnailUrl) {
           toast.error(
             '画像のアップロードに失敗しました。画像形式（HEIC不可）やサイズをご確認ください。'
           )
@@ -181,6 +165,9 @@ export default function OrgConfigForm() {
           )
           await fetch('/api/storage', {
             method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
               originalUrl: orgAndConfig.config.images[0].original_url || '',
               withThumbnail: true,
