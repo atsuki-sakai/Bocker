@@ -68,6 +68,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command'
 import { Check, ChevronDown } from 'lucide-react'
 import { MAX_NOTES_LENGTH, MAX_NUM, MAX_TAG_LENGTH } from '@/convex/constants'
+import Uploader from '@/components/common/Uploader'
 
 // バリデーションスキーマ
 const schemaMenu = z
@@ -318,6 +319,10 @@ export default function MenuAddForm() {
 
   if (!tenantId || !orgId) {
     return <Loading />
+  }
+
+  if (isUploading) {
+    return <Uploader uploaded={isUploading} />
   }
 
   return (

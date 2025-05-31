@@ -79,21 +79,21 @@ const TagInput: React.FC<TagInputProps> = ({ tags, setTagsAction, error, example
         ))}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2 w-full">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addTag(e)}
           placeholder="タグを入力（カンマ区切りで複数入力可）"
-          className="flex-1 py-2 px-1 bg-input border border-ring rounded-md text-base focus:outline-none focus:border-primary transition-colors"
+          className="flex-1 py-2 px-1 bg-input border border-ring rounded-md text-base focus:outline-none focus:border-primary transition-colors min-w-0"
           disabled={tags.length >= 5}
         />
         <Button
           variant="default"
           onClick={(e) => addTag(e)}
           disabled={tags.length >= 5 || !input.trim()}
-          className="text-sm"
+          className="text-sm w-auto"
         >
           追加
         </Button>

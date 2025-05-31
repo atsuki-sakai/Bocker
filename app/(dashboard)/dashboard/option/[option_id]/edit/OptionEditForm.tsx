@@ -51,6 +51,7 @@ import { fileToBase64 } from '@/lib/utils'
 import { ImageType } from '@/convex/types'
 import { MAX_NUM } from '@/convex/constants'
 import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
+import Uploader from '@/components/common/Uploader'
 
 // バリデーションスキーマ
 const optionSchema = z
@@ -424,6 +425,10 @@ export default function OptionEditForm() {
 
   if (!orgId || !optionId || !optionData?._id) {
     return <Loading />
+  }
+
+  if (isUploading) {
+    return <Uploader uploaded={isUploading} />
   }
 
   console.log('isDirty', isDirty)

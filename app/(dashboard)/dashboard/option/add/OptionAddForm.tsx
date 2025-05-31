@@ -35,6 +35,7 @@ import { fileToBase64 } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MAX_NUM, MAX_TEXT_LENGTH } from '@/convex/constants'
 import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
+import Uploader from '@/components/common/Uploader'
 
 // 施術時間：0〜360分の5分刻みをキャッシュ
 // 0分を許容する事で物販にも対応する
@@ -306,6 +307,10 @@ function OptionAddForm() {
 
   if (!tenantId || !orgId) {
     return <Loading />
+  }
+
+  if (isUploading) {
+    return <Uploader uploaded={isUploading} />
   }
 
   return (

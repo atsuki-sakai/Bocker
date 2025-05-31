@@ -63,6 +63,7 @@ import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/u
 import { Check, ChevronDown } from 'lucide-react'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { MAX_NUM, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/convex/constants'
+import Uploader from '@/components/common/Uploader'
 
 // バリデーションスキーマ
 const schemaMenu = z
@@ -428,6 +429,10 @@ export default function MenuEditForm() {
 
   if (!orgId || !tenantId || !menuData || !isInitialized) {
     return <Loading />
+  }
+
+  if (isUploading) {
+    return <Uploader uploaded={isUploading} />
   }
 
   return (
