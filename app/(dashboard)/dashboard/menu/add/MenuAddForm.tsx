@@ -18,7 +18,6 @@ import { Button } from '@/components/ui/button'
 import { TagInput } from '@/components/common'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { ImageType } from '@/convex/types'
-import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import {
   Accordion,
   AccordionItem,

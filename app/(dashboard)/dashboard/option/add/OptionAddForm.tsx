@@ -32,7 +32,6 @@ import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MAX_NUM, MAX_TEXT_LENGTH } from '@/convex/constants'
-import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import Uploader from '@/components/common/Uploader'
 import { createSingleImageFormData, uploadImages } from '@/lib/utils'
 

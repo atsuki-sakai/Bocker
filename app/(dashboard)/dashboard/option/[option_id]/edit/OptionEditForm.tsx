@@ -51,7 +51,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { createSingleImageFormData, uploadImages } from '@/lib/utils'
 import { ImageType } from '@/convex/types'
 import { MAX_NUM } from '@/convex/constants'
-import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import Uploader from '@/components/common/Uploader'
 
 // バリデーションスキーマ

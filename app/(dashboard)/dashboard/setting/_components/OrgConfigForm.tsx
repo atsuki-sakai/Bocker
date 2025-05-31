@@ -19,7 +19,6 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { ZodTextField } from '@/components/common'
 import { Loader2 } from 'lucide-react'
 import { Mail, Phone, MapPin, Save, Upload, Building } from 'lucide-react'
-import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import Uploader from '@/components/common/Uploader'
 import { createSingleImageFormData, uploadImages } from '@/lib/utils'
 

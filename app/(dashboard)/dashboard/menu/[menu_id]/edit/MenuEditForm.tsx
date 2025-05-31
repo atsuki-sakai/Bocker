@@ -65,7 +65,6 @@ import { getMinuteMultiples } from '@/lib/schedules'
 import { MAX_NUM, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
 import { createMultipleImageFormData, uploadImages } from '@/lib/utils'
-import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 
 // バリデーションスキーマ
 const schemaMenu = z
