@@ -254,7 +254,7 @@ export default function MenuEditForm() {
         try {
           // FormDataを使って複数画像をアップロード
           const formData = createMultipleImageFormData(newFiles, orgId, 'menu', {
-            quality: 'high',
+            quality: 'medium',
             aspectType: 'mobile',
           })
           console.log('FormData作成完了 - ファイル数:', newFiles.length)

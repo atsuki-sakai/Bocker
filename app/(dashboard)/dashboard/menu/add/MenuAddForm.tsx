@@ -201,7 +201,7 @@ export default function MenuAddForm() {
         try {
           // FormDataを使って複数画像をアップロード
           const formData = createMultipleImageFormData(currentFiles, orgId, 'menu', {
-            quality: 'high',
+            quality: 'medium',
             aspectType: 'mobile',
           })
 

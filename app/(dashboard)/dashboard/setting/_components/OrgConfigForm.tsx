@@ -109,7 +109,7 @@ export default function OrgConfigForm() {
 
         // FormDataを作成してファイルを直接送信
         const formData = createSingleImageFormData(currentFile, orgId, 'setting', {
-          quality: 'high',
+          quality: 'medium',
           aspectType: 'landscape',
         })
 
