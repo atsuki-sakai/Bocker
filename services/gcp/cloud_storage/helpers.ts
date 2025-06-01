@@ -47,7 +47,125 @@ function sanitizeFileName(fileName: string, preferredExt: string = '.webp'): str
   const timestamp = Date.now().toString(36);  // 衝突低減
   const uuid = uuidv4().slice(0, 8);
 
-  return `${timestamp}_${base}_${uuid}${preferredExt}`;
+  // ファイル名の長さ制限（拡張子含めて255文字以内）
+  const maxBaseLength = 255 - preferredExt.length - timestamp.length - uuid.length - 2; // "_"分を考慮
+  const truncatedBase = base.length > maxBaseLength ? base.substring(0, maxBaseLength) : base;
+
+  return `${timestamp}_${truncatedBase}_${uuid}${preferredExt}`;
+}
+
+/**
+ * 低メモリ端末かどうかを判定する
+ * @returns メモリが限られている端末の場合true
+ */
+function isLowMemoryDevice(): boolean {
+  // navigator.deviceMemoryがサポートされている場合は使用（GB単位）
+  if ('deviceMemory' in navigator && typeof (navigator as any).deviceMemory === 'number') {
+    return (navigator as any).deviceMemory <= 2; // 2GB以下は低メモリ端末と判定
+  }
+  
+  // User Agentベースの推定（フォールバック）
+  const ua = navigator.userAgent;
+  // 古いデバイス、エントリーレベルのデバイスを検出
+  if (/iPhone OS [89]_|Android [4-7]\.|Windows Phone|BlackBerry/.test(ua)) {
+    return true;
+  }
+  
+  return false; // 不明な場合は最新のものと仮定
+}
+
+/**
+ * Exif情報から画像の回転角度を取得する
+ * @param arrayBuffer 画像ファイルのArrayBuffer
+ * @returns 回転角度（0, 90, 180, 270）
+ */
+function getExifRotation(arrayBuffer: ArrayBuffer): number {
+  const dataView = new DataView(arrayBuffer);
+  
+  // JPEG でない場合やExif情報がない場合は回転なし
+  if (dataView.getUint16(0) !== 0xFFD8) return 0;
+  
+  let offset = 2;
+  while (offset < dataView.byteLength) {
+    const marker = dataView.getUint16(offset);
+    if (marker === 0xFFE1) {
+      // Exifセグメント発見
+      const exifOffset = offset + 4;
+      if (dataView.getUint32(exifOffset) === 0x45786966) { // "Exif"
+        const tiffOffset = exifOffset + 6;
+        const byteOrder = dataView.getUint16(tiffOffset);
+        const isLittleEndian = byteOrder === 0x4949;
+        
+        // IFD0のエントリ数を取得
+        const ifd0Offset = tiffOffset + dataView.getUint32(tiffOffset + 4, isLittleEndian);
+        const entryCount = dataView.getUint16(ifd0Offset, isLittleEndian);
+        
+        // Orientationタグ（0x0112）を検索
+        for (let i = 0; i < entryCount; i++) {
+          const entryOffset = ifd0Offset + 2 + i * 12;
+          const tag = dataView.getUint16(entryOffset, isLittleEndian);
+          if (tag === 0x0112) {
+            const orientation = dataView.getUint16(entryOffset + 8, isLittleEndian);
+            // Orientationからrotation角度に変換
+            switch (orientation) {
+              case 3: return 180;
+              case 6: return 90;
+              case 8: return 270;
+              default: return 0;
+            }
+          }
+        }
+      }
+    }
+    // 次のセグメントへ
+    offset += 2 + dataView.getUint16(offset + 2);
+  }
+  
+  return 0;
+}
+
+/**
+ * Canvas上で画像を回転させる
+ * @param ctx CanvasRenderingContext2D または OffscreenCanvasRenderingContext2D
+ * @param img 描画する画像
+ * @param rotation 回転角度（0, 90, 180, 270）
+ * @param sx ソース画像のx座標
+ * @param sy ソース画像のy座標  
+ * @param sw ソース画像の幅
+ * @param sh ソース画像の高さ
+ * @param dx 描画先のx座標
+ * @param dy 描画先のy座標
+ * @param dw 描画先の幅
+ * @param dh 描画先の高さ
+ */
+function drawRotatedImage(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, 
+  img: ImageBitmap | HTMLImageElement,
+  rotation: number,
+  sx: number, sy: number, sw: number, sh: number,
+  dx: number, dy: number, dw: number, dh: number
+): void {
+  if (rotation === 0) {
+    ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+    return;
+  }
+  
+  ctx.save();
+  
+  // 回転の中心点をキャンバス中央に設定
+  const centerX = dw / 2;
+  const centerY = dh / 2;
+  ctx.translate(centerX, centerY);
+  ctx.rotate((rotation * Math.PI) / 180);
+  
+  // 90度回転の場合は幅と高さが入れ替わる
+  if (rotation === 90 || rotation === 270) {
+    ctx.drawImage(img, sx, sy, sw, sh, -centerY, -centerX, dh, dw);
+  } else {
+    ctx.drawImage(img, sx, sy, sw, sh, -centerX, -centerY, dw, dh);
+  }
+  
+  ctx.restore();
 }
 
 /**
@@ -63,6 +181,8 @@ export async function compressAndCropImage(
   aspectType: 'square' | 'landscape' | 'mobile',
   quality: number
 ): Promise<File> {
+  console.log('[画像圧縮] 処理開始:', { fileName: file.name, size: file.size, type: file.type });
+  
   // --- WebP エンコード可否 & iOS 判定 ----------------------------------------
   const canWebp = await canEncodeWebp();
   const isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
@@ -72,6 +192,10 @@ export async function compressAndCropImage(
   const mime = useWebp ? 'image/webp' : 'image/jpeg';
   const ext  = useWebp ? '.webp'    : '.jpg';
 
+  // --- 低メモリ端末判定 ----------------------------------------------------
+  const isLowMemory = isLowMemoryDevice();
+  console.log('[画像圧縮] デバイス情報:', { isLowMemory, useWebp, isIOS });
+  
   // --- OffscreenCanvas サポート判定 ------------------------------------------
   const supportsOffscreen =
     typeof OffscreenCanvas !== 'undefined' &&
@@ -79,53 +203,43 @@ export async function compressAndCropImage(
     // 型定義に convertToBlob がまだ無い場合があるため any キャスト
     (OffscreenCanvas.prototype as any).convertToBlob !== undefined;
 
-  // ========================================================================
-  // 1) OffscreenCanvas パス  (iOS 17+ / 最新ブラウザ)
-  // ========================================================================
-  if (supportsOffscreen) {
-    const bitmap = await createImageBitmap(file);
-    const { width, height } = bitmap;
+  // 低メモリ端末の場合は強制的にフォールバックを使用
+  const useOffscreenPath = supportsOffscreen && !isLowMemory;
+  console.log('[画像圧縮] 処理パス選択:', { supportsOffscreen, useOffscreenPath });
 
-    // ----- アスペクト比計算 & クロップ領域算出 -----------------------------
-    let targetAspect = 1;
-    if (aspectType === 'landscape') targetAspect = 16 / 9;
-    if (aspectType === 'mobile')    targetAspect = 2 / 3;
-
-    let cropWidth = width, cropHeight = height;
-    if (width / height > targetAspect) {
-      cropHeight = height;
-      cropWidth  = Math.round(height * targetAspect);
-    } else {
-      cropWidth  = width;
-      cropHeight = Math.round(width / targetAspect);
-    }
-
-    const left = Math.floor((width  - cropWidth)  / 2);
-    const top  = Math.floor((height - cropHeight) / 2);
-
-    // ----- クロップ & リサイズ --------------------------------------------
-    const scale = maxWidth / cropWidth;
-    const outW = maxWidth;
-    const outH = Math.round(cropHeight * scale);
-
-    const off = new OffscreenCanvas(outW, outH);
-    const ctx = off.getContext('2d')!;
-    ctx.drawImage(bitmap, left, top, cropWidth, cropHeight, 0, 0, outW, outH);
-
-    // ----- 画像エンコード ---------------------------------------------------
-    const blob: Blob = await (off as any).convertToBlob({ type: mime, quality });
-    return new File([blob], sanitizeFileName(file.name, ext), { type: mime });
+  // --- Exif回転情報取得 ---------------------------------------------------
+  let rotation = 0;
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    rotation = getExifRotation(arrayBuffer);
+    console.log('[画像圧縮] Exif回転角度:', rotation);
+  } catch (error) {
+    console.warn('[画像圧縮] Exif読み取り失敗（回転なしで続行）:', error);
   }
 
   // ========================================================================
-  // 2) フォールバックパス  (toDataURL → fetch で全 iOS 対応)
+  // 1) OffscreenCanvas パス  (iOS 17+ / 最新ブラウザ)
   // ========================================================================
-  return new Promise<File>((resolve, reject) => {
-    const img = new Image();
-    img.onload = async () => {
-      const width  = img.width;
-      const height = img.height;
+  if (useOffscreenPath) {
+    let bitmap: ImageBitmap | null = null;
+    let fileUrl: string | null = null;
+    
+    try {
+      console.log('[画像圧縮] OffscreenCanvasパス開始');
+      
+      // ImageBitmap作成（例外処理強化）
+      try {
+        bitmap = await createImageBitmap(file);
+        console.log('[画像圧縮] ImageBitmap作成成功:', { width: bitmap.width, height: bitmap.height });
+      } catch (bitmapError) {
+        console.warn('[画像圧縮] createImageBitmap失敗、フォールバックを使用:', bitmapError);
+        // フォールバックパスに転送
+        return await executeCanvasFallback(file, maxWidth, aspectType, quality, mime, ext, rotation);
+      }
+      
+      const { width, height } = bitmap;
 
+      // ----- アスペクト比計算 & クロップ領域算出 -----------------------------
       let targetAspect = 1;
       if (aspectType === 'landscape') targetAspect = 16 / 9;
       if (aspectType === 'mobile')    targetAspect = 2 / 3;
@@ -142,28 +256,133 @@ export async function compressAndCropImage(
       const left = Math.floor((width  - cropWidth)  / 2);
       const top  = Math.floor((height - cropHeight) / 2);
 
-      const canvas = document.createElement('canvas');
-      const scale  = maxWidth / cropWidth;
-      canvas.width  = maxWidth;
-      canvas.height = Math.round(cropHeight * scale);
+      // ----- クロップ & リサイズ --------------------------------------------
+      const scale = maxWidth / cropWidth;
+      const outW = maxWidth;
+      const outH = Math.round(cropHeight * scale);
 
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, left, top, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+      const off = new OffscreenCanvas(outW, outH);
+      const ctx = off.getContext('2d')!;
+      
+      // Exif回転を考慮して描画
+      drawRotatedImage(ctx, bitmap, rotation, left, top, cropWidth, cropHeight, 0, 0, outW, outH);
 
+      // ----- 画像エンコード ---------------------------------------------------
+      const blob: Blob = await (off as any).convertToBlob({ type: mime, quality });
+      console.log('[画像圧縮] OffscreenCanvas圧縮完了:', { originalSize: file.size, compressedSize: blob.size });
+      
+      return new File([blob], sanitizeFileName(file.name, ext), { type: mime });
+      
+    } catch (error) {
+      console.error('[画像圧縮] OffscreenCanvasパスでエラー、フォールバックを試行:', error);
+      // フォールバックパスに転送
+      return await executeCanvasFallback(file, maxWidth, aspectType, quality, mime, ext, rotation);
+    } finally {
+      // メモリ解放
+      if (bitmap) {
+        bitmap.close();
+        console.log('[画像圧縮] ImageBitmapを解放');
+      }
+      if (fileUrl) {
+        URL.revokeObjectURL(fileUrl);
+        console.log('[画像圧縮] ObjectURLを解放');
+      }
+    }
+  }
+
+  // ========================================================================
+  // 2) フォールバックパス  (toDataURL → fetch で全 iOS 対応)
+  // ========================================================================
+  return await executeCanvasFallback(file, maxWidth, aspectType, quality, mime, ext, rotation);
+}
+
+/**
+ * Canvas フォールバック処理を実行する
+ */
+async function executeCanvasFallback(
+  file: File,
+  maxWidth: number,
+  aspectType: 'square' | 'landscape' | 'mobile',
+  quality: number,
+  mime: string,
+  ext: string,
+  rotation: number
+): Promise<File> {
+  console.log('[画像圧縮] Canvasフォールバックパス開始');
+  
+  return new Promise<File>((resolve, reject) => {
+    const img = new Image();
+    let fileUrl: string | null = null;
+    
+    img.onload = async () => {
       try {
+        const width  = img.width;
+        const height = img.height;
+
+        let targetAspect = 1;
+        if (aspectType === 'landscape') targetAspect = 16 / 9;
+        if (aspectType === 'mobile')    targetAspect = 2 / 3;
+
+        let cropWidth = width, cropHeight = height;
+        if (width / height > targetAspect) {
+          cropHeight = height;
+          cropWidth  = Math.round(height * targetAspect);
+        } else {
+          cropWidth  = width;
+          cropHeight = Math.round(width / targetAspect);
+        }
+
+        const left = Math.floor((width  - cropWidth)  / 2);
+        const top  = Math.floor((height - cropHeight) / 2);
+
+        const canvas = document.createElement('canvas');
+        const scale  = maxWidth / cropWidth;
+        
+        // 回転を考慮したキャンバスサイズ
+        if (rotation === 90 || rotation === 270) {
+          canvas.width  = Math.round(cropHeight * scale);
+          canvas.height = maxWidth;
+        } else {
+          canvas.width  = maxWidth;
+          canvas.height = Math.round(cropHeight * scale);
+        }
+
+        const ctx = canvas.getContext('2d')!;
+        
+        // Exif回転を考慮して描画
+        drawRotatedImage(ctx, img, rotation, left, top, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+
         // iOS Safari でも quality が反映される toDataURL 経由
         const dataURL = canvas.toDataURL(mime, quality);
         const blob = await (await fetch(dataURL)).blob();
+        console.log('[画像圧縮] Canvasフォールバック圧縮完了:', { originalSize: file.size, compressedSize: blob.size });
+        
         resolve(new File([blob], sanitizeFileName(file.name, ext), { type: mime }));
       } catch (err) {
+        console.error('[画像圧縮] Canvasフォールバック処理エラー:', err);
         reject(err);
+      } finally {
+        // ObjectURL解放
+        if (fileUrl) {
+          URL.revokeObjectURL(fileUrl);
+          console.log('[画像圧縮] ObjectURL解放（フォールバック）');
+        }
       }
     };
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
+    
+    img.onerror = (error) => {
+      console.error('[画像圧縮] 画像読み込みエラー:', error);
+      if (fileUrl) {
+        URL.revokeObjectURL(fileUrl);
+      }
+      reject(new Error('画像の読み込みに失敗しました'));
+    };
+    
+    // ObjectURL作成
+    fileUrl = URL.createObjectURL(file);
+    img.src = fileUrl;
   });
 }
-
 
 /**
  * オリジナル画像とサムネイル画像を署名付きURLを取得してアップロードする

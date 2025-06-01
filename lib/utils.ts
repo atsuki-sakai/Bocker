@@ -639,9 +639,12 @@ export const deleteCookie = (name: string) => {
  * GCSに安全に保存できるファイル名へサニタイズする
  * - 絵文字・サロゲートペア・GCS非推奨文字を除去または置換
  * - ファイル拡張子は維持
+ * - 255文字制限を適用
+ * - 制御文字とPath Traversal攻撃を防止
  */
 export function sanitizeFileName(fileName: string): string {
   if (typeof fileName !== 'string') throw new TypeError('fileName must be a string')
+  if (fileName.length === 0) return 'file'
 
   // ファイル名と拡張子を分離
   const match = fileName.match(/^(.*?)(\.[^.]+)?$/)
@@ -649,8 +652,8 @@ export function sanitizeFileName(fileName: string): string {
   const [, name, ext] = match
 
   // 絵文字・サロゲートペア・GCS非推奨文字を除去または置換
-  const sanitizedName = name
-    // 絵文字・サロゲートペア除去
+  let sanitizedName = name
+    // 絵文字・サロゲートペア除去（範囲を拡張）
     .replace(/[\u{1F600}-\u{1F6FF}]/gu, '')
     .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')
     .replace(/[\u{1F700}-\u{1F77F}]/gu, '')
@@ -660,17 +663,53 @@ export function sanitizeFileName(fileName: string): string {
     .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '')
     .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '')
     .replace(/[\u{2600}-\u{26FF}]/gu, '')
+    .replace(/[\u{2700}-\u{27BF}]/gu, '')
+    // 追加の絵文字範囲
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
+    .replace(/[\u{E000}-\u{F8FF}]/gu, '')
     // GCS非推奨文字を_に置換
     .replace(/[\/\\?%*:|"<>#\[\]\{\}]/g, '_')
-    // 制御文字除去
-    .replace(/[\u0000-\u001F\u007F]/g, '')
-    // 空白を_
+    // Path Traversal攻撃の防止
+    .replace(/\.\.+/g, '_')
+    // 制御文字除去（NUL文字含む）
+    .replace(/[\u0000-\u001F\u007F\u0080-\u009F]/g, '')
+    // 空白文字を統一して_に変換
     .replace(/\s+/g, '_')
+    // 連続する_を1つに
+    .replace(/_+/g, '_')
     // 先頭・末尾の_を除去
     .replace(/^_+|_+$/g, '')
 
-  if (!sanitizedName) return 'file'
-  return sanitizedName + (ext || '')
+  // 空になった場合のフォールバック
+  if (!sanitizedName || sanitizedName.length === 0) {
+    sanitizedName = 'file'
+  }
+
+  // 最終的なファイル名
+  const finalFileName = sanitizedName + (ext || '')
+
+  // 255文字制限を適用（UTF-8バイト数ベース）
+  const encoder = new TextEncoder()
+  let encoded = encoder.encode(finalFileName)
+  
+  if (encoded.length > 255) {
+    // 拡張子の長さを考慮して切り詰め
+    const extBytes = encoder.encode(ext || '')
+    const maxNameBytes = 255 - extBytes.length - 8 // 余裕を持って8バイト少なく
+    
+    // 文字境界を考慮した切り詰め
+    let truncatedName = sanitizedName
+    let nameBytes = encoder.encode(truncatedName)
+    
+    while (nameBytes.length > maxNameBytes && truncatedName.length > 1) {
+      truncatedName = truncatedName.slice(0, -1)
+      nameBytes = encoder.encode(truncatedName)
+    }
+    
+    return truncatedName + (ext || '')
+  }
+
+  return finalFileName
 }
 
 

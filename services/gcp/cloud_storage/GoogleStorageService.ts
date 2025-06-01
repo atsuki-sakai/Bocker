@@ -10,6 +10,16 @@ import { Id } from '@/convex/_generated/dataModel';
 import { AspectType } from '@/convex/types';
 import { ImageDirectory, ImageQuality, ProcessedImageResult, UploadedFileResult } from './types';
 import { compressAndCropImage } from './helpers';
+
+/**
+ * 画像サイズとメモリ使用量の制限設定
+ */
+const IMAGE_LIMITS = {
+  MAX_DIMENSION: 8192,     // 最大幅・高さ（ピクセル）
+  MAX_FILE_SIZE: 50 * 1024 * 1024, // 最大ファイルサイズ（50MB）
+  MAX_MEMORY_USAGE: 100 * 1024 * 1024, // 最大メモリ使用量（100MB） width * height * 4 bytes
+} as const;
+
 /**
  * GCSクライアントとバケット設定を管理し、画像処理機能も提供するクラス
  */
@@ -144,111 +154,256 @@ class GoogleStorageService {
   }
 
   /**
- * 指定された設定で画像を圧縮する
- * @param inputBuffer 入力画像バッファ
- * @param maxWidth 最大幅
- * @param compressionQuality 圧縮品質
- * @returns 圧縮された画像バッファ
- */
-private async compressImage(
-  inputBuffer: Buffer,
-  maxWidth: number,
-  aspectType: AspectType, // アスペクト比の種類 / デフォルトはsquare  landscape: 16:9, mobile: 9:16
-  compressionQuality: number,
-): Promise<Buffer> {
-  if (inputBuffer.length === 0) {
-    throw new SystemError(
-      '圧縮対象の画像バッファが空です。',
-      {
-        statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'GoogleStorageService.compressImage',
-        message: '圧縮対象の画像バッファが空です。',
-        code: 'UNPROCESSABLE_ENTITY',
-        status: 400,
-        title: '空の画像データ',
-        details: {
-          error: 'Input buffer for image compression is empty.',
-          maxWidth,
-          compressionQuality,
-        },
+   * 画像の安全性とサイズを検証する
+   * @param imageBuffer 画像バッファ
+   * @param fileName ファイル名（ログ用）
+   * @returns 検証結果 
+   */
+  private async validateImageSafety(imageBuffer: Buffer, fileName: string): Promise<{ width: number; height: number }> {
+    // ファイルサイズチェック
+    if (imageBuffer.length > IMAGE_LIMITS.MAX_FILE_SIZE) {
+      throw new SystemError(
+        '画像ファイルサイズが制限を超えています。',
+        {
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.validateImageSafety',
+          message: '画像ファイルサイズが制限を超えています。',
+          code: 'UNPROCESSABLE_ENTITY',
+          status: 413,
+          title: 'ファイルサイズ超過',
+          details: {
+            error: 'Image file size exceeds limit.',
+            fileName,
+            fileSize: imageBuffer.length,
+            maxSize: IMAGE_LIMITS.MAX_FILE_SIZE,
+          },
+        }
+      );
+    }
+
+    try {
+      // sharpを使って画像メタデータを安全に取得
+      const metadata = await sharp(imageBuffer).metadata();
+      const { width, height } = metadata;
+
+      if (!width || !height) {
+        throw new Error('画像の幅または高さが取得できませんでした');
       }
-    )
+
+      // 画像サイズの制限チェック
+      if (width > IMAGE_LIMITS.MAX_DIMENSION || height > IMAGE_LIMITS.MAX_DIMENSION) {
+        throw new SystemError(
+          '画像の解像度が制限を超えています。',
+          {
+            statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
+            severity: ERROR_SEVERITY.ERROR,
+            callFunc: 'GoogleStorageService.validateImageSafety',
+            message: '画像の解像度が制限を超えています。',
+            code: 'UNPROCESSABLE_ENTITY',
+            status: 413,
+            title: '解像度制限超過',
+            details: {
+              error: 'Image resolution exceeds limit.',
+              fileName,
+              width,
+              height,
+              maxDimension: IMAGE_LIMITS.MAX_DIMENSION,
+            },
+          }
+        );
+      }
+
+      // メモリ使用量の推定（RGBA: 4 bytes per pixel）
+      const estimatedMemoryUsage = width * height * 4;
+      if (estimatedMemoryUsage > IMAGE_LIMITS.MAX_MEMORY_USAGE) {
+        throw new SystemError(
+          '画像処理に必要なメモリが制限を超えています。',
+          {
+            statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
+            severity: ERROR_SEVERITY.ERROR,
+            callFunc: 'GoogleStorageService.validateImageSafety',
+            message: '画像処理に必要なメモリが制限を超えています。',
+            code: 'UNPROCESSABLE_ENTITY',
+            status: 413,
+            title: 'メモリ使用量超過',
+            details: {
+              error: 'Estimated memory usage for image processing exceeds limit.',
+              fileName,
+              width,
+              height,
+              estimatedMemoryUsage,
+              maxMemoryUsage: IMAGE_LIMITS.MAX_MEMORY_USAGE,
+            },
+          }
+        );
+      }
+
+      console.log('[画像検証] 安全性チェック完了:', {
+        fileName,
+        width,
+        height,
+        fileSize: imageBuffer.length,
+        estimatedMemoryUsage,
+      });
+
+      return { width, height };
+    } catch (sharpError) {
+      // Sharp のエラーはより詳細な情報を提供
+      if (sharpError instanceof SystemError) {
+        throw sharpError; // 既に我々のエラーならそのまま再スロー
+      }
+      
+      throw new SystemError(
+        '画像の形式が不正または破損している可能性があります。',
+        {
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.validateImageSafety',
+          message: '画像の形式が不正または破損している可能性があります。',
+          code: 'UNPROCESSABLE_ENTITY',
+          status: 400,
+          title: '画像形式エラー',
+          details: {
+            error: this.formatErrorDetails(sharpError),
+            fileName,
+            bufferSize: imageBuffer.length,
+          },
+        }
+      );
+    }
   }
-  try {
-    // 1. sharpインスタンス生成とメタデータ取得
-    const sharpInstance = sharp(inputBuffer).withMetadata();
-    const metadata = await sharpInstance.metadata();
 
-    // 2. アスペクト比2:3で中央トリミング
-    let { width, height } = metadata;
-    if (!width || !height) {
-      throw new Error('画像サイズを取得できませんでした');
+  /**
+   * 指定された設定で画像を圧縮する
+   * @param inputBuffer 入力画像バッファ
+   * @param maxWidth 最大幅
+   * @param aspectType アスペクト比の種類 / デフォルトはsquare  landscape: 16:9, mobile: 9:16
+   * @param compressionQuality 圧縮品質
+   * @returns 圧縮された画像バッファ
+   */
+  private async compressImage(
+    inputBuffer: Buffer,
+    maxWidth: number,
+    aspectType: AspectType, // アスペクト比の種類 / デフォルトはsquare  landscape: 16:9, mobile: 9:16
+    compressionQuality: number,
+  ): Promise<Buffer> {
+    if (inputBuffer.length === 0) {
+      throw new SystemError(
+        '圧縮対象の画像バッファが空です。',
+        {
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.compressImage',
+          message: '圧縮対象の画像バッファが空です。',
+          code: 'UNPROCESSABLE_ENTITY',
+          status: 400,
+          title: '空の画像データ',
+          details: {
+            error: 'Input buffer for image compression is empty.',
+            maxWidth,
+            compressionQuality,
+          },
+        }
+      )
     }
-    let targetAspect: number;
-    switch (aspectType) {
-      case 'square':
-        targetAspect = 1;      // 1:1
-        break;
-      case 'landscape':
-        targetAspect = 16 / 9; // 16:9
-        break;
-      case 'mobile':
-        targetAspect = 2 / 3; // 2:3
-        break;
-      default:
-        targetAspect = 1;      // デフォルトは正方形
+    
+    try {
+      // 画像の安全性を事前検証
+      console.log('[画像圧縮] 安全性検証開始');
+      const { width, height } = await this.validateImageSafety(inputBuffer, 'compression-target');
+      console.log('[画像圧縮] 安全性検証完了:', { width, height });
+
+      // 1. sharpインスタンス生成とメタデータ取得
+      const sharpInstance = sharp(inputBuffer).withMetadata();
+
+      // 2. アスペクト比2:3で中央トリミング
+      let targetAspect: number;
+      switch (aspectType) {
+        case 'square':
+          targetAspect = 1;      // 1:1
+          break;
+        case 'landscape':
+          targetAspect = 16 / 9; // 16:9
+          break;
+        case 'mobile':
+          targetAspect = 2 / 3; // 2:3
+          break;
+        default:
+          targetAspect = 1;      // デフォルトは正方形
+      }
+
+      let cropWidth = width;
+      let cropHeight = height;
+
+      if (width / height > targetAspect) {
+        // 横長 → 横方向をカット
+        cropHeight = height;
+        cropWidth = Math.round(height * targetAspect);
+      } else {
+        // 縦長 → 縦方向をカット
+        cropWidth = width;
+        cropHeight = Math.round(width / targetAspect);
+      }
+
+      const left = Math.floor((width - cropWidth) / 2);
+      const top = Math.floor((height - cropHeight) / 2);
+
+      // 3. トリミング→リサイズ→圧縮
+      let processed = sharp(inputBuffer)
+        .extract({ left, top, width: cropWidth, height: cropHeight })
+        .resize({ width: maxWidth, withoutEnlargement: true });
+
+      // 4. 圧縮保存
+      const compressionStart = Date.now();
+      let compressedBuffer: Buffer;
+      
+      if (this.activeFormat === 'avif') {
+        compressedBuffer = await processed.avif({ quality: compressionQuality, effort: 4 }).toBuffer();
+      } else {
+        compressedBuffer = await processed.webp({ quality: compressionQuality }).toBuffer();
+      }
+      
+      const compressionTime = Date.now() - compressionStart;
+      const compressionRatio = (1 - compressedBuffer.length / inputBuffer.length) * 100;
+      
+      console.log('[画像圧縮] 圧縮完了:', {
+        originalSize: inputBuffer.length,
+        compressedSize: compressedBuffer.length,
+        compressionRatio: `${compressionRatio.toFixed(1)}%`,
+        compressionTime: `${compressionTime}ms`,
+        aspectType,
+        maxWidth,
+        quality: compressionQuality,
+      });
+      
+      return compressedBuffer;
+    } catch (originalError) {
+      // SystemErrorは既に適切な形でラップされているので再スロー
+      if (originalError instanceof SystemError) {
+        throw originalError;
+      }
+      
+      throw new SystemError(
+        '画像圧縮処理中にエラーが発生しました。',
+        {
+          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.compressImage',
+          message: '画像圧縮処理中にエラーが発生しました。',
+          code: 'INTERNAL_SERVER_ERROR',
+          status: 500,
+          title: '画像圧縮失敗',
+          details: {
+            error: this.formatErrorDetails(originalError),
+            inputBufferSize: inputBuffer.length,
+            maxWidth,
+            compressionQuality,
+            activeFormat: this.activeFormat,
+          },
+        });
     }
-
-    let cropWidth = width;
-    let cropHeight = height;
-
-
-    if (width / height > targetAspect) {
-      // 横長 → 横方向をカット
-      cropHeight = height;
-      cropWidth = Math.round(height * targetAspect);
-    } else {
-      // 縦長 → 縦方向をカット
-      cropWidth = width;
-      cropHeight = Math.round(width / targetAspect);
-    }
-
-    const left = Math.floor((width - cropWidth) / 2);
-    const top = Math.floor((height - cropHeight) / 2);
-
-    // 3. トリミング→リサイズ→圧縮
-    let processed = sharp(inputBuffer)
-      .extract({ left, top, width: cropWidth, height: cropHeight })
-      .resize({ width: maxWidth, withoutEnlargement: true });
-
-    // 4. 圧縮保存
-    if (this.activeFormat === 'avif') {
-      return await processed.avif({ quality: compressionQuality, effort: 4 }).toBuffer();
-    } else {
-      return await processed.webp({ quality: compressionQuality }).toBuffer();
-    }
-  } catch (originalError) {
-    throw new SystemError(
-      '画像圧縮処理中にエラーが発生しました。',
-      {
-        statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'GoogleStorageService.compressImage',
-        message: '画像圧縮処理中にエラーが発生しました。',
-        code: 'INTERNAL_SERVER_ERROR',
-        status: 500,
-        title: '画像圧縮失敗',
-        details: {
-          error: this.formatErrorDetails(originalError),
-          inputBufferSize: inputBuffer.length,
-          maxWidth,
-          compressionQuality,
-          activeFormat: this.activeFormat,
-        },
-    });
   }
-}
 
   /**
    * バッファからファイルをアップロードする
