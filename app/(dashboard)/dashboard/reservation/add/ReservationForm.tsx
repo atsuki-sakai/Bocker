@@ -312,7 +312,7 @@ export default function ReservationForm() {
     }
 
     searchCustomers()
-  }, [tenantId, orgId, debouncedSearchName, customerRepository, showErrorToast])
+  }, [tenantId, orgId, debouncedSearchName, showErrorToast])
 
   useEffect(() => {
     if (!tenantId || !orgId) return
@@ -419,13 +419,15 @@ export default function ReservationForm() {
   }, [selectedMenus, menus])
 
   // optionTotalPrice
-  const optionTotalPrice = selectedOptions.reduce((sum, item) => {
-    const option = options.find((o) => o._id === item.id)
-    if (!option) return sum
-    const price =
-      option.sale_price && option.sale_price > 0 ? option.sale_price : (option.unit_price ?? 0)
-    return sum + price * item.quantity
-  }, 0)
+  const optionTotalPrice = React.useMemo(() => {
+    return selectedOptions.reduce((sum, item) => {
+      const option = options.find((o) => o._id === item.id)
+      if (!option) return sum
+      const price =
+        option.sale_price && option.sale_price > 0 ? option.sale_price : (option.unit_price ?? 0)
+      return sum + price * item.quantity
+    }, 0)
+  }, [selectedOptions, options])
 
   // スタッフ指名料
   const extraChargePrice = React.useMemo(() => {
@@ -435,12 +437,15 @@ export default function ReservationForm() {
   }, [selectedStaffId, availableStaff])
 
   // 総合計金額をフォームの totalPrice にセット
-  const totalPriceCalculated = menuTotalPrice + optionTotalPrice + extraChargePrice
+  const totalPriceCalculated = React.useMemo(() => {
+    return menuTotalPrice + optionTotalPrice + extraChargePrice
+  }, [menuTotalPrice, optionTotalPrice, extraChargePrice])
 
   useEffect(() => {
     setValue('total_price', totalPriceCalculated)
     setValue('unit_price', menuTotalPrice)
-  }, [setValue, totalPriceCalculated, menuTotalPrice, optionTotalPrice, extraChargePrice])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPriceCalculated, menuTotalPrice])
 
   // 日付とスタッフの変更で空き時間を取得
   useEffect(() => {

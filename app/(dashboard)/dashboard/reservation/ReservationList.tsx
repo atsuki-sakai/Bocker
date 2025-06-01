@@ -313,39 +313,41 @@ export default function ReservationList() {
     return groups
   }, [reservations])
 
-  // グループごとの予約数を計算
-  const groupCounts = useMemo<Record<string, number>>(() => {
-    if (!groupedReservations) return {}
+  // アクティブタブを決定
+  useEffect(() => {
+    if (!groupedReservations) return
 
+    // groupCountsを内部で計算して無限ループを防ぐ
     const counts: Record<string, number> = {}
     Object.keys(groupedReservations).forEach((group) => {
       counts[group] = groupedReservations[group as ReservationGroup]?.length || 0
     })
 
-    return counts
-  }, [groupedReservations])
-
-  // アクティブタブを決定
-  useEffect(() => {
-    if (!groupedReservations) return
+    // 現在のactiveTabが適切かチェックして、必要な場合のみ更新
+    let newActiveTab: string | null = null
 
     // 優先順位: 今日 > 今週 > 来週 > 今月 > 来月 > 再来月
-    if (groupCounts[ReservationGroup.TODAY] > 0) {
-      setActiveTab(ReservationGroup.TODAY)
-    } else if (groupCounts[ReservationGroup.UPCOMING] > 0) {
-      setActiveTab(ReservationGroup.UPCOMING)
-    } else if (groupCounts[ReservationGroup.NEXT_WEEK] > 0) {
-      setActiveTab(ReservationGroup.NEXT_WEEK)
-    } else if (groupCounts[ReservationGroup.THIS_MONTH] > 0) {
-      setActiveTab(ReservationGroup.THIS_MONTH)
-    } else if (groupCounts[ReservationGroup.NEXT_MONTH] > 0) {
-      setActiveTab(ReservationGroup.NEXT_MONTH)
-    } else if (groupCounts[ReservationGroup.MONTH_AFTER_NEXT] > 0) {
-      setActiveTab(ReservationGroup.MONTH_AFTER_NEXT)
+    if (counts[ReservationGroup.TODAY] > 0) {
+      newActiveTab = ReservationGroup.TODAY
+    } else if (counts[ReservationGroup.UPCOMING] > 0) {
+      newActiveTab = ReservationGroup.UPCOMING
+    } else if (counts[ReservationGroup.NEXT_WEEK] > 0) {
+      newActiveTab = ReservationGroup.NEXT_WEEK
+    } else if (counts[ReservationGroup.THIS_MONTH] > 0) {
+      newActiveTab = ReservationGroup.THIS_MONTH
+    } else if (counts[ReservationGroup.NEXT_MONTH] > 0) {
+      newActiveTab = ReservationGroup.NEXT_MONTH
+    } else if (counts[ReservationGroup.MONTH_AFTER_NEXT] > 0) {
+      newActiveTab = ReservationGroup.MONTH_AFTER_NEXT
     } else {
-      setActiveTab(ReservationGroup.TODAY) // デフォルト
+      newActiveTab = ReservationGroup.TODAY // デフォルト
     }
-  }, [groupedReservations, groupCounts])
+
+    // 現在のactiveTabと異なる場合のみ更新
+    if (newActiveTab && newActiveTab !== activeTab) {
+      setActiveTab(newActiveTab)
+    }
+  }, [groupedReservations, activeTab])
 
   if (isLoading) return <Loading />
 
@@ -358,36 +360,41 @@ export default function ReservationList() {
   // タブ構成を生成
   // --- 2) タブ定義 ----
   const groupConfigs: GroupTabConfig[] = [
-    { id: ReservationGroup.TODAY, label: '今日', icon: Calendar, count: groupCounts.today },
+    {
+      id: ReservationGroup.TODAY,
+      label: '今日',
+      icon: Calendar,
+      count: groupedReservations.today?.length || 0,
+    },
     {
       id: ReservationGroup.UPCOMING,
       label: '今週',
       icon: CalendarRange,
-      count: groupCounts.upcoming,
+      count: groupedReservations.upcoming?.length || 0,
     },
     {
       id: ReservationGroup.NEXT_WEEK,
       label: '来週',
       icon: CalendarDays,
-      count: groupCounts['next-week'],
+      count: groupedReservations['next-week']?.length || 0,
     },
     {
       id: ReservationGroup.THIS_MONTH,
       label: currentMonthName,
       icon: CalendarDays,
-      count: groupCounts['this-month'],
+      count: groupedReservations['this-month']?.length || 0,
     },
     {
       id: ReservationGroup.NEXT_MONTH,
       label: nextMonthName,
       icon: CalendarDays,
-      count: groupCounts['next-month'],
+      count: groupedReservations['next-month']?.length || 0,
     },
     {
       id: ReservationGroup.MONTH_AFTER_NEXT,
       label: monthAfterNextName,
       icon: CalendarDays,
-      count: groupCounts['month-after-next'],
+      count: groupedReservations['month-after-next']?.length || 0,
     },
   ].filter((g) => g.count > 0 || g.id === ReservationGroup.TODAY)
 

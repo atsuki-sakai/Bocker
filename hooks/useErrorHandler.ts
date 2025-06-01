@@ -1,6 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
+import { useCallback } from 'react';
 import { ERROR_SEVERITY } from '@/lib/errors/constants';
 import { isErrorPayload } from '@/lib/errors/utils';
 import type { ErrorPayload } from '@/lib/errors/types';
@@ -36,7 +37,7 @@ interface ErrorHandlerOptions {
  *   }
  */
 export function useErrorHandler(options?: ErrorHandlerOptions) {
-  const showErrorToast = (error: unknown) => {
+  const showErrorToast = useCallback((error: unknown) => {
     let processedPayload: ErrorPayload | null = null;
     let originalErrorMessage: string | null = null;
 
@@ -109,7 +110,7 @@ export function useErrorHandler(options?: ErrorHandlerOptions) {
         toast.error(displayMessage);
         break;
     }
-  };
+  }, [options?.defaultTitle, options?.defaultMessage]);
 
   return { showErrorToast };
 } 
