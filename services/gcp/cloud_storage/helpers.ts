@@ -189,6 +189,13 @@ export async function compressAndCropImage(
                 (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
   const useWebp = canWebp && !isIOS;
 
+  // --- iOS だけ追加で品質・サイズを落としてファイルサイズを半分程度に抑える ----------
+  // 体感目標: 約 40–60 % 削減
+  const iosQualityFactor = 0.6;   // 品質を 60 % に
+  const iosWidthFactor   = 0.8;   // 幅を 80 % に
+  const effectiveQuality   = isIOS ? Math.max(0.25, quality * iosQualityFactor) : quality;
+  const effectiveMaxWidth  = isIOS ? Math.round(maxWidth * iosWidthFactor)      : maxWidth;
+
   const mime = useWebp ? 'image/webp' : 'image/jpeg';
   const ext  = useWebp ? '.webp'    : '.jpg';
 
@@ -228,7 +235,7 @@ export async function compressAndCropImage(
       } catch (bitmapError) {
         console.warn('[画像圧縮] createImageBitmap失敗、フォールバックを使用:', bitmapError);
         // フォールバックパスに転送
-        return await executeCanvasFallback(file, maxWidth, aspectType, quality, mime, ext, rotation);
+        return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext, rotation);
       }
       
       const { width, height } = bitmap;
@@ -251,8 +258,8 @@ export async function compressAndCropImage(
       const top  = Math.floor((height - cropHeight) / 2);
 
       // ----- クロップ & リサイズ --------------------------------------------
-      const scale = maxWidth / cropWidth;
-      const outW = maxWidth;
+      const scale = effectiveMaxWidth / cropWidth;
+      const outW  = effectiveMaxWidth;
       const outH = Math.round(cropHeight * scale);
 
       const off = new OffscreenCanvas(outW, outH);
@@ -261,7 +268,7 @@ export async function compressAndCropImage(
       ctx.drawImage(bitmap, left, top, cropWidth, cropHeight, 0, 0, outW, outH);
 
       // ----- 画像エンコード ---------------------------------------------------
-      const blob: Blob = await (off as any).convertToBlob({ type: mime, quality });
+      const blob: Blob = await (off as any).convertToBlob({ type: mime, quality: effectiveQuality });
       console.log('[画像圧縮] OffscreenCanvas圧縮完了:', { originalSize: file.size, compressedSize: blob.size });
       
       return new File([blob], sanitizeFileName(file.name, ext), { type: mime });
@@ -269,7 +276,7 @@ export async function compressAndCropImage(
     } catch (error) {
       console.error('[画像圧縮] OffscreenCanvasパスでエラー、フォールバックを試行:', error);
       // フォールバックパスに転送
-      return await executeCanvasFallback(file, maxWidth, aspectType, quality, mime, ext, rotation);
+      return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext, rotation);
     } finally {
       // メモリ解放
       if (bitmap) {
@@ -286,7 +293,7 @@ export async function compressAndCropImage(
   // ========================================================================
   // 2) フォールバックパス  (toDataURL → fetch で全 iOS 対応)
   // ========================================================================
-  return await executeCanvasFallback(file, maxWidth, aspectType, quality, mime, ext, rotation);
+  return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext, rotation);
 }
 
 /**
@@ -294,9 +301,9 @@ export async function compressAndCropImage(
  */
 async function executeCanvasFallback(
   file: File,
-  maxWidth: number,
+  effectiveMaxWidth: number,
   aspectType: 'square' | 'landscape' | 'mobile',
-  quality: number,
+  effectiveQuality: number,
   mime: string,
   ext: string,
   rotation: number
@@ -329,10 +336,10 @@ async function executeCanvasFallback(
         const top  = Math.floor((height - cropHeight) / 2);
 
         const canvas = document.createElement('canvas');
-        const scale  = maxWidth / cropWidth;
+        const scale  = effectiveMaxWidth / cropWidth;
         
         // 画像の向きを変更しない
-        canvas.width  = maxWidth;
+        canvas.width  = effectiveMaxWidth;
         canvas.height = Math.round(cropHeight * scale);
 
         const ctx = canvas.getContext('2d')!;
@@ -340,7 +347,7 @@ async function executeCanvasFallback(
         ctx.drawImage(img, left, top, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
 
         // iOS Safari でも quality が反映される toDataURL 経由
-        const dataURL = canvas.toDataURL(mime, quality);
+        const dataURL = canvas.toDataURL(mime, effectiveQuality);
         const blob = await (await fetch(dataURL)).blob();
         console.log('[画像圧縮] Canvasフォールバック圧縮完了:', { originalSize: file.size, compressedSize: blob.size });
         
