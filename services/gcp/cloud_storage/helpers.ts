@@ -2,6 +2,29 @@ import { AspectType } from "@/convex/types";
 import { ImageQuality } from "./types";
 import { v4 as uuidv4 } from 'uuid';
 
+
+/**
+ * ブラウザが Canvas で WebP エンコード可能かを非同期に判定する。
+ * 一度判定した結果をキャッシュして次回以降は即 return する。
+ */
+let webpEncodeSupport: boolean | undefined;
+export async function canEncodeWebp(): Promise<boolean> {
+  if (webpEncodeSupport !== undefined) return webpEncodeSupport;
+  if (typeof document === 'undefined') return (webpEncodeSupport = false);
+
+  const canvas = document.createElement('canvas');
+  return new Promise<boolean>((resolve) => {
+    canvas.toBlob(
+      (blob) => {
+        webpEncodeSupport = !!blob && blob.type === 'image/webp';
+        resolve(webpEncodeSupport);
+      },
+      'image/webp',
+      0.1
+    );
+  });
+}
+
 const qualityTable = {
     low: { original: { width: 700, quality: 0.4 }, thumb: { width: 150, quality: 0.3 }},
     medium: { original: { width: 1280, quality: 0.55 }, thumb: { width: 240, quality: 0.4 }},
@@ -9,23 +32,22 @@ const qualityTable = {
 };
 
 /**
- * ファイル名を安全な形式に変換し、必ず `.webp` 拡張子に統一する
+ * ファイル名を安全な形式に変換する
  * @param fileName 元のファイル名
- * @returns 安全なファイル名（例: "l9f2m3_sample_8a1b2c3d.webp"）
+ * @param preferredExt 出力拡張子 (例: ".webp" / ".jpg") デフォルトは ".webp"
+ * @returns 例: "l9f2m3_sample_8a1b2c3d.webp"
  */
-function sanitizeFileName(fileName: string): string {
-  // 1) ベース名生成: ディレクトリと既存拡張子を取り除き、英数字/ _ / - のみにする
+function sanitizeFileName(fileName: string, preferredExt: string = '.webp'): string {
+  // ベース名生成: ディレクトリと既存拡張子を除去し、安全文字に置換
   const base = fileName
-    .replace(/^.*[\\/]/, '')   // ディレクトリ除去
-    .replace(/\.[^.]+$/, '')   // 既存拡張子除去
-    .replace(/[^\w\-]/g, '_'); // 非英数字を安全文字に置換
+    .replace(/^.*[\\/]/, '')      // ディレクトリ除去
+    .replace(/\.[^.]+$/, '')      // 既存拡張子除去
+    .replace(/[^\w\-]/g, '_');    // 非英数字を置換
 
-  // 2) タイムスタンプ + 8 文字の UUID 断片で衝突低減
-  const timestamp = Date.now().toString(36); // 36 進で短縮
-  const uuid = uuidv4().slice(0, 8);        // 8 文字だけ使用
+  const timestamp = Date.now().toString(36);  // 衝突低減
+  const uuid = uuidv4().slice(0, 8);
 
-  // 3) 拡張子は必ず .webp に固定
-  return `${timestamp}_${base}_${uuid}.webp`;
+  return `${timestamp}_${base}_${uuid}${preferredExt}`;
 }
 
 /**
@@ -36,57 +58,61 @@ function sanitizeFileName(fileName: string): string {
  * @param quality 0〜1 圧縮率
  */
 export async function compressAndCropImage(
-file: File,
-maxWidth: number,
-aspectType: 'square' | 'landscape' | 'mobile',
-quality: number
+  file: File,
+  maxWidth: number,
+  aspectType: 'square' | 'landscape' | 'mobile',
+  quality: number
 ): Promise<File> {
-return new Promise((resolve, reject) => {
+  // --- エンコード可否を機能検出で判定 --------------------
+  const canWebp = await canEncodeWebp();      // ← await OK  (functionは async)
+  const mime = canWebp ? 'image/webp' : 'image/jpeg';
+  const ext  = canWebp ? '.webp' : '.jpg';
+  return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
-    let { width, height } = img;
-    let targetAspect = 1; // square
-    if (aspectType === 'landscape') targetAspect = 16 / 9;
-    if (aspectType === 'mobile') targetAspect = 2 / 3;
+      let { width, height } = img;
+      let targetAspect = 1; // square
+      if (aspectType === 'landscape') targetAspect = 16 / 9;
+      if (aspectType === 'mobile') targetAspect = 2 / 3;
 
-    let cropWidth = width, cropHeight = height;
-    if (width / height > targetAspect) {
+      let cropWidth = width, cropHeight = height;
+      if (width / height > targetAspect) {
         cropHeight = height;
         cropWidth = Math.round(height * targetAspect);
-    } else {
+      } else {
         cropWidth = width;
         cropHeight = Math.round(width / targetAspect);
-    }
+      }
 
-    const left = Math.floor((width - cropWidth) / 2);
-    const top = Math.floor((height - cropHeight) / 2);
+      const left = Math.floor((width - cropWidth) / 2);
+      const top = Math.floor((height - cropHeight) / 2);
 
-    // 切り抜き & リサイズ
-    const canvas = document.createElement('canvas');
-    const scale = maxWidth / cropWidth;
-    canvas.width = maxWidth;
-    canvas.height = cropHeight * scale;
+      // 切り抜き & リサイズ
+      const canvas = document.createElement('canvas');
+      const scale = maxWidth / cropWidth;
+      canvas.width = maxWidth;
+      canvas.height = cropHeight * scale;
 
-    const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(img, left, top, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, left, top, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
 
-    canvas.toBlob(
+      canvas.toBlob(
         (blob) => {
-        if (!blob) return reject(new Error('圧縮失敗'));
-        const compressedFile = new File(
+          if (!blob) return reject(new Error('圧縮失敗'));
+          const compressedFile = new File(
             [blob],
-            sanitizeFileName(file.name),
-            { type: 'image/webp' }
-        );
-        resolve(compressedFile);
+            sanitizeFileName(file.name, ext),
+            { type: mime }
+          );
+          resolve(compressedFile);
         },
-        'image/webp',
+        mime,
         quality
-    );
+      );
     };
     img.onerror = reject;
     img.src = URL.createObjectURL(file);
-});
+  });
 }
 
 
@@ -152,12 +178,13 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
         const compressionTime = timings.compressionEnd - timings.compressionStart;
         console.log(`[パフォーマンス] 圧縮処理時間: ${compressionTime.toFixed(2)}ms`)
 
-        // 安全なファイル名を生成（オリジナルとサムネイルで同じベース名を使用）
-        const safeFileName = sanitizeFileName(file.name);
-        console.log('[画像アップロード] 安全なファイル名:', safeFileName)
-
         // 実際の圧縮ファイルのContent-Typeを取得（署名とPUTで一致させるため）
         const actualContentType = compressed.type;
+        const ext = actualContentType === 'image/jpeg' ? '.jpg' : '.webp';
+        // 安全なファイル名を生成（オリジナルとサムネイルで同じベース名を使用）
+        const safeFileName = sanitizeFileName(file.name, ext);
+        console.log('[画像アップロード] 安全なファイル名:', safeFileName)
+
         console.log('[画像アップロード] 実際のContent-Type:', actualContentType)
         console.log('[画像アップロード] サムネイルContent-Type:', thumbnail.type)
 

@@ -314,6 +314,9 @@ export default function MenuAddForm() {
               onFilesSelect={(newFiles) => {
                 setCurrentFiles(newFiles as File[])
               }}
+              maxSizeMB={6}
+              limitFiles={3}
+              hasSelected={currentFiles.length}
             />
           </div>
 

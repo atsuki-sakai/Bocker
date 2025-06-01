@@ -163,7 +163,7 @@ const schemaMenu = z
 // エラーメッセージコンポーネント
 const ErrorMessage = ({ message }: { message: string | undefined }) => (
   <motion.p
-    className="text-red-500 text-sm mt-1 flex items-center gap-1"
+    className="text-destructive-foreground text-sm mt-1 flex items-center gap-1"
     initial={{ opacity: 0, height: 0 }}
     animate={{ opacity: 1, height: 'auto' }}
     exit={{ opacity: 0, height: 0 }}
@@ -445,7 +445,7 @@ export default function MenuEditForm() {
                 onFilesSelect={(files: File[]) => {
                   setNewFiles(files)
                 }}
-                limitFiles={4}
+                limitFiles={3}
                 hasSelected={existingImages.length}
               />
             </div>
