@@ -32,12 +32,13 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { fileToBase64 } from '@/lib/utils'
 import { Id } from '@/convex/_generated/dataModel'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ConvexError } from 'convex/values'
+import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
+
 import {
   Save,
   ArrowLeft,
@@ -56,7 +57,6 @@ import {
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExclusionMenu } from '@/components/common'
-import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
@@ -187,7 +187,7 @@ export default function StaffAddPage() {
     let staffId: Id<'staff'> | null = null
     let staffConfigId: Id<'staff_config'> | null = null
     let staffAuthId: Id<'staff_auth'> | null = null
-    const newUploadedImageUrls: { original_url: string; thumbnail_url: string }[] = []
+    let newUploadedImageUrls: { original_url: string; thumbnail_url: string }[] = []
 
     try {
       if (!tenantId || !orgId) {
@@ -197,25 +197,20 @@ export default function StaffAddPage() {
 
       if (selectedFile) {
         try {
-          // クライアント側で画像処理を行う
-          const originalBase64 = await fileToBase64(selectedFile)
-
-          const response = await fetch('/api/storage', {
-            method: 'POST',
-            body: JSON.stringify({
-              base64Data: originalBase64,
-              directory: 'staff',
-              fileName: selectedFile.name,
-              orgId: orgId,
-              quality: 'high',
-              aspectType: 'square',
-            }),
-          })
-          const result: ProcessedImageResult = await response.json()
-          newUploadedImageUrls.push({
-            original_url: result.originalUrl,
-            thumbnail_url: result.thumbnailUrl,
-          })
+          const result = await uploadCompressedImageWithThumbnailSignedUrl(
+            selectedFile!,
+            orgId,
+            'staff',
+            'square', // aspectType: 'square' | 'landscape' | 'mobile'
+            'medium' // quality: 'low' | 'medium' | 'high'
+          )
+          // 新方式のレスポンス形式に合わせて修正
+          newUploadedImageUrls = [
+            {
+              original_url: result.original.publicUrl,
+              thumbnail_url: result.thumbnail.publicUrl,
+            },
+          ]
         } catch (error) {
           console.log('画像アップロードエラー: ', error)
 
@@ -235,7 +230,7 @@ export default function StaffAddPage() {
             name: data.name,
             email: data.email,
             gender: data.gender,
-            images: data.images,
+            images: newUploadedImageUrls ? newUploadedImageUrls : data.images,
             is_active: data.is_active,
             tags: data.tags,
             tenant_id: tenantId,
@@ -334,10 +329,10 @@ export default function StaffAddPage() {
         } catch (cleanupError) {
           throw new ConvexError({
             message: 'スタッフ削除中にエラーが発生しました',
-            status: 500,
-            code: 'INTERNAL_ERROR',
-            title: 'スタッフ削除中にエラーが発生しました',
-            details: { Error: JSON.stringify(cleanupError) },
+            statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+            severity: ERROR_SEVERITY.ERROR,
+            callFunc: 'staff.mutation.create',
+            details: { ...data, error: JSON.stringify(cleanupError) },
           })
         }
         showErrorToast(error)
@@ -401,6 +396,7 @@ export default function StaffAddPage() {
                         <div className="w-full">
                           <SingleImageDrop
                             onFileSelect={(file) => setSelectedFile(file ?? null)}
+                            aspectType="square"
                             className="transition-all duration-200 hover:opacity-90 aspect-square"
                           />
                         </div>

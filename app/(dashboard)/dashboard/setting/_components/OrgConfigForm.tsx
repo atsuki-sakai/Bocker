@@ -315,7 +315,7 @@ export default function OrgConfigForm() {
                   alt="店舗画像"
                   width={1512}
                   height={1512}
-                  className="w-full h-full object-cover rounded-md border border-border aspect-[9/16]"
+                  className="w-full h-full object-cover rounded-md border border-border aspect-[16/9]"
                 />
               </div>
             )}

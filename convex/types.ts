@@ -138,12 +138,12 @@ export const reservationIntervalMinutesType = v.union(
 )
 export type ReservationIntervalMinutes = Infer<typeof reservationIntervalMinutesType>
 
-// サロンスケジュールタイプの定義
+// スケジュールタイプの定義
 export const EXCEPTION_SCHEDULE_TYPE_VALUES = ['holiday', 'other'] as const
-export const ExceptionScheduleType = v.union(
+export const exceptionScheduleType = v.union(
   ...EXCEPTION_SCHEDULE_TYPE_VALUES.map((type) => v.literal(type))
 )
-export type ExceptionSchedule = Infer<typeof ExceptionScheduleType>
+export type ExceptionSchedule = Infer<typeof exceptionScheduleType>
 
 // 支払い方法の型定義
 export const PAYMENT_METHOD_VALUES = ['cash', 'credit_card', 'all'] as const
@@ -316,6 +316,7 @@ export const STRIPE_CONNECT_STATUS_VALUES = [
 export const stripeConnectStatusType = v.union(...STRIPE_CONNECT_STATUS_VALUES.map((status) => v.literal(status)))
 export type StripeConnectStatus = Infer<typeof stripeConnectStatusType>
 
+// square: 正方形: 1/1, landscape: 横長: 16/9, mobile: 縦長: 2/3
 export const ASPECT_TYPE_VALUES = ['square', 'landscape', 'mobile'] as const
 export const aspectType = v.union(...ASPECT_TYPE_VALUES.map((type) => v.literal(type)))
 export type AspectType = Infer<typeof aspectType>

@@ -9,7 +9,7 @@ import {
   validateDateStrFormat,
 } from '@/convex/utils/validations';
 import { checkAuth } from '@/convex/utils/auth';
-import { ExceptionScheduleType, dayOfWeekType } from '@/convex/types';
+import { exceptionScheduleType, dayOfWeekType } from '@/convex/types';
 import { MAX_NOTES_LENGTH } from '@/convex/constants';
 import { excludeFields } from '@/convex/utils/helpers';
 
@@ -18,7 +18,7 @@ export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    type: ExceptionScheduleType,
+    type: exceptionScheduleType,
     date: v.string(),
     notes: v.optional(v.string()),
   },
@@ -57,7 +57,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     exceptionScheduleId: v.id('exception_schedule'),
-    type: ExceptionScheduleType,
+    type: exceptionScheduleType,
     date: v.string(),
     notes: v.optional(v.string()),
   },
@@ -112,7 +112,7 @@ export const upsert = mutation({
     exceptionScheduleId: v.id('exception_schedule'),
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    type: ExceptionScheduleType,
+    type: exceptionScheduleType,
     date: v.string(),
     notes: v.optional(v.string()),
   },

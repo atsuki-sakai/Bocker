@@ -2,7 +2,7 @@ import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { validateRequired, validateDateStrFormat } from '@/convex/utils/validations';
 import { paginationOptsValidator } from 'convex/server';
-import { ExceptionScheduleType } from '@/convex/types';
+import { exceptionScheduleType } from '@/convex/types';
 import { checkAuth } from '@/convex/utils/auth';
 
 export const displayExceptionSchedule = query({
@@ -29,7 +29,7 @@ export const getByScheduleList = query({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    type: ExceptionScheduleType
+    type: exceptionScheduleType
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -60,7 +60,7 @@ export const getByOrgAndDate = query({
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
     date: v.string(),
-    type: ExceptionScheduleType,
+    type: exceptionScheduleType,
     paginationOpts: paginationOptsValidator
   },
   handler: async (ctx, args) => {

@@ -22,6 +22,7 @@ import { Gender, Role, GENDER_VALUES, ROLE_VALUES } from '@/convex/types'
 import { MAX_NOTES_LENGTH, MAX_NUM, MAX_TEXT_LENGTH, MAX_PIN_CODE_LENGTH } from '@/convex/constants'
 import { Textarea } from '@/components/ui/textarea'
 import { ZodTextField } from '@/components/common'
+import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
 import {
   Select,
   SelectContent,
@@ -33,7 +34,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { fileToBase64, encryptStringCryptoJS, decryptStringCryptoJS } from '@/lib/utils'
+import { encryptStringCryptoJS, decryptStringCryptoJS } from '@/lib/utils'
 import { Id } from '@/convex/_generated/dataModel'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
@@ -65,7 +66,6 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
-import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import Image from 'next/image'
 
 const staffAddSchema = z.object({
@@ -247,26 +247,18 @@ export default function StaffEditForm() {
 
       if (selectedFile) {
         try {
-          // クライアント側で画像処理を行う
-          const originalBase64 = await fileToBase64(selectedFile)
+          const result = await uploadCompressedImageWithThumbnailSignedUrl(
+            selectedFile!,
+            orgId,
+            'staff',
+            'square', // aspectType: 'square' | 'landscape' | 'mobile'
+            'medium' // quality: 'low' | 'medium' | 'high'
+          )
 
-          const response = await fetch('/api/storage', {
-            method: 'POST',
-            body: JSON.stringify({
-              base64Data: originalBase64,
-              fileName: selectedFile.name,
-              directory: 'staff',
-              org_id: orgId,
-              quality: 'high',
-              aspectType: 'square',
-            }),
-          })
-
-          const result: ProcessedImageResult = await response.json()
           newUploadedImages = [
             {
-              original_url: result.originalUrl,
-              thumbnail_url: result.thumbnailUrl,
+              original_url: result.original.publicUrl,
+              thumbnail_url: result.thumbnail.publicUrl,
             },
           ]
         } catch (error) {
@@ -537,14 +529,15 @@ export default function StaffEditForm() {
                               <Image
                                 src={staffAllData.images[0].original_url}
                                 alt="スタッフ画像"
-                                width={1600}
-                                height={1600}
+                                width={1280}
+                                height={1280}
                                 className="transition-all duration-200 hover:opacity-90 aspect-square"
                               />
                             )}
                             <SingleImageDrop
                               onFileSelect={(file) => setSelectedFile(file)}
                               className="transition-all duration-200 hover:opacity-90 aspect-square"
+                              aspectType="square"
                             />
                           </div>
                         </div>

@@ -281,7 +281,7 @@ import {
   dayOfWeekType,
   billingPeriodType,
   reservationStatusType,
-  ExceptionScheduleType,
+  exceptionScheduleType,
   menuPaymentMethodType,
   paymentMethodType,
   roleType,
@@ -489,7 +489,7 @@ const week_schedule = defineTable({
 const exception_schedule = defineTable({
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.id('organization'), // 店舗ID
-  type: ExceptionScheduleType, // スケジュール例外タイプ
+  type: exceptionScheduleType, // スケジュール例外タイプ
   date: v.string(), // 日付 YYYY-MM-DD
   ...CommonFields,
 })
@@ -526,7 +526,7 @@ const staff_exception_schedule = defineTable({
   start_time_unix: v.optional(v.number()), // 開始時間
   end_time_unix: v.optional(v.number()), // 終了時間
   notes: v.optional(v.string()), // メモ
-  type: ExceptionScheduleType, // スタッフスケジュールタイプ
+  type: exceptionScheduleType, // スタッフスケジュールタイプ
   is_all_day: v.boolean(), // 全日休暇
   ...CommonFields,
 })
