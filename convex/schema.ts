@@ -217,23 +217,7 @@ CREATE TABLE public.carte_detail (
   sort_key             TEXT
 );
 
--- 9. タイムカード（勤怠）
-CREATE TABLE public.time_card (
-  tenant_id              TEXT        NOT NULL,
-  org_id                 TEXT        NOT NULL,
-  staff_id               UUID        NOT NULL REFERENCES public.staff(id),
-  start_date_time_unix   BIGINT     NOT NULL,
-  end_date_time_unix     BIGINT,
-  break_duration_minutes INTEGER,
-  worked_time_minutes    INTEGER,
-  notes                  TEXT,
-  created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
-  is_archive             BOOLEAN     NOT NULL DEFAULT FALSE,
-  sort_key               TEXT
-);
-
--- 10. トラッキングイベントログ
+-- 9. トラッキングイベントログ
 CREATE TABLE public.tracking_event (
   tenant_id           TEXT        NOT NULL,
   org_id              TEXT        NOT NULL,
@@ -256,7 +240,7 @@ CREATE TABLE public.tracking_event (
   sort_key            TEXT
 );
 
--- 11. トラッキング集計サマリー
+-- 10. トラッキング集計サマリー
 CREATE TABLE public.tracking_summaries (
   tenant_id         TEXT        NOT NULL,
   org_id            TEXT        NOT NULL,
@@ -708,7 +692,7 @@ const reservation = defineTable({
   date: v.string(), // 予約日 YYYY-MM-DD
   start_time_unix: v.number(), // 予約開始時間
   end_time_unix: v.number(), // 予約終了時間
-  ...CommonFields,
+  ...CommonFields,　// デフォルトでこれらのフィールドを持つ _creationTime: number | undefined; is_archive?: boolean | undefined; updated_at?: number | undefined; deleted_at?: number | undefined;
 })
   // ① 単一レコード取得
   .index('by_tenant_org_master_archive', ['tenant_id', 'org_id', 'master_id','is_archive'])

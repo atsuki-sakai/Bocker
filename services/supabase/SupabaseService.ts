@@ -2,7 +2,6 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/supabase.types'
 import { throwSupabaseError } from './utils/errors'
 import { CustomerRepository, CustomerDetailRepository, CustomerPointsRepository } from './repositories/customer'
-import { ReservationRepository } from './repositories/ReservationRepository'
 
 /* 型エイリアス --------------------------------------------------- */
 export type Tables = Database['public']['Tables']
@@ -342,40 +341,9 @@ return retryOperation(async () => {
   
 }
 
-class SupabaseService extends SupabaseBaseService {
-  public readonly customer: CustomerRepository
-  public readonly reservation: ReservationRepository
-  public readonly customerDetail: CustomerDetailRepository
-  public readonly customerPoints: CustomerPointsRepository
-
+export class SupabaseService extends SupabaseBaseService {
   constructor(supabaseInstance: SupabaseClient) {
     super(supabaseInstance)
-    this.reservation = new ReservationRepository(this)
-    this.customer = new CustomerRepository(this)
-    this.customerDetail = new CustomerDetailRepository(this)
-    this.customerPoints = new CustomerPointsRepository(this)
-  }
-
-  async registerCustomerWithDetailsAndInitialPoints(
-    customerCoreData: Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'phone' | 'salon_id' | 'line_id' | 'line_user_name' | 'password_hash'>,
-    detailData: Omit<InsertType<'customer_detail'>, '_id' | 'customer_id' | '_creation_time' | 'updated_time' | 'is_archive'>, 
-    initialPoints: number = 0
-  ): ReturnType<CustomerRepository['createCustomerWithDetailsAndPoints']> { 
-    console.log("[SupabaseService] Calling CustomerRepository.createCustomerWithDetailsAndPoints");
-    try {
-      return await this.customer.createCustomerWithDetailsAndPoints(customerCoreData, detailData, initialPoints);
-    } catch (error) {
-      console.error("[SupabaseService] Error calling createCustomerWithDetailsAndPoints from CustomerRepository:", error);
-      if (error instanceof Error && !(error.name === 'SupabaseError')) {
-         throwSupabaseError({
-            callFunc: 'SupabaseService.registerCustomerWithDetailsAndInitialPoints',
-            message: `Failed during customer registration with details: ${error.message}`,
-            error: error,
-            severity: 'high',
-        });
-      }
-      throw error; 
-    }
   }
 }
 

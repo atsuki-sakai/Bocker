@@ -46,7 +46,6 @@ import type * as point_mutation from "../point/mutation.js";
 import type * as point_query from "../point/query.js";
 import type * as point_queue_mutation from "../point/queue/mutation.js";
 import type * as point_queue_query from "../point/queue/query.js";
-import type * as reservation_action from "../reservation/action.js";
 import type * as reservation_mutation from "../reservation/mutation.js";
 import type * as reservation_query from "../reservation/query.js";
 import type * as staff_auth_mutation from "../staff/auth/mutation.js";
@@ -116,7 +115,6 @@ declare const fullApi: ApiFromModules<{
   "point/query": typeof point_query;
   "point/queue/mutation": typeof point_queue_mutation;
   "point/queue/query": typeof point_queue_query;
-  "reservation/action": typeof reservation_action;
   "reservation/mutation": typeof reservation_mutation;
   "reservation/query": typeof reservation_query;
   "staff/auth/mutation": typeof staff_auth_mutation;

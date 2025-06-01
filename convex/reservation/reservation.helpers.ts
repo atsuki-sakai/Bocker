@@ -55,7 +55,7 @@ export async function createReservationWithDetails(
   // Convex & Supabase 共通識別子を生成し、予約と予約詳細の紐付けを保証
   const master_id = uuidv4();
 
-  // 予約テーブルに基本情報を作成
+  // 予約テーブルに基本情報を作成 
   const reservationId = await createRecord(ctx, 'reservation', {
     master_id,
     tenant_id: args.tenant_id,

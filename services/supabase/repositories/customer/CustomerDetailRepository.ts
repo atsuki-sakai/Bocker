@@ -1,6 +1,6 @@
 import { BaseRepository, BaseRepositoryOptions, ListOptions } from '../BaseRepository';
-import type { RowType, InsertType, UpdateType } from '../../SupabaseService';
-import { supabaseClientService } from '../../SupabaseService';
+import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService';
+import { supabaseClientService } from '@/services/supabase/SupabaseService';
 
 /**
  * 顧客詳細 (CustomerDetail) テーブル操作リポジトリ

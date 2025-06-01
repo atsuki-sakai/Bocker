@@ -1,5 +1,5 @@
-import { supabaseClientService, RowType, InsertType, UpdateType, TableName, SelectCols } from '../SupabaseService';
-import { addCreationCommonFields, addUpdateCommonFields } from '../utils/helper';
+import { supabaseClientService, RowType, InsertType, UpdateType, TableName, SelectCols } from '@/services/supabase/SupabaseService';
+import { addCreationCommonFields, addUpdateCommonFields } from '@/services/supabase/utils/helper';
 
 /**
  * リポジトリの基本操作オプション

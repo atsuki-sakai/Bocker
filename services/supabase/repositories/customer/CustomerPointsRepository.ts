@@ -1,6 +1,6 @@
 import { BaseRepository, BaseRepositoryOptions, ListOptions } from '../BaseRepository';
-import type { RowType, InsertType, UpdateType } from '../../SupabaseService';
-import { supabaseClientService  } from '../../SupabaseService';
+import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService';
+import { supabaseClientService  } from '@/services/supabase/SupabaseService';
 
 /**
  * 顧客ポイント (CustomerPoints) テーブル操作リポジトリ
@@ -17,9 +17,9 @@ export class CustomerPointsRepository extends BaseRepository<'customer_points'> 
    * @param options - 取得オプション
    * @returns 顧客ポイント情報、または null
    */
-  async findBySalonAndCustomerUid(salonId: string, customerUid: string, options?: BaseRepositoryOptions<'customer_points'>): Promise<RowType<'customer_points'> | null> {
-    console.log(`[CustomerPointsRepository] findBySalonAndCustomerUid: salonId=${salonId}, customerUid=${customerUid}, options=${JSON.stringify(options)}`);
-    return this.findOne({ salon_id: salonId, customer_uid: customerUid } as Partial<RowType<'customer_points'>>, options);
+  async findByTenantAndOrgAndCustomerUid(tenantId: string, orgId: string, customerUid: string, options?: BaseRepositoryOptions<'customer_points'>): Promise<RowType<'customer_points'> | null> {
+    console.log(`[CustomerPointsRepository] findByTenantAndOrgAndCustomerUid: tenantId=${tenantId}, orgId=${orgId}, customerUid=${customerUid}, options=${JSON.stringify(options)}`);
+    return this.findOne({ tenant_id: tenantId, org_id: orgId, customer_uid: customerUid } as Partial<RowType<'customer_points'>>, options);
   }
 
   /**
@@ -31,23 +31,30 @@ export class CustomerPointsRepository extends BaseRepository<'customer_points'> 
    * @returns 顧客ポイント情報
    */
   async initializePointsForCustomer(
+    tenantId: string,
+    orgId: string,
     customerId: string, 
-    salonId: string, 
     initialPoints: number = 0
   ): Promise<RowType<'customer_points'>> {
-    console.log(`[CustomerPointsRepository] initializePointsForCustomer: customerId=${customerId}, salonId=${salonId}, initialPoints=${initialPoints}`);
-    let pointsRecord = await this.findBySalonAndCustomerUid(salonId, customerId);
+    console.log(`[CustomerPointsRepository] initializePointsForCustomer: tenantId=${tenantId}, orgId=${orgId}, customerId=${customerId}, initialPoints=${initialPoints}`);
+    let pointsRecord = await this.findByTenantAndOrgAndCustomerUid(tenantId, orgId, customerId);
     if (!pointsRecord) {
       const newPointsData: InsertType<'customer_points'> = {
         uid: crypto.randomUUID(),
         customer_uid: customerId,
-        salon_id: salonId,
+        tenant_id: tenantId,
+        org_id: orgId,
         total_points: initialPoints,
         last_transaction_date_unix: Math.floor(Date.now() / 1000),
         // _creation_time, updated_time, is_archive は BaseRepository.create で自動設定
       };
       pointsRecord = await this.create(newPointsData);
     }
+    // TypeScript型チェックのため、nullチェックを追加
+    if (!pointsRecord) {
+      throw new Error('Failed to create or retrieve customer points record');
+    }
+    
     return pointsRecord;
   }
 
@@ -64,13 +71,14 @@ export class CustomerPointsRepository extends BaseRepository<'customer_points'> 
    * @throws Error レコードが見つからない場合や更新に失敗した場合 (RPC未使用時のリスクあり)
    */
   async addPoints(
-    salonId: string,
+    tenantId: string,
+    orgId: string,
     customerUid: string,
     pointsToAdd: number,
     options?: BaseRepositoryOptions<'customer_points'>
   ): Promise<RowType<'customer_points'> | null> {
     console.warn(`[CustomerPointsRepository] addPoints called for customerUid=${customerUid}, pointsToAdd=${pointsToAdd}. This method is NOT ATOMIC and prone to race conditions. Use an RPC for production.`);
-    const currentPoints = await this.findBySalonAndCustomerUid(salonId, customerUid);
+    const currentPoints = await this.findByTenantAndOrgAndCustomerUid(tenantId, orgId, customerUid);
     if (!currentPoints || typeof currentPoints.total_points !== 'number') {
       console.error(`[CustomerPointsRepository] addPoints: Points record not found or total_points is invalid for customerUid=${customerUid}`);
       throw new Error('Points record not found or invalid.'); 

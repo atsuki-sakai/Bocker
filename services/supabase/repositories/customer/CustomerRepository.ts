@@ -1,7 +1,7 @@
 import { BaseRepository, ListOptions, BaseRepositoryOptions } from '../BaseRepository';
-import type { RowType, InsertType, UpdateType } from '../../SupabaseService'; // supabase.types から直接も可
-import { supabaseClientService } from '../../SupabaseService';
-import { throwSupabaseError } from '../../utils/errors';
+import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService'; // supabase.types から直接も可
+import { supabaseClientService } from '@/services/supabase/SupabaseService';
+import { throwSupabaseError } from '@/services/supabase/utils/errors';
 
 // テーブル名を指定して型を具体化
 
@@ -21,11 +21,10 @@ export class CustomerRepository extends BaseRepository<'customer'> {
    * @returns 作成された顧客情報
    */
   async registerNewCustomer(
-    customerData: Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'line_id' | 'line_user_name' | 'password_hash' | 'phone' | 'salon_id'>
+    customerData: InsertType<'customer'>
   ): Promise<RowType<'customer'>> {
     console.log(`[CustomerRepository] registerNewCustomer: data=${JSON.stringify(customerData)}`);
     const newCustomerDataWithId: InsertType<'customer'> = {
-      uid: crypto.randomUUID(),
       ...customerData,
       // 共通フィールド (_creation_time, updated_time, is_archive) は BaseRepository の create メソッドで自動追加
     };
@@ -42,7 +41,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
    * @returns 作成された顧客、詳細、ポイントの情報を含むオブジェクト。エラー時はnullまたはエラーをスロー。
    */
   async createCustomerWithDetailsAndPoints(
-    customerCoreData: Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'phone' | 'salon_id' | 'line_id' | 'line_user_name' | 'password_hash'>,
+    customerCoreData: InsertType<'customer'>,
     detailData: Omit<InsertType<'customer_detail'>, 'uid' | 'customer_uid' | '_creation_time' | 'updated_time' | 'is_archive'>,
     initialPoints: number = 0
   ): Promise<{ customer: RowType<'customer'> | null }> {
@@ -53,10 +52,11 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       p_first_name: customerCoreData.first_name,
       p_last_name: customerCoreData.last_name,
       p_phone: customerCoreData.phone,
-      p_salon_id: customerCoreData.salon_id,
+      p_tenant_id: customerCoreData.tenant_id,
+      p_org_id: customerCoreData.org_id,
       p_line_id: customerCoreData.line_id,
       p_line_user_name: customerCoreData.line_user_name,
-      p_password_hash: customerCoreData.password_hash,
+      p_password_hash: customerCoreData.password_hash ?? null,
       // customer_detail fields
       p_detail_email: detailData.email, // customer_detail.email は customer.email と同じと仮定
       p_detail_gender: detailData.gender,
@@ -140,14 +140,14 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     return this.findOne({ searchable_text: searchableText } as Partial<RowType<'customer'>>, options); 
   }
 
-  async findBySalonAndCustomerEmail(salonId: string, customerEmail: string, options?: BaseRepositoryOptions<'customer'>): Promise<RowType<'customer'> | null> {
-    console.log(`[CustomerRepository] findBySalonAndCustomerEmail: salonId=${salonId}, customerEmail=${customerEmail}, options=${JSON.stringify(options)}`);
-    return this.findOne({ salon_id: salonId, email: customerEmail } as Partial<RowType<'customer'>>, options); 
+  async findBySalonAndCustomerEmail(tenantId: string, orgId: string, customerEmail: string, options?: BaseRepositoryOptions<'customer'>): Promise<RowType<'customer'> | null> {
+    console.log(`[CustomerRepository] findBySalonAndCustomerEmail: tenantId=${tenantId}, orgId=${orgId}, customerEmail=${customerEmail}, options=${JSON.stringify(options)}`);
+    return this.findOne({ tenant_id: tenantId, org_id: orgId, email: customerEmail } as Partial<RowType<'customer'>>, options); 
   }
 
-  async findBySalonAndCustomerLineId(salonId: string, customerLineId: string, options?: BaseRepositoryOptions<'customer'>): Promise<RowType<'customer'> | null> {
-    console.log(`[CustomerRepository] findBySalonAndCustomerLineId: salonId=${salonId}, customerLineId=${customerLineId}, options=${JSON.stringify(options)}`);
-    return this.findOne({ salon_id: salonId, line_id: customerLineId } as Partial<RowType<'customer'>>, options); 
+  async findBySalonAndCustomerLineId(tenantId: string, orgId: string, customerLineId: string, options?: BaseRepositoryOptions<'customer'>): Promise<RowType<'customer'> | null> {
+    console.log(`[CustomerRepository] findBySalonAndCustomerLineId: tenantId=${tenantId}, orgId=${orgId}, customerLineId=${customerLineId}, options=${JSON.stringify(options)}`);
+    return this.findOne({ tenant_id: tenantId, org_id: orgId, line_id: customerLineId } as Partial<RowType<'customer'>>, options); 
   }
 
 
@@ -158,6 +158,158 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       console.error('Error deleting customer and related data:', error);
       // 適切なエラーハンドリングを行う
       throw error;
+    }
+  }
+
+  /**
+   * 顧客情報、詳細情報、ポイント情報を一度に更新します。
+   * @param customerUid - 更新対象の顧客UID
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param customerData - 顧客のコア情報
+   * @param detailData - 顧客詳細情報
+   * @param totalPoints - 総ポイント数
+   * @param tags - タグ配列
+   * @returns 更新された顧客情報
+   */
+  async updateCustomerWithDetailsAndPoints(
+    customerUid: string,
+    tenantId: string,
+    orgId: string,
+    customerData: Partial<Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'phone' | 'line_id' | 'line_user_name'>>,
+    detailData: Partial<Pick<InsertType<'customer_detail'>, 'email' | 'gender' | 'birthday' | 'age' | 'notes'>>,
+    totalPoints: number,
+    tags: string[] = []
+  ): Promise<{ customer: RowType<'customer'> | null }> {
+    console.log('[CustomerRepository] updateCustomerWithDetailsAndPoints: Calling RPC for atomicity.')
+
+    const params = {
+      p_customer_uid: customerUid,
+      p_tenant_id: tenantId,
+      p_org_id: orgId,
+      p_email: customerData.email || '',
+      p_first_name: customerData.first_name || '',
+      p_last_name: customerData.last_name || '',
+      p_phone: customerData.phone || '',
+      p_line_id: customerData.line_id || '',
+      p_line_user_name: customerData.line_user_name || '',
+      p_detail_email: detailData.email || '',
+      p_detail_gender: detailData.gender || '',
+      p_detail_birthday: detailData.birthday || '',
+      p_detail_age: detailData.age || 0,
+      p_detail_notes: detailData.notes || '',
+      p_total_points: totalPoints,
+      p_tags: tags,
+    }
+
+    try {
+      const { data: updatedCustomers, error } = await this.supabaseServiceInstance.rpc<RowType<'customer'>>(
+        'update_customer_with_details_and_points',
+        params
+      )
+
+      if (error) {
+        console.error('[CustomerRepository] Error calling update_customer_with_details_and_points RPC:', error)
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.updateCustomerWithDetailsAndPoints (RPC)',
+          message: error.message || 'Failed to update customer with details and points via RPC',
+          error: error,
+          severity: 'high',
+          details: { params }
+        })
+        return { customer: null }
+      }
+
+      if (!updatedCustomers || updatedCustomers.length === 0) {
+        console.warn('[CustomerRepository] update_customer_with_details_and_points RPC returned no data.')
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.updateCustomerWithDetailsAndPoints (RPC)',
+          message: 'RPC update_customer_with_details_and_points returned no customer data.',
+          severity: 'medium',
+          code: 'DATABASE_NO_DATA',
+          details: { params }
+        })
+        return { customer: null }
+      }
+      
+      console.log('[CustomerRepository] Successfully updated customer with details and points via RPC:', updatedCustomers[0])
+      return { customer: updatedCustomers[0] }
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e));
+      console.error('[CustomerRepository] Unexpected error in updateCustomerWithDetailsAndPoints (RPC):', error)
+      if (!(error.name === 'SupabaseError')) {
+         throwSupabaseError({
+            callFunc: 'CustomerRepository.updateCustomerWithDetailsAndPoints (RPC Catch)',
+            message: error.message || 'Unexpected error during RPC call for customer update.',
+            error: error,
+            severity: 'critical',
+            details: { params }
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 顧客の完全な情報（顧客、詳細、ポイント）を取得します。
+   * @param customerUid - 顧客UID
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @returns 完全な顧客情報
+   */
+  async getCompleteCustomerData(
+    customerUid: string,
+    tenantId: string,
+    orgId: string
+  ): Promise<{
+    customer: RowType<'customer'> | null;
+    customerDetail: RowType<'customer_detail'> | null;
+    customerPoints: RowType<'customer_points'> | null;
+  }> {
+    console.log(`[CustomerRepository] getCompleteCustomerData: customerUid=${customerUid}, tenantId=${tenantId}, orgId=${orgId}`)
+
+    try {
+      // 顧客基本情報を取得
+      const customer = await this.findOne({ 
+        uid: customerUid, 
+        tenant_id: tenantId, 
+        org_id: orgId 
+      } as Partial<RowType<'customer'>>)
+
+      if (!customer) {
+        return { customer: null, customerDetail: null, customerPoints: null }
+      }
+
+      // 顧客詳細情報を取得（BaseRepositoryのlistRecordsメソッドを使用）
+      const { data: customerDetailData } = await this.supabaseServiceInstance.listRecords<'customer_detail'>('customer_detail', {
+        filters: {
+          customer_uid: customerUid,
+          tenant_id: tenantId,
+          org_id: orgId,
+          is_archive: false
+        } as Partial<RowType<'customer_detail'>>,
+        pageSize: 1
+      })
+
+      // 顧客ポイント情報を取得（BaseRepositoryのlistRecordsメソッドを使用）
+      const { data: customerPointsData } = await this.supabaseServiceInstance.listRecords<'customer_points'>('customer_points', {
+        filters: {
+          customer_uid: customerUid,
+          tenant_id: tenantId,
+          org_id: orgId,
+          is_archive: false
+        } as Partial<RowType<'customer_points'>>,
+        pageSize: 1
+      })
+
+      return {
+        customer,
+        customerDetail: customerDetailData.length > 0 ? customerDetailData[0] : null,
+        customerPoints: customerPointsData.length > 0 ? customerPointsData[0] : null,
+      }
+    } catch (error) {
+      console.error('[CustomerRepository] Error in getCompleteCustomerData:', error)
+      throw error
     }
   }
 }
