@@ -9,20 +9,23 @@ const qualityTable = {
 };
 
 /**
- * ファイル名を安全な形式に変換する
+ * ファイル名を安全な形式に変換し、必ず `.webp` 拡張子に統一する
  * @param fileName 元のファイル名
- * @returns 安全なファイル名
+ * @returns 安全なファイル名（例: "l9f2m3_sample_8a1b2c3d.webp"）
  */
 function sanitizeFileName(fileName: string): string {
-    // ファイル名の拡張子を取得
-    const lastDotIndex = fileName.lastIndexOf('.');
-    const extension = lastDotIndex !== -1 ? fileName.substring(lastDotIndex) : '.webp';
-    
-    // UUIDを使って安全で短いファイル名を生成
-    const uuid = uuidv4();
-    const timestamp = Date.now().toString(36); // 36進数で短縮
-    
-    return `${timestamp}_${uuid.substring(0, 8)}${extension}`;
+  // 1) ベース名生成: ディレクトリと既存拡張子を取り除き、英数字/ _ / - のみにする
+  const base = fileName
+    .replace(/^.*[\\/]/, '')   // ディレクトリ除去
+    .replace(/\.[^.]+$/, '')   // 既存拡張子除去
+    .replace(/[^\w\-]/g, '_'); // 非英数字を安全文字に置換
+
+  // 2) タイムスタンプ + 8 文字の UUID 断片で衝突低減
+  const timestamp = Date.now().toString(36); // 36 進で短縮
+  const uuid = uuidv4().slice(0, 8);        // 8 文字だけ使用
+
+  // 3) 拡張子は必ず .webp に固定
+  return `${timestamp}_${base}_${uuid}.webp`;
 }
 
 /**
