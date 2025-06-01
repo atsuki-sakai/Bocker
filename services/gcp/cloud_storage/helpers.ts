@@ -25,7 +25,7 @@ export async function canEncodeWebp(): Promise<boolean> {
   });
 }
 
-const qualityTable = {
+export const qualityTable = {
     low: { original: { width: 700, quality: 0.4 }, thumb: { width: 150, quality: 0.3 }},
     medium: { original: { width: 1280, quality: 0.55 }, thumb: { width: 240, quality: 0.4 }},
     high: { original: { width: 1920, quality: 0.75 }, thumb: { width: 360, quality: 0.5 }},
@@ -74,100 +74,6 @@ function isLowMemoryDevice(): boolean {
   }
   
   return false; // 不明な場合は最新のものと仮定
-}
-
-/**
- * Exif情報から画像の回転角度を取得する
- * @param arrayBuffer 画像ファイルのArrayBuffer
- * @returns 回転角度（0, 90, 180, 270）
- */
-function getExifRotation(arrayBuffer: ArrayBuffer): number {
-  const dataView = new DataView(arrayBuffer);
-  
-  // JPEG でない場合やExif情報がない場合は回転なし
-  if (dataView.getUint16(0) !== 0xFFD8) return 0;
-  
-  let offset = 2;
-  while (offset < dataView.byteLength) {
-    const marker = dataView.getUint16(offset);
-    if (marker === 0xFFE1) {
-      // Exifセグメント発見
-      const exifOffset = offset + 4;
-      if (dataView.getUint32(exifOffset) === 0x45786966) { // "Exif"
-        const tiffOffset = exifOffset + 6;
-        const byteOrder = dataView.getUint16(tiffOffset);
-        const isLittleEndian = byteOrder === 0x4949;
-        
-        // IFD0のエントリ数を取得
-        const ifd0Offset = tiffOffset + dataView.getUint32(tiffOffset + 4, isLittleEndian);
-        const entryCount = dataView.getUint16(ifd0Offset, isLittleEndian);
-        
-        // Orientationタグ（0x0112）を検索
-        for (let i = 0; i < entryCount; i++) {
-          const entryOffset = ifd0Offset + 2 + i * 12;
-          const tag = dataView.getUint16(entryOffset, isLittleEndian);
-          if (tag === 0x0112) {
-            const orientation = dataView.getUint16(entryOffset + 8, isLittleEndian);
-            // Orientationからrotation角度に変換
-            switch (orientation) {
-              case 3: return 180;
-              case 6: return 90;
-              case 8: return 270;
-              default: return 0;
-            }
-          }
-        }
-      }
-    }
-    // 次のセグメントへ
-    offset += 2 + dataView.getUint16(offset + 2);
-  }
-  
-  return 0;
-}
-
-/**
- * Canvas上で画像を回転させる
- * @param ctx CanvasRenderingContext2D または OffscreenCanvasRenderingContext2D
- * @param img 描画する画像
- * @param rotation 回転角度（0, 90, 180, 270）
- * @param sx ソース画像のx座標
- * @param sy ソース画像のy座標  
- * @param sw ソース画像の幅
- * @param sh ソース画像の高さ
- * @param dx 描画先のx座標
- * @param dy 描画先のy座標
- * @param dw 描画先の幅
- * @param dh 描画先の高さ
- */
-function drawRotatedImage(
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, 
-  img: ImageBitmap | HTMLImageElement,
-  rotation: number,
-  sx: number, sy: number, sw: number, sh: number,
-  dx: number, dy: number, dw: number, dh: number
-): void {
-  if (rotation === 0) {
-    ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-    return;
-  }
-  
-  ctx.save();
-  
-  // 回転の中心点をキャンバス中央に設定
-  const centerX = dw / 2;
-  const centerY = dh / 2;
-  ctx.translate(centerX, centerY);
-  ctx.rotate((rotation * Math.PI) / 180);
-  
-  // 90度回転の場合は幅と高さが入れ替わる
-  if (rotation === 90 || rotation === 270) {
-    ctx.drawImage(img, sx, sy, sw, sh, -centerY, -centerX, dh, dw);
-  } else {
-    ctx.drawImage(img, sx, sy, sw, sh, -centerX, -centerY, dw, dh);
-  }
-  
-  ctx.restore();
 }
 
 /**

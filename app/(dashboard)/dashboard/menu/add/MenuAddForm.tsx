@@ -307,7 +307,7 @@ export default function MenuAddForm() {
           <div className="md:col-span-1">
             <div className="text-base flex items-center gap-2 mb-2">
               <ImageIcon size={18} className="text-muted-foreground" />
-              メニュー画像 (4枚まで)
+              メニュー画像 (3枚まで )
             </div>
             <MultiImageDrop
               currentFiles={currentFiles}

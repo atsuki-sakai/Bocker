@@ -225,27 +225,26 @@ export default function MultiImageDrop({
         style={style}
         {...attributes}
         {...listeners}
-        className="relative group aspect-square cursor-grab"
+        className="relative group aspect-[2/3] cursor-grab max-h-[150px]"
       >
         <Image
           src={id}
           alt={`Preview ${index + 1}`}
           unoptimized
+          fill
           loader={({ src }) => src}
           className="object-cover w-full h-full rounded-md pointer-events-none"
-          width={150}
-          height={150}
         />
         <Button
-          variant="outline"
+          variant="destructive"
           size="icon"
-          className="absolute top-1 right-1 z-10  text-muted-foreground hover:text-white p-0.5 rounded-full shadow"
+          className="absolute top-1 right-1 z-10  rounded-full"
           onClick={(e) => {
             e.stopPropagation()
             handleRemoveImage(index)
           }}
         >
-          <X size={10} />
+          <X size={12} />
         </Button>
 
         {selectedFiles[index] && (
@@ -301,7 +300,7 @@ export default function MultiImageDrop({
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={previewImageUrls} strategy={horizontalListSortingStrategy}>
-              <div className="grid grid-cols-2 grid-flow-row-dense gap-2 p-2">
+              <div className="grid grid-cols-3 grid-flow-row-dense gap-2 p-2">
                 {previewImageUrls.map((url, idx) => (
                   <SortableThumb
                     key={url}

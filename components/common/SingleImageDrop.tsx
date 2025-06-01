@@ -122,16 +122,19 @@ export default function SingleImageDrop({
       onDragLeave={() => setIsDragging(false)}
     >
       {previewImageUrl ? (
-        <div className="relative flex flex-col items-center justify-center w-full h-full">
-          <Image
-            src={previewImageUrl}
-            alt="Preview"
-            unoptimized
-            loader={({ src }) => src}
-            className={`mx-auto object-cover h-auto w-full rounded-md overflow-hidden ${aspectType === 'square' ? 'aspect-[1/1]' : aspectType === 'landscape' ? 'aspect-[16/9]' : 'aspect-49/6]'}`}
-            width={previewWidth}
-            height={previewHeight}
-          />
+        <>
+          <div
+            className={`relative flex flex-col items-center justify-center w-full h-full ${aspectType === 'square' ? 'aspect-[1/1]' : aspectType === 'landscape' ? 'aspect-[16/9]' : 'aspect-49/6]'}`}
+          >
+            <Image
+              src={previewImageUrl}
+              alt="Preview"
+              unoptimized
+              fill
+              loader={({ src }) => src}
+              className={`object-cover rounded-md overflow-hidden`}
+            />
+          </div>
           <div className="flex items-center justify-center gap-2 mt-2">
             <Button
               type="button"
@@ -163,7 +166,7 @@ export default function SingleImageDrop({
               </p>
             </div>
           )}
-        </div>
+        </>
       ) : (
         <>
           {renderDragAreaPlaceholder()}

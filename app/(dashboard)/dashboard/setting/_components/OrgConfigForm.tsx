@@ -21,6 +21,7 @@ import { ZodTextField } from '@/components/common'
 import { Loader2 } from 'lucide-react'
 import { Mail, Phone, MapPin, Save, Upload, Building } from 'lucide-react'
 import Uploader from '@/components/common/Uploader'
+import { qualityTable } from '@/services/gcp/cloud_storage/helpers'
 
 const orgAndConfigFormSchema = z.object({
   org_name: z.string().max(120, 'サロン名は120文字以内で入力してください'), // サロン名
@@ -110,7 +111,7 @@ export default function OrgConfigForm() {
           orgId,
           'setting', // 保存先ディレクトリ
           'landscape', // aspectType: 'square' | 'landscape' | 'mobile'
-          'medium' // quality: 'low' | 'medium' | 'high'
+          'high' // quality: 'low' | 'medium' | 'high'
         )
         // result.original.publicUrl, result.thumbnail.publicUrl を使ってConvex等に登録
         newUploadedImageUrls = [
@@ -309,13 +310,12 @@ export default function OrgConfigForm() {
           <div className="w-full md:w-1/2 flex flex-col gap-4">
             <h4 className="text-2xl font-bold">店舗画像</h4>
             {orgAndConfig?.config?.images[0]?.original_url && (
-              <div className="w-full h-full aspect-square max-h-[350px]">
+              <div className="relative w-full h-full aspect-[16/9] max-h-[350px]">
                 <Image
                   src={orgAndConfig.config.images[0].original_url}
                   alt="店舗画像"
-                  width={1512}
-                  height={1512}
-                  className="w-full h-full object-cover rounded-md border border-border aspect-[16/9]"
+                  fill
+                  className="w-full h-full object-cover rounded-md border border-border"
                 />
               </div>
             )}
