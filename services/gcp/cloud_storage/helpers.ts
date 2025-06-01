@@ -65,8 +65,12 @@ export async function compressAndCropImage(
 ): Promise<File> {
   // --- エンコード可否を機能検出で判定 --------------------
   const canWebp = await canEncodeWebp();      // ← await OK  (functionは async)
-  const mime = canWebp ? 'image/webp' : 'image/jpeg';
-  const ext  = canWebp ? '.webp' : '.jpg';
+  // iOS Safari は WebP エンコード出来ても quality 指定が無視され容量が膨らむため JPEG を優先
+  const isIOS = /iP(hone|od|ad)/.test(navigator.userAgent);
+  const useWebp = canWebp && !isIOS;
+
+  const mime = useWebp ? 'image/webp' : 'image/jpeg';
+  const ext  = useWebp ? '.webp' : '.jpg';
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
