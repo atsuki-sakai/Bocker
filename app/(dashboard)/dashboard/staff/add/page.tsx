@@ -141,7 +141,7 @@ const staffAddSchema = z.object({
     },
     z.number().max(999, { message: '優先度は999以下で入力してください' }).nullable().optional()
   ),
-  selected_menu_ids: z.array(z.string()),
+  selected_menu_ids: z.array(z.string()).optional(),
 })
 
 export default function StaffAddPage() {
@@ -393,11 +393,11 @@ export default function StaffAddPage() {
                           </span>
                         </div>
 
-                        <div className="w-full">
+                        <div className="w-full max-w-md mx-auto">
                           <SingleImageDrop
                             onFileSelect={(file) => setSelectedFile(file ?? null)}
                             aspectType="square"
-                            className="transition-all duration-200 hover:opacity-90 aspect-square"
+                            className="transition-all duration-200 hover:opacity-90"
                           />
                         </div>
                       </div>

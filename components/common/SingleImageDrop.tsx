@@ -25,8 +25,8 @@ export default function SingleImageDrop({
   currentFile,
   onFileSelect,
   maxSizeMB = 7,
-  previewWidth = 1512,
-  previewHeight = 1512,
+  previewWidth = 1280,
+  previewHeight = 1280,
   className = '',
   placeholderText = '画像をドラッグするか、クリックして選択',
   accept = 'image/*',
@@ -122,19 +122,16 @@ export default function SingleImageDrop({
       onDragLeave={() => setIsDragging(false)}
     >
       {previewImageUrl ? (
-        <>
-          <div
-            className={`relative flex flex-col items-center justify-center w-full h-full ${aspectType === 'square' ? 'aspect-[1/1]' : aspectType === 'landscape' ? 'aspect-[16/9]' : 'aspect-49/6]'}`}
-          >
-            <Image
-              src={previewImageUrl}
-              alt="Preview"
-              unoptimized
-              fill
-              loader={({ src }) => src}
-              className={`object-cover rounded-md overflow-hidden`}
-            />
-          </div>
+        <div className="relative flex flex-col items-center justify-center w-full max-w-xl h-full">
+          <Image
+            src={previewImageUrl}
+            alt="Preview"
+            unoptimized
+            loader={({ src }) => src}
+            className={`mx-auto object-cover h-auto w-full rounded-md overflow-hidden ${aspectType === 'square' ? 'aspect-[1/1]' : aspectType === 'landscape' ? 'aspect-[16/9]' : 'aspect-49/6]'}`}
+            width={previewWidth}
+            height={previewHeight}
+          />
           <div className="flex items-center justify-center gap-2 mt-2">
             <Button
               type="button"
@@ -156,17 +153,22 @@ export default function SingleImageDrop({
             </Button>
           </div>
           {selectedFile && (
-            <div className="flex items-center justify-start w-full gap-4 text-xs text-muted-foreground mt-2 text-start">
+            <div className="flex items-center justify-between w-full gap-4 text-xs text-muted-foreground mt-2 text-start">
               <p>
-                <span className="font-bold">ファイル名:</span> {selectedFile.name.slice(0, 10)}...
+                <span className="font-bold">ファイル名:</span>
+                <br />
+                {selectedFile.name.length > 12
+                  ? selectedFile.name.slice(0, 12) + '...'
+                  : selectedFile.name}
               </p>
               <p>
-                <span className="font-bold">サイズ:</span> {(selectedFile.size / 1024).toFixed(1)}{' '}
-                KB
+                <span className="font-bold">サイズ:</span>
+                <br />
+                {(selectedFile.size / 1024).toFixed(1)} KB
               </p>
             </div>
           )}
-        </>
+        </div>
       ) : (
         <>
           {renderDragAreaPlaceholder()}
@@ -193,7 +195,12 @@ export default function SingleImageDrop({
       <p className="text-xs scale-90 text-muted-foreground mt-2">
         <span className="font-bold">
           推奨のアスペクト比は
-          {aspectType === 'square' ? '1/1' : aspectType === 'landscape' ? '16/9' : '2/3'}です。
+          {aspectType === 'square'
+            ? '1/1の正方形'
+            : aspectType === 'landscape'
+              ? '16/9の横長'
+              : '2/3の縦長'}
+          です。
         </span>
       </p>
     </div>

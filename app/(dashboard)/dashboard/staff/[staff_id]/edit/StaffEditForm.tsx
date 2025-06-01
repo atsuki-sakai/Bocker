@@ -285,6 +285,20 @@ export default function StaffEditForm() {
         is_active: true,
       })
 
+      if (newUploadedImages.length > 0 && staffAllData?.images && staffAllData?.images.length > 0) {
+        try {
+          await fetch('/api/storage', {
+            method: 'DELETE',
+            body: JSON.stringify({
+              originalUrl: staffAllData.images[0].original_url,
+              withThumbnail: true,
+            }),
+          })
+        } catch (deleteError) {
+          console.error('画像削除中にエラーが発生しました:', deleteError)
+        }
+      }
+
       try {
         // スタッフの設定情報を追加
         staffConfigId = await staffConfigUpsert({
@@ -504,39 +518,37 @@ export default function StaffEditForm() {
                               スタッフ画像
                             </span>
                           </div>
-                          {staffAllData?.images[0].original_url && (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="mb-2"
-                              onClick={handleShowDeleteDialog}
-                            >
-                              {isDeletingImage ? (
-                                <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                              ) : (
-                                <Trash className="h-3 w-3 mr-2" />
-                              )}
-                              {isDeletingImage ? '削除中...' : '画像を削除'}
-                            </Button>
-                          )}
                         </div>
                       )}
 
                       <div className="w-full flex flex-col md:flex-row items-end justify-center gap-4">
-                        <div className="max-w-xl mx-auto">
-                          <div className="w-full">
-                            {staffAllData.images && staffAllData.images.length > 0 && (
-                              <Image
-                                src={staffAllData.images[0].original_url}
-                                alt="スタッフ画像"
-                                width={1280}
-                                height={1280}
-                                className="transition-all duration-200 hover:opacity-90 aspect-square"
-                              />
-                            )}
+                        <div className="w-full flex flex-col md:flex-row items-start justify-center gap-4">
+                          {staffAllData.images && staffAllData.images.length > 0 && (
+                            <>
+                              <div className="w-full relative aspect-square">
+                                <Image
+                                  src={staffAllData.images[0].original_url}
+                                  alt="スタッフ画像"
+                                  fill
+                                  className="transition-all duration-200 rounded-md object-cover"
+                                />
+                                <div className="absolute top-0 right-2">
+                                  <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="mt-2"
+                                    onClick={handleShowDeleteDialog}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </>
+                          )}
+
+                          <div className="max-w-md w-full h-full  mx-auto">
                             <SingleImageDrop
                               onFileSelect={(file) => setSelectedFile(file)}
-                              className="transition-all duration-200 hover:opacity-90 aspect-square"
                               aspectType="square"
                             />
                           </div>
