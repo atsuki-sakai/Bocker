@@ -58,7 +58,6 @@ import {
   X,
   Image as ImageIcon,
   Instagram,
-  Trash,
   Lock,
   Shuffle,
   Copy,
@@ -920,7 +919,14 @@ export default function StaffEditForm() {
               キャンセル
             </Button>
             <Button variant="destructive" onClick={handleDeleteImage}>
-              削除
+              {isDeletingImage ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  削除中...
+                </>
+              ) : (
+                '削除'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

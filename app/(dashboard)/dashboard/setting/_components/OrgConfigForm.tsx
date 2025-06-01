@@ -21,7 +21,6 @@ import { ZodTextField } from '@/components/common'
 import { Loader2 } from 'lucide-react'
 import { Mail, Phone, MapPin, Save, Upload, Building } from 'lucide-react'
 import Uploader from '@/components/common/Uploader'
-import { qualityTable } from '@/services/gcp/cloud_storage/helpers'
 
 const orgAndConfigFormSchema = z.object({
   org_name: z.string().max(120, 'サロン名は120文字以内で入力してください'), // サロン名
