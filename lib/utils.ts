@@ -690,7 +690,7 @@ export function sanitizeFileName(fileName: string): string {
 
   // 255文字制限を適用（UTF-8バイト数ベース）
   const encoder = new TextEncoder()
-  let encoded = encoder.encode(finalFileName)
+  const encoded = encoder.encode(finalFileName)
   
   if (encoded.length > 255) {
     // 拡張子の長さを考慮して切り詰め
