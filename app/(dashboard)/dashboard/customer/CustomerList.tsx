@@ -136,7 +136,7 @@ export default function CustomerList() {
       fetchCustomers(1, debouncedSearchTerm, false)
       setCurrentPage(1)
     }
-  }, [tenantId, orgId, isLoaded, debouncedSearchTerm, fetchCustomers])
+  }, [tenantId, orgId, isLoaded, debouncedSearchTerm])
 
   // さらに読み込み
   const loadMore = () => {
