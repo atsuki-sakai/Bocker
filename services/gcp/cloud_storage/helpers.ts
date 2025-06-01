@@ -51,11 +51,11 @@ function sanitizeFileName(fileName: string, preferredExt: string = '.webp'): str
 }
 
 /**
- * フロントエンドで画像を指定のアスペクト比＆幅でリサイズ・圧縮する
- * @param file File 元画像
- * @param maxWidth number 最大幅
- * @param aspectType 'square' | 'landscape' | 'mobile'
- * @param quality 0〜1 圧縮率
+ * フロントエンドで画像を指定のアスペクト比＆幅でリサイズ・圧縮する  
+ * iOS 17+ / Safari 17+ など OffscreenCanvas が使えるブラウザでは  
+ * `OffscreenCanvas.convertToBlob()` を利用し、高速かつ品質指定付きで JPEG/WebP へエンコード。  
+ * 旧ブラウザ（OffscreenCanvas 未対応）では `toDataURL → fetch()` フォールバックで
+ * iOS Safari (<17) の `canvas.toBlob` 品質無視バグも回避する。
  */
 export async function compressAndCropImage(
   file: File,
@@ -63,56 +63,101 @@ export async function compressAndCropImage(
   aspectType: 'square' | 'landscape' | 'mobile',
   quality: number
 ): Promise<File> {
-  // --- エンコード可否を機能検出で判定 --------------------
-  const canWebp = await canEncodeWebp();      // ← await OK  (functionは async)
-  // iOS Safari は WebP エンコード出来ても quality 指定が無視され容量が膨らむため JPEG を優先
-  const isIOS = /iP(hone|od|ad)/.test(navigator.userAgent);
+  // --- WebP エンコード可否 & iOS 判定 ----------------------------------------
+  const canWebp = await canEncodeWebp();
+  const isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
+                (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
   const useWebp = canWebp && !isIOS;
 
   const mime = useWebp ? 'image/webp' : 'image/jpeg';
-  const ext  = useWebp ? '.webp' : '.jpg';
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    img.onload = () => {
-      let { width, height } = img;
-      let targetAspect = 1; // square
+  const ext  = useWebp ? '.webp'    : '.jpg';
+
+  // --- OffscreenCanvas サポート判定 ------------------------------------------
+  const supportsOffscreen =
+    typeof OffscreenCanvas !== 'undefined' &&
+    typeof createImageBitmap === 'function' &&
+    // 型定義に convertToBlob がまだ無い場合があるため any キャスト
+    (OffscreenCanvas.prototype as any).convertToBlob !== undefined;
+
+  // ========================================================================
+  // 1) OffscreenCanvas パス  (iOS 17+ / 最新ブラウザ)
+  // ========================================================================
+  if (supportsOffscreen) {
+    const bitmap = await createImageBitmap(file);
+    const { width, height } = bitmap;
+
+    // ----- アスペクト比計算 & クロップ領域算出 -----------------------------
+    let targetAspect = 1;
+    if (aspectType === 'landscape') targetAspect = 16 / 9;
+    if (aspectType === 'mobile')    targetAspect = 2 / 3;
+
+    let cropWidth = width, cropHeight = height;
+    if (width / height > targetAspect) {
+      cropHeight = height;
+      cropWidth  = Math.round(height * targetAspect);
+    } else {
+      cropWidth  = width;
+      cropHeight = Math.round(width / targetAspect);
+    }
+
+    const left = Math.floor((width  - cropWidth)  / 2);
+    const top  = Math.floor((height - cropHeight) / 2);
+
+    // ----- クロップ & リサイズ --------------------------------------------
+    const scale = maxWidth / cropWidth;
+    const outW = maxWidth;
+    const outH = Math.round(cropHeight * scale);
+
+    const off = new OffscreenCanvas(outW, outH);
+    const ctx = off.getContext('2d')!;
+    ctx.drawImage(bitmap, left, top, cropWidth, cropHeight, 0, 0, outW, outH);
+
+    // ----- 画像エンコード ---------------------------------------------------
+    const blob: Blob = await (off as any).convertToBlob({ type: mime, quality });
+    return new File([blob], sanitizeFileName(file.name, ext), { type: mime });
+  }
+
+  // ========================================================================
+  // 2) フォールバックパス  (toDataURL → fetch で全 iOS 対応)
+  // ========================================================================
+  return new Promise<File>((resolve, reject) => {
+    const img = new Image();
+    img.onload = async () => {
+      const width  = img.width;
+      const height = img.height;
+
+      let targetAspect = 1;
       if (aspectType === 'landscape') targetAspect = 16 / 9;
-      if (aspectType === 'mobile') targetAspect = 2 / 3;
+      if (aspectType === 'mobile')    targetAspect = 2 / 3;
 
       let cropWidth = width, cropHeight = height;
       if (width / height > targetAspect) {
         cropHeight = height;
-        cropWidth = Math.round(height * targetAspect);
+        cropWidth  = Math.round(height * targetAspect);
       } else {
-        cropWidth = width;
+        cropWidth  = width;
         cropHeight = Math.round(width / targetAspect);
       }
 
-      const left = Math.floor((width - cropWidth) / 2);
-      const top = Math.floor((height - cropHeight) / 2);
+      const left = Math.floor((width  - cropWidth)  / 2);
+      const top  = Math.floor((height - cropHeight) / 2);
 
-      // 切り抜き & リサイズ
       const canvas = document.createElement('canvas');
-      const scale = maxWidth / cropWidth;
-      canvas.width = maxWidth;
-      canvas.height = cropHeight * scale;
+      const scale  = maxWidth / cropWidth;
+      canvas.width  = maxWidth;
+      canvas.height = Math.round(cropHeight * scale);
 
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(img, left, top, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
 
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) return reject(new Error('圧縮失敗'));
-          const compressedFile = new File(
-            [blob],
-            sanitizeFileName(file.name, ext),
-            { type: mime }
-          );
-          resolve(compressedFile);
-        },
-        mime,
-        quality
-      );
+      try {
+        // iOS Safari でも quality が反映される toDataURL 経由
+        const dataURL = canvas.toDataURL(mime, quality);
+        const blob = await (await fetch(dataURL)).blob();
+        resolve(new File([blob], sanitizeFileName(file.name, ext), { type: mime }));
+      } catch (err) {
+        reject(err);
+      }
     };
     img.onerror = reject;
     img.src = URL.createObjectURL(file);
