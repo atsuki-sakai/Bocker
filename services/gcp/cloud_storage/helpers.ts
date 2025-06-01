@@ -40,9 +40,11 @@ const qualityTable = {
 function sanitizeFileName(fileName: string, preferredExt: string = '.webp'): string {
   // ベース名生成: ディレクトリと既存拡張子を除去し、安全文字に置換
   const base = fileName
-    .replace(/^.*[\\/]/, '')      // ディレクトリ除去
-    .replace(/\.[^.]+$/, '')      // 既存拡張子除去
-    .replace(/[^\w\-]/g, '_');    // 非英数字を置換
+    .replace(/^.*[\\/]/, '')        // ディレクトリ除去
+    .replace(/\.[^.]+$/, '')        // 既存拡張子除去
+    .replace(/[^\w\-]/g, '_')       // 非英数字をアンダースコアへ
+    .replace(/_+/g, '_')            // 連続する _ を1つに圧縮
+    .replace(/^_+|_+$/g, '');       // 先頭・末尾の _ を削除
 
   const timestamp = Date.now().toString(36);  // 衝突低減
   const uuid = uuidv4().slice(0, 8);

@@ -255,7 +255,7 @@ export default function OptionList() {
             <DialogTitle>オプションを削除しますか？</DialogTitle>
             <DialogDescription>この操作は元に戻すことができません。</DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex justify-center">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               キャンセル
             </Button>

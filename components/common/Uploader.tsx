@@ -24,10 +24,10 @@ export default function ControlledProgressBar() {
   const getStatusIcon = () => {
     return (
       <div className="relative">
-        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-link-foreground to-link flex items-center justify-center">
-          <Upload className="w-3 h-3 text-primary" />
+        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-active to-active flex items-center justify-center">
+          <Upload className="w-3 h-3 text-active-foreground" />
         </div>
-        <div className="absolute inset-0 bg-link-foreground rounded-full animate-ping opacity-20" />
+        <div className="absolute inset-0 bg-active rounded-full animate-ping opacity-20" />
       </div>
     )
   }
@@ -45,11 +45,11 @@ export default function ControlledProgressBar() {
         {/* メインカード */}
         <div className="bg-background backdrop-blur-sm rounded-2xl shadow-2xl border border-border p-6 space-y-6">
           {/* ヘッダー部分 */}
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-start justify-center gap-4">
             {getStatusIcon()}
             <div className="text-center">
               <h3 className="text-lg font-semibold text-foreground">
-                {progress === 100 ? '画像をアップロード中' : 'アップロード完了'}
+                {progress !== 100 ? '画像をアップロード中' : 'アップロード完了'}
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
                 {progress === 100 ? '処理が完了しました' : `${progress}% 完了`}
@@ -80,11 +80,11 @@ export default function ControlledProgressBar() {
 
           {/* 警告メッセージ */}
           {progress !== 100 && (
-            <div className="flex items-start gap-3 p-3 bg-destructive-foreground border border-destructive rounded-xl">
+            <div className="flex items-start gap-3 p-3 bg-destructive border border-destructive-foreground rounded-xl">
               <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
               <div className="text-xs text-destructive-foreground">
-                <p className="text-destructive font-bold">重要な注意事項</p>
-                <p className="text-destructive mt-1">
+                <p className="text-destructive-foreground font-bold">重要な注意事項</p>
+                <p className="text-destructive-foreground mt-1">
                   戻るボタンやページ遷移をするとアップロードがキャンセルされます。
                 </p>
               </div>
