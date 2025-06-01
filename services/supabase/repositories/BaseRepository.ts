@@ -49,17 +49,17 @@ export class BaseRepository<K extends TableName> {
     uid: string,
     options?: BaseRepositoryOptions<K>
   ): Promise<RowType<K> | null> {
-    console.log(`[BaseRepository<${this.tableName}>] findByUid: uid=${uid}, options=${JSON.stringify(options)}`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] findByUid: uid=${uid}, options=${JSON.stringify(options)}`);
     const { data } = await this.supabaseServiceInstance.listRecords<K>(this.tableName, {
       filters: { uid: uid } as unknown as Partial<RowType<K>>,
       select: options?.select,
       pageSize: 1,
     });
     if (data.length > 0) {
-      console.log(`[BaseRepository<${this.tableName}>] findByUid successful: returned ${data.length} record(s)`);
+      console.log(`[BaseRepository<${String(this.tableName)}>] findByUid successful: returned ${data.length} record(s)`);
       return data[0];
     }
-    console.log(`[BaseRepository<${this.tableName}>] findByUid: No record found with uid=${uid}`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] findByUid: No record found with uid=${uid}`);
     return null;
   }
 
@@ -74,17 +74,17 @@ export class BaseRepository<K extends TableName> {
     filters: Partial<RowType<K>>,
     options?: BaseRepositoryOptions<K>
   ): Promise<RowType<K> | null> {
-    console.log(`[BaseRepository<${this.tableName}>] findOne: filters=${JSON.stringify(filters)}, options=${JSON.stringify(options)}`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] findOne: filters=${JSON.stringify(filters)}, options=${JSON.stringify(options)}`);
     const { data } = await this.supabaseServiceInstance.listRecords<K>(this.tableName, {
       filters,
       select: options?.select,
       pageSize: 1,
     });
     if (data.length > 0) {
-      console.log(`[BaseRepository<${this.tableName}>] findOne successful: returned ${data.length} record(s)`);
+      console.log(`[BaseRepository<${String(this.tableName)}>] findOne successful: returned ${data.length} record(s)`);
       return data[0];
     }
-    console.log(`[BaseRepository<${this.tableName}>] findOne: No record found with filters=${JSON.stringify(filters)}`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] findOne: No record found with filters=${JSON.stringify(filters)}`);
     return null;
   }
 
@@ -97,9 +97,9 @@ export class BaseRepository<K extends TableName> {
   async list(
     listOptions: ListOptions<K> = {}
   ): Promise<{ data: RowType<K>[]; count: number | null }> {
-    console.log(`[BaseRepository<${this.tableName}>] list: options=${JSON.stringify(listOptions)}`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] list: options=${JSON.stringify(listOptions)}`);
     const result = await this.supabaseServiceInstance.listRecords<K>(this.tableName, listOptions);
-    console.log(`[BaseRepository<${this.tableName}>] list successful: returned ${result.data.length} record(s), total count ${result.count}`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] list successful: returned ${result.data.length} record(s), total count ${result.count}`);
     return result;
   }
 
@@ -114,13 +114,13 @@ export class BaseRepository<K extends TableName> {
     createData: InsertType<K>,
     options?: BaseRepositoryOptions<K>
   ): Promise<RowType<K>> {
-    console.log(`[BaseRepository<${this.tableName}>] create: originalData=${JSON.stringify(createData)}, options=${JSON.stringify(options)}`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] create: originalData=${JSON.stringify(createData)}, options=${JSON.stringify(options)}`);
     if (!('_id' in createData) || !createData._id) {
-        console.warn(`[BaseRepository<${this.tableName}>] create: _id is not provided in createData. This might lead to issues if not handled by the database or specific repository.`);
+        console.warn(`[BaseRepository<${String(this.tableName)}>] create: _id is not provided in createData. This might lead to issues if not handled by the database or specific repository.`);
     }
     // 共通作成フィールドを追加
     const dataWithCommonFields = addCreationCommonFields(createData);
-    console.log(`[BaseRepository<${this.tableName}>] create: dataWithCommonFields=${JSON.stringify(dataWithCommonFields)}`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] create: dataWithCommonFields=${JSON.stringify(dataWithCommonFields)}`);
 
     const result = await this.supabaseServiceInstance.upsert<K>(
       this.tableName,
@@ -128,10 +128,10 @@ export class BaseRepository<K extends TableName> {
       { select: options?.select }
     );
     if (result.length === 0) {
-      console.error(`[BaseRepository<${this.tableName}>] create failed: No data returned after upsert.`);
-      throw new Error(`Failed to create record in ${this.tableName}: No data returned.`);
+      console.error(`[BaseRepository<${String(this.tableName)}>] create failed: No data returned after upsert.`);
+      throw new Error(`Failed to create record in ${String(this.tableName)}: No data returned.`);
     }
-    console.log(`[BaseRepository<${this.tableName}>] create successful: returned ${result.length} record(s)`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] create successful: returned ${result.length} record(s)`);
     return result[0];
   }
 
@@ -148,11 +148,11 @@ export class BaseRepository<K extends TableName> {
     updateData: UpdateType<K>,
     options?: BaseRepositoryOptions<K>
   ): Promise<RowType<K>> {
-    console.log(`[BaseRepository<${this.tableName}>] update: id=${id}, originalData=${JSON.stringify(updateData)}, options=${JSON.stringify(options)}`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] update: id=${id}, originalData=${JSON.stringify(updateData)}, options=${JSON.stringify(options)}`);
     
     // 共通更新フィールドを追加
     const dataWithCommonFields = addUpdateCommonFields(updateData);
-    console.log(`[BaseRepository<${this.tableName}>] update: dataWithCommonFields=${JSON.stringify(dataWithCommonFields)}`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] update: dataWithCommonFields=${JSON.stringify(dataWithCommonFields)}`);
 
     // _id は updateData には通常含まれないため、ここで payload に含める
     const payload = { ...dataWithCommonFields, _id: id } as InsertType<K>;
@@ -166,10 +166,10 @@ export class BaseRepository<K extends TableName> {
       }
     );
     if (result.length === 0) {
-      console.error(`[BaseRepository<${this.tableName}>] update failed for id=${id}: No data returned after upsert. Record might not exist or onConflict prevented update.`);
-      throw new Error(`Failed to update record with id ${id} in ${this.tableName}. Record may not exist or update was prevented.`);
+      console.error(`[BaseRepository<${String(this.tableName)}>] update failed for id=${id}: No data returned after upsert. Record might not exist or onConflict prevented update.`);
+      throw new Error(`Failed to update record with id ${id} in ${String(this.tableName)}. Record may not exist or update was prevented.`);
     }
-    console.log(`[BaseRepository<${this.tableName}>] update successful: returned ${result.length} record(s)`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] update successful: returned ${result.length} record(s)`);
     return result[0];
   }
 
@@ -197,7 +197,7 @@ export class BaseRepository<K extends TableName> {
     onConflictColumn: keyof RowType<K> & string,
     options?: BaseRepositoryOptions<K>
   ): Promise<RowType<K>[]> {
-    console.log(`[BaseRepository<${this.tableName}>] bulkUpsert: ${records.length} records, onConflict=${onConflictColumn}, options=${JSON.stringify(options)}`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] bulkUpsert: ${records.length} records, onConflict=${onConflictColumn}, options=${JSON.stringify(options)}`);
     const result = await this.supabaseServiceInstance.upsert<K>(
       this.tableName,
       records,
@@ -206,7 +206,7 @@ export class BaseRepository<K extends TableName> {
         select: options?.select,
       }
     );
-    console.log(`[BaseRepository<${this.tableName}>] bulkUpsert successful: returned ${result.length} record(s)`);
+    console.log(`[BaseRepository<${String(this.tableName)}>] bulkUpsert successful: returned ${result.length} record(s)`);
     return result;
   }
 }

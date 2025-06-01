@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ZodTextField } from '@/components/common'
 import { TagInput } from '@/components/common'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useZodForm } from '@/hooks/useZodForm'
 import { Button } from '@/components/ui/button'
 import { GENDER_VALUES } from '@/convex/types'
@@ -139,7 +139,8 @@ export default function CustomerEditForm() {
   // 状態管理
   const [completeCustomer, setCompleteCustomer] = useState<CompleteCustomerData | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(true)
-  const customerRepo = new CustomerRepository()
+  // customerRepo の初期化を useMemo でラップ
+  const customerRepo = useMemo(() => new CustomerRepository(), [])
 
   const {
     register,

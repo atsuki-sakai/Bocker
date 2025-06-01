@@ -19,7 +19,7 @@ import {
   History,
   Mail,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
@@ -45,7 +45,7 @@ export default function CustomerDetailPage() {
   // 状態管理
   const [completeCustomer, setCompleteCustomer] = useState<CompleteCustomerData | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(true)
-  const customerRepo = new CustomerRepository()
+  const customerRepo = useMemo(() => new CustomerRepository(), [])
 
   // 顧客データを取得
   useEffect(() => {

@@ -54,78 +54,81 @@ export default function CustomerList() {
   const customerRepo = new CustomerRepository()
 
   // 顧客データを取得する関数
-  const fetchCustomers = async (page: number = 1, search: string = '', append: boolean = false) => {
-    if (!tenantId || !orgId || !isLoaded) {
-      return
-    }
-
-    try {
-      if (!append) {
-        setIsLoading(true)
-      } else {
-        setIsLoadingMore(true)
+  const fetchCustomers = useCallback(
+    async (page: number = 1, search: string = '', append: boolean = false) => {
+      if (!tenantId || !orgId || !isLoaded) {
+        return
       }
 
-      // 顧客リストを取得
-      const { data: customerList, count } = await customerRepo.list({
-        page,
-        pageSize: PAGE_SIZE,
-        filters: {
-          tenant_id: tenantId,
-          org_id: orgId,
-          is_archive: false,
-          ...(search &&
-            {
-              // 検索語がある場合、名前、電話番号、メールアドレスでフィルタリング
-              // 注意: 実際のSupabaseクエリでは、より高度な検索機能が必要な場合があります
-            }),
-        } as Partial<RowType<'customer'>>,
-      })
+      try {
+        if (!append) {
+          setIsLoading(true)
+        } else {
+          setIsLoadingMore(true)
+        }
 
-      // 各顧客の詳細情報とポイント情報を並行取得
-      const customersWithDetails: CustomerWithDetails[] = await Promise.all(
-        customerList.map(async (customer) => {
-          const completeData = await customerRepo.getCompleteCustomerData(
-            customer.uid,
-            tenantId,
-            orgId
-          )
-          return {
-            customer,
-            customerDetail: completeData.customerDetail,
-            customerPoints: completeData.customerPoints,
-          }
+        // 顧客リストを取得
+        const { data: customerList, count } = await customerRepo.list({
+          page,
+          pageSize: PAGE_SIZE,
+          filters: {
+            tenant_id: tenantId,
+            org_id: orgId,
+            is_archive: false,
+            ...(search &&
+              {
+                // 検索語がある場合、名前、電話番号、メールアドレスでフィルタリング
+                // 注意: 実際のSupabaseクエリでは、より高度な検索機能が必要な場合があります
+              }),
+          } as Partial<RowType<'customer'>>,
         })
-      )
 
-      // 検索フィルタリング（クライアントサイドで実施）
-      const filteredCustomers = search
-        ? customersWithDetails.filter((item) => {
-            const searchLower = search.toLowerCase().trim()
-            const customer = item.customer
-            const searchableText =
-              `${customer.first_name || ''} ${customer.last_name || ''} ${customer.email || ''} ${customer.phone || ''} ${customer.line_user_name || ''}`.toLowerCase()
-            return searchableText.includes(searchLower)
+        // 各顧客の詳細情報とポイント情報を並行取得
+        const customersWithDetails: CustomerWithDetails[] = await Promise.all(
+          customerList.map(async (customer) => {
+            const completeData = await customerRepo.getCompleteCustomerData(
+              customer.uid,
+              tenantId,
+              orgId
+            )
+            return {
+              customer,
+              customerDetail: completeData.customerDetail,
+              customerPoints: completeData.customerPoints,
+            }
           })
-        : customersWithDetails
+        )
 
-      if (append) {
-        setCustomers((prev) => [...prev, ...filteredCustomers])
-      } else {
-        setCustomers(filteredCustomers)
+        // 検索フィルタリング（クライアントサイドで実施）
+        const filteredCustomers = search
+          ? customersWithDetails.filter((item) => {
+              const searchLower = search.toLowerCase().trim()
+              const customer = item.customer
+              const searchableText =
+                `${customer.first_name || ''} ${customer.last_name || ''} ${customer.email || ''} ${customer.phone || ''} ${customer.line_user_name || ''}`.toLowerCase()
+              return searchableText.includes(searchLower)
+            })
+          : customersWithDetails
+
+        if (append) {
+          setCustomers((prev) => [...prev, ...filteredCustomers])
+        } else {
+          setCustomers(filteredCustomers)
+        }
+
+        // ページネーション制御
+        const totalCustomers = search ? filteredCustomers.length : count || 0
+        setHasMoreData(filteredCustomers.length === PAGE_SIZE && page * PAGE_SIZE < totalCustomers)
+      } catch (error) {
+        console.error('顧客データの取得に失敗しました:', error)
+        toast.error('顧客データの取得に失敗しました')
+      } finally {
+        setIsLoading(false)
+        setIsLoadingMore(false)
       }
-
-      // ページネーション制御
-      const totalCustomers = search ? filteredCustomers.length : count || 0
-      setHasMoreData(filteredCustomers.length === PAGE_SIZE && page * PAGE_SIZE < totalCustomers)
-    } catch (error) {
-      console.error('顧客データの取得に失敗しました:', error)
-      toast.error('顧客データの取得に失敗しました')
-    } finally {
-      setIsLoading(false)
-      setIsLoadingMore(false)
-    }
-  }
+    },
+    [tenantId, orgId, isLoaded, customerRepo]
+  )
 
   // 初回データ取得
   useEffect(() => {
