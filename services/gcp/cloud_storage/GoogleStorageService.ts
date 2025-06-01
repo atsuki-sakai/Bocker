@@ -9,7 +9,7 @@ import sharp from 'sharp';
 import { Id } from '@/convex/_generated/dataModel';
 import { AspectType } from '@/convex/types';
 import { ImageDirectory, ImageQuality, ProcessedImageResult, UploadedFileResult } from './types';
-
+import { compressAndCropImage } from './helpers';
 /**
  * GCSクライアントとバケット設定を管理し、画像処理機能も提供するクラス
  */
