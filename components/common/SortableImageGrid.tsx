@@ -46,7 +46,7 @@ function SortableImageItem({
       style={style}
       {...attributes}
       {...listeners}
-      className={`relative aspect-square w-full h-full border bg-muted rounded-lg overflow-hidden shadow group transition-all ${
+      className={`relative aspect-[2/3] w-full h-full border bg-muted rounded-lg overflow-hidden shadow group transition-all ${
         isDragging
           ? 'border-primary ring-2 ring-primary/60'
           : 'hover:shadow-lg hover:border-primary/50'

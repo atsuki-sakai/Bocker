@@ -132,8 +132,12 @@ export default function OrgConfigForm() {
           return
         }
 
+        console.log('1 newUploadedImageUrls: ', newUploadedImageUrls)
+
         // サロン設定の画像パスを更新
         if (newUploadedImageUrls.length > 0 && tenantId && orgId) {
+          console.log('2 newUploadedImageUrls: ', newUploadedImageUrls)
+
           // [ログ] updateImages呼び出し
           console.log('[画像アップロード] updateImages呼び出し', {
             tenantId,

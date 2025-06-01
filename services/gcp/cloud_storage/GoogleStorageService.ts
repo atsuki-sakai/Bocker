@@ -756,16 +756,77 @@ private async compressImage(
   }
 
   async getSignedUploadUrl(fileName: string, contentType: string, orgId: Id<'organization'>, directory: string): Promise<{ url: string; filePath: string }> {
-    this.initializeIfNeeded();
-    // ここでSDKを直接使って署名付きURLを発行
-    const bucket = this.storage!.bucket(this.bucketName!);
-    const filePath = `${orgId}/${directory}/${fileName}`;
-    const [url] = await bucket.file(filePath).getSignedUrl({
-      action: 'write',
-      expires: Date.now() + 10 * 60 * 1000, // 10分有効
+    console.log('[GCS] 署名付きURL生成開始:', {
+      fileName,
       contentType,
-    });
-    return { url, filePath };
+      orgId,
+      directory
+    })
+    
+    try {
+      this.initializeIfNeeded();
+      console.log('[GCS] クライアント初期化完了')
+      
+      // ここでSDKを直接使って署名付きURLを発行
+      const bucket = this.storage!.bucket(this.bucketName!);
+      const filePath = `${orgId}/${directory}/${fileName}`;
+      
+      console.log('[GCS] 署名付きURL生成パラメータ:', {
+        bucketName: this.bucketName,
+        filePath,
+        contentType
+      })
+      
+      // 署名付きURL生成オプションを詳細に設定
+      const options = {
+        action: 'write' as const,
+        expires: Date.now() + 30 * 60 * 1000, // 30分有効
+        contentType,
+        version: 'v4' as const,
+      };
+      
+      console.log('[GCS] 署名付きURL生成オプション:', options)
+      
+      const [url] = await bucket.file(filePath).getSignedUrl(options);
+      
+      console.log('[GCS] 署名付きURL生成成功:', {
+        filePath,
+        urlPrefix: url.substring(0, 150) + '...',
+        urlLength: url.length,
+        containsCredentials: url.includes('X-Goog-Credential'),
+        containsSignature: url.includes('X-Goog-Signature')
+      })
+      
+      return { url, filePath };
+      
+    } catch (error) {
+      console.error('[GCS] 署名付きURL生成エラー:', error)
+      console.error('[GCS] エラー詳細:', {
+        errorName: error instanceof Error ? error.name : 'Unknown',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : 'No stack'
+      })
+      throw new SystemError(
+        '署名付きURLの生成に失敗しました',
+        {
+          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'GoogleStorageService.getSignedUploadUrl',
+          message: '署名付きURLの生成に失敗しました',
+          code: 'INTERNAL_SERVER_ERROR',
+          status: 500,
+          title: '署名付きURL生成失敗',
+          details: {
+            error: this.formatErrorDetails(error),
+            fileName,
+            contentType,
+            orgId,
+            directory,
+            bucketName: this.bucketName
+          },
+        }
+      )
+    }
   }
 }
 

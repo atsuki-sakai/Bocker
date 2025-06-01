@@ -267,7 +267,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                 <CarouselContent>
                   {menu.images.map((image, index) => (
                     <CarouselItem key={`main-${index}`}>
-                      <div className="relative w-full aspect-[4/3] sm:aspect-[3/4] bg-muted group rounded-lg overflow-hidden">
+                      <div className="relative w-full aspect-[2/3] bg-muted group rounded-lg overflow-hidden">
                         <Image
                           src={image.original_url || ''}
                           alt={`${menu.name || 'メニュー画像'} ${index + 1}`}

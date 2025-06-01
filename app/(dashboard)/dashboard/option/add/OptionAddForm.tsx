@@ -307,7 +307,6 @@ function OptionAddForm() {
                 <div className="w-full">
                   <SingleImageDrop
                     currentFile={currentFile}
-                    maxSizeMB={5}
                     onFileSelect={(file) => {
                       setCurrentFile(file ?? null)
                     }}

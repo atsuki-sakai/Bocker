@@ -24,7 +24,7 @@ interface SingleImageDropProps {
 export default function SingleImageDrop({
   currentFile,
   onFileSelect,
-  maxSizeMB = 6,
+  maxSizeMB = 7,
   previewWidth = 1512,
   previewHeight = 1512,
   className = '',

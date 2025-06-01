@@ -1,1 +1,21 @@
-[{"origin":["*"],"method":["GET"],"responseHeader":["Content-Type"],"maxAgeSeconds":3600}]
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "https://*.vercel.app",
+      "https://bocker.jp",
+      "https://bcker-saas.vercel.app",
+      "https://bcker-saas-*.vercel.app"
+    ],
+    "method": ["PUT", "GET", "POST", "HEAD", "OPTIONS"],
+    "responseHeader": [
+      "Content-Type",
+      "x-goog-resumable",
+      "x-goog-content-length-range",
+      "Access-Control-Allow-Origin",
+      "Access-Control-Allow-Headers"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

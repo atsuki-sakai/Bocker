@@ -441,8 +441,8 @@ export default function OptionEditForm() {
                       <Image
                         src={existingImageUrls[0].original_url}
                         alt="option image"
-                        width={1512}
-                        height={1512}
+                        width={1280}
+                        height={1280}
                         className="w-full h-auto object-cover rounded-md border border-border aspect-[1/1]"
                       />
                       <Button
@@ -462,7 +462,6 @@ export default function OptionEditForm() {
                     className={`w-full ${existingImageUrls[0]?.original_url ? 'lg:w-[50%]' : ''} flex items-center justify-center`}
                   >
                     <SingleImageDrop
-                      maxSizeMB={5}
                       onFileSelect={(file) => {
                         setCurrentFile(file)
                         setValue(

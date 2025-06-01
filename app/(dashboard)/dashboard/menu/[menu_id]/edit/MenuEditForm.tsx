@@ -70,7 +70,9 @@ import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/clou
 const schemaMenu = z
   .object({
     name: z
-      .string()
+      .string({
+        required_error: 'メニュー名は必須です',
+      })
       .min(1, { message: 'メニュー名は必須です' })
       .max(100, { message: 'メニュー名は100文字以内で入力してください' })
       .optional(),
@@ -79,7 +81,9 @@ const schemaMenu = z
       .min(1, { message: 'カテゴリは必須です' })
       .optional(),
     unit_price: z
-      .number()
+      .number({
+        required_error: '価格は必須です',
+      })
       .min(1, { message: '価格は必須です' })
       .max(MAX_NUM, { message: `価格は${MAX_NUM}円以下で入力してください` })
       .nullable()
@@ -88,7 +92,9 @@ const schemaMenu = z
       .optional(),
     sale_price: zNumberFieldOptional(MAX_NUM, `セール価格は${MAX_NUM}円以下で入力してください`),
     duration_min: z
-      .number()
+      .number({
+        required_error: '実際にスタッフが稼働する施術時間は必須です',
+      })
       .refine((val) => val !== null || val !== undefined || val !== 0, {
         message: '実際にスタッフが稼働する施術時間は必須です',
       })
@@ -245,7 +251,6 @@ export default function MenuEditForm() {
         toast.error('サロン情報または既存メニュー情報が見つかりません')
         return
       }
-
       setIsSubmitting(true)
       let imagesToSave: ImageType[] = [...existingImages]
 
