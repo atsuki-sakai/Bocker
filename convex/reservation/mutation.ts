@@ -1,7 +1,8 @@
+import { api } from '@/convex/_generated/api'
 import { mutation, internalMutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { excludeFields, updateRecord } from '@/convex/utils/helpers';
-import { reservationStatusType,  paymentMethodType,reservationPaymentStatusType, reservationMenuOrOptionType, imageType } from '@/convex/types';
+import { reservationStatusType,  paymentMethodType,reservationPaymentStatusType, reservationMenuType, reservationOptionType, imageType } from '@/convex/types';
 import { validateRequired, validateRequiredNumber, validateDateStrToDate } from '@/convex/utils/validations';
 import { checkAuth } from '@/convex/utils/auth';
 import { ConvexError } from 'convex/values';
@@ -9,8 +10,7 @@ import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import {
   createReservationWithDetails,
   archiveReservationWithDetails,
-  deleteReservationWithDetails,
-  checkDoubleBooking,
+  deleteReservationWithDetails
 } from '@/convex/reservation/reservation.helpers';
 
 // 予約の追加処理
@@ -29,12 +29,13 @@ export const create = mutation({
     date: v.string(), // 予約日 YYYY-MM-DD
     start_time_unix: v.number(), // 予約開始時間
     end_time_unix: v.number(), // 予約終了時間
+    total_price: v.number(), // 合計金額
     coupon_id: v.optional(v.id('coupon')), // クーポンID
     payment_method: paymentMethodType, // 支払方法
     stripe_checkout_session_id: v.optional(v.string()), // Stripe Checkout Session ID
     payment_status: reservationPaymentStatusType, // 支払ステータス
-    menus: v.array(reservationMenuOrOptionType), // メニュー/オプション
-    options: v.array(reservationMenuOrOptionType), // オプション
+    menus: v.array(reservationMenuType), // メニュー
+    options: v.array(reservationOptionType), // オプション
     extra_charge: v.optional(v.number()), // 追加料金
     use_points: v.optional(v.number()), // 使用ポイント数
     coupon_discount: v.optional(v.number()), // クーポン割引額
@@ -82,7 +83,7 @@ export const create = mutation({
     }
 
     // 予約時間の重複を防ぐため、同じスタッフ・日時での予約が既に存在しないかをチェックする（Race condition防止）
-    const isOverlapping = await checkDoubleBooking(ctx, {
+    const isOverlapping = await ctx.runQuery(api.reservation.query.checkDoubleBooking, {
       tenant_id: args.tenant_id,
       org_id: args.org_id,
       staff_id: args.staff_id,
@@ -124,14 +125,14 @@ export const update = mutation({
     customer_name: v.string(),
     staff_id: v.id('staff'),
     staff_name: v.string(),
-    menus: v.array(reservationMenuOrOptionType),
-    options: v.array(reservationMenuOrOptionType),
-    unit_price: v.number(),
+    menus: v.array(reservationMenuType),
+    options: v.array(reservationOptionType),
     total_price: v.number(),
     status: reservationStatusType,
     date: v.string(),
     start_time_unix: v.number(),
     end_time_unix: v.number(),
+    extra_charge: v.number(),
     featured_hair_images: v.array(imageType),
     use_points: v.number(),
     coupon_id: v.id('coupon'),
@@ -172,7 +173,7 @@ export const update = mutation({
       (args.start_time_unix !== reservation.start_time_unix ||
         args.end_time_unix !== reservation.end_time_unix)
     ) {
-      const isOverlapping = await checkDoubleBooking(ctx, {
+      const isOverlapping = await ctx.runQuery(api.reservation.query.checkDoubleBooking, {
         tenant_id: args.tenant_id,
         org_id: args.org_id,
         staff_id: args.staff_id,
@@ -219,8 +220,31 @@ export const update = mutation({
       }
     )
 
+    const reservationDetail = await ctx.db.query('reservation_detail').withIndex('by_reservation_archive', q => q.eq('reservation_id', reservation._id).eq('is_archive', false)).first()
+    if (!reservationDetail) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'reservation.update',
+      })
+    }
+
     // 予約詳細情報を更新し、最新の状態をDBに反映
-    return await ctx.db.patch(reservation._id, updateData)
+    return await ctx.db.patch(reservationDetail._id, {
+      tenant_id: args.tenant_id, // テナントID
+      org_id: args.org_id, // 店舗ID
+      reservation_id: args.reservation_id, // 予約ID
+      coupon_id: args.coupon_id, // クーポンID
+      total_price: args.total_price, // 合計金額
+      payment_method: args.payment_method, // 支払方法
+      menus: args.menus, // メニュー
+      options: args.options, // オプション
+      extra_charge: args.extra_charge, // 追加料金
+      use_points: args.use_points, // 使用ポイント数
+      coupon_discount: args.coupon_discount, // クーポン割引額
+      featured_hair_images: args.featured_hair_images, // フィーチャー画像
+      notes: args.notes, // メモ
+    })
   },
 })
 

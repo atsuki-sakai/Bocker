@@ -5,8 +5,33 @@ export type Json =
   | null
   | { [key: string]: Json | undefined }
   | Json[]
-  
+
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       carte: {
@@ -583,44 +608,88 @@ export type Database = {
           p_org_id: string
           p_line_id: string
           p_line_user_name: string
+          p_password_hash: string
           p_detail_email: string
           p_detail_gender: string
           p_detail_birthday: string
           p_detail_age: number
           p_detail_notes: string
-          p_password_hash?: string
-          p_initial_points?: number
+          p_initial_points: number
         }
         Returns: {
-          _creation_time: string | null
-          created_at: string
-          customer_type: string | null
-          email: string | null
-          first_name: string | null
-          initial_tracking: Json | null
-          is_archive: boolean | null
-          last_name: string | null
-          last_reservation_date_unix: number | null
-          line_id: string | null
-          line_user_name: string | null
-          org_id: string
-          password: string | null
-          password_hash: string | null
-          phone: string | null
-          searchable_text: string | null
-          sort_key: string | null
-          tags: string[] | null
-          tenant_id: string
-          total_reservation_count: number | null
           uid: string
-          updated_at: string
-          updated_time: string | null
-          use_count: number | null
+          email: string
+          first_name: string
+          last_name: string
+          phone: string
+          tenant_id: string
+          org_id: string
+          line_id: string
+          line_user_name: string
+          _creation_time: string
+          updated_time: string
+          searchable_text: string
+          is_archive: boolean
         }[]
       }
       delete_customer_and_related_data: {
         Args: { p_customer_uid: string }
         Returns: undefined
+      }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      search_customers_by_similarity: {
+        Args: {
+          p_tenant_id: string
+          p_org_id: string
+          p_search_term: string
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: {
+          uid: string
+          email: string
+          first_name: string
+          last_name: string
+          phone: string
+          line_id: string
+          line_user_name: string
+          tenant_id: string
+          org_id: string
+          _creation_time: string
+          updated_time: string
+          similarity_score: number
+        }[]
+      }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
       }
       update_customer_with_details_and_points: {
         Args: {
@@ -784,7 +853,11 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
+

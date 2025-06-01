@@ -272,7 +272,8 @@ import {
   genderType,
   reservationIntervalMinutesType,
   activeCustomerType,
-  reservationMenuOrOptionType,
+  reservationMenuType,
+  reservationOptionType,
   imageType,
   reservationPaymentStatusType,
   couponDiscountType,
@@ -729,9 +730,10 @@ const reservation_detail = defineTable({
   org_id: v.id('organization'), // 店舗ID
   reservation_id: v.id('reservation'), // 予約ID
   coupon_id: v.optional(v.id('coupon')), // クーポンID
+  total_price: v.optional(v.number()), // 合計金額
   payment_method: paymentMethodType, // 支払方法
-  menus: v.array(reservationMenuOrOptionType), // メニュー/オプション
-  options: v.array(reservationMenuOrOptionType), // オプション
+  menus: v.array(reservationMenuType), // メニュー
+  options: v.array(reservationOptionType), // オプション
   extra_charge: v.optional(v.number()), // 追加料金
   use_points: v.optional(v.number()), // 使用ポイント数
   coupon_discount: v.optional(v.number()), // クーポン割引額

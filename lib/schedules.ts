@@ -21,6 +21,20 @@ export function getCurrentUnixTime(addHours?: number): number {
     : currentTimeMs;
 }
 
+// タイムスタンプを日付の文字列に変換する関数
+// 使用例:
+// const dateString = convertTimestampToDateString(1717334400000);
+// console.log(dateString); // 2024-06-01
+// const dateString = convertTimestampToDateString(1717334400000, 'Asia/Tokyo');
+// console.log(dateString); // 2024-06-01
+
+export function convertTimestampToDateString(timestampMs: number, timeZone?: string): string {
+  const date = new Date(timestampMs);
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: timeZone ?? 'Asia/Tokyo' };
+  const formatted = date.toLocaleDateString('ja-CA', options).replace(/\//g, '-');
+  return formatted;
+}
+
 
 export function getDayOfWeek(date: Date, ja: boolean = false): DayOfWeekEN | typeof DAYS_JA[number] {
   const idx = date.getDay();

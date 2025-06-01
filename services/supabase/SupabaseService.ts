@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/supabase.types'
+import { Database } from '@/supabase.types'
 import { throwSupabaseError } from './utils/errors'
 import { CustomerRepository, CustomerDetailRepository, CustomerPointsRepository } from './repositories/customer'
 

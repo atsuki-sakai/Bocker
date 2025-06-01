@@ -18,12 +18,14 @@ import { checkAuth } from '@/convex/utils/auth';
 import { api } from '@/convex/_generated/api';
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import { validateDateStrFormat, validateRequiredNumber, validateStringLength } from '@/convex/utils/validations';
+import { validateDateStrFormat, validateStringLength } from '@/convex/utils/validations';
 import { convertHourToTimestamp, formatTimestamp,hourToMinutes, convertTimestampToHour, getDayOfWeek, toHourString } from '@/lib/schedules';
 import { TimeRange } from '@/lib/types';
-import { validateDateStrToDate, validateNumberLength } from '@/convex/utils/validations';
+import { validateDateStrToDate } from '@/convex/utils/validations';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { ConvexError } from 'convex/values';
+import { getReservationWithDetail } from './reservation.helpers';
+
 
 /**
  * 予約IDによる単一予約取得
@@ -38,6 +40,15 @@ export const getById = query({
   },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
+  },
+});
+
+export const getWithDetailById = query({
+  args: {
+    id: v.id('reservation'),
+  },
+  handler: async (ctx, args) => {
+    return await getReservationWithDetail(ctx, args.id);
   },
 });
 
@@ -882,3 +893,103 @@ export const syncReservationToSupabase = query({
     return { reservations, nextCursor, isDone };
   },
 });
+
+
+/**
+ * 予約の重複を防ぐために、指定したスタッフの同じ時間帯に
+ * 既に予約が存在しないかをチェックするヘルパー関数です。
+ * 
+ * この関数は競合状態（race condition）を防ぐために、
+ * mutation内で呼び出してから即座に予約を挿入することを推奨します。
+ * 更新時には自身の予約IDを除外してチェック可能です。
+ * 同時予約数の上限とスタッフの同時予約数の上限をチェックします。
+ * 
+ * @param ctx Mutationコンテキスト（DBアクセス用）
+ * @param args チェックに必要な情報（日時・スタッフID等）
+ * @returns 重複予約があればtrue、なければfalse
+ */
+export const checkDoubleBooking = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    staff_id: v.id('staff'),
+    date: v.string(),
+    start_time_unix: v.number(),
+    end_time_unix: v.number(),
+    excludeReservationId: v.optional(v.id('reservation')) // 更新時に自分自身を除外するため
+  },
+  handler: async (ctx, args): Promise<boolean> => {
+
+  const reservationConfig = await ctx.db.query('reservation_config').withIndex('by_tenant_org_archive', (q) =>
+    q.eq('tenant_id', args.tenant_id)
+      .eq('org_id', args.org_id)
+  ).first();
+
+  // 店舗ごとの同時受付可能席数を取得
+  const availableSheet = reservationConfig?.available_sheet || 3;
+
+  // 組織全体で、該当日の confirmed かつ is_archive: false の予約のみ取得
+  const orgReservations = await ctx.db
+    .query('reservation')
+    .withIndex('by_tenant_org_date_status_archive', (q) =>
+      q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('date', args.date)
+        .eq('status', 'confirmed')
+        .eq('is_archive', false)
+    )
+    .collect();
+
+  const overlapCount = orgReservations.filter((reservation) => {
+    // 除外ID（自分自身）は外す
+    if (args.excludeReservationId && reservation._id === args.excludeReservationId) return false;
+    // 時間帯が一部でも重なればtrue
+    return (
+      reservation.start_time_unix < args.end_time_unix &&
+      reservation.end_time_unix > args.start_time_unix
+    );
+  }).length;
+
+  if (overlapCount >= availableSheet) {
+    throw new ConvexError({
+      statusCode: ERROR_STATUS_CODE.CONFLICT,
+      severity: ERROR_SEVERITY.ERROR,
+      callFunc: 'reservation.checkReservationOverlap',
+      message: 'この時間帯の最大同時予約数は上限です。別の時間を選択してください。',
+      code: 'CONFLICT',
+      status: 409,
+      details: {
+        ...args,
+      },
+    });
+  }
+
+  // 指定された条件に合致する予約を検索し、
+  // 時間帯が重複している予約が存在するかを判定
+  const query = ctx.db
+    .query('reservation')
+    .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
+      q
+        .eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('staff_id', args.staff_id)
+        .eq('date', args.date)
+        .eq('status', 'confirmed')
+        .eq('is_archive', false)
+    )
+    .filter((q) =>
+      q.and(
+        // 時間の重複をチェック（開始時間が相手の終了時間前、終了時間が相手の開始時間後）
+        q.lt(q.field('start_time_unix'), args.end_time_unix),
+        q.gt(q.field('end_time_unix'), args.start_time_unix),
+        // 除外IDがあればそれを除外、なければ常にtrueの条件
+        args.excludeReservationId
+          ? q.neq(q.field('_id'), args.excludeReservationId)
+          : q.eq(q.field('_id'), q.field('_id')) // 常にtrueになる条件
+      )
+    );
+
+  const overlapping = await query.first();
+  return !!overlapping;
+  },
+})     

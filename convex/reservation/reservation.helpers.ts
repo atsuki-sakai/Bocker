@@ -1,8 +1,9 @@
-import { MutationCtx, query } from '@/convex/_generated/server';
+import { MutationCtx, QueryCtx } from '@/convex/_generated/server';
 import { Id } from '@/convex/_generated/dataModel';
 import { createRecord, archiveRecord, killRecord } from '@/convex/utils/helpers';
 import {
-  ReservationMenuOrOption,
+  ReservationMenu,
+  ReservationOption,
   ImageType,
   PaymentMethod,
   ReservationStatus,
@@ -12,6 +13,26 @@ import { v4 as uuidv4 } from 'uuid';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 
+
+
+export const getReservationWithDetail = async (ctx: QueryCtx, reservationId: Id<'reservation'>) => {
+  const reservation = await ctx.db.get(reservationId);
+  if (!reservation) {
+    throw new ConvexError({
+      message: '予約が存在しません',
+      statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+      severity: ERROR_SEVERITY.ERROR,
+      callFunc: 'getReservationWithDetail',
+      details: {
+        reservationId,
+      },
+    })
+  }
+  const reservationDetail = await ctx.db.query('reservation_detail').withIndex('by_reservation_archive', (q) =>
+    q.eq('reservation_id', reservationId).eq('is_archive', false)
+  ).first();
+  return { reservation, reservationDetail };
+}
 
 /**
  * 予約と予約詳細を同時に作成するためのヘルパー関数です。
@@ -43,8 +64,9 @@ export async function createReservationWithDetails(
     payment_status: ReservationPaymentStatus;
     stripe_checkout_session_id?: string;
     coupon_id?: Id<'coupon'>;
-    menus: ReservationMenuOrOption[];
-    options: ReservationMenuOrOption[];
+    total_price: number;
+    menus: ReservationMenu[];
+    options: ReservationOption[];
     extra_charge?: number;
     use_points?: number;
     coupon_discount?: number;
@@ -79,6 +101,7 @@ export async function createReservationWithDetails(
     reservation_id: reservationId,
     coupon_id: args.coupon_id,
     payment_method: args.payment_method,
+    total_price: args.total_price,
     menus: args.menus,
     options: args.options,
     extra_charge: args.extra_charge,
@@ -159,101 +182,4 @@ export async function deleteReservationWithDetails(
   return true;
 }
 
-/**
- * 予約の重複を防ぐために、指定したスタッフの同じ時間帯に
- * 既に予約が存在しないかをチェックするヘルパー関数です。
- * 
- * この関数は競合状態（race condition）を防ぐために、
- * mutation内で呼び出してから即座に予約を挿入することを推奨します。
- * 更新時には自身の予約IDを除外してチェック可能です。
- * 同時予約数の上限とスタッフの同時予約数の上限をチェックします。
- * 
- * @param ctx Mutationコンテキスト（DBアクセス用）
- * @param args チェックに必要な情報（日時・スタッフID等）
- * @returns 重複予約があればtrue、なければfalse
- */
-export async function checkDoubleBooking(
-  ctx: MutationCtx,
-  args: {
-    tenant_id: Id<'tenant'>;
-    org_id: Id<'organization'>;
-    staff_id: Id<'staff'>;
-    date: string;
-    start_time_unix: number;
-    end_time_unix: number;
-    excludeReservationId?: Id<'reservation'>; // 更新時に自分自身を除外するため
-  }
-): Promise<boolean> {
 
-  const reservationConfig = await ctx.db.query('reservation_config').withIndex('by_tenant_org_archive', (q) =>
-    q.eq('tenant_id', args.tenant_id)
-      .eq('org_id', args.org_id)
-  ).first();
-
-  // 店舗ごとの同時受付可能席数を取得
-  const availableSheet = reservationConfig?.available_sheet || 3;
-
-  // 組織全体で、該当日の confirmed かつ is_archive: false の予約のみ取得
-  const orgReservations = await ctx.db
-    .query('reservation')
-    .withIndex('by_tenant_org_date_status_archive', (q) =>
-      q.eq('tenant_id', args.tenant_id)
-        .eq('org_id', args.org_id)
-        .eq('date', args.date)
-        .eq('status', 'confirmed')
-        .eq('is_archive', false)
-    )
-    .collect();
-
-  const overlapCount = orgReservations.filter((reservation) => {
-    // 除外ID（自分自身）は外す
-    if (args.excludeReservationId && reservation._id === args.excludeReservationId) return false;
-    // 時間帯が一部でも重なればtrue
-    return (
-      reservation.start_time_unix < args.end_time_unix &&
-      reservation.end_time_unix > args.start_time_unix
-    );
-  }).length;
-
-  if (overlapCount >= availableSheet) {
-    throw new ConvexError({
-      statusCode: ERROR_STATUS_CODE.CONFLICT,
-      severity: ERROR_SEVERITY.ERROR,
-      callFunc: 'reservation.checkReservationOverlap',
-      message: 'この時間帯の最大同時予約数は上限です。別の時間を選択してください。',
-      code: 'CONFLICT',
-      status: 409,
-      details: {
-        ...args,
-      },
-    });
-  }
-
-  // 指定された条件に合致する予約を検索し、
-  // 時間帯が重複している予約が存在するかを判定
-  const query = ctx.db
-    .query('reservation')
-    .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
-      q
-        .eq('tenant_id', args.tenant_id)
-        .eq('org_id', args.org_id)
-        .eq('staff_id', args.staff_id)
-        .eq('date', args.date)
-        .eq('status', 'confirmed')
-        .eq('is_archive', false)
-    )
-    .filter((q) =>
-      q.and(
-        // 時間の重複をチェック（開始時間が相手の終了時間前、終了時間が相手の開始時間後）
-        q.lt(q.field('start_time_unix'), args.end_time_unix),
-        q.gt(q.field('end_time_unix'), args.start_time_unix),
-        // 除外IDがあればそれを除外、なければ常にtrueの条件
-        args.excludeReservationId
-          ? q.neq(q.field('_id'), args.excludeReservationId)
-          : q.eq(q.field('_id'), q.field('_id')) // 常にtrueになる条件
-      )
-    );
-
-  const overlapping = await query.first();
-  return !!overlapping;
-}

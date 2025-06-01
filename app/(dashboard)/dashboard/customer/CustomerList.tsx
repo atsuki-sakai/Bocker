@@ -24,7 +24,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
@@ -51,7 +51,8 @@ export default function CustomerList() {
   const [currentPage, setCurrentPage] = useState(1)
   const [hasMoreData, setHasMoreData] = useState(true)
 
-  const customerRepo = new CustomerRepository()
+  // CustomerRepositoryのインスタンスをメモ化
+  const customerRepo = useMemo(() => new CustomerRepository(), [])
 
   // 顧客データを取得する関数
   const fetchCustomers = useCallback(
@@ -136,7 +137,7 @@ export default function CustomerList() {
       fetchCustomers(1, debouncedSearchTerm, false)
       setCurrentPage(1)
     }
-  }, [tenantId, orgId, isLoaded, debouncedSearchTerm])
+  }, [tenantId, orgId, isLoaded, debouncedSearchTerm, fetchCustomers])
 
   // さらに読み込み
   const loadMore = () => {

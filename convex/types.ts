@@ -54,13 +54,21 @@ export const STRIPE_SUBSCRIPTION_STATUS_VALUES = [
 export const stripeSubscriptionStatusType = v.union(...STRIPE_SUBSCRIPTION_STATUS_VALUES.map((status) => v.literal(status)))
 export type StripeSubscriptionStatus = Infer<typeof stripeSubscriptionStatusType>
 
-export const reservationMenuOrOptionType = v.object({
-  id: v.union(v.id('option'), v.literal('menu')),
+export const reservationOptionType = v.object({
+  id: v.id('option'),
   name: v.string(),
   price: v.number(),
   quantity: v.number(),
 })
-export type ReservationMenuOrOption = Infer<typeof reservationMenuOrOptionType>
+export type ReservationOption = Infer<typeof reservationOptionType>
+
+export const reservationMenuType = v.object({
+  id:  v.id('menu'),
+  name: v.string(),
+  price: v.number(),
+  quantity: v.number(),
+})
+export type ReservationMenu = Infer<typeof reservationMenuType>
 
 
 export const reservationPaymentStatusType = v.union( // 支払い状況
