@@ -207,15 +207,9 @@ export async function compressAndCropImage(
   const useOffscreenPath = supportsOffscreen && !isLowMemory;
   console.log('[画像圧縮] 処理パス選択:', { supportsOffscreen, useOffscreenPath });
 
-  // --- Exif回転情報取得 ---------------------------------------------------
-  let rotation = 0;
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    rotation = getExifRotation(arrayBuffer);
-    console.log('[画像圧縮] Exif回転角度:', rotation);
-  } catch (error) {
-    console.warn('[画像圧縮] Exif読み取り失敗（回転なしで続行）:', error);
-  }
+  // --- 画像の向きは変更しない方針 ---------------------------------------
+  // Exif の Orientation タグを読まず、常に 0° で描画する
+  const rotation = 0;
 
   // ========================================================================
   // 1) OffscreenCanvas パス  (iOS 17+ / 最新ブラウザ)
@@ -264,8 +258,7 @@ export async function compressAndCropImage(
       const off = new OffscreenCanvas(outW, outH);
       const ctx = off.getContext('2d')!;
       
-      // Exif回転を考慮して描画
-      drawRotatedImage(ctx, bitmap, rotation, left, top, cropWidth, cropHeight, 0, 0, outW, outH);
+      ctx.drawImage(bitmap, left, top, cropWidth, cropHeight, 0, 0, outW, outH);
 
       // ----- 画像エンコード ---------------------------------------------------
       const blob: Blob = await (off as any).convertToBlob({ type: mime, quality });
@@ -338,19 +331,13 @@ async function executeCanvasFallback(
         const canvas = document.createElement('canvas');
         const scale  = maxWidth / cropWidth;
         
-        // 回転を考慮したキャンバスサイズ
-        if (rotation === 90 || rotation === 270) {
-          canvas.width  = Math.round(cropHeight * scale);
-          canvas.height = maxWidth;
-        } else {
-          canvas.width  = maxWidth;
-          canvas.height = Math.round(cropHeight * scale);
-        }
+        // 画像の向きを変更しない
+        canvas.width  = maxWidth;
+        canvas.height = Math.round(cropHeight * scale);
 
         const ctx = canvas.getContext('2d')!;
         
-        // Exif回転を考慮して描画
-        drawRotatedImage(ctx, img, rotation, left, top, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, left, top, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
 
         // iOS Safari でも quality が反映される toDataURL 経由
         const dataURL = canvas.toDataURL(mime, quality);
