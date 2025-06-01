@@ -220,7 +220,7 @@ export default function StaffEditForm() {
   const handleGeneratePinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     const pinCode = generatePinCode()
-    setValue('pin_code', pinCode, { shouldDirty: true })
+    setValue('pin_code', pinCode, { shouldDirty: true, shouldValidate: true })
   }
 
   const handleCopyPinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -577,7 +577,10 @@ export default function StaffEditForm() {
                           <Select
                             value={watch('gender') || staffAllData?.gender}
                             onValueChange={(value) =>
-                              setValue('gender', value as Gender, { shouldDirty: true })
+                              setValue('gender', value as Gender, {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              })
                             }
                           >
                             <SelectTrigger className="w-full">
@@ -626,7 +629,10 @@ export default function StaffEditForm() {
                             id="is_active"
                             checked={watch('is_active')}
                             onCheckedChange={(checked) =>
-                              setValue('is_active', checked, { shouldDirty: true })
+                              setValue('is_active', checked, {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              })
                             }
                           />
                           <Label htmlFor="is_active" className="text-sm cursor-pointer">
@@ -776,7 +782,10 @@ export default function StaffEditForm() {
                                   : 'border-border bg-muted text-muted-foreground'
                               }`}
                               onClick={() =>
-                                setValue('role', item.role as Role, { shouldDirty: true })
+                                setValue('role', item.role as Role, {
+                                  shouldDirty: true,
+                                  shouldValidate: true,
+                                })
                               }
                             >
                               <div className="font-medium text-sm mb-1">{item.label}</div>

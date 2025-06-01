@@ -444,6 +444,8 @@ export default function MenuEditForm() {
                 maxSizeMB={6}
                 onFilesSelect={(files: File[]) => {
                   setNewFiles(files)
+                  // この値は使用しないので、空配列を設定して変更のみをトリガーする
+                  setValue('images', [], { shouldValidate: true, shouldDirty: true })
                 }}
                 limitFiles={3}
                 hasSelected={existingImages.length}
@@ -506,11 +508,12 @@ export default function MenuEditForm() {
                                 setValue(
                                   'categories',
                                   current.filter((c: MenuCategory) => c !== category),
-                                  { shouldValidate: true }
+                                  { shouldValidate: true, shouldDirty: true }
                                 )
                               } else {
                                 setValue('categories', [...current, category], {
                                   shouldValidate: true,
+                                  shouldDirty: true,
                                 })
                               }
                             }}
@@ -575,12 +578,15 @@ export default function MenuEditForm() {
                   value={watch('duration_min')?.toString() ?? renderDurationMin?.toString()}
                   onValueChange={(value) => {
                     if (!value) {
-                      setValue('duration_min', undefined, { shouldValidate: true })
+                      setValue('duration_min', undefined, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      })
                       return
                     }
                     const n = parseInt(value, 10)
                     if (!Number.isNaN(n)) {
-                      setValue('duration_min', n, { shouldValidate: true })
+                      setValue('duration_min', n, { shouldValidate: true, shouldDirty: true })
                     }
                   }}
                 >
@@ -617,7 +623,7 @@ export default function MenuEditForm() {
                     if (!value.trim()) return
                     const typedValue = value
                     setTargetType(typedValue)
-                    setValue('target_type', typedValue, { shouldValidate: true })
+                    setValue('target_type', typedValue, { shouldValidate: true, shouldDirty: true })
                   }}
                 >
                   <SelectTrigger className="border-border focus:border-border transition-colors">
@@ -645,7 +651,10 @@ export default function MenuEditForm() {
                     if (!value.trim()) return
                     const typedValue = value
                     setTargetGender(typedValue)
-                    setValue('target_gender', typedValue, { shouldValidate: true })
+                    setValue('target_gender', typedValue, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    })
                   }}
                 >
                   <SelectTrigger className="border-border focus:border-border transition-colors">
@@ -670,7 +679,7 @@ export default function MenuEditForm() {
               tags={currentTags}
               setTagsAction={(tags: string[]) => {
                 setCurrentTags(tags)
-                setValue('tags', tags, { shouldValidate: true })
+                setValue('tags', tags, { shouldValidate: true, shouldDirty: true })
               }}
             />
 
@@ -688,7 +697,10 @@ export default function MenuEditForm() {
                     if (value) {
                       const typedValue = value as MenuPaymentMethod
                       setPaymentMethod(typedValue)
-                      setValue('payment_method', typedValue, { shouldValidate: true })
+                      setValue('payment_method', typedValue, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      })
                     }
                   }}
                 >
@@ -759,7 +771,9 @@ export default function MenuEditForm() {
           <Switch
             id="isActive"
             checked={watch('is_active') ?? true}
-            onCheckedChange={(checked) => setValue('is_active', checked ?? true)}
+            onCheckedChange={(checked) =>
+              setValue('is_active', checked ?? true, { shouldValidate: true, shouldDirty: true })
+            }
           />
         </div>
 
