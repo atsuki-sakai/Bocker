@@ -709,191 +709,188 @@ export default function ReservationForm() {
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
-            {
-              isFirstCustomer ? (
-                <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
+            {isFirstCustomer ? (
+              <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
+                <div className="flex flex-col items-start gap-2">
                   <div className="flex flex-col items-start gap-2">
-                    <div className="flex flex-col items-start gap-2">
-                      <div className="flex items-center text-xl gap-2">
-                        <p className="text-primary font-bold">顧客検索</p>
-                      </div>
-                      <p className="text-muted-foreground text-xs">
-                        顧客無しでも予約は作成できます。
-                      </p>
+                    <div className="flex items-center text-xl gap-2">
+                      <p className="text-primary font-bold">顧客検索</p>
                     </div>
-                    <Input
-                      className="w-full my-3"
-                      placeholder="顧客を検索"
-                      value={searchName}
-                      onChange={(e) => setSearchName(e.target.value)}
-                    />
+                    <p className="text-muted-foreground text-xs">
+                      顧客無しでも予約は作成できます。
+                    </p>
                   </div>
-                  {isLoadingCustomers ? (
-                    <div className="flex items-center justify-center p-4 rounded-md">
-                      <Loader2 className="h-5 w-5 animate-spin mr-2 text-active" />
-                      <span className="text-active text-sm">顧客を検索中...</span>
-                    </div>
-                  ) : customers && customers.length > 0 ? (
-                    <div>
-                      <p className="text-primary text-sm font-bold mb-1">検索結果</p>
-                      <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
-                        <PopoverTrigger asChild>
-                          <p className="text-primary text-sm mb-1 border border-border p-2 rounded-md bg-input">
-                            一致した顧客を選択する
-                          </p>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-full max-w-[300px] p-2 overflow-y-auto h-fit"
-                          onOpenAutoFocus={(event) => event.preventDefault()}
-                        >
-                          <Command>
-                            <div className="flex items-center justify-between border-b">
-                              <p className="text-muted-foreground text-sm">検索結果</p>
-                              <button
-                                type="button"
-                                onClick={() => setCustomerPopoverOpen(false)}
-                                className="p-2 text-muted-foreground "
-                              >
-                                <X className="w-4 h-4" aria-hidden="true" />
-                                <span className="sr-only">閉じる</span>
-                              </button>
-                            </div>
-                            <CommandList className="max-h-[300px] py-2 overflow-y-auto">
-                              {customers.map((customer) => {
-                                return (
-                                  <CommandItem
-                                    key={customer.uid}
-                                    className="flex items-center justify-between cursor-pointer"
-                                    onSelect={() => {
-                                      setSelectedCustomer(customer)
-                                      setCustomerPopoverOpen(false)
-                                    }}
-                                  >
-                                    <div className="flex items-start gap-1 text-xs">
-                                      {customer.last_name && customer.last_name !== '未登録'
-                                        ? customer.last_name + ' '
-                                        : ''}
-                                      {customer.first_name && customer.first_name !== '未登録'
-                                        ? customer.first_name + ' '
-                                        : ''}
-                                      {customer.line_user_name &&
-                                      customer.line_user_name !== '未登録'
-                                        ? customer.line_user_name + '　'
-                                        : ''}
-                                      {customer.phone ? 'tel:' + customer.phone : ''}
-                                    </div>
-                                  </CommandItem>
-                                )
-                              })}
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  ) : searchName.length > 0 ? (
-                    <p className="text-warning-foreground text-sm text-center bg-warning border border-warning-foreground p-4 rounded-md">
-                      顧客が見つかりません
-                    </p>
-                  ) : (
-                    <p className="text-muted-foreground text-sm text-center bg-muted border border-border p-4 rounded-md">
-                      顧客を検索してください。
-                    </p>
-                  )}
-                  {selectedCustomer && (
-                    <div className="flex flex-col gap-2 mt-2 bg-active-foreground border border-active p-3 rounded-md">
-                      <p className="text-active text-sm font-bold">予約する顧客</p>
-                      <p className="text-active text-sm">
-                        {selectedCustomer.last_name ? selectedCustomer.last_name + ' ' : null}
-                        {selectedCustomer.first_name ? selectedCustomer.first_name + ' ' : null}
-                        {selectedCustomer.line_user_name
-                          ? selectedCustomer.line_user_name + '　'
-                          : null}
-                        {selectedCustomer.phone ? 'tel:' + selectedCustomer.phone : null}
-                      </p>
-                    </div>
-                  )}
+                  <Input
+                    className="w-full my-3"
+                    placeholder="顧客を検索"
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                  />
                 </div>
-              ) : (
-                <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
-                  <h4 className="text-primary text-xl font-bold">顧客情報</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <ZodTextField
-                      register={register}
-                      name="customer_last_name"
-                      placeholder="姓"
-                      className="w-full"
-                      errors={errors}
-                      label="姓"
-                    />
-                    <ZodTextField
-                      register={register}
-                      name="customer_first_name"
-                      placeholder="名"
-                      className="w-full"
-                      errors={errors}
-                      label="名"
-                    />
+                {isLoadingCustomers ? (
+                  <div className="flex items-center justify-center p-4 rounded-md">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2 text-active" />
+                    <span className="text-active text-sm">顧客を検索中...</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <ZodTextField
-                      register={register}
-                      type="tel"
-                      name="customer_phone"
-                      placeholder="電話番号"
-                      className="w-full"
-                      errors={errors}
-                      label="電話番号"
-                    />
-                    <div className="flex flex-col">
-                      <Label className="text-sm ml-2">性別</Label>
-                      <Select
-                        value={watch('customer_gender') ?? ''}
-                        onValueChange={(value: string) => {
-                          setValue('customer_gender', value as Gender)
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="性別" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {GENDER_VALUES.map((gender) => (
-                            <SelectItem key={gender} value={gender}>
-                              {convertGender(gender, true)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                ) : customers && customers.length > 0 ? (
                   <div>
-                    <Label className="text-sm ml-2">生年月日</Label>
-                    <Input
-                      type="date"
-                      value={watch('customer_birthday') ?? ''}
-                      onChange={(e) => setValue('customer_birthday', e.target.value)}
-                    />
+                    <p className="text-primary text-sm font-bold mb-1">検索結果</p>
+                    <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <p className="text-primary text-sm mb-1 border border-border p-2 rounded-md bg-input">
+                          一致した顧客を選択する
+                        </p>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-full max-w-[300px] p-2 overflow-y-auto h-fit"
+                        onOpenAutoFocus={(event) => event.preventDefault()}
+                      >
+                        <Command>
+                          <div className="flex items-center justify-between border-b">
+                            <p className="text-muted-foreground text-sm">検索結果</p>
+                            <button
+                              type="button"
+                              onClick={() => setCustomerPopoverOpen(false)}
+                              className="p-2 text-muted-foreground "
+                            >
+                              <X className="w-4 h-4" aria-hidden="true" />
+                              <span className="sr-only">閉じる</span>
+                            </button>
+                          </div>
+                          <CommandList className="max-h-[300px] py-2 overflow-y-auto">
+                            {customers.map((customer) => {
+                              return (
+                                <CommandItem
+                                  key={customer.uid}
+                                  className="flex items-center justify-between cursor-pointer"
+                                  onSelect={() => {
+                                    setSelectedCustomer(customer)
+                                    setCustomerPopoverOpen(false)
+                                  }}
+                                >
+                                  <div className="flex items-start gap-1 text-xs">
+                                    {customer.last_name && customer.last_name !== '未登録'
+                                      ? customer.last_name + ' '
+                                      : ''}
+                                    {customer.first_name && customer.first_name !== '未登録'
+                                      ? customer.first_name + ' '
+                                      : ''}
+                                    {customer.line_user_name && customer.line_user_name !== '未登録'
+                                      ? customer.line_user_name + '　'
+                                      : ''}
+                                    {customer.phone ? 'tel:' + customer.phone : ''}
+                                  </div>
+                                </CommandItem>
+                              )
+                            })}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                  <TagInput
-                    tags={watch('customer_tags') ?? []}
-                    setTagsAction={(value: string[]) => setValue('customer_tags', value)}
+                ) : searchName.length > 0 ? (
+                  <p className="text-warning-foreground text-sm text-center bg-warning border border-warning-foreground p-4 rounded-md">
+                    顧客が見つかりません
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground text-sm text-center bg-muted border border-border p-4 rounded-md">
+                    顧客を検索してください。
+                  </p>
+                )}
+                {selectedCustomer && (
+                  <div className="flex flex-col gap-2 mt-2 bg-active-foreground border border-active p-3 rounded-md">
+                    <p className="text-active text-sm font-bold">予約する顧客</p>
+                    <p className="text-active text-sm">
+                      {selectedCustomer.last_name ? selectedCustomer.last_name + ' ' : null}
+                      {selectedCustomer.first_name ? selectedCustomer.first_name + ' ' : null}
+                      {selectedCustomer.line_user_name
+                        ? selectedCustomer.line_user_name + '　'
+                        : null}
+                      {selectedCustomer.phone ? 'tel:' + selectedCustomer.phone : null}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
+                <h4 className="text-primary text-xl font-bold">顧客情報</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <ZodTextField
+                    register={register}
+                    name="customer_last_name"
+                    placeholder="姓"
+                    className="w-full"
+                    errors={errors}
+                    label="姓"
                   />
-                  <Textarea
-                    placeholder="備考"
-                    rows={8}
-                    value={watch('customer_notes') ?? ''}
-                    onChange={(e) => setValue('customer_notes', e.target.value)}
+                  <ZodTextField
+                    register={register}
+                    name="customer_first_name"
+                    placeholder="名"
+                    className="w-full"
+                    errors={errors}
+                    label="名"
                   />
                 </div>
-              )
-            }
-            ;<div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
+                <div className="grid grid-cols-2 gap-2">
+                  <ZodTextField
+                    register={register}
+                    type="tel"
+                    name="customer_phone"
+                    placeholder="電話番号"
+                    className="w-full"
+                    errors={errors}
+                    label="電話番号"
+                  />
+                  <div className="flex flex-col">
+                    <Label className="text-sm ml-2">性別</Label>
+                    <Select
+                      value={watch('customer_gender') ?? ''}
+                      onValueChange={(value: string) => {
+                        setValue('customer_gender', value as Gender)
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="性別" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GENDER_VALUES.map((gender) => (
+                          <SelectItem key={gender} value={gender}>
+                            {convertGender(gender, true)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm ml-2">生年月日</Label>
+                  <Input
+                    type="date"
+                    value={watch('customer_birthday') ?? ''}
+                    onChange={(e) => setValue('customer_birthday', e.target.value)}
+                  />
+                </div>
+                <TagInput
+                  tags={watch('customer_tags') ?? []}
+                  setTagsAction={(value: string[]) => setValue('customer_tags', value)}
+                />
+                <Textarea
+                  placeholder="備考"
+                  rows={8}
+                  value={watch('customer_notes') ?? ''}
+                  onChange={(e) => setValue('customer_notes', e.target.value)}
+                />
+              </div>
+            )}
+            <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
               <div className="flex items-center gap-2">
                 <p className="text-primary font-bold text-xl">予約するメニュー</p>
               </div>
               <span className="text-muted-foreground text-xs">
                 ※メニューは最大5件まで選択できます。
               </span>
-              ;<Popover open={menuPopoverOpen} onOpenChange={setMenuPopoverOpen}>
+              <Popover open={menuPopoverOpen} onOpenChange={setMenuPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -1006,43 +1003,39 @@ export default function ReservationForm() {
                   </Command>
                 </PopoverContent>
               </Popover>
-              {
-                errors.menus && <p className="text-destructive text-sm">{errors.menus.message}</p>
-              }
-              {
-                selectedMenus.length > 0 && (
-                  <div className="mt-2 bg-active-foreground p-3 rounded-md border border-active">
-                    <Label className=" block text-active font-bold mb-2">選択中のメニュー</Label>
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {uniqMenuIds.map((menuId) => {
-                        const menu = menus?.find((m) => m._id === menuId)
-                        return menu ? (
-                          <div
-                            key={menuId}
-                            className="bg-background px-3 py-1 rounded-md flex items-center gap-2 border border-border"
-                          >
-                            <span className="text-xs">
-                              {menu.name}
-                              {(() => {
-                                const c = getMenuCount(menuId)
-                                return c > 1 ? ` ×${c}` : ''
-                              })()}
-                            </span>
+              {errors.menus && <p className="text-destructive text-sm">{errors.menus.message}</p>}
+              {selectedMenus.length > 0 && (
+                <div className="mt-2 bg-active-foreground p-3 rounded-md border border-active">
+                  <Label className=" block text-active font-bold mb-2">選択中のメニュー</Label>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {uniqMenuIds.map((menuId) => {
+                      const menu = menus?.find((m) => m._id === menuId)
+                      return menu ? (
+                        <div
+                          key={menuId}
+                          className="bg-background px-3 py-1 rounded-md flex items-center gap-2 border border-border"
+                        >
+                          <span className="text-xs">
+                            {menu.name}
+                            {(() => {
+                              const c = getMenuCount(menuId)
+                              return c > 1 ? ` ×${c}` : ''
+                            })()}
+                          </span>
 
-                            <button
-                              type="button"
-                              onClick={() => removeMenuAll(menuId)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <X className="h-4 w-4 text-destructive" />
-                            </button>
-                          </div>
-                        ) : null
-                      })}
-                    </div>
+                          <button
+                            type="button"
+                            onClick={() => removeMenuAll(menuId)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <X className="h-4 w-4 text-destructive" />
+                          </button>
+                        </div>
+                      ) : null
+                    })}
                   </div>
-                )
-              }
+                </div>
+              )}
             </div>
           </div>
           {selectedMenus.length > 0 && availableStaff.length > 0 && (
