@@ -78,7 +78,19 @@ export const create = mutation({
       });
     }
 
-    return await createRecord(ctx, 'staff', args)
+    return await createRecord(ctx, 'staff', {
+      tenant_id: args.tenant_id, // テナントID
+      org_id: args.org_id, // 組織ID
+      name: args.name, // スタッフ名
+      age: args.age, // 年齢
+      email: args.email, // メールアドレス
+      gender: args.gender, // 性別
+      instagram_link: args.instagram_link, // インスタグラムリンク 
+      description: args.description, // 自己紹介
+      images: args.images, // 画像
+      tags: args.tags, // タグ
+      is_active: args.is_active, // 有効/無効
+    })
   },
 })
 

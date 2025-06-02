@@ -49,7 +49,20 @@ export const create = mutation({
         code: 'BAD_REQUEST',
       });
     }
-    return await createRecord(ctx, 'option', args)
+    return await createRecord(ctx, 'option', {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      name: args.name, // オプションメニュー名
+      unit_price: args.unit_price, // 価格
+      sale_price: args.sale_price, // セール価格
+      order_limit: args.order_limit, // 注文制限
+      in_stock: args.in_stock, // 在庫数
+      duration_min: args.duration_min, // 時間(分)
+      tags: args.tags, // タグ
+      description: args.description, // 説明
+      images: args.images, // 画像
+      is_active: args.is_active, // 有効/無効フラグ
+    })
   },
 })
 export const update = mutation({
