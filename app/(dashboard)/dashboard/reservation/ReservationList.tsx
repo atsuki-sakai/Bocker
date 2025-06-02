@@ -343,11 +343,11 @@ export default function ReservationList() {
       newActiveTab = ReservationGroup.TODAY // デフォルト
     }
 
-    // 現在のactiveTabと異なる場合のみ更新
-    if (newActiveTab && newActiveTab !== activeTab) {
+    // 現在選択中のタブに予約が無い場合のみ、自動でタブを切り替える
+    if (counts[activeTab as ReservationGroup] === 0 && newActiveTab && newActiveTab !== activeTab) {
       setActiveTab(newActiveTab)
     }
-  }, [groupedReservations, activeTab])
+  }, [groupedReservations])
 
   if (isLoading) return <Loading />
 
