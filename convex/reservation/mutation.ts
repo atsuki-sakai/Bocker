@@ -13,6 +13,63 @@ import {
   deleteReservationWithDetails
 } from '@/convex/reservation/reservation.helpers';
 
+/**
+
+1. Convex ミューテーションのトランザクショナル性
+
+Convex のミューテーションは内部的に Optimistic Concurrency Control （OCC）を用いており、同一テーブルへの同時書き込みが競合すると自動的に再試行されるため、同一ミューテーション内でチェック→挿入を連続的に実行することで、外部呼び出しを挟む方法よりも整合性が担保されやすいです  ￼ ￼。
+	•	たとえば、checkDoubleBooking を別クエリとして呼び出す場合、クエリ実行後に別のリクエストで同じ時間帯の予約が入る可能性があります。しかし、ミューテーション内にチェックロジックを内包し、直後に挿入する実装であれば、Convex が提供するトランザクション的な実行保証（シリアライズ処理）が働き、最後まで同じミューテーション内で連続実行されます  ￼ ￼。
+	•	さらに、Convex のサンドボックス化された JavaScript 実行環境により、ミューテーション内で外部副作用を起こさず、データベース権限・読み書き以外の処理は許されないため、途中で外部 API を呼んで結果が変わるリスクもありません  ￼。
+
+⸻
+
+2. レースコンディション発生メカニズムと対策
+
+2.1 レースコンディションの原理
+
+レースコンディションは「複数の処理が同時に同じデータにアクセスし、更新のタイミングによって結果が不定になる状況」です  ￼ ￼。例えば、予約の重複チェックをクエリとして呼び出した直後に別リクエストが同時間帯の予約を挿入してしまうと、チェック後に矛盾した結果で予約を受け付けてしまう恐れがあります  ￼。
+
+2.2 Convex における対策
+	•	同一ミューテーション内での連続実行
+Convex ミューテーションはサーバーサイドで一度にバッチ的に実行され、最終的な書き込みを OCC によって試行します。これにより、同一ミューテーション内で重複チェック→挿入を並列にせず直列に処理すれば、チェックと挿入の間に別プロセスが介入しづらくなります  ￼ ￼。
+	•	OCC による自動再試行
+それでも、極めて同時刻に複数ミューテーションが到達するケースでは、そのタイミングで同一レコードに対する書き込み衝突が発生し、Convex の OCC により一方のミューテーションが失敗して再試行されます。この再試行によって、結果として重複チェックの結果が再取得され、最終的に一方のみが書き込まれる仕組みです  ￼。
+
+⸻
+
+3. 以下の順序で処理を行っています。
+	1.	入力バリデーション・スタッフ・組織の存在チェック
+	2.	reservation_config から availableSheet を取得
+	3.	組織全体で同日・確定済みの既存予約をクエリし、時間帯重複数 overlapCount を算出
+	•	overlapCount >= availableSheet の場合は即例外投げ
+	4.	同じスタッフ・同日・確定済みで時間帯が重複する予約をクエリし、1件でも存在すれば例外投げ
+	5.	例外が発生しなければ ctx.db.insert('reservation', …) で新規予約レコードを作成
+	6.	createReservationWithDetails で関連テーブルにも同一関数内でレコードを挿入
+
+  「重複チェック→挿入」を同じミューテーション内にまとめた形です  ￼ ￼。
+	•	予約件数上限 (availableSheet) のチェックと挿入を同じ関数内で直列実行
+たとえば orgReservations を取得し、overlapCount を算出した後、すぐにエラー投げまたは次ステップへ進み、外部の別クエリ呼び出しを挟んでいません。これにより、チェック結果と挿入の間に別リクエストが介入する“間”がかなり小さくなっています  ￼ ￼。
+	•	スタッフ単位の時間帯重複チェックも同様に同関数内で行い、そのままエラー投げまたは挿入へ。したがって、チェック→挿入の連続性が保たれています  ￼ ￼。
+
+よって、多少の同時リクエストがあったとしても、Convex の OCC による自動再試行メカニズムが働き、最終的に正しいデータ整合性が担保されるため、実運用上「重複予約を許さない」要件を十分満たすといえます  ￼ ￼。
+
+⸻
+
+4. 注意点およびさらに安全性を高めるための提案
+
+4.1 可能な OCC エラーの捕捉と再試行ロジック
+
+Convex の OCC エラーは自動的に再試行されますが、ミューテーション内で何かしら例外をキャッチしてしまうと自動再試行がスキップされる恐れがあります  ￼。
+	•	もし独自に try/catch を追加している場合は、ConvexError 以外の例外は再スローするようにし、OCC が発生したときに Convex の再試行機構が生きるように注意してください  ￼。
+
+4.2 インデックス設計とクエリ最適化
+	•	withIndex('by_tenant_org_date_status_archive', ...) と withIndex('by_tenant_org_staff_date_status_archive', ...) の両方を使っていますが、インデックスが適切に設定されていることでクエリが高速化され、結果的にチェック→挿入のタイミングラグがさらに小さくなります  ￼。
+	•	インデックスのカーディナリティ（値の種類）が高い場合、実行プランによってはサブインデックスが使われず全表走査になる可能性もあるため、Convex ダッシュボードの「Query Performance」セクションで実行時間を確認し、必要なら追加インデックスを検討すると良いでしょう  ￼。
+
+4.3 マルチインスタンス環境での検証
+	•	複数クライアント（たとえばウェブとモバイルアプリ）が同時に予約を試みた場合の挙動を本番環境と同等の条件で負荷テストすることで、意図しないシナリオ（例：深夜バッチや外部システム連携による予約一括挿入時など）が発生したときに正常に再試行が起きるかを確認しておくと安心です  ￼ ￼。
+*/
+
 // 予約の追加処理
 // 予約作成に必要な情報を受け取り、入力バリデーションやスタッフ・組織の存在確認を行う。
 // さらに、予約時間の重複チェック（Race condition防止）を実施し、問題なければ予約と予約詳細を同時に作成する。
@@ -21,7 +78,7 @@ export const create = mutation({
   args: {
     tenant_id: v.id('tenant'), // テナントID
     org_id: v.id('organization'), // 組織ID
-    customer_id: v.string(), // Supabase 側の customer.id
+    customer_id: v.optional(v.string()), // Supabase 側の customer.id
     staff_id: v.id('staff'), // スタッフID
     customer_name: v.string(), // 顧客名
     staff_name: v.string(), // スタッフ名
@@ -47,7 +104,6 @@ export const create = mutation({
     validateDateStrToDate(args.date, 'date')
     validateRequiredNumber(args.start_time_unix, 'start_time_unix')
     validateRequiredNumber(args.end_time_unix, 'end_time_unix')
-    validateRequired(args.customer_id, 'customer_id')
     validateRequired(args.org_id, 'org_id')
 
     // スタッフIDに対応するスタッフが存在するかを確認し、存在しなければエラーを返す
@@ -83,14 +139,70 @@ export const create = mutation({
     }
 
     // 予約時間の重複を防ぐため、同じスタッフ・日時での予約が既に存在しないかをチェックする（Race condition防止）
-    const isOverlapping = await ctx.runQuery(api.reservation.query.checkDoubleBooking, {
-      tenant_id: args.tenant_id,
-      org_id: args.org_id,
-      staff_id: args.staff_id,
-      date: args.date,
-      start_time_unix: args.start_time_unix,
-      end_time_unix: args.end_time_unix,
-    });
+    const reservationConfig = await ctx.db.query('reservation_config').withIndex('by_tenant_org_archive', (q) =>
+      q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+    ).first();
+  
+    // 店舗ごとの同時受付可能席数を取得
+    const availableSheet = reservationConfig?.available_sheet || 3;
+  
+    // 組織全体で、該当日の confirmed かつ is_archive: false の予約のみ取得
+    const orgReservations = await ctx.db
+      .query('reservation')
+      .withIndex('by_tenant_org_date_status_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('date', args.date)
+          .eq('status', 'confirmed')
+          .eq('is_archive', false)
+      )
+      .collect();
+  
+    const overlapCount = orgReservations.filter((reservation) => {
+      // 時間帯が一部でも重なればtrue
+      return (
+        reservation.start_time_unix < args.end_time_unix &&
+        reservation.end_time_unix > args.start_time_unix
+      );
+    }).length;
+  
+    if (overlapCount >= availableSheet) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.CONFLICT,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'reservation.checkReservationOverlap',
+        message: 'この時間帯の最大同時予約数は上限です。別の時間を選択してください。',
+        code: 'CONFLICT',
+        status: 409,
+        details: {
+          ...args,
+        },
+      });
+    }
+  
+    // 指定された条件に合致する予約を検索し、
+    // 時間帯が重複している予約が存在するかを判定
+    const query = ctx.db
+      .query('reservation')
+      .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
+        q
+          .eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('staff_id', args.staff_id)
+          .eq('date', args.date)
+          .eq('status', 'confirmed')
+          .eq('is_archive', false)
+      )
+      .filter((q) =>
+        q.and(
+          // 時間の重複をチェック（開始時間が相手の終了時間前、終了時間が相手の開始時間後）
+          q.lt(q.field('start_time_unix'), args.end_time_unix),
+          q.gt(q.field('end_time_unix'), args.start_time_unix),
+        )
+      );
+  
+    const isOverlapping = await query.first();
 
     if (isOverlapping) {
       throw new ConvexError({

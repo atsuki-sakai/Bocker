@@ -16,6 +16,7 @@ import { convertGender, ReservationMenu, ReservationOption } from '@/convex/type
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
+import { useMutation } from 'convex/react'
 
 // 入力値を数値または undefined に変換するプリプロセス関数
 const preprocessNumber = (val: unknown) => {
@@ -271,6 +272,9 @@ export default function ReservationForm() {
       initialNumItems: 100,
     }
   )
+
+  // Mutation
+  const createReservation = useMutation(api.reservation.mutation.create)
 
   const {
     register,
@@ -583,23 +587,11 @@ export default function ReservationForm() {
   const onSubmit = async (data: z.infer<typeof schemaReservation>) => {
     if (!tenantId || !orgId) return
     try {
-      const isAvailable = await fetchQuery(api.reservation.query.checkDoubleBooking, {
-        tenant_id: tenantId,
-        org_id: orgId,
-        staff_id: selectedStaffId as Id<'staff'>,
-        date: format(selectdate as Date, 'yyyy-MM-dd'),
-        start_time_unix: data.start_time_unix as number,
-        end_time_unix: data.end_time_unix as number,
-      })
-      if (!isAvailable) {
-        toast.error('同時に予約できる人数を超えています。')
-        return
-      }
-
+      let customerUid
       if (!isFirstCustomer) {
         // 新規顧客の場合、CustomerRepositoryで顧客を作成
         try {
-          const customerUid = crypto.randomUUID()
+          customerUid = crypto.randomUUID()
           await customerRepository.createCustomerWithDetailsAndPoints(
             {
               uid: customerUid,
@@ -627,6 +619,31 @@ export default function ReservationForm() {
           return
         }
       }
+
+      await createReservation({
+        tenant_id: tenantId, // テナントID
+        org_id: orgId, // 組織ID
+        customer_id: isFirstCustomer ? (customerUid ?? '') : (selectedCustomer?.uid ?? ''), // Supabase 側の customer.id
+        staff_id: selectedStaffId as Id<'staff'>, // スタッフID
+        customer_name: selectedCustomer?.last_name + ' ' + selectedCustomer?.first_name, // 顧客名
+        staff_name: selectStaff?.name ?? '', // スタッフ名
+        status: 'confirmed', // 予約ステータス
+        date: format(selectdate as Date, 'yyyy-MM-dd'), // 予約日 YYYY-MM-DD
+        start_time_unix: data.start_time_unix as number, // 予約開始時間
+        end_time_unix: data.end_time_unix as number, // 予約終了時間
+        total_price: totalPriceCalculated, // 合計金額
+        coupon_id: undefined, // クーポンID
+        payment_method: 'cash', // 支払方法
+        stripe_checkout_session_id: undefined, // Stripe Checkout Session ID
+        payment_status: 'pending', // 支払ステータス
+        menus: selectedMenus, // メニュー
+        options: selectedOptions, // オプション
+        extra_charge: extraChargePrice, // 追加料金
+        use_points: undefined, // 使用ポイント数
+        coupon_discount: undefined, // クーポン割引額
+        featured_hair_images: [], // フィーチャー画像
+        notes: data.notes ?? '', // メモ
+      })
 
       toast.success('予約が完了しました')
       router.push('/dashboard/reservation')

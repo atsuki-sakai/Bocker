@@ -52,7 +52,7 @@ export async function createReservationWithDetails(
   args: {
     tenant_id: Id<'tenant'>;
     org_id: Id<'organization'>;
-    customer_id: string;
+    customer_id?: string;
     staff_id: Id<'staff'>;
     customer_name: string;
     staff_name: string;
