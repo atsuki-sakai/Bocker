@@ -4,16 +4,28 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
-    domains: ['placehold.co', 'storage.googleapis.com', 'via.placeholder.com', 'placehold.jp'],
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'placehold.co',
+      },
+      {
+        protocol: 'https',
         hostname: 'storage.googleapis.com',
-        pathname: '/bocker_storage/**',
+        pathname: '/bocker_storage/**', // 必要ならパス制限
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.jp',
       },
     ],
   },
-}
+};
+
 
 export default withSentryConfig(nextConfig, {
 // For all available options, see:
