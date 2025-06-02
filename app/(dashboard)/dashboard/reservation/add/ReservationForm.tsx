@@ -438,7 +438,7 @@ export default function ReservationForm() {
     return selectedStaffId
       ? (availableStaff.find((s) => s._id === selectedStaffId)?.extra_charge ?? 0)
       : 0
-  }, [selectedStaffId, availableStaff?.length])
+  }, [selectedStaffId, availableStaff])
 
   // 総合計金額をフォームの totalPrice にセット
   const totalPriceCalculated = React.useMemo(() => {

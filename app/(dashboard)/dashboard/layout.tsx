@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'Bocker - ダッシュボード',
   description: 'Bockerはサロンの予約管理を便利にするサービスです。',
   icons: {
-    icon: '../../icon0.svg',
+    icon: '/icon0.svg',
   },
 }
 // global.d.ts
