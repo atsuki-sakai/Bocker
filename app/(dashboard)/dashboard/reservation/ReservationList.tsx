@@ -347,7 +347,7 @@ export default function ReservationList() {
     if (counts[activeTab as ReservationGroup] === 0 && newActiveTab && newActiveTab !== activeTab) {
       setActiveTab(newActiveTab)
     }
-  }, [groupedReservations])
+  }, [groupedReservations, activeTab])
 
   if (isLoading) return <Loading />
 

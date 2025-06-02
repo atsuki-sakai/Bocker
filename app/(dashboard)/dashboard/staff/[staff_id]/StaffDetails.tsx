@@ -124,7 +124,7 @@ export default function StaffDetails() {
       // 削除処理中フラグを立てて、クエリの実行を停止
       setIsDeleting(true)
 
-      if (staffAllData?.images) {
+      if (staffAllData?.images[0]?.original_url) {
         await deleteImage({
           originalUrl: staffAllData.images[0].original_url,
         })

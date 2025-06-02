@@ -53,7 +53,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandList, CommandInput, CommandItem } from '@/components/ui/command'
 import { Label } from '@/components/ui/label'
 import { Loader2, X, Plus, Minus } from 'lucide-react'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useZodForm } from '@/hooks/useZodForm'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { ZodTextField } from '@/components/common'
@@ -290,33 +290,57 @@ export default function ReservationForm() {
   // 選択した日付を "yyyy-MM-dd" 形式で保持
   const formattedDate = selectdate ? format(selectdate, 'yyyy-MM-dd') : ''
 
-  // 顧客検索のためのuseEffect
-  useEffect(() => {
-    const searchCustomers = async () => {
-      if (!tenantId || !orgId) return
-      if (debouncedSearchName.length === 0) {
-        setCustomers([])
-        return
-      }
+  // 顧客検索の最適化されたコールバック
+  const searchCustomers = useCallback(async () => {
+    console.log(`[ReservationForm] searchCustomers called with:`, {
+      tenantId,
+      orgId,
+      debouncedSearchName,
+      searchNameLength: debouncedSearchName.length,
+    })
 
-      setIsLoadingCustomers(true)
-      try {
-        const { data } = await customerRepository.list({
-          page: 1,
-          pageSize: 100,
-        })
-        setCustomers(data)
-      } catch (error) {
-        console.error('Error searching customers:', error)
-        showErrorToast(error)
-        setCustomers([])
-      } finally {
-        setIsLoadingCustomers(false)
-      }
+    if (!tenantId || !orgId || debouncedSearchName === '') {
+      console.log(`[ReservationForm] Early return: missing params or empty search`)
+      setCustomers([])
+      return
     }
 
+    setIsLoadingCustomers(true)
+    try {
+      console.log(`[ReservationForm] Calling customerRepository.findBySearchableText...`)
+      const result = await customerRepository.findBySearchableText(
+        tenantId,
+        orgId,
+        debouncedSearchName,
+        { page: 1, pageSize: 50 }
+      )
+      console.log(`[ReservationForm] Search result:`, {
+        dataLength: result.data.length,
+        count: result.count,
+        hasMore: result.hasMore,
+        firstCustomer: result.data[0]
+          ? {
+              uid: result.data[0].uid,
+              firstName: result.data[0].first_name,
+              lastName: result.data[0].last_name,
+              searchableText: result.data[0].searchable_text,
+            }
+          : null,
+      })
+      setCustomers(result.data)
+    } catch (error) {
+      console.error('[ReservationForm] Error searching customers:', error)
+      showErrorToast(error)
+      setCustomers([])
+    } finally {
+      setIsLoadingCustomers(false)
+    }
+  }, [tenantId, orgId, debouncedSearchName, customerRepository, showErrorToast])
+
+  // 顧客検索の実行
+  useEffect(() => {
     searchCustomers()
-  }, [tenantId, orgId, debouncedSearchName, showErrorToast])
+  }, [searchCustomers])
 
   useEffect(() => {
     if (!tenantId || !orgId) return
@@ -341,70 +365,46 @@ export default function ReservationForm() {
     })
   }, [tenantId, orgId, reset])
 
-  useEffect(() => {
+  // スタッフ取得の最適化されたコールバック
+  const getAvailableStaffForAllMenus = useCallback(async () => {
     if (selectedMenus.length === 0 || !tenantId || !orgId) {
       setAvailableStaff([])
       return
     }
 
-    const getAvailableStaffForAllMenus = async () => {
-      setIsLoadingStaff(true)
-      try {
-        // 最初のメニューに対応するスタッフを取得
-        const firstMenuStaffs = await fetchQuery(api.staff.query.findByAvailableStaffs, {
-          tenant_id: tenantId,
-          org_id: orgId,
-          menu_ids: selectedMenus.map((m) => m.id),
-        })
+    setIsLoadingStaff(true)
+    try {
+      // 全メニューIDを一度に渡してスタッフを取得
+      const eligibleStaff = await fetchQuery(api.staff.query.findByAvailableStaffs, {
+        tenant_id: tenantId,
+        org_id: orgId,
+        menu_ids: selectedMenus.map((m) => m.id),
+      })
 
-        if (selectedMenus.length === 1) {
-          // 単一メニューの場合はそのまま設定
-          setAvailableStaff(firstMenuStaffs)
-        } else {
-          // 複数メニューの場合は、各メニューに対応するスタッフを取得して共通するスタッフを抽出
-          let eligibleStaff = [...firstMenuStaffs]
-
-          // 2番目以降のメニューについてループ
-          for (let i = 1; i < selectedMenus.length; i++) {
-            const menuId = selectedMenus[i].id
-            const menuStaffs = (await fetchQuery(api.staff.query.findAvailableStaffByMenu, {
-              tenant_id: tenantId,
-              org_id: orgId,
-              menu_id: menuId,
-            })) as AvailableStaff[]
-
-            // 共通するスタッフのみをフィルタリング
-            eligibleStaff = eligibleStaff.filter((staff) =>
-              menuStaffs.some((menuStaff) => menuStaff._id === staff._id)
-            )
-
-            // 共通するスタッフがいない場合は早期リターン
-            if (eligibleStaff.length === 0) break
-          }
-
-          setAvailableStaff(eligibleStaff)
-        }
-      } catch (error) {
-        showErrorToast(error)
-        setAvailableStaff([])
-      } finally {
-        setIsLoadingStaff(false)
-      }
+      setAvailableStaff(eligibleStaff)
+    } catch (error) {
+      showErrorToast(error)
+      setAvailableStaff([])
+    } finally {
+      setIsLoadingStaff(false)
     }
-
-    getAvailableStaffForAllMenus()
   }, [selectedMenus, tenantId, orgId, showErrorToast])
+
+  // スタッフ取得の実行
+  useEffect(() => {
+    getAvailableStaffForAllMenus()
+  }, [getAvailableStaffForAllMenus])
 
   // 合計所要時間 (メニューとオプションの timeToMin を合算)
   const totalTimeMinutes = React.useMemo(() => {
     const menuTime = selectedMenus.reduce((sum, item) => {
-      const menu = menus.find((m) => m._id === item.id)
+      const menu = menus?.find((m) => m._id === item.id)
       return sum + (menu?.duration_min ?? 0)
     }, 0)
 
     // ✅ 数量を掛ける
     const optionTime = selectedOptions.reduce((sum, item) => {
-      const option = options.find((o) => o._id === item.id)
+      const option = options?.find((o) => o._id === item.id)
       return sum + (option?.duration_min ?? 0) * item.quantity
     }, 0)
 
@@ -414,7 +414,7 @@ export default function ReservationForm() {
   // 選択されたメニューの合計金額 (salePrice が 0 か未定義の場合は unitPrice)
   const menuTotalPrice = React.useMemo(() => {
     return selectedMenus.reduce((sum, item) => {
-      const menu = menus.find((m) => m._id === item.id)
+      const menu = menus?.find((m) => m._id === item.id)
       if (!menu) return sum
       const price =
         menu.sale_price && menu.sale_price > 0 ? menu.sale_price : (menu.unit_price ?? 0)
@@ -425,7 +425,7 @@ export default function ReservationForm() {
   // optionTotalPrice
   const optionTotalPrice = React.useMemo(() => {
     return selectedOptions.reduce((sum, item) => {
-      const option = options.find((o) => o._id === item.id)
+      const option = options?.find((o) => o._id === item.id)
       if (!option) return sum
       const price =
         option.sale_price && option.sale_price > 0 ? option.sale_price : (option.unit_price ?? 0)
@@ -438,7 +438,7 @@ export default function ReservationForm() {
     return selectedStaffId
       ? (availableStaff.find((s) => s._id === selectedStaffId)?.extra_charge ?? 0)
       : 0
-  }, [selectedStaffId, availableStaff])
+  }, [selectedStaffId, availableStaff?.length])
 
   // 総合計金額をフォームの totalPrice にセット
   const totalPriceCalculated = React.useMemo(() => {
@@ -451,40 +451,42 @@ export default function ReservationForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalPriceCalculated, menuTotalPrice])
 
-  // 日付とスタッフの変更で空き時間を取得
-  useEffect(() => {
-    const getAvailableTimeSlots = async () => {
-      if (selectedStaffId && tenantId && orgId && selectdate && totalTimeMinutes) {
-        // 日付をYYYY-MM-DD形式に変換
-        const formattedDate = format(selectdate, 'yyyy-MM-dd')
+  // 時間スロット取得の最適化されたコールバック
+  const getAvailableTimeSlots = useCallback(async () => {
+    if (!selectedStaffId || !tenantId || !orgId || !selectdate || !totalTimeMinutes) {
+      setAvailableTimeSlots([])
+      return
+    }
 
-        try {
-          // newAvailableTimeSlotsはスタッフごとの配列を返す
-          const result = await fetchQuery(api.reservation.query.calculateReservationTime, {
-            tenant_id: tenantId,
-            org_id: orgId,
-            staff_id: selectedStaffId,
-            date: formattedDate,
-            duration_min: totalTimeMinutes,
-          })
+    try {
+      // 日付をYYYY-MM-DD形式に変換
+      const formattedDate = format(selectdate, 'yyyy-MM-dd')
 
-          // 結果が配列で返され、選択したスタッフのスロットを含む場合
-          if (Array.isArray(result) && result.length > 0) {
-            setAvailableTimeSlots(result)
-          } else {
-            setAvailableTimeSlots([])
-          }
-        } catch (error) {
-          showErrorToast(error)
-          setAvailableTimeSlots([])
-        }
+      // 空き時間スロットを取得
+      const result = await fetchQuery(api.reservation.query.calculateReservationTime, {
+        tenant_id: tenantId,
+        org_id: orgId,
+        staff_id: selectedStaffId,
+        date: formattedDate,
+        duration_min: totalTimeMinutes,
+      })
+
+      // 結果が配列で返され、選択したスタッフのスロットを含む場合
+      if (Array.isArray(result) && result.length > 0) {
+        setAvailableTimeSlots(result)
       } else {
-        // 必要な情報が揃っていない場合は空にする
         setAvailableTimeSlots([])
       }
+    } catch (error) {
+      showErrorToast(error)
+      setAvailableTimeSlots([])
     }
-    getAvailableTimeSlots()
   }, [selectedStaffId, tenantId, orgId, selectdate, totalTimeMinutes, showErrorToast])
+
+  // 時間スロット取得の実行
+  useEffect(() => {
+    getAvailableTimeSlots()
+  }, [getAvailableTimeSlots])
 
   // ─────────────────────────
   // メニュー数量操作用ヘルパー
@@ -503,7 +505,7 @@ export default function ReservationForm() {
   const calcMenuSubTotal = React.useCallback(
     (ids: Id<'menu'>[]) =>
       ids.reduce((sum, id) => {
-        const menu = menus.find((m) => m._id === id)
+        const menu = menus?.find((m) => m._id === id)
         if (!menu) return sum
         const price =
           menu.sale_price && menu.sale_price > 0 ? menu.sale_price : (menu.unit_price ?? 0)
@@ -660,6 +662,23 @@ export default function ReservationForm() {
       )
     : undefined
 
+  // デバッグ用：顧客データの存在確認
+  useEffect(() => {
+    const debugCustomerData = async () => {
+      if (!tenantId || !orgId) return
+
+      try {
+        console.log(`[ReservationForm] Debug: Checking if customers exist for tenant/org`)
+        const customers = await customerRepository.debugListAllCustomers(tenantId, orgId)
+        console.log(`[ReservationForm] Debug: Found ${customers.length} customers in total`)
+      } catch (error) {
+        console.error('[ReservationForm] Debug: Error checking customer data:', error)
+      }
+    }
+
+    debugCustomerData()
+  }, [tenantId, orgId, customerRepository])
+
   if (!tenantId || !orgId) return <Loading />
 
   return (
@@ -690,206 +709,191 @@ export default function ReservationForm() {
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
-            {isFirstCustomer ? (
-              <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
-                <div className="flex flex-col items-start gap-2">
+            {
+              isFirstCustomer ? (
+                <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
                   <div className="flex flex-col items-start gap-2">
-                    <div className="flex items-center text-xl gap-2">
-                      <p className="text-primary font-bold">顧客検索</p>
-                    </div>
-                    <p className="text-muted-foreground text-xs">
-                      顧客無しでも予約は作成できます。
-                    </p>
-                  </div>
-                  <Input
-                    className="w-full my-3"
-                    placeholder="顧客を検索"
-                    value={searchName}
-                    onChange={(e) => setSearchName(e.target.value)}
-                  />
-                </div>
-                {isLoadingCustomers ? (
-                  <div className="flex items-center justify-center p-4 rounded-md">
-                    <Loader2 className="h-5 w-5 animate-spin mr-2 text-active" />
-                    <span className="text-active text-sm">顧客を検索中...</span>
-                  </div>
-                ) : customers && customers.length > 0 ? (
-                  customers.map((customer) => {
-                    return (
-                      <div key={customer.uid}>
-                        <p className="text-primary text-sm font-bold mb-1">検索結果</p>
-                        <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant={'outline'}
-                              className="w-full justify-start h-fit border border-border"
-                            >
-                              {customer.last_name && customer.last_name !== '未登録'
-                                ? customer.last_name + ' '
-                                : ''}
-                              {customer.first_name && customer.first_name !== '未登録'
-                                ? customer.first_name + ' '
-                                : ''}
-                              {customer.line_user_name && customer.line_user_name !== '未登録'
-                                ? customer.line_user_name + '　'
-                                : ''}
-                              {customer.phone ? 'tel:' + customer.phone : ''}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-full min-w-[350px] p-2 overflow-y-auto h-fit"
-                            onOpenAutoFocus={(event) => event.preventDefault()}
-                          >
-                            <Command>
-                              <div className="flex items-center justify-between border-b">
-                                <p className="text-muted-foreground text-sm">検索結果</p>
-                                <button
-                                  type="button"
-                                  onClick={() => setCustomerPopoverOpen(false)}
-                                  className="p-2 text-muted-foreground "
-                                >
-                                  <X className="w-4 h-4" aria-hidden="true" />
-                                  <span className="sr-only">閉じる</span>
-                                </button>
-                              </div>
-                              <CommandList className="max-h-[300px] py-2 overflow-y-auto">
-                                {customers.map((customer) => {
-                                  return (
-                                    <CommandItem
-                                      key={customer.uid}
-                                      className="flex items-center justify-between cursor-pointer"
-                                      onSelect={() => {
-                                        setSelectedCustomer(customer)
-                                        setCustomerPopoverOpen(false)
-                                      }}
-                                    >
-                                      <div className="flex items-start gap-1 text-xs">
-                                        {customer.last_name && customer.last_name !== '未登録'
-                                          ? customer.last_name + ' '
-                                          : ''}
-                                        {customer.first_name && customer.first_name !== '未登録'
-                                          ? customer.first_name + ' '
-                                          : ''}
-                                        {customer.line_user_name &&
-                                        customer.line_user_name !== '未登録'
-                                          ? customer.line_user_name + '　'
-                                          : ''}
-                                        {customer.phone ? 'tel:' + customer.phone : ''}
-                                      </div>
-                                    </CommandItem>
-                                  )
-                                })}
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                    <div className="flex flex-col items-start gap-2">
+                      <div className="flex items-center text-xl gap-2">
+                        <p className="text-primary font-bold">顧客検索</p>
                       </div>
-                    )
-                  })
-                ) : searchName.length > 0 ? (
-                  <p className="text-warning-foreground text-sm text-center bg-warning border border-warning-foreground p-4 rounded-md">
-                    顧客が見つかりません
-                  </p>
-                ) : (
-                  <p className="text-muted-foreground text-sm text-center bg-muted border border-border p-4 rounded-md">
-                    顧客を検索してください。
-                  </p>
-                )}
-                {selectedCustomer && (
-                  <div className="flex flex-col gap-2 mt-2 bg-active-foreground border border-active p-3 rounded-md">
-                    <p className="text-active text-sm font-bold">予約する顧客</p>
-                    <p className="text-active text-sm">
-                      {selectedCustomer.last_name ? selectedCustomer.last_name + ' ' : null}
-                      {selectedCustomer.first_name ? selectedCustomer.first_name + ' ' : null}
-                      {selectedCustomer.line_user_name
-                        ? selectedCustomer.line_user_name + '　'
-                        : null}
-                      {selectedCustomer.phone ? 'tel:' + selectedCustomer.phone : null}
+                      <p className="text-muted-foreground text-xs">
+                        顧客無しでも予約は作成できます。
+                      </p>
+                    </div>
+                    <Input
+                      className="w-full my-3"
+                      placeholder="顧客を検索"
+                      value={searchName}
+                      onChange={(e) => setSearchName(e.target.value)}
+                    />
+                  </div>
+                  {isLoadingCustomers ? (
+                    <div className="flex items-center justify-center p-4 rounded-md">
+                      <Loader2 className="h-5 w-5 animate-spin mr-2 text-active" />
+                      <span className="text-active text-sm">顧客を検索中...</span>
+                    </div>
+                  ) : customers && customers.length > 0 ? (
+                    <div>
+                      <p className="text-primary text-sm font-bold mb-1">検索結果</p>
+                      <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <p className="text-primary text-sm mb-1 border border-border p-2 rounded-md bg-input">
+                            一致した顧客を選択する
+                          </p>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-full max-w-[300px] p-2 overflow-y-auto h-fit"
+                          onOpenAutoFocus={(event) => event.preventDefault()}
+                        >
+                          <Command>
+                            <div className="flex items-center justify-between border-b">
+                              <p className="text-muted-foreground text-sm">検索結果</p>
+                              <button
+                                type="button"
+                                onClick={() => setCustomerPopoverOpen(false)}
+                                className="p-2 text-muted-foreground "
+                              >
+                                <X className="w-4 h-4" aria-hidden="true" />
+                                <span className="sr-only">閉じる</span>
+                              </button>
+                            </div>
+                            <CommandList className="max-h-[300px] py-2 overflow-y-auto">
+                              {customers.map((customer) => {
+                                return (
+                                  <CommandItem
+                                    key={customer.uid}
+                                    className="flex items-center justify-between cursor-pointer"
+                                    onSelect={() => {
+                                      setSelectedCustomer(customer)
+                                      setCustomerPopoverOpen(false)
+                                    }}
+                                  >
+                                    <div className="flex items-start gap-1 text-xs">
+                                      {customer.last_name && customer.last_name !== '未登録'
+                                        ? customer.last_name + ' '
+                                        : ''}
+                                      {customer.first_name && customer.first_name !== '未登録'
+                                        ? customer.first_name + ' '
+                                        : ''}
+                                      {customer.line_user_name &&
+                                      customer.line_user_name !== '未登録'
+                                        ? customer.line_user_name + '　'
+                                        : ''}
+                                      {customer.phone ? 'tel:' + customer.phone : ''}
+                                    </div>
+                                  </CommandItem>
+                                )
+                              })}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  ) : searchName.length > 0 ? (
+                    <p className="text-warning-foreground text-sm text-center bg-warning border border-warning-foreground p-4 rounded-md">
+                      顧客が見つかりません
                     </p>
+                  ) : (
+                    <p className="text-muted-foreground text-sm text-center bg-muted border border-border p-4 rounded-md">
+                      顧客を検索してください。
+                    </p>
+                  )}
+                  {selectedCustomer && (
+                    <div className="flex flex-col gap-2 mt-2 bg-active-foreground border border-active p-3 rounded-md">
+                      <p className="text-active text-sm font-bold">予約する顧客</p>
+                      <p className="text-active text-sm">
+                        {selectedCustomer.last_name ? selectedCustomer.last_name + ' ' : null}
+                        {selectedCustomer.first_name ? selectedCustomer.first_name + ' ' : null}
+                        {selectedCustomer.line_user_name
+                          ? selectedCustomer.line_user_name + '　'
+                          : null}
+                        {selectedCustomer.phone ? 'tel:' + selectedCustomer.phone : null}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
+                  <h4 className="text-primary text-xl font-bold">顧客情報</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <ZodTextField
+                      register={register}
+                      name="customer_last_name"
+                      placeholder="姓"
+                      className="w-full"
+                      errors={errors}
+                      label="姓"
+                    />
+                    <ZodTextField
+                      register={register}
+                      name="customer_first_name"
+                      placeholder="名"
+                      className="w-full"
+                      errors={errors}
+                      label="名"
+                    />
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
-                <h4 className="text-primary text-xl font-bold">顧客情報</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <ZodTextField
-                    register={register}
-                    name="customer_last_name"
-                    placeholder="姓"
-                    className="w-full"
-                    errors={errors}
-                    label="姓"
-                  />
-                  <ZodTextField
-                    register={register}
-                    name="customer_first_name"
-                    placeholder="名"
-                    className="w-full"
-                    errors={errors}
-                    label="名"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <ZodTextField
-                    register={register}
-                    type="tel"
-                    name="customer_phone"
-                    placeholder="電話番号"
-                    className="w-full"
-                    errors={errors}
-                    label="電話番号"
-                  />
-                  <div className="flex flex-col">
-                    <Label className="text-sm ml-2">性別</Label>
-                    <Select
-                      value={watch('customer_gender') ?? ''}
-                      onValueChange={(value: string) => {
-                        setValue('customer_gender', value as Gender)
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="性別" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GENDER_VALUES.map((gender) => (
-                          <SelectItem key={gender} value={gender}>
-                            {convertGender(gender, true)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <ZodTextField
+                      register={register}
+                      type="tel"
+                      name="customer_phone"
+                      placeholder="電話番号"
+                      className="w-full"
+                      errors={errors}
+                      label="電話番号"
+                    />
+                    <div className="flex flex-col">
+                      <Label className="text-sm ml-2">性別</Label>
+                      <Select
+                        value={watch('customer_gender') ?? ''}
+                        onValueChange={(value: string) => {
+                          setValue('customer_gender', value as Gender)
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="性別" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {GENDER_VALUES.map((gender) => (
+                            <SelectItem key={gender} value={gender}>
+                              {convertGender(gender, true)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <Label className="text-sm ml-2">生年月日</Label>
-                  <Input
-                    type="date"
-                    value={watch('customer_birthday') ?? ''}
-                    onChange={(e) => setValue('customer_birthday', e.target.value)}
+                  <div>
+                    <Label className="text-sm ml-2">生年月日</Label>
+                    <Input
+                      type="date"
+                      value={watch('customer_birthday') ?? ''}
+                      onChange={(e) => setValue('customer_birthday', e.target.value)}
+                    />
+                  </div>
+                  <TagInput
+                    tags={watch('customer_tags') ?? []}
+                    setTagsAction={(value: string[]) => setValue('customer_tags', value)}
+                  />
+                  <Textarea
+                    placeholder="備考"
+                    rows={8}
+                    value={watch('customer_notes') ?? ''}
+                    onChange={(e) => setValue('customer_notes', e.target.value)}
                   />
                 </div>
-                <TagInput
-                  tags={watch('customer_tags') ?? []}
-                  setTagsAction={(value: string[]) => setValue('customer_tags', value)}
-                />
-                <Textarea
-                  placeholder="備考"
-                  rows={8}
-                  value={watch('customer_notes') ?? ''}
-                  onChange={(e) => setValue('customer_notes', e.target.value)}
-                />
-              </div>
-            )}
-            <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
+              )
+            }
+            ;<div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
               <div className="flex items-center gap-2">
                 <p className="text-primary font-bold text-xl">予約するメニュー</p>
               </div>
               <span className="text-muted-foreground text-xs">
                 ※メニューは最大5件まで選択できます。
               </span>
-
-              <Popover open={menuPopoverOpen} onOpenChange={setMenuPopoverOpen}>
+              ;<Popover open={menuPopoverOpen} onOpenChange={setMenuPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -898,7 +902,7 @@ export default function ReservationForm() {
                     {selectedMenus.length > 0 ? (
                       <span className="flex flex-wrap gap-1">
                         {uniqMenuIds.map((id) => {
-                          const m = menus.find((m) => m._id === id)
+                          const m = menus?.find((m) => m._id === id)
                           return m ? (
                             <Badge key={id} className="py-1 px-2">
                               {m.name}
@@ -912,7 +916,7 @@ export default function ReservationForm() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-full min-w-[350px] max-w-[500px] py-2 px-4 overflow-y-auto h-full "
+                  className="w-full py-2 px-4 overflow-y-auto h-full "
                   onOpenAutoFocus={(event) => event.preventDefault()}
                 >
                   <Command>
@@ -930,8 +934,8 @@ export default function ReservationForm() {
                         <span className="sr-only">閉じる</span>
                       </button>
                     </div>
-                    <CommandList className=" max-h-[calc(100vh-200px)] max-w-[calc(100vw-50px)] py-8 overflow-y-auto">
-                      {menus.map((menu) => {
+                    <CommandList className=" py-8 overflow-y-auto">
+                      {menus?.map((menu) => {
                         const count = getMenuCount(menu._id)
                         return (
                           <CommandItem
@@ -1002,39 +1006,43 @@ export default function ReservationForm() {
                   </Command>
                 </PopoverContent>
               </Popover>
-              {errors.menus && <p className="text-destructive text-sm">{errors.menus.message}</p>}
-              {selectedMenus.length > 0 && (
-                <div className="mt-2 bg-active-foreground p-3 rounded-md border border-active">
-                  <Label className=" block text-active font-bold mb-2">選択中のメニュー</Label>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {uniqMenuIds.map((menuId) => {
-                      const menu = menus.find((m) => m._id === menuId)
-                      return menu ? (
-                        <div
-                          key={menuId}
-                          className="bg-background px-3 py-1 rounded-md flex items-center gap-2 border border-border"
-                        >
-                          <span className="text-xs">
-                            {menu.name}
-                            {(() => {
-                              const c = getMenuCount(menuId)
-                              return c > 1 ? ` ×${c}` : ''
-                            })()}
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={() => removeMenuAll(menuId)}
-                            className="text-destructive hover:text-destructive"
+              {
+                errors.menus && <p className="text-destructive text-sm">{errors.menus.message}</p>
+              }
+              {
+                selectedMenus.length > 0 && (
+                  <div className="mt-2 bg-active-foreground p-3 rounded-md border border-active">
+                    <Label className=" block text-active font-bold mb-2">選択中のメニュー</Label>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {uniqMenuIds.map((menuId) => {
+                        const menu = menus?.find((m) => m._id === menuId)
+                        return menu ? (
+                          <div
+                            key={menuId}
+                            className="bg-background px-3 py-1 rounded-md flex items-center gap-2 border border-border"
                           >
-                            <X className="h-4 w-4 text-destructive" />
-                          </button>
-                        </div>
-                      ) : null
-                    })}
+                            <span className="text-xs">
+                              {menu.name}
+                              {(() => {
+                                const c = getMenuCount(menuId)
+                                return c > 1 ? ` ×${c}` : ''
+                              })()}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => removeMenuAll(menuId)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <X className="h-4 w-4 text-destructive" />
+                            </button>
+                          </div>
+                        ) : null
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                )
+              }
             </div>
           </div>
           {selectedMenus.length > 0 && availableStaff.length > 0 && (
@@ -1127,7 +1135,7 @@ export default function ReservationForm() {
                         {selectedOptions.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {selectedOptions.map((selectedOption) => {
-                              const option = options.find((o) => o._id === selectedOption.id)
+                              const option = options?.find((o) => o._id === selectedOption.id)
                               return option ? (
                                 <Badge key={option._id} className="py-1 px-2">
                                   {option?.name}
@@ -1141,7 +1149,7 @@ export default function ReservationForm() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-full min-w-[320px] p-2"
+                      className="w-full p-2"
                       onOpenAutoFocus={(event) => event.preventDefault()}
                     >
                       <Command>
@@ -1159,8 +1167,8 @@ export default function ReservationForm() {
                             <span className="sr-only">閉じる</span>
                           </button>
                         </div>
-                        <CommandList className="max-h-[300px] max-w-[100vw] overflow-y-auto py-8">
-                          {options.map((option) => {
+                        <CommandList className="overflow-y-auto py-8">
+                          {options?.map((option) => {
                             const count = getOptionCount(option._id)
                             return (
                               <CommandItem
@@ -1227,7 +1235,7 @@ export default function ReservationForm() {
                   <Label className="mb-2 block text-active font-bold">選択中のオプション</Label>
                   <div className="flex flex-wrap gap-2 pt-1 ">
                     {selectedOptions.map((selectedOption) => {
-                      const option = options.find((o) => o._id === selectedOption.id)
+                      const option = options?.find((o) => o._id === selectedOption.id)
                       return option ? (
                         <div
                           key={selectedOption.id}
@@ -1267,7 +1275,7 @@ export default function ReservationForm() {
                       <Button
                         variant={'outline'}
                         className={cn(
-                          'w-[240px] justify-start text-left font-normal border border-border',
+                          'w-[300px] justify-start text-left font-normal border border-border',
                           !selectdate && 'text-muted-foreground'
                         )}
                       >
@@ -1401,7 +1409,7 @@ export default function ReservationForm() {
             <div className="flex flex-col">
               {uniqMenuIds.length > 0 ? (
                 uniqMenuIds.map((menuId) => {
-                  const menu = menus.find((m) => m._id === menuId)
+                  const menu = menus?.find((m) => m._id === menuId)
                   const price =
                     menu?.sale_price && menu?.sale_price > 0
                       ? menu?.sale_price
@@ -1428,7 +1436,7 @@ export default function ReservationForm() {
             <div className="flex flex-col">
               {selectedOptions.length > 0 ? (
                 selectedOptions.map((selectedOption) => {
-                  const option = options.find((o) => o._id === selectedOption.id)
+                  const option = options?.find((o) => o._id === selectedOption.id)
                   return (
                     option && (
                       <div

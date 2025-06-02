@@ -257,8 +257,9 @@ class SupabaseBaseService {
   
   /**
  * 任意テーブル用取得メソッド
- *  - filters     : { columnName: value } の完全一致条件を任意個指定
- *  - rangeFilter : 範囲検索に使うカラム名と from / to
+ *  - filters     : { columnName: value } の完全一致条件、または { columnName: { ilike: '%text%' } } 等の演算子条件を任意個指定
+ *  - orConditions: 複数フィールドでのOR検索をサポート
+ *  - rangeFilter : 範囲検索に使うカラム名と from / to（廃止予定: filtersで { column: { gte: from, lte: to } } を推奨）
  *  - page        : 1 始まりのページ番号（未指定なら全件）
  *  - pageSize    : 1 ページ当たり件数（既定 50）
  *  - select      : '*' かカラム配列
@@ -269,12 +270,14 @@ T extends TableName
 table: T,
 {
   filters,
+  orConditions,
   rangeFilter,
   page,
   pageSize = 50,
   select = '*' as SelectCols<RowType<T>>,
 }: {
-  filters?: Partial<RowType<T>>
+  filters?: Partial<RowType<T>> | Record<string, any>
+  orConditions?: Array<{ column: string; operator: string; value: any }>
   rangeFilter?: { column: keyof RowType<T>; from?: string | number; to?: string | number }
   page?: number
   pageSize?: number
@@ -283,24 +286,71 @@ table: T,
 ): Promise<{ data: RowType<T>[]; count: number | null }> {
 const operationName = `listRecords(${String(table)})`
 return retryOperation(async () => {
-  console.log(`[SupabaseService] Executing ${operationName}`, { filters, rangeFilter, page, pageSize, select })
+  console.log(`[SupabaseService] Executing ${operationName}`, { filters, orConditions, rangeFilter, page, pageSize, select })
 
   const sel = Array.isArray(select) ? select.join(',') : String(select);
   let query = this.client
     .from(table)
     .select(sel, { count: 'exact' })
 
-  /* 完全一致フィルタ */
+  /* 完全一致 or 演算子付きフィルタ */
   if (filters) {
+    console.log(`[SupabaseService] Processing filters:`, filters);
     for (const [col, val] of Object.entries(filters)) {
-      // null / undefined は無視
-      if (val !== undefined && val !== null) {
+      // null/undefined は無視
+      if (val == null) {
+        console.log(`[SupabaseService] Skipping null/undefined filter for column: ${col}`);
+        continue;
+      }
+      
+      if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+        console.log(`[SupabaseService] Processing operator filter for column ${col}:`, val);
+        // 演算子オブジェクト: { ilike: '%text%', gte: 10 } 等
+        for (const [op, operatorValue] of Object.entries(val)) {
+          // operatorValueがnull/undefinedの場合は無視
+          if (operatorValue == null) {
+            console.log(`[SupabaseService] Skipping null/undefined operator value for ${col}.${op}`);
+            continue;
+          }
+          
+          console.log(`[SupabaseService] Applying operator ${op} to column ${col} with value:`, operatorValue);
+          // メタプログラミングで演算子を適用
+          if (typeof (query as any)[op] === 'function') {
+            query = (query as any)[op](col, operatorValue);
+            console.log(`[SupabaseService] Successfully applied ${op} operator`);
+          } else {
+            console.warn(`[SupabaseService] Unknown operator: ${op} for column: ${col}`)
+          }
+        }
+      } else {
+        console.log(`[SupabaseService] Processing exact match filter for column ${col}:`, val);
+        // 通常の完全一致
         query = query.eq(col as keyof RowType<T> & string, val)
       }
     }
   }
 
-  /* 範囲フィルタ */
+  /* OR条件の処理 */
+  if (orConditions && orConditions.length > 0) {
+    console.log(`[SupabaseService] Processing OR conditions:`, orConditions);
+    // OR条件を文字列で構築
+    const orConditionStrings = orConditions.map(condition => {
+      const { column, operator, value } = condition;
+      if (operator === 'ilike') {
+        return `${column}.ilike.${value}`;
+      } else if (operator === 'eq') {
+        return `${column}.eq.${value}`;
+      } else {
+        return `${column}.${operator}.${value}`;
+      }
+    });
+    
+    const orConditionString = orConditionStrings.join(',');
+    console.log(`[SupabaseService] Applying OR condition:`, orConditionString);
+    query = query.or(orConditionString);
+  }
+
+  /* 範囲フィルタ（後方互換性のため残す） */
   if (rangeFilter) {
     const col = String(rangeFilter.column)
     if (rangeFilter.from !== undefined) query = query.gte(col, rangeFilter.from)
@@ -325,6 +375,7 @@ return retryOperation(async () => {
       details: {
         table,
         filters,
+        orConditions,
         rangeFilter,
         page,
         pageSize,

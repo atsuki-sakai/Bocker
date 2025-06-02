@@ -520,32 +520,30 @@ export default function StaffEditForm() {
                         </div>
                       )}
 
-                      <div className="w-full flex flex-col md:flex-row items-end justify-center gap-4">
-                        <div className="w-full flex flex-col md:flex-row items-start justify-center gap-4">
+                      <div className="w-full flex flex-col gap-4">
+                        <div className="w-full flex flex-col gap-4">
                           {staffAllData.images && staffAllData.images.length > 0 && (
-                            <>
-                              <div className="w-full relative aspect-square">
-                                <Image
-                                  src={staffAllData.images[0].original_url}
-                                  alt="スタッフ画像"
-                                  fill
-                                  className="transition-all duration-200 rounded-md object-cover"
-                                />
-                                <div className="absolute top-0 right-2">
-                                  <Button
-                                    variant="destructive"
-                                    size="icon"
-                                    className="mt-2"
-                                    onClick={handleShowDeleteDialog}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                            <div className="w-full relative aspect-square min-w-0">
+                              <Image
+                                src={staffAllData.images[0].original_url}
+                                alt="スタッフ画像"
+                                fill
+                                className="transition-all duration-200 rounded-md object-cover"
+                              />
+                              <div className="absolute top-0 right-2">
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  className="mt-2"
+                                  onClick={handleShowDeleteDialog}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
                               </div>
-                            </>
+                            </div>
                           )}
 
-                          <div className="max-w-md w-full h-full  mx-auto">
+                          <div className="w-full max-w-full">
                             <SingleImageDrop
                               onFileSelect={(file) => setSelectedFile(file)}
                               aspectType="square"

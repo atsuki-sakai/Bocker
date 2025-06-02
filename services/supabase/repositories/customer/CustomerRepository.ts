@@ -317,60 +317,142 @@ export class CustomerRepository extends BaseRepository<'customer'> {
    * 名前による顧客検索（改良版・ページネーション対応）
    * @param tenantId - テナントID（salon_idにマップ）
    * @param orgId - 組織ID（現在はsalon_idのみを使用）
-   * @param searchName - 検索する名前（searchable_text列を使用した高速検索）
+   * @param searchText - 検索するテキスト（複数フィールドでのOR検索）
    * @param options - 取得オプション（ページングなど）
    * @returns 検索結果の顧客リスト
    */
-  async findByName(
+  async findBySearchableText(
     tenantId: string,
     orgId: string,
-    searchName: string,
-    options?: ListOptions<'customer'>
+    searchText: string,
+    options: ListOptions<'customer'> = {}
   ): Promise<{
     data: RowType<'customer'>[];
     count: number;
     hasMore: boolean;
   }> {
-    console.log(`[CustomerRepository] findByName: tenantId=${tenantId}, orgId=${orgId}, searchName=${searchName}, options=${JSON.stringify(options)}`)
+    console.log(`[CustomerRepository] findBySearchableText: START`, {
+      tenantId,
+      orgId,
+      searchText,
+      options
+    });
     
-    if (!searchName.trim()) {
+    // 空文字検索の場合は早期リターン
+    if (!searchText.trim()) {
+      console.log(`[CustomerRepository] Empty search text, returning empty result`);
       return { data: [], count: 0, hasMore: false }
     }
 
     try {
-      const pageSize = options?.pageSize || 50
-      const page = options?.page || 1
-      const offset = (page - 1) * pageSize
+      const { page = 1, pageSize = 50, select } = options;
+      
+      // 基本フィルタ（tenant_id, org_id, is_archive）
+      const filters = {
+        tenant_id: tenantId,
+        org_id: orgId,
+        is_archive: false,
+      };
+      
+      // OR検索条件を構築（複数フィールドで検索）
+      const searchPattern = `%${searchText}%`;
+      const orConditions = [
+        { column: 'email', operator: 'ilike', value: searchPattern },
+        { column: 'phone', operator: 'ilike', value: searchPattern },
+        { column: 'first_name', operator: 'ilike', value: searchPattern },
+        { column: 'last_name', operator: 'ilike', value: searchPattern },
+        { column: 'line_id', operator: 'ilike', value: searchPattern },
+        { column: 'line_user_name', operator: 'ilike', value: searchPattern },
+      ];
+      
+      console.log(`[CustomerRepository] Executing listRecords with OR search:`, {
+        filters,
+        orConditions,
+        page,
+        pageSize,
+        select
+      });
 
-      // listRecordsを使用して基本フィルタを適用（salon_idを使用）
-      const { data: allCustomers } = await this.supabaseServiceInstance.listRecords<'customer'>('customer', {
-        filters: {
-          salon_id: tenantId, // tenant_idをsalon_idにマップ
-          is_archive: false
-        } as Partial<RowType<'customer'>>,
-        pageSize: 1000, // 大きめの値で取得してからフィルタリング
-        select: options?.select || '*'
-      })
+      // 複数フィールドでのOR検索を実行
+      const result = await this.supabaseServiceInstance.listRecords<'customer'>('customer', {
+        filters,
+        orConditions,
+        page,
+        pageSize,
+        select,
+      });
 
-      // searchable_text列を使用したクライアントサイド検索
-      const searchPattern = searchName.toLowerCase()
-      const filteredCustomers = allCustomers.filter(customer => {
-        const searchableText = customer.searchable_text?.toLowerCase() || ''
-        return searchableText.includes(searchPattern)
-      })
+      console.log(`[CustomerRepository] listRecords result:`, {
+        dataLength: result.data.length,
+        count: result.count,
+        sampleCustomer: result.data[0] ? {
+          uid: result.data[0].uid,
+          firstName: result.data[0].first_name,
+          lastName: result.data[0].last_name,
+          phone: result.data[0].phone,
+          email: result.data[0].email,
+          lineId: result.data[0].line_id,
+          lineUserName: result.data[0].line_user_name,
+          tenantId: result.data[0].tenant_id,
+          orgId: result.data[0].org_id
+        } : 'No customers found'
+      });
 
-      // ページングを適用
-      const paginatedCustomers = filteredCustomers.slice(offset, offset + pageSize)
-      const hasMore = filteredCustomers.length > offset + pageSize
+      // hasMoreを算出（count から判定）
+      const hasMore = result.count !== null && result.count > page * pageSize;
 
-      return {
-        data: paginatedCustomers,
-        count: filteredCustomers.length,
+      const finalResult = {
+        data: result.data,
+        count: result.count || 0,
         hasMore
-      }
+      };
+      
+      console.log(`[CustomerRepository] findBySearchableText: COMPLETE`, finalResult);
+      return finalResult;
     } catch (error) {
-      console.error('[CustomerRepository] Unexpected error in findByName:', error)
-      throw error
+      console.error('[CustomerRepository] Unexpected error in findBySearchableText:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * デバッグ用：指定したテナント・組織の全顧客を取得（最初の5件）
+   */
+  async debugListAllCustomers(
+    tenantId: string,
+    orgId: string
+  ): Promise<RowType<'customer'>[]> {
+    console.log(`[CustomerRepository] debugListAllCustomers: tenantId=${tenantId}, orgId=${orgId}`);
+    
+    try {
+      const result = await this.supabaseServiceInstance.listRecords<'customer'>('customer', {
+        filters: {
+          tenant_id: tenantId,
+          org_id: orgId,
+          is_archive: false,
+        },
+        pageSize: 5,
+        page: 1,
+      });
+      
+      console.log(`[CustomerRepository] debugListAllCustomers result:`, {
+        count: result.count,
+        dataLength: result.data.length,
+        customers: result.data.map(c => ({
+          uid: c.uid,
+          firstName: c.first_name,
+          lastName: c.last_name,
+          phone: c.phone,
+          searchableText: c.searchable_text,
+          tenantId: c.tenant_id,
+          orgId: c.org_id
+        }))
+      });
+      
+      return result.data;
+    } catch (error) {
+      console.error('[CustomerRepository] Error in debugListAllCustomers:', error);
+      throw error;
     }
   }
 }

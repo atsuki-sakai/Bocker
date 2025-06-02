@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { GENDER_VALUES, Gender } from '@/convex/types'
+import { calcAgeFromBirthday } from '@/lib/helpers'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import {
   Select,
@@ -179,10 +180,11 @@ export default function CustomerAddForm() {
         // その他のフィールドはオプショナルなのでundefinedでも問題なし
       }
 
+      // FIXME: ageをbirthdayから算出するようにする
       // 顧客詳細情報を準備
       const detailData = {
         email: data.email || null,
-        age: data.age || null,
+        age: data.birthday ? calcAgeFromBirthday(data.birthday) : null,
         birthday: data.birthday || null,
         gender: data.gender || null,
         notes: data.notes || null,
@@ -267,7 +269,6 @@ export default function CustomerAddForm() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <ZodTextField label="年齢" type="number" name="age" register={register} errors={errors} />
           <ZodTextField
             label="誕生日"
             type="date"

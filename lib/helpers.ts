@@ -24,3 +24,16 @@ export const fetchAddressByPostalCode = async (postalCode: string): Promise<stri
         return '住所が見つかりませんでした'
     }
 }
+
+
+export const calcAgeFromBirthday = (birthday: string | null): number | null => {
+    if (!birthday) return null;
+    const today = new Date();
+    const birthDate = new Date(birthday);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
