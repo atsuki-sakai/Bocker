@@ -146,7 +146,7 @@ const staffAddSchema = z.object({
 
 export default function StaffAddPage() {
   const router = useRouter()
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [exclusionMenuIds, setExclusionMenuIds] = useState<Id<'menu'>[]>([])
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -190,7 +190,7 @@ export default function StaffAddPage() {
     let newUploadedImageUrls: { original_url: string; thumbnail_url: string }[] = []
 
     try {
-      if (!tenantId || !orgId) {
+      if (!tenantId || !orgId || !planName) {
         toast.error('店舗が見つかりません')
         return
       }
@@ -224,6 +224,7 @@ export default function StaffAddPage() {
         // スタッフの基本情報を追加
         try {
           staffId = await staffAdd({
+            plan_name: planName,
             instagram_link: data.instagram_link ?? undefined,
             age: data.age ?? undefined,
             description: data.description ?? undefined,

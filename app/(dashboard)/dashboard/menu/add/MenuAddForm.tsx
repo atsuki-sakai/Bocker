@@ -156,7 +156,7 @@ const ErrorMessage = ({ message }: { message: string | undefined }) => (
 
 export default function MenuAddForm() {
   const router = useRouter()
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false)
   const [currentFiles, setCurrentFiles] = useState<File[]>([])
   const { showErrorToast } = useErrorHandler()
@@ -188,7 +188,7 @@ export default function MenuAddForm() {
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
     try {
-      if (!tenantId || !orgId) {
+      if (!tenantId || !orgId || !planName) {
         toast.error('テナント or 店舗情報が必要です')
         return
       }
@@ -232,6 +232,7 @@ export default function MenuAddForm() {
         const menuId = await createMenu({
           tenant_id: tenantId,
           org_id: orgId,
+          plan_name: planName,
           name: data.name,
           categories: data.categories,
           unit_price: data.unit_price ?? 0,
@@ -256,6 +257,7 @@ export default function MenuAddForm() {
         // 現状は、API側のロールバックに任せ、クライアント側ではStateのクリアのみ行う。
 
         setIsSubmitting(false)
+        console.log(err)
         showErrorToast(err)
       }
     } catch (err) {

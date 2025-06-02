@@ -314,7 +314,7 @@ const subscription = defineTable({
   stripe_customer_id: v.string(),// Stripe Customer ID（Clerkユーザ単位ではなくテナント単位）
   status: subscriptionStatusType,
   price_id: v.string(),         // Stripe Price ID
-  plan_name: subscriptionPlanNameType,        // "Lite" | "Pro" | "Enterprise"
+  plan_name: subscriptionPlanNameType,        // "LITE" | "PRO"
   billing_period: billingPeriodType, // "monthly" | "yearly"
   current_period_start: v.number(),    // 現在の課金期間開始UNIX
   current_period_end: v.number(),    // 現在の課金期間終了UNIX

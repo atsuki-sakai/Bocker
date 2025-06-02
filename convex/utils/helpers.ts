@@ -5,6 +5,9 @@ import { WithoutSystemFields } from 'convex/server';
 import { getCurrentUnixTime } from '@/lib/schedules';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
+import { SUBSCRIPTION_PLAN_LIMITS } from '@/convex/constants';
+import { SubscriptionPlanName } from '@/convex/types';
+import { PlanLimits } from '@/convex/constants';
 
 /**
  * オブジェクトから undefined のデータを削除
@@ -148,4 +151,13 @@ export async function killRecord<T extends keyof DataModel>(ctx: MutationCtx, id
     });
   }
   await ctx.db.delete(id as Id<T>);
+}
+
+
+export function getPlanLimits(planName: SubscriptionPlanName): PlanLimits {
+  const limits = SUBSCRIPTION_PLAN_LIMITS[planName];
+  if (!limits) {
+    throw new Error(`未定義のプラン名が指定されました: ${planName}`);
+  }
+  return limits;
 }

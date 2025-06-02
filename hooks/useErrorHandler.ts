@@ -44,22 +44,24 @@ export function useErrorHandler(options?: ErrorHandlerOptions) {
     console.log('フックに渡されたエラー:', error);
 
     if (error instanceof ConvexError) {
-
-      const convexData = error.data as any;
+      /** ConvexError は .data にカスタムペイロードがそのまま入る */
+      const convexData = (error.data ?? {}) as any;
       console.log('Convexエラーのデータ:', convexData);
 
-      if (convexData && typeof convexData === 'object') {
-        if ('payload' in convexData && isErrorPayload(convexData.payload)) {
-          processedPayload = convexData.payload;
-          originalErrorMessage = convexData.message || error.message;
-        } else if (isErrorPayload(convexData)) {
-          processedPayload = convexData;
-          originalErrorMessage = convexData.message || error.message;
-        } else {
-          originalErrorMessage = error.message || 'Convexエラーのデータ形式が不正です。';
-        }
+      // ❶ isErrorPayload が true なら優先採用
+      if (isErrorPayload(convexData)) {
+        processedPayload = convexData;
+        originalErrorMessage = convexData.message;
+      } else if (
+        typeof convexData === 'object' &&
+        convexData !== null &&
+        typeof convexData.message === 'string'
+      ) {
+        // ❷ payload 判定に落ちた場合でも message プロパティだけは拾う
+        originalErrorMessage = convexData.message;
       } else {
-        originalErrorMessage = error.message || 'Convexエラーのデータが取得できませんでした。';
+        // ❸ 最後の手段として error.message を使用
+        originalErrorMessage = error.message || 'Convexエラーですが内容を解析できませんでした。';
       }
     } else if (error instanceof BaseError) {
       console.log('BaseErrorインスタンスを直接処理:', error);
@@ -72,8 +74,8 @@ export function useErrorHandler(options?: ErrorHandlerOptions) {
       processedPayload = error;
       originalErrorMessage = error.message;
     } else if (error instanceof Error) {
-      console.log('エラーインスタンスとして処理:', error);
-      originalErrorMessage = error.message;
+      const match = error.message.match(/Uncaught\s+[A-Z_]+:\s*(.+)/);
+      originalErrorMessage = match ? match[1] : error.message;
     } else if (typeof error === 'string') {
       console.log('文字列として処理:', error);
       originalErrorMessage = error;

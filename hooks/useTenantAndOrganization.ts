@@ -9,8 +9,7 @@ import { Id } from '@/convex/_generated/dataModel';
 import type { Role } from '@/convex/types';
 import { api } from '@/convex/_generated/api';
 import { useQuery } from 'convex/react';
-import { Doc } from '@/convex/_generated/dataModel';
-import { SubscriptionStatus } from '@/convex/types';
+import { SubscriptionPlanName, SubscriptionStatus } from '@/convex/types';
 
 type UseTenantAndOrganization = {
   tenantId: Id<'tenant'> | null;
@@ -18,6 +17,7 @@ type UseTenantAndOrganization = {
   userId: string | null;
   role: Role | null;
   subscriptionStatus: SubscriptionStatus | null;
+  planName: SubscriptionPlanName | null;
   isLoaded: boolean;
   isSignedIn: boolean;
   ready: boolean;
@@ -73,6 +73,7 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
     orgId: org?._id ?? null,
     userId: userId as string | null,
     role: role,
+    planName: subscription?.plan_name ?? 'UNKNOWN',
     subscriptionStatus: subscription?.status ?? null,
     isLoaded,
     isSignedIn: isSignedIn as boolean,

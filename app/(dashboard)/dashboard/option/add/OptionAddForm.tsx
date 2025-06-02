@@ -148,7 +148,7 @@ const optionSchema = z
   )
 
 function OptionAddForm() {
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
   const router = useRouter()
   const [currentTags, setCurrentTags] = useState<string[]>([])
   const { showErrorToast } = useErrorHandler()
@@ -173,7 +173,7 @@ function OptionAddForm() {
     let newUploadedImageUrls: { original_url: string; thumbnail_url: string }[] = []
 
     try {
-      if (!tenantId || !orgId) {
+      if (!tenantId || !orgId || !planName) {
         toast.error('サロン情報が必要です')
         return
       }
@@ -206,6 +206,7 @@ function OptionAddForm() {
       await addOption({
         tenant_id: tenantId,
         org_id: orgId,
+        plan_name: planName,
         name: data.name,
         unit_price: data.unit_price, // 価格
         sale_price: data.sale_price ? data.sale_price : undefined, // セール価格

@@ -1,3 +1,35 @@
+import { SubscriptionPlanName } from "@/convex/types";
+
+// プラン毎の制限値
+export type PlanLimits = {
+    maxStaffCount: number;
+    maxMenuCount: number;
+    maxOptionCount: number;
+    monthlyReservationLimit: number;
+};
+
+
+export const SUBSCRIPTION_PLAN_LIMITS: Record<SubscriptionPlanName, PlanLimits> = {
+    'LITE': {
+        maxStaffCount: 3,
+        maxMenuCount: 10,
+        maxOptionCount: 5,
+        monthlyReservationLimit: 200,
+    },
+    'PRO': {
+        maxStaffCount: 10,
+        maxMenuCount: 20,
+        maxOptionCount: 10,
+        monthlyReservationLimit: 500,
+    },
+    'UNKNOWN': {
+        maxStaffCount: 0,
+        maxMenuCount: 0,
+        maxOptionCount: 0,
+        monthlyReservationLimit: 0,
+    },
+};
+
 // ポイントの最大利用数
 export const MAX_USE_POINTS = 2000;
 // 合計金額の最大値
