@@ -231,7 +231,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<MenuRespo
 }
 
 // OPTIONSメソッドの対応（CORS対応）
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {

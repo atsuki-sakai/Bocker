@@ -9,6 +9,7 @@ import { Loading } from '@/components/common'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Doc } from '@/convex/_generated/dataModel'
+import InviteManagement from './components/InviteManagement'
 
 const numberOfStaffs = 10
 export default function StaffList() {
@@ -31,8 +32,13 @@ export default function StaffList() {
   }
 
   return (
-    <div className="mt-2 flow-root">
-      <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8 px-4 md:px-0">
+    <div className="space-y-6">
+      {/* 招待管理コンポーネント */}
+      <InviteManagement />
+      
+      {/* スタッフ一覧テーブル */}
+      <div className="mt-2 flow-root">
+        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8 px-4 md:px-0">
         <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
           <div className="overflow-hidden border border-border rounded-lg">
             <table className="min-w-full divide-y divide-border">
@@ -186,6 +192,7 @@ export default function StaffList() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   )
 }

@@ -124,11 +124,39 @@ export default function StaffDetails() {
       // 削除処理中フラグを立てて、クエリの実行を停止
       setIsDeleting(true)
 
+      // 1. 画像ファイルの削除
       if (staffAllData?.images[0]?.original_url) {
         await deleteImage({
           originalUrl: staffAllData.images[0].original_url,
         })
       }
+      
+      // 2. Clerkアカウントの削除（メールアドレスが設定されている場合）
+      if (staffAllData?.email) {
+        try {
+          const clerkDeleteResponse = await fetch('/api/clerk/staff/delete', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: staffAllData.email,
+            }),
+          })
+          
+          const clerkDeleteData = await clerkDeleteResponse.json()
+          
+          if (clerkDeleteResponse.ok) {
+            console.log('Clerkアカウントを削除しました:', clerkDeleteData.deleted_user_id)
+          } else {
+            console.warn('Clerkアカウント削除失敗（継続）:', clerkDeleteData.error)
+          }
+        } catch (clerkError) {
+          console.warn('Clerkアカウント削除エラー（継続）:', clerkError)
+        }
+      }
+      
+      // 3. データベースからスタッフ関連データの削除
       if (staffAllData && tenantId && orgId) {
         await staffKill({
           tenant_id: tenantId,
@@ -138,6 +166,7 @@ export default function StaffDetails() {
           staff_auth_id: staffAllData.staff_auth_id,
         })
       }
+      
       toast.success('スタッフを削除しました')
       router.push('/dashboard/staff')
     } catch (error) {

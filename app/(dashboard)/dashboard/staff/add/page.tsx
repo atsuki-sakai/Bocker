@@ -152,6 +152,7 @@ export default function StaffAddPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [currentTags, setCurrentTags] = useState<string[]>([])
+  const [sendInviteEmail, setSendInviteEmail] = useState(true)
 
   const staffAdd = useMutation(api.staff.mutation.create)
   const staffConfigAdd = useMutation(api.staff.config.mutation.create)
@@ -272,9 +273,46 @@ export default function StaffAddPage() {
           selected_menu_ids: exclusionMenuIds,
         })
 
-        toast.success('スタッフを追加しました', {
-          icon: <Check className="h-4 w-4 text-active" />,
-        })
+        // 招待メール送信処理（オプション）
+        if (sendInviteEmail) {
+          try {
+            const inviteResponse = await fetch('/api/clerk/staff/invite', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: data.email,
+                tenant_id: tenantId,
+                org_id: orgId,
+                role: data.role,
+              }),
+            })
+
+            const inviteData = await inviteResponse.json()
+
+            if (inviteResponse.ok) {
+              toast.success('スタッフを追加し、招待メールを送信しました', {
+                icon: <Check className="h-4 w-4 text-active" />,
+              })
+            } else {
+              console.warn('招待メール送信失敗:', inviteData.error)
+              toast.success('スタッフを追加しました（招待メール送信は失敗）', {
+                icon: <Check className="h-4 w-4 text-active" />,
+              })
+            }
+          } catch (inviteError) {
+            console.warn('招待メール送信エラー:', inviteError)
+            toast.success('スタッフを追加しました（招待メール送信は失敗）', {
+              icon: <Check className="h-4 w-4 text-active" />,
+            })
+          }
+        } else {
+          toast.success('スタッフを追加しました', {
+            icon: <Check className="h-4 w-4 text-active" />,
+          })
+        }
+        
         router.push('/dashboard/staff')
       } catch (configAuthError) {
         // スタッフ設定または認証の保存に失敗した場合、作成したスタッフを削除
@@ -582,11 +620,26 @@ export default function StaffAddPage() {
                         </div>
                       </div>
 
-                      <div>
-                        <div className="flex items-center mb-2">
-                          <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <Label className="font-medium text-muted-foreground">権限</Label>
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="send_invite_email"
+                            checked={sendInviteEmail}
+                            onCheckedChange={(checked) => setSendInviteEmail(checked)}
+                          />
+                          <Label htmlFor="send_invite_email" className="text-sm cursor-pointer">
+                            招待メールを送信してClerkアカウントを作成
+                          </Label>
                         </div>
+                        <p className="text-xs text-muted-foreground">
+                          有効にすると、スタッフに招待メールが送信され、Clerkアカウントでログインできるようになります。
+                        </p>
+                        
+                        <div>
+                          <div className="flex items-center mb-2">
+                            <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <Label className="font-medium text-muted-foreground">権限</Label>
+                          </div>
                         <div className="mt-1">
                           <div className="grid grid-cols-3 gap-3">
                             {[
@@ -621,6 +674,7 @@ export default function StaffAddPage() {
                               </motion.div>
                             ))}
                           </div>
+                        </div>
                         </div>
                       </div>
                     </div>
