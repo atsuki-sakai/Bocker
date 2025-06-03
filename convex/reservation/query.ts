@@ -992,4 +992,109 @@ export const checkDoubleBooking = query({
   const overlapping = await query.first();
   return !!overlapping;
   },
+})
+
+/**
+ * 全スタッフの予約を日付範囲で一括取得
+ * - タイムライン画面での全スタッフ表示用
+ * - is_archive: false のみ対象
+ * - confirmed ステータスのみを取得
+ * - 日付範囲での絞り込み可能
+ * データ取得専用でバリデーションはmutationで担保
+ */
+export const listAllStaffsByDateRange = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    start_date: v.string(), // "YYYY-MM-DD"
+    end_date: v.string(), // "YYYY-MM-DD"
+    paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx)
+    validateStringLength(args.org_id, 'org_id')
+    validateDateStrFormat(args.start_date, 'start_date')
+    validateDateStrFormat(args.end_date, 'end_date')
+    
+    // 日付範囲での予約を取得
+    return await ctx.db
+      .query('reservation')
+      .withIndex('by_tenant_org_date_status_archive', (q) =>
+        q
+          .eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .gte('date', args.start_date)
+          .lte('date', args.end_date)
+      )
+      .filter((q) => q.eq(q.field('is_archive'), false))
+      .filter((q) => q.eq(q.field('status'), 'confirmed'))
+      .order(args.sort || 'asc')
+      .paginate(args.paginationOpts)
+  },
+})
+
+/**
+ * スタッフ別の予約をまとめて取得（最適化版）
+ * - 全スタッフのタイムライン表示専用
+ * - 指定したスタッフIDリストの予約のみ取得
+ * - パフォーマンス向上のため使用
+ * データ取得専用でバリデーションはmutationで担保
+ */
+export const listByStaffIds = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    staff_ids: v.array(v.id('staff')),
+    paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx)
+    validateStringLength(args.org_id, 'org_id')
+    
+    if (args.staff_ids.length === 0) {
+      return { page: [], isDone: true, continueCursor: null }
+    }
+    
+    // 各スタッフの予約を効率的に取得
+    const allReservations: any[] = []
+    
+    // スタッフごとの予約を並列取得
+    const reservationPromises = args.staff_ids.map(async (staff_id) => {
+      const reservations = await ctx.db
+        .query('reservation')
+        .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
+          q
+            .eq('tenant_id', args.tenant_id)
+            .eq('org_id', args.org_id)
+            .eq('staff_id', staff_id)
+        )
+        .filter((q) => q.eq(q.field('is_archive'), false))
+        .filter((q) => q.eq(q.field('status'), 'confirmed'))
+        .order('asc')
+        .take(50) // 各スタッフ最大50件
+      return reservations
+    })
+    
+    const results = await Promise.all(reservationPromises)
+    results.forEach(reservations => allReservations.push(...reservations))
+    
+    // 日付・時間順でソート
+    allReservations.sort((a, b) => {
+      const timeA = a.start_time_unix || 0
+      const timeB = b.start_time_unix || 0
+      return args.sort === 'desc' ? timeB - timeA : timeA - timeB
+    })
+    
+    // ページネーション形式に合わせて返す
+    const pageSize = args.paginationOpts.numItems
+    const startIndex = args.paginationOpts.cursor ? parseInt(args.paginationOpts.cursor) : 0
+    const endIndex = startIndex + pageSize
+    const page = allReservations.slice(startIndex, endIndex)
+    const isDone = endIndex >= allReservations.length
+    const continueCursor = isDone ? null : endIndex.toString()
+    
+    return { page, isDone, continueCursor }
+  },
 })     
