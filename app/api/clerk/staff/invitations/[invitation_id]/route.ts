@@ -8,7 +8,7 @@ import { auth } from '@clerk/nextjs/server'
 // 招待のキャンセル（無効化）
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { invitation_id: string } }
+  { params }: { params: Promise<{ invitation_id: string }> }
 ) {
   try {
     // 1. 認証チェック
@@ -21,7 +21,7 @@ export async function DELETE(
     }
 
     // 2. パラメータから招待IDを取得
-    const { invitation_id } = params
+    const { invitation_id } = await params
 
     if (!invitation_id) {
       return NextResponse.json(

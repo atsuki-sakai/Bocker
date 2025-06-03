@@ -56,6 +56,8 @@ export default function InviteManagement() {
     if (tenantId && orgId) {
       fetchInvitations()
     }
+    // fetchInvitationsは内部で状態を変更するため、依存配列には含めない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, orgId])
 
   // 招待一覧を取得する関数
