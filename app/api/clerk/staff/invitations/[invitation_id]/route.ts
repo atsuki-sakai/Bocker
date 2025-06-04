@@ -1,9 +1,8 @@
 // app/api/clerk/staff/invitations/[invitation_id]/route.ts
 // 個別招待管理API - 特定の招待のキャンセル
 
-import { clerkClient } from '@clerk/nextjs/server'
+import { clerkClient, currentUser } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 
 // 招待のキャンセル（無効化）
 export async function DELETE(
@@ -12,8 +11,8 @@ export async function DELETE(
 ) {
   try {
     // 1. 認証チェック
-    const { userId } = await auth()
-    if (!userId) {
+    const user = await currentUser()
+    if (!user) {
       return NextResponse.json(
         { error: '認証が必要です' },
         { status: 401 }

@@ -1,21 +1,21 @@
 // app/api/clerk/staff/invitations/route.ts
 // 招待状況管理API - 招待の確認・再送・キャンセル機能
 
-import { clerkClient } from '@clerk/nextjs/server'
+import { clerkClient, currentUser } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 
 // 招待一覧取得（保留中のもののみ）
 export async function GET(req: NextRequest) {
   try {
     // 1. 認証チェック
-    const { userId } = await auth()
-    if (!userId) {
+    const user = await currentUser()
+    if (!user) {
       return NextResponse.json(
         { error: '認証が必要です' },
         { status: 401 }
       )
     }
+    // const userId = user.id // 異なる用途で使用される可能性があるため保持
 
     // 2. クエリパラメータからテナント・組織IDを取得（フィルタリング用）
     const { searchParams } = new URL(req.url)
@@ -67,13 +67,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // 1. 認証チェック
-    const { userId } = await auth()
-    if (!userId) {
+    const user = await currentUser()
+    if (!user) {
       return NextResponse.json(
         { error: '認証が必要です' },
         { status: 401 }
       )
     }
+    const userId = user.id
 
     // 2. リクエストボディから再送に必要な情報を取得
     const { email, tenant_id, org_id, role } = await req.json()

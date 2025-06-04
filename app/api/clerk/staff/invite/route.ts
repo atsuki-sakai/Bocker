@@ -1,17 +1,21 @@
 // app/api/clerk/staff/invite/route.ts
 // スタッフ招待API - Clerk Core 2を使用してスタッフ招待を実行
 
-import { clerkClient } from '@clerk/nextjs/server'
+import { clerkClient, auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { BASE_URL } from '@/lib/constants'
 
 export async function POST(req: NextRequest) {
+  console.log('▶️ 招待APIが呼び出されました')
+  
   try {
-
-    const clerk = await clerkClient()
     // 1. 認証チェック - 現在のユーザーが認証されているか確認
+    console.log('🔐 認証チェック中...')
     const { userId } = await auth()
+    console.log('👤 ユーザーID:', userId)
+    
     if (!userId) {
+      console.log('❌ 認証失敗')
       return NextResponse.json(
         { error: '認証が必要です' },
         { status: 401 }
@@ -19,10 +23,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. リクエストボディから必要な情報を取得
+    console.log('💬 リクエストボディを解析中...')
     const { email, tenant_id, org_id, role } = await req.json()
+    console.log('📦 受信データ:', { email, tenant_id, org_id, role })
 
     // 3. 必須パラメータの検証
     if (!email || !tenant_id || !org_id || !role) {
+      console.log('❌ パラメータ不足')
       return NextResponse.json(
         { error: '必要なパラメータが不足しています' },
         { status: 400 }
@@ -39,21 +46,31 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. 招待の作成実行
-    const invitation = await clerk.invitations.createInvitation({
+    console.log('🏢 Clerk Clientの有無:', !!clerkClient)
+    console.log('🌐 NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
+    console.log('🔑 CLERK_SECRET_KEYの有無:', !!process.env.CLERK_SECRET_KEY)
+    
+    const invitationParams = {
       emailAddress: email,
-      // リダイレクト先のURL（招待受け入れページ）
-      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/invite-accept`,
-      // パブリックメタデータに組織情報とロールを設定
+      redirectUrl: `${BASE_URL}/invite-accept`,
       publicMetadata: {
-        tenant_id,    // テナントID（どのサロンか）
-        org_id,       // 組織ID（細分化された部門など）
-        role,         // 権限（staff/manager/owner）
-        invited_by: userId, // 招待者のID
-        invited_at: new Date().toISOString(), // 招待日時
+        tenant_id,
+        org_id,
+        role,
+        invited_by: userId,
+        invited_at: new Date().toISOString()
       },
-      notify: true,           // メール自動送信を有効
-      ignoreExisting: true,   // 既存招待があっても新規発行
-    })
+      notify: true,
+      ignoreExisting: true
+    }
+    
+    console.log('🚀 招待パラメータ:', invitationParams)
+    console.log('📧 招待作成を実行中...')
+    
+    const clerk = await clerkClient()
+    const invitation = await clerk.invitations.createInvitation(invitationParams)
+    
+    console.log('✅ 招待作成成功:', invitation.id)
 
     // 6. 成功レスポンスを返す
     return NextResponse.json({
@@ -64,7 +81,18 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     // 7. エラーハンドリング
-    console.error('招待作成エラー:', error)
+    console.error('🚨 招待作成エラー:', error)
+    console.error('🐞 エラーの詳細:', JSON.stringify(error, null, 2))
+    
+    // Clerkの環境変数を確認
+    console.log('🔑 CLERK_SECRET_KEYの有無:', !!process.env.CLERK_SECRET_KEY)
+    console.log('🌐 NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
+    
+    // エラータイプを詳細に分析
+    if (error instanceof Error) {
+      console.error('📄 エラーメッセージ:', error.message)
+      console.error('📋 エラースタック:', error.stack)
+    }
     
     // Clerkのエラーレスポンスを解析
     if (error && typeof error === 'object' && 'errors' in error) {

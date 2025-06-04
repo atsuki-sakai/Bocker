@@ -21,6 +21,7 @@ import { Mail, RefreshCw, Trash2, Clock, XCircle, AlertCircle, Users } from 'luc
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { formatTimestamp } from '@/lib/schedules'
 
 // 招待データの型定義
 interface Invitation {
@@ -177,24 +178,7 @@ export default function InviteManagement() {
 
   // 招待がない場合の表示
   if (!isLoading && invitations.length === 0) {
-    return (
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            招待管理
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <div className="text-muted-foreground mb-2">
-              <Mail className="h-12 w-12 mx-auto" />
-            </div>
-            <p className="text-sm text-muted-foreground">現在、保留中の招待はありません</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
+    return null
   }
 
   return (
@@ -203,7 +187,7 @@ export default function InviteManagement() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            招待管理
+            スタッフ招待管理
             {invitations.length > 0 && (
               <Badge variant="secondary" className="ml-2">
                 {invitations.length}件
@@ -276,10 +260,15 @@ export default function InviteManagement() {
                               <>
                                 <AlertCircle className="h-3 w-3 text-warning-foreground" />
                                 期限:{' '}
-                                {formatDistanceToNow(new Date(invitation.expires_at), {
-                                  addSuffix: true,
-                                  locale: ja,
-                                })}
+                                {
+                                  formatTimestamp(
+                                    invitation.created_at + 30 * 24 * 60 * 60 * 1000, // 30日後
+                                    {
+                                      useJST: true,
+                                      includeDate: true,
+                                    }
+                                  ).split(' ')[0]
+                                }
                               </>
                             )}
                           </div>

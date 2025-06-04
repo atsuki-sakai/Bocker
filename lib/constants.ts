@@ -160,7 +160,7 @@ export const SUBSCRIPTION_PLANS = {
   },
   PRO: {
     id: 'pro',
-    name: 'Pro', // HTMLの表示は'PRO'ですが、例の形式に合わせて'Pro'とします
+    name: 'Pro',
     features: [
       'LITEプランの全機能',
       '予約時に理想の髪型の画像(1枚)を添付できる様になります。',

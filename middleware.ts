@@ -180,6 +180,9 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    '/((?!api/|_next/static/|_next/image/|images/|img/|assets/|favicon.ico|sw.js).*)',
+    // Clerk関連のAPI Routeも含めるように設定
+    '/((?!api/webhook|api/generate|api/storage|_next/static/|_next/image/|images/|img/|assets/|favicon.ico|sw.js).*)',
+    // Clerk API Routeを明示的に含める
+    '/api/clerk/:path*',
   ],
 }

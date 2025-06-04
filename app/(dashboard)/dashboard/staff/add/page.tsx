@@ -276,6 +276,13 @@ export default function StaffAddPage() {
         // 招待メール送信処理（オプション）
         if (sendInviteEmail) {
           try {
+            console.log('📧 招待メール送信を開始:', {
+              email: data.email,
+              tenant_id: tenantId,
+              org_id: orgId,
+              role: data.role
+            })
+            
             const inviteResponse = await fetch('/api/clerk/staff/invite', {
               method: 'POST',
               headers: {
@@ -289,23 +296,26 @@ export default function StaffAddPage() {
               }),
             })
 
+            console.log('🔍 招待APIレスポンスステータス:', inviteResponse.status)
             const inviteData = await inviteResponse.json()
+            console.log('📦 招待APIレスポンスデータ:', inviteData)
 
             if (inviteResponse.ok) {
+              console.log('✅ 招待メール送信成功')
               toast.success('スタッフを追加し、招待メールを送信しました', {
                 icon: <Check className="h-4 w-4 text-active" />,
               })
             } else {
-              console.warn('招待メール送信失敗:', inviteData.error)
-              toast.success('スタッフを追加しました（招待メール送信は失敗）', {
-                icon: <Check className="h-4 w-4 text-active" />,
+              console.error('❌ 招待メール送信失敗:', {
+                status: inviteResponse.status,
+                error: inviteData.error,
+                fullResponse: inviteData
               })
+              toast.error(`招待メール送信失敗: ${inviteData.error || '不明なエラー'}`)
             }
           } catch (inviteError) {
-            console.warn('招待メール送信エラー:', inviteError)
-            toast.success('スタッフを追加しました（招待メール送信は失敗）', {
-              icon: <Check className="h-4 w-4 text-active" />,
-            })
+            console.error('🚨 招待メール送信エラー:', inviteError)
+            toast.error(`招待メール送信エラー: ${inviteError instanceof Error ? inviteError.message : '不明なエラー'}`)
           }
         } else {
           toast.success('スタッフを追加しました', {

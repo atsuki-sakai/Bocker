@@ -1,20 +1,20 @@
 // app/api/clerk/staff/delete/route.ts
 // スタッフ削除API - Clerkユーザーの完全削除
 
-import { clerkClient } from '@clerk/nextjs/server'
+import { clerkClient, currentUser } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 
 export async function DELETE(req: NextRequest) {
   try {
     // 1. 認証チェック
-    const { userId } = await auth()
-    if (!userId) {
+    const user = await currentUser()
+    if (!user) {
       return NextResponse.json(
         { error: '認証が必要です' },
         { status: 401 }
       )
     }
+    const userId = user.id
 
     // 2. リクエストボディから削除対象のユーザーIDを取得
     const { user_id, email } = await req.json()
