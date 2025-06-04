@@ -60,6 +60,7 @@ import type * as staff_week_schedule_mutation from "../staff/week_schedule/mutat
 import type * as staff_week_schedule_query from "../staff/week_schedule/query.js";
 import type * as storage_action from "../storage/action.js";
 import type * as tenant_mutation from "../tenant/mutation.js";
+import type * as tenant_plan_query from "../tenant/plan/query.js";
 import type * as tenant_query from "../tenant/query.js";
 import type * as tenant_referral_action from "../tenant/referral/action.js";
 import type * as tenant_referral_mutation from "../tenant/referral/mutation.js";
@@ -129,6 +130,7 @@ declare const fullApi: ApiFromModules<{
   "staff/week_schedule/query": typeof staff_week_schedule_query;
   "storage/action": typeof storage_action;
   "tenant/mutation": typeof tenant_mutation;
+  "tenant/plan/query": typeof tenant_plan_query;
   "tenant/query": typeof tenant_query;
   "tenant/referral/action": typeof tenant_referral_action;
   "tenant/referral/mutation": typeof tenant_referral_mutation;

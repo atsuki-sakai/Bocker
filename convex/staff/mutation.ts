@@ -15,12 +15,11 @@ export const create = mutation({
   args: {
     tenant_id: v.id('tenant'), // テナントID
     org_id: v.id('organization'), // 組織ID
-    plan_name: subscriptionPlanNameType,
     name: v.string(), // スタッフ名
     age: v.optional(v.number()), // 年齢
     email: v.string(), // メールアドレス
     gender: genderType, // 性別
-    instagram_link: v.optional(v.string()), // インスタグラムリンク 
+    instagram_link: v.optional(v.string()), // インスタグラムリンク
     description: v.optional(v.string()), // 自己紹介
     images: v.array(imageType), // 画像
     tags: v.array(v.string()), // タグ
@@ -53,29 +52,6 @@ export const create = mutation({
         callFunc: 'staff.create',
         details: { ...existingStaff },
       })
-    }
-
-    const limits = getPlanLimits(args.plan_name);
-
-    // 3. 現在のメニュー数を取得
-    // メニュー数を取得するために、最大数+1件取得して、その数をチェックする無駄なデータの取得をしない
-    const staffCount = await ctx.db
-      .query('staff')
-      .withIndex('by_tenant_org_active_archive', (q) =>
-        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
-      ).filter((q) => q.eq(q.field('is_archive'), false))
-      .take(limits.maxMenuCount + 1);
-
-    // 4. 上限チェック
-    if (staffCount.length >= limits.maxStaffCount) {
-      // 2 . ConvexError を使用してエラーをスローする
-      throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'menu.core.create',
-        message: `${args.plan_name}プランのスタッフの最大登録数は${limits.maxStaffCount}件です。`,
-        code: 'BAD_REQUEST',
-      });
     }
 
     return await createRecord(ctx, 'staff', {

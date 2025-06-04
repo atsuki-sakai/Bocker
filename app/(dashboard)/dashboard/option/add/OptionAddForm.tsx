@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useZodForm } from '@/hooks/useZodForm'
 import { api } from '@/convex/_generated/api'
 import { useMutation } from 'convex/react'
+import { fetchQuery } from 'convex/nextjs'
 import { TagInput, SingleImageDrop, Loading, ZodTextField } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -178,6 +179,12 @@ function OptionAddForm() {
         return
       }
 
+      await fetchQuery(api.tenant.plan.query.checkLimitByPlan, {
+        tenant_id: tenantId,
+        org_id: orgId,
+        limit_type: 'staff',
+      })
+
       if (currentFile) {
         try {
           setIsUploading(true)
@@ -206,7 +213,6 @@ function OptionAddForm() {
       await addOption({
         tenant_id: tenantId,
         org_id: orgId,
-        plan_name: planName,
         name: data.name,
         unit_price: data.unit_price, // 価格
         sale_price: data.sale_price ? data.sale_price : undefined, // セール価格

@@ -34,9 +34,9 @@ const SLOT_WIDTH = 32
 const TimelineHeader = memo(({ timeSlots }: { timeSlots: TimeSlot[] }) => (
   <div className="flex sticky top-0 z-20 bg-background shadow-sm border-b border-border">
     {/* スタッフ名カラムのヘッダー */}
-    <div className="sticky left-0 z-30 bg-background border-r border-border w-40 p-3 flex items-center justify-center font-bold text-muted-foreground">
+    <div className="sticky left-0 z-30 bg-background border-r border-border w-20 md:w-40 p-3 flex items-center justify-center font-bold text-muted-foreground">
       <User className="w-4 h-4 mr-2" />
-      スタッフ
+      <span className="hidden md:block">スタッフ</span>
     </div>
 
     {/* 時間スロットヘッダー */}
@@ -154,8 +154,8 @@ const StaffTimelineRow = memo(
         )}
       >
         {/* スタッフ名（左端固定） */}
-        <div className="sticky left-0 z-30 bg-background border-r border-border w-40 p-4 flex h-full items-center">
-          <div className="flex items-center gap-3 w-full">
+        <div className="sticky left-0 z-30 bg-background border-r border-border w-20 md:w-40 p-2 md:p-4 flex h-full items-center">
+          <div className="flex flex-col md:flex-row items-center gap-3 w-full">
             <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center shadow-sm">
               {staffData.staff.images && staffData.staff.images.length > 0 ? (
                 <Image
@@ -169,12 +169,12 @@ const StaffTimelineRow = memo(
                 <User className="w-5 h-5 text-primary" />
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm text-primary truncate">
+            <div className="flex-1 min-w-0 w-full">
+              <div className="font-semibold text-xs text-center  md:text-sm text-primary truncate">
                 {staffData.staff.name}
               </div>
               <div className="text-xs text-link-foreground flex items-center gap-1">
-                <Clock className="w-3 h-3" />
+                <Clock className="hidden md:block w-3 h-3" />
                 {reservationBars.length}件の予約
               </div>
             </div>
@@ -287,26 +287,14 @@ const ReservationDetailDialog = memo(
 ReservationDetailDialog.displayName = 'ReservationDetailDialog'
 
 // ■ 統計情報コンポーネント
-const StatsCards = memo(
-  ({
-    totalReservations,
-    activeStaffCount,
-  }: {
-    totalReservations: number
-    activeStaffCount: number
-  }) => (
-    <div className="flex gap-4 pb-4">
-      <Card className="flex items-center justify-between gap-4 px-2 py-1 bg-palette-3 border-palette-3-foreground">
-        <div className="text-xs text-palette-3-foreground font-medium">総予約数</div>
-        <div className="text-sm font-bold text-palette-3-foreground">{totalReservations}件</div>
-      </Card>
-      <Card className="flex items-center justify-between gap-4 px-2 py-1 bg-active-foreground border-active">
-        <div className="text-xs text-active font-medium">アクティブスタッフ</div>
-        <div className="text-sm font-bold text-active">{activeStaffCount}名</div>
-      </Card>
-    </div>
-  )
-)
+const StatsCards = memo(({ totalReservations }: { totalReservations: number }) => (
+  <div className="flex gap-4 pb-4">
+    <Card className="flex items-center justify-between gap-4 px-2 py-1 bg-active-foreground border-active">
+      <div className="text-xs text-active font-medium">総予約数</div>
+      <div className="text-sm font-bold text-active">{totalReservations}件</div>
+    </Card>
+  </div>
+))
 
 StatsCards.displayName = 'StatsCards'
 
@@ -381,13 +369,12 @@ export default function ReservationForm() {
 
   // ■ データ取得（最適化されたカスタムフック使用）
   const targetDateStr = format(selectedDate, 'yyyy-MM-dd')
-  const { staffTimelineData, timeSlots, totalReservations, activeStaffCount, isLoading } =
-    useTimelineData({
-      tenantId,
-      orgId,
-      date: targetDateStr,
-      ready,
-    })
+  const { staffTimelineData, timeSlots, totalReservations, isLoading } = useTimelineData({
+    tenantId,
+    orgId,
+    date: targetDateStr,
+    ready,
+  })
 
   // 表示用は30分単位
   const halfHourSlots = useMemo(
@@ -428,51 +415,55 @@ export default function ReservationForm() {
       {/* ヘッダー部分 */}
       <div className="sticky top-0 z-30 bg-background backdrop-blur-sm border-b-2 border-border space-y-4 shadow-sm">
         {/* 日付選択とビュー切り替え */}
-        <div className="flex items-center justify-between ">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleDateChange(-1)}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <div
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2 border-2 rounded-xl shadow-sm',
-                  isWeekendDate ? 'bg-muted border-muted-foreground' : 'bg-background border-border'
-                )}
-              >
-                <CalendarDays className="w-4 h-4 text-link-foreground" />
-                <span className="font-bold text-primary">
-                  {format(selectedDate, 'yyyy年MM月dd日(E)', { locale: ja })}
-                </span>
-                {isWeekendDate && (
-                  <span className="text-xs text-destructive font-medium">土日</span>
-                )}
+        <div className="flex flex-col md:flex-row items-center justify-between w-full">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-4 w-full">
+              <div className="flex items-center gap-2 w-full">
+                <Button variant="outline" size="sm" onClick={() => handleDateChange(-1)}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <div
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-2 border-2 rounded-xl shadow-sm',
+                    isWeekendDate
+                      ? 'bg-muted border-muted-foreground'
+                      : 'bg-background border-border'
+                  )}
+                >
+                  <CalendarDays className="w-4 h-4 text-link-foreground" />
+                  <span className="text-xs md:text-base font-bold text-primary">
+                    {format(selectedDate, 'MM月dd日(E)', { locale: ja })}
+                  </span>
+                  {isWeekendDate && (
+                    <span className="text-xs text-destructive font-medium">土日</span>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={() => handleDateChange(1)}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={() => handleDateChange(1)}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
             </div>
-
+          </div>
+          <div className="flex items-center gap-4 w-full md:mt-0 mt-4">
             <Button variant="outline" onClick={() => setSelectedDate(new Date())}>
               今日
             </Button>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Tabs
-              value={viewMode}
-              onValueChange={(value) => setViewMode(value as 'timeline' | 'list')}
-            >
-              <TabsList>
-                <TabsTrigger value="timeline">タイムライン</TabsTrigger>
-                <TabsTrigger value="list">リスト</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex items-center gap-3">
+              <Tabs
+                value={viewMode}
+                onValueChange={(value) => setViewMode(value as 'timeline' | 'list')}
+              >
+                <TabsList>
+                  <TabsTrigger value="timeline">タイムライン</TabsTrigger>
+                  <TabsTrigger value="list">リスト</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
         </div>
 
         {/* 統計情報 */}
-        <StatsCards totalReservations={totalReservations} activeStaffCount={activeStaffCount} />
+        <StatsCards totalReservations={totalReservations} />
       </div>
 
       {/* メインコンテンツ */}

@@ -1,5 +1,6 @@
 import { SubscriptionPlanName } from "@/convex/types";
 
+
 // プラン毎の制限値
 export type PlanLimits = {
     maxStaffCount: number;

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loading, ZodTextField } from '@/components/common'
 import { z } from 'zod'
+import { fetchQuery } from 'convex/nextjs'
 import { useZodForm } from '@/hooks/useZodForm'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { MultiImageDrop } from '@/components/common'
@@ -193,6 +194,12 @@ export default function MenuAddForm() {
         return
       }
 
+      await fetchQuery(api.tenant.plan.query.checkLimitByPlan, {
+        tenant_id: tenantId,
+        org_id: orgId,
+        limit_type: 'menu',
+      })
+
       setIsSubmitting(true)
       let newUploadedImageUrls: ImageType[] = []
 
@@ -232,7 +239,6 @@ export default function MenuAddForm() {
         const menuId = await createMenu({
           tenant_id: tenantId,
           org_id: orgId,
-          plan_name: planName,
           name: data.name,
           categories: data.categories,
           unit_price: data.unit_price ?? 0,

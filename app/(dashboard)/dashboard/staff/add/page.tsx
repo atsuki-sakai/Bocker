@@ -7,6 +7,7 @@ import { TagInput } from '@/components/common'
 import { DashboardSection } from '@/components/common'
 import { useZodForm } from '@/hooks/useZodForm'
 import { useMutation } from 'convex/react'
+import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -196,6 +197,12 @@ export default function StaffAddPage() {
         return
       }
 
+      await fetchQuery(api.tenant.plan.query.checkLimitByPlan, {
+        tenant_id: tenantId,
+        org_id: orgId,
+        limit_type: 'staff',
+      })
+
       if (selectedFile) {
         try {
           const result = await uploadCompressedImageWithThumbnailSignedUrl(
@@ -225,7 +232,6 @@ export default function StaffAddPage() {
         // スタッフの基本情報を追加
         try {
           staffId = await staffAdd({
-            plan_name: planName,
             instagram_link: data.instagram_link ?? undefined,
             age: data.age ?? undefined,
             description: data.description ?? undefined,
@@ -280,9 +286,9 @@ export default function StaffAddPage() {
               email: data.email,
               tenant_id: tenantId,
               org_id: orgId,
-              role: data.role
+              role: data.role,
             })
-            
+
             const inviteResponse = await fetch('/api/clerk/staff/invite', {
               method: 'POST',
               headers: {
@@ -309,20 +315,22 @@ export default function StaffAddPage() {
               console.error('❌ 招待メール送信失敗:', {
                 status: inviteResponse.status,
                 error: inviteData.error,
-                fullResponse: inviteData
+                fullResponse: inviteData,
               })
               toast.error(`招待メール送信失敗: ${inviteData.error || '不明なエラー'}`)
             }
           } catch (inviteError) {
             console.error('🚨 招待メール送信エラー:', inviteError)
-            toast.error(`招待メール送信エラー: ${inviteError instanceof Error ? inviteError.message : '不明なエラー'}`)
+            toast.error(
+              `招待メール送信エラー: ${inviteError instanceof Error ? inviteError.message : '不明なエラー'}`
+            )
           }
         } else {
           toast.success('スタッフを追加しました', {
             icon: <Check className="h-4 w-4 text-active" />,
           })
         }
-        
+
         router.push('/dashboard/staff')
       } catch (configAuthError) {
         // スタッフ設定または認証の保存に失敗した場合、作成したスタッフを削除
@@ -434,7 +442,7 @@ export default function StaffAddPage() {
                   {/* 基本情報セクション */}
                   <div>
                     <div className="grid md:grid-cols-2 gap-6 pb-4">
-                      <div className="max-w-xl mx-auto">
+                      <div className="w-full">
                         <div className="mb-2 flex items-center">
                           <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
                           <span className="text-sm font-medium text-muted-foreground">
@@ -442,7 +450,7 @@ export default function StaffAddPage() {
                           </span>
                         </div>
 
-                        <div className="w-full max-w-md mx-auto">
+                        <div className="w-full">
                           <SingleImageDrop
                             onFileSelect={(file) => setSelectedFile(file ?? null)}
                             aspectType="square"
@@ -451,7 +459,7 @@ export default function StaffAddPage() {
                         </div>
                       </div>
 
-                      <div className="space-y-4">
+                      <div className="space-y-4 w-full">
                         <div>
                           <ZodTextField
                             name="name"
@@ -465,7 +473,7 @@ export default function StaffAddPage() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <div className="w-1/2">
+                          <div className="w-full">
                             <Label className="flex items-center mb-2 font-medium text-muted-foreground">
                               <User className="h-4 w-4 mr-2 text-muted-foreground" />
                               性別
@@ -491,7 +499,7 @@ export default function StaffAddPage() {
                             </Select>
                           </div>
 
-                          <div className="w-1/2">
+                          <div className="w-full">
                             <ZodTextField
                               name="age"
                               label="年齢"
@@ -644,47 +652,47 @@ export default function StaffAddPage() {
                         <p className="text-xs text-muted-foreground">
                           有効にすると、スタッフに招待メールが送信され、Clerkアカウントでログインできるようになります。
                         </p>
-                        
+
                         <div>
                           <div className="flex items-center mb-2">
                             <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
                             <Label className="font-medium text-muted-foreground">権限</Label>
                           </div>
-                        <div className="mt-1">
-                          <div className="grid grid-cols-3 gap-3">
-                            {[
-                              {
-                                role: 'staff',
-                                label: 'スタッフ',
-                                desc: '基本的な予約確認と自身の情報管理のみ',
-                              },
-                              {
-                                role: 'manager',
-                                label: 'マネージャー',
-                                desc: 'スタッフ管理と基本設定の変更が可能',
-                              },
-                              {
-                                role: 'owner',
-                                label: 'オーナー',
-                                desc: 'すべての機能にアクセス可能',
-                              },
-                            ].map((item) => (
-                              <motion.div
-                                key={item.role}
-                                whileHover={{ scale: 1.02 }}
-                                className={`border rounded-md p-3 cursor-pointer transition-all ${
-                                  watch('role') === item.role
-                                    ? 'border-active bg-active-foreground text-active'
-                                    : 'border-border bg-muted text-muted-foreground'
-                                }`}
-                                onClick={() => setValue('role', item.role as Role)}
-                              >
-                                <div className="text-sm mb-1 font-bold">{item.label}</div>
-                                <div className="text-xs text-muted-foreground">{item.desc}</div>
-                              </motion.div>
-                            ))}
+                          <div className="mt-1">
+                            <div className="grid grid-cols-3 gap-3">
+                              {[
+                                {
+                                  role: 'staff',
+                                  label: 'スタッフ',
+                                  desc: '基本的な予約確認と自身の情報管理のみ',
+                                },
+                                {
+                                  role: 'manager',
+                                  label: 'マネージャー',
+                                  desc: 'スタッフ管理と基本設定の変更が可能',
+                                },
+                                {
+                                  role: 'owner',
+                                  label: 'オーナー',
+                                  desc: 'すべての機能にアクセス可能',
+                                },
+                              ].map((item) => (
+                                <motion.div
+                                  key={item.role}
+                                  whileHover={{ scale: 1.02 }}
+                                  className={`border rounded-md p-3 cursor-pointer transition-all ${
+                                    watch('role') === item.role
+                                      ? 'border-active bg-active-foreground text-active'
+                                      : 'border-border bg-muted text-muted-foreground'
+                                  }`}
+                                  onClick={() => setValue('role', item.role as Role)}
+                                >
+                                  <div className="text-sm mb-1 font-bold">{item.label}</div>
+                                  <div className="text-xs text-muted-foreground">{item.desc}</div>
+                                </motion.div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
                         </div>
                       </div>
                     </div>

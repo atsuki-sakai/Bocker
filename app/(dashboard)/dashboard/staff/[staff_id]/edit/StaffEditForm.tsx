@@ -567,7 +567,7 @@ export default function StaffEditForm() {
                       </div>
 
                       <div className="flex items-center gap-4">
-                        <div className="w-1/2">
+                        <div className="w-full">
                           <Label className="flex items-center mb-2 font-medium">
                             <User className="h-4 w-4 mr-2 text-muted-foreground" />
                             性別
@@ -598,7 +598,7 @@ export default function StaffEditForm() {
                           </Select>
                         </div>
 
-                        <div className="w-1/2">
+                        <div className="w-full">
                           <ZodTextField
                             name="age"
                             label="年齢"

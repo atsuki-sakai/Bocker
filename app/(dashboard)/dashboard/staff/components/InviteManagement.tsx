@@ -175,6 +175,9 @@ export default function InviteManagement() {
   const isExpired = (expiresAt: number) => {
     return new Date().getTime() > expiresAt
   }
+  if (isLoading) {
+    return null
+  }
 
   // 招待がない場合の表示
   if (!isLoading && invitations.length === 0) {

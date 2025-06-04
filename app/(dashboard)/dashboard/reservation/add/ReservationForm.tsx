@@ -50,7 +50,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Command, CommandList, CommandInput, CommandItem } from '@/components/ui/command'
+import { Command, CommandList, CommandItem } from '@/components/ui/command'
 import { Label } from '@/components/ui/label'
 import { Loader2, X, Plus, Minus } from 'lucide-react'
 import { useEffect, useState, useMemo, useCallback } from 'react'
@@ -742,7 +742,7 @@ export default function ReservationForm() {
                         </p>
                       </PopoverTrigger>
                       <PopoverContent
-                        className="w-full max-w-[300px] p-2 overflow-y-auto h-fit"
+                        className="w-full p-2 overflow-y-auto h-fit"
                         onOpenAutoFocus={(event) => event.preventDefault()}
                       >
                         <Command>
@@ -913,15 +913,11 @@ export default function ReservationForm() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-full py-2 px-4 overflow-y-auto h-full "
+                  className="w-full max-w-[calc(100vw-60px)] py-2 px-4 overflow-y-auto h-full "
                   onOpenAutoFocus={(event) => event.preventDefault()}
                 >
                   <Command>
                     <div className="flex items-center justify-between border-b">
-                      <CommandInput
-                        placeholder="メニューを検索…"
-                        className="flex-1 border-0 focus:ring-0"
-                      />
                       <button
                         type="button"
                         onClick={() => setMenuPopoverOpen(false)}
@@ -1142,15 +1138,11 @@ export default function ReservationForm() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-full p-2"
+                      className="w-full max-w-[calc(100vw-60px)] p-2"
                       onOpenAutoFocus={(event) => event.preventDefault()}
                     >
                       <Command>
                         <div className="flex justify-between items-center w-full border-b">
-                          <CommandInput
-                            placeholder="オプションを検索..."
-                            className=" border-0 focus:ring-0 w-full"
-                          />
                           <button
                             type="button"
                             onClick={() => setOptionPopoverOpen(false)}

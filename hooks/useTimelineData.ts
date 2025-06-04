@@ -68,7 +68,6 @@ interface UseTimelineDataReturn {
   staffTimelineData: StaffTimelineData[]
   timeSlots: TimeSlot[]
   totalReservations: number
-  activeStaffCount: number
   isLoading: boolean
 }
 
@@ -225,11 +224,6 @@ export function useTimelineData({
     [reservations?.results]
   )
 
-  const activeStaffCount = useMemo(() => 
-    staffTimelineData.length,
-    [staffTimelineData]
-  )
-
   // ローディング状態の判定
   const isLoading = useMemo(() => 
     !staffList || !reservations || staffList.isLoading || reservations.isLoading,
@@ -240,7 +234,6 @@ export function useTimelineData({
     staffTimelineData,
     timeSlots,
     totalReservations,
-    activeStaffCount,
     isLoading,
   }
 }
