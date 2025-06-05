@@ -75,30 +75,193 @@ npx convex run <function-name>
 
 ## 主要ディレクトリ構造と責務
 
+### フロントエンド (Next.js App Router)
 ```
-app/                 # Next.js App Router
-├── (auth)/          # 認証関連ページ（サインイン、サインアップ、パスワードリセット）
-├── (dashboard)/     # 管理画面（予約、顧客、メニュー、スタッフ、設定など）
-└── api/             # APIルート（Webhook、Stripe、Clerk連携）
-
-convex/              # Convexバックエンド関数
-├── _generated/      # 自動生成ファイル（編集不可）
-├── schema.ts        # データベーススキーマ定義
-├── auth.config.ts   # Convex Auth設定
-└── [feature]/       # 機能別ディレクトリ（query.ts, mutation.ts, action.ts）
-
-services/            # 外部サービス連携層
-├── gcp/             # Google Cloud Storage連携
-├── line/            # LINE API連携（Flex Message対応）
-├── stripe/          # Stripe連携（Connect、Subscription）
-├── supabase/        # Supabaseリポジトリ層
-└── webhook/         # Webhook処理（並列処理、べき等性対応）
-
-lib/                 # 共通ライブラリ
-├── errors/          # カスタムエラークラス（BaseError継承）
-├── zod/             # Zodスキーマヘルパー
-└── types/           # 共通型定義
+app/
+├── (auth)/                    # 認証関連ページ群
+│   ├── sign-in/              # サインインページ・フォーム
+│   ├── sign-up/              # サインアップページ・フォーム
+│   └── invite-accept/        # スタッフ招待受諾ページ
+├── (dashboard)/              # 管理画面（認証後）
+│   └── dashboard/
+│       ├── page.tsx          # ダッシュボードホーム
+│       ├── reservation/      # 予約管理（一覧・詳細・新規）
+│       ├── customer/         # 顧客管理（一覧・詳細・編集・新規）
+│       ├── menu/             # メニュー管理（一覧・詳細・編集・新規）
+│       ├── staff/            # スタッフ管理（一覧・詳細・編集・招待）
+│       ├── option/           # オプション管理
+│       ├── coupon/           # クーポン管理
+│       ├── point/            # ポイント管理
+│       ├── setting/          # 組織設定（営業時間・決済・API設定）
+│       ├── subscription/     # サブスクリプション管理
+│       └── staff-schedule/   # スタッフスケジュール管理
+├── (home)/                   # 公開ページ
+│   ├── page.tsx              # ランディングページ
+│   └── maintenance/          # メンテナンスページ
+└── api/                      # APIエンドポイント
+    ├── clerk/                # Clerk認証関連API
+    ├── stripe/               # Stripe決済・Connect API
+    ├── storage/              # ファイルアップロード署名付きURL
+    ├── webhook/              # 各種Webhook受信
+    └── generate/             # AI生成API（メニュー説明など）
 ```
+
+### バックエンド (Convex)
+```
+convex/
+├── _generated/               # 自動生成ファイル（編集不可）
+├── schema.ts                 # 全テーブルスキーマ定義
+├── auth.config.ts           # Clerk認証設定
+├── constants.ts             # 共通定数
+├── types.ts                 # 共通型定義
+├── crons.ts                 # バッチ処理（データ移行）
+├── migrations.ts            # データマイグレーション
+├── utils/                   # ヘルパー関数
+│   ├── auth.ts              # 認証ユーティリティ
+│   ├── helpers.ts           # 共通ヘルパー
+│   └── validations.ts       # バリデーション関数
+└── [feature]/               # 機能別ディレクトリ
+    ├── query.ts             # データ取得関数
+    ├── mutation.ts          # データ更新関数
+    └── action.ts            # 外部API連携・複雑処理
+
+機能別ディレクトリ構成:
+├── organization/            # 組織・設定管理
+│   ├── config/              # 基本設定
+│   ├── api_config/          # API設定
+│   ├── reservation_config/   # 予約設定
+│   ├── week_schedule/       # 営業時間
+│   └── exception_schedule/  # 特別営業日
+├── staff/                   # スタッフ管理
+│   ├── auth/                # スタッフ認証
+│   ├── config/              # スタッフ設定
+│   ├── week_schedule/       # 勤務スケジュール
+│   └── exception_schedule/  # 特別勤務日
+├── reservation/             # 予約管理
+├── menu/                    # メニュー管理
+│   └── menu_exclusion_staff/ # スタッフ除外設定
+├── option/                  # オプション管理
+├── coupon/                  # クーポン管理
+│   ├── config/              # クーポン設定
+│   └── exclusion_menu/      # 除外メニュー
+├── point/                   # ポイント管理
+│   ├── exclusion_menu/      # 除外メニュー
+│   └── queue/               # ポイント処理キュー
+├── tenant/                  # テナント管理
+│   ├── plan/                # プラン管理
+│   ├── subscription/        # サブスクリプション
+│   └── referral/            # 紹介システム
+├── storage/                 # ファイル管理
+└── webhook_events/          # Webhook処理結果
+```
+
+### サービス層 (外部API連携)
+```
+services/
+├── gcp/                     # Google Cloud Platform
+│   └── cloud_storage/       # GCS画像アップロード・管理
+│       ├── GoogleStorageService.ts  # メインサービス
+│       ├── constants.ts     # GCS設定定数
+│       ├── helpers.ts       # ヘルパー関数
+│       └── types.ts         # 型定義
+├── line/                    # LINE Messaging API
+│   ├── LineService.ts       # メインサービス
+│   ├── repositories/        # LINE関連データアクセス
+│   ├── message_template/    # Flex Messageテンプレート
+│   ├── constants.ts         # LINE API設定
+│   └── types.ts             # LINE関連型定義
+├── stripe/                  # Stripe決済・マーケットプレイス
+│   ├── StripeService.ts     # メインサービス
+│   ├── repositories/        # Stripe関連データアクセス
+│   │   ├── StripeConnectRepository.ts    # Connect機能
+│   │   └── StripeSubscriptionRepository.ts # サブスクリプション
+│   ├── constants.ts         # Stripe設定
+│   └── types.ts             # Stripe関連型定義
+├── supabase/                # PostgreSQL（履歴データ・分析）
+│   ├── SupabaseService.ts   # メインサービス
+│   ├── repositories/        # データアクセス層
+│   │   ├── BaseRepository.ts          # 基底リポジトリ
+│   │   ├── ReservationRepository.ts   # 予約履歴
+│   │   ├── customer/        # 顧客マスター・ポイント
+│   │   ├── carte/           # カルテ
+│   │   ├── coupon/          # クーポン利用履歴
+│   │   ├── point/           # ポイント取引履歴
+│   │   └── tracking/        # アクセス解析
+│   └── utils/               # Supabase関連ユーティリティ
+└── webhook/                 # Webhook処理基盤
+    ├── BaseProcessor.ts     # 基底プロセッサ
+    ├── parallel.ts          # 並列処理ユーティリティ
+    ├── metrics.ts           # 処理メトリクス
+    ├── clerk/               # Clerk Webhook処理
+    └── stripe/              # Stripe Webhook処理
+```
+
+### 共通ライブラリ
+```
+lib/
+├── auth/                    # 認証関連
+│   └── getOrganizationAuth.ts # 組織認証取得
+├── errors/                  # エラーハンドリング
+│   ├── BaseError.ts         # 基底エラークラス
+│   ├── custom_errors.ts     # カスタムエラー定義
+│   ├── constants.ts         # エラーコード定数
+│   ├── helpers.ts           # エラーヘルパー
+│   ├── types.ts             # エラー関連型
+│   └── utils.ts             # エラーユーティリティ
+├── zod/                     # バリデーション
+│   └── helpers.ts           # Zodスキーマヘルパー
+├── email_templates/         # メールテンプレート
+├── constants.ts             # アプリ全体定数
+├── helpers.ts               # 共通ヘルパー関数
+├── schedules.ts             # スケジュール関連ロジック
+├── utils.ts                 # 汎用ユーティリティ
+└── types.ts                 # 共通型定義
+```
+
+### コンポーネント
+```
+components/
+├── ui/                      # shadcn/ui基本コンポーネント
+├── common/                  # 共通コンポーネント
+│   ├── Sidebar.tsx          # サイドバーナビゲーション
+│   ├── DashboardSection.tsx # ダッシュボードセクション
+│   ├── OrganizationForm.tsx # 組織情報フォーム
+│   ├── SingleImageDrop.tsx  # 単一画像アップロード
+│   ├── MultiImageDrop.tsx   # 複数画像アップロード
+│   ├── TagInput.tsx         # タグ入力
+│   ├── CalendarMultiSelect.tsx # カレンダー複数選択
+│   └── Loading.tsx          # ローディング表示
+├── providers/               # React Context Provider
+│   ├── ClerkProvider.tsx    # Clerk認証
+│   ├── ConvexClientProvider.tsx # Convex接続
+│   ├── ThemeProvider.tsx    # ダークモード
+│   └── LiffProvider.tsx     # LINE LIFF
+└── emails/                  # メールテンプレート
+    └── ReservationConfirmationEmail.tsx
+```
+
+### フック・ユーティリティ
+```
+hooks/
+├── useZodForm.ts            # Zod+React Hook Form統合
+├── useTenantAndOrganization.ts # テナント・組織情報取得
+├── useStablePaginatedQuery.tsx # 安定したページネーション
+├── useTimelineData.ts       # タイムライン表示用データ
+├── useErrorHandler.ts       # エラーハンドリング
+└── use-toast.ts            # トースト通知
+
+middleware.ts                # Clerk認証ミドルウェア
+instrumentation.ts           # Sentry監視設定
+```
+
+### 責務分離の原則
+
+1. **フロントエンド**: UIコンポーネント・ユーザー操作・状態管理
+2. **Convex**: リアルタイムデータ・ビジネスロジック・認証
+3. **Services**: 外部API連携・データ変換・エラーハンドリング
+4. **Supabase**: 履歴データ・分析用データ・顧客マスター
+5. **Components**: 再利用可能UI・フォーム・表示ロジック
+6. **Lib**: 共通関数・型定義・定数・エラークラス
 
 ## 開発時の重要なパターン
 
@@ -289,16 +452,6 @@ export const listWithExtraArg = query({
     },
 });
 ```
-
-### チャットアプリ実装例
-
-完全な実装例は`.cursor/rules/convex_rules.mdc`を参照してください。主要な設計パターン：
-
-1. **スキーマ設計**：users、channels、messagesテーブル
-2. **パブリックAPI**：createUser、createChannel、sendMessage、listMessages
-3. **内部関数**：generateResponse、loadContext、writeAgentResponse
-4. **AI統合**：OpenAI GPT-4を使用した自動応答
-5. **非同期処理**：`ctx.scheduler.runAfter`でAI応答をスケジュール
 
 ## データ量・ストレージ設計（3,000店舗規模）
 
