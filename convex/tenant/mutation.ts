@@ -60,10 +60,33 @@ export const upsert = mutation({
 
 export const archive = mutation({
   args: {
-    tenant_id: v.id('tenant'),
+    user_id: v.string(), // Changed from tenant_id
   },
   handler: async (ctx, args) => {
-      await archiveRecord(ctx,args.tenant_id);
+    validateStringLength(args.user_id, 'user_id');
+
+    const existingTenant = await ctx.db
+      .query('tenant')
+      .withIndex('by_user_archive', (q) =>
+        q.eq('user_id', args.user_id).eq('is_archive', false)
+      )
+      .first();
+
+    if (existingTenant) {
+      await archiveRecord(ctx, existingTenant._id);
+      return {
+        success: true,
+        archived: true,
+        tenantId: existingTenant._id,
+        stripe_customer_id: existingTenant.stripe_customer_id
+      };
+    } else {
+      return {
+        success: true,
+        not_found: true,
+        message: 'No active tenant found for this user_id to archive.'
+      };
+    }
   },
 });
 

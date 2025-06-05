@@ -107,51 +107,68 @@ export async function handleSubscriptionDeleted(
     stripeCustomerId: evt.data.object.customer as string,
     stripeSubscriptionId: evt.data.object.id as string,
   };
-  console.log(`👤 [${eventId}] CustomerSubscriptionDeleted処理開始: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`, context);
+  const stripeSubscriptionId = evt.data.object.id as string;
+  const stripeCustomerId = evt.data.object.customer as string; // Keep for logging/metadata
+
+  console.log(`🗑️ [${eventId}] CustomerSubscriptionDeleted処理開始 (Archive by stripe_subscription_id): stripeSubscriptionId=${stripeSubscriptionId}`, context);
+  metrics.incrementApiCall('convex'); // For the archive call
+
+  // The call to deps.stripe.customers.retrieve to get tenant_id is removed as it's not strictly needed for archiving.
+  // If tenant_id was needed for some other side-effect not related to archive, this would be a breaking change for that side-effect.
+  // The original code used tenant_id from customer metadata for logging/context. We can try to retain customer retrieval if it's quick and useful.
+  // However, the goal is to reduce Convex calls. Stripe calls are secondary.
+  // Let's assume for this optimization, direct tenant_id is not critical for the archive action itself.
 
   try {
-
-    const customer = await deps.stripe.customers.retrieve(evt.data.object.customer as string) as Stripe.Customer;
-    metrics.incrementApiCall("stripe");
-    const tenant_id = customer.metadata?.tenant_id as Id<'tenant'>;
-
-    const subscription = await deps.retry(() =>
-      fetchQuery(deps.convex.tenant.subscription.query.findByStripeCustomerId, {
-        stripe_customer_id: evt.data.object.customer as string,
+    const archiveResult = await deps.retry(() =>
+      fetchMutation(deps.convex.tenant.subscription.mutation.archive, {
+        stripe_subscription_id: stripeSubscriptionId,
       })
     );
-    metrics.incrementApiCall("convex");
-    if (!subscription) {
+    // Note: The original code had another metrics.incrementApiCall("convex") for the query, this is now removed.
+
+    if (archiveResult.success && archiveResult.archived) {
+      console.log(`✅ [${eventId}] サブスクリプションアーカイブ成功 (by stripe_subscription_id): stripeSubscriptionId=${stripeSubscriptionId}, convexSubscriptionId=${archiveResult.subscriptionId}`, { ...context, convexSubscriptionId: archiveResult.subscriptionId });
       return {
-        result: 'skipped',
+        result: 'success',
         metadata: {
-          action: 'customer_subscription_deleted',
-          stripeCustomerId: evt.data.object.customer as string,
-          stripeSubscriptionId: evt.data.object.id as string,
-          errorMessage: 'サブスクリプションはすでに削除またはアーカイブされています',
+          action: 'customer_subscription_deleted_archived_by_stripe_id',
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: stripeSubscriptionId,
+          convexSubscriptionId: archiveResult.subscriptionId,
         }
       };
+    } else if (archiveResult.success && archiveResult.not_found) {
+      console.warn(`⚠️ [${eventId}] 削除対象のサブスクリプションが見つかりません (stripe_subscription_id=${stripeSubscriptionId})。既に処理済みか、存在しません。`, { ...context });
+      return {
+        result: 'success', // Still success as the desired state (no active subscription) is achieved
+        metadata: {
+          action: 'customer_subscription_deleted_not_found_by_stripe_id',
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: stripeSubscriptionId,
+          errorMessage: 'サブスクリプションはすでに削除またはアーカイブされています', // Original message
+        }
+      };
+    } else {
+      // Handle unexpected result
+      console.error(`❌ [${eventId}] サブスクリプションアーカイブ失敗 (by stripe_subscription_id): stripeSubscriptionId=${stripeSubscriptionId}. Result:`, archiveResult, context);
+      Sentry.captureMessage('Subscription archive by stripe_subscription_id failed with unexpected result', {
+        level: 'error',
+        tags: { ...context, operation: 'archive_subscription_by_stripe_id_unexpected_result' },
+        extra: { archiveResult }
+      });
+      return {
+        result: 'error',
+        errorMessage: 'Subscription archive failed with unexpected result.'
+      };
     }
-    await deps.retry(() =>
-      fetchMutation(deps.convex.tenant.subscription.mutation.archive, {
-        id: subscription._id
-      })
-    );
-    metrics.incrementApiCall("convex");
-    
-    return {
-      result: 'success',
-      metadata: {
-        action: 'customer_subscription_deleted',
-        stripeCustomerId: evt.data.object.customer as string,
-        stripeSubscriptionId: evt.data.object.id as string,
-      }
-    };
+
   } catch (error) {
-    console.error(`❌ [${eventId}] CustomerSubscriptionDeleted処理中に致命的なエラーが発生: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`, { ...context, error });
+    // ... (outer catch block remains mostly the same) ...
+    console.error(`❌ [${eventId}] CustomerSubscriptionDeleted処理中に致命的なエラーが発生 (Archive by StripeID Flow): stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`, { ...context, error });
     Sentry.captureException(error, {
       level: 'error',
-      tags: { ...context, operation: 'handleCustomerSubscriptionDeleted_main_catch' },
+      tags: { ...context, operation: 'handleCustomerSubscriptionDeleted_archive_by_stripe_id_catch' },
     });
     return {
       result: 'error',
