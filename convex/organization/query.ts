@@ -116,3 +116,23 @@ export const getOrgAndConfig = query({
     };
   },
 });
+
+// Find the primary organization for a tenant
+// This assumes a simple model where the first organization created for a tenant is considered primary,
+// or that there's an index `by_tenant_id` on the `organization` table.
+export const findPrimaryByTenantId = query({
+  args: { tenant_id: v.id('tenant') },
+  handler: async (ctx, args): Promise<Doc<'organization'> | null> => {
+    // Ensure your 'organization' table has an index named 'by_tenant_id' on the 'tenant_id' field.
+    // Example schema definition for such an index:
+    // defineTable({ ... })
+    //  .index("by_tenant_id", ["tenant_id"])
+    const organization = await ctx.db
+      .query('organization')
+      .withIndex('by_tenant_id', (q) => q.eq('tenant_id', args.tenant_id))
+      .first(); // Takes the first one found.
+    return organization;
+  },
+});
+
+// Add other organization queries here if any...

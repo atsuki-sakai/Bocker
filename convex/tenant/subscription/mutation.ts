@@ -115,10 +115,24 @@ export const paymentFailed = mutation({
 
 export const archive = mutation({
   args: {
-    id: v.id('subscription'),
+    stripe_subscription_id: v.string(), // Changed from id: v.id('subscription')
   },
   handler: async (ctx, args) => {
-    return await archiveRecord(ctx, args.id);
+    validateStringLength(args.stripe_subscription_id, 'stripe_subscription_id');
+
+    const existingSubscription = await ctx.db
+      .query('subscription')
+      .withIndex('by_stripe_subscription_archive', (q) =>
+        q.eq('stripe_subscription_id', args.stripe_subscription_id).eq('is_archive', false)
+      )
+      .first();
+
+    if (existingSubscription) {
+      await archiveRecord(ctx, existingSubscription._id);
+      return { success: true, archived: true, subscriptionId: existingSubscription._id };
+    } else {
+      return { success: true, not_found: true, message: 'No active subscription found for this stripe_subscription_id to archive.' };
+    }
   },
 });
 
