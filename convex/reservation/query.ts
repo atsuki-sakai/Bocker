@@ -612,6 +612,57 @@ export const findStaffReservations = query({
   },
 })
 
+// Helper query to fetch various staff availability data
+const _getStaffAvailabilityData = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    staff_id: v.id('staff'),
+    date: v.string(), // "YYYY-MM-DD"
+  },
+  handler: async (ctx, args) => {
+    // Validate date format (optional but good practice)
+    validateDateStrToDate(args.date, '_getStaffAvailabilityData');
+
+    const availableTimeSlots = await ctx.runQuery(api.reservation.query.findAvailableTimeSlots, {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      staff_id: args.staff_id,
+      date: args.date,
+    });
+
+    const staffAllDaySchedules = await ctx.runQuery(api.reservation.query.findStaffSchedules, {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      staff_id: args.staff_id,
+      date: args.date,
+      is_all_day: true,
+    });
+
+    const staffPartialSchedules = await ctx.runQuery(api.reservation.query.findStaffSchedules, {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      staff_id: args.staff_id,
+      date: args.date,
+      is_all_day: false,
+    });
+
+    const staffReservations = await ctx.runQuery(api.reservation.query.findStaffReservations, {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      staff_id: args.staff_id,
+      date: args.date,
+    });
+
+    return {
+      availableTimeSlots,
+      staffAllDaySchedules,
+      staffPartialSchedules, // Renamed from staffSchedules for clarity
+      staffReservations,
+    };
+  },
+});
+
 // --- ユーティリティ関数としてファイル下部にまとめる ---
 function subtractScheduleFromAvailable(
   available: TimeRange,
@@ -764,27 +815,28 @@ export const calculateReservationTime = query({
     staff_id: v.id('staff'),
     date: v.string(), // "YYYY-MM-DD"
     duration_min: v.number(), // 50分などの施術時間 数値のみ
+    reservationConfigData: v.any(), // Added: Pass reservation_config directly
   },
   handler: async (ctx, args): Promise<TimeRange[]> => {
     // 共通日付バリデーション
     validateDateStrToDate(args.date, 'calculateReservationTime')
     validateStringLength(args.org_id, 'org_id')
 
-    // findAvailableTimeSlots, findStaffSchedules, findStaffReservations を直接呼び出し
-    const availableTimeSlots = await ctx.runQuery(api.reservation.query.findAvailableTimeSlots, {
+    // Call the new helper query to get staff availability data
+    const staffAvailability = await ctx.runQuery(api.reservation.query._getStaffAvailabilityData, {
       tenant_id: args.tenant_id,
       org_id: args.org_id,
       staff_id: args.staff_id,
       date: args.date,
-    })
+    });
 
-    const staffAllDaySchedules = await ctx.runQuery(api.reservation.query.findStaffSchedules, {
-      tenant_id: args.tenant_id,
-      org_id: args.org_id,
-      staff_id: args.staff_id,
-      date: args.date,
-      is_all_day: true,
-    })
+    // Destructure the data from the helper query result
+    const {
+      availableTimeSlots,
+      staffAllDaySchedules,
+      staffPartialSchedules, // This was staffSchedules before
+      staffReservations,
+    } = staffAvailability;
 
     if (staffAllDaySchedules.length > 0) {
       throw new ConvexError({
@@ -803,28 +855,31 @@ export const calculateReservationTime = query({
       })
     }
 
-    const reservationConfig = await ctx.runQuery(api.organization.reservation_config.query.findByTenantAndOrg, {
-      tenant_id: args.tenant_id,
-      org_id: args.org_id,
-    })
+    // Use passed-in reservationConfigData instead of fetching
+    const reservationConfig = args.reservationConfigData
 
-    const staffSchedules = await ctx.runQuery(api.reservation.query.findStaffSchedules, {
-      tenant_id: args.tenant_id,
-      org_id: args.org_id,
-      staff_id: args.staff_id,
-      date: args.date,
-      is_all_day: false,
-    })
+    if (!reservationConfig) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'calculateReservationTime',
+        status: 400,
+        message: 'Reservation configuration is required but was not provided.',
+        code: 'BAD_REQUEST',
+        details: {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+          staff_id: args.staff_id,
+          date: args.date,
+        },
+      });
+    }
 
-    const staffReservations = await ctx.runQuery(api.reservation.query.findStaffReservations, {
-      tenant_id: args.tenant_id,
-      org_id: args.org_id,
-      staff_id: args.staff_id,
-      date: args.date,
-    })
+    // staffSchedules is now staffPartialSchedules from the helper
+    // staffReservations is also from the helper
 
     const allSchedules = [
-      ...staffSchedules.map((schedule) => ({
+      ...staffPartialSchedules.map((schedule) => ({ // Use staffPartialSchedules
         startHour: formatTimestamp(schedule.start_time_unix,{useJST: true}),
         endHour: formatTimestamp(schedule.end_time_unix,{useJST: true}),
       })),

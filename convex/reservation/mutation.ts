@@ -98,6 +98,10 @@ export const create = mutation({
     coupon_discount: v.optional(v.number()), // クーポン割引額
     featured_hair_images: v.array(imageType), // フィーチャー画像
     notes: v.optional(v.string()), // メモ
+    // Added optional arguments for passed-in data
+    passedReservationConfig: v.optional(v.any()),
+    passedStaffData: v.optional(v.any()),
+    passedOrgData: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     // 入力値の妥当性を検証し、不正なデータの登録を防止するためのバリデーション処理
@@ -106,24 +110,28 @@ export const create = mutation({
     validateRequiredNumber(args.end_time_unix, 'end_time_unix')
     validateRequired(args.org_id, 'org_id')
 
-    // スタッフIDに対応するスタッフが存在するかを確認し、存在しなければエラーを返す
-    const staff = await ctx.db.get(args.staff_id)
-    if (!staff) {
+    // Staff Check: Use passedStaffData if available and valid, otherwise fetch
+    let staff = args.passedStaffData;
+    if (!staff || staff._id !== args.staff_id || !staff.is_active) { // Add any other necessary checks for staff validity
+      staff = await ctx.db.get(args.staff_id);
+    }
+    if (!staff || !staff.is_active) { // Ensure staff is active if fetched or passed
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.NOT_FOUND,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'reservation.create',
-        message: '指定されたスタッフが存在しません',
+        message: '指定されたスタッフが存在しないか、アクティブではありません',
         code: 'NOT_FOUND',
         status: 404,
-        details: {
-          ...args,
-        },
-      })
+        details: { ...args, staff_id: args.staff_id },
+      });
     }
 
-    // アクティブな組織が存在し、かつアーカイブされていないことを確認する
-    const organization = await ctx.db.query('organization').withIndex('by_tenant_active_archive', q => q.eq('tenant_id', args.tenant_id).eq('is_active', true).eq('is_archive', false)).first()
+    // Organization Check: Use passedOrgData if available and valid, otherwise fetch
+    let organization = args.passedOrgData;
+    if (!organization || organization._id !== args.org_id || !organization.is_active || organization.is_archive) {
+      organization = await ctx.db.query('organization').withIndex('by_tenant_active_archive', q => q.eq('tenant_id', args.tenant_id).eq('_id', args.org_id).eq('is_active', true).eq('is_archive', false)).first();
+    }
     if (!organization) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
@@ -132,23 +140,36 @@ export const create = mutation({
         message: '指定された有効な組織が存在しません',
         code: 'NOT_FOUND',
         status: 404,
-        details: {
-          ...args,
-        },
+        details: { ...args, org_id: args.org_id },
       });
     }
 
-    // 予約時間の重複を防ぐため、同じスタッフ・日時での予約が既に存在しないかをチェックする（Race condition防止）
-    const reservationConfig = await ctx.db.query('reservation_config').withIndex('by_tenant_org_archive', (q) =>
-      q.eq('tenant_id', args.tenant_id)
-        .eq('org_id', args.org_id)
-    ).first();
+    // Reservation Config: Use passedReservationConfig if available, otherwise fetch
+    let reservationConfig = args.passedReservationConfig;
+    if (!reservationConfig || reservationConfig.org_id !== args.org_id) { // Basic check
+      reservationConfig = await ctx.db.query('reservation_config').withIndex('by_tenant_org_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('is_archive', false) // Ensure not archived
+      ).first();
+    }
+    if (!reservationConfig) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'reservation.create',
+        message: '予約設定が見つかりません',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: { ...args, org_id: args.org_id },
+      });
+    }
   
     // 店舗ごとの同時受付可能席数を取得
-    const availableSheet = reservationConfig?.available_sheet || 3;
-  
-    // 組織全体で、該当日の confirmed かつ is_archive: false の予約のみ取得
-    const orgReservations = await ctx.db
+    const availableSheet = reservationConfig.available_sheet || 3; // Ensure available_sheet is accessed from the correct reservationConfig
+
+    // Fetch all potentially conflicting reservations for the organization on the given date
+    const potentiallyConflictingReservations = await ctx.db
       .query('reservation')
       .withIndex('by_tenant_org_date_status_archive', (q) =>
         q.eq('tenant_id', args.tenant_id)
@@ -158,53 +179,37 @@ export const create = mutation({
           .eq('is_archive', false)
       )
       .collect();
-  
-    const overlapCount = orgReservations.filter((reservation) => {
-      // 時間帯が一部でも重なればtrue
+
+    // Organization Overlap Check (in-memory)
+    const organizationOverlapCount = potentiallyConflictingReservations.filter(reservation => {
       return (
         reservation.start_time_unix < args.end_time_unix &&
         reservation.end_time_unix > args.start_time_unix
       );
     }).length;
-  
-    if (overlapCount >= availableSheet) {
+
+    if (organizationOverlapCount >= availableSheet) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.CONFLICT,
         severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'reservation.checkReservationOverlap',
+        callFunc: 'reservation.create.checkOrgOverlap',
         message: 'この時間帯の最大同時予約数は上限です。別の時間を選択してください。',
         code: 'CONFLICT',
         status: 409,
-        details: {
-          ...args,
-        },
+        details: { ...args },
       });
     }
-  
-    // 指定された条件に合致する予約を検索し、
-    // 時間帯が重複している予約が存在するかを判定
-    const query = ctx.db
-      .query('reservation')
-      .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
-        q
-          .eq('tenant_id', args.tenant_id)
-          .eq('org_id', args.org_id)
-          .eq('staff_id', args.staff_id)
-          .eq('date', args.date)
-          .eq('status', 'confirmed')
-          .eq('is_archive', false)
-      )
-      .filter((q) =>
-        q.and(
-          // 時間の重複をチェック（開始時間が相手の終了時間前、終了時間が相手の開始時間後）
-          q.lt(q.field('start_time_unix'), args.end_time_unix),
-          q.gt(q.field('end_time_unix'), args.start_time_unix),
-        )
-      );
-  
-    const isOverlapping = await query.first();
 
-    if (isOverlapping) {
+    // Staff Overlap Check (in-memory)
+    const staffIsOverlapping = potentiallyConflictingReservations.some(reservation => {
+      return (
+        reservation.staff_id === args.staff_id &&
+        reservation.start_time_unix < args.end_time_unix &&
+        reservation.end_time_unix > args.start_time_unix
+      );
+    });
+
+    if (staffIsOverlapping) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.CONFLICT,
         severity: ERROR_SEVERITY.ERROR,

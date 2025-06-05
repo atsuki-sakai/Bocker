@@ -203,8 +203,9 @@ export default function ReservationForm() {
   const [selectedCustomer, setSelectedCustomer] = useState<RowType<'customer'> | null>(null)
   const customerRepository = useMemo(() => new CustomerRepository(), [])
 
-  const reservationConfig = useQuery(
-    api.organization.reservation_config.query.findByTenantAndOrg,
+  // New consolidated query for initial UI data
+  const initialUIData = useQuery(
+    api.ui_helpers.query.getInitialReservationUIData,
     tenantId && orgId
       ? {
           tenant_id: tenantId,
@@ -212,6 +213,13 @@ export default function ReservationForm() {
         }
       : 'skip'
   )
+
+  // Destructure data from the new query
+  const reservationConfig = initialUIData?.reservationConfig
+  const orgWeekSchedules = initialUIData?.orgWeekSchedules
+  // orgExceptionSchedules is now a direct array
+  const orgExceptionSchedules = initialUIData?.orgExceptionSchedules ?? []
+
 
   const { results: menus } = usePaginatedQuery(
     api.menu.query.listByTenantAndOrg,
@@ -237,41 +245,20 @@ export default function ReservationForm() {
     { initialNumItems: 100 }
   )
 
-  const orgWeekSchedules = useQuery(
-    api.organization.week_schedule.query.getAllByTenantAndOrg,
-    tenantId && orgId
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-        }
-      : 'skip'
-  )
+  // const staffWeekSchedules = useQuery( <--- This query is now redundant
+  //   api.staff.week_schedule.query.getByTenantOrgStaff,
+  //   tenantId && orgId && selectedStaffId
+  //     ? {
+  //         tenant_id: tenantId,
+  //         org_id: orgId,
+  //         staff_id: selectedStaffId,
+  //       }
+  //     : 'skip'
+  // )
+  // Staff week schedules can be derived from selectStaff.week_schedules
+  const selectStaff = availableStaff.find((staff) => staff._id === selectedStaffId)
+  const staffWeekSchedules = selectStaff?.week_schedules
 
-  const staffWeekSchedules = useQuery(
-    api.staff.week_schedule.query.getByTenantOrgStaff,
-    tenantId && orgId && selectedStaffId
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-          staff_id: selectedStaffId,
-        }
-      : 'skip'
-  )
-
-  const orgExceptionSchedules = usePaginatedQuery(
-    api.organization.exception_schedule.query.getByOrgAndDate,
-    tenantId && orgId
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-          type: 'holiday',
-          date: new Date().toISOString().split('T')[0],
-        }
-      : 'skip',
-    {
-      initialNumItems: 100,
-    }
-  )
 
   // Mutation
   const createReservation = useMutation(api.reservation.mutation.create)
@@ -453,7 +440,7 @@ export default function ReservationForm() {
 
   // 時間スロット取得の最適化されたコールバック
   const getAvailableTimeSlots = useCallback(async () => {
-    if (!selectedStaffId || !tenantId || !orgId || !selectdate || !totalTimeMinutes) {
+    if (!selectedStaffId || !tenantId || !orgId || !selectdate || !totalTimeMinutes || !reservationConfig) { // Added reservationConfig check
       setAvailableTimeSlots([])
       return
     }
@@ -469,6 +456,7 @@ export default function ReservationForm() {
         staff_id: selectedStaffId,
         date: formattedDate,
         duration_min: totalTimeMinutes,
+        reservationConfigData: reservationConfig, // Pass reservationConfig
       })
 
       // 結果が配列で返され、選択したスタッフのスロットを含む場合
@@ -481,7 +469,7 @@ export default function ReservationForm() {
       showErrorToast(error)
       setAvailableTimeSlots([])
     }
-  }, [selectedStaffId, tenantId, orgId, selectdate, totalTimeMinutes, showErrorToast])
+  }, [selectedStaffId, tenantId, orgId, selectdate, totalTimeMinutes, showErrorToast, reservationConfig]) // Added reservationConfig to dependency array
 
   // 時間スロット取得の実行
   useEffect(() => {
@@ -587,7 +575,10 @@ export default function ReservationForm() {
     setValue('options', newOpts)
   }
   const onSubmit = async (data: z.infer<typeof schemaReservation>) => {
-    if (!tenantId || !orgId) return
+    if (!tenantId || !orgId || !selectStaff) { // Ensure selectStaff is available for the mutation
+        toast.error("スタッフが選択されていません。")
+        return
+    }
     try {
       let customerUid
       if (!isFirstCustomer) {
@@ -645,6 +636,10 @@ export default function ReservationForm() {
         coupon_discount: undefined, // クーポン割引額
         featured_hair_images: [], // フィーチャー画像
         notes: data.notes ?? '', // メモ
+        // Pass additional data to the mutation
+        passedReservationConfig: reservationConfig,
+        passedStaffData: selectStaff,
+        // passedOrgData: initialUIData?.organizationData, // Example if org data was available
       })
 
       toast.success('予約が完了しました')
@@ -654,7 +649,7 @@ export default function ReservationForm() {
     }
   }
 
-  const selectStaff = availableStaff.find((staff) => staff._id === selectedStaffId)
+  // selectStaff is now defined earlier to derive staffWeekSchedules
 
   const toDate = reservationConfig?.reservation_limit_days
     ? new Date(
@@ -1273,7 +1268,7 @@ export default function ReservationForm() {
                         fromDate={new Date()}
                         toDate={toDate}
                         disabled={[
-                          ...(orgExceptionSchedules.results.map((day) => new Date(day.date)) ?? []),
+                          ...(orgExceptionSchedules.map((day) => new Date(day.date)) ?? []),
                           // サロンの営業曜日外を除外
                           (date: Date) => {
                             const dayKey = getDayOfWeek(date)
