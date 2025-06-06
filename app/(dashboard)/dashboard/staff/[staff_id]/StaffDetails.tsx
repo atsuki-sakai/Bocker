@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import React, { useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { useQuery, useMutation, useAction } from 'convex/react'
+import { useQuery, useAction } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
@@ -78,7 +78,6 @@ export default function StaffDetails() {
       : 'skip'
   )
 
-  const staffKill = useMutation(api.staff.mutation.killRelatedTables)
   const deleteImage = useAction(api.storage.action.killWithThumbnail)
 
   useEffect(() => {
