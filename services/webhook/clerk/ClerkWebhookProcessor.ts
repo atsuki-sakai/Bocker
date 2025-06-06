@@ -17,9 +17,6 @@ import {
   handleUserCreated,
   handleUserUpdated,
   handleUserDeleted,
-  // handleOrganizationCreated,
-  // handleOrganizationUpdated,
-  // handleOrganizationDeleted,
 } from './handlers';
 
 // 🔒 環境変数の検証
