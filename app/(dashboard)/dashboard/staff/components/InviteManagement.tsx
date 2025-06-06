@@ -17,11 +17,10 @@ import {
 import { toast } from 'sonner'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { Mail, RefreshCw, Trash2, Clock, XCircle, AlertCircle, Users, UserPlus } from 'lucide-react'
+import { Mail, RefreshCw, Trash2, Clock, AlertCircle, Users, UserPlus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { formatTimestamp } from '@/lib/schedules'
 
 // 招待データの型定義（Convex + Clerkの統合データ）
 interface StaffInvitation {
