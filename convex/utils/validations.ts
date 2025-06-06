@@ -443,3 +443,101 @@ export function validateTags(
   }
   return true;
 }
+
+//================================================
+// INVITATION SPECIFIC
+//================================================
+/**
+ * 招待用メールアドレスの検証
+ * 通常のメール検証に加えて、招待固有の要件をチェック
+ *
+ * @param email 検証するメールアドレス
+ * @param fieldName フィールド名（エラーメッセージ用）
+ * @returns 値が有効な場合はtrue
+ * @throws バリデーションエラー
+ */
+export function validateInvitationEmail(
+  email: string | undefined | null,
+  fieldName: string = 'メールアドレス'
+): boolean {
+  // 必須チェック
+  if (!email || email.trim() === '') {
+    throw new ConvexError({
+      statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+      severity: ERROR_SEVERITY.ERROR,
+      callFunc: 'validateInvitationEmail',
+      message: `${fieldName}は必須項目です`,
+      code: 'BAD_REQUEST',
+      status: 400,
+      details: { field: fieldName },
+    });
+  }
+
+  // 通常のメール検証を実行
+  validateEmail(email, fieldName);
+
+  // 招待固有の追加チェック（将来的に拡張可能）
+  // 例: 特定ドメインの除外、使い捨てメール検知など
+
+  return true;
+}
+
+/**
+ * スタッフ招待データの検証
+ * 招待作成時の全データを包括的にチェック
+ *
+ * @param data 検証する招待データ
+ * @returns 値が有効な場合はtrue
+ * @throws バリデーションエラー
+ */
+export function validateStaffInvitationData(data: {
+  name: string | undefined | null;
+  email: string | undefined | null;
+  gender: string | undefined | null;
+  age?: number | undefined | null;
+  tags?: string[] | undefined | null;
+  extra_charge?: number | undefined | null;
+  priority?: number | undefined | null;
+}): boolean {
+  // 名前の検証
+  validateRequired(data.name, '名前');
+  validateStringLength(data.name, '名前');
+
+  // メールの検証（招待用）
+  validateInvitationEmail(data.email, 'メールアドレス');
+
+  // 性別の検証
+  if (!data.gender || !['unselected', 'male', 'female'].includes(data.gender)) {
+    throw new ConvexError({
+      statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+      severity: ERROR_SEVERITY.ERROR,
+      callFunc: 'validateStaffInvitationData',
+      message: '性別の値が不正です',
+      code: 'BAD_REQUEST',
+      status: 400,
+      details: { field: 'gender', value: data.gender },
+    });
+  }
+
+  // 年齢の検証（オプション）
+  if (data.age !== undefined && data.age !== null) {
+    validateNumberRange(data.age, 0, 150, '年齢');
+  }
+
+  // タグの検証（オプション）
+  if (data.tags) {
+    validateTags(data.tags, 'タグ');
+  }
+
+  // 追加料金の検証（オプション）
+  if (data.extra_charge !== undefined && data.extra_charge !== null) {
+    validateNumberRange(data.extra_charge, 0, MAX_NUM, '追加料金');
+  }
+
+  // 優先順位の検証（オプション）
+  if (data.priority !== undefined && data.priority !== null) {
+    validateNumberRange(data.priority, 0, MAX_NUM, '優先順位');
+  }
+
+  return true;
+}

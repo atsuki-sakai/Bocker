@@ -17,27 +17,40 @@ import {
 import { toast } from 'sonner'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { Mail, RefreshCw, Trash2, Clock, XCircle, AlertCircle, Users } from 'lucide-react'
+import { Mail, RefreshCw, Trash2, Clock, XCircle, AlertCircle, Users, UserPlus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { formatTimestamp } from '@/lib/schedules'
 
-// 招待データの型定義
-interface Invitation {
-  id: string
+// 招待データの型定義（Convex + Clerkの統合データ）
+interface StaffInvitation {
+  // Convexデータ
+  staff_id: string
+  name: string
   email: string
-  status: string
+  gender: string
+  age?: number
+  tags: string[]
   created_at: number
-  expires_at: number
+  
+  // Clerk招待データ
+  invitation_id: string | null
+  invitation_status: 'pending' | 'missing'
+  invitation_created_at: number | null
+  
+  // メタデータ
   metadata: {
     tenant_id: string
     org_id: string
     role: string
-    invited_by: string
-    invited_at: string
+    staff_id: string
+    extra_charge?: number
+    priority?: number
+    invited_by?: string
+    invited_at?: string
     resent?: boolean
-  }
+  } | null
 }
 
 export default function InviteManagement() {
@@ -45,10 +58,10 @@ export default function InviteManagement() {
   const { showErrorToast } = useErrorHandler()
 
   // コンポーネントの状態管理
-  const [invitations, setInvitations] = useState<Invitation[]>([])
+  const [invitations, setInvitations] = useState<StaffInvitation[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [selectedInvitation, setSelectedInvitation] = useState<Invitation | null>(null)
+  const [selectedInvitation, setSelectedInvitation] = useState<StaffInvitation | null>(null)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -57,7 +70,6 @@ export default function InviteManagement() {
     if (tenantId && orgId) {
       fetchInvitations()
     }
-    // fetchInvitationsは内部で状態を変更するため、依存配列には含めない
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, orgId])
 
@@ -98,7 +110,7 @@ export default function InviteManagement() {
   }
 
   // 招待を再送する関数
-  const resendInvitation = async (invitation: Invitation) => {
+  const resendInvitation = async (invitation: StaffInvitation) => {
     setIsProcessing(true)
     try {
       const response = await fetch('/api/clerk/staff/invitations', {
@@ -107,10 +119,8 @@ export default function InviteManagement() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: invitation.email,
-          tenant_id: invitation.metadata.tenant_id,
-          org_id: invitation.metadata.org_id,
-          role: invitation.metadata.role,
+          staff_id: invitation.staff_id,
+          invitation_id: invitation.invitation_id,
         }),
       })
 
@@ -130,10 +140,14 @@ export default function InviteManagement() {
   }
 
   // 招待をキャンセルする関数
-  const cancelInvitation = async (invitation: Invitation) => {
+  const cancelInvitation = async (invitation: StaffInvitation) => {
     setIsProcessing(true)
     try {
-      const response = await fetch(`/api/clerk/staff/invitations/${invitation.id}`, {
+      const url = invitation.invitation_id 
+        ? `/api/clerk/staff/invitations/${invitation.invitation_id}?staff_id=${invitation.staff_id}`
+        : `/api/clerk/staff/invitations/cancel?staff_id=${invitation.staff_id}`
+        
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -166,15 +180,27 @@ export default function InviteManagement() {
         return 'マネージャー'
       case 'owner':
         return 'オーナー'
+      case 'admin':
+        return '管理者'
       default:
         return role
     }
   }
 
-  // 招待の期限切れチェック
-  const isExpired = (expiresAt: number) => {
-    return new Date().getTime() > expiresAt
+  // 性別表示を日本語に変換
+  const getGenderDisplayName = (gender: string) => {
+    switch (gender) {
+      case 'male':
+        return '男性'
+      case 'female':
+        return '女性'
+      case 'unselected':
+        return '未選択'
+      default:
+        return gender
+    }
   }
+
   if (isLoading) {
     return null
   }
@@ -221,7 +247,7 @@ export default function InviteManagement() {
               <AnimatePresence>
                 {invitations.map((invitation) => (
                   <motion.div
-                    key={invitation.id}
+                    key={invitation.staff_id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
@@ -230,51 +256,61 @@ export default function InviteManagement() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{invitation.email}</span>
-                          <Badge
-                            variant={isExpired(invitation.expires_at) ? 'destructive' : 'default'}
-                            className="text-xs"
-                          >
-                            {getRoleDisplayName(invitation.metadata.role)}
-                          </Badge>
-                          {invitation.metadata.resent && (
+                          <UserPlus className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{invitation.name}</span>
+                          <span className="text-sm text-muted-foreground">({invitation.email})</span>
+                          {invitation.metadata && (
+                            <Badge
+                              variant="default"
+                              className="text-xs"
+                            >
+                              {getRoleDisplayName(invitation.metadata.role)}
+                            </Badge>
+                          )}
+                          {invitation.invitation_status === 'missing' && (
+                            <Badge variant="destructive" className="text-xs">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              招待エラー
+                            </Badge>
+                          )}
+                          {invitation.metadata?.resent && (
                             <Badge variant="outline" className="text-xs">
                               再送済
                             </Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>{getGenderDisplayName(invitation.gender)}</span>
+                          {invitation.age && <span>{invitation.age}歳</span>}
+                          {invitation.tags.length > 0 && (
+                            <div className="flex gap-1">
+                              {invitation.tags.map((tag, index) => (
+                                <Badge key={index} variant="secondary" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            招待日:{' '}
+                            登録日:{' '}
                             {formatDistanceToNow(new Date(invitation.created_at), {
                               addSuffix: true,
                               locale: ja,
                             })}
                           </div>
-                          <div className="flex items-center gap-1">
-                            {isExpired(invitation.expires_at) ? (
-                              <>
-                                <XCircle className="h-3 w-3 text-destructive" />
-                                <span className="text-destructive">期限切れ</span>
-                              </>
-                            ) : (
-                              <>
-                                <AlertCircle className="h-3 w-3 text-warning-foreground" />
-                                期限:{' '}
-                                {
-                                  formatTimestamp(
-                                    invitation.created_at + 30 * 24 * 60 * 60 * 1000, // 30日後
-                                    {
-                                      useJST: true,
-                                      includeDate: true,
-                                    }
-                                  ).split(' ')[0]
-                                }
-                              </>
-                            )}
-                          </div>
+                          {invitation.invitation_created_at && (
+                            <div className="flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              招待送信:{' '}
+                              {formatDistanceToNow(new Date(invitation.invitation_created_at), {
+                                addSuffix: true,
+                                locale: ja,
+                              })}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -286,7 +322,7 @@ export default function InviteManagement() {
                           className="flex items-center gap-1"
                         >
                           <RefreshCw className="h-3 w-3" />
-                          再送
+                          {invitation.invitation_id ? '再送' : '送信'}
                         </Button>
                         <Button
                           variant="destructive"
@@ -299,7 +335,7 @@ export default function InviteManagement() {
                           className="flex items-center gap-1"
                         >
                           <Trash2 className="h-3 w-3" />
-                          キャンセル
+                          削除
                         </Button>
                       </div>
                     </div>
@@ -315,9 +351,9 @@ export default function InviteManagement() {
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>招待をキャンセルしますか？</DialogTitle>
+            <DialogTitle>スタッフ招待を削除しますか？</DialogTitle>
             <DialogDescription>
-              {selectedInvitation?.email} への招待をキャンセルします。
+              {selectedInvitation?.name} ({selectedInvitation?.email}) の招待を削除します。
               この操作は元に戻すことができません。
             </DialogDescription>
           </DialogHeader>
@@ -334,7 +370,7 @@ export default function InviteManagement() {
               onClick={() => selectedInvitation && cancelInvitation(selectedInvitation)}
               disabled={isProcessing}
             >
-              {isProcessing ? '処理中...' : '招待をキャンセル'}
+              {isProcessing ? '処理中...' : 'スタッフを削除'}
             </Button>
           </DialogFooter>
         </DialogContent>

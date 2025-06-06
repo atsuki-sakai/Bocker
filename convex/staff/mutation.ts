@@ -57,6 +57,7 @@ export const create = mutation({
     return await createRecord(ctx, 'staff', {
       tenant_id: args.tenant_id, // テナントID
       org_id: args.org_id, // 組織ID
+      clerk_user_id: undefined, // 通常作成時はclerk_user_idは設定しない
       name: args.name, // スタッフ名
       age: args.age, // 年齢
       email: args.email, // メールアドレス

@@ -9,6 +9,7 @@ import type {
 import { executeInParallel, createTask } from '../parallel';
 import { WebhookMetricsCollector } from '../metrics';
 import { clerkClient } from '@clerk/nextjs/server';
+import { Id } from '@/convex/_generated/dataModel';
 
 /**
  * `user.created` Webhookイベントを処理するハンドラー関数。
@@ -26,7 +27,7 @@ export async function handleUserCreated(
   deps: WebhookDependencies,
   metrics: WebhookMetricsCollector
 ): Promise<EventProcessingResult> {
-  const { id, email_addresses = [], unsafe_metadata } = data;
+  const { id, email_addresses = [], unsafe_metadata, public_metadata } = data;
   const referral_code = unsafe_metadata?.referralCode as string | null;
   const org_name = unsafe_metadata?.orgName as string | undefined;
   const email = email_addresses[0]?.email_address || 'no-email';
@@ -38,6 +39,12 @@ export async function handleUserCreated(
   };
 
   console.log(`👤 [${eventId}] User Created処理開始: user_id=${id}, email=${email}`, context);
+
+  // スタッフ招待の受諾チェック
+  if (public_metadata && 'staff_id' in public_metadata) {
+    console.log(`🎫 [${eventId}] スタッフ招待の受諾を検出: staff_id=${public_metadata.staff_id}`, context);
+    return handleStaffInvitationAccepted(data, eventId, deps, metrics);
+  }
 
   try {
     // 1. 既存テナントの確認
@@ -493,6 +500,111 @@ export async function handleUserDeleted(
     Sentry.captureException(error, {
       level: 'error',
       tags: { ...context, operation: 'handleUserDeleted_main_catch' },
+    });
+
+    return {
+      result: 'error',
+      errorMessage: error instanceof Error ? error.message : '不明なエラー'
+    };
+  }
+}
+
+/**
+ * スタッフ招待受諾時の処理を行うハンドラー関数
+ * @param data UserJSON - Clerkから送信されたユーザーデータ
+ * @param eventId string - Webhookイベントの一意なID
+ * @param deps WebhookDependencies - 外部サービスへの依存関係
+ * @param metrics WebhookMetricsCollector - メトリクス収集用インスタンス
+ * @returns Promise<EventProcessingResult> - 処理結果
+ */
+async function handleStaffInvitationAccepted(
+  data: UserJSON,
+  eventId: string,
+  deps: WebhookDependencies,
+  metrics: WebhookMetricsCollector
+): Promise<EventProcessingResult> {
+  const { id: clerk_user_id, public_metadata } = data;
+  
+  // publicMetadataから必要な情報を取得
+  const staff_id = public_metadata?.staff_id as string | undefined;
+  const tenant_id = public_metadata?.tenant_id as string | undefined;
+  const org_id = public_metadata?.org_id as string | undefined;
+  const role = (public_metadata?.role as 'staff' | 'admin') || 'staff';
+  const extra_charge = public_metadata?.extra_charge as number | undefined;
+  const priority = public_metadata?.priority as number | undefined;
+
+  const context: LogContext = {
+    eventId,
+    eventType: 'user.created',
+    userId: clerk_user_id,
+  };
+
+  console.log(`🎫 [${eventId}] スタッフ招待受諾処理開始: staff_id=${staff_id}, clerk_user_id=${clerk_user_id}`, context);
+
+  if (!staff_id || !tenant_id || !org_id) {
+    console.error(`❌ [${eventId}] 必要なメタデータが不足しています: staff_id=${staff_id}, tenant_id=${tenant_id}, org_id=${org_id}`, context);
+    return {
+      result: 'error',
+      errorMessage: 'スタッフ招待のメタデータが不足しています'
+    };
+  }
+
+  try {
+    // Convexでスタッフレコードを更新
+    console.log(`📝 [${eventId}] Convexスタッフレコード更新開始: staff_id=${staff_id}`, context);
+    metrics.incrementApiCall('convex');
+    
+    await deps.retry(() =>
+      fetchMutation(deps.convex.staff.invitation.mutation.acceptInvitation, {
+        staff_id: staff_id as Id<"staff">,
+        clerk_user_id,
+        extra_charge,
+        priority,
+        role,
+      })
+    );
+
+    console.log(`✅ [${eventId}] スタッフ招待受諾処理完了: staff_id=${staff_id}, clerk_user_id=${clerk_user_id}`, context);
+
+    // Clerkユーザーのpublicメタデータを更新（staff_id以外の情報を保持）
+    try {
+      const clerk = await clerkClient();
+      await clerk.users.updateUserMetadata(clerk_user_id, {
+        publicMetadata: {
+          tenant_id,
+          org_id,
+          role,
+          staff_id,
+        },
+      });
+      metrics.incrementApiCall('clerk');
+      console.log(`✅ [${eventId}] Clerkメタデータ更新完了`, context);
+    } catch (clerkError) {
+      console.warn(`⚠️ [${eventId}] Clerkメタデータ更新失敗（非クリティカル）`, { ...context, error: clerkError });
+      Sentry.captureException(clerkError, {
+        level: 'warning',
+        tags: { ...context, operation: 'update_clerk_metadata_after_invitation' },
+      });
+    }
+
+    return {
+      result: 'success',
+      metadata: { 
+        action: 'staff_invitation_accepted',
+        staff_id,
+        tenant_id,
+        org_id,
+        role
+      }
+    };
+
+  } catch (error) {
+    console.error(`❌ [${eventId}] スタッフ招待受諾処理中にエラーが発生: staff_id=${staff_id}`, { ...context, error });
+    
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: { ...context, operation: 'handleStaffInvitationAccepted' },
+      extra: { staff_id, tenant_id, org_id }
     });
 
     return {

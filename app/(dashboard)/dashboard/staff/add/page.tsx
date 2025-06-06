@@ -160,6 +160,7 @@ export default function StaffAddPage() {
   const staffAuthAdd = useMutation(api.staff.auth.mutation.create)
   const staffKill = useMutation(api.staff.mutation.killRelatedTables)
   const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert)
+  const staffInvite = useMutation(api.staff.invitation.mutation.createWithInvitation)
 
   const {
     register,
@@ -202,6 +203,21 @@ export default function StaffAddPage() {
         org_id: orgId,
         limit_type: 'staff',
       })
+
+      // 招待メール送信時は事前にメールアドレスの重複チェック
+      if (sendInviteEmail) {
+        const emailCheckResult = await fetchQuery(api.staff.invitation.query.checkEmailAvailability, {
+          tenant_id: tenantId,
+          org_id: orgId,
+          email: data.email,
+        })
+
+        if (!emailCheckResult.isAvailable) {
+          toast.error(`このメールアドレスは既に登録されています: ${emailCheckResult.existingStaff?.name}`)
+          setIsLoading(false)
+          return
+        }
+      }
 
       if (selectedFile) {
         try {
@@ -299,31 +315,48 @@ export default function StaffAddPage() {
                 tenant_id: tenantId,
                 org_id: orgId,
                 role: data.role,
+                // スタッフ基本情報
+                name: data.name,
+                gender: data.gender,
+                age: data.age,
+                instagram_link: data.instagram_link,
+                description: data.description,
+                tags: data.tags,
+                // 事前設定情報
+                extra_charge: data.extra_charge,
+                priority: data.priority,
               }),
             })
 
-            console.log('🔍 招待APIレスポンスステータス:', inviteResponse.status)
             const inviteData = await inviteResponse.json()
-            console.log('📦 招待APIレスポンスデータ:', inviteData)
 
-            if (inviteResponse.ok) {
-              console.log('✅ 招待メール送信成功')
-              toast.success('スタッフを追加し、招待メールを送信しました', {
-                icon: <Check className="h-4 w-4 text-active" />,
-              })
-            } else {
-              console.error('❌ 招待メール送信失敗:', {
-                status: inviteResponse.status,
-                error: inviteData.error,
-                fullResponse: inviteData,
-              })
-              toast.error(`招待メール送信失敗: ${inviteData.error || '不明なエラー'}`)
+            if (!inviteResponse.ok) {
+              // 招待失敗時のエラーハンドリング
+              if (inviteResponse.status === 400 && inviteData.error?.includes('Clerk')) {
+                toast.error('このメールアドレスは既にClerkに登録されています')
+              } else {
+                toast.error(`招待メール送信失敗: ${inviteData.error || '不明なエラー'}`)
+              }
+              return
             }
+
+            // 招待成功の場合、作成したスタッフレコードを削除
+            if (staffId) {
+              await staffKill({
+                tenant_id: tenantId,
+                org_id: orgId,
+                staff_id: staffId,
+                staff_config_id: staffConfigId!,
+                staff_auth_id: staffAuthId!,
+              })
+            }
+            
+            toast.success('スタッフ招待メールを送信しました', {
+              icon: <Check className="h-4 w-4 text-active" />,
+            })
           } catch (inviteError) {
             console.error('🚨 招待メール送信エラー:', inviteError)
-            toast.error(
-              `招待メール送信エラー: ${inviteError instanceof Error ? inviteError.message : '不明なエラー'}`
-            )
+            toast.error('招待メール送信中にエラーが発生しました')
           }
         } else {
           toast.success('スタッフを追加しました', {

@@ -28,3 +28,17 @@ export const enum ERROR_SEVERITY {
   ERROR = 'error',
   CRITICAL = 'critical',
 }
+
+// 招待関連エラー
+export const INVITATION_ERRORS = {
+  EMAIL_ALREADY_EXISTS: 'このメールアドレスは既に使用されています',
+  EMAIL_ALREADY_REGISTERED: 'このメールアドレスは既に登録されています',
+  INVITATION_EXPIRED: '招待の有効期限が切れています',
+  CLERK_API_ERROR: '招待送信に失敗しました',
+  DUPLICATE_INVITATION: 'このメールアドレスは既に招待済みです',
+  INVITATION_NOT_FOUND: '招待が見つかりません',
+  STAFF_NOT_FOUND: 'スタッフが見つかりません',
+  ALREADY_ACCEPTED: '既に受諾済みの招待です',
+  METADATA_MISSING: '招待のメタデータが不足しています',
+  INVITATION_CANCELLED: '招待はキャンセルされました',
+} as const

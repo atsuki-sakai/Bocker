@@ -243,6 +243,37 @@ export const imgDirectoryType = v.union(
 )
 export type ImgDirectoryType = Infer<typeof imgDirectoryType>
 
+// 招待ステータス型
+export const INVITATION_STATUS_VALUES = ['pending', 'accepted', 'expired', 'cancelled'] as const
+export const invitationStatusType = v.union(
+  ...INVITATION_STATUS_VALUES.map((status) => v.literal(status))
+)
+export type InvitationStatus = Infer<typeof invitationStatusType>
+
+// 統合スタッフデータ型（Convexデータ + Clerk招待状態）
+export type StaffWithInvitationStatus = {
+  _id: string
+  _creationTime: number
+  tenant_id: string
+  org_id: string
+  clerk_user_id?: string
+  name: string
+  email: string
+  gender: string
+  age?: number
+  instagram_link?: string
+  description?: string
+  images: ImageType[]
+  tags: string[]
+  featured_hair_images?: ImageType[]
+  is_active: boolean
+  created_at?: number
+  updated_at?: number
+  is_archive?: boolean
+  sort_key?: string
+  invitationStatus: 'pending' | 'accepted'
+}
+
 // FIXME: カテゴリを各組織毎に作成できる様にする
 // メニューカテゴリの型定義
 export const MENU_CATEGORY_VALUES = [

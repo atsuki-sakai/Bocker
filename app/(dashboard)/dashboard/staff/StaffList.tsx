@@ -10,24 +10,24 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Doc } from '@/convex/_generated/dataModel'
 import InviteManagement from './components/InviteManagement'
+import { useQuery } from 'convex/react'
+import { Mail } from 'lucide-react'
 
 const numberOfStaffs = 10
 export default function StaffList() {
   const { tenantId, orgId } = useTenantAndOrganization()
-  const {
-    results: staffs,
-    isLoading,
-    status,
-    loadMore,
-  } = useStablePaginatedQuery(
-    api.staff.query.list,
-    tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip',
-    {
-      initialNumItems: numberOfStaffs,
-    }
+  
+  // 招待状態を含むスタッフ一覧を取得
+  const staffsWithInvitation = useQuery(
+    api.staff.invitation.query.getStaffWithInvitationStatus,
+    tenantId && orgId ? { 
+      tenant_id: tenantId, 
+      org_id: orgId,
+      includeInactive: true // 招待中のスタッフも含める
+    } : 'skip'
   )
 
-  if (!staffs || isLoading) {
+  if (!staffsWithInvitation) {
     return <Loading />
   }
 
@@ -49,6 +49,12 @@ export default function StaffList() {
                     className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
                   >
                     ステータス
+                  </th>
+                  <th
+                    scope="col"
+                    className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
+                  >
+                    招待状態
                   </th>
                   <th
                     scope="col"
@@ -95,8 +101,8 @@ export default function StaffList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-background text-nowrap">
-                {staffs && staffs.length > 0 ? (
-                  staffs.map((staff: Doc<'staff'>, index: number) => (
+                {staffsWithInvitation && staffsWithInvitation.length > 0 ? (
+                  staffsWithInvitation.map((staff, index: number) => (
                     <tr key={index}>
                       <td className="py-4 pr-3 pl-4 text-xs font-medium whitespace-nowrap text-muted-foreground sm:pl-6">
                         {staff.is_active ? (
@@ -106,6 +112,18 @@ export default function StaffList() {
                         ) : (
                           <Badge variant="outline" className="bg-muted  text-muted-foreground">
                             無効
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="py-4 pr-3 pl-4 text-xs font-medium whitespace-nowrap text-muted-foreground sm:pl-6">
+                        {staff.invitationStatus === 'pending' ? (
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                            <Mail className="h-3 w-3 mr-1" />
+                            招待中
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                            受諾済み
                           </Badge>
                         )}
                       </td>
@@ -182,13 +200,6 @@ export default function StaffList() {
                 )}
               </tbody>
             </table>
-            {staffs && staffs.length > 0 && status === 'CanLoadMore' && (
-              <div className="flex justify-center items-center py-4">
-                <Button onClick={() => loadMore(numberOfStaffs)} variant="outline">
-                  スタッフをさらに読み込む
-                </Button>
-              </div>
-            )}
           </div>
         </div>
       </div>

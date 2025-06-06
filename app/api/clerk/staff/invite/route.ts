@@ -4,6 +4,11 @@
 import { clerkClient, auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { BASE_URL } from '@/lib/constants'
+import { ConvexHttpClient } from 'convex/browser'
+import { api } from '@/convex/_generated/api'
+import { Id } from '@/convex/_generated/dataModel'
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
 export async function POST(req: NextRequest) {
   console.log('▶️ 招待APIが呼び出されました')
@@ -24,11 +29,26 @@ export async function POST(req: NextRequest) {
 
     // 2. リクエストボディから必要な情報を取得
     console.log('💬 リクエストボディを解析中...')
-    const { email, tenant_id, org_id, role } = await req.json()
-    console.log('📦 受信データ:', { email, tenant_id, org_id, role })
+    const { 
+      email, 
+      tenant_id, 
+      org_id, 
+      role,
+      // スタッフ基本情報
+      name,
+      gender,
+      age,
+      instagram_link,
+      description,
+      tags,
+      // 事前設定情報
+      extra_charge,
+      priority
+    } = await req.json()
+    console.log('📦 受信データ:', { email, tenant_id, org_id, role, name })
 
     // 3. 必須パラメータの検証
-    if (!email || !tenant_id || !org_id || !role) {
+    if (!email || !tenant_id || !org_id || !role || !name || !gender) {
       console.log('❌ パラメータ不足')
       return NextResponse.json(
         { error: '必要なパラメータが不足しています' },
@@ -45,10 +65,27 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 5. 招待の作成実行
+    // 5. Convexに招待レコード作成（clerk_user_id = null）
+    // 注: メール重複チェックはフロントエンドで事前に実施済み
+    console.log('📝 Convexにスタッフレコード作成中...')
+    const result = await convex.mutation(api.staff.invitation.mutation.createWithInvitation, {
+      tenant_id: tenant_id as Id<"tenant">,
+      org_id: org_id as Id<"organization">,
+      name,
+      email,
+      gender,
+      age,
+      instagram_link,
+      description,
+      tags: tags || [],
+      extra_charge,
+      priority,
+    })
+
+    console.log('✅ Convexスタッフレコード作成成功:', result.staffId)
+
+    // 7. Clerk招待送信（publicMetadataにstaff_idを含める）
     console.log('🏢 Clerk Clientの有無:', !!clerkClient)
-    console.log('🌐 NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
-    console.log('🔑 CLERK_SECRET_KEYの有無:', !!process.env.CLERK_SECRET_KEY)
     
     const invitationParams = {
       emailAddress: email,
@@ -57,6 +94,10 @@ export async function POST(req: NextRequest) {
         tenant_id,
         org_id,
         role,
+        staff_id: result.staffId,
+        // 事前設定情報も含める
+        extra_charge: result.preConfig.extra_charge,
+        priority: result.preConfig.priority,
         invited_by: userId,
         invited_at: new Date().toISOString()
       },
@@ -68,25 +109,31 @@ export async function POST(req: NextRequest) {
     console.log('📧 招待作成を実行中...')
     
     const clerk = await clerkClient()
-    const invitation = await clerk.invitations.createInvitation(invitationParams)
-    
-    console.log('✅ 招待作成成功:', invitation.id)
+    let invitation
+    try {
+      invitation = await clerk.invitations.createInvitation(invitationParams)
+      console.log('✅ Clerk招待作成成功:', invitation.id)
+    } catch (clerkError) {
+      // Clerk招待作成失敗時のrollback処理
+      console.error('❌ Clerk招待作成失敗、Convexレコードをキャンセル中...')
+      await convex.mutation(api.staff.invitation.mutation.cancelInvitation, {
+        staff_id: result.staffId as Id<"staff">,
+      })
+      throw clerkError
+    }
 
-    // 6. 成功レスポンスを返す
+    // 8. 成功レスポンスを返す
     return NextResponse.json({
       success: true,
       invitation_id: invitation.id,
+      staff_id: result.staffId,
       message: '招待メールを送信しました',
     })
 
   } catch (error: unknown) {
-    // 7. エラーハンドリング
+    // 9. エラーハンドリング
     console.error('🚨 招待作成エラー:', error)
     console.error('🐞 エラーの詳細:', JSON.stringify(error, null, 2))
-    
-    // Clerkの環境変数を確認
-    console.log('🔑 CLERK_SECRET_KEYの有無:', !!process.env.CLERK_SECRET_KEY)
-    console.log('🌐 NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
     
     // エラータイプを詳細に分析
     if (error instanceof Error) {
@@ -100,7 +147,7 @@ export async function POST(req: NextRequest) {
       const clerkErrors = error.errors as any[]
       if (clerkErrors?.[0]?.code === 'form_identifier_exists') {
         return NextResponse.json(
-          { error: 'このメールアドレスは既に登録されています' },
+          { error: 'このメールアドレスは既にClerkに登録されています' },
           { status: 400 }
         )
       }

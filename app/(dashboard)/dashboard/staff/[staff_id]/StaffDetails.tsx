@@ -61,6 +61,12 @@ export default function StaffDetails() {
       : 'skip'
   )
 
+  // 招待状態を含むスタッフ情報を取得
+  const staffWithInvitation = useQuery(
+    api.staff.invitation.query.getStaffWithInvitation,
+    staff_id && !isDeleting ? { staff_id: staff_id as Id<'staff'> } : 'skip'
+  )
+
   const exclusionMenus = useQuery(
     api.menu.menu_exclusion_staff.query.listBySalonAndStaffId,
     tenantId && orgId && staff_id
@@ -131,41 +137,37 @@ export default function StaffDetails() {
         })
       }
       
-      // 2. Clerkアカウントの削除（メールアドレスが設定されている場合）
-      if (staffAllData?.email) {
+      // 2. 削除APIを呼び出し（招待状態を考慮した削除）
+      if (staffAllData && tenantId && orgId) {
         try {
-          const clerkDeleteResponse = await fetch('/api/clerk/staff/delete', {
+          const deleteResponse = await fetch('/api/clerk/staff/delete', {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              email: staffAllData.email,
+              staff_id: staff_id,
+              tenant_id: tenantId,
+              org_id: orgId,
+              staff_config_id: staffAllData.staff_config_id,
+              staff_auth_id: staffAllData.staff_auth_id,
             }),
           })
           
-          const clerkDeleteData = await clerkDeleteResponse.json()
+          const deleteData = await deleteResponse.json()
           
-          if (clerkDeleteResponse.ok) {
-            console.log('Clerkアカウントを削除しました:', clerkDeleteData.deleted_user_id)
+          if (deleteResponse.ok) {
+            console.log('スタッフ削除成功:', deleteData)
           } else {
-            console.warn('Clerkアカウント削除失敗（継続）:', clerkDeleteData.error)
+            throw new Error(deleteData.error || 'スタッフ削除に失敗しました')
           }
-        } catch (clerkError) {
-          console.warn('Clerkアカウント削除エラー（継続）:', clerkError)
+        } catch (deleteError) {
+          console.error('スタッフ削除エラー:', deleteError)
+          throw deleteError
         }
       }
       
-      // 3. データベースからスタッフ関連データの削除
-      if (staffAllData && tenantId && orgId) {
-        await staffKill({
-          tenant_id: tenantId,
-          org_id: orgId,
-          staff_id: staff_id as Id<'staff'>,
-          staff_config_id: staffAllData.staff_config_id,
-          staff_auth_id: staffAllData.staff_auth_id,
-        })
-      }
+      // 3. データベースからの削除は削除APIで処理済みのため不要
       
       toast.success('スタッフを削除しました')
       router.push('/dashboard/staff')
@@ -217,6 +219,12 @@ export default function StaffDetails() {
                       >
                         {getRoleDisplay(staffAllData.role || '')}
                       </Badge>
+                      {staffWithInvitation && staffWithInvitation.invitationStatus === 'pending' && (
+                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                          <Mail className="h-3 w-3 mr-1" />
+                          招待中
+                        </Badge>
+                      )}
                     </div>
                   </div>
 

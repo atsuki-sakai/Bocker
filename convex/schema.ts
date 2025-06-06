@@ -526,6 +526,7 @@ const staff_exception_schedule = defineTable({
 const staff = defineTable({
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.id('organization'), // 店舗ID
+  clerk_user_id: v.optional(v.string()), // Clerk ユーザーID (null=招待中, 存在=受諾済み)
   name: v.string(), // スタッフ名
   age: v.optional(v.number()), // 年齢
   email: v.string(), // メールアドレス
@@ -539,6 +540,7 @@ const staff = defineTable({
   ...CommonFields,
 })  
 .index('by_tenant_org_active_archive', ['tenant_id', 'org_id', 'is_active', 'is_archive'])
+.index('by_tenant_org_clerk_user_archive', ['tenant_id', 'org_id', 'clerk_user_id', 'is_archive'])
 
 /**
  * =========================
