@@ -42,3 +42,10 @@ export const INVITATION_ERRORS = {
   METADATA_MISSING: '招待のメタデータが不足しています',
   INVITATION_CANCELLED: '招待はキャンセルされました',
 } as const
+
+// Clerk権限更新関連エラー
+export const CLERK_ROLE_UPDATE_ERRORS = {
+  CLERK_USER_NOT_FOUND: 'Clerkユーザーが見つかりません',
+  METADATA_UPDATE_FAILED: 'Clerk権限情報の更新に失敗しました',
+  ROLE_SYNC_WARNING: 'スタッフ権限は更新されましたが、Clerk側の同期に失敗しました'
+} as const

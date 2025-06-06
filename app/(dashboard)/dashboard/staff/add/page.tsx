@@ -466,6 +466,21 @@ export default function StaffAddPage() {
                 <CardContent className="space-y-8 pt-6">
                   {/* 基本情報セクション */}
                   <div>
+                    <div className="flex flex-col items-start justify-between space-y-2 mb-4">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="send_invite_email"
+                          checked={sendInviteEmail}
+                          onCheckedChange={(checked) => setSendInviteEmail(checked)}
+                        />
+                        <Label htmlFor="send_invite_email" className="text-sm cursor-pointer">
+                          招待メールを送信してスタッフアカウントを作成
+                        </Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        有効にすると、スタッフに招待メールが送信され、スタッフアカウントでログインできるようになります。
+                      </p>
+                    </div>
                     <div className="grid md:grid-cols-2 gap-6 pb-4">
                       <div className="w-full">
                         <div className="mb-2 flex items-center">
@@ -664,20 +679,6 @@ export default function StaffAddPage() {
                       </div>
 
                       <div className="space-y-4">
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="send_invite_email"
-                            checked={sendInviteEmail}
-                            onCheckedChange={(checked) => setSendInviteEmail(checked)}
-                          />
-                          <Label htmlFor="send_invite_email" className="text-sm cursor-pointer">
-                            招待メールを送信してClerkアカウントを作成
-                          </Label>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          有効にすると、スタッフに招待メールが送信され、Clerkアカウントでログインできるようになります。
-                        </p>
-
                         <div>
                           <div className="flex items-center mb-2">
                             <Shield className="h-4 w-4 mr-2 text-muted-foreground" />

@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useEffect, useState } from 'react'
 import { SingleImageDrop, Loading, TagInput } from '@/components/common'
+import { useStaffRoleUpdate } from '@/hooks/useStaffRoleUpdate'
 import {
   Dialog,
   DialogContent,
@@ -174,7 +175,7 @@ export default function StaffEditForm() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [currentTags, setCurrentTags] = useState<string[]>([])
 
-  const updateRole = useMutation(api.staff.auth.mutation.update)
+  const { updateStaffRole } = useStaffRoleUpdate()
 
   // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
   const staffUpsert = useMutation(api.staff.mutation.upsert)
@@ -330,10 +331,11 @@ export default function StaffEditForm() {
         })
 
         if (staffAllData && data.role !== staffAllData?.role) {
-          await updateRole({
-            staff_auth_id: staffAllData?.staff_auth_id as Id<'staff_auth'>,
-            role: data.role,
-          })
+          await updateStaffRole(
+            staffAllData?.staff_auth_id as Id<'staff_auth'>,
+            data.role,
+            encryptedPinCode
+          )
         }
 
         toast.success('スタッフを更新しました', {

@@ -68,7 +68,28 @@ export const update = mutation({
 
     const updateData = excludeFields(args, ['staff_auth_id']);
 
-    return await updateRecord(ctx,args.staff_auth_id, updateData);
+    // 権限が変更される場合、スタッフ情報も取得して後でClerk更新用の情報を返す
+    let shouldUpdateClerk = false;
+    let staffInfo = null;
+    
+    if (args.role && args.role !== staffAuth.role) {
+      shouldUpdateClerk = true;
+      staffInfo = await ctx.db.get(staffAuth.staff_id);
+    }
+
+     await updateRecord(ctx, args.staff_auth_id, updateData);
+
+    // Clerk更新が必要な場合は追加情報を返す
+    return {
+      shouldUpdateClerk,
+      clerkUpdateInfo: shouldUpdateClerk ? {
+        staff_id: staffAuth.staff_id,
+        clerk_user_id: staffInfo?.clerk_user_id,
+        new_role: args.role,
+        tenant_id: staffAuth.tenant_id,
+        org_id: staffAuth.org_id,
+      } : null,
+    };
   },
 });
 
