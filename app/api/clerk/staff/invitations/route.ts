@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
       publicMetadata: {
         tenant_id: staffData.tenant_id,
         org_id: staffData.org_id,
-        role: staffData.auth?.role || 'staff',
+        role: staffData.config?.role || 'staff',
         staff_id: staffData._id,
         // 事前設定情報も含める
         extra_charge: staffData.config?.extra_charge,
