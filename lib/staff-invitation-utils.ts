@@ -3,7 +3,24 @@
 
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '@/convex/_generated/api'
-import { Id } from '@/convex/_generated/dataModel'
+import { Doc, Id } from '@/convex/_generated/dataModel'
+import { Gender, Role } from '@/convex/types'
+import { InvitationStatus } from '@/lib/types'
+
+
+interface ClerkInvitation {
+  object: "invitation";
+  id: string;
+  email_address: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public_metadata: Record<string, any>;
+  revoked: boolean;
+  status: InvitationStatus;
+  url: string;
+  expires_at: number;
+  created_at: number;
+  updated_at: number;
+}
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
@@ -42,49 +59,52 @@ export const validateEmailAvailability = async (
   }
 }
 
+// 招待メタデータの型定義
+interface InvitationMetadata {
+  tenant_id: Id<"tenant">
+  org_id: Id<"organization">
+  role: Role
+  staff_id: Id<"staff">
+  extra_charge?: number
+  priority?: number
+  invited_by?: string // ClerkのユーザーID
+  invited_at?: string // 招待日時
+  resent?: boolean // 再送信フラグ
+}
+
 /**
  * ConvexスタッフデータとClerk招待データをマージ
  */
 export interface MergedStaffInvitationData {
   // Convexデータ
-  staff_id: string
+  staff_id: Id<"staff">
   name: string
   email: string
-  gender: string
+  gender: Gender
   age?: number
   tags: string[]
   created_at: number
   
   // Clerk招待データ
   invitation_id: string | null
-  invitation_status: 'pending' | 'missing' | 'accepted'
+  invitation_status: InvitationStatus
   invitation_created_at: number | null
   
   // メタデータ
-  metadata: {
-    tenant_id: string
-    org_id: string
-    role: string
-    staff_id: string
-    extra_charge?: number
-    priority?: number
-    invited_by?: string
-    invited_at?: string
-    resent?: boolean
-  } | null
+  metadata: InvitationMetadata | null
 }
 
 /**
  * スタッフ招待データのマージング
  */
 export const mergeStaffWithInvitationData = (
-  convexStaff: any[],
-  clerkInvitations: any[]
+  convexStaff: Doc<'staff'>[],
+  clerkInvitations: ClerkInvitation[]
 ): MergedStaffInvitationData[] => {
   return convexStaff.map(staff => {
     // このスタッフに対応するClerk招待を探す
     const clerkInvitation = clerkInvitations.find(inv => {
-      const metadata = inv.publicMetadata as any
+      const metadata = inv.public_metadata
       return metadata?.staff_id === staff._id
     })
 
@@ -96,15 +116,15 @@ export const mergeStaffWithInvitationData = (
       gender: staff.gender,
       age: staff.age,
       tags: staff.tags || [],
-      created_at: staff.created_at,
+      created_at: staff._creationTime,
       
       // Clerk招待データ
       invitation_id: clerkInvitation?.id || null,
-      invitation_status: staff.clerk_user_id ? 'accepted' : (clerkInvitation ? 'pending' : 'missing'),
-      invitation_created_at: clerkInvitation?.createdAt || null,
+      invitation_status: clerkInvitation?.status || (staff.clerk_user_id ? 'accepted' : 'missing'),
+      invitation_created_at: clerkInvitation?.created_at || null,
       
       // メタデータ
-      metadata: clerkInvitation?.publicMetadata as any || null,
+      metadata: clerkInvitation?.public_metadata as InvitationMetadata || null,
     }
   })
 }
@@ -130,9 +150,9 @@ export const checkInvitationExpiry = (createdAt: number): {
 /**
  * 招待エラーメッセージの取得
  */
-export const getInvitationErrorMessage = (error: any): string => {
+export const getInvitationErrorMessage = (error: unknown): string => {
   if (error && typeof error === 'object' && 'errors' in error) {
-    const clerkErrors = error.errors as any[]
+    const clerkErrors = error.errors as { code: string }[]
     if (clerkErrors?.[0]?.code === 'form_identifier_exists') {
       return 'このメールアドレスは既に登録されています'
     }
