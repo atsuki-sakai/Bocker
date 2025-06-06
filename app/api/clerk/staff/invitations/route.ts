@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
         gender: staff.gender,
         age: staff.age,
         tags: staff.tags,
-        created_at: staff.created_at,
+        created_at: staff._creationTime,
         
         // Clerk招待データ
         invitation_id: clerkInvitation?.id || null,

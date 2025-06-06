@@ -74,12 +74,12 @@ export async function POST(req: NextRequest) {
       name,
       email,
       gender,
-      age,
-      instagram_link,
-      description,
+      ...(age !== null && age !== undefined && { age }),
+      ...(instagram_link && { instagram_link }),
+      ...(description && { description }),
       tags: tags || [],
-      extra_charge,
-      priority,
+      ...(extra_charge !== null && extra_charge !== undefined && { extra_charge }),
+      ...(priority !== null && priority !== undefined && { priority }),
     })
 
     console.log('✅ Convexスタッフレコード作成成功:', result.staffId)
@@ -95,9 +95,9 @@ export async function POST(req: NextRequest) {
         org_id,
         role,
         staff_id: result.staffId,
-        // 事前設定情報も含める
-        extra_charge: result.preConfig.extra_charge,
-        priority: result.preConfig.priority,
+        // 事前設定情報も含める（値がある場合のみ）
+        ...(result.preConfig.extra_charge !== undefined && { extra_charge: result.preConfig.extra_charge }),
+        ...(result.preConfig.priority !== undefined && { priority: result.preConfig.priority }),
         invited_by: userId,
         invited_at: new Date().toISOString()
       },
