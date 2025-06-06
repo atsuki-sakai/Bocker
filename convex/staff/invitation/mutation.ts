@@ -26,21 +26,8 @@ export const createWithInvitation = mutation({
   },
   handler: async (ctx, args) => {
   
-    // 同じ組織内でメールアドレスの重複チェック
-    const existingStaff = await ctx.db
-      .query('staff')
-      .withIndex('by_tenant_org_active_archive', (q) => 
-        q.eq('tenant_id', args.tenant_id)
-         .eq('org_id', args.org_id)
-      )
-      .filter((q) => q.eq(q.field('is_archive'), false))
-      .filter((q) => q.eq(q.field('email'), args.email))
-      .first();
-
-    if (existingStaff) {
-      throw new Error('このメールアドレスは既に使用されています');
-    }
-
+    // 注: メールアドレスの重複チェックはフロントエンドで実施済み
+    
     // スタッフレコード作成（clerk_user_id = null で招待中を示す）
     const staffId = await createRecord(ctx, 'staff', {
       tenant_id: args.tenant_id,

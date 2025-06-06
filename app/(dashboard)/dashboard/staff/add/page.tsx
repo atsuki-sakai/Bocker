@@ -219,6 +219,64 @@ export default function StaffAddPage() {
         }
       }
 
+      // 招待メール送信の場合は、スタッフ作成をスキップして直接招待APIを呼び出す
+      if (sendInviteEmail) {
+        try {
+          console.log('📧 招待メール送信を開始:', {
+            email: data.email,
+            tenant_id: tenantId,
+            org_id: orgId,
+            role: data.role,
+          })
+
+          const inviteResponse = await fetch('/api/clerk/staff/invite', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: data.email,
+              tenant_id: tenantId,
+              org_id: orgId,
+              role: data.role,
+              // スタッフ基本情報
+              name: data.name,
+              gender: data.gender,
+              age: data.age,
+              instagram_link: data.instagram_link,
+              description: data.description,
+              tags: data.tags,
+              // 事前設定情報
+              extra_charge: data.extra_charge,
+              priority: data.priority,
+            }),
+          })
+
+          const inviteData = await inviteResponse.json()
+
+          if (!inviteResponse.ok) {
+            // 招待失敗時のエラーハンドリング
+            if (inviteResponse.status === 400 && inviteData.error?.includes('Clerk')) {
+              toast.error('このメールアドレスは既にClerkに登録されています')
+            } else {
+              toast.error(`招待メール送信失敗: ${inviteData.error || '不明なエラー'}`)
+            }
+            return
+          }
+          
+          toast.success('スタッフ招待メールを送信しました', {
+            icon: <Check className="h-4 w-4 text-active" />,
+          })
+          router.push('/dashboard/staff')
+          return
+        } catch (inviteError) {
+          console.error('🚨 招待メール送信エラー:', inviteError)
+          toast.error('招待メール送信中にエラーが発生しました')
+          return
+        }
+      }
+
+      // 通常のスタッフ作成処理
       if (selectedFile) {
         try {
           const result = await uploadCompressedImageWithThumbnailSignedUrl(
@@ -295,74 +353,9 @@ export default function StaffAddPage() {
           selected_menu_ids: exclusionMenuIds,
         })
 
-        // 招待メール送信処理（オプション）
-        if (sendInviteEmail) {
-          try {
-            console.log('📧 招待メール送信を開始:', {
-              email: data.email,
-              tenant_id: tenantId,
-              org_id: orgId,
-              role: data.role,
-            })
-
-            const inviteResponse = await fetch('/api/clerk/staff/invite', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                email: data.email,
-                tenant_id: tenantId,
-                org_id: orgId,
-                role: data.role,
-                // スタッフ基本情報
-                name: data.name,
-                gender: data.gender,
-                age: data.age,
-                instagram_link: data.instagram_link,
-                description: data.description,
-                tags: data.tags,
-                // 事前設定情報
-                extra_charge: data.extra_charge,
-                priority: data.priority,
-              }),
-            })
-
-            const inviteData = await inviteResponse.json()
-
-            if (!inviteResponse.ok) {
-              // 招待失敗時のエラーハンドリング
-              if (inviteResponse.status === 400 && inviteData.error?.includes('Clerk')) {
-                toast.error('このメールアドレスは既にClerkに登録されています')
-              } else {
-                toast.error(`招待メール送信失敗: ${inviteData.error || '不明なエラー'}`)
-              }
-              return
-            }
-
-            // 招待成功の場合、作成したスタッフレコードを削除
-            if (staffId) {
-              await staffKill({
-                tenant_id: tenantId,
-                org_id: orgId,
-                staff_id: staffId,
-                staff_config_id: staffConfigId!,
-                staff_auth_id: staffAuthId!,
-              })
-            }
-            
-            toast.success('スタッフ招待メールを送信しました', {
-              icon: <Check className="h-4 w-4 text-active" />,
-            })
-          } catch (inviteError) {
-            console.error('🚨 招待メール送信エラー:', inviteError)
-            toast.error('招待メール送信中にエラーが発生しました')
-          }
-        } else {
-          toast.success('スタッフを追加しました', {
-            icon: <Check className="h-4 w-4 text-active" />,
-          })
-        }
+        toast.success('スタッフを追加しました', {
+          icon: <Check className="h-4 w-4 text-active" />,
+        })
 
         router.push('/dashboard/staff')
       } catch (configAuthError) {
