@@ -16,14 +16,14 @@ export const SUBSCRIPTION_PLAN_LIMITS: Record<SubscriptionPlanName, PlanLimits> 
         maxStaffCount: 3,
         maxMenuCount: 10,
         maxOptionCount: 5,
-        maxCouponCount: 10,
+        maxCouponCount: 5,
         monthlyReservationLimit: 200,
     },
     'PRO': {
         maxStaffCount: 10,
         maxMenuCount: 20,
         maxOptionCount: 10,
-        maxCouponCount: 100,
+        maxCouponCount: 20,
         monthlyReservationLimit: 500,
     },
     'UNKNOWN': {
