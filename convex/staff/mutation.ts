@@ -7,8 +7,6 @@ import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
 import { genderType, imageType } from '@/convex/types';
 import { MAX_NOTES_LENGTH } from '../constants';
-import { getPlanLimits } from '@/convex/utils/helpers';
-import { subscriptionPlanNameType } from '@/convex/types';
 
 // スタッフの追加
 export const create = mutation({
@@ -165,16 +163,12 @@ export const killRelatedTables = mutation({
     tenant_id: v.id('tenant'), // テナントID
     org_id: v.id('organization'), // 組織ID
     staff_id: v.id('staff'),
-    staff_config_id: v.id('staff_config'),
-    staff_auth_id: v.id('staff_auth'),
+    staff_config_id: v.id('staff_config')
   },
   handler: async (ctx, args) => {
 
     if (args.staff_config_id) {
       await killRecord(ctx, args.staff_config_id)
-    }
-    if (args.staff_auth_id) {
-      await killRecord(ctx, args.staff_auth_id)
     }
     if (args.staff_id) {
       await killRecord(ctx, args.staff_id)
@@ -193,7 +187,6 @@ export const killRelatedTables = mutation({
     await Promise.all(staffSchedules.map((schedule) => killRecord(ctx, schedule._id)))
     return {
       deletedStaffConfigId: args.staff_config_id,
-      deletedStaffAuthId: args.staff_auth_id,
       deletedStaffId: args.staff_id,
     }
   },

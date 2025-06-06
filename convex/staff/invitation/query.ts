@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { query } from '../../_generated/server';
+import { InvitationStatus } from '@/convex/types';
 
 /**
  * 招待中スタッフ一覧
@@ -124,17 +125,7 @@ export const getStaffWithInvitation = query({
     }
 
     // 関連データ取得
-    const [staffAuth, staffConfig] = await Promise.all([
-      ctx.db
-        .query('staff_auth')
-        .withIndex('by_tenant_org_staff_archive', (q) =>
-          q.eq('tenant_id', staff.tenant_id)
-           .eq('org_id', staff.org_id)
-           .eq('staff_id', args.staff_id)
-           .eq('is_archive', false)
-        )
-        .first(),
-      ctx.db
+    const staffConfig = await ctx.db
         .query('staff_config')
         .withIndex('by_tenant_org_staff_archive', (q) =>
           q.eq('tenant_id', staff.tenant_id)
@@ -142,13 +133,11 @@ export const getStaffWithInvitation = query({
            .eq('staff_id', args.staff_id)
            .eq('is_archive', false)
         )
-        .first(),
-    ]);
+        .first()
 
     return {
       ...staff,
-      invitationStatus: staff.clerk_user_id ? 'accepted' : 'pending' as 'accepted' | 'pending',
-      auth: staffAuth,
+      invitationStatus: staff.clerk_user_id ? 'accepted' : 'pending' as InvitationStatus,
       config: staffConfig,
     };
   },

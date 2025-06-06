@@ -147,7 +147,6 @@ export default function StaffAddPage() {
 
   const staffAdd = useMutation(api.staff.mutation.create)
   const staffConfigAdd = useMutation(api.staff.config.mutation.create)
-  const staffAuthAdd = useMutation(api.staff.auth.mutation.create)
   const staffKill = useMutation(api.staff.mutation.killRelatedTables)
   const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert)
 
@@ -164,7 +163,6 @@ export default function StaffAddPage() {
     setIsLoading(true)
     let staffId: Id<'staff'> | null = null
     let staffConfigId: Id<'staff_config'> | null = null
-    let staffAuthId: Id<'staff_auth'> | null = null
     let newUploadedImageUrls: { original_url: string; thumbnail_url: string }[] = []
 
     try {
@@ -320,16 +318,9 @@ export default function StaffAddPage() {
           staff_id: staffId,
           tenant_id: tenantId,
           org_id: orgId,
+          role: data.role,
           extra_charge: data.extra_charge ?? undefined,
           priority: data.priority ?? undefined,
-        })
-
-        // スタッフの認証情報を追加
-        staffAuthId = await staffAuthAdd({
-          staff_id: staffId,
-          role: data.role,
-          tenant_id: tenantId,
-          org_id: orgId,
         })
 
         // スタッフの対応外メニューを追加
@@ -349,13 +340,12 @@ export default function StaffAddPage() {
         // スタッフ設定または認証の保存に失敗した場合、作成したスタッフを削除
         if (staffId) {
           try {
-            if (staffConfigId && staffAuthId && staffId) {
+            if (staffConfigId && staffId) {
               await staffKill({
                 tenant_id: tenantId,
                 org_id: orgId,
                 staff_id: staffId,
                 staff_config_id: staffConfigId,
-                staff_auth_id: staffAuthId,
               })
             }
           } catch (cleanupError) {
@@ -387,13 +377,12 @@ export default function StaffAddPage() {
       }
       if (staffId) {
         try {
-          if (staffConfigId && staffAuthId && staffId && tenantId && orgId) {
+          if (staffConfigId && staffId && tenantId && orgId) {
             await staffKill({
               tenant_id: tenantId,
               org_id: orgId,
               staff_id: staffId,
               staff_config_id: staffConfigId,
-              staff_auth_id: staffAuthId,
             })
           }
         } catch (cleanupError) {

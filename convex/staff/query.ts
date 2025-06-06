@@ -115,20 +115,12 @@ export const getRelatedTables = query({
     }
 
     // 残りのデータを並列で取得
-    const [staff_config, staff_auth] = await Promise.all([
-      ctx.db
+    const staff_config = await ctx.db
         .query('staff_config')
         .withIndex('by_tenant_org_staff_archive', (q) =>
           q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('staff_id', args.staff_id).eq('is_archive', false)
         )
-        .first(),
-      ctx.db
-        .query('staff_auth')
-        .withIndex('by_tenant_org_staff_archive', (q) =>
-          q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('staff_id', args.staff_id).eq('is_archive', false)
-        )
-        .first(),
-    ])
+        .first()
 
     if (!staff_config) {
       throw new ConvexError({
@@ -142,22 +134,11 @@ export const getRelatedTables = query({
       })
     }
 
-    if (!staff_auth) {
-      throw new ConvexError({
-        message: '指定されたスタッフの認証情報が存在しません',
-        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'staff.getRelatedTables',
-        code: 'NOT_FOUND',
-        status: ERROR_STATUS_CODE.NOT_FOUND,
-        details: { ...args },
-      })
-    }
-
     return {
       tenant_id: staff.tenant_id,
       org_id: staff.org_id,
       staff_id: staff._id,
+      clerk_user_id: staff.clerk_user_id,
       name: staff.name,
       age: staff.age,
       email: staff.email,
@@ -172,8 +153,7 @@ export const getRelatedTables = query({
       ] : [],
       is_active: staff.is_active,
       tags: staff.tags,
-      staff_auth_id: staff_auth._id,
-      role: staff_auth.role,
+      role: staff_config.role,
       staff_config_id: staff_config._id,
       extra_charge: staff_config.extra_charge,
       priority: staff_config.priority,

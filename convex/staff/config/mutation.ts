@@ -5,6 +5,7 @@ import { checkAuth } from '@/convex/utils/auth';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
 import { validateNumberLength } from '@/convex/utils/validations';
+import { roleType } from '@/convex/types';
 
 // スタッフ詳細設定の追加
 export const create = mutation({
@@ -12,6 +13,7 @@ export const create = mutation({
     tenant_id: v.id('tenant'),
     staff_id: v.id('staff'),
     org_id: v.id('organization'),
+    role: roleType,
     extra_charge: v.optional(v.number()),
     priority: v.optional(v.number()),
   },
@@ -51,6 +53,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     staff_config_id: v.id('staff_config'),
+    role: v.optional(roleType),
     extra_charge: v.optional(v.number()),
     priority: v.optional(v.number()),
   },
@@ -76,6 +79,25 @@ export const update = mutation({
   },
 });
 
+export const updateRole = mutation({
+  args: {
+    staff_id: v.id('staff'),
+    clerk_user_id: v.string(),
+    staff_config_id: v.id('staff_config'),
+    role: roleType,
+  },
+  handler: async (ctx, args) => {
+    await updateRecord(ctx, args.staff_config_id, {
+      role: args.role,
+    })
+    return {
+      staff_id: args.staff_id,
+      clerk_user_id: args.clerk_user_id,
+      new_role: args.role,
+    }
+  },
+});
+
 // スタッフ設定の削除
 export const archive = mutation({
   args: {
@@ -93,6 +115,7 @@ export const upsert = mutation({
     org_id: v.id('organization'),
     staff_config_id: v.id('staff_config'),
     staff_id: v.id('staff'),
+    role: roleType,
     extra_charge: v.optional(v.number()),
     priority: v.optional(v.number()),
   },

@@ -30,9 +30,6 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
-    // 4. Convex側のstaff_auth更新（既存処理）
-    console.log('📝 Convex staff_auth更新中...')
-    
     // 5. Clerkユーザーが存在する場合のみpublic_metadata更新
     if (clerk_user_id) {
       console.log('🔄 Clerk public_metadata更新中...')

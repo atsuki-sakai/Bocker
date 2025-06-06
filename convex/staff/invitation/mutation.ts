@@ -61,7 +61,7 @@ export const createWithInvitation = mutation({
  * 招待受諾時の更新
  * clerk_user_idを設定
  * is_activeを有効化
- * staff_auth, staff_configテーブル作成
+ * staff_configテーブル作成
  */
 export const acceptInvitation = mutation({
   args: {
@@ -90,19 +90,13 @@ export const acceptInvitation = mutation({
       is_active: true,
     });
 
-    // staff_auth作成
-    await createRecord(ctx, 'staff_auth', {
-      tenant_id: staff.tenant_id,
-      org_id: staff.org_id,
-      staff_id: args.staff_id,
-      role: args.role || 'staff'
-    });
 
     // staff_config作成
     await createRecord(ctx, 'staff_config', {
       tenant_id: staff.tenant_id,
       org_id: staff.org_id,
       staff_id: args.staff_id,
+      role: args.role || 'staff',
       extra_charge: args.extra_charge,
       priority: args.priority,
     });

@@ -120,7 +120,6 @@ export default function StaffDetails() {
               tenant_id: tenantId,
               org_id: orgId,
               staff_config_id: staffAllData.staff_config_id,
-              staff_auth_id: staffAllData.staff_auth_id,
             }),
           })
 

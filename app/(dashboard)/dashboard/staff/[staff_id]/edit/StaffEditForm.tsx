@@ -35,7 +35,6 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { encryptStringCryptoJS } from '@/lib/utils'
 import { Id } from '@/convex/_generated/dataModel'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
@@ -180,7 +179,6 @@ export default function StaffEditForm() {
   // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
   const staffUpsert = useMutation(api.staff.mutation.upsert)
   const staffConfigUpsert = useMutation(api.staff.config.mutation.upsert)
-  const staffAuthUpsert = useMutation(api.staff.auth.mutation.upsert)
   const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert)
 
   // FIXME: 一回の呼び出しで複数のテーブルを更新するようにConvexのトランザクションを活用
@@ -236,7 +234,6 @@ export default function StaffEditForm() {
     setIsLoading(true)
     let staffId: Id<'staff'> | null = null
     let staffConfigId: Id<'staff_config'> | null = null
-    let staffAuthId: Id<'staff_auth'> | null = null
     let newUploadedImages: { original_url: string; thumbnail_url: string }[] = []
 
     try {
@@ -306,18 +303,9 @@ export default function StaffEditForm() {
           org_id: orgId,
           staff_id: staff_id as Id<'staff'>,
           staff_config_id: staffAllData?.staff_config_id as Id<'staff_config'>,
+          role: data.role,
           extra_charge: data.extra_charge ?? undefined,
           priority: data.priority ?? undefined,
-        })
-
-        // スタッフの認証情報を追加
-        const encryptedPinCode = await encryptStringCryptoJS(data.pin_code ?? '')
-        staffAuthId = await staffAuthUpsert({
-          tenant_id: tenantId,
-          org_id: orgId,
-          staff_id: staff_id as Id<'staff'>,
-          staff_auth_id: staffAllData?.staff_auth_id as Id<'staff_auth'>,
-          role: data.role,
         })
 
         // 除外メニューを更新
@@ -329,11 +317,12 @@ export default function StaffEditForm() {
           selected_menu_ids: selectedExclusionMenuIds,
         })
 
-        if (staffAllData && data.role !== staffAllData?.role) {
+        if (staffAllData && data.role !== staffAllData?.role && staffAllData?.clerk_user_id) {
           await updateStaffRole(
-            staffAllData?.staff_auth_id as Id<'staff_auth'>,
-            data.role,
-            encryptedPinCode
+            staff_id as Id<'staff'>,
+            staffAllData?.clerk_user_id as string,
+            staffConfigId,
+            data.role
           )
         }
 
@@ -343,14 +332,13 @@ export default function StaffEditForm() {
         router.push('/dashboard/staff')
       } catch (configAuthError) {
         // スタッフ設定または認証の保存に失敗した場合、作成したスタッフを削除
-        if (staffId && staffConfigId && staffAuthId) {
+        if (staffId && staffConfigId) {
           try {
             await staffKill({
               tenant_id: tenantId,
               org_id: orgId,
               staff_id: staff_id as Id<'staff'>,
               staff_config_id: staffConfigId,
-              staff_auth_id: staffAuthId,
             })
           } catch (cleanupError) {
             console.error('スタッフ削除中にエラーが発生しました:', cleanupError)
@@ -377,13 +365,12 @@ export default function StaffEditForm() {
       // staffIdが存在し、configAuthErrorでないケースでスタッフを削除（重複防止）
       if (staffId && !(error instanceof Error && error.name === 'configAuthError')) {
         try {
-          if (staffConfigId && staffAuthId && tenantId && orgId) {
+          if (staffConfigId && tenantId && orgId) {
             await staffKill({
               tenant_id: tenantId,
               org_id: orgId,
               staff_id: staff_id as Id<'staff'>,
               staff_config_id: staffConfigId,
-              staff_auth_id: staffAuthId,
             })
           }
         } catch (killError) {

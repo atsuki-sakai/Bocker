@@ -41,8 +41,6 @@ export const MAX_USE_POINTS = 2000;
 export const MAX_TOTAL_PRICE = 100000;
 // 備考の最大文字数
 export const MAX_NOTES_LENGTH = 2000;
-// スタッフ認証コードの文字数
-export const MAX_STAFF_AUTH_CODE_LENGTH = 6;
 // ポイントの有効期限の最大値
 export const MAX_POINT_EXPIRATION_DAYS = 1095;
 // ポイント付与率の最大値

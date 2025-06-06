@@ -6,7 +6,7 @@ import { api } from '@/convex/_generated/api';
 import * as Sentry from '@sentry/nextjs';
 import { STRIPE_API_VERSION } from '@/services/stripe/constants';
 import { retryOperation } from '@/lib/utils';
-import type { UserJSON, OrganizationJSON } from '@clerk/nextjs/server';
+import type { UserJSON } from '@clerk/nextjs/server';
 import { z } from 'zod';
 
 import { WebhookProcessor } from '../BaseProcessor'; // Added

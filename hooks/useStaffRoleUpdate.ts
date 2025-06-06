@@ -6,33 +6,36 @@ import { api } from '@/convex/_generated/api'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { toast } from 'sonner'
 import { Id } from '@/convex/_generated/dataModel'
+import type { Role } from '@/convex/types'
 
 export const useStaffRoleUpdate = () => {
   const { showErrorToast } = useErrorHandler()
-  const updateStaffAuth = useMutation(api.staff.auth.mutation.update)
+  const updateStaffRoleMutation = useMutation(api.staff.config.mutation.updateRole)
 
   const updateStaffRole = async (
-    staffAuthId: Id<'staff_auth'>,
-    newRole: string,
-    pinCode?: string
+    staffId: Id<'staff'>,
+    clerkUserId: string,
+    staffConfigId: Id<'staff_config'>,
+    newRole: Role,
   ) => {
     try {
       // 1. Convex側の更新を実行
-      const result = await updateStaffAuth({
-        staff_auth_id: staffAuthId,
-        role: newRole as any,
-        ...(pinCode && { pin_code: pinCode }),
+      const result = await updateStaffRoleMutation({
+        staff_id: staffId,
+        clerk_user_id: clerkUserId,
+        staff_config_id: staffConfigId,
+        role: newRole,
       })
 
       // 2. Clerk側の更新が必要な場合
-      if (result.shouldUpdateClerk && result.clerkUpdateInfo) {
+      if (result) {
         try {
           const response = await fetch('/api/clerk/staff/update-role', {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(result.clerkUpdateInfo),
+            body: JSON.stringify(result),
           })
 
           const clerkResult = await response.json()

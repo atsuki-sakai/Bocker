@@ -28,7 +28,6 @@ export async function DELETE(req: NextRequest) {
       tenant_id,
       org_id,
       staff_config_id,
-      staff_auth_id,
     } = await req.json()
 
     // 3. 必須パラメータの検証
@@ -101,8 +100,7 @@ export async function DELETE(req: NextRequest) {
       tenant_id: tenant_id as Id<"tenant">,
       org_id: org_id as Id<"organization">,
       staff_id: staff_id as Id<"staff">,
-      staff_config_id: staff_config_id as Id<"staff_config">,
-      staff_auth_id: staff_auth_id as Id<"staff_auth">,
+      staff_config_id: staff_config_id as Id<"staff_config">
     })
 
     // 8. 画像削除（存在する場合）

@@ -48,8 +48,6 @@ import type * as point_queue_mutation from "../point/queue/mutation.js";
 import type * as point_queue_query from "../point/queue/query.js";
 import type * as reservation_mutation from "../reservation/mutation.js";
 import type * as reservation_query from "../reservation/query.js";
-import type * as staff_auth_mutation from "../staff/auth/mutation.js";
-import type * as staff_auth_query from "../staff/auth/query.js";
 import type * as staff_config_mutation from "../staff/config/mutation.js";
 import type * as staff_config_query from "../staff/config/query.js";
 import type * as staff_exception_schedule_mutation from "../staff/exception_schedule/mutation.js";
@@ -120,8 +118,6 @@ declare const fullApi: ApiFromModules<{
   "point/queue/query": typeof point_queue_query;
   "reservation/mutation": typeof reservation_mutation;
   "reservation/query": typeof reservation_query;
-  "staff/auth/mutation": typeof staff_auth_mutation;
-  "staff/auth/query": typeof staff_auth_query;
   "staff/config/mutation": typeof staff_config_mutation;
   "staff/config/query": typeof staff_config_query;
   "staff/exception_schedule/mutation": typeof staff_exception_schedule_mutation;

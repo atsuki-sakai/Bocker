@@ -545,21 +545,6 @@ const staff = defineTable({
 
 /**
  * =========================
- * スタッフ認証（PIN ログイン等）
- * =========================
- * スタッフ一人につき一つ作成する。
- */
-const staff_auth = defineTable({
-  tenant_id: v.id('tenant'), // テナントID
-  org_id: v.id('organization'), // 店舗ID
-  staff_id: v.id('staff'), // スタッフID
-  role: roleType, // ロール
-  ...CommonFields,
-})
-.index('by_tenant_org_staff_archive', ['tenant_id', 'org_id', 'staff_id', 'is_archive']);
-
-/**
- * =========================
  * スタッフ追加設定
  * =========================
  * スタッフ一人につき一つ作成する。
@@ -568,6 +553,7 @@ const staff_config = defineTable({
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.id('organization'), // 店舗ID
   staff_id: v.id('staff'), // スタッフID
+  role: roleType, // ロール
   extra_charge: v.optional(v.number()), // 追加料金
   priority: v.optional(v.number()), // 優先度
   ...CommonFields,
@@ -831,7 +817,6 @@ export default defineSchema({
   staff_week_schedule,
   staff_exception_schedule,
   staff,
-  staff_auth,
   staff_config,
   menu,
   menu_exclusion_staff,
