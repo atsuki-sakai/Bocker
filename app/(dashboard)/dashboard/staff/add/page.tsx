@@ -160,7 +160,6 @@ export default function StaffAddPage() {
   const staffAuthAdd = useMutation(api.staff.auth.mutation.create)
   const staffKill = useMutation(api.staff.mutation.killRelatedTables)
   const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert)
-  const staffInvite = useMutation(api.staff.invitation.mutation.createWithInvitation)
 
   const {
     register,
