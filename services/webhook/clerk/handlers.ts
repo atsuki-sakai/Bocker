@@ -40,7 +40,7 @@ export async function handleUserCreated(
 
   console.log(`👤 [${eventId}] User Created処理開始: user_id=${id}, email=${email}`, context);
 
-  // スタッフ招待の受諾チェック
+  // スタッフ招待の受諾チェック('staff_id'が存在する場合はスタッフアカウントとして処理)
   if (public_metadata && 'staff_id' in public_metadata) {
     console.log(`🎫 [${eventId}] スタッフ招待の受諾を検出: staff_id=${public_metadata.staff_id}`, context);
     return handleStaffInvitationAccepted(data, eventId, deps, metrics);
@@ -346,52 +346,36 @@ export async function handleUserUpdated(
 
       await executeInParallel(updateTasks, context);
 
+      // スタッフメールアドレス同期（非クリティカル）
+      try {
+        console.log(`👤 [${eventId}] スタッフメールアドレス同期開始: user_id=${id}, new_email=${email}`, { ...context, tenantId: existingTenant._id });
+        metrics.incrementApiCall('convex');
+        
+        await deps.retry(() =>
+          fetchMutation(deps.convex.staff.mutation.updateEmailByClerkId, {
+            clerk_user_id: id,
+            email: email,
+          })
+        );
+        
+        console.log(`👤 [${eventId}] スタッフメールアドレス同期完了: user_id=${id}`, { ...context, tenantId: existingTenant._id });
+      } catch (staffUpdateError) {
+        // スタッフが見つからない場合は正常（全ユーザーがスタッフではないため）
+        console.log(`ℹ️ [${eventId}] スタッフメールアドレス同期スキップ（スタッフレコードなし）: user_id=${id}`, { ...context, tenantId: existingTenant._id, error: staffUpdateError });
+      }
+
       console.log(`✅ [${eventId}] User Updated処理完了。user_id=${id}`, { ...context, tenantId: existingTenant._id });
       return {
         result: 'success',
         metadata: { action: 'user_updated', tenantId: existingTenant._id, newEmail: email }
       };
 
-    } else {
-      // 復旧処理として新規作成
-      console.warn(`⚠️ [${eventId}] User Updatedイベント受信: テナントが見つかりません (user_id=${id})。復旧処理を試みます。`, context);
-      Sentry.captureMessage('User Updated: Tenant not found, attempting recovery.', {
-        level: 'warning',
-        tags: { ...context, operation: 'handleUserUpdated_recovery' },
-        extra: { userId: id, email }
-      });
-      
-      // 復旧処理: Stripe顧客とConvexテナントを新規作成
-      console.log(`🛠️ [${eventId}] 復旧処理: Stripe顧客作成開始 user_id=${id}, email=${email}`, context);
-      metrics.incrementApiCall('stripe');
-      const customer = await deps.retry(() =>
-        deps.stripe.customers.create({
-          email: email || undefined,
-          metadata: { user_id: id, recovered_at: new Date().toISOString() },
-        }, {
-          idempotencyKey: `clerk_recovery_user_${id}_${eventId}`,
-        })
-      );
-      console.log(`🛠️ [${eventId}] 復旧処理: Stripe顧客作成成功 (customerId=${customer.id})`, { ...context, stripeCustomerId: customer.id });
-
-      console.log(`🛠️ [${eventId}] 復旧処理: Convexテナント作成開始 user_id=${id}, stripe_customer_id=${customer.id}`, { ...context, stripeCustomerId: customer.id });
-      metrics.incrementApiCall('convex');
-      const recoveredTenantId = await deps.retry(() =>
-        fetchMutation(deps.convex.tenant.mutation.create, {
-          user_id: id,
-          user_email: email,
-          stripe_customer_id: customer.id,
-        })
-      );
-      console.log(`🛠️ [${eventId}] 復旧処理: Convexテナント作成成功 (tenantId=${recoveredTenantId})`, { ...context, tenantId: recoveredTenantId });
-
-      console.log(`✅ [${eventId}] User Updated復旧処理完了。user_id=${id}`, { ...context, tenantId: recoveredTenantId, stripeCustomerId: customer.id });
+    }else{
       return {
-        result: 'success',
-        metadata: { action: 'recovery_created', tenantId: recoveredTenantId, stripeCustomerId: customer.id }
+        result: 'skipped',
+        metadata: { action: "not found tenant." }
       };
     }
-
   } catch (error) {
     console.error(`❌ [${eventId}] User Updated処理中に致命的なエラーが発生: user_id=${id}`, { ...context, error });
     

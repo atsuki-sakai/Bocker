@@ -15,6 +15,7 @@ export const create = mutation({
   args: {
     tenant_id: v.id('tenant'), // テナントID
     org_id: v.id('organization'), // 組織ID
+    clerk_user_id: v.optional(v.string()), // Clerk ユーザーID (null=招待中,undefined=作成時に招待しない, 存在=受諾済み)
     name: v.string(), // スタッフ名
     age: v.optional(v.number()), // 年齢
     email: v.string(), // メールアドレス
@@ -57,7 +58,7 @@ export const create = mutation({
     return await createRecord(ctx, 'staff', {
       tenant_id: args.tenant_id, // テナントID
       org_id: args.org_id, // 組織ID
-      clerk_user_id: undefined, // 通常作成時はclerk_user_idは設定しない
+      clerk_user_id: args.clerk_user_id, // 通常作成時はclerk_user_idは設定しない
       name: args.name, // スタッフ名
       age: args.age, // 年齢
       email: args.email, // メールアドレス
@@ -127,6 +128,7 @@ export const upsert = mutation({
   args: {
     tenant_id: v.id('tenant'), // テナントID
     org_id: v.id('organization'), // 組織ID
+    clerk_user_id: v.optional(v.string()), // Clerk ユーザーID (null=招待中,undefined=作成時に招待しない, 存在=受諾済み)
     staff_id: v.id('staff'),
     name: v.string(), // スタッフ名
     age: v.optional(v.number()), // 年齢
@@ -221,5 +223,37 @@ export const removeImages = mutation({
     return {
       deletedStaffImage,
     }
+  },
+})
+
+// Clerkのメールアドレス変更時の同期用
+export const updateEmailByClerkId = mutation({
+  args: {
+    clerk_user_id: v.string(),
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx);
+    
+    // clerk_user_idでスタッフを検索
+    const staff = await ctx.db
+      .query('staff')
+      .withIndex('by_clerk_archive', (q) => q.eq('clerk_user_id', args.clerk_user_id))
+      .first();
+    
+    if (!staff) {
+      throw new ConvexError({
+        message: '指定されたスタッフが見つかりません',
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'staff.mutation.updateEmailByClerkId',
+        details: { clerk_user_id: args.clerk_user_id },
+      });
+    }
+    
+    // メールアドレスを更新
+    return await updateRecord(ctx, staff._id, {
+      email: args.email,
+    });
   },
 })

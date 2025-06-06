@@ -20,8 +20,7 @@ import { Gender, GENDER_VALUES, Role, ROLE_VALUES } from '@/convex/types'
 import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH } from '@/convex/constants'
 import { Textarea } from '@/components/ui/textarea'
 import { ZodTextField } from '@/components/common'
-import { generatePinCode } from '@/lib/utils'
-import { encryptStringCryptoJS } from '@/lib/utils'
+import { useUser } from '@clerk/clerk-react'
 import {
   Select,
   SelectContent,
@@ -52,9 +51,6 @@ import {
   Check,
   Instagram,
   Image as ImageIcon,
-  Lock,
-  Shuffle,
-  Copy,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExclusionMenu } from '@/components/common'
@@ -75,13 +71,6 @@ const staffAddSchema = z.object({
       z.string().url({ message: 'URLが不正です' }).optional()
     )
     .nullable(), // null も許容したい場合のみ残します
-  pin_code: z
-    .string()
-    .min(6, { message: 'ピンコードは6文字以上で入力してください' })
-    .max(MAX_TEXT_LENGTH)
-    .refine((val) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{6,}$/.test(val), {
-      message: 'ピンコードは英大文字、英小文字、数字を含む6文字以上で入力してください',
-    }),
   gender: z.enum(GENDER_VALUES),
   age: z.preprocess(
     (val) => {
@@ -148,6 +137,7 @@ const staffAddSchema = z.object({
 export default function StaffAddPage() {
   const router = useRouter()
   const { tenantId, orgId, planName } = useTenantAndOrganization()
+  const { user } = useUser()
   const { showErrorToast } = useErrorHandler()
   const [exclusionMenuIds, setExclusionMenuIds] = useState<Id<'menu'>[]>([])
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -170,20 +160,6 @@ export default function StaffAddPage() {
     watch,
   } = useZodForm(staffAddSchema)
 
-  const handleGeneratePinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    const pinCode = generatePinCode()
-    setValue('pin_code', pinCode)
-  }
-
-  const handleCopyPinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    const pinCode = watch('pin_code')
-    if (pinCode) {
-      navigator.clipboard.writeText(pinCode)
-    }
-  }
-
   const onSubmit = async (data: z.infer<typeof staffAddSchema>) => {
     setIsLoading(true)
     let staffId: Id<'staff'> | null = null
@@ -204,15 +180,29 @@ export default function StaffAddPage() {
       })
 
       // 招待メール送信時は事前にメールアドレスの重複チェック
+      const userEmail = user?.emailAddresses[0].emailAddress
+      const isAdmin = userEmail === data.email && user?.publicMetadata.role === 'admin'
       if (sendInviteEmail) {
-        const emailCheckResult = await fetchQuery(api.staff.invitation.query.checkEmailAvailability, {
-          tenant_id: tenantId,
-          org_id: orgId,
-          email: data.email,
-        })
+        if (isAdmin) {
+          toast.error(
+            '管理者はスタッフアカウントを作成できません。アカウントを作成せずにスタッフを追加してください。'
+          )
+          setIsLoading(false)
+          return
+        }
+        const emailCheckResult = await fetchQuery(
+          api.staff.invitation.query.checkEmailAvailability,
+          {
+            tenant_id: tenantId,
+            org_id: orgId,
+            email: data.email,
+          }
+        )
 
         if (!emailCheckResult.isAvailable) {
-          toast.error(`このメールアドレスは既に登録されています: ${emailCheckResult.existingStaff?.name}`)
+          toast.error(
+            `このメールアドレスは既に登録されています: ${emailCheckResult.existingStaff?.name}`
+          )
           setIsLoading(false)
           return
         }
@@ -262,7 +252,7 @@ export default function StaffAddPage() {
             }
             return
           }
-          
+
           toast.success('スタッフ招待メールを送信しました', {
             icon: <Check className="h-4 w-4 text-active" />,
           })
@@ -316,6 +306,7 @@ export default function StaffAddPage() {
             tags: data.tags,
             tenant_id: tenantId,
             org_id: orgId,
+            clerk_user_id: sendInviteEmail ? undefined : 'NOT_INVITED',
           })
         } catch (creationError) {
           console.log('creationError type: ', typeof creationError)
@@ -333,12 +324,9 @@ export default function StaffAddPage() {
           priority: data.priority ?? undefined,
         })
 
-        const pinCode = watch('pin_code')
         // スタッフの認証情報を追加
-        const encryptedPinCode = await encryptStringCryptoJS(pinCode)
         staffAuthId = await staffAuthAdd({
           staff_id: staffId,
-          pin_code: encryptedPinCode,
           role: data.role,
           tenant_id: tenantId,
           org_id: orgId,
@@ -431,7 +419,6 @@ export default function StaffAddPage() {
       name: '',
       email: '',
       instagram_link: undefined,
-      pin_code: generatePinCode(),
       gender: 'unselected',
       description: '',
       images: [],
@@ -482,22 +469,24 @@ export default function StaffAddPage() {
                       </p>
                     </div>
                     <div className="grid md:grid-cols-2 gap-6 pb-4">
-                      <div className="w-full">
-                        <div className="mb-2 flex items-center">
-                          <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <span className="text-sm font-medium text-muted-foreground">
-                            スタッフ画像
-                          </span>
-                        </div>
-
+                      {!sendInviteEmail && (
                         <div className="w-full">
-                          <SingleImageDrop
-                            onFileSelect={(file) => setSelectedFile(file ?? null)}
-                            aspectType="square"
-                            className="transition-all duration-200 hover:opacity-90"
-                          />
+                          <div className="mb-2 flex items-center">
+                            <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <span className="text-sm font-medium text-muted-foreground">
+                              スタッフ画像
+                            </span>
+                          </div>
+
+                          <div className="w-full">
+                            <SingleImageDrop
+                              onFileSelect={(file) => setSelectedFile(file ?? null)}
+                              aspectType="square"
+                              className="transition-all duration-200 hover:opacity-90"
+                            />
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <div className="space-y-4 w-full">
                         <div>
@@ -622,107 +611,72 @@ export default function StaffAddPage() {
                   <Separator />
 
                   {/* 権限設定セクション */}
-                  <div>
-                    <div className="flex items-center mb-4">
-                      <Shield className="h-5 w-5 mr-2 text-active" />
-                      <h3 className="font-semibold text-lg">権限設定</h3>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="flex flex-col space-y-4 items-center gap-2 w-full">
-                        <div className="w-full">
-                          <ZodTextField
-                            name="email"
-                            icon={<Mail className="h-4 w-4 mr-2 text-muted-foreground" />}
-                            label="メールアドレス"
-                            register={register}
-                            errors={errors}
-                            placeholder="メールアドレスを入力してください"
-                          />
-                        </div>
-                        <div className="w-full flex items-center gap-2 justify-between">
+                  {sendInviteEmail && (
+                    <div>
+                      <div className="flex items-center mb-4">
+                        <Shield className="h-5 w-5 mr-2 text-active" />
+                        <h3 className="font-semibold text-lg">権限設定</h3>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="flex flex-col space-y-4 items-center gap-2 w-full">
                           <div className="w-full">
-                            <div className="flex items-start justify-start gap-2">
-                              <div className="w-full">
-                                <ZodTextField
-                                  readOnly={true}
-                                  name="pin_code"
-                                  icon={<Lock className="h-4 w-4 mr-2 text-muted-foreground" />}
-                                  label="ピンコード"
-                                  register={register}
-                                  errors={errors}
-                                  placeholder="ピンコードを生成してください。"
-                                />
-                              </div>
-                              <div className="flex flex-col items-center justify-center gap-1 ml-4">
-                                <div className="w-fit flex items-center justify-center">
-                                  <div>
-                                    <span className="text-xs text-nowrap text-muted-foreground">
-                                      再生成
-                                    </span>
-                                    <Button size={'icon'} onClick={handleGeneratePinCode}>
-                                      <Shuffle className="h-8 w-8 block" />
-                                    </Button>
-                                  </div>
-                                  <div>
-                                    <span className="text-xs text-nowrap text-muted-foreground">
-                                      コピー
-                                    </span>
-                                    <Button size={'icon'} onClick={handleCopyPinCode}>
-                                      <Copy className="h-8 w-8 block" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                            <ZodTextField
+                              name="email"
+                              icon={<Mail className="h-4 w-4 mr-2 text-muted-foreground" />}
+                              label="メールアドレス"
+                              register={register}
+                              errors={errors}
+                              placeholder="メールアドレスを入力してください"
+                            />
                           </div>
                         </div>
-                      </div>
 
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex items-center mb-2">
-                            <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <Label className="font-medium text-muted-foreground">権限</Label>
-                          </div>
-                          <div className="mt-1">
-                            <div className="grid grid-cols-3 gap-3">
-                              {[
-                                {
-                                  role: 'staff',
-                                  label: 'スタッフ',
-                                  desc: '基本的な予約確認と自身の情報管理のみ',
-                                },
-                                {
-                                  role: 'manager',
-                                  label: 'マネージャー',
-                                  desc: 'スタッフ管理と基本設定の変更が可能',
-                                },
-                                {
-                                  role: 'owner',
-                                  label: 'オーナー',
-                                  desc: 'すべての機能にアクセス可能',
-                                },
-                              ].map((item) => (
-                                <motion.div
-                                  key={item.role}
-                                  whileHover={{ scale: 1.02 }}
-                                  className={`border rounded-md p-3 cursor-pointer transition-all ${
-                                    watch('role') === item.role
-                                      ? 'border-active bg-active-foreground text-active'
-                                      : 'border-border bg-muted text-muted-foreground'
-                                  }`}
-                                  onClick={() => setValue('role', item.role as Role)}
-                                >
-                                  <div className="text-sm mb-1 font-bold">{item.label}</div>
-                                  <div className="text-xs text-muted-foreground">{item.desc}</div>
-                                </motion.div>
-                              ))}
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex items-center mb-2">
+                              <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
+                              <Label className="font-medium text-muted-foreground">権限</Label>
+                            </div>
+                            <div className="mt-1">
+                              <div className="grid grid-cols-3 gap-3">
+                                {[
+                                  {
+                                    role: 'staff',
+                                    label: 'スタッフ',
+                                    desc: '基本的な予約確認と自身の情報管理のみ',
+                                  },
+                                  {
+                                    role: 'manager',
+                                    label: 'マネージャー',
+                                    desc: 'スタッフ管理と基本設定の変更が可能',
+                                  },
+                                  {
+                                    role: 'owner',
+                                    label: 'オーナー',
+                                    desc: 'すべての機能にアクセス可能',
+                                  },
+                                ].map((item) => (
+                                  <motion.div
+                                    key={item.role}
+                                    whileHover={{ scale: 1.02 }}
+                                    className={`border rounded-md p-3 cursor-pointer transition-all ${
+                                      watch('role') === item.role
+                                        ? 'border-active bg-active-foreground text-active'
+                                        : 'border-border bg-muted text-muted-foreground'
+                                    }`}
+                                    onClick={() => setValue('role', item.role as Role)}
+                                  >
+                                    <div className="text-sm mb-1 font-bold">{item.label}</div>
+                                    <div className="text-xs text-muted-foreground">{item.desc}</div>
+                                  </motion.div>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   <Separator />
 

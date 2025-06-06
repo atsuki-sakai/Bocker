@@ -87,6 +87,22 @@ export const checkLimitByPlan = query({
           });
         }
         break;
+      case 'coupon':
+        const couponCount = await ctx.db
+          .query('coupon')
+          .withIndex('by_tenant_org_archive', (q) =>
+            q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+          ).filter((q) => q.eq(q.field('is_archive'), false))
+          .take(limits.maxCouponCount + 1);
+        if (couponCount.length >= limits.maxCouponCount) {
+          throw new ConvexError({
+            statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+            severity: ERROR_SEVERITY.ERROR,
+            callFunc: 'coupon.core.create',
+            message: 'クーポンの最大登録数を超えています。',
+          });
+        }
+        break;
       // 予約の制限チェック（現在は無制限）
       case 'reservation':
         //　FIXME: 予約は月毎にリセットされるため、制限をカウントするテーブルを作成する必要がある

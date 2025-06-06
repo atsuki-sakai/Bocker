@@ -538,7 +538,8 @@ const staff = defineTable({
   featured_hair_images: v.optional(v.array(imageType)), // フィーチャー画像
   is_active: v.boolean(), // 有効/無効
   ...CommonFields,
-})  
+})
+.index('by_clerk_archive', ['clerk_user_id', 'is_archive'])
 .index('by_tenant_org_active_archive', ['tenant_id', 'org_id', 'is_active', 'is_archive'])
 .index('by_tenant_org_clerk_user_archive', ['tenant_id', 'org_id', 'clerk_user_id', 'is_archive'])
 
@@ -552,7 +553,6 @@ const staff_auth = defineTable({
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.id('organization'), // 店舗ID
   staff_id: v.id('staff'), // スタッフID
-  pin_code: v.optional(v.string()), // PINコード
   role: roleType, // ロール
   ...CommonFields,
 })

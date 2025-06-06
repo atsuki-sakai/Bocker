@@ -249,13 +249,6 @@ export const NAV_ITEMS: NavItem[] = [
     minRole: 'staff',
     minPlan: 'LITE',
   },
-  // {
-  //   name: '予約一覧',
-  //   href: `/dashboard/reservations`,
-  //   icon: CheckIcon,
-  //   minRole: 'staff',
-  //   minPlan: 'LITE',
-  // },
   {
     name: 'スタッフ管理',
     href: `/dashboard/staff`,

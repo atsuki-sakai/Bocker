@@ -6,6 +6,7 @@ export type PlanLimits = {
     maxStaffCount: number;
     maxMenuCount: number;
     maxOptionCount: number;
+    maxCouponCount: number;
     monthlyReservationLimit: number;
 };
 
@@ -15,18 +16,21 @@ export const SUBSCRIPTION_PLAN_LIMITS: Record<SubscriptionPlanName, PlanLimits> 
         maxStaffCount: 3,
         maxMenuCount: 10,
         maxOptionCount: 5,
+        maxCouponCount: 10,
         monthlyReservationLimit: 200,
     },
     'PRO': {
         maxStaffCount: 10,
         maxMenuCount: 20,
         maxOptionCount: 10,
+        maxCouponCount: 100,
         monthlyReservationLimit: 500,
     },
     'UNKNOWN': {
         maxStaffCount: 0,
         maxMenuCount: 0,
         maxOptionCount: 0,
+        maxCouponCount: 0,
         monthlyReservationLimit: 0,
     },
 };

@@ -88,7 +88,7 @@ export const upsert = mutation({
     validateNumberLength(args.available_sheet, 'available_sheet');
     validateNumberLength(args.today_first_later_minutes, 'today_first_later_minutes');
 
-    const existing = await ctx.db.query('reservation_config').withIndex('by_tenant_org_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)).first();
+    const existing = await ctx.db.query('reservation_config').withIndex('by_tenant_org_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)).first();
   
     if (existing) {
       return await updateRecord(ctx, existing._id, {

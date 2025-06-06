@@ -3,11 +3,6 @@
 
 import { clerkClient, currentUser } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { ConvexHttpClient } from 'convex/browser'
-import { api } from '@/convex/_generated/api'
-import { Id } from '@/convex/_generated/dataModel'
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -24,9 +19,7 @@ export async function PATCH(req: NextRequest) {
     const { 
       staff_id,
       clerk_user_id,
-      new_role,
-      tenant_id,
-      org_id
+      new_role
     } = await req.json()
 
     // 3. 必須パラメータの検証
@@ -48,6 +41,7 @@ export async function PATCH(req: NextRequest) {
       try {
         // 現在のメタデータを取得
         const clerkUser = await clerk.users.getUser(clerk_user_id)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const currentMetadata = clerkUser.publicMetadata as any || {}
         
         // roleのみを更新（他のメタデータは保持）

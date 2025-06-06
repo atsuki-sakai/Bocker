@@ -14,7 +14,6 @@ export const create = mutation({
     org_id: v.id('organization'),
     staff_id: v.id('staff'),
     role: roleType,
-    pin_code: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -45,7 +44,6 @@ export const update = mutation({
   args: {
     staff_auth_id: v.id('staff_auth'),
     role: v.optional(roleType),
-    pin_code: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -112,7 +110,6 @@ export const upsert = mutation({
     org_id: v.id('organization'),
     staff_id: v.id('staff'),
     role: roleType,
-    pin_code: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);

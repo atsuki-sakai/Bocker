@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import React, { useEffect } from 'react'
+import React from 'react'
 import { useParams } from 'next/navigation'
 import { useQuery, useAction } from 'convex/react'
 import { api } from '@/convex/_generated/api'
@@ -25,22 +25,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { decryptStringCryptoJS } from '@/lib/utils'
 
 // アイコン
-import {
-  User,
-  Trash,
-  Star,
-  Tag,
-  Mail,
-  Calendar,
-  Info,
-  FileEdit,
-  Copy,
-  Eye,
-  EyeOff,
-} from 'lucide-react'
+import { User, Trash, Star, Tag, Mail, Calendar, Info, FileEdit } from 'lucide-react'
 import { MAX_PRIORITY } from '@/convex/constants'
 
 export default function StaffDetails() {
@@ -50,8 +37,6 @@ export default function StaffDetails() {
   const router = useRouter()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [decryptedPinCode, setDecryptedPinCode] = useState('')
-  const [showPinCode, setShowPinCode] = useState(false)
 
   // メモ化されたクエリを使用してパフォーマンス向上
   const staffAllData = useQuery(
@@ -80,16 +65,6 @@ export default function StaffDetails() {
 
   const deleteImage = useAction(api.storage.action.killWithThumbnail)
 
-  useEffect(() => {
-    const asyncDecryptPinCode = async () => {
-      if (staffAllData?.pin_code) {
-        const decryptedPinCode = decryptStringCryptoJS(staffAllData.pin_code)
-        setDecryptedPinCode(decryptedPinCode!)
-      }
-    }
-    asyncDecryptPinCode()
-  }, [staffAllData])
-
   if (!staffAllData) return <Loading />
 
   // アバターの頭文字を取得
@@ -116,10 +91,6 @@ export default function StaffDetails() {
     }
   }
 
-  const handleShowPinCode = () => {
-    setShowPinCode(!showPinCode)
-  }
-
   const handleShowDeleteDialog = () => {
     setIsDeleteDialogOpen(true)
   }
@@ -135,7 +106,7 @@ export default function StaffDetails() {
           originalUrl: staffAllData.images[0].original_url,
         })
       }
-      
+
       // 2. 削除APIを呼び出し（招待状態を考慮した削除）
       if (staffAllData && tenantId && orgId) {
         try {
@@ -152,9 +123,9 @@ export default function StaffDetails() {
               staff_auth_id: staffAllData.staff_auth_id,
             }),
           })
-          
+
           const deleteData = await deleteResponse.json()
-          
+
           if (deleteResponse.ok) {
             console.log('スタッフ削除成功:', deleteData)
           } else {
@@ -165,9 +136,9 @@ export default function StaffDetails() {
           throw deleteError
         }
       }
-      
+
       // 3. データベースからの削除は削除APIで処理済みのため不要
-      
+
       toast.success('スタッフを削除しました')
       router.push('/dashboard/staff')
     } catch (error) {
@@ -218,12 +189,16 @@ export default function StaffDetails() {
                       >
                         {getRoleDisplay(staffAllData.role || '')}
                       </Badge>
-                      {staffWithInvitation && staffWithInvitation.invitationStatus === 'pending' && (
-                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
-                          <Mail className="h-3 w-3 mr-1" />
-                          招待中
-                        </Badge>
-                      )}
+                      {staffWithInvitation &&
+                        staffWithInvitation.invitationStatus === 'pending' && (
+                          <Badge
+                            variant="outline"
+                            className="bg-yellow-50 text-yellow-700 border-yellow-300"
+                          >
+                            <Mail className="h-3 w-3 mr-1" />
+                            招待中
+                          </Badge>
+                        )}
                     </div>
                   </div>
 
@@ -303,58 +278,31 @@ export default function StaffDetails() {
                   </div>
 
                   {/* メールアドレス */}
-                  <div className="flex justify-between  p-3 rounded-lg border border-palette-3-foreground bg-palette-3 transition-shadow overflow-hidden">
-                    <div className="flex flex-col gap-1 w-full">
-                      <div className="flex items-center gap-2 text-palette-3-foreground">
-                        <Mail className="h-4 w-4" />
-                        <p className="text-xs font-bold">メールアドレス</p>
-                      </div>
-                      <p className="font-bold text-sm text-palette-3-foreground text-clip w-full truncate">
-                        {staffAllData.email || '未設定'}
-                      </p>
-                      <div className="flex flex-col gap-1">
-                        <p className="text-xs scale-75 -ml-6 text-palette-3-foreground">
-                          ピンコード
-                        </p>
-                        <div className="flex flex-col items-end justify-between gap-2 w-full">
-                          <p className="text-palette-3-foreground text-sm text-end tracking-wider font-bold w-full">
-                            {showPinCode ? decryptedPinCode : '*** ***'}
-                          </p>
-
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="icon" onClick={handleShowPinCode}>
-                              {showPinCode ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => {
-                                navigator.clipboard.writeText(decryptedPinCode)
-                              }}
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </div>
+                  {staffAllData.email && (
+                    <div className="flex justify-between  p-3 rounded-lg border border-palette-3-foreground bg-palette-3 transition-shadow overflow-hidden">
+                      <div className="flex flex-col gap-1 w-full">
+                        <div className="flex items-center gap-2 text-palette-3-foreground">
+                          <Mail className="h-4 w-4" />
+                          <p className="text-xs font-bold">メールアドレス</p>
                         </div>
+                        <p className="font-bold text-sm text-palette-3-foreground text-clip w-full truncate">
+                          {staffAllData.email || '未設定'}
+                        </p>
                       </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-link-foreground self-start cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            <p className="text-xs max-w-xs">
+                              メールアドレスはスタッフのログインに使用されます
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-4 w-4 text-link-foreground self-start cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <p className="text-xs max-w-xs">
-                            メールアドレスやピンコードはスタッフのログインに使用されます
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
+                  )}
                 </div>
 
                 {/* 対応外メニュー表示 */}

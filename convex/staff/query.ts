@@ -77,7 +77,21 @@ export const findByEmail = query({
   },
 })
 
-// 関連するテーブルの取得
+// ClerkユーザーIDからスタッフを検索
+export const findByClerkUserId = query({
+  args: {
+    clerk_user_id: v.string(),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx)
+    return await ctx.db
+      .query('staff')
+      .withIndex('by_clerk_archive', (q) => q.eq('clerk_user_id', args.clerk_user_id))
+      .first()
+  },
+})
+
+  // 関連するテーブルの取得
 export const getRelatedTables = query({
   args: {
     tenant_id: v.id('tenant'),
@@ -163,7 +177,6 @@ export const getRelatedTables = query({
       staff_config_id: staff_config._id,
       extra_charge: staff_config.extra_charge,
       priority: staff_config.priority,
-      pin_code: staff_auth.pin_code,
       _creationTime: staff._creationTime,
     }
   },

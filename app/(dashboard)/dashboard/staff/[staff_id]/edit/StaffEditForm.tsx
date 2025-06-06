@@ -35,7 +35,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { encryptStringCryptoJS, decryptStringCryptoJS } from '@/lib/utils'
+import { encryptStringCryptoJS } from '@/lib/utils'
 import { Id } from '@/convex/_generated/dataModel'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
@@ -318,7 +318,6 @@ export default function StaffEditForm() {
           staff_id: staff_id as Id<'staff'>,
           staff_auth_id: staffAllData?.staff_auth_id as Id<'staff_auth'>,
           role: data.role,
-          pin_code: encryptedPinCode,
         })
 
         // 除外メニューを更新
@@ -448,12 +447,6 @@ export default function StaffEditForm() {
 
     const initializeForm = async () => {
       try {
-        // PINコードを復号
-        let decryptedPinCode: string | null = null
-        if (staffAllData.pin_code) {
-          decryptedPinCode = await decryptStringCryptoJS(staffAllData.pin_code ?? '')
-        }
-
         // フォームの初期値をリセット
         reset({
           name: staffAllData.name,
@@ -468,17 +461,14 @@ export default function StaffEditForm() {
           extra_charge: staffAllData.extra_charge,
           priority: staffAllData.priority,
           tags: staffAllData.tags,
-          // 復号した PIN コードをセット
-          pin_code: decryptedPinCode ?? undefined,
         })
         // 既存タグをローカル state に同期
         setCurrentTags(staffAllData.tags || [])
       } catch (error) {
-        console.error('ピンコードの復号に失敗しました:', error)
-        toast.error('ピンコードの復号に失敗しました', {
+        console.error('フォーム初期化中にエラーが発生しました:', error)
+        toast.error('フォームの初期化に失敗しました', {
           icon: <X className="h-4 w-4 text-red-500" />,
         })
-        // 必要ならエラーハンドリング（トースト表示など）を追加
       }
     }
 

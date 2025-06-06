@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { Controller } from 'react-hook-form'
 import { useZodForm } from '@/hooks/useZodForm'
 import { format } from 'date-fns'
+import { fetchQuery } from 'convex/nextjs'
 import { ja } from 'date-fns/locale'
 import { useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
@@ -252,6 +253,12 @@ function CouponForm() {
       // 日付をUNIXタイムスタンプに変換（ミリ秒）
       const startDateUnix = data.start_date.getTime()
       const endDateUnix = data.end_date.getTime()
+
+      await fetchQuery(api.tenant.plan.query.checkLimitByPlan, {
+        tenant_id: tenantId,
+        org_id: orgId,
+        limit_type: 'staff',
+      })
 
       // FIXME: active_customer_typeは仮でallを設定　設定できるように修正
       const couponId = await createCouponRelatedTables({

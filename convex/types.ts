@@ -359,6 +359,6 @@ export const ASPECT_TYPE_VALUES = ['square', 'landscape', 'mobile'] as const
 export const aspectType = v.union(...ASPECT_TYPE_VALUES.map((type) => v.literal(type)))
 export type AspectType = Infer<typeof aspectType>
 
-export const LIMIT_TYPE_VALUES = ['staff', 'menu', 'option', 'reservation'] as const
+export const LIMIT_TYPE_VALUES = ['staff', 'menu', 'option', 'reservation', 'coupon'] as const
 export const limitType = v.union(...LIMIT_TYPE_VALUES.map((type) => v.literal(type)))
 export type LimitType = Infer<typeof limitType>
