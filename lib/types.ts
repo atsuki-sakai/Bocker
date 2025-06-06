@@ -41,6 +41,8 @@ export type ClerkEmailAddress = {
   primary?: boolean;
 };
 
+export type InvitationStatus = 'pending' | 'accepted' | 'revoked' | 'expired' | 'missing'
+
 // 開始と終了時刻を表す型
 export type TimeRange = {
   startHour: string; // 開始時刻 "HH:mm"
