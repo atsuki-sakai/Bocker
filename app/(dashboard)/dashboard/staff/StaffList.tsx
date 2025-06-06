@@ -2,18 +2,15 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
 import { api } from '@/convex/_generated/api'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Loading } from '@/components/common'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Doc } from '@/convex/_generated/dataModel'
 import InviteManagement from './components/InviteManagement'
 import { useQuery } from 'convex/react'
 import { Mail } from 'lucide-react'
 
-const numberOfStaffs = 10
 export default function StaffList() {
   const { tenantId, orgId } = useTenantAndOrganization()
   
