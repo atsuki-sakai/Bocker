@@ -72,10 +72,10 @@ function InviteSignUpContent() {
           className="shadow-lg rounded-lg overflow-hidden"
         >
           <SignUp
-            // サインアップ後のリダイレクト先
-            fallbackRedirectUrl="/dashboard"
             // サインイン画面への切り替えURL
             signInUrl="/sign-in"
+            // サインアップ後のリダイレクト先
+            fallbackRedirectUrl="/dashboard"
             // 外観設定 - 既存のサインアップページと統一
             appearance={{
               elements: {
