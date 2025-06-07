@@ -1,9 +1,6 @@
 import { v } from 'convex/values';
 import { query } from '../../_generated/server';
 import { InvitationStatus } from '@/convex/types';
-import { auth, clerkClient } from '@clerk/nextjs/server';
-import { ConvexError } from 'convex/values';
-import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
 
 /**
  * 招待中スタッフ一覧
@@ -129,14 +126,6 @@ export const getCompleteStaffData = query({
       ...staff,
       invitationStatus: staff.clerk_user_id ? 'accepted' : 'pending' as InvitationStatus,
       config: staffConfig,
-      // 一時的な情報（招待中の場合に使用）
-      tempData: {
-        email: staff.temp_email,
-        gender: staff.temp_gender,
-        age: staff.temp_age,
-        instagram_link: staff.temp_instagram_link,
-        tags: staff.temp_tags,
-      }
     };
   },
 });

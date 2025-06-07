@@ -33,17 +33,12 @@ export const createWithInvitation = mutation({
     const staffId = await createRecord(ctx, 'staff', {
       tenant_id: args.tenant_id,
       org_id: args.org_id,
+      connect_clerk: true,
       clerk_user_id: undefined, // 招待中のため null
       name: args.name,
       description: args.description,
       images: [],
       is_active: false, // 招待受諾まで非アクティブ
-      // 一時的な基本情報保存（招待受諾時にstaff_configに移行される）
-      temp_email: args.email,
-      temp_gender: args.gender,
-      temp_age: args.age,
-      temp_instagram_link: args.instagram_link,
-      temp_tags: args.tags,
     });
 
     // 事前設定情報も保存（staff_configは招待受諾時に作成）
@@ -75,13 +70,6 @@ export const acceptInvitation = mutation({
   args: {
     staff_id: v.id('staff'),
     clerk_user_id: v.string(),
-    // 事前設定情報
-    gender: genderType,
-    instagram_link: v.optional(v.string()),
-    tags: v.array(v.string()),
-    age: v.optional(v.number()),
-    extra_charge: v.optional(v.number()),
-    priority: v.optional(v.number()),
     role: v.optional(roleType),
   },
   handler: async (ctx, args) => {
@@ -100,12 +88,6 @@ export const acceptInvitation = mutation({
     await updateRecord(ctx, args.staff_id, {
       clerk_user_id: args.clerk_user_id,
       is_active: true,
-      // 一時的なデータをクリア（staff_configに移行するため）
-      temp_email: undefined,
-      temp_gender: undefined,
-      temp_age: undefined,
-      temp_instagram_link: undefined,
-      temp_tags: undefined,
     });
 
     // staff_config作成（publicMetadataまたは一時保存データから取得）
@@ -114,13 +96,7 @@ export const acceptInvitation = mutation({
       org_id: staff.org_id,
       staff_id: args.staff_id,
       role: args.role || 'staff',
-      // publicMetadataから取得、フォールバックとして一時保存データを使用
-      age: args.age !== undefined ? args.age : staff.temp_age,
-      extra_charge: args.extra_charge,
-      priority: args.priority,
-      gender: args.gender || staff.temp_gender!,
-      instagram_link: args.instagram_link || staff.temp_instagram_link,
-      tags: (args.tags && args.tags.length > 0) ? args.tags : (staff.temp_tags || []),
+      tags: [],
       featured_hair_images: [],
     });
 

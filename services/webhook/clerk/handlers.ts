@@ -10,7 +10,6 @@ import { executeInParallel, createTask } from '../parallel';
 import { WebhookMetricsCollector } from '../metrics';
 import { clerkClient } from '@clerk/nextjs/server';
 import { Id } from '@/convex/_generated/dataModel';
-import { Gender } from '@/convex/types';
 
 /**
  * `user.created` Webhookイベントを処理するハンドラー関数。
@@ -45,219 +44,219 @@ export async function handleUserCreated(
   if (public_metadata && 'staff_id' in public_metadata) {
     console.log(`🎫 [${eventId}] スタッフ招待の受諾を検出: staff_id=${public_metadata.staff_id}`, context);
     return handleStaffInvitationAccepted(data, eventId, deps, metrics);
-  }
-
-  try {
-    // 1. 既存テナントの確認
-    const existingTenant = await deps.retry(() =>
-      fetchQuery(deps.convex.tenant.query.findByUserId, { user_id: id })
-    ).catch((error) => {
-      console.warn(`⚠️ [${eventId}] 既存テナントの確認中にエラー（無視して続行）: user_id=${id}`, { ...context, error });
-      return null;
-    });
-
-    if (existingTenant) {
-      console.log(`👤 [${eventId}] 既存テナント (${existingTenant._id}) が見つかりました: user_id=${id}。メールアドレスを ${email} に更新します。`, { ...context, tenantId: existingTenant._id });
+  }else{
+    try {
+      // 1. 既存テナントの確認
+      const existingTenant = await deps.retry(() =>
+        fetchQuery(deps.convex.tenant.query.findByUserId, { user_id: id })
+      ).catch((error) => {
+        console.warn(`⚠️ [${eventId}] 既存テナントの確認中にエラー（無視して続行）: user_id=${id}`, { ...context, error });
+        return null;
+      });
+  
+      if (existingTenant) {
+        console.log(`👤 [${eventId}] 既存テナント (${existingTenant._id}) が見つかりました: user_id=${id}。メールアドレスを ${email} に更新します。`, { ...context, tenantId: existingTenant._id });
+        
+        // メールアドレスのみ更新
+        await deps.retry(() =>
+          fetchMutation(deps.convex.tenant.mutation.upsert, {
+            user_id: id,
+            user_email: email
+          })
+        );
+        
+        metrics.incrementApiCall('convex');
+        
+        console.log(`✅ [${eventId}] 既存テナント (${existingTenant._id}) のメールアドレス更新成功。`, { ...context, tenantId: existingTenant._id });
+        
+        return {
+          result: 'success',
+          metadata: { action: 'email_updated', existingTenantId: existingTenant._id, newEmail: email }
+        };
+      }
+  
+      // 2. Stripe顧客作成
+      console.log(`💳 [${eventId}] Stripe顧客作成: email=${email}, user_id=${id}`, context);
+      metrics.incrementApiCall('stripe');
       
-      // メールアドレスのみ更新
-      await deps.retry(() =>
-        fetchMutation(deps.convex.tenant.mutation.upsert, {
-          user_id: id,
-          user_email: email
+      const stripeCustomer = await deps.retry(() =>
+        deps.stripe.customers.create({
+          email: email || undefined,
+          metadata: { 
+            user_id: id,
+            referral_code: referral_code
+          },
+        }, {
+          idempotencyKey: `clerk_user_${id}_${eventId}`,
         })
       );
-      
+  
+      console.log(`💳 [${eventId}] Stripe顧客作成成功: customerId=${stripeCustomer.id}`, { ...context, stripeCustomerId: stripeCustomer.id });
+  
+      // 3. テナント作成
+      console.log(`🏢 [${eventId}] テナント作成開始: user_id=${id}, stripeCustomerId=${stripeCustomer.id}`, { ...context, stripeCustomerId: stripeCustomer.id });
       metrics.incrementApiCall('convex');
+      const tenantId = await deps.retry(() =>
+        fetchMutation(deps.convex.tenant.mutation.create, {
+          user_id: id,
+          user_email: email,
+          stripe_customer_id: stripeCustomer.id,
+        })
+      );
+      console.log(`🏢 [${eventId}] テナント作成成功: tenant_id=${tenantId}`, { ...context, tenantId });
       
-      console.log(`✅ [${eventId}] 既存テナント (${existingTenant._id}) のメールアドレス更新成功。`, { ...context, tenantId: existingTenant._id });
-      
+      // 4. Referral作成（非クリティカル）
+      try {
+        console.log(`🎁 [${eventId}] Referral作成開始: tenant_id=${tenantId}`, { ...context, tenantId });
+        metrics.incrementApiCall('convex');
+        await deps.retry(() =>
+          fetchMutation(deps.convex.tenant.referral.mutation.create, {
+            tenant_id: tenantId,
+          })
+        );
+        console.log(`🎁 [${eventId}] Referral作成成功。`, { ...context, tenantId });
+      } catch (referralError) {
+        console.warn(`⚠️ [${eventId}] Referral作成失敗（非クリティカル）: tenant_id=${tenantId}`, { ...context, tenantId, error: referralError });
+        Sentry.captureException(referralError, {
+          level: 'warning',
+          tags: { ...context, operation: 'create_referral', tenant_id: tenantId },
+          extra: { tenantId }
+        });
+      }
+  
+      // 5. 店舗の作成
+      console.log(`🏢 [${eventId}] 店舗作成開始: user_id=${id}, stripeCustomerId=${stripeCustomer.id}`, { ...context, stripeCustomerId: stripeCustomer.id });
+      metrics.incrementApiCall('convex');
+      const orgId = await deps.retry(() =>
+        fetchMutation(deps.convex.organization.mutation.create, {
+          tenant_id: tenantId,
+          org_name: org_name ? org_name : '',
+          org_email: email
+        })
+      );
+      console.log(`🏢 [${eventId}] 店舗作成成功: org_id=${orgId}`, { ...context, orgId });
+  
+        // 6. Stripe顧客のメタデータ更新
+        try{
+          await deps.stripe.customers.update(stripeCustomer.id, {
+            metadata: {
+              tenant_id: tenantId,
+              org_id: orgId,
+            },
+          });
+          metrics.incrementApiCall('stripe');
+        }catch(error){
+          console.warn(`⚠️ [${eventId}] Stripe顧客メタデータ更新失敗（非クリティカル）: customerId=${stripeCustomer.id}`, { ...context, stripeCustomerId: stripeCustomer.id, error });
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: { ...context, operation: 'update_stripe_customer_metadata', stripeCustomerId: stripeCustomer.id },
+          });
+        }
+        // クラークユーザーのメタデータ更新
+        try {
+          const clerk = await clerkClient();
+          await clerk.users.updateUserMetadata(id, {
+            publicMetadata: {
+              org_id: orgId,
+              role: 'admin',
+              tenant_id: tenantId,
+            },
+          })
+          metrics.incrementApiCall('clerk');
+        } catch (error) {
+          console.warn(`⚠️ [${eventId}] ユーザーメタデータ更新失敗（非クリティカル）: user_id=${id}`, { ...context, error });
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: { ...context, operation: 'update_user_metadata', userId: id },
+          });
+          return {
+            result: 'error',
+            errorMessage: 'ユーザーメタデータ更新失敗（クリティカル）ログイン認証できない状態になっている可能性があります。'
+          }
+        }
+  
+        // 7. サロン設定の作成
+        console.log(`🏢 [${eventId}] サロン設定作成開始: org_id=${orgId}`, { ...context, orgId });
+       try{
+        metrics.incrementApiCall('convex');
+        await deps.retry(() =>
+          fetchMutation(deps.convex.organization.config.mutation.create, {
+            org_id: orgId,
+            tenant_id: tenantId,
+            images: [],
+          })
+        );
+       }catch(error){
+        console.warn(`⚠️ [${eventId}] サロン設定作成失敗（非クリティカル）: org_id=${orgId}`, { ...context, orgId, error });
+        Sentry.captureException(error, {
+          level: 'warning',
+          tags: { ...context, operation: 'create_organization_config', orgId },
+        });
+       }
+  
+        // 8. サロンAPI設定を作成
+        try{
+          console.log(`🏢 [${eventId}] サロンAPI設定の画像を作成開始: org_id=${orgId}`, { ...context, orgId });
+        metrics.incrementApiCall('convex');
+        await deps.retry(() =>
+          fetchMutation(deps.convex.organization.api_config.mutation.create, {
+            org_id: orgId,
+            tenant_id: tenantId,
+          })
+        );
+        }catch(error){
+          console.warn(`⚠️ [${eventId}] サロンAPI設定作成失敗（非クリティカル）: org_id=${orgId}`, { ...context, orgId, error });
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: { ...context, operation: 'create_organization_api_config', orgId },
+          });
+        }
+  
+        // 9. サロン予約設定を作成
+       try{
+        console.log(`🏢 [${eventId}] サロン予約設定作成開始: org_id=${orgId}`, { ...context, orgId });
+        metrics.incrementApiCall('convex');
+        await deps.retry(() =>
+          fetchMutation(deps.convex.organization.reservation_config.mutation.create, {
+            org_id: orgId,
+            tenant_id: tenantId,
+            reservation_interval_minutes: 30,
+            available_sheet: 2,
+            reservation_limit_days: 30,
+            available_cancel_days: 3,
+            today_first_later_minutes: 30,
+          })
+        );
+       }catch(error){
+        console.warn(`⚠️ [${eventId}] サロン予約設定作成失敗（非クリティカル）: org_id=${orgId}`, { ...context, orgId, error });
+        Sentry.captureException(error, {
+          level: 'warning',
+          tags: { ...context, operation: 'create_organization_reservation_config', orgId },
+        });
+       }
+      console.log(`✅ [${eventId}] User Created処理完了。`, { ...context, tenantId, stripeCustomerId: stripeCustomer.id });
       return {
         result: 'success',
-        metadata: { action: 'email_updated', existingTenantId: existingTenant._id, newEmail: email }
+        metadata: { 
+          action: 'user_created', 
+          tenantId: tenantId,
+          stripeCustomerId: stripeCustomer.id 
+        }
+      };
+  
+    } catch (error) {
+      console.error(`❌ [${eventId}] User Created処理中に致命的なエラーが発生: user_id=${id}`, { ...context, error });
+      
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: { ...context, operation: 'handleUserCreated_main_catch' },
+      });
+  
+      return {
+        result: 'error',
+        errorMessage: error instanceof Error ? error.message : '不明なエラー'
       };
     }
-
-    // 2. Stripe顧客作成
-    console.log(`💳 [${eventId}] Stripe顧客作成: email=${email}, user_id=${id}`, context);
-    metrics.incrementApiCall('stripe');
-    
-    const stripeCustomer = await deps.retry(() =>
-      deps.stripe.customers.create({
-        email: email || undefined,
-        metadata: { 
-          user_id: id,
-          referral_code: referral_code
-        },
-      }, {
-        idempotencyKey: `clerk_user_${id}_${eventId}`,
-      })
-    );
-
-    console.log(`💳 [${eventId}] Stripe顧客作成成功: customerId=${stripeCustomer.id}`, { ...context, stripeCustomerId: stripeCustomer.id });
-
-    // 3. テナント作成
-    console.log(`🏢 [${eventId}] テナント作成開始: user_id=${id}, stripeCustomerId=${stripeCustomer.id}`, { ...context, stripeCustomerId: stripeCustomer.id });
-    metrics.incrementApiCall('convex');
-    const tenantId = await deps.retry(() =>
-      fetchMutation(deps.convex.tenant.mutation.create, {
-        user_id: id,
-        user_email: email,
-        stripe_customer_id: stripeCustomer.id,
-      })
-    );
-    console.log(`🏢 [${eventId}] テナント作成成功: tenant_id=${tenantId}`, { ...context, tenantId });
-    
-    // 4. Referral作成（非クリティカル）
-    try {
-      console.log(`🎁 [${eventId}] Referral作成開始: tenant_id=${tenantId}`, { ...context, tenantId });
-      metrics.incrementApiCall('convex');
-      await deps.retry(() =>
-        fetchMutation(deps.convex.tenant.referral.mutation.create, {
-          tenant_id: tenantId,
-        })
-      );
-      console.log(`🎁 [${eventId}] Referral作成成功。`, { ...context, tenantId });
-    } catch (referralError) {
-      console.warn(`⚠️ [${eventId}] Referral作成失敗（非クリティカル）: tenant_id=${tenantId}`, { ...context, tenantId, error: referralError });
-      Sentry.captureException(referralError, {
-        level: 'warning',
-        tags: { ...context, operation: 'create_referral', tenant_id: tenantId },
-        extra: { tenantId }
-      });
-    }
-
-    // 5. 店舗の作成
-    console.log(`🏢 [${eventId}] 店舗作成開始: user_id=${id}, stripeCustomerId=${stripeCustomer.id}`, { ...context, stripeCustomerId: stripeCustomer.id });
-    metrics.incrementApiCall('convex');
-    const orgId = await deps.retry(() =>
-      fetchMutation(deps.convex.organization.mutation.create, {
-        tenant_id: tenantId,
-        org_name: org_name ? org_name : '',
-        org_email: email
-      })
-    );
-    console.log(`🏢 [${eventId}] 店舗作成成功: org_id=${orgId}`, { ...context, orgId });
-
-      // 6. Stripe顧客のメタデータ更新
-      try{
-        await deps.stripe.customers.update(stripeCustomer.id, {
-          metadata: {
-            tenant_id: tenantId,
-            org_id: orgId,
-          },
-        });
-        metrics.incrementApiCall('stripe');
-      }catch(error){
-        console.warn(`⚠️ [${eventId}] Stripe顧客メタデータ更新失敗（非クリティカル）: customerId=${stripeCustomer.id}`, { ...context, stripeCustomerId: stripeCustomer.id, error });
-        Sentry.captureException(error, {
-          level: 'warning',
-          tags: { ...context, operation: 'update_stripe_customer_metadata', stripeCustomerId: stripeCustomer.id },
-        });
-      }
-      // クラークユーザーのメタデータ更新
-      try {
-        const clerk = await clerkClient();
-        await clerk.users.updateUserMetadata(id, {
-          publicMetadata: {
-            org_id: orgId,
-            role: 'admin',
-            tenant_id: tenantId,
-          },
-        })
-        metrics.incrementApiCall('clerk');
-      } catch (error) {
-        console.warn(`⚠️ [${eventId}] ユーザーメタデータ更新失敗（非クリティカル）: user_id=${id}`, { ...context, error });
-        Sentry.captureException(error, {
-          level: 'warning',
-          tags: { ...context, operation: 'update_user_metadata', userId: id },
-        });
-        return {
-          result: 'error',
-          errorMessage: 'ユーザーメタデータ更新失敗（クリティカル）ログイン認証できない状態になっている可能性があります。'
-        }
-      }
-
-      // 7. サロン設定の作成
-      console.log(`🏢 [${eventId}] サロン設定作成開始: org_id=${orgId}`, { ...context, orgId });
-     try{
-      metrics.incrementApiCall('convex');
-      await deps.retry(() =>
-        fetchMutation(deps.convex.organization.config.mutation.create, {
-          org_id: orgId,
-          tenant_id: tenantId,
-          images: [],
-        })
-      );
-     }catch(error){
-      console.warn(`⚠️ [${eventId}] サロン設定作成失敗（非クリティカル）: org_id=${orgId}`, { ...context, orgId, error });
-      Sentry.captureException(error, {
-        level: 'warning',
-        tags: { ...context, operation: 'create_organization_config', orgId },
-      });
-     }
-
-      // 8. サロンAPI設定を作成
-      try{
-        console.log(`🏢 [${eventId}] サロンAPI設定の画像を作成開始: org_id=${orgId}`, { ...context, orgId });
-      metrics.incrementApiCall('convex');
-      await deps.retry(() =>
-        fetchMutation(deps.convex.organization.api_config.mutation.create, {
-          org_id: orgId,
-          tenant_id: tenantId,
-        })
-      );
-      }catch(error){
-        console.warn(`⚠️ [${eventId}] サロンAPI設定作成失敗（非クリティカル）: org_id=${orgId}`, { ...context, orgId, error });
-        Sentry.captureException(error, {
-          level: 'warning',
-          tags: { ...context, operation: 'create_organization_api_config', orgId },
-        });
-      }
-
-      // 9. サロン予約設定を作成
-     try{
-      console.log(`🏢 [${eventId}] サロン予約設定作成開始: org_id=${orgId}`, { ...context, orgId });
-      metrics.incrementApiCall('convex');
-      await deps.retry(() =>
-        fetchMutation(deps.convex.organization.reservation_config.mutation.create, {
-          org_id: orgId,
-          tenant_id: tenantId,
-          reservation_interval_minutes: 30,
-          available_sheet: 2,
-          reservation_limit_days: 30,
-          available_cancel_days: 3,
-          today_first_later_minutes: 30,
-        })
-      );
-     }catch(error){
-      console.warn(`⚠️ [${eventId}] サロン予約設定作成失敗（非クリティカル）: org_id=${orgId}`, { ...context, orgId, error });
-      Sentry.captureException(error, {
-        level: 'warning',
-        tags: { ...context, operation: 'create_organization_reservation_config', orgId },
-      });
-     }
-    console.log(`✅ [${eventId}] User Created処理完了。`, { ...context, tenantId, stripeCustomerId: stripeCustomer.id });
-    return {
-      result: 'success',
-      metadata: { 
-        action: 'user_created', 
-        tenantId: tenantId,
-        stripeCustomerId: stripeCustomer.id 
-      }
-    };
-
-  } catch (error) {
-    console.error(`❌ [${eventId}] User Created処理中に致命的なエラーが発生: user_id=${id}`, { ...context, error });
-    
-    Sentry.captureException(error, {
-      level: 'error',
-      tags: { ...context, operation: 'handleUserCreated_main_catch' },
-    });
-
-    return {
-      result: 'error',
-      errorMessage: error instanceof Error ? error.message : '不明なエラー'
-    };
   }
 }
 
@@ -498,24 +497,12 @@ async function handleStaffInvitationAccepted(
   const tenant_id = public_metadata?.tenant_id as string | undefined;
   const org_id = public_metadata?.org_id as string | undefined;
   const role = (public_metadata?.role as 'staff' | 'admin') || 'staff';
-  const extra_charge = public_metadata?.extra_charge as number | undefined;
-  const priority = public_metadata?.priority as number | undefined;
-  const gender = public_metadata?.gender as Gender;
-  const age = public_metadata?.age as number | undefined;
-  const instagram_link = public_metadata?.instagram_link as string | undefined;
-  const tags = public_metadata?.tags as string[] || [];
-
+ 
   console.log(`📋 [${eventId}] publicMetadataから取得した情報:`, {
     staff_id,
     tenant_id,
     org_id,
-    role,
-    gender,
-    age,
-    instagram_link,
-    tags: tags.length,
-    extra_charge,
-    priority
+    role
   });
 
   const context: LogContext = {
@@ -535,42 +522,6 @@ async function handleStaffInvitationAccepted(
   }
 
   try {
-    // 基本情報が不足している場合のフォールバック処理
-    let finalGender = gender;
-    let finalAge = age;
-    let finalInstagramLink = instagram_link;
-    let finalTags = tags;
-
-    if (!gender) {
-      console.log(`⚠️ [${eventId}] publicMetadataにgenderが不足、一時保存データから取得を試行`, context);
-      
-      try {
-        // Convexから一時保存データを取得してフォールバック
-        const staffData = await fetchQuery(deps.convex.staff.invitation.query.getCompleteStaffData, {
-          staff_id: staff_id as Id<"staff">,
-        });
-        
-        if (staffData?.tempData) {
-          finalGender = gender || staffData.tempData.gender;
-          finalAge = age !== undefined ? age : staffData.tempData.age;
-          finalInstagramLink = instagram_link || staffData.tempData.instagram_link;
-          finalTags = tags.length > 0 ? tags : (staffData.tempData.tags || []);
-          
-          console.log(`✅ [${eventId}] 一時保存データからフォールバック完了:`, {
-            finalGender,
-            finalAge,
-            finalInstagramLink,
-            finalTags: finalTags.length
-          });
-        }
-      } catch (fallbackError) {
-        console.warn(`⚠️ [${eventId}] フォールバック処理に失敗:`, fallbackError);
-        Sentry.captureException(fallbackError, {
-          level: 'warning',
-          tags: { ...context, operation: 'staff_invitation_fallback' },
-        });
-      }
-    }
 
     // Convexでスタッフレコードを更新
     console.log(`📝 [${eventId}] Convexスタッフレコード更新開始: staff_id=${staff_id}`, context);
@@ -580,13 +531,7 @@ async function handleStaffInvitationAccepted(
       fetchMutation(deps.convex.staff.invitation.mutation.acceptInvitation, {
         staff_id: staff_id as Id<"staff">,
         clerk_user_id,
-        extra_charge,
-        priority,
         role,
-        gender: finalGender,
-        age: finalAge,
-        instagram_link: finalInstagramLink,
-        tags: finalTags,
       })
     );
 

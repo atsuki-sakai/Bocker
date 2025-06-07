@@ -114,6 +114,7 @@ export const getRelatedTables = query({
       tenant_id: staff.tenant_id,
       org_id: staff.org_id,
       staff_id: staff._id,
+      connect_clerk: staff.connect_clerk,
       clerk_user_id: staff.clerk_user_id,
       name: staff.name,
       description: staff.description,

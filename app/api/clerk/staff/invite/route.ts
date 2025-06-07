@@ -3,7 +3,6 @@
 
 import { clerkClient, auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { BASE_URL } from '@/lib/constants'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
@@ -74,12 +73,12 @@ export async function POST(req: NextRequest) {
       name,
       email,
       gender,
-      ...(age !== null && age !== undefined && { age }),
-      ...(instagram_link && { instagram_link }),
-      ...(description && { description }),
+      age,
+      instagram_link,
+      description,
       tags: tags || [],
-      ...(extra_charge !== null && extra_charge !== undefined && { extra_charge }),
-      ...(priority !== null && priority !== undefined && { priority }),
+      extra_charge,
+      priority,
     })
 
     console.log('✅ Convexスタッフレコード作成成功:', result.staffId)
@@ -89,25 +88,17 @@ export async function POST(req: NextRequest) {
     
     const invitationParams = {
       emailAddress: email,
-      redirectUrl: `${BASE_URL}/invite-accept`,
+      // redirectUrl: `${BASE_URL}/invite-accept?staff_id=${result.staffId}`,
       publicMetadata: {
         tenant_id,
         org_id,
         role,
         staff_id: result.staffId,
-        // スタッフ基本情報（webhook処理で必要）
-        gender,
-        ...(age !== null && age !== undefined && { age }),
-        ...(instagram_link && { instagram_link }),
-        tags: tags || [],
-        // 事前設定情報も含める（値がある場合のみ）
-        ...(result.preConfig.extra_charge !== undefined && { extra_charge: result.preConfig.extra_charge }),
-        ...(result.preConfig.priority !== undefined && { priority: result.preConfig.priority }),
         invited_by: userId,
         invited_at: new Date().toISOString()
       },
-      notify: true,
-      ignoreExisting: true
+      notify: true, // 招待メールを送信するかどうか
+      ignoreExisting: true // 既存の招待を無視するかどうか
     }
     
     console.log('🚀 招待パラメータ:', invitationParams)

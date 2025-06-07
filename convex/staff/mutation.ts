@@ -13,6 +13,7 @@ export const create = mutation({
   args: {
     tenant_id: v.id('tenant'), // テナントID
     org_id: v.id('organization'), // 店舗ID
+    connect_clerk: v.boolean(), // Clerk ユーザーID (true = clerk認証ユーザー, false = 未認証スタッフ)
     clerk_user_id: v.optional(v.string()), // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
     name: v.string(), // スタッフ名
     description: v.optional(v.string()), // 自己紹介
@@ -47,6 +48,7 @@ export const create = mutation({
     return await createRecord(ctx, 'staff', {
       tenant_id: args.tenant_id, // テナントID
       org_id: args.org_id, // 組織ID
+      connect_clerk: args.connect_clerk, // Clerk ユーザーID (true = clerk認証ユーザー, false = 未認証スタッフ)
       clerk_user_id: args.clerk_user_id, // 通常作成時はclerk_user_idは設定しない
       name: args.name, // スタッフ名
       description: args.description, // 自己紹介
@@ -103,6 +105,7 @@ export const upsert = mutation({
   args: {
     tenant_id: v.id('tenant'), // テナントID
     org_id: v.id('organization'), // 組織ID
+    connect_clerk: v.boolean(), // Clerk ユーザーID (true = clerk認証ユーザー, false = 未認証スタッフ)
     clerk_user_id: v.optional(v.string()), // Clerk ユーザーID (null=招待中,undefined=作成時に招待しない, 存在=受諾済み)
     staff_id: v.id('staff'),
     name: v.string(), // スタッフ名

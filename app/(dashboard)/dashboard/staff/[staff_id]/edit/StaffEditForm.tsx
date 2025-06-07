@@ -268,6 +268,7 @@ export default function StaffEditForm() {
 
       // スタッフの基本情報を追加
       staffId = await staffUpsert({
+        connect_clerk: staffAllData?.connect_clerk ?? false,
         tenant_id: staffAllData?.tenant_id as Id<'tenant'>, // テナントID
         org_id: staffAllData?.org_id as Id<'organization'>, // 店舗ID
         staff_id: staff_id as Id<'staff'>,

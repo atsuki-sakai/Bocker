@@ -66,10 +66,6 @@ export async function GET(req: NextRequest) {
         // Convexデータ
         staff_id: staff._id,
         name: staff.name,
-        email: staff.temp_email || clerkInvitation?.emailAddress || '',
-        gender: staff.temp_gender || 'unselected',
-        age: staff.temp_age,
-        tags: staff.temp_tags || [],
         created_at: staff._creationTime,
         
         // Clerk招待データ
@@ -122,7 +118,7 @@ export async function POST(req: NextRequest) {
     const { staff_id, invitation_id, email } = body
 
     // 3. 必須パラメータの検証
-    if (!staff_id) {
+    if (!staff_id || !email) {
       console.log('❌ staff_idが不足')
       return NextResponse.json(
         { error: 'staff_idが必要です' },
@@ -180,7 +176,7 @@ export async function POST(req: NextRequest) {
     const clerk = await clerkClient()
     
     const invitationParams = {
-      emailAddress: email || staffData.tempData?.email || 'no-email',
+      emailAddress: email ?? 'no-email',
       redirectUrl,
       publicMetadata: {
         tenant_id: staffData.tenant_id,
@@ -193,11 +189,6 @@ export async function POST(req: NextRequest) {
         invited_by: userId,
         invited_at: new Date().toISOString(),
         resent: true, // 再送フラグ
-        // 基本情報（configがあればそちらを、なければ一時保存データを使用）
-        gender: staffData.config?.gender || staffData.tempData?.gender,
-        age: staffData.config?.age || staffData.tempData?.age,
-        instagram_link: staffData.config?.instagram_link || staffData.tempData?.instagram_link,
-        tags: staffData.config?.tags || staffData.tempData?.tags || [],
       },
       notify: true,
       ignoreExisting: true,

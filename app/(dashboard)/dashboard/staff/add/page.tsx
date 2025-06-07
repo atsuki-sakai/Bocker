@@ -56,8 +56,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExclusionMenu } from '@/components/common'
 
 const staffAddSchema = z.object({
-  name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
-  email: z.string().email({ message: 'メールアドレスが不正です' }),
+  name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH).optional().nullable(),
+  email: z.string().email({ message: 'メールアドレスが不正です' }).optional().nullable(),
   instagram_link: z
     .preprocess(
       (val) => {
@@ -71,7 +71,7 @@ const staffAddSchema = z.object({
       z.string().url({ message: 'URLが不正です' }).optional()
     )
     .nullable(), // null も許容したい場合のみ残します
-  gender: z.enum(GENDER_VALUES),
+  gender: z.enum(GENDER_VALUES).optional().nullable(),
   age: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
@@ -82,7 +82,12 @@ const staffAddSchema = z.object({
     },
     z.number().max(99, { message: '年齢は99以下で入力してください' }).nullable().optional()
   ),
-  description: z.string().min(1, { message: '説明は必須です' }).max(MAX_NOTES_LENGTH),
+  description: z
+    .string()
+    .min(1, { message: '説明は必須です' })
+    .max(MAX_NOTES_LENGTH)
+    .optional()
+    .nullable(),
   images: z.array(
     z.object({
       original_url: z.string(),
@@ -90,7 +95,7 @@ const staffAddSchema = z.object({
     })
   ),
   is_active: z.boolean(),
-  role: z.enum(ROLE_VALUES),
+  role: z.enum(ROLE_VALUES).optional().nullable(),
   tags: z.preprocess(
     (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
     z
@@ -180,15 +185,15 @@ export default function StaffAddPage() {
       // 招待メール送信時は事前にメールアドレスの重複チェック
       const userEmail = user?.emailAddresses[0].emailAddress
       const isAdmin = userEmail === data.email && user?.publicMetadata.role === 'admin'
-      if (sendInviteEmail) {
+      if (sendInviteEmail && data.email) {
         if (isAdmin) {
           toast.error(
-            '管理者はスタッフアカウントを作成できません。アカウントを作成せずにスタッフを追加してください。'
+            '管理者はスタッフアカウントを作成できません。アカウントを作成せずにスタッフを作成してください。'
           )
           setIsLoading(false)
           return
         }
-        
+
         try {
           const emailCheckResult = await fetchAction(
             api.staff.invitation.action.checkEmailAvailability,
@@ -301,8 +306,9 @@ export default function StaffAddPage() {
           staffId = await staffAdd({
             tenant_id: tenantId, // テナントID
             org_id: orgId, // 店舗ID
-            clerk_user_id: sendInviteEmail ? undefined : 'NOT_INVITED', // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
-            name: data.name, // スタッフ名
+            connect_clerk: false, // Clerk ユーザーID (true = clerk認証ユーザー, false = 未認証スタッフ)
+            clerk_user_id: undefined, // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
+            name: data.name ?? '', // スタッフ名
             description: data.description ?? undefined, // 自己紹介
             images: newUploadedImageUrls ? newUploadedImageUrls : data.images, // 画像
             is_active: data.is_active, // 有効/無効
@@ -320,10 +326,10 @@ export default function StaffAddPage() {
           org_id: orgId, // 店舗ID
           staff_id: staffId, // スタッフID
           age: data.age ?? undefined, // 年齢
-          gender: data.gender, // 性別
+          gender: data.gender ?? ('unselected' as Gender), // 性別
           instagram_link: data.instagram_link ?? undefined, // インスタグラムリンク
-          tags: data.tags, // タグ
-          role: data.role, // ロール
+          tags: data.tags ?? [], // タグ
+          role: data.role ?? ('staff' as Role), // ロール
           featured_hair_images: [], // フィーチャー画像
           extra_charge: data.extra_charge ?? undefined, // 追加料金
           priority: data.priority ?? undefined, // 優先度
@@ -448,7 +454,7 @@ export default function StaffAddPage() {
                 <CardContent className="space-y-8 pt-6">
                   {/* 基本情報セクション */}
                   <div>
-                    <div className="flex flex-col items-start justify-between space-y-2 mb-4">
+                    <div className="flex flex-col items-start justify-between space-y-2 mb-4 bg-active-foreground text-active border border-active rounded-md p-4">
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="send_invite_email"
@@ -459,8 +465,10 @@ export default function StaffAddPage() {
                           招待メールを送信してスタッフアカウントを作成
                         </Label>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        有効にすると、スタッフに招待メールが送信され、スタッフアカウントでログインできるようになります。
+                      <p className="text-xs text-muted-foreground w-fit">
+                        スタッフアカウントを作成する事でスタッフのアカウントでもログイン可能になり、スケジュールやカルテの編集を行うことができます。
+                        <br />
+                        招待メールを送信した後、認証後にスタッフアカウントでログインできるようになります。
                       </p>
                     </div>
                     <div className="grid md:grid-cols-2 gap-6 pb-4">
@@ -483,124 +491,132 @@ export default function StaffAddPage() {
                         </div>
                       )}
 
-                      <div className="space-y-4 w-full">
-                        <div>
-                          <ZodTextField
-                            name="name"
-                            label="名前"
-                            icon={<User className="h-4 w-4 mr-2 text-muted-foreground" />}
-                            register={register}
-                            errors={errors}
-                            placeholder="名前を入力してください"
-                            className="transition-all duration-200"
-                          />
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <div className="w-full">
-                            <Label className="flex items-center mb-2 font-medium text-muted-foreground">
-                              <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                              性別
-                            </Label>
-                            <Select
-                              defaultValue="unselected"
-                              onValueChange={(value) => setValue('gender', value as Gender)}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="性別を選択してください" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {GENDER_VALUES.map((gender) => (
-                                  <SelectItem key={gender} value={gender}>
-                                    {gender === 'male'
-                                      ? '男性'
-                                      : gender === 'female'
-                                        ? '女性'
-                                        : '未選択'}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="w-full">
+                      {!sendInviteEmail && (
+                        <div className="space-y-4 w-full">
+                          <div>
                             <ZodTextField
-                              name="age"
-                              label="年齢"
-                              icon={<Calendar className="h-4 w-4 mr-2 text-muted-foreground" />}
-                              type="number"
+                              name="name"
+                              label="名前"
+                              icon={<User className="h-4 w-4 mr-2 text-muted-foreground" />}
                               register={register}
                               errors={errors}
-                              placeholder="年齢を入力してください"
+                              placeholder="名前を入力してください"
+                              className="transition-all duration-200"
                             />
                           </div>
-                        </div>
 
-                        {/* タグセクション */}
-                        <TagInput
-                          tags={currentTags}
-                          setTagsAction={(tags) => {
-                            setCurrentTags(tags)
+                          <div className="flex items-center gap-2">
+                            <div className="w-full">
+                              <Label className="flex items-center mb-2 font-medium text-muted-foreground">
+                                <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                                性別
+                              </Label>
+                              <Select
+                                defaultValue="unselected"
+                                onValueChange={(value) => setValue('gender', value as Gender)}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="性別を選択してください" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {GENDER_VALUES.map((gender) => (
+                                    <SelectItem key={gender} value={gender}>
+                                      {gender === 'male'
+                                        ? '男性'
+                                        : gender === 'female'
+                                          ? '女性'
+                                          : '未選択'}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                            setValue('tags', tags, { shouldValidate: true })
-                          }}
-                          error={errors.tags?.message}
-                          title="スタッフに付与するタグ"
-                          exampleText="ヘアセット, カット, メイク"
-                        />
+                            <div className="w-full">
+                              <ZodTextField
+                                name="age"
+                                label="年齢"
+                                icon={<Calendar className="h-4 w-4 mr-2 text-muted-foreground" />}
+                                type="number"
+                                register={register}
+                                errors={errors}
+                                placeholder="年齢を入力してください"
+                              />
+                            </div>
+                          </div>
 
-                        <div className="flex items-center space-x-2 pt-1">
-                          <Switch
-                            id="is_active"
-                            checked={watch('is_active')}
-                            onCheckedChange={(checked) => setValue('is_active', checked)}
+                          {/* タグセクション */}
+                          <TagInput
+                            tags={currentTags}
+                            setTagsAction={(tags) => {
+                              setCurrentTags(tags)
+
+                              setValue('tags', tags, { shouldValidate: true })
+                            }}
+                            error={errors.tags?.message}
+                            title="スタッフに付与するタグ"
+                            exampleText="ヘアセット, カット, メイク"
                           />
-                          <Label htmlFor="is_active" className="text-xs cursor-pointer">
-                            {watch('is_active') ? (
-                              <span className="text-active font-medium">有効</span>
-                            ) : (
-                              <span className="text-destructive font-medium">無効</span>
-                            )}
-                          </Label>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          予約受け付けは有効の場合のみ可能になります。
-                        </span>
-                      </div>
-                    </div>
 
-                    <div className="mt-10">
-                      <ZodTextField
-                        icon={<Instagram className="h-4 w-4 mr-2 text-muted-foreground" />}
-                        name="instagram_link"
-                        label="Instagramリンク"
-                        register={register}
-                        errors={errors}
-                        placeholder="スタッフのInstagramリンクを入力してください"
-                      />
-                    </div>
-                    <div className="mt-4">
-                      <div className="flex items-center mb-2">
-                        <Clipboard className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <Label className="font-medium text-muted-foreground">スタッフ紹介</Label>
-                      </div>
-                      <Textarea
-                        value={watch('description')}
-                        rows={10}
-                        {...register('description')}
-                        placeholder="スタッフの紹介を入力してください"
-                        className="resize-none focus:ring-2 focus:ring-border transition-all duration-200"
-                      />
-                      {errors.description && (
-                        <motion.p
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="text-sm text-destructive mt-1"
-                        >
-                          {errors.description.message}
-                        </motion.p>
+                          <div className="flex items-center space-x-2 pt-1">
+                            <Switch
+                              id="is_active"
+                              checked={watch('is_active')}
+                              onCheckedChange={(checked) => setValue('is_active', checked)}
+                            />
+                            <Label htmlFor="is_active" className="text-xs cursor-pointer">
+                              {watch('is_active') ? (
+                                <span className="text-active font-medium">有効</span>
+                              ) : (
+                                <span className="text-destructive font-medium">無効</span>
+                              )}
+                            </Label>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            予約受け付けは有効の場合のみ可能になります。
+                          </span>
+                        </div>
                       )}
                     </div>
+
+                    {!sendInviteEmail && (
+                      <>
+                        <div className="mt-10">
+                          <ZodTextField
+                            icon={<Instagram className="h-4 w-4 mr-2 text-muted-foreground" />}
+                            name="instagram_link"
+                            label="Instagramリンク"
+                            register={register}
+                            errors={errors}
+                            placeholder="スタッフのInstagramリンクを入力してください"
+                          />
+                        </div>
+                        <div className="mt-4">
+                          <div className="flex items-center mb-2">
+                            <Clipboard className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <Label className="font-medium text-muted-foreground">
+                              スタッフ紹介
+                            </Label>
+                          </div>
+                          <Textarea
+                            value={watch('description') ?? ''}
+                            rows={10}
+                            {...register('description')}
+                            placeholder="スタッフの紹介を入力してください"
+                            className="resize-none focus:ring-2 focus:ring-border transition-all duration-200"
+                          />
+                          {errors.description && (
+                            <motion.p
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="text-sm text-destructive mt-1"
+                            >
+                              {errors.description.message}
+                            </motion.p>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <Separator />
@@ -623,6 +639,9 @@ export default function StaffAddPage() {
                               errors={errors}
                               placeholder="メールアドレスを入力してください"
                             />
+                            <p className="text-xs text-muted-foreground">
+                              こちらのメールアドレスに招待メールを送信します。
+                            </p>
                           </div>
                         </div>
 
@@ -630,7 +649,9 @@ export default function StaffAddPage() {
                           <div>
                             <div className="flex items-center mb-2">
                               <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
-                              <Label className="font-medium text-muted-foreground">権限</Label>
+                              <Label className="font-medium text-muted-foreground">
+                                招待・権限設定
+                              </Label>
                             </div>
                             <div className="mt-1">
                               <div className="grid grid-cols-3 gap-3">
@@ -676,44 +697,46 @@ export default function StaffAddPage() {
                   <Separator />
 
                   {/* 詳細設定セクション */}
-                  <div>
-                    <div className="flex items-center mb-4">
-                      <Sparkles className="h-5 w-5 mr-2 text-blue-500" />
-                      <h3 className="font-semibold text-lg">詳細設定</h3>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <ZodTextField
-                          name="extra_charge"
-                          label="指名料金"
-                          type="number"
-                          register={register}
-                          errors={errors}
-                          placeholder="指名料金を入力してください"
-                          className="transition-all duration-200"
-                        />
-                        <p className="text-xs mt-1 text-gray-500">
-                          お客様がこのスタッフを指名した場合に追加料金を設定します。
-                        </p>
+                  {!sendInviteEmail && (
+                    <div>
+                      <div className="flex items-center mb-4">
+                        <Sparkles className="h-5 w-5 mr-2 text-blue-500" />
+                        <h3 className="font-semibold text-lg">詳細設定</h3>
                       </div>
 
-                      <div>
-                        <ZodTextField
-                          name="priority"
-                          label="優先度"
-                          type="number"
-                          register={register}
-                          errors={errors}
-                          placeholder="優先度を入力してください"
-                          className="transition-all duration-200"
-                        />
-                        <p className="text-xs mt-1 text-gray-500">
-                          数値が大きいほど予約画面などで上位に表示されます。
-                        </p>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <ZodTextField
+                            name="extra_charge"
+                            label="指名料金"
+                            type="number"
+                            register={register}
+                            errors={errors}
+                            placeholder="指名料金を入力してください"
+                            className="transition-all duration-200"
+                          />
+                          <p className="text-xs mt-1 text-gray-500">
+                            お客様がこのスタッフを指名した場合に追加料金を設定します。
+                          </p>
+                        </div>
+
+                        <div>
+                          <ZodTextField
+                            name="priority"
+                            label="優先度"
+                            type="number"
+                            register={register}
+                            errors={errors}
+                            placeholder="優先度を入力してください"
+                            className="transition-all duration-200"
+                          />
+                          <p className="text-xs mt-1 text-gray-500">
+                            数値が大きいほど予約画面などで上位に表示されます。
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
