@@ -17,22 +17,6 @@ export const checkEmailAvailability = action({
     },
     handler: async (ctx, args) => {
       try {
-        const identity = await checkAuth(ctx);
-        
-        if (!identity) {
-          throw new ConvexError({
-            message: '認証が必要です',
-            statusCode: ERROR_STATUS_CODE.UNAUTHORIZED,
-            severity: ERROR_SEVERITY.ERROR,
-            callFunc: 'staff.invitation.query.checkEmailAvailability',
-            code: 'NOT_FOUND',
-            status: ERROR_STATUS_CODE.NOT_FOUND,
-            details: { ...args },
-          })
-        }
-        
-        // Initialize Clerk client with API key for Convex actions
-
         // Clerkのクライアントを作成 サーバーサイドでのみ使用
         const { createClerkClient } = await import('@clerk/backend');
         const clerk = createClerkClient({
