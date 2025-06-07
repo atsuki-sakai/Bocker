@@ -21,29 +21,31 @@ import { Mail, RefreshCw, Trash2, Clock, AlertCircle, Users, UserPlus } from 'lu
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { Role, Gender, InvitationStatus } from '@/convex/types'
+import { Id } from '@/convex/_generated/dataModel'
 
 // 招待データの型定義（Convex + Clerkの統合データ）
 interface StaffInvitation {
   // Convexデータ
-  staff_id: string
+  staff_id: Id<'staff'>
   name: string
   email: string
-  gender: string
+  gender: Gender
   age?: number
   tags: string[]
   created_at: number
-  
+
   // Clerk招待データ
   invitation_id: string | null
-  invitation_status: 'pending' | 'missing'
+  invitation_status: InvitationStatus
   invitation_created_at: number | null
-  
+
   // メタデータ
   metadata: {
-    tenant_id: string
-    org_id: string
-    role: string
-    staff_id: string
+    tenant_id: Id<'tenant'>
+    org_id: Id<'organization'>
+    role: Role
+    staff_id: Id<'staff'>
     extra_charge?: number
     priority?: number
     invited_by?: string
@@ -120,6 +122,7 @@ export default function InviteManagement() {
         body: JSON.stringify({
           staff_id: invitation.staff_id,
           invitation_id: invitation.invitation_id,
+          org_id: orgId,
         }),
       })
 
@@ -143,10 +146,10 @@ export default function InviteManagement() {
   const cancelInvitation = async (invitation: StaffInvitation) => {
     setIsProcessing(true)
     try {
-      const url = invitation.invitation_id 
+      const url = invitation.invitation_id
         ? `/api/clerk/staff/invitations/${invitation.invitation_id}?staff_id=${invitation.staff_id}`
         : `/api/clerk/staff/invitations/cancel?staff_id=${invitation.staff_id}`
-        
+
       const response = await fetch(url, {
         method: 'DELETE',
         headers: {
@@ -172,7 +175,7 @@ export default function InviteManagement() {
   }
 
   // ロール表示を日本語に変換
-  const getRoleDisplayName = (role: string) => {
+  const getRoleDisplayName = (role: Role) => {
     switch (role) {
       case 'staff':
         return 'スタッフ'
@@ -188,7 +191,7 @@ export default function InviteManagement() {
   }
 
   // 性別表示を日本語に変換
-  const getGenderDisplayName = (gender: string) => {
+  const getGenderDisplayName = (gender: Gender) => {
     switch (gender) {
       case 'male':
         return '男性'
@@ -253,17 +256,16 @@ export default function InviteManagement() {
                     exit={{ opacity: 0, y: -20 }}
                     className="border rounded-lg p-4 bg-muted/30"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col md:flex-row items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <UserPlus className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">{invitation.name}</span>
-                          <span className="text-sm text-muted-foreground">({invitation.email})</span>
+                          <span className="text-sm text-muted-foreground">
+                            ({invitation.email})
+                          </span>
                           {invitation.metadata && (
-                            <Badge
-                              variant="default"
-                              className="text-xs"
-                            >
+                            <Badge variant="default" className="text-xs">
                               {getRoleDisplayName(invitation.metadata.role)}
                             </Badge>
                           )}

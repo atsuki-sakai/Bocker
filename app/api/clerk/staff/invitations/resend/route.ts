@@ -1,22 +1,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { BASE_URL } from '@/lib/constants';
 
 export async function POST(request: NextRequest) {
   try {
-    const authData = await auth();
-    const clerk = await clerkClient();
     
-    if (!authData.userId || !authData.orgId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { staff_id, invitation_id } = await request.json();
+    const clerk = await clerkClient();
+    const { staff_id, invitation_id, org_id } = await request.json();
 
     if (!staff_id || !invitation_id) {
       return NextResponse.json(
@@ -37,9 +28,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('existingInvitation', existingInvitation);
     if (!existingInvitation || existingInvitation.data[0].status !== 'pending') {
       return NextResponse.json(
-        { error: 'Invitation is not in pending status' },
+        { error: 'atus' },
         { status: 400 }
       );
     }
@@ -56,7 +48,7 @@ export async function POST(request: NextRequest) {
       emailAddress: existingInvitation.data[0].emailAddress,
       redirectUrl,
       publicMetadata: {
-        organizationId: authData.orgId,
+        organizationId: org_id,
         role: existingInvitation.data[0].publicMetadata?.role || 'staff',
         staffId: staff_id,
       },

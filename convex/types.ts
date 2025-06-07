@@ -244,7 +244,7 @@ export const imgDirectoryType = v.union(
 export type ImgDirectoryType = Infer<typeof imgDirectoryType>
 
 // 招待ステータス型
-export const INVITATION_STATUS_VALUES = ['pending', 'accepted', 'expired', 'cancelled'] as const
+export const INVITATION_STATUS_VALUES = ['pending', 'accepted', 'expired', 'cancelled', "missing"] as const
 export const invitationStatusType = v.union(
   ...INVITATION_STATUS_VALUES.map((status) => v.literal(status))
 )

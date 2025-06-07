@@ -33,32 +33,64 @@ export const checkEmailAvailability = action({
               message: 'このメールアドレスは既に登録されています',
               statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
               severity: ERROR_SEVERITY.ERROR,
-              callFunc: 'staff.invitation.query.checkEmailAvailability',
+              callFunc: 'staff.invitation.action.checkEmailAvailability',
               code: 'BAD_REQUEST',
               status: ERROR_STATUS_CODE.BAD_REQUEST,
               details: { ...args },
             })
           }
         } catch (error) {
+          // ConvexErrorの場合はそのまま再投げ
+          if (error instanceof ConvexError) {
+            throw error;
+          }
+          // その他のエラーの場合はログを出力して再投げ
           console.error('Failed to check existing user:', error);
+          throw new ConvexError({
+            message: 'メールアドレスの確認中にエラーが発生しました',
+            statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+            severity: ERROR_SEVERITY.ERROR,
+            callFunc: 'staff.invitation.action.checkEmailAvailability',
+            code: 'INTERNAL_SERVER_ERROR',
+            status: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+            details: { ...args },
+          });
         }
   
         // 既存の招待もチェック
-        const invitationList = await clerk.invitations.getInvitationList();
-        const existingInvitation = invitationList.data.find(
-          (inv: any) => inv.emailAddress === args.email && inv.status === 'pending'
-        );
-  
-        if (existingInvitation) {
+        try {
+          const invitationList = await clerk.invitations.getInvitationList();
+          const existingInvitation = invitationList.data.find(
+            (inv: any) => inv.emailAddress === args.email && inv.status === 'pending'
+          );
+    
+          if (existingInvitation) {
+            throw new ConvexError({
+              message: 'このメールアドレスは既に招待されています',
+              statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+              severity: ERROR_SEVERITY.ERROR,
+              callFunc: 'staff.invitation.action.checkEmailAvailability',
+              code: 'BAD_REQUEST',
+              status: ERROR_STATUS_CODE.BAD_REQUEST,
+              details: { ...args },
+            })
+          }
+        } catch (error) {
+          // ConvexErrorの場合はそのまま再投げ
+          if (error instanceof ConvexError) {
+            throw error;
+          }
+          // その他のエラーの場合はログを出力して再投げ
+          console.error('Failed to check invitations:', error);
           throw new ConvexError({
-            message: 'このメールアドレスは既に招待されています',
-            statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+            message: '招待状況の確認中にエラーが発生しました',
+            statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
             severity: ERROR_SEVERITY.ERROR,
-            callFunc: 'staff.invitation.query.checkEmailAvailability',
-            code: 'BAD_REQUEST',
-            status: ERROR_STATUS_CODE.BAD_REQUEST,
-            details: { ...args },
-          })
+            callFunc: 'staff.invitation.action.checkEmailAvailability',
+            code: 'INTERNAL_SERVER_ERROR',
+            status: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+            details: { ...args, },
+          });
         }
         
         return {
@@ -69,4 +101,4 @@ export const checkEmailAvailability = action({
         throw error;
       }
     },
-  });
+});

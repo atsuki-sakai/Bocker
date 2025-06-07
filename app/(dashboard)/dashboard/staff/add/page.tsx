@@ -188,17 +188,25 @@ export default function StaffAddPage() {
           setIsLoading(false)
           return
         }
-        const emailCheckResult = await fetchAction(
-          api.staff.invitation.action.checkEmailAvailability,
-          {
-            tenant_id: tenantId,
-            org_id: orgId,
-            email: data.email,
-          }
-        )
+        
+        try {
+          const emailCheckResult = await fetchAction(
+            api.staff.invitation.action.checkEmailAvailability,
+            {
+              tenant_id: tenantId,
+              org_id: orgId,
+              email: data.email,
+            }
+          )
 
-        if (!emailCheckResult.isAvailable) {
-          toast.error(`このメールアドレスは既に登録されています`)
+          if (!emailCheckResult.isAvailable) {
+            toast.error(`このメールアドレスは既に登録されています`)
+            setIsLoading(false)
+            return
+          }
+        } catch (checkError) {
+          console.error('メールアドレスチェックエラー:', checkError)
+          showErrorToast(checkError)
           setIsLoading(false)
           return
         }
