@@ -112,7 +112,7 @@ export default function InviteManagement() {
   const resendInvitation = async (invitation: StaffInvitation) => {
     setIsProcessing(true)
     try {
-      const response = await fetch('/api/clerk/staff/invitations', {
+      const response = await fetch('/api/clerk/staff/invitations/resend', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -132,6 +132,7 @@ export default function InviteManagement() {
       toast.success(`${invitation.email} に招待メールを再送しました`)
       await fetchInvitations() // 一覧を更新
     } catch (error) {
+      console.error('Failed to resend invitation:', error)
       showErrorToast(error)
     } finally {
       setIsProcessing(false)

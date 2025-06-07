@@ -105,15 +105,8 @@ export default function PreviewDialog({
 
   // 確認ボタン
   const handleConfirm = () => {
-    console.log('🔘 PreviewDialog確認ボタンクリック:', {
-      subscriptionId,
-      updatePlanName,
-      billingPeriod,
-      newPriceId: getPriceNameFromPlanName(updatePlanName as SubscriptionPlanName, billingPeriod),
-    })
 
     if (!subscriptionId || !updatePlanName) {
-      console.error('❌ 必要なパラメータが不足:', { subscriptionId, updatePlanName })
       return
     }
 
@@ -160,7 +153,7 @@ export default function PreviewDialog({
 
   const confirmButtonContent = isSubmitting ? (
     <>
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      <Loader2 className="mr-2 h-4 w-4" />
       処理中...
     </>
   ) : (

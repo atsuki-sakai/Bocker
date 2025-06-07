@@ -526,17 +526,17 @@ const staff_exception_schedule = defineTable({
 const staff = defineTable({
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.id('organization'), // 店舗ID
-  clerk_user_id: v.optional(v.string()), // Clerk ユーザーID (null=招待中, 存在=受諾済み)
+  clerk_user_id: v.optional(v.string()), // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
   name: v.string(), // スタッフ名
-  age: v.optional(v.number()), // 年齢
-  email: v.string(), // メールアドレス
-  gender: genderType, // 性別
-  instagram_link: v.optional(v.string()), // インスタグラムリンク
   description: v.optional(v.string()), // 自己紹介
   images: v.array(imageType), // 画像
-  tags: v.array(v.string()), // タグ
-  featured_hair_images: v.optional(v.array(imageType)), // フィーチャー画像
   is_active: v.boolean(), // 有効/無効
+  // 一時的な招待情報（招待受諾時にstaff_configに移行される）
+  temp_email: v.optional(v.string()), // 一時保存：メールアドレス
+  temp_gender: v.optional(genderType), // 一時保存：性別
+  temp_age: v.optional(v.number()), // 一時保存：年齢
+  temp_instagram_link: v.optional(v.string()), // 一時保存：Instagramリンク
+  temp_tags: v.optional(v.array(v.string())), // 一時保存：タグ
   ...CommonFields,
 })
 .index('by_clerk_archive', ['clerk_user_id', 'is_archive'])
@@ -553,7 +553,12 @@ const staff_config = defineTable({
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.id('organization'), // 店舗ID
   staff_id: v.id('staff'), // スタッフID
+  age: v.optional(v.number()), // 年齢
+  gender: genderType, // 性別
+  instagram_link: v.optional(v.string()), // インスタグラムリンク
+  tags: v.array(v.string()), // タグ
   role: roleType, // ロール
+  featured_hair_images: v.optional(v.array(imageType)), // フィーチャー画像
   extra_charge: v.optional(v.number()), // 追加料金
   priority: v.optional(v.number()), // 優先度
   ...CommonFields,

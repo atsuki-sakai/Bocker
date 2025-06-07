@@ -10,6 +10,7 @@ import { executeInParallel, createTask } from '../parallel';
 import { WebhookMetricsCollector } from '../metrics';
 import { clerkClient } from '@clerk/nextjs/server';
 import { Id } from '@/convex/_generated/dataModel';
+import { Gender } from '@/convex/types';
 
 /**
  * `user.created` Webhookイベントを処理するハンドラー関数。
@@ -346,23 +347,6 @@ export async function handleUserUpdated(
 
       await executeInParallel(updateTasks, context);
 
-      // スタッフメールアドレス同期（非クリティカル）
-      try {
-        console.log(`👤 [${eventId}] スタッフメールアドレス同期開始: user_id=${id}, new_email=${email}`, { ...context, tenantId: existingTenant._id });
-        metrics.incrementApiCall('convex');
-        
-        await deps.retry(() =>
-          fetchMutation(deps.convex.staff.mutation.updateEmailByClerkId, {
-            clerk_user_id: id,
-            email: email,
-          })
-        );
-        
-        console.log(`👤 [${eventId}] スタッフメールアドレス同期完了: user_id=${id}`, { ...context, tenantId: existingTenant._id });
-      } catch (staffUpdateError) {
-        // スタッフが見つからない場合は正常（全ユーザーがスタッフではないため）
-        console.log(`ℹ️ [${eventId}] スタッフメールアドレス同期スキップ（スタッフレコードなし）: user_id=${id}`, { ...context, tenantId: existingTenant._id, error: staffUpdateError });
-      }
 
       console.log(`✅ [${eventId}] User Updated処理完了。user_id=${id}`, { ...context, tenantId: existingTenant._id });
       return {
@@ -509,13 +493,30 @@ async function handleStaffInvitationAccepted(
 ): Promise<EventProcessingResult> {
   const { id: clerk_user_id, public_metadata } = data;
   
-  // publicMetadataから必要な情報を取得
+  // publicMetadataから必要な情報を取得（フォールバック機能付き）
   const staff_id = public_metadata?.staff_id as string | undefined;
   const tenant_id = public_metadata?.tenant_id as string | undefined;
   const org_id = public_metadata?.org_id as string | undefined;
   const role = (public_metadata?.role as 'staff' | 'admin') || 'staff';
   const extra_charge = public_metadata?.extra_charge as number | undefined;
   const priority = public_metadata?.priority as number | undefined;
+  const gender = public_metadata?.gender as Gender;
+  const age = public_metadata?.age as number | undefined;
+  const instagram_link = public_metadata?.instagram_link as string | undefined;
+  const tags = public_metadata?.tags as string[] || [];
+
+  console.log(`📋 [${eventId}] publicMetadataから取得した情報:`, {
+    staff_id,
+    tenant_id,
+    org_id,
+    role,
+    gender,
+    age,
+    instagram_link,
+    tags: tags.length,
+    extra_charge,
+    priority
+  });
 
   const context: LogContext = {
     eventId,
@@ -534,6 +535,43 @@ async function handleStaffInvitationAccepted(
   }
 
   try {
+    // 基本情報が不足している場合のフォールバック処理
+    let finalGender = gender;
+    let finalAge = age;
+    let finalInstagramLink = instagram_link;
+    let finalTags = tags;
+
+    if (!gender) {
+      console.log(`⚠️ [${eventId}] publicMetadataにgenderが不足、一時保存データから取得を試行`, context);
+      
+      try {
+        // Convexから一時保存データを取得してフォールバック
+        const staffData = await fetchQuery(deps.convex.staff.invitation.query.getCompleteStaffData, {
+          staff_id: staff_id as Id<"staff">,
+        });
+        
+        if (staffData?.tempData) {
+          finalGender = gender || staffData.tempData.gender;
+          finalAge = age !== undefined ? age : staffData.tempData.age;
+          finalInstagramLink = instagram_link || staffData.tempData.instagram_link;
+          finalTags = tags.length > 0 ? tags : (staffData.tempData.tags || []);
+          
+          console.log(`✅ [${eventId}] 一時保存データからフォールバック完了:`, {
+            finalGender,
+            finalAge,
+            finalInstagramLink,
+            finalTags: finalTags.length
+          });
+        }
+      } catch (fallbackError) {
+        console.warn(`⚠️ [${eventId}] フォールバック処理に失敗:`, fallbackError);
+        Sentry.captureException(fallbackError, {
+          level: 'warning',
+          tags: { ...context, operation: 'staff_invitation_fallback' },
+        });
+      }
+    }
+
     // Convexでスタッフレコードを更新
     console.log(`📝 [${eventId}] Convexスタッフレコード更新開始: staff_id=${staff_id}`, context);
     metrics.incrementApiCall('convex');
@@ -545,6 +583,10 @@ async function handleStaffInvitationAccepted(
         extra_charge,
         priority,
         role,
+        gender: finalGender,
+        age: finalAge,
+        instagram_link: finalInstagramLink,
+        tags: finalTags,
       })
     );
 

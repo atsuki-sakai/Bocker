@@ -30,7 +30,7 @@ export default function CurrentPlanBanner({
     if (isSubmitting) {
       return (
         <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 className="mr-2 h-4 w-4" />
           処理中...
         </>
       )
@@ -48,7 +48,7 @@ export default function CurrentPlanBanner({
   return (
     <div className="w-full max-w-xl mb-8 border border-active p-4 rounded-lg">
       <div className="flex items-center justify-between">
-        <div className="flex items-center  gap-3">
+        <div className="flex items-center gap-3">
           <div className="bg-background border border-active rounded-full p-1 shadow-md">
             <Check className="w-5 h-5 text-active dark:text-active" />
           </div>

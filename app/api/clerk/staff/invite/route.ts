@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ Convexスタッフレコード作成成功:', result.staffId)
 
-    // 7. Clerk招待送信（publicMetadataにstaff_idを含める）
+    // 7. Clerk招待送信（publicMetadataにstaff_idと全ての必要な情報を含める）
     console.log('🏢 Clerk Clientの有無:', !!clerkClient)
     
     const invitationParams = {
@@ -95,6 +95,11 @@ export async function POST(req: NextRequest) {
         org_id,
         role,
         staff_id: result.staffId,
+        // スタッフ基本情報（webhook処理で必要）
+        gender,
+        ...(age !== null && age !== undefined && { age }),
+        ...(instagram_link && { instagram_link }),
+        tags: tags || [],
         // 事前設定情報も含める（値がある場合のみ）
         ...(result.preConfig.extra_charge !== undefined && { extra_charge: result.preConfig.extra_charge }),
         ...(result.preConfig.priority !== undefined && { priority: result.preConfig.priority }),

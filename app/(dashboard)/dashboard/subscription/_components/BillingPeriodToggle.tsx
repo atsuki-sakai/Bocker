@@ -29,7 +29,7 @@ export default function BillingPeriodToggle({
   const monthlyButtonClasses = useMemo(
     () =>
       cn(
-        'px-4 py-2 rounded-full text-sm font-bold transition-all duration-200',
+        'px-4 py-2 rounded-full text-sm font-bold',
         billingPeriod === 'month'
           ? 'bg-accent shadow-sm text-accent-foreground'
           : 'text-secondary-foreground hover:text-secondary-foreground'
@@ -40,7 +40,7 @@ export default function BillingPeriodToggle({
   const yearlyButtonClasses = useMemo(
     () =>
       cn(
-        'px-4 py-2 rounded-full text-sm font-bold transition-all duration-200',
+        'px-4 py-2 rounded-full text-sm font-bold',
         billingPeriod === 'year'
           ? 'bg-accent shadow-sm text-accent-foreground'
           : 'text-secondary-foreground hover:text-secondary-foreground'

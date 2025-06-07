@@ -29,26 +29,34 @@ export const createWithInvitation = mutation({
     // 注: メールアドレスの重複チェックはフロントエンドで実施済み
     
     // スタッフレコード作成（clerk_user_id = null で招待中を示す）
+    // 一時的に基本情報も保存（招待受諾時にstaff_configに移行）
     const staffId = await createRecord(ctx, 'staff', {
       tenant_id: args.tenant_id,
       org_id: args.org_id,
       clerk_user_id: undefined, // 招待中のため null
       name: args.name,
-      email: args.email,
-      gender: args.gender,
-      age: args.age,
-      instagram_link: args.instagram_link,
       description: args.description,
       images: [],
-      tags: args.tags,
-      featured_hair_images: [],
       is_active: false, // 招待受諾まで非アクティブ
+      // 一時的な基本情報保存（招待受諾時にstaff_configに移行される）
+      temp_email: args.email,
+      temp_gender: args.gender,
+      temp_age: args.age,
+      temp_instagram_link: args.instagram_link,
+      temp_tags: args.tags,
     });
 
     // 事前設定情報も保存（staff_configは招待受諾時に作成）
     // 返却値に含めて、API側で管理する
     return {
       staffId,
+      basicInfo: {
+        email: args.email,
+        gender: args.gender,
+        age: args.age,
+        instagram_link: args.instagram_link,
+        tags: args.tags,
+      },
       preConfig: {
         extra_charge: args.extra_charge,
         priority: args.priority,
@@ -68,6 +76,10 @@ export const acceptInvitation = mutation({
     staff_id: v.id('staff'),
     clerk_user_id: v.string(),
     // 事前設定情報
+    gender: genderType,
+    instagram_link: v.optional(v.string()),
+    tags: v.array(v.string()),
+    age: v.optional(v.number()),
     extra_charge: v.optional(v.number()),
     priority: v.optional(v.number()),
     role: v.optional(roleType),
@@ -84,21 +96,32 @@ export const acceptInvitation = mutation({
       throw new Error('既に受諾済みの招待です');
     }
 
-    // スタッフレコード更新
+    // スタッフレコード更新（一時的なデータもクリア）
     await updateRecord(ctx, args.staff_id, {
       clerk_user_id: args.clerk_user_id,
       is_active: true,
+      // 一時的なデータをクリア（staff_configに移行するため）
+      temp_email: undefined,
+      temp_gender: undefined,
+      temp_age: undefined,
+      temp_instagram_link: undefined,
+      temp_tags: undefined,
     });
 
-
-    // staff_config作成
+    // staff_config作成（publicMetadataまたは一時保存データから取得）
     await createRecord(ctx, 'staff_config', {
       tenant_id: staff.tenant_id,
       org_id: staff.org_id,
       staff_id: args.staff_id,
       role: args.role || 'staff',
+      // publicMetadataから取得、フォールバックとして一時保存データを使用
+      age: args.age !== undefined ? args.age : staff.temp_age,
       extra_charge: args.extra_charge,
       priority: args.priority,
+      gender: args.gender || staff.temp_gender!,
+      instagram_link: args.instagram_link || staff.temp_instagram_link,
+      tags: (args.tags && args.tags.length > 0) ? args.tags : (staff.temp_tags || []),
+      featured_hair_images: [],
     });
 
     // 週次スケジュールの初期化（全曜日休み）

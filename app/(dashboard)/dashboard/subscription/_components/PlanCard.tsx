@@ -3,7 +3,6 @@
 // PlanCard Component
 // ------------------------------------------------------
 import { PLAN_TRIAL_DAYS, PLAN_CHARGE_MONTHS_YEARLY } from '@/lib/constants'
-import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
@@ -20,22 +19,7 @@ import { Check, Star, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { BillingPeriod } from '@/convex/types'
 import { Separator } from '@/components/ui/separator'
-import { useMemo, useCallback } from 'react'
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1 },
-}
+import { useMemo, useCallback, memo } from 'react'
 interface PlanCardProps {
   title: string
   description: string
@@ -52,10 +36,9 @@ interface PlanCardProps {
   isSubmitting: boolean
   isPopular?: boolean
   highlightColor: string
-  delay: number
 }
 
-export default function PlanCard({
+const PlanCard = memo(function PlanCard({
   title,
   description,
   price,
@@ -71,7 +54,6 @@ export default function PlanCard({
   isSubmitting,
   isPopular = false,
   highlightColor,
-  delay,
 }: PlanCardProps) {
   // 現在のプランかどうかのチェックをメモ化
   const isCurrentPlan = useMemo(() => {
@@ -80,10 +62,6 @@ export default function PlanCard({
 
   // 支払い期間が変更されているかのチェックをメモ化
   const isBillingPeriodChange = useMemo(() => {
-    console.log('currentPlanName', currentPlanName)
-    console.log('planName', planName)
-    console.log('currentBillingPeriod', currentBillingPeriod)
-    console.log('billingPeriod', billingPeriod)
     return currentPlanName === planName && currentBillingPeriod !== billingPeriod
   }, [currentPlanName, planName, currentBillingPeriod, billingPeriod])
 
@@ -116,10 +94,7 @@ export default function PlanCard({
   }, [isPopular])
 
   return (
-    <motion.div
-      initial={{ y: 30, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, delay }}
+    <div
       className={cn('relative', isPopular ? 'md:-mt-4 md:mb-4' : '')}
     >
       {isPopular && (
@@ -142,15 +117,9 @@ export default function PlanCard({
               {title}
             </CardTitle>
             {isCurrentPlan && isActive && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
-              >
-                <Badge variant="default" className="bg-active text-white px-3 py-1 animate-pulse">
-                  現在のプラン
-                </Badge>
-              </motion.div>
+              <Badge variant="default" className="bg-active text-white px-3 py-1">
+                現在のプラン
+              </Badge>
             )}
           </div>
           <CardDescription>{description}</CardDescription>
@@ -178,25 +147,19 @@ export default function PlanCard({
 
           <Separator className="my-4" />
 
-          <motion.ul
-            className="space-y-3 my-6"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
+          <ul className="space-y-3 my-6">
             {features.map((feature, index) => (
-              <motion.li
+              <li
                 key={index}
-                variants={itemVariants}
                 className="flex items-start gap-2 text-sm"
               >
                 <span className="mt-0.5 text-active flex-shrink-0">
                   <Check className="h-4 w-4" />
                 </span>
                 <span>{feature}</span>
-              </motion.li>
+              </li>
             ))}
-          </motion.ul>
+          </ul>
 
           <PlanActionButton
             isActive={isActive}
@@ -217,9 +180,11 @@ export default function PlanCard({
           <p>※{PLAN_TRIAL_DAYS}日間の無料トライアル付き</p>
         </CardFooter>
       </Card>
-    </motion.div>
+    </div>
   )
-}
+})
+
+export default PlanCard
 
 interface PlanActionButtonProps {
   isActive: boolean
@@ -252,7 +217,7 @@ function PlanActionButton({
   const loadingButton = useMemo(
     () => (
       <Button disabled className="w-full">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <Loader2 className="mr-2 h-4 w-4" />
         処理中...
       </Button>
     ),

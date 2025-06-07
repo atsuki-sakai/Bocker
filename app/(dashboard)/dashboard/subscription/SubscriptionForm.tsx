@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useAction, Preloaded, usePreloadedQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { PlanCard, BillingPeriodToggle, PreviewDialog, CurrentPlanBanner } from './_components'
@@ -63,24 +63,6 @@ export default function SubscriptionForm({
     setBillingPeriod(period)
   }, [])
 
-  // ダイアログ状態の変化をログに出力
-  useEffect(() => {
-    console.log('🎭 PreviewDialog状態変化:', {
-      showConfirmDialog,
-      hasPreviewData: !!previewData,
-      updatePlanId,
-      currentPlanName,
-      billingPeriod,
-      tenantSubscriptionId: subscription?.stripe_subscription_id,
-    })
-  }, [
-    showConfirmDialog,
-    previewData,
-    updatePlanId,
-    currentPlanName,
-    billingPeriod,
-    subscription?.stripe_subscription_id,
-  ])
 
   // プレビュー取得関数をメモ化
   const handleGetPreview = useCallback(
@@ -89,38 +71,21 @@ export default function SubscriptionForm({
       billingPeriod: BillingPeriod,
       overrideSubscriptionId?: string
     ) => {
-      console.log('🔍 handleGetPreview開始:', { planName, billingPeriod, overrideSubscriptionId })
-
       try {
         setIsSubmitting(true)
-        console.log('⏳ isSubmittingをtrueに設定')
 
         // より厳密なバリデーション - 引数で渡されたIDを優先
         const subscriptionId = overrideSubscriptionId || subscription?.stripe_subscription_id
         const customerId = tenant?.stripe_customer_id
 
-        // デバッグ情報をログに出力
-        console.log('📋 Preview request params:', {
-          planName,
-          billingPeriod,
-          subscriptionId,
-          customerId,
-          tenantId: tenant?._id,
-          orgId,
-          newPriceId: getPriceNameFromPlanName(planName, billingPeriod),
-        })
 
         if (!subscriptionId || subscriptionId === '') {
-          console.error('❌ サブスクリプションIDが見つかりません')
           throw new Error('サブスクリプションIDが見つかりません')
         }
 
         if (!customerId || customerId === '') {
-          console.error('❌ Stripe顧客IDが見つかりません')
           throw new Error('Stripe顧客IDが見つかりません')
         }
-
-        console.log('🚀 getSubscriptionUpdatePreview API呼び出し中...')
 
         // previewデータを取得し状態を更新
         const result = await getSubscriptionUpdatePreview({
@@ -131,17 +96,11 @@ export default function SubscriptionForm({
           stripe_customer_id: customerId,
         })
 
-        console.log('📊 プレビューデータ取得成功:', result)
-
         // プレビューデータを設定
         setPreviewData(result as StripePreviewData)
-        console.log('✅ setPreviewData完了')
-
         // ダイアログを表示
         setShowConfirmDialog(true)
-        console.log('✅ setShowConfirmDialog(true)完了 - ダイアログが表示されるはずです')
       } catch (err) {
-        console.error('❌ Preview error details:', err)
         const errorMessage =
           err instanceof Error
             ? `プレビュー取得エラー: ${err.message}`
@@ -150,7 +109,6 @@ export default function SubscriptionForm({
         toast.error(errorMessage)
       } finally {
         setIsSubmitting(false)
-        console.log('🏁 handleGetPreview終了 - isSubmittingをfalseに設定')
       }
     },
     [
@@ -166,13 +124,6 @@ export default function SubscriptionForm({
   const handleConfirmUpdate = useCallback(
     async (subscriptionId: string, newPriceId: string) => {
       try {
-        console.log('🔍 handleConfirmUpdate開始:', {
-          subscriptionId,
-          newPriceId,
-          previewData,
-          tenantId,
-          orgId,
-        })
         setIsSubmitting(true)
         const result = await confirmSubscriptionUpdate({
           tenant_id: tenantId,
@@ -183,10 +134,8 @@ export default function SubscriptionForm({
           proration_date: previewData?.prorationDate || 0,
         })
 
-        console.log('📊 confirmSubscriptionUpdate結果:', result)
 
         if (result.success) {
-          console.log('✅ サブスクリプション更新成功!')
           toast.success('サブスクリプションを更新しました')
 
           // ダイアログを閉じる
@@ -196,13 +145,11 @@ export default function SubscriptionForm({
           setPreviewData(null)
           setUpdatePlanId(null)
         } else {
-          console.error('❌ サブスクリプション更新失敗:', result)
           const errorMessage = 'サブスクリプションの更新に失敗しました'
           setError(errorMessage)
           toast.error(errorMessage)
         }
       } catch (err) {
-        console.error('Update confirmation error:', err)
         const errorMessage =
           err instanceof Error
             ? `更新エラー: ${err.message}`
@@ -219,16 +166,6 @@ export default function SubscriptionForm({
   // サブスクリプション作成関数をメモ化
   const handleSubscribe = useCallback(
     async (planName: SubscriptionPlanName, billingPeriod: BillingPeriod) => {
-      console.log('🔥 handleSubscribe called with:', {
-        planName,
-        billingPeriod,
-        tenantSubscriptionId: subscription?.stripe_subscription_id,
-        subscriptionStripeId: subscription?.stripe_subscription_id,
-        tenantSubscriptionStatus: subscription?.status,
-        subscriptionStatus: subscription?.status,
-        hasSubscriptionId: !!subscription?.stripe_subscription_id,
-        hasSubscriptionFromQuery: !!subscription?.stripe_subscription_id,
-      })
 
       // subscriptionオブジェクトからサブスクリプションIDを取得
       const subscriptionId = subscription?.stripe_subscription_id
@@ -238,24 +175,15 @@ export default function SubscriptionForm({
         (subscription?.status === 'active' || subscription?.status === 'trialing')
       ) {
         // 既契約あり → プレビュー
-        console.log('✅ 既存契約あり - プレビューを表示します')
         await handleGetPreview(planName, billingPeriod, subscriptionId)
         setUpdatePlanId(planName)
-        console.log('✅ プレビュー処理完了、updatePlanIdStrを設定:', planName)
       } else {
         // 新規 → Checkout
-        console.log('🆕 新規契約 - チェックアウトページに遷移します')
         try {
           setIsSubmitting(true)
           const priceId = getPriceNameFromPlanName(planName, billingPeriod)
           const isTrial = !subscription
 
-          console.log('💳 チェックアウトセッション作成中:', {
-            priceId,
-            isTrial,
-            tenantId,
-            orgId,
-          })
 
           const result = await createSession({
             tenant_id: tenantId,
@@ -267,16 +195,13 @@ export default function SubscriptionForm({
           })
 
           if (result?.checkoutUrl) {
-            console.log('✅ チェックアウトURLを取得、リダイレクト中:', result.checkoutUrl)
             window.location.href = result.checkoutUrl
           } else {
             const errorMessage = 'チェックアウトURLの取得に失敗しました'
-            console.error('❌ チェックアウトURL取得失敗:', result)
             setError(errorMessage)
             toast.error(errorMessage)
           }
         } catch (err: unknown) {
-          console.error('❌ Subscription error:', err)
           const errorMessage =
             err instanceof Error
               ? `サブスクリプションエラー: ${err.message}`
@@ -311,7 +236,6 @@ export default function SubscriptionForm({
         toast.error(errorMessage)
       }
     } catch (err) {
-      console.error('Billing portal error:', err)
       const errorMessage =
         err instanceof Error
           ? `請求ポータルエラー: ${err.message}`
@@ -325,12 +249,10 @@ export default function SubscriptionForm({
 
   // 各プラン用のサブスクリプションハンドラをメモ化
   const handleLiteSubscribe = useCallback(() => {
-    console.log('🟦 Liteプランボタンがクリックされました', { billingPeriod })
     handleSubscribe('LITE', billingPeriod)
   }, [handleSubscribe, billingPeriod])
 
   const handleProSubscribe = useCallback(() => {
-    console.log('🟪 Proプランボタンがクリックされました', { billingPeriod })
     handleSubscribe('PRO', billingPeriod)
   }, [handleSubscribe, billingPeriod])
 
@@ -400,7 +322,6 @@ export default function SubscriptionForm({
           onPortalAction={handleBillingPortal}
           isSubmitting={isSubmitting}
           highlightColor="from-palette-2-foreground to-palette-2-foreground"
-          delay={0}
         />
 
         {/* Pro プラン */}
@@ -428,7 +349,6 @@ export default function SubscriptionForm({
           isSubmitting={isSubmitting}
           isPopular={false}
           highlightColor="from-palette-3-foreground to-palette-3-foreground"
-          delay={0.1}
         />
       </div>
 

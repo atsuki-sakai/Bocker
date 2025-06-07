@@ -101,21 +101,29 @@ export async function GET(req: NextRequest) {
 // 招待の再送
 export async function POST(req: NextRequest) {
   try {
+    console.log('🔄 招待再送処理開始')
+    
     // 1. 認証チェック
     const user = await currentUser()
     if (!user) {
+      console.log('❌ 認証失敗')
       return NextResponse.json(
         { error: '認証が必要です' },
         { status: 401 }
       )
     }
     const userId = user.id
+    console.log('✅ 認証成功:', userId)
 
     // 2. リクエストボディから再送に必要な情報を取得
-    const { staff_id, invitation_id } = await req.json()
+    const body = await req.json()
+    console.log('📦 受信データ:', body)
+    
+    const { staff_id, invitation_id } = body
 
     // 3. 必須パラメータの検証
     if (!staff_id) {
+      console.log('❌ staff_idが不足')
       return NextResponse.json(
         { error: 'staff_idが必要です' },
         { status: 400 }
@@ -123,18 +131,27 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Convexからスタッフ情報を取得
+    console.log('🔍 スタッフ情報取得中:', staff_id)
     const staffData = await convex.query(api.staff.invitation.query.getStaffWithInvitation, {
       staff_id: staff_id as Id<"staff">,
     })
 
     if (!staffData) {
+      console.log('❌ スタッフが見つかりません')
       return NextResponse.json(
         { error: 'スタッフが見つかりません' },
         { status: 404 }
       )
     }
 
+    console.log('✅ スタッフ情報取得成功:', { 
+      name: staffData.name, 
+      email: staffData.email,
+      status: staffData.invitationStatus 
+    })
+
     if (staffData.invitationStatus === 'accepted') {
+      console.log('❌ 既に受諾済み')
       return NextResponse.json(
         { error: '既に受諾済みの招待です' },
         { status: 400 }
@@ -143,19 +160,28 @@ export async function POST(req: NextRequest) {
 
     // 5. 古い招待をキャンセル（存在する場合）
     if (invitation_id) {
+      console.log('🗑️ 古い招待をキャンセル中:', invitation_id)
       try {
         const clerk = await clerkClient()
         await clerk.invitations.revokeInvitation(invitation_id)
+        console.log('✅ 古い招待のキャンセル成功')
       } catch (revokeError) {
-        console.warn('古い招待のキャンセルに失敗:', revokeError)
+        console.warn('⚠️ 古い招待のキャンセルに失敗:', revokeError)
+        // 続行（招待が既に無効の可能性）
       }
     }
 
-    // 6. 新しい招待を作成（再送）
+    // 6. リダイレクトURLの確認
+    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite-accept`
+    console.log('🔗 リダイレクトURL:', redirectUrl)
+
+    // 7. 新しい招待を作成（再送）
+    console.log('📧 新しい招待を作成中...')
     const clerk = await clerkClient()
-    const invitation = await clerk.invitations.createInvitation({
+    
+    const invitationParams = {
       emailAddress: staffData.email,
-      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/invite-accept`,
+      redirectUrl,
       publicMetadata: {
         tenant_id: staffData.tenant_id,
         org_id: staffData.org_id,
@@ -170,7 +196,13 @@ export async function POST(req: NextRequest) {
       },
       notify: true,
       ignoreExisting: true,
-    })
+    }
+    
+    console.log('🚀 招待パラメータ:', JSON.stringify(invitationParams, null, 2))
+    
+    const invitation = await clerk.invitations.createInvitation(invitationParams)
+    
+    console.log('✅ 招待作成成功:', invitation.id)
 
     return NextResponse.json({
       success: true,
@@ -179,7 +211,27 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error: unknown) {
-    console.error('招待再送エラー:', error)
+    console.error('❌ 招待再送エラー:', error)
+    
+    // エラーの詳細をログ出力
+    if (error && typeof error === 'object') {
+      console.error('📋 エラー詳細:', JSON.stringify(error, null, 2))
+    }
+    
+    // Clerkのエラーレスポンスを解析
+    if (error && typeof error === 'object' && 'errors' in error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const clerkErrors = error.errors as any[]
+      console.error('🏢 Clerkエラー:', clerkErrors)
+      
+      if (clerkErrors?.[0]?.code === 'form_identifier_exists') {
+        return NextResponse.json(
+          { error: 'このメールアドレスは既にClerkに登録されています' },
+          { status: 400 }
+        )
+      }
+    }
+    
     return NextResponse.json(
       { error: '招待の再送に失敗しました' },
       { status: 500 }
