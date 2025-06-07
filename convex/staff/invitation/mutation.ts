@@ -1,6 +1,5 @@
 import { v } from 'convex/values';
 import { mutation } from '../../_generated/server';
-import { genderType } from '../../types';
 import { archiveRecord, updateRecord, createRecord } from '@/convex/utils/helpers';
 import { roleType } from '@/convex/types';
 
@@ -13,49 +12,28 @@ export const createWithInvitation = mutation({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    name: v.string(),
     email: v.string(),
-    gender: genderType,
-    age: v.optional(v.number()),
-    instagram_link: v.optional(v.string()),
-    description: v.optional(v.string()),
-    tags: v.array(v.string()),
-    // 事前設定情報
-    extra_charge: v.optional(v.number()),
-    priority: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
   
     // 注: メールアドレスの重複チェックはフロントエンドで実施済み
     
     // スタッフレコード作成（clerk_user_id = null で招待中を示す）
-    // 一時的に基本情報も保存（招待受諾時にstaff_configに移行）
     const staffId = await createRecord(ctx, 'staff', {
       tenant_id: args.tenant_id,
       org_id: args.org_id,
       connect_clerk: true,
       clerk_user_id: undefined, // 招待中のため null
-      name: args.name,
-      description: args.description,
+      name: '未設定', // 招待受諾後に設定
+      description: undefined,
       images: [],
       is_active: false, // 招待受諾まで非アクティブ
     });
 
-    // 事前設定情報も保存（staff_configは招待受諾時に作成）
-    // 返却値に含めて、API側で管理する
+    // staff_configは招待受諾後に作成するため、ここでは作成しない
+
     return {
       staffId,
-      basicInfo: {
-        email: args.email,
-        gender: args.gender,
-        age: args.age,
-        instagram_link: args.instagram_link,
-        tags: args.tags,
-      },
-      preConfig: {
-        extra_charge: args.extra_charge,
-        priority: args.priority,
-      }
     };
   },
 });
@@ -90,15 +68,29 @@ export const acceptInvitation = mutation({
       is_active: true,
     });
 
-    // staff_config作成（publicMetadataまたは一時保存データから取得）
-    await createRecord(ctx, 'staff_config', {
-      tenant_id: staff.tenant_id,
-      org_id: staff.org_id,
-      staff_id: args.staff_id,
-      role: args.role || 'staff',
-      tags: [],
-      featured_hair_images: [],
-    });
+    // staff_configが既に存在するか確認
+    const existingConfig = await ctx.db
+      .query('staff_config')
+      .withIndex('by_tenant_org_staff_archive', (q) => 
+        q.eq('tenant_id', staff.tenant_id)
+         .eq('org_id', staff.org_id)
+         .eq('staff_id', args.staff_id)
+         .eq('is_archive', false)
+      )
+      .first();
+
+    if (!existingConfig) {
+      // staff_config作成（初期値のみ設定）
+      await createRecord(ctx, 'staff_config', {
+        tenant_id: staff.tenant_id,
+        org_id: staff.org_id,
+        staff_id: args.staff_id,
+        role: args.role || 'staff',
+        tags: [],
+        featured_hair_images: [],
+        gender: 'unselected',
+      });
+    }
 
     // 週次スケジュールの初期化（全曜日休み）
     const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
