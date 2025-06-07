@@ -66,6 +66,10 @@ export async function GET(req: NextRequest) {
         // Convexデータ
         staff_id: staff._id,
         name: staff.name,
+        email: staff.temp_email || clerkInvitation?.emailAddress || '',
+        gender: staff.temp_gender || 'unselected',
+        age: staff.temp_age,
+        tags: staff.temp_tags || [],
         created_at: staff._creationTime,
         
         // Clerk招待データ
