@@ -32,22 +32,12 @@ export async function POST(req: NextRequest) {
       email, 
       tenant_id, 
       org_id, 
-      role,
-      // スタッフ基本情報
-      name,
-      gender,
-      age,
-      instagram_link,
-      description,
-      tags,
-      // 事前設定情報
-      extra_charge,
-      priority
+      role
     } = await req.json()
-    console.log('📦 受信データ:', { email, tenant_id, org_id, role, name })
+    console.log('📦 受信データ:', { email, tenant_id, org_id, role })
 
     // 3. 必須パラメータの検証
-    if (!email || !tenant_id || !org_id || !role || !name || !gender) {
+    if (!email || !tenant_id || !org_id || !role) {
       console.log('❌ パラメータ不足')
       return NextResponse.json(
         { error: '必要なパラメータが不足しています' },
@@ -70,15 +60,7 @@ export async function POST(req: NextRequest) {
     const result = await convex.mutation(api.staff.invitation.mutation.createWithInvitation, {
       tenant_id: tenant_id as Id<"tenant">,
       org_id: org_id as Id<"organization">,
-      name,
       email,
-      gender,
-      age,
-      instagram_link,
-      description,
-      tags: tags || [],
-      extra_charge,
-      priority,
     })
 
     console.log('✅ Convexスタッフレコード作成成功:', result.staffId)
