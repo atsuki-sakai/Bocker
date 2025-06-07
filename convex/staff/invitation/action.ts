@@ -14,7 +14,7 @@ export const checkEmailAvailability = action({
       org_id: v.id('organization'),
       email: v.string(),
     },
-    handler: async (ctx, args) => {
+    handler: async (_, args) => {
       try {
         // Clerkのクライアントを作成 サーバーサイドでのみ使用
         const { createClerkClient } = await import('@clerk/backend');
