@@ -53,30 +53,6 @@ export const list = query({
   },
 })
 
-
-
-// テナントIDと組織IDとメールアドレスでスタッフを検索
-export const findByEmail = query({
-  args: {
-    tenant_id: v.id('tenant'),
-    org_id: v.id('organization'),
-    email: v.string(),
-  },
-  handler: async (ctx, args) => {
-    checkAuth(ctx)
-    return await ctx.db
-      .query('staff')
-      .withIndex('by_tenant_org_active_archive', (q) =>
-        q
-          .eq('tenant_id', args.tenant_id)
-          .eq('org_id', args.org_id)
-      )
-      .filter((q) => q.eq(q.field('email'), args.email))
-      .filter((q) => q.eq(q.field('is_archive'), false))
-      .first()
-  },
-})
-
 // ClerkユーザーIDからスタッフを検索
 export const findByClerkUserId = query({
   args: {
@@ -140,10 +116,6 @@ export const getRelatedTables = query({
       staff_id: staff._id,
       clerk_user_id: staff.clerk_user_id,
       name: staff.name,
-      age: staff.age,
-      email: staff.email,
-      instagram_link: staff.instagram_link,
-      gender: staff.gender,
       description: staff.description,
       images: staff.images ? [
         ...staff.images.map((image) => ({
@@ -151,8 +123,11 @@ export const getRelatedTables = query({
           thumbnail_url: image.thumbnail_url,
         })),
       ] : [],
+      tags: staff_config.tags,
+      age: staff_config.age,
+      gender: staff_config.gender,
+      instagram_link: staff_config.instagram_link,
       is_active: staff.is_active,
-      tags: staff.tags,
       role: staff_config.role,
       staff_config_id: staff_config._id,
       extra_charge: staff_config.extra_charge,
@@ -220,9 +195,9 @@ export const findAvailableStaffByMenu = query({
       return {
         _id: staff._id,
         name: staff.name,
-        age: staff.age,
-        email: staff.email,
-        gender: staff.gender,
+        age: config?.age,
+        gender: config?.gender,
+        instagram_link: config?.instagram_link,
         description: staff.description,
         images: staff.images ? [
           ...staff.images.map((image) => ({
@@ -306,10 +281,9 @@ export const listDisplayData = query({
     return staffs.map((staff) => ({
       _id: staff._id,
       name: staff.name,
-      age: staff.age,
-      email: staff.email,
-      instagram_link: staff.instagram_link,
-      gender: staff.gender,
+      age: staffConfigs.find((config) => config.staff_id === staff._id)?.age,
+      instagram_link: staffConfigs.find((config) => config.staff_id === staff._id)?.instagram_link,
+      gender: staffConfigs.find((config) => config.staff_id === staff._id)?.gender,
       description: staff.description,
       images: staff.images ? [
         ...staff.images.map((image) => ({
@@ -318,16 +292,10 @@ export const listDisplayData = query({
         })),
       ] : [],
       is_active: staff.is_active,
-      tags: staff.tags,
       _creationTime: staff._creationTime,
       extra_charge: staffConfigs.find((config) => config.staff_id === staff._id)?.extra_charge,
       priority: staffConfigs.find((config) => config.staff_id === staff._id)?.priority,
-      featured_hair_images: staff.featured_hair_images ? [
-        ...staff.featured_hair_images.map((image) => ({
-          original_url: image.original_url,
-          thumbnail_url: image.thumbnail_url,
-        })),
-      ] : [],
+      featured_hair_images: staffConfigs.find((config) => config.staff_id === staff._id)?.featured_hair_images,
     }))
   },
 })
@@ -393,9 +361,9 @@ export const findByAvailableStaffs = query({
       return {
         _id: staff._id,
         name: staff.name,
-        age: staff.age,
-        email: staff.email,
-        gender: staff.gender,
+        age: config?.age,
+        instagram_link: config?.instagram_link,
+        gender: config?.gender,
         description: staff.description,
         images: staff.images ? [
           ...staff.images.map((image) => ({
@@ -404,11 +372,9 @@ export const findByAvailableStaffs = query({
           })),
         ] : [],
         is_active: staff.is_active,
-        tags: staff.tags,
         _creationTime: staff._creationTime,
-        instagram_link: staff.instagram_link,
-        featured_hair_images: staff.featured_hair_images ? [
-          ...staff.featured_hair_images.map((image) => ({
+        featured_hair_images: config?.featured_hair_images ? [
+          ...config?.featured_hair_images.map((image) => ({
             original_url: image.original_url,
             thumbnail_url: image.thumbnail_url,
           })),

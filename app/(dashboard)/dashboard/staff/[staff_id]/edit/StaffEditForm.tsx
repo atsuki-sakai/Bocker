@@ -268,18 +268,14 @@ export default function StaffEditForm() {
 
       // スタッフの基本情報を追加
       staffId = await staffUpsert({
-        tenant_id: tenantId,
-        org_id: orgId,
+        tenant_id: staffAllData?.tenant_id as Id<'tenant'>, // テナントID
+        org_id: staffAllData?.org_id as Id<'organization'>, // 店舗ID
         staff_id: staff_id as Id<'staff'>,
-        name: data.name,
-        age: data.age ?? undefined,
-        email: data.email,
-        instagram_link: data.instagram_link ?? undefined,
-        gender: data.gender,
-        description: data.description,
-        images: newUploadedImages,
-        tags: data.tags ?? [],
-        is_active: true,
+        clerk_user_id: staffAllData?.clerk_user_id, // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
+        name: data.name, // スタッフ名
+        description: data.description, // 自己紹介
+        images: newUploadedImages, // 画像
+        is_active: true, // 有効/無効
       })
 
       if (newUploadedImages.length > 0 && staffAllData?.images && staffAllData?.images.length > 0) {
@@ -299,13 +295,18 @@ export default function StaffEditForm() {
       try {
         // スタッフの設定情報を追加
         staffConfigId = await staffConfigUpsert({
-          tenant_id: tenantId,
-          org_id: orgId,
-          staff_id: staff_id as Id<'staff'>,
           staff_config_id: staffAllData?.staff_config_id as Id<'staff_config'>,
-          role: data.role,
-          extra_charge: data.extra_charge ?? undefined,
-          priority: data.priority ?? undefined,
+          tenant_id: staffAllData?.tenant_id as Id<'tenant'>, // テナントID
+          org_id: staffAllData?.org_id as Id<'organization'>, // 店舗ID
+          staff_id: staff_id as Id<'staff'>, // スタッフID
+          age: data.age ?? undefined, // 年齢
+          gender: data.gender, // 性別
+          instagram_link: data.instagram_link ?? undefined, // インスタグラムリンク
+          tags: data.tags ?? [], // タグ
+          role: data.role, // ロール
+          featured_hair_images: [], // フィーチャー画像
+          extra_charge: data.extra_charge ?? undefined, // 追加料金
+          priority: data.priority ?? undefined, // 優先度
         })
 
         // 除外メニューを更新
@@ -437,7 +438,6 @@ export default function StaffEditForm() {
         // フォームの初期値をリセット
         reset({
           name: staffAllData.name,
-          email: staffAllData.email,
           instagram_link: staffAllData.instagram_link,
           gender: staffAllData.gender,
           age: staffAllData.age,

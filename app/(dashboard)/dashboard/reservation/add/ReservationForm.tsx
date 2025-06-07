@@ -147,15 +147,13 @@ type AvailableStaff = {
   _id: Id<'staff'>
   name: string
   age: number | undefined
-  email: string
-  gender: 'unselected' | 'male' | 'female'
-  description: string | undefined
-  images: ImageType[]
-  is_active: boolean
-  tags: string[]
-  _creationTime: number
   instagram_link: string | undefined
-  featured_hair_images: ImageType[]
+  gender: Gender | undefined
+  description: string | undefined
+  images: ImageType[] | undefined
+  is_active: boolean
+  _creationTime: number
+  featured_hair_images: ImageType[] | undefined
   extra_charge: number | undefined
   priority: number | undefined
   week_schedules:
@@ -1071,7 +1069,7 @@ export default function ReservationForm() {
                     <div className="flex flex-col bg-active-foreground p-3 rounded-md border border-active mt-3">
                       <p className="text-active text-sm font-bold mb-2">選択中のスタッフ</p>
                       <div className="flex items-center gap-2">
-                        {selectStaff?.images[0]?.original_url ? (
+                        {selectStaff?.images?.[0]?.original_url ? (
                           <Image
                             src={selectStaff.images[0].original_url}
                             alt={selectStaff?.name ?? ''}
@@ -1448,7 +1446,7 @@ export default function ReservationForm() {
           <div className="flex flex-col gap-2 mb-4">
             <p className="text-muted-foreground text-xs text-nowrap">施術者</p>
             <div className="flex items-center gap-2 bg-background p-2 border-b border-border">
-              {selectStaff?.images[0]?.thumbnail_url ? (
+              {selectStaff?.images?.[0]?.thumbnail_url ? (
                 <Avatar className="w-8 h-8">
                   <AvatarImage
                     className="object-cover"

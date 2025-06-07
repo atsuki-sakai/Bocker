@@ -12,27 +12,18 @@ import { MAX_NOTES_LENGTH } from '../constants';
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'), // テナントID
-    org_id: v.id('organization'), // 組織ID
-    clerk_user_id: v.optional(v.string()), // Clerk ユーザーID (null=招待中,undefined=作成時に招待しない, 存在=受諾済み)
+    org_id: v.id('organization'), // 店舗ID
+    clerk_user_id: v.optional(v.string()), // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
     name: v.string(), // スタッフ名
-    age: v.optional(v.number()), // 年齢
-    email: v.string(), // メールアドレス
-    gender: genderType, // 性別
-    instagram_link: v.optional(v.string()), // インスタグラムリンク
     description: v.optional(v.string()), // 自己紹介
     images: v.array(imageType), // 画像
-    tags: v.array(v.string()), // タグ
     is_active: v.boolean(), // 有効/無効
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
     validateRequired(args.name, 'name');
-    validateEmail(args.email, 'email');
-    validateRequired(args.gender, 'gender');
     validateStringLength(args.name, 'name');
     validateStringLength(args.description, 'description', MAX_NOTES_LENGTH);
-    validateStringLength(args.instagram_link, 'instagram_link');
-    validateTags(args.tags, 'tags');
     // スタッフの存在確認
     const existingStaff = await ctx.db
       .query('staff')
@@ -40,7 +31,7 @@ export const create = mutation({
         q
           .eq('tenant_id', args.tenant_id)
           .eq('org_id', args.org_id)
-      ).filter((q) => q.eq(q.field('email'), args.email))
+      ).filter((q) => q.eq(q.field('clerk_user_id'), args.clerk_user_id))
       .filter((q) => q.eq(q.field('is_archive'), false))
       .first()
     if (existingStaff) {
@@ -58,13 +49,8 @@ export const create = mutation({
       org_id: args.org_id, // 組織ID
       clerk_user_id: args.clerk_user_id, // 通常作成時はclerk_user_idは設定しない
       name: args.name, // スタッフ名
-      age: args.age, // 年齢
-      email: args.email, // メールアドレス
-      gender: args.gender, // 性別
-      instagram_link: args.instagram_link, // インスタグラムリンク 
       description: args.description, // 自己紹介
       images: args.images, // 画像
-      tags: args.tags, // タグ
       is_active: args.is_active, // 有効/無効
     })
   },
@@ -75,24 +61,15 @@ export const update = mutation({
   args: {
     staff_id: v.id('staff'),
     name: v.optional(v.string()),
-    age: v.optional(v.number()),
-    email: v.optional(v.string()),
-    instagram_link: v.optional(v.string()),
-    gender: v.optional(genderType),
     description: v.optional(v.string()),
     images: v.optional(v.array(imageType)),
     is_active: v.optional(v.boolean()),
-    tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
     validateRequired(args.name, 'name');
-    validateEmail(args.email, 'email');
-    validateRequired(args.gender, 'gender');
     validateStringLength(args.name, 'name');
     validateStringLength(args.description, 'description', MAX_NOTES_LENGTH);
-    validateStringLength(args.instagram_link, 'instagram_link');
-    validateTags(args.tags, 'tags');
     // スタッフの存在確認
     const staff = await ctx.db.get(args.staff_id)
     if (!staff || staff.is_archive) {
@@ -129,24 +106,15 @@ export const upsert = mutation({
     clerk_user_id: v.optional(v.string()), // Clerk ユーザーID (null=招待中,undefined=作成時に招待しない, 存在=受諾済み)
     staff_id: v.id('staff'),
     name: v.string(), // スタッフ名
-    age: v.optional(v.number()), // 年齢
-    email: v.string(), // メールアドレス
-    gender: genderType, // 性別
-    instagram_link: v.optional(v.string()), // インスタグラムリンク 
     description: v.optional(v.string()), // 自己紹介
     images: v.array(imageType), // 画像
-    tags: v.array(v.string()), // タグ
     is_active: v.boolean(), // 有効/無効
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
     validateRequired(args.name, 'name');
-    validateEmail(args.email, 'email');
-    validateRequired(args.gender, 'gender');
     validateStringLength(args.name, 'name');
     validateStringLength(args.description, 'description', MAX_NOTES_LENGTH);
-    validateStringLength(args.instagram_link, 'instagram_link');
-    validateTags(args.tags, 'tags');
     const existingStaff = await ctx.db.get(args.staff_id)
 
     if (!existingStaff || existingStaff.is_archive) {
@@ -219,34 +187,3 @@ export const removeImages = mutation({
   },
 })
 
-// Clerkのメールアドレス変更時の同期用
-export const updateEmailByClerkId = mutation({
-  args: {
-    clerk_user_id: v.string(),
-    email: v.string(),
-  },
-  handler: async (ctx, args) => {
-    checkAuth(ctx);
-    
-    // clerk_user_idでスタッフを検索
-    const staff = await ctx.db
-      .query('staff')
-      .withIndex('by_clerk_archive', (q) => q.eq('clerk_user_id', args.clerk_user_id))
-      .first();
-    
-    if (!staff) {
-      throw new ConvexError({
-        message: '指定されたスタッフが見つかりません',
-        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'staff.mutation.updateEmailByClerkId',
-        details: { clerk_user_id: args.clerk_user_id },
-      });
-    }
-    
-    // メールアドレスを更新
-    return await updateRecord(ctx, staff._id, {
-      email: args.email,
-    });
-  },
-})

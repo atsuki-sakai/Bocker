@@ -5,17 +5,22 @@ import { checkAuth } from '@/convex/utils/auth';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
 import { validateNumberLength } from '@/convex/utils/validations';
-import { roleType } from '@/convex/types';
+import { roleType, genderType, imageType } from '@/convex/types';
 
 // スタッフ詳細設定の追加
 export const create = mutation({
   args: {
-    tenant_id: v.id('tenant'),
-    staff_id: v.id('staff'),
-    org_id: v.id('organization'),
-    role: roleType,
-    extra_charge: v.optional(v.number()),
-    priority: v.optional(v.number()),
+    tenant_id: v.id('tenant'), // テナントID
+    org_id: v.id('organization'), // 店舗ID
+    staff_id: v.id('staff'), // スタッフID
+    age: v.optional(v.number()), // 年齢
+    gender: genderType, // 性別
+    instagram_link: v.optional(v.string()), // インスタグラムリンク
+    tags: v.array(v.string()), // タグ
+    role: roleType, // ロール
+    featured_hair_images: v.optional(v.array(imageType)), // フィーチャー画像
+    extra_charge: v.optional(v.number()), // 追加料金
+    priority: v.optional(v.number()), // 優先度
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -52,10 +57,18 @@ export const create = mutation({
 // スタッフ設定情報の更新
 export const update = mutation({
   args: {
-    staff_config_id: v.id('staff_config'),
-    role: v.optional(roleType),
-    extra_charge: v.optional(v.number()),
-    priority: v.optional(v.number()),
+    tenant_id: v.id('tenant'), // テナントID
+    org_id: v.id('organization'), // 店舗ID
+    staff_id: v.id('staff'), // スタッフID
+    staff_config_id: v.id('staff_config'), // スタッフ設定ID
+    age: v.optional(v.number()), // 年齢
+    gender: genderType, // 性別
+    instagram_link: v.optional(v.string()), // インスタグラムリンク
+    tags: v.array(v.string()), // タグ
+    role: roleType, // ロール
+    featured_hair_images: v.optional(v.array(imageType)), // フィーチャー画像
+    extra_charge: v.optional(v.number()), // 追加料金
+    priority: v.optional(v.number()), // 優先度
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -111,13 +124,18 @@ export const archive = mutation({
 
 export const upsert = mutation({
   args: {
-    tenant_id: v.id('tenant'),
-    org_id: v.id('organization'),
-    staff_config_id: v.id('staff_config'),
-    staff_id: v.id('staff'),
-    role: roleType,
-    extra_charge: v.optional(v.number()),
-    priority: v.optional(v.number()),
+    tenant_id: v.id('tenant'), // テナントID
+    org_id: v.id('organization'), // 店舗ID
+    staff_id: v.id('staff'), // スタッフID
+    staff_config_id: v.id('staff_config'), // スタッフ設定ID
+    age: v.optional(v.number()), // 年齢
+    gender: genderType, // 性別
+    instagram_link: v.optional(v.string()), // インスタグラムリンク
+    tags: v.array(v.string()), // タグ
+    role: roleType, // ロール
+    featured_hair_images: v.optional(v.array(imageType)), // フィーチャー画像
+    extra_charge: v.optional(v.number()), // 追加料金
+    priority: v.optional(v.number()), // 優先度
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -125,10 +143,7 @@ export const upsert = mutation({
     validateNumberLength(args.priority, 'priority');
     const existingStaffConfig = await ctx.db.get(args.staff_config_id);
     if (!existingStaffConfig || existingStaffConfig.is_archive) {
-      return await ctx.db.insert('staff_config', {
-        ...args,
-        is_archive: false,
-      });
+      return await createRecord(ctx, 'staff_config', args);
     } else {
       const updateData = excludeFields(args, ['staff_config_id', 'staff_id', 'tenant_id', 'org_id']);
       return await updateRecord(ctx, existingStaffConfig._id, updateData);

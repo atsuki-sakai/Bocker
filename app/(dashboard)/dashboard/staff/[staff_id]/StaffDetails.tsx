@@ -21,13 +21,12 @@ import {
 import { Instagram } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 // アイコン
-import { User, Trash, Star, Tag, Mail, Calendar, Info, FileEdit } from 'lucide-react'
+import { User, Trash, Star, Tag, Mail, Calendar, FileEdit } from 'lucide-react'
 import { MAX_PRIORITY } from '@/convex/constants'
 
 export default function StaffDetails() {
@@ -275,33 +274,6 @@ export default function StaffDetails() {
                       </p>
                     </div>
                   </div>
-
-                  {/* メールアドレス */}
-                  {staffAllData.email && (
-                    <div className="flex justify-between  p-3 rounded-lg border border-palette-3-foreground bg-palette-3 transition-shadow overflow-hidden">
-                      <div className="flex flex-col gap-1 w-full">
-                        <div className="flex items-center gap-2 text-palette-3-foreground">
-                          <Mail className="h-4 w-4" />
-                          <p className="text-xs font-bold">メールアドレス</p>
-                        </div>
-                        <p className="font-bold text-sm text-palette-3-foreground text-clip w-full truncate">
-                          {staffAllData.email || '未設定'}
-                        </p>
-                      </div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-link-foreground self-start cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">
-                            <p className="text-xs max-w-xs">
-                              メールアドレスはスタッフのログインに使用されます
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  )}
                 </div>
 
                 {/* 対応外メニュー表示 */}

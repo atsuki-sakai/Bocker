@@ -83,10 +83,12 @@ export default function ReservationPage() {
   )
 
   const staff = useQuery(
-    api.staff.query.getById,
+    api.staff.query.getRelatedTables,
     reservationData?.reservation?.staff_id
       ? {
-          id: reservationData.reservation.staff_id as Id<'staff'>,
+          tenant_id: reservationData.reservation.tenant_id,
+          org_id: reservationData.reservation.org_id,
+          staff_id: reservationData.reservation.staff_id as Id<'staff'>,
         }
       : 'skip'
   )

@@ -66,10 +66,6 @@ export async function GET(req: NextRequest) {
         // Convexデータ
         staff_id: staff._id,
         name: staff.name,
-        email: staff.email,
-        gender: staff.gender,
-        age: staff.age,
-        tags: staff.tags,
         created_at: staff._creationTime,
         
         // Clerk招待データ
@@ -119,7 +115,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     console.log('📦 受信データ:', body)
     
-    const { staff_id, invitation_id } = body
+    const { staff_id, invitation_id, email } = body
 
     // 3. 必須パラメータの検証
     if (!staff_id) {
@@ -130,9 +126,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 4. Convexからスタッフ情報を取得
+    // 4. Convexからスタッフ情報を取得（一時的な情報含む）
     console.log('🔍 スタッフ情報取得中:', staff_id)
-    const staffData = await convex.query(api.staff.invitation.query.getStaffWithInvitation, {
+    const staffData = await convex.query(api.staff.invitation.query.getCompleteStaffData, {
       staff_id: staff_id as Id<"staff">,
     })
 
@@ -146,7 +142,7 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ スタッフ情報取得成功:', { 
       name: staffData.name, 
-      email: staffData.email,
+      clerk_user_id: staffData.clerk_user_id,
       status: staffData.invitationStatus 
     })
 
@@ -180,7 +176,7 @@ export async function POST(req: NextRequest) {
     const clerk = await clerkClient()
     
     const invitationParams = {
-      emailAddress: staffData.email,
+      emailAddress: email || staffData.tempData?.email || 'no-email',
       redirectUrl,
       publicMetadata: {
         tenant_id: staffData.tenant_id,
@@ -193,6 +189,11 @@ export async function POST(req: NextRequest) {
         invited_by: userId,
         invited_at: new Date().toISOString(),
         resent: true, // 再送フラグ
+        // 基本情報（configがあればそちらを、なければ一時保存データを使用）
+        gender: staffData.config?.gender || staffData.tempData?.gender,
+        age: staffData.config?.age || staffData.tempData?.age,
+        instagram_link: staffData.config?.instagram_link || staffData.tempData?.instagram_link,
+        tags: staffData.config?.tags || staffData.tempData?.tags || [],
       },
       notify: true,
       ignoreExisting: true,

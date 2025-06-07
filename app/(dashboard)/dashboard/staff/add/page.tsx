@@ -7,7 +7,7 @@ import { TagInput } from '@/components/common'
 import { DashboardSection } from '@/components/common'
 import { useZodForm } from '@/hooks/useZodForm'
 import { useMutation } from 'convex/react'
-import { fetchQuery } from 'convex/nextjs'
+import { fetchAction, fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -188,8 +188,8 @@ export default function StaffAddPage() {
           setIsLoading(false)
           return
         }
-        const emailCheckResult = await fetchQuery(
-          api.staff.invitation.query.checkEmailAvailability,
+        const emailCheckResult = await fetchAction(
+          api.staff.invitation.action.checkEmailAvailability,
           {
             tenant_id: tenantId,
             org_id: orgId,
@@ -198,9 +198,7 @@ export default function StaffAddPage() {
         )
 
         if (!emailCheckResult.isAvailable) {
-          toast.error(
-            `このメールアドレスは既に登録されています: ${emailCheckResult.existingStaff?.name}`
-          )
+          toast.error(`このメールアドレスは既に登録されています`)
           setIsLoading(false)
           return
         }
@@ -293,18 +291,13 @@ export default function StaffAddPage() {
         // スタッフの基本情報を追加
         try {
           staffId = await staffAdd({
-            instagram_link: data.instagram_link ?? undefined,
-            age: data.age ?? undefined,
-            description: data.description ?? undefined,
-            name: data.name,
-            email: data.email,
-            gender: data.gender,
-            images: newUploadedImageUrls ? newUploadedImageUrls : data.images,
-            is_active: data.is_active,
-            tags: data.tags,
-            tenant_id: tenantId,
-            org_id: orgId,
-            clerk_user_id: sendInviteEmail ? undefined : 'NOT_INVITED',
+            tenant_id: tenantId, // テナントID
+            org_id: orgId, // 店舗ID
+            clerk_user_id: sendInviteEmail ? undefined : 'NOT_INVITED', // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
+            name: data.name, // スタッフ名
+            description: data.description ?? undefined, // 自己紹介
+            images: newUploadedImageUrls ? newUploadedImageUrls : data.images, // 画像
+            is_active: data.is_active, // 有効/無効
           })
         } catch (creationError) {
           console.log('creationError type: ', typeof creationError)
@@ -315,12 +308,17 @@ export default function StaffAddPage() {
         }
         // スタッフの設定情報を追加
         staffConfigId = await staffConfigAdd({
-          staff_id: staffId,
-          tenant_id: tenantId,
-          org_id: orgId,
-          role: data.role,
-          extra_charge: data.extra_charge ?? undefined,
-          priority: data.priority ?? undefined,
+          tenant_id: tenantId, // テナントID
+          org_id: orgId, // 店舗ID
+          staff_id: staffId, // スタッフID
+          age: data.age ?? undefined, // 年齢
+          gender: data.gender, // 性別
+          instagram_link: data.instagram_link ?? undefined, // インスタグラムリンク
+          tags: data.tags, // タグ
+          role: data.role, // ロール
+          featured_hair_images: [], // フィーチャー画像
+          extra_charge: data.extra_charge ?? undefined, // 追加料金
+          priority: data.priority ?? undefined, // 優先度
         })
 
         // スタッフの対応外メニューを追加
