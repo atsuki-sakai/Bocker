@@ -2,9 +2,9 @@
 
 import { action } from '../../_generated/server';
 import { v } from 'convex/values';
-import { auth, clerkClient } from '@clerk/nextjs/server';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
+import { checkAuth } from '../../utils/auth';
 
 /**
  * Staffのメールアドレス重複チェック(Clerkでのメールアドレス重複チェック)
@@ -17,10 +17,9 @@ export const checkEmailAvailability = action({
     },
     handler: async (ctx, args) => {
       try {
-        const authData = await auth();
-        const clerk = await clerkClient();
+        const identity = await checkAuth(ctx);
         
-        if (!authData.userId) {
+        if (!identity) {
           throw new ConvexError({
             message: '認証が必要です',
             statusCode: ERROR_STATUS_CODE.UNAUTHORIZED,
@@ -31,6 +30,14 @@ export const checkEmailAvailability = action({
             details: { ...args },
           })
         }
+        
+        // Initialize Clerk client with API key for Convex actions
+
+        // Clerkのクライアントを作成 サーバーサイドでのみ使用
+        const { createClerkClient } = await import('@clerk/backend');
+        const clerk = createClerkClient({
+          secretKey: process.env.CLERK_SECRET_KEY
+        });
   
         // メールアドレスが既に登録されているかチェック
         try {
@@ -56,7 +63,7 @@ export const checkEmailAvailability = action({
         // 既存の招待もチェック
         const invitationList = await clerk.invitations.getInvitationList();
         const existingInvitation = invitationList.data.find(
-          inv => inv.emailAddress === args.email && inv.status === 'pending'
+          (inv: any) => inv.emailAddress === args.email && inv.status === 'pending'
         );
   
         if (existingInvitation) {

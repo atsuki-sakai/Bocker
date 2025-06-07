@@ -16,6 +16,7 @@
     "migrate:supabase": "ts-node scripts/migrate-to-supabase.ts"
   },
   "dependencies": {
+    "@clerk/backend": "^2.0.0",
     "@clerk/clerk-react": "^5.22.12",
     "@clerk/localizations": "^3.16.1",
     "@clerk/nextjs": "^6.11.2",
