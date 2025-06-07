@@ -55,89 +55,115 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExclusionMenu } from '@/components/common'
 
-const staffAddSchema = z.object({
-  name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH).optional().nullable(),
-  email: z.string().email({ message: 'メールアドレスが不正です' }).optional().nullable(),
-  instagram_link: z
-    .preprocess(
-      (val) => {
-        // val が文字列以外なら undefined
-        if (typeof val !== 'string') return undefined
-        // トリムして空文字なら undefined、それ以外はトリム済み文字列
-        const str = val.trim()
-        return str === '' ? undefined : str
-      },
-      // undefined が渡れば optional でスキップ、文字列なら URL バリデーション
-      z.string().url({ message: 'URLが不正です' }).optional()
-    )
-    .nullable(), // null も許容したい場合のみ残します
-  gender: z.enum(GENDER_VALUES).optional().nullable(),
-  age: z.preprocess(
-    (val) => {
-      // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null
-      // 数値に変換できない場合もnullを返す
-      const num = Number(val)
-      return isNaN(num) ? null : num
-    },
-    z.number().max(99, { message: '年齢は99以下で入力してください' }).nullable().optional()
-  ),
-  description: z
-    .string()
-    .min(1, { message: '説明は必須です' })
-    .max(MAX_NOTES_LENGTH)
-    .optional()
-    .nullable(),
-  images: z.array(
-    z.object({
-      original_url: z.string(),
-      thumbnail_url: z.string(),
-    })
-  ),
-  is_active: z.boolean(),
-  role: z.enum(ROLE_VALUES).optional().nullable(),
-  tags: z.preprocess(
-    (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
-    z
-      .string()
-      .max(100, { message: 'タグは合計100文字以内で入力してください' })
-      .transform((val) =>
-        val
-          ? val
-              .replace(/[,、]/g, ',')
-              .split(',')
-              .map((tag) => tag.trim())
-              .filter((tag) => tag !== '')
-          : []
+// sendInviteEmailフラグに応じて動的にバリデーションを変更するスキーマファクトリー関数
+const createStaffAddSchema = (sendInviteEmail: boolean) =>
+  z.object({
+    // 名前：招待メール送信時は任意、通常作成時は必須
+    name: sendInviteEmail
+      ? z.string().max(MAX_TEXT_LENGTH).optional().nullable()
+      : z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH).optional().nullable(),
+
+    // メールアドレス：招待メール送信時は必須、通常作成時は任意
+    email: sendInviteEmail
+      ? z
+          .string()
+          .min(1, { message: 'メールアドレスは必須です' })
+          .email({ message: 'メールアドレスが不正です' })
+      : z.string().email({ message: 'メールアドレスが不正です' }).optional().nullable(),
+
+    instagram_link: z
+      .preprocess(
+        (val) => {
+          // val が文字列以外なら undefined
+          if (typeof val !== 'string') return undefined
+          // トリムして空文字なら undefined、それ以外はトリム済み文字列
+          const str = val.trim()
+          return str === '' ? undefined : str
+        },
+        // undefined が渡れば optional でスキップ、文字列なら URL バリデーション
+        z.string().url({ message: 'URLが不正です' }).optional()
       )
-      .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
-  ),
-  extra_charge: z.preprocess(
-    (val) => {
-      // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null
-      // 数値に変換できない場合もnullを返す
-      const num = Number(val)
-      return isNaN(num) ? null : num
-    },
-    z
-      .number()
-      .max(99999, { message: '指名料金は99999円以下で入力してください' })
-      .nullable()
-      .optional()
-  ),
-  priority: z.preprocess(
-    (val) => {
-      // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null
-      // 数値に変換できない場合もnullを返す
-      const num = Number(val)
-      return isNaN(num) ? null : num
-    },
-    z.number().max(999, { message: '優先度は999以下で入力してください' }).nullable().optional()
-  ),
-  selected_menu_ids: z.array(z.string()).optional(),
-})
+      .nullable(), // null も許容したい場合のみ残します
+
+    gender: z.enum(GENDER_VALUES).optional().nullable(),
+
+    age: z.preprocess(
+      (val) => {
+        // 空文字列の場合はnullを返す
+        if (val === '' || val === null || val === undefined) return null
+        // 数値に変換できない場合もnullを返す
+        const num = Number(val)
+        return isNaN(num) ? null : num
+      },
+      z.number().max(99, { message: '年齢は99以下で入力してください' }).nullable().optional()
+    ),
+
+    // 説明：招待メール送信時は任意、通常作成時は必須
+    description: sendInviteEmail
+      ? z.string().max(MAX_NOTES_LENGTH).optional().nullable()
+      : z
+          .string()
+          .min(1, { message: '説明は必須です' })
+          .max(MAX_NOTES_LENGTH)
+          .optional()
+          .nullable(),
+
+    images: z.array(
+      z.object({
+        original_url: z.string(),
+        thumbnail_url: z.string(),
+      })
+    ),
+
+    is_active: z.boolean(),
+
+    role: z.enum(ROLE_VALUES).optional().nullable(),
+
+    tags: z.preprocess(
+      (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
+      z
+        .string()
+        .max(100, { message: 'タグは合計100文字以内で入力してください' })
+        .transform((val) =>
+          val
+            ? val
+                .replace(/[,、]/g, ',')
+                .split(',')
+                .map((tag) => tag.trim())
+                .filter((tag) => tag !== '')
+            : []
+        )
+        .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
+    ),
+
+    extra_charge: z.preprocess(
+      (val) => {
+        // 空文字列の場合はnullを返す
+        if (val === '' || val === null || val === undefined) return null
+        // 数値に変換できない場合もnullを返す
+        const num = Number(val)
+        return isNaN(num) ? null : num
+      },
+      z
+        .number()
+        .max(99999, { message: '指名料金は99999円以下で入力してください' })
+        .nullable()
+        .optional()
+    ),
+
+    priority: z.preprocess(
+      (val) => {
+        // 空文字列の場合はnullを返す
+        if (val === '' || val === null || val === undefined) return null
+        // 数値に変換できない場合もnullを返す
+        const num = Number(val)
+        return isNaN(num) ? null : num
+      },
+      z.number().max(999, { message: '優先度は999以下で入力してください' }).nullable().optional()
+    ),
+
+    selected_menu_ids: z.array(z.string()).optional(),
+  })
 
 export default function StaffAddPage() {
   const router = useRouter()
@@ -155,6 +181,9 @@ export default function StaffAddPage() {
   const staffKill = useMutation(api.staff.mutation.killRelatedTables)
   const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert)
 
+  // sendInviteEmailフラグに応じて動的にスキーマを生成
+  const staffAddSchema = createStaffAddSchema(sendInviteEmail)
+
   const {
     register,
     handleSubmit,
@@ -164,7 +193,7 @@ export default function StaffAddPage() {
     watch,
   } = useZodForm(staffAddSchema)
 
-  const onSubmit = async (data: z.infer<typeof staffAddSchema>) => {
+  const onSubmit = async (data: z.infer<ReturnType<typeof createStaffAddSchema>>) => {
     setIsLoading(true)
     let staffId: Id<'staff'> | null = null
     let staffConfigId: Id<'staff_config'> | null = null
@@ -237,16 +266,6 @@ export default function StaffAddPage() {
               tenant_id: tenantId,
               org_id: orgId,
               role: data.role,
-              // スタッフ基本情報
-              name: data.name,
-              gender: data.gender,
-              age: data.age,
-              instagram_link: data.instagram_link,
-              description: data.description,
-              tags: data.tags,
-              // 事前設定情報
-              extra_charge: data.extra_charge,
-              priority: data.priority,
             }),
           })
 
@@ -415,6 +434,7 @@ export default function StaffAddPage() {
     }
   }
 
+  // フォームの初期化とスキーマの再適用
   useEffect(() => {
     reset({
       name: '',
@@ -430,7 +450,7 @@ export default function StaffAddPage() {
       tags: [],
     })
     setCurrentTags([])
-  }, [reset])
+  }, [reset, sendInviteEmail]) // sendInviteEmailの変更時もリセット
 
   return (
     <DashboardSection
