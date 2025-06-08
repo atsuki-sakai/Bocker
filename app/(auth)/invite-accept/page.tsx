@@ -76,6 +76,28 @@ function InviteSignUpContent() {
             signInUrl="/sign-in"
             // サインアップ後のリダイレクト先
             fallbackRedirectUrl="/dashboard"
+            // 外観設定 - 既存のサインアップページと統一
+            appearance={{
+              elements: {
+                // フォームの外観調整
+                formButtonPrimary:
+                  'bg-primary hover:bg-primary/90 text-sm normal-case transition-colors',
+                card: 'shadow-none border-0 bg-background',
+                headerTitle: 'text-xl font-semibold text-primary',
+                headerSubtitle: 'text-sm text-muted-foreground',
+                socialButtonsBlockButton:
+                  'text-sm normal-case border border-border hover:bg-muted transition-colors',
+                formFieldInput:
+                  'border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors',
+                formFieldLabel: 'text-sm font-medium text-primary',
+                identityPreviewText: 'text-sm text-muted-foreground',
+                identityPreviewEditButton: 'text-primary hover:text-primary/80',
+                formFieldSuccessText: 'text-green-600',
+                formFieldErrorText: 'text-destructive',
+                footerActionText: 'text-muted-foreground',
+                footerActionLink: 'text-primary hover:text-primary/80',
+              },
+            }}
           />
         </motion.div>
 
