@@ -269,18 +269,8 @@ export default function OptionEditForm() {
           tags: data.tags, // zodで変換された配列 or undefined
           description: data.description,
           is_active: data.is_active,
-          // 新しい画像がある場合は新しいパス、ない場合は existingImageUrl を維持するか、削除の場合は undefined
-          images:
-            newUploadedImageUrls.length > 0
-              ? newUploadedImageUrls
-              : existingImageUrls.length > 0 && existingImageUrls[0]?.original_url
-                ? [
-                    {
-                      original_url: existingImageUrls[0].original_url,
-                      thumbnail_url: existingImageUrls[0].thumbnail_url,
-                    },
-                  ]
-                : [], // 配列が空なら空配列を渡す
+          // 新しい画像がある場合は新しいパス、ない場合は既存画像を維持
+          images: newUploadedImageUrls.length > 0 ? newUploadedImageUrls : (existingImageUrls || []),
           option_id: optionId, // idは必須
         }
 
@@ -329,7 +319,7 @@ export default function OptionEditForm() {
         router.push('/dashboard/option')
       } catch (updateErr) {
         // メニュー更新に失敗した場合、新しくアップロードした画像を削除
-        if (newUploadedImageUrls.length > 0 && !currentFile) {
+        if (newUploadedImageUrls.length > 0) {
           try {
             await fetch('/api/storage', {
               method: 'DELETE',
@@ -337,7 +327,7 @@ export default function OptionEditForm() {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                originalUrl: existingImageUrls[0].original_url,
+                originalUrl: newUploadedImageUrls[0].original_url,
                 withThumbnail: true,
               }),
             })
