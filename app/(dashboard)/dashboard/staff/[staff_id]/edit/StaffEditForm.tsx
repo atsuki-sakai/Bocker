@@ -42,7 +42,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import { useParams } from 'next/navigation'
-import { generatePinCode } from '@/lib/utils'
 import {
   Save,
   ArrowLeft,
@@ -52,15 +51,11 @@ import {
   Tag,
   Sparkles,
   User,
-  Mail,
   Clipboard,
   Check,
   X,
   Image as ImageIcon,
   Instagram,
-  Lock,
-  Shuffle,
-  Copy,
 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useMemo } from 'react'
