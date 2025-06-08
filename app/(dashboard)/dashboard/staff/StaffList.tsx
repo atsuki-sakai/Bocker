@@ -9,19 +9,21 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import InviteManagement from './components/InviteManagement'
 import { useQuery } from 'convex/react'
-import { Mail } from 'lucide-react'
+import { CheckCircleIcon } from 'lucide-react'
 
 export default function StaffList() {
   const { tenantId, orgId } = useTenantAndOrganization()
-  
+
   // 招待状態を含むスタッフ一覧を取得
   const staffsWithInvitation = useQuery(
     api.staff.invitation.query.getStaffWithInvitationStatus,
-    tenantId && orgId ? { 
-      tenant_id: tenantId, 
-      org_id: orgId,
-      includeInactive: true // 招待中のスタッフも含める
-    } : 'skip'
+    tenantId && orgId
+      ? {
+          tenant_id: tenantId,
+          org_id: orgId,
+          includeInactive: true, // 招待中のスタッフも含める
+        }
+      : 'skip'
   )
 
   if (!staffsWithInvitation) {
@@ -47,12 +49,7 @@ export default function StaffList() {
                     >
                       ステータス
                     </th>
-                    <th
-                      scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
-                    >
-                      招待状態
-                    </th>
+
                     <th
                       scope="col"
                       className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
@@ -67,27 +64,9 @@ export default function StaffList() {
                     </th>
                     <th
                       scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-muted-foreground"
+                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
                     >
-                      年齢
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-muted-foreground"
-                    >
-                      メールアドレス
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-muted-foreground"
-                    >
-                      性別
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-muted-foreground"
-                    >
-                      タグ
+                      説明
                     </th>
                     <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
                       <span className="sr-only">詳細</span>
@@ -112,34 +91,22 @@ export default function StaffList() {
                             </Badge>
                           )}
                         </td>
-                        <td className="py-4 pr-3 pl-4 text-xs font-medium whitespace-nowrap text-muted-foreground sm:pl-6">
-                          {staff.invitationStatus === 'pending' ? (
-                            <Badge
-                              variant="outline"
-                              className="bg-yellow-50 text-yellow-700 border-yellow-300"
-                            >
-                              <Mail className="h-3 w-3 mr-1" />
-                              招待中
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="bg-green-50 text-green-700 border-green-300"
-                            >
-                              受諾済み
-                            </Badge>
-                          )}
-                        </td>
+
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                           {staff.images && staff.images.length > 0 ? (
-                            <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
+                            <div className="relative w-12 h-12 bg-muted flex items-center justify-center">
                               <Image
                                 src={staff.images[0].thumbnail_url}
                                 alt={staff.name ?? ''}
                                 layout="fill"
                                 objectFit="cover"
-                                className="object-cover"
+                                className="object-cover rounded-md"
                               />
+                              {staff.connect_clerk ? (
+                                <div className="bg-active-foreground text-active border-active p-1 rounded-full absolute -top-2 -right-2">
+                                  <CheckCircleIcon className="h-3 w-3" />
+                                </div>
+                              ) : null}
                             </div>
                           ) : (
                             <div className="w-10 h-10  bg-muted rounded-full text-center flex items-center justify-center ">
@@ -153,15 +120,13 @@ export default function StaffList() {
                           {staff.name ?? '未設定'}
                         </td>
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
-                          /
+                          {staff.description && staff.description.length > 20 ? (
+                            <div className="line-clamp-2">{staff.description.slice(0, 20)}...</div>
+                          ) : (
+                            <div className="text-muted-foreground">{staff.description}</div>
+                          )}
                         </td>
 
-                        <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
-                          /
-                        </td>
-                        <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground flex flex-wrap gap-2">
-                          /
-                        </td>
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                           <Link
                             href={`/dashboard/staff/${staff._id}`}
