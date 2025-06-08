@@ -164,6 +164,7 @@ export async function POST(req: NextRequest) {
       try {
         await clerk.invitations.revokeInvitation(invitationIdToRevoke)
         console.log('✅ 古い招待のキャンセル成功')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (revokeError: any) {
         const errorMessage = revokeError?.errors?.[0]?.message || revokeError?.message
         console.warn('⚠️ 古い招待のキャンセルに失敗:', errorMessage)
