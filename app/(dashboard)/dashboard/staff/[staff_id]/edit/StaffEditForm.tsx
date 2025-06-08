@@ -69,7 +69,6 @@ import Image from 'next/image'
 
 const staffAddSchema = z.object({
   name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
-  email: z.string().email({ message: 'メールアドレスが不正です' }),
   instagram_link: z.preprocess(
     (val) => {
       // 空文字列の場合はnullを返す
@@ -215,20 +214,6 @@ export default function StaffEditForm() {
     formState: { isSubmitting, errors, isDirty },
     watch,
   } = useZodForm(staffAddSchema)
-
-  const handleGeneratePinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    const pinCode = generatePinCode()
-    setValue('pin_code', pinCode, { shouldDirty: true, shouldValidate: true })
-  }
-
-  const handleCopyPinCode = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    const pinCode = watch('pin_code')
-    if (pinCode) {
-      navigator.clipboard.writeText(pinCode)
-    }
-  }
 
   const onSubmit = async (data: z.infer<typeof staffAddSchema>) => {
     setIsLoading(true)
@@ -474,6 +459,8 @@ export default function StaffEditForm() {
     return <Loading />
   }
 
+  console.log('staffAllData', staffAllData.connect_clerk)
+
   return (
     <div>
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -670,111 +657,68 @@ export default function StaffEditForm() {
                 <Separator />
 
                 {/* 認証情報セクション */}
-                <div>
-                  <div className="flex items-center mb-4">
-                    <Shield className="h-5 w-5 mr-2 text-muted-foreground" />
-                    <h3 className="font-semibold text-lg">認証情報</h3>
-                  </div>
+                {staffAllData.connect_clerk && (
+                  <div>
+                    <div className="flex items-center mb-4">
+                      <Shield className="h-5 w-5 mr-2 text-muted-foreground" />
+                      <h3 className="font-semibold text-lg">権限設定</h3>
+                    </div>
 
-                  <Alert className="bg-muted border-border mb-4">
-                    <AlertDescription className="text-muted-foreground text-sm">
-                      スタッフがログインする際に使用する認証情報です。スタッフはメールアドレスとピンコードを使用してログインできます。
-                    </AlertDescription>
-                  </Alert>
+                    <Alert className="bg-warning border border-warning-foreground rounded-md mb-4">
+                      <AlertDescription className="text-warning-foreground text-sm">
+                        スタッフの権限を設定します。権限によってアクセスできる機能が異なります。
+                      </AlertDescription>
+                    </Alert>
 
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="flex flex-col space-y-4">
+                    <div className="grid md:grid-cols-2 gap-6">
                       <div>
-                        <ZodTextField
-                          name="email"
-                          icon={<Mail className="h-4 w-4 mr-2 text-muted-foreground" />}
-                          label="メールアドレス"
-                          register={register}
-                          errors={errors}
-                          placeholder="メールアドレスを入力してください"
-                        />
-                      </div>
-                      <div className="flex items-start justify-start gap-2">
-                        <div className="w-full">
-                          <ZodTextField
-                            readOnly={true}
-                            name="pin_code"
-                            icon={<Lock className="h-4 w-4 mr-2 text-muted-foreground" />}
-                            label="ピンコード"
-                            register={register}
-                            errors={errors}
-                            placeholder="ピンコードを入力してください"
-                          />
+                        <div className="flex items-center mb-2">
+                          <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <Label className="font-medium text-primary">権限</Label>
                         </div>
-                        <div className="flex flex-col items-center justify-center gap-1 ml-4">
-                          <div className="w-fit flex items-center justify-center">
-                            <div>
-                              <span className="text-xs text-nowrap text-muted-foreground">
-                                再生成
-                              </span>
-                              <Button size={'icon'} onClick={handleGeneratePinCode}>
-                                <Shuffle className="h-8 w-8 block" />
-                              </Button>
-                            </div>
-                            <div>
-                              <span className="text-xs text-nowrap text-muted-foreground">
-                                コピー
-                              </span>
-                              <Button size={'icon'} onClick={handleCopyPinCode}>
-                                <Copy className="h-8 w-8 block" />
-                              </Button>
-                            </div>
+                        <div className="mt-1">
+                          <div className="grid grid-cols-3 gap-3">
+                            {[
+                              {
+                                role: 'staff',
+                                label: 'スタッフ',
+                                desc: '基本的な予約確認と自身の情報管理のみ',
+                              },
+                              {
+                                role: 'manager',
+                                label: 'マネージャー',
+                                desc: 'スタッフ管理と基本設定の変更が可能',
+                              },
+                              {
+                                role: 'owner',
+                                label: 'オーナー',
+                                desc: 'すべての機能にアクセス可能',
+                              },
+                            ].map((item) => (
+                              <div
+                                key={item.role}
+                                className={`border rounded-md p-3 cursor-pointer transition-all ${
+                                  watch('role') === item.role
+                                    ? 'border-active bg-active-foreground text-active'
+                                    : 'border-border bg-muted text-muted-foreground'
+                                }`}
+                                onClick={() =>
+                                  setValue('role', item.role as Role, {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                  })
+                                }
+                              >
+                                <div className="font-medium text-sm mb-1">{item.label}</div>
+                                <div className="text-xs text-muted-foreground">{item.desc}</div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div>
-                      <div className="flex items-center mb-2">
-                        <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <Label className="font-medium text-primary">権限</Label>
-                      </div>
-                      <div className="mt-1">
-                        <div className="grid grid-cols-3 gap-3">
-                          {[
-                            {
-                              role: 'staff',
-                              label: 'スタッフ',
-                              desc: '基本的な予約確認と自身の情報管理のみ',
-                            },
-                            {
-                              role: 'manager',
-                              label: 'マネージャー',
-                              desc: 'スタッフ管理と基本設定の変更が可能',
-                            },
-                            {
-                              role: 'owner',
-                              label: 'オーナー',
-                              desc: 'すべての機能にアクセス可能',
-                            },
-                          ].map((item) => (
-                            <div
-                              key={item.role}
-                              className={`border rounded-md p-3 cursor-pointer transition-all ${
-                                watch('role') === item.role
-                                  ? 'border-active bg-active-foreground text-active'
-                                  : 'border-border bg-muted text-muted-foreground'
-                              }`}
-                              onClick={() =>
-                                setValue('role', item.role as Role, {
-                                  shouldDirty: true,
-                                  shouldValidate: true,
-                                })
-                              }
-                            >
-                              <div className="font-medium text-sm mb-1">{item.label}</div>
-                              <div className="text-xs text-muted-foreground">{item.desc}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
                   </div>
-                </div>
+                )}
 
                 <Separator />
 
