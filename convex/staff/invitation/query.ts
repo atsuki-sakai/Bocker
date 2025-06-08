@@ -4,7 +4,7 @@ import { InvitationStatus } from '@/convex/types';
 
 /**
  * 招待中スタッフ一覧
- * clerk_user_id が null のスタッフを取得
+ * connect_clerk が trueで clerk_user_id が null のスタッフを取得
  */
 export const listPending = query({
   args: {
@@ -21,7 +21,7 @@ export const listPending = query({
          .eq('is_active', false) // 招待中は非アクティブ
          .eq('is_archive', false)
       )
-      .filter((q) => q.eq(q.field('clerk_user_id'), undefined))
+      .filter((q) => q.eq(q.field('connect_clerk'), true) && q.eq(q.field('clerk_user_id'), undefined))
       .collect();
 
     return pendingStaff;
