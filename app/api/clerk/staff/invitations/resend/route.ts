@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       emailAddress: existingInvitation.invitation_email!,
       redirectUrl,
       publicMetadata: {
-        organizationId: org_id,
+        org_id: org_id,
         role: existingInvitation.role || 'staff',
         staffId: staff_id,
       },
