@@ -218,6 +218,7 @@ export async function POST(req: NextRequest) {
       clerk_invitation_id: invitation.id,
       invitation_email: email,
       invitation_status: 'pending' as const,
+      role: staffData.config?.role || 'staff',
     })
     console.log('✅ Convex招待情報更新成功')
 
