@@ -154,14 +154,27 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. 古い招待をキャンセル（存在する場合）
-    if (invitation_id) {
-      console.log('🗑️ 古い招待をキャンセル中:', invitation_id)
+    const clerk = await clerkClient()
+    
+    // フロントエンドから渡されたIDまたはConvexに保存されているIDを使用
+    const invitationIdToRevoke = invitation_id
+    
+    if (invitationIdToRevoke) {
+      console.log('🗑️ 古い招待をキャンセル中:', invitationIdToRevoke)
       try {
-        const clerk = await clerkClient()
-        await clerk.invitations.revokeInvitation(invitation_id)
+        await clerk.invitations.revokeInvitation(invitationIdToRevoke)
         console.log('✅ 古い招待のキャンセル成功')
-      } catch (revokeError) {
-        console.warn('⚠️ 古い招待のキャンセルに失敗:', revokeError)
+      } catch (revokeError: any) {
+        const errorMessage = revokeError?.errors?.[0]?.message || revokeError?.message
+        console.warn('⚠️ 古い招待のキャンセルに失敗:', errorMessage)
+        
+        // already revokedエラーの場合は問題なし
+        if (errorMessage && (
+          errorMessage.toLowerCase().includes('already revoked') ||
+          errorMessage.toLowerCase().includes('resource_not_found')
+        )) {
+          console.log('✅ 招待は既に無効化されています')
+        }
         // 続行（招待が既に無効の可能性）
       }
     }
@@ -172,7 +185,6 @@ export async function POST(req: NextRequest) {
 
     // 7. 新しい招待を作成（再送）
     console.log('📧 新しい招待を作成中...')
-    const clerk = await clerkClient()
     
     const invitationParams = {
       emailAddress: email ?? 'no-email',

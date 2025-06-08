@@ -89,8 +89,39 @@ export async function POST(req: NextRequest) {
     const clerk = await clerkClient()
     let invitation
     try {
+      // このスタッフの既存の招待IDをチェック
+      const existingStaffData = await convex.query(api.staff.invitation.query.getStaffWithInvitation, {
+        staff_id: result.staffId as Id<"staff">,
+      })
+      
+      if (existingStaffData?.clerk_invitation_id && existingStaffData.invitationStatus === 'pending') {
+        console.log('⚠️ このスタッフの既存の招待が見つかりました:', {
+          staffId: result.staffId,
+          existingInvitationId: existingStaffData.clerk_invitation_id,
+          email: existingStaffData.invitation_email,
+        })
+        
+        // 既存の招待を取り消す
+        try {
+          await clerk.invitations.revokeInvitation(existingStaffData.clerk_invitation_id)
+          console.log('✅ 既存の招待を取り消しました:', existingStaffData.clerk_invitation_id)
+        } catch (revokeError) {
+          console.error('❌ 既存招待の取り消しエラー:', revokeError)
+          // エラーの詳細を確認
+          const errorMessage = (revokeError as any)?.errors?.[0]?.message || (revokeError as any)?.message
+          if (errorMessage && !errorMessage.toLowerCase().includes('already revoked')) {
+            // already revokedエラー以外の場合は処理を中断
+            throw revokeError
+          }
+        }
+      }
+      
       invitation = await clerk.invitations.createInvitation(invitationParams)
-      console.log('✅ Clerk招待作成成功:', invitation.id)
+      console.log('✅ Clerk招待作成成功:', {
+        newInvitationId: invitation.id,
+        email: invitation.emailAddress,
+        previousInvitationId: existingStaffData?.clerk_invitation_id,
+      })
       
       // Convexに招待情報を保存
       await convex.mutation(api.staff.mutation.updateInvitationInfo, {

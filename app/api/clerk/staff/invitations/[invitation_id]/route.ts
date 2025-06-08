@@ -62,11 +62,40 @@ export async function DELETE(
     let clerkCancelSuccess = false
     let clerkError: string | null = null
     
+    // デバッグ情報を追加
+    console.log('🔍 招待キャンセル処理開始:', {
+      urlParamInvitationId: invitation_id,
+      staffId: staff_id,
+      convexClerkInvitationId: staffData.clerk_invitation_id,
+      invitationStatus: staffData.invitationStatus,
+    })
+    
     if (staffData.invitationStatus === 'pending' && staffData.clerk_invitation_id) {
       try {
+        // 現在の組織の全招待を取得してデバッグ
+        if (staffData.org_id) {
+          try {
+            const invitations = await clerk.invitations.getInvitationList()
+            console.log('📋 現在の組織の招待一覧:', invitations.data.map(inv => ({
+              id: inv.id,
+              emailAddress: inv.emailAddress,
+              status: inv.status,
+              createdAt: inv.createdAt,
+            })))
+          } catch (listError) {
+            console.error('招待一覧取得エラー:', listError)
+          }
+        }
+        
         // 保存されているClerk招待IDで直接削除
-        await clerk.invitations.revokeInvitation(staffData.clerk_invitation_id)
-        console.log('✅ Clerk招待キャンセル成功')
+        const revokedInvitation = await clerk.invitations.revokeInvitation(staffData.clerk_invitation_id)
+        console.log('✅ Clerk招待キャンセル成功:', {
+          invitationId: staffData.clerk_invitation_id,
+          revokedStatus: revokedInvitation.status,
+          revokedAt: revokedInvitation.createdAt,
+        })
+        
+        
         clerkCancelSuccess = true
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
@@ -79,8 +108,21 @@ export async function DELETE(
         if (errorCode === 'resource_not_found') {
           console.log('✅ Clerk招待は既に削除済みです')
           clerkCancelSuccess = true
+        } else if (errorMessage && (
+          errorMessage.toLowerCase().includes('already revoked') ||
+          errorMessage.toLowerCase().includes('invitation is already revoked') ||
+          errorMessage.toLowerCase().includes('invitation has already been revoked')
+        )) {
+          // 招待が既に取り消されている場合も成功として扱う
+          console.log('✅ Clerk招待は既に取り消し済みです')
+          clerkCancelSuccess = true
+        } else if (errorCode === 'unauthorized' || errorCode === 'forbidden') {
+          console.error('❌ 権限エラー: この招待を取り消す権限がありません')
+          clerkCancelSuccess = false
+          clerkError = 'この招待を取り消す権限がありません'
         } else {
           console.error(`❌ Clerk招待削除失敗: Code=${errorCode}, Message=${errorMessage}`)
+          console.error('エラーオブジェクト全体:', JSON.stringify(error, null, 2))
           clerkCancelSuccess = false
           clerkError = `Clerk招待削除失敗: ${errorMessage}`
         }
