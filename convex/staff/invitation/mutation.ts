@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 import { mutation } from '../../_generated/server';
-import { archiveRecord, updateRecord, createRecord } from '@/convex/utils/helpers';
+import { archiveRecord, updateRecord, createRecord, killRecord } from '@/convex/utils/helpers';
 import { roleType } from '@/convex/types';
 
 /**
@@ -84,7 +84,7 @@ export const acceptInvitation = mutation({
         invitation_status: 'accepted' as const,
       });
       // 受諾完了後、招待レコードをアーカイブ
-      await archiveRecord(ctx, invitation._id);
+      await killRecord(ctx, invitation._id);
     }
 
     // staff_configが既に存在するか確認
@@ -142,8 +142,16 @@ export const cancelInvitation = mutation({
   },
   handler: async (ctx, args) => {
     const staff = await ctx.db.get(args.staff_id);
-    if (!staff || staff.is_archive) {
+    if (!staff) {
       throw new Error('スタッフが見つかりません');
+    }
+
+    // 既にアーカイブ済みの場合は成功として扱う
+    if (staff.is_archive) {
+      return {
+        success: true,
+        message: 'スタッフは既に削除済みです',
+      };
     }
 
     // 既に受諾済みの場合はキャンセルできない
@@ -152,7 +160,7 @@ export const cancelInvitation = mutation({
     }
 
     // スタッフレコードを論理削除
-    await archiveRecord(ctx, args.staff_id);
+    await killRecord(ctx, args.staff_id);
     
     // 関連するstaff_invitationレコードもアーカイブ
     const invitation = await ctx.db
@@ -166,7 +174,7 @@ export const cancelInvitation = mutation({
       .first();
       
     if (invitation) {
-      await archiveRecord(ctx, invitation._id);
+      await killRecord(ctx, invitation._id);
     }
 
     return {
