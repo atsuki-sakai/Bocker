@@ -69,7 +69,7 @@ const createStaffAddSchema = (sendInviteEmail: boolean) =>
           .string()
           .min(1, { message: 'メールアドレスは必須です' })
           .email({ message: 'メールアドレスが不正です' })
-      : z.string().email({ message: 'メールアドレスが不正です' }).optional().nullable(),
+      : z.string().optional().nullable(),
 
     instagram_link: z
       .preprocess(
