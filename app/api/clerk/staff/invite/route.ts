@@ -107,12 +107,16 @@ export async function POST(req: NextRequest) {
           console.log('✅ 既存の招待を取り消しました:', existingStaffData.clerk_invitation_id)
         } catch (revokeError) {
           console.error('❌ 既存招待の取り消しエラー:', revokeError)
-          // エラーの詳細を確認
-          const errorMessage = (revokeError as any)?.errors?.[0]?.message || (revokeError as any)?.message
-          if (errorMessage && !errorMessage.toLowerCase().includes('already revoked')) {
-            // already revokedエラー以外の場合は処理を中断
+          // エラーコードを確認してrevoked_invitation以外の場合は処理を中断
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const errorCode = (revokeError as any)?.errors?.[0]?.code
+          console.log('🔍 エラーコード:', errorCode)
+          
+          if (errorCode && errorCode !== 'revoked_invitation') {
+            // revoked_invitation（既に取り消し済み）以外のエラーの場合は処理を中断
             throw revokeError
           }
+          console.log('ℹ️ 招待は既に取り消し済みです。処理を続行します。')
         }
       }
       
