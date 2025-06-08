@@ -2,6 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { BASE_URL } from '@/lib/constants';
+import { ConvexHttpClient } from 'convex/browser';
+import { api } from '@/convex/_generated/api';
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,42 +20,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Clerkから既存の招待情報を取得
-    let existingInvitation;
-    try {
-      existingInvitation = await clerk.invitations.getInvitationList(invitation_id);
-    } catch (error) {
-      console.error('Failed to get invitation from Clerk:', error);
-      return NextResponse.json(
-        { error: 'Invitation not found' },
-        { status: 404 }
-      );
-    }
-
-    console.log('existingInvitation', existingInvitation);
-    if (!existingInvitation || existingInvitation.data[0].status !== 'pending') {
-      return NextResponse.json(
-        { error: 'atus' },
-        { status: 400 }
-      );
-    }
 
     // Clerkに再送リクエストを送信
     await clerk.invitations.revokeInvitation(invitation_id);
 
     // 環境に応じてベースURLを設定
     const redirectUrl = `${BASE_URL}/invite-accept?invitationId=${invitation_id}`;
+  
 
+    const existingInvitation = await convex.query(api.staff.invitation.query.getInvitation, {
+      invitation_id: invitation_id,
+    });
+    if(!existingInvitation) {
+      return NextResponse.json(
+        { error: 'Invitation not found' },
+        { status: 404 }
+      );
+    }
     // 新しい招待を作成
-    
     const newInvitation = await clerk.invitations.createInvitation({
-      emailAddress: existingInvitation.data[0].emailAddress,
+      emailAddress: existingInvitation.invitation_email!,
       redirectUrl,
       publicMetadata: {
         organizationId: org_id,
-        role: existingInvitation.data[0].publicMetadata?.role || 'staff',
+        role: existingInvitation.role || 'staff',
         staffId: staff_id,
       },
+    });
+
+    // 招待情報を更新
+    await convex.mutation(api.staff.mutation.updateInvitationInfo, {
+      staff_id: staff_id,
+      clerk_invitation_id: newInvitation.id,
+      invitation_email: existingInvitation.invitation_email!,
+      role: existingInvitation.role || 'staff',
+      invitation_status: 'pending' as const,
     });
 
     return NextResponse.json({

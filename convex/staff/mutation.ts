@@ -5,7 +5,7 @@ import { validateRequired, validateStringLength, validateEmail, validateTags } f
 import { checkAuth } from '@/convex/utils/auth';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
-import { genderType, imageType } from '@/convex/types';
+import { genderType, imageType, roleType } from '@/convex/types';
 import { MAX_NOTES_LENGTH } from '../constants';
 
 export const create = mutation({
@@ -208,6 +208,7 @@ export const updateInvitationInfo = mutation({
     staff_id: v.id('staff'),
     clerk_invitation_id: v.string(),
     invitation_email: v.string(),
+    role: v.union(roleType),
     invitation_status: v.union(v.literal('pending'), v.literal('accepted'), v.literal('revoked')),
   },
   handler: async (ctx, args) => {

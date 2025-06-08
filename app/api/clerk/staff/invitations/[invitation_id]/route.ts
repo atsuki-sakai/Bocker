@@ -72,21 +72,6 @@ export async function DELETE(
     
     if (staffData.invitationStatus === 'pending' && staffData.clerk_invitation_id) {
       try {
-        // 現在の組織の全招待を取得してデバッグ
-        if (staffData.org_id) {
-          try {
-            const invitations = await clerk.invitations.getInvitationList()
-            console.log('📋 現在の組織の招待一覧:', invitations.data.map(inv => ({
-              id: inv.id,
-              emailAddress: inv.emailAddress,
-              status: inv.status,
-              createdAt: inv.createdAt,
-            })))
-          } catch (listError) {
-            console.error('招待一覧取得エラー:', listError)
-          }
-        }
-        
         // 保存されているClerk招待IDで直接削除
         const revokedInvitation = await clerk.invitations.revokeInvitation(staffData.clerk_invitation_id)
         console.log('✅ Clerk招待キャンセル成功:', {

@@ -119,10 +119,14 @@ export default function InviteManagement() {
         }),
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || '招待の再送に失敗しました')
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json()
+          throw new Error(data.error || '招待の再送に失敗しました')
+        } else {
+          throw new Error('招待の再送に失敗しました')
+        }
       }
 
       toast.success(`${invitation.email} に招待メールを再送しました`)
@@ -151,8 +155,13 @@ export default function InviteManagement() {
         )
 
         if (!response.ok) {
-          const data = await response.json()
-          throw new Error(data.error || 'Clerk招待のキャンセルに失敗しました')
+          const contentType = response.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json()
+            throw new Error(data.error || 'Clerk招待のキャンセルに失敗しました')
+          } else {
+            throw new Error('Clerk招待のキャンセルに失敗しました')
+          }
         }
       } else {
         toast.error('招待IDが見つかりません')

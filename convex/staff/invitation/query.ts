@@ -2,6 +2,15 @@ import { v } from 'convex/values';
 import { query } from '../../_generated/server';
 import { InvitationStatus } from '@/convex/types';
 
+
+export const getInvitation = query({
+  args: {
+    invitation_id: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.query('staff_invitation').withIndex('by_invitation', (q) => q.eq('invitation_id', args.invitation_id)).first();
+  },
+});
 /**
  * 招待中スタッフ一覧
  * connect_clerk が trueで clerk_user_id が null のスタッフを取得

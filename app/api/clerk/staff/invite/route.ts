@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
+import { Role } from '@/convex/types'
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
@@ -133,6 +134,7 @@ export async function POST(req: NextRequest) {
         clerk_invitation_id: invitation.id,
         invitation_email: email,
         invitation_status: 'pending' as const,
+        role: role as Role,
       })
       console.log('✅ Convex招待情報更新成功')
     } catch (clerkError) {
