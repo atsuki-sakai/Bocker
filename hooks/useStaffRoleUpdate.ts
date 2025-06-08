@@ -48,14 +48,14 @@ export const useStaffRoleUpdate = () => {
           if (clerkResult.warning) {
             toast.warning(clerkResult.warning)
           } else {
-            toast.success('スタッフ権限を更新しました')
+            console.log('スタッフ権限を更新しました')
           }
         } catch (clerkError) {
           console.error('Clerk更新エラー:', clerkError)
           toast.warning('スタッフ権限は更新されましたが、Clerkの権限情報更新に失敗しました')
         }
       } else {
-        toast.success('スタッフ権限を更新しました')
+        console.log('スタッフ権限を更新しました')
       }
 
       return result
