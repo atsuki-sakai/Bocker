@@ -24,7 +24,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { Role, Gender, InvitationStatus } from '@/convex/types'
 import { Id } from '@/convex/_generated/dataModel'
-import { useQuery, useMutation } from 'convex/react'
+import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 
 // 招待データの型定義（Convex + Clerkの統合データ）
@@ -66,9 +66,6 @@ export default function InviteManagement() {
     api.staff.invitation.query.listPending,
     tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
   )
-
-  // 招待キャンセルのmutation
-  const cancelInvitationMutation = useMutation(api.staff.invitation.mutation.cancelInvitation)
 
   // コンポーネントの状態管理
   const [selectedInvitation, setSelectedInvitation] = useState<StaffInvitation | null>(null)
