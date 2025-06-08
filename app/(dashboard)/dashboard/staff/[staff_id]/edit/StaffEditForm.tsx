@@ -260,7 +260,7 @@ export default function StaffEditForm() {
         clerk_user_id: staffAllData?.clerk_user_id, // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
         name: data.name, // スタッフ名
         description: data.description, // 自己紹介
-        images: newUploadedImages, // 画像
+        images: newUploadedImages.length > 0 ? newUploadedImages : (staffAllData?.images || []), // 画像（新しい画像がない場合は既存の画像を維持）
         is_active: true, // 有効/無効
       })
 
