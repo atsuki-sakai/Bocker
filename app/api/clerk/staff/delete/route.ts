@@ -20,7 +20,13 @@ export async function DELETE(req: NextRequest) {
         { status: 401 }
       )
     }
-    const userId = user.id
+    const role = user.publicMetadata?.role;
+    if(role !== 'admin') {
+      return NextResponse.json(
+        { error: '権限がありません' },
+        { status: 403 }
+      )
+    }
 
     // 2. リクエストボディから削除情報を取得
     const { 

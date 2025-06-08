@@ -55,6 +55,7 @@ export async function DELETE(
       await clerk.invitations.revokeInvitation(invitation_id)
       console.log('✅ Clerk招待キャンセル成功')
       clerkCancelSuccess = true
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (clerkError: any) {
       console.error('❌ Clerk招待処理エラー:', clerkError)
       
