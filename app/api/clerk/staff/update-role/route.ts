@@ -45,8 +45,6 @@ export async function PATCH(req: NextRequest) {
         const updatedMetadata = {
           ...currentMetadata,
           role: new_role,
-          // 更新者情報も記録
-          last_role_updated_by: user.id,
           last_role_updated_at: new Date().toISOString(),
         }
         
