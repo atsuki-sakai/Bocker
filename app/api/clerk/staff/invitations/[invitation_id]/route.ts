@@ -55,8 +55,17 @@ export async function DELETE(
       // Clerkエラーでも続行（既にキャンセル済みの可能性）
     }
 
-    // 5. Convexスタッフレコード削除
+    // 5. Convexスタッフレコード削除＆招待ステータス更新
     try {
+      // 招待ステータスを'revoked'に更新
+      await convex.mutation(api.staff.mutation.updateInvitationInfo, {
+        staff_id: staff_id as Id<"staff">,
+        clerk_invitation_id: invitation_id,
+        invitation_email: '', // キャンセルされたので空にする
+        invitation_status: 'revoked' as const,
+      })
+      
+      // スタッフレコードを論理削除
       await convex.mutation(api.staff.invitation.mutation.cancelInvitation, {
         staff_id: staff_id as Id<"staff">,
       })

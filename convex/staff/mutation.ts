@@ -190,3 +190,58 @@ export const removeImages = mutation({
   },
 })
 
+// 招待情報の更新（招待作成・再送時に使用）
+export const updateInvitationInfo = mutation({
+  args: {
+    staff_id: v.id('staff'),
+    clerk_invitation_id: v.string(),
+    invitation_email: v.string(),
+    invitation_status: v.union(v.literal('pending'), v.literal('accepted'), v.literal('revoked')),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx)
+    const staff = await ctx.db.get(args.staff_id)
+    if (!staff || staff.is_archive) {
+      throw new ConvexError({
+        message: '指定されたスタッフが存在しません',
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'staff.updateInvitationInfo',
+        details: { ...args },
+      })
+    }
+
+    // 既存のstaff_invitationレコードを探す
+    const existingInvitation = await ctx.db
+      .query('staff_invitation')
+      .withIndex('by_tenant_org_staff_archive', (q) =>
+        q.eq('tenant_id', staff.tenant_id)
+         .eq('org_id', staff.org_id)
+         .eq('staff_id', args.staff_id)
+         .eq('is_archive', false)
+      )
+      .first()
+
+    if (existingInvitation) {
+      // 既存レコードを更新
+      await updateRecord(ctx, existingInvitation._id, {
+        invitation_id: args.clerk_invitation_id,
+        invitation_email: args.invitation_email,
+        invitation_status: args.invitation_status,
+      })
+    } else {
+      // 新規レコードを作成
+      await createRecord(ctx, 'staff_invitation', {
+        tenant_id: staff.tenant_id,
+        org_id: staff.org_id,
+        staff_id: args.staff_id,
+        invitation_id: args.clerk_invitation_id,
+        invitation_email: args.invitation_email,
+        invitation_status: args.invitation_status,
+      })
+    }
+
+    return { success: true }
+  },
+})
+

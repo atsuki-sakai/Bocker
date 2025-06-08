@@ -214,6 +214,21 @@ export const ROLE_VALUES = ['admin', 'owner', 'manager', 'staff'] as const
 export const roleType = v.union(...ROLE_VALUES.map((role) => v.literal(role)))
 export type Role = Infer<typeof roleType>
 
+export const convertRole = (role: Role): string => {
+  switch (role) {
+    case 'admin':
+      return '管理者'
+    case 'owner':
+      return 'オーナー'
+    case 'manager':
+      return 'マネージャー'
+    case 'staff':
+      return 'スタッフ'
+    default:
+      return '不明'
+  }
+}
+
 // ポイントトランザクションタイプの型定義
 export const POINT_TRANSACTION_TYPE_VALUES = ['earned', 'used', 'adjusted', 'expired'] as const
 export const pointTransactionType = v.union(
@@ -244,7 +259,7 @@ export const imgDirectoryType = v.union(
 export type ImgDirectoryType = Infer<typeof imgDirectoryType>
 
 // 招待ステータス型
-export const INVITATION_STATUS_VALUES = ['pending', 'accepted', 'expired', 'cancelled', "missing"] as const
+export const INVITATION_STATUS_VALUES = ['pending', 'accepted', 'revoked', 'expired', 'cancelled', "missing"] as const
 export const invitationStatusType = v.union(
   ...INVITATION_STATUS_VALUES.map((status) => v.literal(status))
 )

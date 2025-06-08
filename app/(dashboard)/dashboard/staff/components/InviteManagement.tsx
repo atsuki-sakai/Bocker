@@ -2,7 +2,8 @@
 // 招待管理コンポーネント - 招待状況の確認・再送・キャンセル機能
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { convertRole } from '@/convex/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,6 +24,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { Role, Gender, InvitationStatus } from '@/convex/types'
 import { Id } from '@/convex/_generated/dataModel'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 
 // 招待データの型定義（Convex + Clerkの統合データ）
 interface StaffInvitation {
@@ -58,57 +61,50 @@ export default function InviteManagement() {
   const { tenantId, orgId } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
 
+  // Convexクエリで招待中スタッフを取得
+  const pendingStaff = useQuery(
+    api.staff.invitation.query.listPending,
+    tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
+  )
+
+  // 招待キャンセルのmutation
+  const cancelInvitationMutation = useMutation(api.staff.invitation.mutation.cancelInvitation)
+
   // コンポーネントの状態管理
-  const [invitations, setInvitations] = useState<StaffInvitation[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [selectedInvitation, setSelectedInvitation] = useState<StaffInvitation | null>(null)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // 初回読み込み時に招待一覧を取得
-  useEffect(() => {
-    if (tenantId && orgId) {
-      fetchInvitations()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantId, orgId])
+  // pendingStaffをStaffInvitation型に変換
+  const invitations: StaffInvitation[] =
+    pendingStaff?.map((staff) => ({
+      // Convexデータ
+      staff_id: staff._id,
+      name: staff.name,
+      email: staff.invitation_email || '',
+      gender: staff.config?.gender || ('unselected' as Gender),
+      age: staff.config?.age,
+      tags: staff.config?.tags || [],
+      created_at: staff._creationTime,
 
-  // 招待一覧を取得する関数
-  const fetchInvitations = async () => {
-    setIsLoading(true)
-    try {
-      const response = await fetch(
-        `/api/clerk/staff/invitations?tenant_id=${tenantId}&org_id=${orgId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      )
+      // 招待データ
+      invitation_id: staff.clerk_invitation_id || null,
+      invitation_status: staff.invitation_status || 'pending',
+      invitation_created_at: staff._creationTime,
 
-      const data = await response.json()
+      // メタデータ
+      metadata: {
+        tenant_id: staff.tenant_id,
+        org_id: staff.org_id,
+        role: staff.config?.role || ('staff' as Role),
+        staff_id: staff._id,
+        extra_charge: staff.config?.extra_charge,
+        priority: staff.config?.priority,
+        resent: false,
+      },
+    })) || []
 
-      if (!response.ok) {
-        throw new Error(data.error || '招待一覧の取得に失敗しました')
-      }
-
-      setInvitations(data.invitations || [])
-    } catch (error) {
-      showErrorToast(error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // 招待一覧を更新する関数
-  const refreshInvitations = async () => {
-    setIsRefreshing(true)
-    await fetchInvitations()
-    setIsRefreshing(false)
-    toast.success('招待一覧を更新しました')
-  }
+  const isLoading = pendingStaff === undefined
 
   // 招待を再送する関数
   const resendInvitation = async (invitation: StaffInvitation) => {
@@ -133,7 +129,6 @@ export default function InviteManagement() {
       }
 
       toast.success(`${invitation.email} に招待メールを再送しました`)
-      await fetchInvitations() // 一覧を更新
     } catch (error) {
       console.error('Failed to resend invitation:', error)
       showErrorToast(error)
@@ -146,61 +141,37 @@ export default function InviteManagement() {
   const cancelInvitation = async (invitation: StaffInvitation) => {
     setIsProcessing(true)
     try {
-      const url = invitation.invitation_id
-        ? `/api/clerk/staff/invitations/${invitation.invitation_id}?staff_id=${invitation.staff_id}`
-        : `/api/clerk/staff/invitations/cancel?staff_id=${invitation.staff_id}`
-
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // Convex mutationでキャンセル
+      await cancelInvitationMutation({
+        staff_id: invitation.staff_id,
       })
 
-      const data = await response.json()
+      // Clerk側の招待もキャンセル（APIエンドポイント経由）
+      if (invitation.invitation_id) {
+        const response = await fetch(
+          `/api/clerk/staff/invitations/${invitation.invitation_id}?staff_id=${invitation.staff_id}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        )
 
-      if (!response.ok) {
-        throw new Error(data.error || '招待のキャンセルに失敗しました')
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.error || 'Clerk招待のキャンセルに失敗しました')
+        }
       }
 
       toast.success(`${invitation.email} の招待をキャンセルしました`)
       setShowCancelDialog(false)
       setSelectedInvitation(null)
-      await fetchInvitations() // 一覧を更新
+      // Convexは自動的に更新されるため、手動更新は不要
     } catch (error) {
       showErrorToast(error)
     } finally {
       setIsProcessing(false)
-    }
-  }
-
-  // ロール表示を日本語に変換
-  const getRoleDisplayName = (role: Role) => {
-    switch (role) {
-      case 'staff':
-        return 'スタッフ'
-      case 'manager':
-        return 'マネージャー'
-      case 'owner':
-        return 'オーナー'
-      case 'admin':
-        return '管理者'
-      default:
-        return role
-    }
-  }
-
-  // 性別表示を日本語に変換
-  const getGenderDisplayName = (gender: Gender) => {
-    switch (gender) {
-      case 'male':
-        return '男性'
-      case 'female':
-        return '女性'
-      case 'unselected':
-        return '未選択'
-      default:
-        return gender
     }
   }
 
@@ -226,16 +197,7 @@ export default function InviteManagement() {
               </Badge>
             )}
           </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refreshInvitations}
-            disabled={isRefreshing}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            更新
-          </Button>
+          {/* Convexは自動更新されるため、更新ボタンは不要 */}
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -266,7 +228,7 @@ export default function InviteManagement() {
                           </span>
                           {invitation.metadata && (
                             <Badge variant="default" className="text-xs">
-                              {getRoleDisplayName(invitation.metadata.role)}
+                              {convertRole(invitation.metadata.role)}
                             </Badge>
                           )}
                           {invitation.invitation_status === 'missing' && (

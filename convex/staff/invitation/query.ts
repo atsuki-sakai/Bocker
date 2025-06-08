@@ -5,6 +5,7 @@ import { InvitationStatus } from '@/convex/types';
 /**
  * 招待中スタッフ一覧
  * connect_clerk が trueで clerk_user_id が null のスタッフを取得
+ * staff_invitationテーブルから招待情報も取得
  */
 export const listPending = query({
   args: {
@@ -13,6 +14,7 @@ export const listPending = query({
   },
   handler: async (ctx, args) => {
 
+    // 招待中スタッフのリストを取得
     const pendingStaff = await ctx.db
       .query('staff')
       .withIndex('by_tenant_org_active_archive', (q) =>
@@ -24,7 +26,37 @@ export const listPending = query({
       .filter((q) => q.eq(q.field('connect_clerk'), true) && q.eq(q.field('clerk_user_id'), undefined))
       .collect();
 
-    return pendingStaff;
+    // 各スタッフの招待情報を取得
+    const staffWithInvitation = await Promise.all(
+      pendingStaff.map(async (staff) => {
+        const config = await ctx.db.query('staff_config').withIndex('by_tenant_org_staff_archive', (q) =>
+          q.eq('tenant_id', args.tenant_id)
+           .eq('org_id', args.org_id)
+           .eq('staff_id', staff._id)
+           .eq('is_archive', false)
+        ).first();
+
+        const invitation = await ctx.db
+          .query('staff_invitation')
+          .withIndex('by_tenant_org_staff_archive', (q) =>
+            q.eq('tenant_id', args.tenant_id)
+             .eq('org_id', args.org_id)
+             .eq('staff_id', staff._id)
+             .eq('is_archive', false)
+          )
+          .first();
+
+        return {
+          ...staff,
+          config: config,
+          clerk_invitation_id: invitation?.invitation_id || null,
+          invitation_email: invitation?.invitation_email || null,
+          invitation_status: invitation?.invitation_status || 'pending',
+        };
+      })
+    );
+
+    return staffWithInvitation;
   },
 });
 

@@ -91,6 +91,15 @@ export async function POST(req: NextRequest) {
     try {
       invitation = await clerk.invitations.createInvitation(invitationParams)
       console.log('✅ Clerk招待作成成功:', invitation.id)
+      
+      // Convexに招待情報を保存
+      await convex.mutation(api.staff.mutation.updateInvitationInfo, {
+        staff_id: result.staffId as Id<"staff">,
+        clerk_invitation_id: invitation.id,
+        invitation_email: email,
+        invitation_status: 'pending' as const,
+      })
+      console.log('✅ Convex招待情報更新成功')
     } catch (clerkError) {
       // Clerk招待作成失敗時のrollback処理
       console.error('❌ Clerk招待作成失敗、Convexレコードをキャンセル中...')

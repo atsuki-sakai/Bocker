@@ -67,6 +67,25 @@ export const acceptInvitation = mutation({
       clerk_user_id: args.clerk_user_id,
       is_active: true,
     });
+    
+    // staff_invitationレコードを更新
+    const invitation = await ctx.db
+      .query('staff_invitation')
+      .withIndex('by_tenant_org_staff_archive', (q) =>
+        q.eq('tenant_id', staff.tenant_id)
+         .eq('org_id', staff.org_id)
+         .eq('staff_id', args.staff_id)
+         .eq('is_archive', false)
+      )
+      .first();
+      
+    if (invitation) {
+      await updateRecord(ctx, invitation._id, {
+        invitation_status: 'accepted' as const,
+      });
+      // 受諾完了後、招待レコードをアーカイブ
+      await archiveRecord(ctx, invitation._id);
+    }
 
     // staff_configが既に存在するか確認
     const existingConfig = await ctx.db
@@ -134,8 +153,23 @@ export const cancelInvitation = mutation({
 
     // スタッフレコードを論理削除
     await archiveRecord(ctx, args.staff_id);
+    
+    // 関連するstaff_invitationレコードもアーカイブ
+    const invitation = await ctx.db
+      .query('staff_invitation')
+      .withIndex('by_tenant_org_staff_archive', (q) =>
+        q.eq('tenant_id', staff.tenant_id)
+         .eq('org_id', staff.org_id)
+         .eq('staff_id', args.staff_id)
+         .eq('is_archive', false)
+      )
+      .first();
+      
+    if (invitation) {
+      await archiveRecord(ctx, invitation._id);
+    }
 
-      return {
+    return {
       success: true,
     };
   },

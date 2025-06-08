@@ -1,3 +1,4 @@
+import { InvitationStatus, invitationStatusType } from './types'
 /* =============================================================
  * Convex スキーマ定義（美容サロン向けマルチテナント SaaS "Bocker"）
  * =============================================================
@@ -560,6 +561,18 @@ const staff_config = defineTable({
 })
 .index('by_tenant_org_staff_archive', ['tenant_id', 'org_id', 'staff_id', 'is_archive']);
 
+
+const staff_invitation = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.id('organization'), // 店舗ID
+  staff_id: v.id('staff'), // スタッフID
+  invitation_id: v.optional(v.string()), // Clerk招待ID
+  invitation_email: v.optional(v.string()), // 招待メールアドレス
+  invitation_status: v.optional(invitationStatusType), // 招待ステータス
+  ...CommonFields,
+})
+.index('by_tenant_org_staff_archive', ['tenant_id', 'org_id', 'staff_id', 'is_archive']);
+
 /**
  * =========================
  * MENU (施術メニュー)
@@ -818,6 +831,7 @@ export default defineSchema({
   staff_exception_schedule,
   staff,
   staff_config,
+  staff_invitation,
   menu,
   menu_exclusion_staff,
   coupon,

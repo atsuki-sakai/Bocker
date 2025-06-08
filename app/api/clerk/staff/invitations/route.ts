@@ -33,51 +33,50 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // 3. Convexから招待中スタッフ一覧を取得
+    // 3. Convexから招待中スタッフ一覧を取得（招待情報も含まれている）
     const pendingStaff = await convex.query(api.staff.invitation.query.listPending, {
       tenant_id: tenant_id as Id<"tenant">,
       org_id: org_id as Id<"organization">,
     })
 
-    // 4. Clerkから保留中の招待一覧を取得
-    const clerk = await clerkClient()
-    const invitations = await clerk.invitations.getInvitationList({
-      status: 'pending',
-      limit: 50,
-    })
+    // 4. レスポンスデータを整形（Clerk APIは不要）
+    const mergedData = await Promise.all(
+      pendingStaff.map(async (staff) => {
+        // staff_configから追加情報を取得
+        const staffConfig = await convex.query(api.staff.config.query.findByStaffId, {
+          tenant_id: staff.tenant_id,
+          org_id: staff.org_id,
+          staff_id: staff._id,
+        });
 
-    // 5. テナント・組織でフィルタリング
-    const filteredInvitations = invitations.data.filter((invitation) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const metadata = invitation.publicMetadata as any
-      return metadata?.tenant_id === tenant_id && metadata?.org_id === org_id
-    })
-
-    // 6. ConvexスタッフとClerk招待データをマージ
-    const mergedData = pendingStaff.map(staff => {
-      // このスタッフに対応するClerk招待を探す
-      const clerkInvitation = filteredInvitations.find(inv => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const metadata = inv.publicMetadata as any
-        return metadata?.staff_id === staff._id
+        return {
+          // Convexデータ
+          staff_id: staff._id,
+          name: staff.name,
+          email: staff.invitation_email || '',
+          gender: staffConfig?.gender || 'unselected',
+          age: staffConfig?.age,
+          tags: staffConfig?.tags || [],
+          created_at: staff._creationTime,
+          
+          // 招待データ（Convexから取得）
+          invitation_id: staff.clerk_invitation_id || null,
+          invitation_status: staff.invitation_status || 'pending',
+          invitation_created_at: staff._creationTime, // 招待作成時刻として代用
+          
+          // メタデータ
+          metadata: {
+            tenant_id: staff.tenant_id,
+            org_id: staff.org_id,
+            role: staffConfig?.role || 'staff',
+            staff_id: staff._id,
+            extra_charge: staffConfig?.extra_charge,
+            priority: staffConfig?.priority,
+            resent: false, // TODO: 再送フラグの管理が必要な場合は実装
+          },
+        };
       })
-
-      return {
-        // Convexデータ
-        staff_id: staff._id,
-        name: staff.name,
-        created_at: staff._creationTime,
-        
-        // Clerk招待データ
-        invitation_id: clerkInvitation?.id || null,
-        invitation_status: clerkInvitation?.status || 'missing',
-        invitation_created_at: clerkInvitation?.createdAt || null,
-        
-        // メタデータ
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        metadata: clerkInvitation?.publicMetadata as any || null,
-      }
-    })
+    );
 
     return NextResponse.json({
       success: true,
@@ -199,6 +198,15 @@ export async function POST(req: NextRequest) {
     const invitation = await clerk.invitations.createInvitation(invitationParams)
     
     console.log('✅ 招待作成成功:', invitation.id)
+    
+    // Convexに新しい招待情報を保存
+    await convex.mutation(api.staff.mutation.updateInvitationInfo, {
+      staff_id: staff_id as Id<"staff">,
+      clerk_invitation_id: invitation.id,
+      invitation_email: email,
+      invitation_status: 'pending' as const,
+    })
+    console.log('✅ Convex招待情報更新成功')
 
     return NextResponse.json({
       success: true,
