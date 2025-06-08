@@ -120,10 +120,24 @@ export const getStaffWithInvitation = query({
         )
         .first()
 
+    // 招待情報を取得
+    const invitation = await ctx.db
+      .query('staff_invitation')
+      .withIndex('by_tenant_org_staff_archive', (q) =>
+        q.eq('tenant_id', staff.tenant_id)
+         .eq('org_id', staff.org_id)
+         .eq('staff_id', args.staff_id)
+         .eq('is_archive', false)
+      )
+      .first();
+
     return {
       ...staff,
       invitationStatus: staff.clerk_user_id ? 'accepted' : 'pending' as InvitationStatus,
       config: staffConfig,
+      clerk_invitation_id: invitation?.invitation_id || null,
+      invitation_email: invitation?.invitation_email || null,
+      invitation_status: invitation?.invitation_status || null,
     };
   },
 });

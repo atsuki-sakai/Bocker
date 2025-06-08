@@ -59,28 +59,31 @@ export async function DELETE(req: NextRequest) {
     // 6. 招待状態に応じた処理
     const clerk = await clerkClient()
     
-    if (staffData.invitationStatus === 'pending') {
-      // 招待中の場合：Clerk招待をキャンセル
+    if (staffData.invitationStatus === 'pending' && staffData.clerk_invitation_id) {
+      // 招待中の場合：保存されているClerk招待IDで直接キャンセル
       try {
-        // 招待リストから該当する招待を探す
-        const invitations = await clerk.invitations.getInvitationList({
-          status: 'pending',
-          limit: 100,
-        })
-        
-        const targetInvitation = invitations.data.find(inv => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const metadata = inv.publicMetadata as any
-          return metadata?.staff_id === staff_id
-        })
-        
-        if (targetInvitation) {
-          await clerk.invitations.revokeInvitation(targetInvitation.id)
-          console.log('✅ Clerk招待キャンセル成功')
-        }
+        await clerk.invitations.revokeInvitation(staffData.clerk_invitation_id)
+        console.log('✅ Clerk招待キャンセル成功')
       } catch (inviteError) {
         console.error('❌ Clerk招待キャンセルエラー:', inviteError)
-        // エラーでも続行
+        
+        // resource_not_found以外のエラーは処理を停止
+        if (inviteError && typeof inviteError === 'object' && 'errors' in inviteError) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const clerkErrors = inviteError.errors as any[]
+          if (clerkErrors?.[0]?.code !== 'resource_not_found') {
+            return NextResponse.json(
+              { error: 'Clerk招待の取り消しに失敗しました' },
+              { status: 500 }
+            )
+          }
+        } else {
+          // 予期しないエラーの場合も停止
+          return NextResponse.json(
+            { error: 'Clerk招待の取り消しに失敗しました' },
+            { status: 500 }
+          )
+        }
       }
     } else if (staffData.clerk_user_id) {
       // 受諾済みの場合：Clerkユーザー削除

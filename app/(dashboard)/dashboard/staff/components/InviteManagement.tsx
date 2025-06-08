@@ -141,11 +141,6 @@ export default function InviteManagement() {
   const cancelInvitation = async (invitation: StaffInvitation) => {
     setIsProcessing(true)
     try {
-      // Convex mutationでキャンセル
-      await cancelInvitationMutation({
-        staff_id: invitation.staff_id,
-      })
-
       // Clerk側の招待もキャンセル（APIエンドポイント経由）
       if (invitation.invitation_id) {
         const response = await fetch(
@@ -162,6 +157,8 @@ export default function InviteManagement() {
           const data = await response.json()
           throw new Error(data.error || 'Clerk招待のキャンセルに失敗しました')
         }
+      } else {
+        toast.error('招待IDが見つかりません')
       }
 
       toast.success(`${invitation.email} の招待をキャンセルしました`)

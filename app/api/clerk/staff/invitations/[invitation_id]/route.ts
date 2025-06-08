@@ -45,36 +45,60 @@ export async function DELETE(
       )
     }
 
-    // 4. Clerk招待キャンセル
-    const clerk = await clerkClient()
-    let clerkCancelSuccess = false
-    
-    // まず招待の状態を確認
-    try {
-     
-      await clerk.invitations.revokeInvitation(invitation_id)
-      console.log('✅ Clerk招待キャンセル成功')
-      clerkCancelSuccess = true
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (clerkError: any) {
-      console.error('❌ Clerk招待処理エラー:', clerkError)
-      
-      // Clerk側で招待が既に削除されている場合は成功として扱う
-      if (clerkError?.errors?.[0]?.code === 'resource_not_found') {
-        console.log('✅ Clerk招待は既に削除済みです')
-        clerkCancelSuccess = true
-      } else if (clerkError?.status === 400) {
-        // Bad Requestの場合、招待が無効な状態の可能性がある
-        console.log('⚠️ Clerk招待が無効な状態です - 処理を続行')
-        clerkCancelSuccess = true
-      } else {
-        // その他のエラーの場合はログに記録して続行
-        console.error('⚠️ Clerk招待削除でエラーが発生しましたが処理を続行します')
-        clerkCancelSuccess = false
-      }
+    // 4. Convexからスタッフ情報を取得してClerk招待IDを確認
+    const staffData = await convex.query(api.staff.invitation.query.getStaffWithInvitation, {
+      staff_id: staff_id as Id<"staff">,
+    })
+
+    if (!staffData) {
+      return NextResponse.json(
+        { error: 'スタッフが見つかりません' },
+        { status: 404 }
+      )
     }
 
-    // 5. Convexスタッフレコード削除
+    // 5. Clerk招待をキャンセル
+    const clerk = await clerkClient()
+    let clerkCancelSuccess = false
+    let clerkError: string | null = null
+    
+    if (staffData.invitationStatus === 'pending' && staffData.clerk_invitation_id) {
+      try {
+        // 保存されているClerk招待IDで直接削除
+        await clerk.invitations.revokeInvitation(staffData.clerk_invitation_id)
+        console.log('✅ Clerk招待キャンセル成功')
+        clerkCancelSuccess = true
+      } catch (error: any) {
+        console.error('❌ Clerk招待処理エラー:', error)
+        
+        // エラーの詳細を記録
+        const errorCode = error?.errors?.[0]?.code
+        const errorMessage = error?.errors?.[0]?.message || error?.message
+        
+        if (errorCode === 'resource_not_found') {
+          console.log('✅ Clerk招待は既に削除済みです')
+          clerkCancelSuccess = true
+        } else {
+          console.error(`❌ Clerk招待削除失敗: Code=${errorCode}, Message=${errorMessage}`)
+          clerkCancelSuccess = false
+          clerkError = `Clerk招待削除失敗: ${errorMessage}`
+        }
+      }
+    } else {
+      // 招待状態がpending以外、またはClerk招待IDが存在しない場合
+      console.log(`⚠️ 招待状態: ${staffData.invitationStatus}, Clerk招待ID: ${staffData.clerk_invitation_id}`)
+      clerkCancelSuccess = true // Convex側のクリーンアップのみ実行
+    }
+
+    // Clerk側でエラーが発生した場合は処理を停止
+    if (!clerkCancelSuccess && clerkError) {
+      return NextResponse.json(
+        { error: clerkError },
+        { status: 500 }
+      )
+    }
+
+    // 6. Convexスタッフレコード削除
     try {
       // スタッフレコードを論理削除（招待情報も含めて処理される）
       await convex.mutation(api.staff.invitation.mutation.cancelInvitation, {
@@ -96,7 +120,7 @@ export async function DELETE(
       }
     }
 
-    // 6. 成功レスポンス
+    // 7. 成功レスポンス
     return NextResponse.json({
       success: true,
       message: '招待をキャンセルしました',
