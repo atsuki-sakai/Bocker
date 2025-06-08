@@ -281,19 +281,7 @@ export default function InviteManagement() {
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>{getGenderDisplayName(invitation.gender)}</span>
-                          {invitation.age && <span>{invitation.age}歳</span>}
-                          {invitation.tags.length > 0 && (
-                            <div className="flex gap-1">
-                              {invitation.tags.map((tag, index) => (
-                                <Badge key={index} variant="secondary" className="text-xs">
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+
                         <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
