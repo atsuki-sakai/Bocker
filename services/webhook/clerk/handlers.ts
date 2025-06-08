@@ -32,6 +32,7 @@ export async function handleUserCreated(
   const org_name = unsafe_metadata?.orgName as string | undefined;
   const email = email_addresses[0]?.email_address || 'no-email';
 
+
   const context: LogContext = {
     eventId,
     eventType: 'user.created',
@@ -40,6 +41,7 @@ export async function handleUserCreated(
 
   console.log(`👤 [${eventId}] User Created処理開始: user_id=${id}, email=${email}`, context);
 
+  console.log('public_metadata', public_metadata);
   // スタッフ招待の受諾チェック('staff_id'が存在する場合はスタッフアカウントとして処理)
   if (public_metadata && 'staff_id' in public_metadata) {
     console.log(`🎫 [${eventId}] スタッフ招待の受諾を検出: staff_id=${public_metadata.staff_id}`, context);
