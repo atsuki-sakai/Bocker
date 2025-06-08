@@ -222,7 +222,6 @@ export default function InviteManagement() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <UserPlus className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{invitation.name}</span>
                           <span className="text-sm text-muted-foreground">
                             ({invitation.email})
                           </span>
@@ -265,7 +264,7 @@ export default function InviteManagement() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-end gap-2 w-full mt-4">
                         <Button
                           variant="outline"
                           size="sm"

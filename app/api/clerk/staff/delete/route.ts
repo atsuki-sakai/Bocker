@@ -49,15 +49,7 @@ export async function DELETE(req: NextRequest) {
         { status: 404 }
       )
     }
-
-    // 5. 自分自身の削除を防止
-    if (staffData.clerk_user_id === userId) {
-      return NextResponse.json(
-        { error: '自分自身を削除することはできません' },
-        { status: 400 }
-      )
-    }
-
+    
     // 6. 招待状態に応じた処理
     const clerk = await clerkClient()
     
@@ -107,7 +99,7 @@ export async function DELETE(req: NextRequest) {
     if (staffData.images && staffData.images.length > 0) {
       for (const image of staffData.images) {
         try {
-          await gcsService.deleteImage(image.original_url)
+          await gcsService.deleteImageWithThumbnail(image.original_url)
           console.log(`✅ 画像削除成功: ${image.original_url}`)
         } catch (imageError) {
           console.error(`❌ 画像削除エラー: ${image.original_url}`, imageError)

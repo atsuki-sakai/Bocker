@@ -47,42 +47,62 @@ export async function DELETE(
 
     // 4. Clerk招待キャンセル
     const clerk = await clerkClient()
+    let clerkCancelSuccess = false
+    
+    // まず招待の状態を確認
     try {
+     
       await clerk.invitations.revokeInvitation(invitation_id)
       console.log('✅ Clerk招待キャンセル成功')
-    } catch (clerkError) {
-      console.error('❌ Clerk招待キャンセルエラー:', clerkError)
-      // Clerkエラーでも続行（既にキャンセル済みの可能性）
+      clerkCancelSuccess = true
+    } catch (clerkError: any) {
+      console.error('❌ Clerk招待処理エラー:', clerkError)
+      
+      // Clerk側で招待が既に削除されている場合は成功として扱う
+      if (clerkError?.errors?.[0]?.code === 'resource_not_found') {
+        console.log('✅ Clerk招待は既に削除済みです')
+        clerkCancelSuccess = true
+      } else if (clerkError?.status === 400) {
+        // Bad Requestの場合、招待が無効な状態の可能性がある
+        console.log('⚠️ Clerk招待が無効な状態です - 処理を続行')
+        clerkCancelSuccess = true
+      } else {
+        // その他のエラーの場合はログに記録して続行
+        console.error('⚠️ Clerk招待削除でエラーが発生しましたが処理を続行します')
+        clerkCancelSuccess = false
+      }
     }
 
-    // 5. Convexスタッフレコード削除＆招待ステータス更新
+    // 5. Convexスタッフレコード削除
     try {
-      // 招待ステータスを'revoked'に更新
-      await convex.mutation(api.staff.mutation.updateInvitationInfo, {
-        staff_id: staff_id as Id<"staff">,
-        clerk_invitation_id: invitation_id,
-        invitation_email: '', // キャンセルされたので空にする
-        invitation_status: 'revoked' as const,
-      })
-      
-      // スタッフレコードを論理削除
+      // スタッフレコードを論理削除（招待情報も含めて処理される）
       await convex.mutation(api.staff.invitation.mutation.cancelInvitation, {
         staff_id: staff_id as Id<"staff">,
       })
       console.log('✅ Convexスタッフレコード削除成功')
     } catch (convexError) {
       console.error('❌ Convexスタッフレコード削除エラー:', convexError)
-      // 整合性のため、エラーを返す
-      return NextResponse.json(
-        { error: 'スタッフレコードの削除に失敗しました' },
-        { status: 500 }
-      )
+      // スタッフが既に削除済みの場合は成功として扱う
+      const errorMessage = convexError instanceof Error ? convexError.message : String(convexError)
+      if (errorMessage.includes('スタッフが見つかりません') || errorMessage.includes('指定されたスタッフが存在しません')) {
+        console.log('✅ スタッフは既に削除済みです')
+      } else {
+        // 他のエラーの場合は失敗として扱う
+        return NextResponse.json(
+          { error: 'スタッフレコードの削除に失敗しました' },
+          { status: 500 }
+        )
+      }
     }
 
     // 6. 成功レスポンス
     return NextResponse.json({
       success: true,
       message: '招待をキャンセルしました',
+      details: {
+        clerkCancelSuccess,
+        convexCancelSuccess: true,
+      }
     })
 
   } catch (error: unknown) {

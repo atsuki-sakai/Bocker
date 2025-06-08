@@ -8,7 +8,6 @@ import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
 import { genderType, imageType } from '@/convex/types';
 import { MAX_NOTES_LENGTH } from '../constants';
 
-// スタッフの追加
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'), // テナントID
@@ -138,12 +137,23 @@ export const killRelatedTables = mutation({
   },
   handler: async (ctx, args) => {
 
+    // スタッフ設定の削除
     if (args.staff_config_id) {
       await killRecord(ctx, args.staff_config_id)
     }
+    // スタッフの削除
     if (args.staff_id) {
+      const staff = await ctx.db.get(args.staff_id)
       await killRecord(ctx, args.staff_id)
     }
+
+    // 招待情報の削除
+    const staffInvitation = await ctx.db.query('staff_invitation').withIndex('by_tenant_org_staff_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('staff_id', args.staff_id)).first()
+    if (staffInvitation) {
+      await killRecord(ctx, staffInvitation._id)
+    }
+
+    // スタッフのスケジュールの削除
     const staffWeekSchedules = await ctx.db
       .query('staff_week_schedule')
       .withIndex('by_tenant_org_staff_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('staff_id', args.staff_id))
@@ -151,11 +161,13 @@ export const killRelatedTables = mutation({
 
     await Promise.all(staffWeekSchedules.map((schedule) => killRecord(ctx, schedule._id)))
 
+    // スタッフの例外スケジュールの削除
     const staffSchedules = await ctx.db
       .query('staff_exception_schedule')
       .withIndex('by_tenant_org_staff_date_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('staff_id', args.staff_id))
       .collect()
     await Promise.all(staffSchedules.map((schedule) => killRecord(ctx, schedule._id)))
+
     return {
       deletedStaffConfigId: args.staff_config_id,
       deletedStaffId: args.staff_id,
@@ -199,7 +211,7 @@ export const updateInvitationInfo = mutation({
     invitation_status: v.union(v.literal('pending'), v.literal('accepted'), v.literal('revoked')),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx)
+   
     const staff = await ctx.db.get(args.staff_id)
     if (!staff || staff.is_archive) {
       throw new ConvexError({
