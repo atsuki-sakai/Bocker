@@ -82,7 +82,7 @@ export const acceptInvitation = mutation({
 
     // スタッフレコード取得
     const staff = await ctx.db.get(args.staff_id);
-    if (!staff || staff.is_archive) {
+    if (!staff) {
       throw new Error('スタッフが見つかりません');
     }
 
