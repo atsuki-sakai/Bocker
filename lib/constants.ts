@@ -246,7 +246,7 @@ export const NAV_ITEMS: NavItem[] = [
     name: 'スタッフ予定表',
     href: `/dashboard/staff-schedule`,
     icon: TimerIcon,
-    minRole: 'staff',
+    minRole: 'manager',
     minPlan: 'LITE',
   },
   {
@@ -267,7 +267,7 @@ export const NAV_ITEMS: NavItem[] = [
     name: '顧客管理',
     href: `/dashboard/customer`,
     icon: UserCircleIcon,
-    minRole: 'staff',
+    minRole: 'manager',
     minPlan: 'LITE',
   },
   {

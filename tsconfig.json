@@ -29,7 +29,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "supabase/functions/**/*.ts",
-    "app/(dashboard)/dashboard/staff-schedule/page.tsx"
+    "app/(dashboard)/dashboard/staff-schedule/page.tsx",
+    "app/(dashboard)/dashboard/staff/[staff_id]/my-page"
   ],
   "exclude": ["node_modules"]
 }
