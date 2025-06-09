@@ -599,12 +599,13 @@ export default function StaffAddPage() {
                                     🔐 権限詳細
                                   </h4>
                                   <div className="space-y-2 text-xs text-muted-foreground">
-                                    <div className="border-l-2 border-palette-3-foreground pl-2">
-                                      <strong className="text-palette-3-foreground">
-                                        スタッフ：
+                                    <div className="border-l-2 border-palette-1-foreground pl-2">
+                                      <strong className="text-palette-1-foreground">
+                                        オーナー：
                                       </strong>
                                       <span className="ml-1">
-                                        ダッシュボード、予約作成・タイムライン、顧客カルテ管理
+                                        マネージャー権限 + スタッフ管理、ポイント設定、システム設定
+                                        + サブスクリプション管理
                                       </span>
                                     </div>
                                     <div className="border-l-2 border-palette-4-foreground pl-2">
@@ -616,13 +617,12 @@ export default function StaffAddPage() {
                                         スタッフ予定表、メニュー管理、顧客管理、オプション管理、クーポン管理
                                       </span>
                                     </div>
-                                    <div className="border-l-2 border-palette-1-foreground pl-2">
-                                      <strong className="text-palette-1-foreground">
-                                        オーナー：
+                                    <div className="border-l-2 border-palette-3-foreground pl-2">
+                                      <strong className="text-palette-3-foreground">
+                                        スタッフ：
                                       </strong>
                                       <span className="ml-1">
-                                        マネージャー権限 + スタッフ管理、ポイント設定、システム設定
-                                        + サブスクリプション管理
+                                        ダッシュボード、予約作成・タイムライン、顧客カルテ管理
                                       </span>
                                     </div>
                                   </div>
@@ -641,7 +641,7 @@ export default function StaffAddPage() {
                     )}
 
                     <Separator className="my-8 md:my-12 w-full" />
-                    <div className="grid md:grid-cols-2 gap-6 pb-4 w-full">
+                    <div className="flex flex-col md:flex-row gap-6 pb-4 w-full">
                       <div className="w-full">
                         <div className="mb-2 flex items-center">
                           <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
