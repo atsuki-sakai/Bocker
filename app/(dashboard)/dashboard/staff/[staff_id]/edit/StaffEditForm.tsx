@@ -158,7 +158,7 @@ const staffAddSchema = z.object({
 export default function StaffEditForm() {
   const router = useRouter()
   const { staff_id } = useParams()
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, role } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [selectedExclusionMenuIds, setSelectedExclusionMenuIds] = useState<Id<'menu'>[]>([])
   const [exclusionInitialized, setExclusionInitialized] = useState(false)
@@ -255,7 +255,7 @@ export default function StaffEditForm() {
         clerk_user_id: staffAllData?.clerk_user_id, // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
         name: data.name, // スタッフ名
         description: data.description, // 自己紹介
-        images: newUploadedImages.length > 0 ? newUploadedImages : (staffAllData?.images || []), // 画像（新しい画像がない場合は既存の画像を維持）
+        images: newUploadedImages.length > 0 ? newUploadedImages : staffAllData?.images || [], // 画像（新しい画像がない場合は既存の画像を維持）
         is_active: true, // 有効/無効
       })
 
@@ -652,141 +652,145 @@ export default function StaffEditForm() {
                 <Separator />
 
                 {/* 認証情報セクション */}
-                {staffAllData.connect_clerk && (
-                  <div>
-                    <div className="flex items-center mb-4">
-                      <Shield className="h-5 w-5 mr-2 text-muted-foreground" />
-                      <h3 className="font-semibold text-lg">権限設定</h3>
-                    </div>
+                {staffAllData.connect_clerk && role === 'admin' && (
+                  <>
+                    <div>
+                      <div className="flex items-center mb-4">
+                        <Shield className="h-5 w-5 mr-2 text-muted-foreground" />
+                        <h3 className="font-semibold text-lg">権限設定</h3>
+                      </div>
 
-                    <Alert className="bg-warning border border-warning-foreground rounded-md mb-4">
-                      <AlertDescription className="text-warning-foreground text-sm">
-                        スタッフの権限を設定します。権限によってアクセスできる機能が異なります。
-                      </AlertDescription>
-                    </Alert>
+                      <Alert className="bg-warning border border-warning-foreground rounded-md mb-4">
+                        <AlertDescription className="text-warning-foreground text-sm">
+                          スタッフの権限を設定します。権限によってアクセスできる機能が異なります。
+                        </AlertDescription>
+                      </Alert>
 
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <div className="flex items-center mb-2">
-                          <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <Label className="font-medium text-primary">権限</Label>
-                        </div>
-                        <div className="mt-1">
-                          <div className="grid grid-cols-3 gap-3">
-                            {[
-                              {
-                                role: 'staff',
-                                label: 'スタッフ',
-                                desc: '基本的な予約確認と自身の情報管理のみ',
-                              },
-                              {
-                                role: 'manager',
-                                label: 'マネージャー',
-                                desc: 'スタッフ管理と基本設定の変更が可能',
-                              },
-                              {
-                                role: 'owner',
-                                label: 'オーナー',
-                                desc: 'すべての機能にアクセス可能',
-                              },
-                            ].map((item) => (
-                              <div
-                                key={item.role}
-                                className={`border rounded-md p-3 cursor-pointer transition-all ${
-                                  watch('role') === item.role
-                                    ? 'border-active bg-active-foreground text-active'
-                                    : 'border-border bg-muted text-muted-foreground'
-                                }`}
-                                onClick={() =>
-                                  setValue('role', item.role as Role, {
-                                    shouldDirty: true,
-                                    shouldValidate: true,
-                                  })
-                                }
-                              >
-                                <div className="font-medium text-sm mb-1">{item.label}</div>
-                                <div className="text-xs text-muted-foreground">{item.desc}</div>
-                              </div>
-                            ))}
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <div className="flex items-center mb-2">
+                            <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <Label className="font-medium text-primary">権限</Label>
+                          </div>
+                          <div className="mt-1">
+                            <div className="grid grid-cols-3 gap-3">
+                              {[
+                                {
+                                  role: 'staff',
+                                  label: 'スタッフ',
+                                  desc: '基本的な予約確認と自身の情報管理のみ',
+                                },
+                                {
+                                  role: 'manager',
+                                  label: 'マネージャー',
+                                  desc: 'スタッフ管理と基本設定の変更が可能',
+                                },
+                                {
+                                  role: 'owner',
+                                  label: 'オーナー',
+                                  desc: 'すべての機能にアクセス可能',
+                                },
+                              ].map((item) => (
+                                <div
+                                  key={item.role}
+                                  className={`border rounded-md p-3 cursor-pointer transition-all ${
+                                    watch('role') === item.role
+                                      ? 'border-active bg-active-foreground text-active'
+                                      : 'border-border bg-muted text-muted-foreground'
+                                  }`}
+                                  onClick={() =>
+                                    setValue('role', item.role as Role, {
+                                      shouldDirty: true,
+                                      shouldValidate: true,
+                                    })
+                                  }
+                                >
+                                  <div className="font-medium text-sm mb-1">{item.label}</div>
+                                  <div className="text-xs text-muted-foreground">{item.desc}</div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                    <Separator />
+                  </>
                 )}
 
-                <Separator />
-
-                {/* 詳細設定セクション */}
-                <div>
-                  <div className="flex items-center mb-4">
-                    <Sparkles className="h-5 w-5 mr-2 text-primary" />
-                    <h3 className="font-semibold text-lg">詳細設定</h3>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
+                {role === 'admin' && (
+                  <>
+                    {/* 詳細設定セクション */}
                     <div>
-                      <div className="flex items-center mb-2">
-                        <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <Label className="font-medium text-muted-foreground">指名料金</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 ml-1 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="text-xs w-56">
-                                お客様がこのスタッフを指名した場合の追加料金です。
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                      <div className="flex items-center mb-4">
+                        <Sparkles className="h-5 w-5 mr-2 text-primary" />
+                        <h3 className="font-semibold text-lg">詳細設定</h3>
                       </div>
-                      <ZodTextField
-                        name="extra_charge"
-                        label="指名料金"
-                        type="number"
-                        register={register}
-                        errors={errors}
-                        placeholder="指名料金を入力してください"
-                        className="transition-all duration-200"
-                      />
-                    </div>
 
-                    <div>
-                      <div className="flex items-center mb-2">
-                        <Sparkles className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <Label className="font-medium text-muted-foreground">優先度</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 ml-1 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="text-xs w-56">
-                                数値が大きいほど予約画面などで上位に表示されます。
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <div className="flex items-center mb-2">
+                            <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <Label className="font-medium text-muted-foreground">指名料金</Label>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 ml-1 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs w-56">
+                                    お客様がこのスタッフを指名した場合の追加料金です。
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <ZodTextField
+                            name="extra_charge"
+                            label="指名料金"
+                            type="number"
+                            register={register}
+                            errors={errors}
+                            placeholder="指名料金を入力してください"
+                            className="transition-all duration-200"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center mb-2">
+                            <Sparkles className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <Label className="font-medium text-muted-foreground">優先度</Label>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 ml-1 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs w-56">
+                                    数値が大きいほど予約画面などで上位に表示されます。
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <ZodTextField
+                            name="priority"
+                            label="優先度"
+                            type="number"
+                            register={register}
+                            errors={errors}
+                            placeholder="優先度を入力してください"
+                            className="transition-all duration-200"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            数値が大きいほど予約画面などで上位に表示されます。
+                            <br />
+                            指名無しの予約などで優先的に予約を確保したい場合は高い数値を設定してください。
+                          </p>
+                        </div>
                       </div>
-                      <ZodTextField
-                        name="priority"
-                        label="優先度"
-                        type="number"
-                        register={register}
-                        errors={errors}
-                        placeholder="優先度を入力してください"
-                        className="transition-all duration-200"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        数値が大きいほど予約画面などで上位に表示されます。
-                        <br />
-                        指名無しの予約などで優先的に予約を確保したい場合は高い数値を設定してください。
-                      </p>
                     </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

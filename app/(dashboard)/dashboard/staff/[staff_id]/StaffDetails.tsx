@@ -9,7 +9,7 @@ import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Loading } from '@/components/common'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,7 @@ export default function StaffDetails() {
   const { tenantId, orgId } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const router = useRouter()
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -63,6 +64,35 @@ export default function StaffDetails() {
   )
 
   const deleteImage = useAction(api.storage.action.killWithThumbnail)
+  const fetchUserEmail = useAction(api.staff.action.fetchUserEmail)
+
+  // メールアドレス取得処理をuseCallbackで安定化
+  const getEmailAddress = useCallback(
+    async (clerkUserId: string) => {
+      try {
+        const email = await fetchUserEmail({
+          clerk_user_id: clerkUserId,
+        })
+        console.log('取得したメール:', email)
+        setUserEmail(email)
+      } catch (error) {
+        // エラーハンドリング：メール取得に失敗した場合はコンソールに出力
+        console.error('メールアドレス取得エラー:', error)
+        // UIには影響させず、メールリンクを非表示にする
+        setUserEmail(null)
+      }
+    },
+    [fetchUserEmail]
+  )
+
+  // メールアドレス取得のuseEffect
+  useEffect(() => {
+    // スタッフデータとclerk_user_idが存在する場合のみ処理を実行
+    if (staffAllData && staffAllData.clerk_user_id !== undefined) {
+      // useCallbackで安定化された関数を呼び出し
+      getEmailAddress(staffAllData.clerk_user_id)
+    }
+  }, [staffAllData, getEmailAddress]) // getEmailAddressを依存配列に追加
 
   if (!staffAllData) return <Loading />
 
@@ -173,8 +203,8 @@ export default function StaffDetails() {
               </div>
 
               {/* 情報部分 - レイアウト改良 */}
-              <div className="p-6 md:w-2/3">
-                <div className="flex justify-between items-start mb-4">
+              <div className="py-6 md:w-2/3 xl:ml-10">
+                <div className="flex flex-col xl:flex-row justify-between items-start mb-4">
                   <div>
                     <h2 className="text-2xl font-bold text-primary">{staffAllData.name}</h2>
                     <div className="flex items-center gap-4 mt-2">
@@ -187,20 +217,16 @@ export default function StaffDetails() {
                       >
                         {getRoleDisplay(staffAllData.role || '')}
                       </Badge>
-                      {staffWithInvitation &&
-                        staffWithInvitation.invitationStatus === 'pending' && (
-                          <Badge
-                            variant="outline"
-                            className="bg-yellow-50 text-yellow-700 border-yellow-300"
-                          >
-                            <Mail className="h-3 w-3 mr-1" />
-                            招待中
-                          </Badge>
-                        )}
+                      {staffWithInvitation && staffWithInvitation.connect_clerk && (
+                        <Badge variant="outline">
+                          <Mail className="h-3 w-3 mr-1" />
+                          認証スタッフ
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                  <div className="flex gap-2 text-sm text-muted-foreground mt-4 xl:mt-0">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <span className="text-primary font-bold text-lg">
@@ -213,17 +239,27 @@ export default function StaffDetails() {
                         {staffAllData.age ? `${staffAllData.age}歳` : '年齢未設定'}
                       </span>
                     </div>
+                    {staffAllData.instagram_link && (
+                      <div className="flex items-center gap-2 ml-4 xl:ml-0">
+                        <Link
+                          href={staffAllData.instagram_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Instagram className="h-6 w-6 mr-5 text-pink-500" />
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {staffAllData.instagram_link && (
-                  <div className="mt-4 w-full flex justify-end items-center">
+                {userEmail && (
+                  <div className="mt-4 w-full flex justify-start items-center mb-4">
                     <Link
-                      href={staffAllData.instagram_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href={`mailto:${userEmail}`}
+                      className="text-link-foreground underline text-sm"
                     >
-                      <Instagram className="h-6 w-6 mr-5 text-pink-500" />
+                      {userEmail}
                     </Link>
                   </div>
                 )}
