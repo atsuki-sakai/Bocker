@@ -213,7 +213,7 @@ export const updateInvitationInfo = mutation({
   handler: async (ctx, args) => {
    
     const staff = await ctx.db.get(args.staff_id)
-    if (!staff || staff.is_archive) {
+    if (!staff) {
       throw new ConvexError({
         message: '指定されたスタッフが存在しません',
         statusCode: ERROR_STATUS_CODE.NOT_FOUND,
