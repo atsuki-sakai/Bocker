@@ -43,18 +43,18 @@ export async function POST(request: NextRequest) {
       redirectUrl,
       publicMetadata: {
         org_id: org_id,
-        role: existingInvitation.role || 'staff',
-        staffId: staff_id,
+        role: existingInvitation.role,
+        staff_id: staff_id,
       },
     });
 
     // 招待情報を更新
     await convex.mutation(api.staff.mutation.updateInvitationInfo, {
       staff_id: staff_id,
-      clerk_invitation_id: newInvitation.id,
+      invitation_id: newInvitation.id,
       invitation_email: existingInvitation.invitation_email!,
-      role: existingInvitation.role || 'staff',
       invitation_status: 'pending' as const,
+      role: existingInvitation.role,
     });
 
     return NextResponse.json({

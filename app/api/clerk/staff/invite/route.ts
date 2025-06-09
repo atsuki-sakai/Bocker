@@ -6,8 +6,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
-import { Role } from '@/convex/types'
 import { BASE_URL } from '@/lib/constants'
+import { Role } from '@/convex/types'
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
@@ -31,10 +31,21 @@ export async function POST(req: NextRequest) {
     // 2. リクエストボディから必要な情報を取得
     console.log('💬 リクエストボディを解析中...')
     const { 
-      email, 
-      tenant_id, 
-      org_id, 
-      role
+      email,
+      tenant_id,
+      org_id,
+      name,
+      description,
+      images,
+      is_active,
+      age,
+      gender,
+      instagram_link,
+      tags,
+      role,
+      featured_hair_images,
+      extra_charge,
+      priority,
     } = await req.json()
     console.log('📦 受信データ:', { email, tenant_id, org_id, role })
 
@@ -58,11 +69,24 @@ export async function POST(req: NextRequest) {
 
     // 5. Convexに招待レコード作成（clerk_user_id = null）
     // 注: メール重複チェックはフロントエンドで事前に実施済み
+    // スタッフとstaff_configレコードを作成
     console.log('📝 Convexにスタッフレコード作成中...')
     const result = await convex.mutation(api.staff.invitation.mutation.createWithInvitation, {
       tenant_id: tenant_id as Id<"tenant">,
       org_id: org_id as Id<"organization">,
       email,
+      name,
+      description,
+      images,
+      is_active,
+      age,
+      gender,
+      instagram_link,
+      tags,
+      role,
+      featured_hair_images,
+      extra_charge,
+      priority,
     })
 
     console.log('✅ Convexスタッフレコード作成成功:', result.staffId)
@@ -96,17 +120,17 @@ export async function POST(req: NextRequest) {
         staff_id: result.staffId as Id<"staff">,
       })
       
-      if (existingStaffData?.clerk_invitation_id && existingStaffData.invitationStatus === 'pending') {
+      if (existingStaffData?.invitation_id && existingStaffData.invitationStatus === 'pending') {
         console.log('⚠️ このスタッフの既存の招待が見つかりました:', {
           staffId: result.staffId,
-          existingInvitationId: existingStaffData.clerk_invitation_id,
+          existingInvitationId: existingStaffData.invitation_id,
           email: existingStaffData.invitation_email,
         })
         
         // 既存の招待を取り消す
         try {
-          await clerk.invitations.revokeInvitation(existingStaffData.clerk_invitation_id)
-          console.log('✅ 既存の招待を取り消しました:', existingStaffData.clerk_invitation_id)
+          await clerk.invitations.revokeInvitation(existingStaffData.invitation_id)
+          console.log('✅ 既存の招待を取り消しました:', existingStaffData.invitation_id)
         } catch (revokeError) {
           console.error('❌ 既存招待の取り消しエラー:', revokeError)
           // エラーコードを確認してrevoked_invitation以外の場合は処理を中断
@@ -126,13 +150,13 @@ export async function POST(req: NextRequest) {
       console.log('✅ Clerk招待作成成功:', {
         newInvitationId: invitation.id,
         email: invitation.emailAddress,
-        previousInvitationId: existingStaffData?.clerk_invitation_id,
+        previousInvitationId: existingStaffData?.invitation_id,
       })
       
       // Convexに招待情報を保存
       await convex.mutation(api.staff.mutation.updateInvitationInfo, {
         staff_id: result.staffId as Id<"staff">,
-        clerk_invitation_id: invitation.id,
+        invitation_id: invitation.id,
         invitation_email: email,
         invitation_status: 'pending' as const,
         role: role as Role,

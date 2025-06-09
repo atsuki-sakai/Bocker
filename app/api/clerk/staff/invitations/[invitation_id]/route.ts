@@ -66,16 +66,16 @@ export async function DELETE(
     console.log('🔍 招待キャンセル処理開始:', {
       urlParamInvitationId: invitation_id,
       staffId: staff_id,
-      convexClerkInvitationId: staffData.clerk_invitation_id,
+      convexClerkInvitationId: staffData.invitation_id,
       invitationStatus: staffData.invitationStatus,
     })
     
-    if (staffData.invitationStatus === 'pending' && staffData.clerk_invitation_id) {
+    if (staffData.invitationStatus === 'pending' && staffData.invitation_id) {
       try {
         // 保存されているClerk招待IDで直接削除
-        const revokedInvitation = await clerk.invitations.revokeInvitation(staffData.clerk_invitation_id)
+        const revokedInvitation = await clerk.invitations.revokeInvitation(staffData.invitation_id)
         console.log('✅ Clerk招待キャンセル成功:', {
-          invitationId: staffData.clerk_invitation_id,
+          invitationId: staffData.invitation_id,
           revokedStatus: revokedInvitation.status,
           revokedAt: revokedInvitation.createdAt,
         })
@@ -114,7 +114,7 @@ export async function DELETE(
       }
     } else {
       // 招待状態がpending以外、またはClerk招待IDが存在しない場合
-      console.log(`⚠️ 招待状態: ${staffData.invitationStatus}, Clerk招待ID: ${staffData.clerk_invitation_id}`)
+      console.log(`⚠️ 招待状態: ${staffData.invitationStatus}, Clerk招待ID: ${staffData.invitation_id}`)
       clerkCancelSuccess = true // Convex側のクリーンアップのみ実行
     }
 

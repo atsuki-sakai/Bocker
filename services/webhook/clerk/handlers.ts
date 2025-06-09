@@ -41,12 +41,20 @@ export async function handleUserCreated(
 
   console.log(`👤 [${eventId}] User Created処理開始: user_id=${id}, email=${email}`, context);
 
-  console.log('public_metadata', public_metadata);
   // スタッフ招待の受諾チェック('staff_id'が存在する場合はスタッフアカウントとして処理)
-  if (public_metadata && 'staff_id' in public_metadata) {
-    console.log(`🎫 [${eventId}] スタッフ招待の受諾を検出: staff_id=${public_metadata.staff_id}`, context);
+  // スタッフ招待の条件を確認
+  // 1. public_metadataが存在するか
+  // 2. staff_idまたはstaffIdが存在するか
+  // 3. ロールがadminでないか
+  const isStaffInvitation = public_metadata && 
+    ('staff_id' in public_metadata || 'staffId' in public_metadata) &&
+    public_metadata.role !== 'admin';
+
+  if (isStaffInvitation) {
+    const staffId = public_metadata.staff_id || public_metadata.staffId;
+    console.log(`🎫 [${eventId}] スタッフ招待の受諾を検出: staff_id=${staffId}`, context);
     return handleStaffInvitationAccepted(data, eventId, deps, metrics);
-  }else{
+  } else {
     try {
       // 1. 既存テナントの確認
       const existingTenant = await deps.retry(() =>

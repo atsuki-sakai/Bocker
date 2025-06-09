@@ -59,10 +59,10 @@ export async function DELETE(req: NextRequest) {
     // 6. 招待状態に応じた処理
     const clerk = await clerkClient()
     
-    if (staffData.invitationStatus === 'pending' && staffData.clerk_invitation_id) {
+    if (staffData.invitationStatus === 'pending' && staffData.invitation_id) {
       // 招待中の場合：保存されているClerk招待IDで直接キャンセル
       try {
-        await clerk.invitations.revokeInvitation(staffData.clerk_invitation_id)
+        await clerk.invitations.revokeInvitation(staffData.invitation_id)
         console.log('✅ Clerk招待キャンセル成功')
       } catch (inviteError) {
         console.error('❌ Clerk招待キャンセルエラー:', inviteError)

@@ -566,10 +566,10 @@ const staff_invitation = defineTable({
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.id('organization'), // 店舗ID
   staff_id: v.id('staff'), // スタッフID
+  role: roleType, // ロール
   invitation_id: v.optional(v.string()), // Clerk招待ID
   invitation_email: v.optional(v.string()), // 招待メールアドレス
   invitation_status: v.optional(invitationStatusType), // 招待ステータス
-  role: v.optional(roleType), // ロール
   ...CommonFields,
 })
 .index('by_invitation', ['invitation_id'])

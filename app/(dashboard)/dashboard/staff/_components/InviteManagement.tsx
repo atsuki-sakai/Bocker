@@ -219,31 +219,35 @@ export default function InviteManagement() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="border rounded-lg p-4 bg-muted/30"
+                    className="border rounded-lg p-3 bg-muted/30"
                   >
                     <div className="flex flex-col md:flex-row items-center justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <UserPlus className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">
-                            ({invitation.email})
-                          </span>
-                          {invitation.metadata && (
-                            <Badge variant="default" className="text-xs">
-                              {convertRole(invitation.metadata.role)}
-                            </Badge>
-                          )}
-                          {invitation.invitation_status === 'missing' && (
-                            <Badge variant="destructive" className="text-xs">
-                              <AlertCircle className="h-3 w-3 mr-1" />
-                              招待エラー
-                            </Badge>
-                          )}
-                          {invitation.metadata?.resent && (
-                            <Badge variant="outline" className="text-xs">
-                              再送済
-                            </Badge>
-                          )}
+                        <div className="flex items-center gap-2 mb-2 w-full">
+                          <div className="flex items-center gap-2">
+                            <UserPlus className="h-6 w-6 text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground w-full">
+                              ({invitation.email})
+                            </p>
+                            {invitation.metadata && (
+                              <Badge variant="default" className="text-xs text-nowrap">
+                                {convertRole(invitation.metadata.role)}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {invitation.invitation_status === 'missing' && (
+                              <Badge variant="destructive" className="text-xs">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                招待エラー
+                              </Badge>
+                            )}
+                            {invitation.metadata?.resent && (
+                              <Badge variant="outline" className="text-xs">
+                                再送済
+                              </Badge>
+                            )}
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">

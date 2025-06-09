@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 import { query } from '../../_generated/server';
-import { InvitationStatus } from '@/convex/types';
+import { InvitationStatus, Role } from '@/convex/types';
 
 
 export const getInvitation = query({
@@ -30,10 +30,12 @@ export const listPending = query({
         q.eq('tenant_id', args.tenant_id)
          .eq('org_id', args.org_id)
          .eq('is_active', false) // 招待中は非アクティブ
-         .eq('is_archive', false)
+         .eq('is_archive', true)
       )
       .filter((q) => q.eq(q.field('connect_clerk'), true) && q.eq(q.field('clerk_user_id'), undefined))
       .collect();
+
+    console.log('pendingStaff', pendingStaff);
 
     // 各スタッフの招待情報を取得
     const staffWithInvitation = await Promise.all(
@@ -61,6 +63,7 @@ export const listPending = query({
           clerk_invitation_id: invitation?.invitation_id || null,
           invitation_email: invitation?.invitation_email || null,
           invitation_status: invitation?.invitation_status || 'pending',
+          role: config?.role || 'staff' as Role,
         };
       })
     );
@@ -114,7 +117,7 @@ export const getStaffWithInvitation = query({
   handler: async (ctx, args) => {
 
     const staff = await ctx.db.get(args.staff_id);
-    if (!staff || staff.is_archive) {
+    if (!staff) {
       return null;
     }
 
@@ -125,7 +128,6 @@ export const getStaffWithInvitation = query({
           q.eq('tenant_id', staff.tenant_id)
            .eq('org_id', staff.org_id)
            .eq('staff_id', args.staff_id)
-           .eq('is_archive', false)
         )
         .first()
 
@@ -136,7 +138,6 @@ export const getStaffWithInvitation = query({
         q.eq('tenant_id', staff.tenant_id)
          .eq('org_id', staff.org_id)
          .eq('staff_id', args.staff_id)
-         .eq('is_archive', false)
       )
       .first();
 
@@ -144,7 +145,7 @@ export const getStaffWithInvitation = query({
       ...staff,
       invitationStatus: staff.clerk_user_id ? 'accepted' : 'pending' as InvitationStatus,
       config: staffConfig,
-      clerk_invitation_id: invitation?.invitation_id || null,
+      invitation_id: invitation?.invitation_id || null,
       invitation_email: invitation?.invitation_email || null,
       invitation_status: invitation?.invitation_status || null,
     };

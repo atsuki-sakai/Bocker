@@ -5,7 +5,7 @@ import { validateRequired, validateStringLength, validateEmail, validateTags } f
 import { checkAuth } from '@/convex/utils/auth';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
-import { genderType, imageType, roleType } from '@/convex/types';
+import { genderType, imageType, roleType, invitationStatusType } from '@/convex/types';
 import { MAX_NOTES_LENGTH } from '../constants';
 
 export const create = mutation({
@@ -143,7 +143,6 @@ export const killRelatedTables = mutation({
     }
     // スタッフの削除
     if (args.staff_id) {
-      const staff = await ctx.db.get(args.staff_id)
       await killRecord(ctx, args.staff_id)
     }
 
@@ -205,11 +204,11 @@ export const removeImages = mutation({
 // 招待情報の更新（招待作成・再送時に使用）
 export const updateInvitationInfo = mutation({
   args: {
-    staff_id: v.id('staff'),
-    clerk_invitation_id: v.string(),
-    invitation_email: v.string(),
-    role: v.union(roleType),
-    invitation_status: v.union(v.literal('pending'), v.literal('accepted'), v.literal('revoked')),
+    staff_id: v.id('staff'), // スタッフID
+    role: roleType, // ロール
+    invitation_id: v.string(), // Clerk招待ID
+    invitation_email: v.string(), // 招待メールアドレス
+    invitation_status: invitationStatusType, // 招待ステータス
   },
   handler: async (ctx, args) => {
    
@@ -238,9 +237,10 @@ export const updateInvitationInfo = mutation({
     if (existingInvitation) {
       // 既存レコードを更新
       await updateRecord(ctx, existingInvitation._id, {
-        invitation_id: args.clerk_invitation_id,
+        invitation_id: args.invitation_id,
         invitation_email: args.invitation_email,
         invitation_status: args.invitation_status,
+        role: args.role,
       })
     } else {
       // 新規レコードを作成
@@ -248,7 +248,8 @@ export const updateInvitationInfo = mutation({
         tenant_id: staff.tenant_id,
         org_id: staff.org_id,
         staff_id: args.staff_id,
-        invitation_id: args.clerk_invitation_id,
+        role: args.role,
+        invitation_id: args.invitation_id,
         invitation_email: args.invitation_email,
         invitation_status: args.invitation_status,
       })

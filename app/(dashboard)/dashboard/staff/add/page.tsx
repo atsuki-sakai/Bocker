@@ -59,9 +59,10 @@ import { ExclusionMenu } from '@/components/common'
 const createStaffAddSchema = (sendInviteEmail: boolean) =>
   z.object({
     // 名前：招待メール送信時は任意、通常作成時は必須
-    name: sendInviteEmail
-      ? z.string().max(MAX_TEXT_LENGTH).optional().nullable()
-      : z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH).optional().nullable(),
+    name: z
+      .string()
+      .min(1, { message: '名前は必須です' })
+      .max(MAX_TEXT_LENGTH, { message: `名前は${MAX_TEXT_LENGTH}文字以内で入力してください` }),
 
     // メールアドレス：招待メール送信時は必須、通常作成時は任意
     email: sendInviteEmail
@@ -211,50 +212,74 @@ export default function StaffAddPage() {
         limit_type: 'staff',
       })
 
-      // 招待メール送信時は事前にメールアドレスの重複チェック
-      const userEmail = user?.emailAddresses[0].emailAddress
-      const isAdmin = userEmail === data.email && user?.publicMetadata.role === 'admin'
-      if (sendInviteEmail && data.email) {
-        if (isAdmin) {
-          toast.error(
-            '管理者はスタッフアカウントを作成できません。アカウントを作成せずにスタッフを作成してください。'
-          )
-          setIsLoading(false)
-          return
-        }
-
-        try {
-          const emailCheckResult = await fetchAction(
-            api.staff.invitation.action.checkEmailAvailability,
-            {
-              tenant_id: tenantId,
-              org_id: orgId,
-              email: data.email,
-            }
-          )
-
-          if (!emailCheckResult.isAvailable) {
-            toast.error(`このメールアドレスは既に登録されています`)
-            setIsLoading(false)
-            return
-          }
-        } catch (checkError) {
-          console.error('メールアドレスチェックエラー:', checkError)
-          showErrorToast(checkError)
-          setIsLoading(false)
-          return
-        }
-      }
-
       // 招待メール送信の場合は、スタッフ作成をスキップして直接招待APIを呼び出す
       if (sendInviteEmail) {
         try {
+          // 招待メール送信時は事前にメールアドレスの重複チェック
+          const userEmail = user?.emailAddresses[0].emailAddress
+          const isAdmin = userEmail === data.email && user?.publicMetadata.role === 'admin'
+          if (sendInviteEmail && data.email) {
+            if (isAdmin) {
+              toast.error(
+                '管理者はスタッフアカウントを作成できません。アカウントを作成せずにスタッフを作成してください。'
+              )
+              setIsLoading(false)
+              return
+            }
+
+            try {
+              const emailCheckResult = await fetchAction(
+                api.staff.invitation.action.checkEmailAvailability,
+                {
+                  tenant_id: tenantId,
+                  org_id: orgId,
+                  email: data.email,
+                }
+              )
+
+              if (!emailCheckResult.isAvailable) {
+                toast.error(`このメールアドレスは既に登録されています`)
+                setIsLoading(false)
+                return
+              }
+            } catch (checkError) {
+              console.error('メールアドレスチェックエラー:', checkError)
+              showErrorToast(checkError)
+              setIsLoading(false)
+              return
+            }
+          }
           console.log('📧 招待メール送信を開始:', {
             email: data.email,
             tenant_id: tenantId,
             org_id: orgId,
             role: data.role,
           })
+
+          if (selectedFile) {
+            try {
+              const result = await uploadCompressedImageWithThumbnailSignedUrl(
+                selectedFile!,
+                orgId,
+                'staff',
+                'square', // aspectType: 'square' | 'landscape' | 'mobile'
+                'medium' // quality: 'low' | 'medium' | 'high'
+              )
+              // 新方式のレスポンス形式に合わせて修正
+              newUploadedImageUrls = [
+                {
+                  original_url: result.original.publicUrl,
+                  thumbnail_url: result.thumbnail.publicUrl,
+                },
+              ]
+            } catch (error) {
+              console.log('画像アップロードエラー: ', error)
+
+              showErrorToast(error)
+              setIsLoading(false)
+              return
+            }
+          }
 
           const inviteResponse = await fetch('/api/clerk/staff/invite', {
             method: 'POST',
@@ -265,7 +290,18 @@ export default function StaffAddPage() {
               email: data.email,
               tenant_id: tenantId,
               org_id: orgId,
-              role: data.role,
+              name: data.name ?? '', // スタッフ名
+              description: data.description ?? undefined, // 自己紹介
+              images: newUploadedImageUrls ? newUploadedImageUrls : data.images, // 画像
+              is_active: data.is_active, // 有効/無効
+              age: data.age ?? undefined, // 年齢
+              gender: data.gender ?? ('unselected' as Gender), // 性別
+              instagram_link: data.instagram_link ?? undefined, // インスタグラムリンク
+              tags: data.tags ?? [], // タグ
+              role: data.role ?? ('staff' as Role), // ロール
+              featured_hair_images: [], // フィーチャー画像
+              extra_charge: data.extra_charge ?? undefined, // 追加料金
+              priority: data.priority ?? undefined, // 優先度
             }),
           })
 
@@ -291,105 +327,105 @@ export default function StaffAddPage() {
           toast.error('招待メール送信中にエラーが発生しました')
           return
         }
-      }
-
-      // 通常のスタッフ作成処理
-      if (selectedFile) {
-        try {
-          const result = await uploadCompressedImageWithThumbnailSignedUrl(
-            selectedFile!,
-            orgId,
-            'staff',
-            'square', // aspectType: 'square' | 'landscape' | 'mobile'
-            'medium' // quality: 'low' | 'medium' | 'high'
-          )
-          // 新方式のレスポンス形式に合わせて修正
-          newUploadedImageUrls = [
-            {
-              original_url: result.original.publicUrl,
-              thumbnail_url: result.thumbnail.publicUrl,
-            },
-          ]
-        } catch (error) {
-          console.log('画像アップロードエラー: ', error)
-
-          showErrorToast(error)
-          setIsLoading(false)
-          return
-        }
-      }
-
-      try {
-        // スタッフの基本情報を追加
-        try {
-          staffId = await staffAdd({
-            tenant_id: tenantId, // テナントID
-            org_id: orgId, // 店舗ID
-            connect_clerk: false, // Clerk ユーザーID (true = clerk認証ユーザー, false = 未認証スタッフ)
-            clerk_user_id: undefined, // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
-            name: data.name ?? '', // スタッフ名
-            description: data.description ?? undefined, // 自己紹介
-            images: newUploadedImageUrls ? newUploadedImageUrls : data.images, // 画像
-            is_active: data.is_active, // 有効/無効
-          })
-        } catch (creationError) {
-          console.log('creationError type: ', typeof creationError)
-          console.log('creationError: ', creationError)
-          showErrorToast(creationError)
-          setIsLoading(false)
-          return
-        }
-        // スタッフの設定情報を追加
-        staffConfigId = await staffConfigAdd({
-          tenant_id: tenantId, // テナントID
-          org_id: orgId, // 店舗ID
-          staff_id: staffId, // スタッフID
-          age: data.age ?? undefined, // 年齢
-          gender: data.gender ?? ('unselected' as Gender), // 性別
-          instagram_link: data.instagram_link ?? undefined, // インスタグラムリンク
-          tags: data.tags ?? [], // タグ
-          role: data.role ?? ('staff' as Role), // ロール
-          featured_hair_images: [], // フィーチャー画像
-          extra_charge: data.extra_charge ?? undefined, // 追加料金
-          priority: data.priority ?? undefined, // 優先度
-        })
-
-        // スタッフの対応外メニューを追加
-        await menuExclusionStaffUpsert({
-          tenant_id: tenantId,
-          org_id: orgId,
-          staff_id: staffId,
-          selected_menu_ids: exclusionMenuIds,
-        })
-
-        toast.success('スタッフを追加しました', {
-          icon: <Check className="h-4 w-4 text-active" />,
-        })
-
-        router.push('/dashboard/staff')
-      } catch (configAuthError) {
-        // スタッフ設定または認証の保存に失敗した場合、作成したスタッフを削除
-        if (staffId) {
+      } else {
+        // 通常のスタッフ作成処理
+        if (selectedFile) {
           try {
-            if (staffConfigId && staffId) {
-              await staffKill({
-                tenant_id: tenantId,
-                org_id: orgId,
-                staff_id: staffId,
-                staff_config_id: staffConfigId,
-              })
-            }
-          } catch (cleanupError) {
-            throw new ConvexError({
-              message: '指定されたスタッフが存在しません',
-              statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-              severity: ERROR_SEVERITY.ERROR,
-              callFunc: 'staff.mutation.create',
-              details: { ...data, error: JSON.stringify(cleanupError) },
-            })
+            const result = await uploadCompressedImageWithThumbnailSignedUrl(
+              selectedFile!,
+              orgId,
+              'staff',
+              'square', // aspectType: 'square' | 'landscape' | 'mobile'
+              'medium' // quality: 'low' | 'medium' | 'high'
+            )
+            // 新方式のレスポンス形式に合わせて修正
+            newUploadedImageUrls = [
+              {
+                original_url: result.original.publicUrl,
+                thumbnail_url: result.thumbnail.publicUrl,
+              },
+            ]
+          } catch (error) {
+            console.log('画像アップロードエラー: ', error)
+
+            showErrorToast(error)
+            setIsLoading(false)
+            return
           }
         }
-        throw configAuthError // 元のエラーを再スロー
+
+        try {
+          // スタッフの基本情報を追加
+          try {
+            staffId = await staffAdd({
+              tenant_id: tenantId, // テナントID
+              org_id: orgId, // 店舗ID
+              connect_clerk: false, // Clerk ユーザーID (true = clerk認証ユーザー, false = 未認証スタッフ)
+              clerk_user_id: undefined, // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
+              name: data.name ?? '', // スタッフ名
+              description: data.description ?? undefined, // 自己紹介
+              images: newUploadedImageUrls ? newUploadedImageUrls : data.images, // 画像
+              is_active: data.is_active, // 有効/無効
+            })
+          } catch (creationError) {
+            console.log('creationError type: ', typeof creationError)
+            console.log('creationError: ', creationError)
+            showErrorToast(creationError)
+            setIsLoading(false)
+            return
+          }
+          // スタッフの設定情報を追加
+          staffConfigId = await staffConfigAdd({
+            tenant_id: tenantId, // テナントID
+            org_id: orgId, // 店舗ID
+            staff_id: staffId, // スタッフID
+            age: data.age ?? undefined, // 年齢
+            gender: data.gender ?? ('unselected' as Gender), // 性別
+            instagram_link: data.instagram_link ?? undefined, // インスタグラムリンク
+            tags: data.tags ?? [], // タグ
+            role: data.role ?? ('staff' as Role), // ロール
+            featured_hair_images: [], // フィーチャー画像
+            extra_charge: data.extra_charge ?? undefined, // 追加料金
+            priority: data.priority ?? undefined, // 優先度
+          })
+
+          // スタッフの対応外メニューを追加
+          await menuExclusionStaffUpsert({
+            tenant_id: tenantId,
+            org_id: orgId,
+            staff_id: staffId,
+            selected_menu_ids: exclusionMenuIds,
+          })
+
+          toast.success('スタッフを追加しました', {
+            icon: <Check className="h-4 w-4 text-active" />,
+          })
+
+          router.push('/dashboard/staff')
+        } catch (configAuthError) {
+          // スタッフ設定または認証の保存に失敗した場合、作成したスタッフを削除
+          if (staffId) {
+            try {
+              if (staffConfigId && staffId) {
+                await staffKill({
+                  tenant_id: tenantId,
+                  org_id: orgId,
+                  staff_id: staffId,
+                  staff_config_id: staffConfigId,
+                })
+              }
+            } catch (cleanupError) {
+              throw new ConvexError({
+                message: '指定されたスタッフが存在しません',
+                statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+                severity: ERROR_SEVERITY.ERROR,
+                callFunc: 'staff.mutation.create',
+                details: { ...data, error: JSON.stringify(cleanupError) },
+              })
+            }
+          }
+          throw configAuthError // 元のエラーを再スロー
+        }
       }
     } catch (error: unknown) {
       // エラー発生時のクリーンアップ
@@ -491,272 +527,260 @@ export default function StaffAddPage() {
                         招待メールを送信した後、認証後にスタッフアカウントでログインできるようになります。
                       </p>
                     </div>
-                    <div className="grid md:grid-cols-2 gap-6 pb-4">
-                      {!sendInviteEmail && (
-                        <div className="w-full">
-                          <div className="mb-2 flex items-center">
-                            <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span className="text-sm font-medium text-muted-foreground">
-                              スタッフ画像
-                            </span>
-                          </div>
-
-                          <div className="w-full">
-                            <SingleImageDrop
-                              onFileSelect={(file) => setSelectedFile(file ?? null)}
-                              aspectType="square"
-                              className="transition-all duration-200 hover:opacity-90"
-                            />
-                          </div>
+                    {/* 権限設定セクション */}
+                    {sendInviteEmail && (
+                      <div>
+                        <div className="flex items-center mb-4">
+                          <Shield className="h-5 w-5 mr-2 text-active" />
+                          <h3 className="font-semibold text-lg">招待・権限設定</h3>
                         </div>
-                      )}
-
-                      {!sendInviteEmail && (
-                        <div className="space-y-4 w-full">
-                          <div>
-                            <ZodTextField
-                              name="name"
-                              label="名前"
-                              icon={<User className="h-4 w-4 mr-2 text-muted-foreground" />}
-                              register={register}
-                              errors={errors}
-                              placeholder="名前を入力してください"
-                              className="transition-all duration-200"
-                            />
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <div className="w-full">
-                              <Label className="flex items-center mb-2 font-medium text-muted-foreground">
-                                <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                                性別
-                              </Label>
-                              <Select
-                                defaultValue="unselected"
-                                onValueChange={(value) => setValue('gender', value as Gender)}
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="性別を選択してください" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {GENDER_VALUES.map((gender) => (
-                                    <SelectItem key={gender} value={gender}>
-                                      {gender === 'male'
-                                        ? '男性'
-                                        : gender === 'female'
-                                          ? '女性'
-                                          : '未選択'}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div className="flex flex-col space-y-4 items-center gap-2 w-full">
                             <div className="w-full">
                               <ZodTextField
-                                name="age"
-                                label="年齢"
-                                icon={<Calendar className="h-4 w-4 mr-2 text-muted-foreground" />}
-                                type="number"
+                                name="email"
+                                icon={<Mail className="h-4 w-4 mr-2 text-muted-foreground" />}
+                                label="招待先メールアドレス"
                                 register={register}
                                 errors={errors}
-                                placeholder="年齢を入力してください"
+                                placeholder="メールアドレスを入力してください"
                               />
+                              <p className="text-xs text-muted-foreground mt-2">
+                                こちらのメールアドレスに招待メールを送信します。
+                              </p>
                             </div>
                           </div>
 
-                          {/* タグセクション */}
-                          <TagInput
-                            tags={currentTags}
-                            setTagsAction={(tags) => {
-                              setCurrentTags(tags)
-
-                              setValue('tags', tags, { shouldValidate: true })
-                            }}
-                            error={errors.tags?.message}
-                            title="スタッフに付与するタグ"
-                            exampleText="ヘアセット, カット, メイク"
-                          />
-
-                          <div className="flex items-center space-x-2 pt-1">
-                            <Switch
-                              id="is_active"
-                              checked={watch('is_active')}
-                              onCheckedChange={(checked) => setValue('is_active', checked)}
-                            />
-                            <Label htmlFor="is_active" className="text-xs cursor-pointer">
-                              {watch('is_active') ? (
-                                <span className="text-active font-medium">有効</span>
-                              ) : (
-                                <span className="text-destructive font-medium">無効</span>
-                              )}
-                            </Label>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            予約受け付けは有効の場合のみ可能になります。
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {!sendInviteEmail && (
-                      <>
-                        <div className="mt-10">
-                          <ZodTextField
-                            icon={<Instagram className="h-4 w-4 mr-2 text-muted-foreground" />}
-                            name="instagram_link"
-                            label="Instagramリンク"
-                            register={register}
-                            errors={errors}
-                            placeholder="スタッフのInstagramリンクを入力してください"
-                          />
-                        </div>
-                        <div className="mt-4">
-                          <div className="flex items-center mb-2">
-                            <Clipboard className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <Label className="font-medium text-muted-foreground">
-                              スタッフ紹介
-                            </Label>
-                          </div>
-                          <Textarea
-                            value={watch('description') ?? ''}
-                            rows={10}
-                            {...register('description')}
-                            placeholder="スタッフの紹介を入力してください"
-                            className="resize-none focus:ring-2 focus:ring-border transition-all duration-200"
-                          />
-                          {errors.description && (
-                            <motion.p
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className="text-sm text-destructive mt-1"
-                            >
-                              {errors.description.message}
-                            </motion.p>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <Separator />
-
-                  {/* 権限設定セクション */}
-                  {sendInviteEmail && (
-                    <div>
-                      <div className="flex items-center mb-4">
-                        <Shield className="h-5 w-5 mr-2 text-active" />
-                        <h3 className="font-semibold text-lg">権限設定</h3>
-                      </div>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="flex flex-col space-y-4 items-center gap-2 w-full">
-                          <div className="w-full">
-                            <ZodTextField
-                              name="email"
-                              icon={<Mail className="h-4 w-4 mr-2 text-muted-foreground" />}
-                              label="メールアドレス"
-                              register={register}
-                              errors={errors}
-                              placeholder="メールアドレスを入力してください"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              こちらのメールアドレスに招待メールを送信します。
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div>
-                            <div className="flex items-center mb-2">
-                              <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
-                              <Label className="font-medium text-muted-foreground">
-                                招待・権限設定
-                              </Label>
-                            </div>
-                            <div className="mt-1">
-                              <div className="grid grid-cols-3 gap-3">
-                                {[
-                                  {
-                                    role: 'staff',
-                                    label: 'スタッフ',
-                                    desc: '基本的な予約確認と自身の情報管理のみ',
-                                  },
-                                  {
-                                    role: 'manager',
-                                    label: 'マネージャー',
-                                    desc: 'スタッフ管理と基本設定の変更が可能',
-                                  },
-                                  {
-                                    role: 'owner',
-                                    label: 'オーナー',
-                                    desc: 'すべての機能にアクセス可能',
-                                  },
-                                ].map((item) => (
-                                  <motion.div
-                                    key={item.role}
-                                    whileHover={{ scale: 1.02 }}
-                                    className={`border rounded-md p-3 cursor-pointer transition-all ${
-                                      watch('role') === item.role
-                                        ? 'border-active bg-active-foreground text-active'
-                                        : 'border-border bg-muted text-muted-foreground'
-                                    }`}
-                                    onClick={() => setValue('role', item.role as Role)}
-                                  >
-                                    <div className="text-sm mb-1 font-bold">{item.label}</div>
-                                    <div className="text-xs text-muted-foreground">{item.desc}</div>
-                                  </motion.div>
-                                ))}
+                          <div className="space-y-4">
+                            <div>
+                              <div className="flex items-center mb-2">
+                                <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
+                                <Label className="font-medium text-muted-foreground">
+                                  権限設定
+                                </Label>
+                              </div>
+                              <div className="mt-1">
+                                <div className="grid grid-cols-3 gap-3">
+                                  {[
+                                    {
+                                      role: 'staff',
+                                      label: 'スタッフ',
+                                      desc: '基本的な予約確認と自身の情報管理のみ',
+                                    },
+                                    {
+                                      role: 'manager',
+                                      label: 'マネージャー',
+                                      desc: 'スタッフ管理と基本設定の変更が可能',
+                                    },
+                                    {
+                                      role: 'owner',
+                                      label: 'オーナー',
+                                      desc: 'すべての機能にアクセス可能',
+                                    },
+                                  ].map((item) => (
+                                    <motion.div
+                                      key={item.role}
+                                      whileHover={{ scale: 1.02 }}
+                                      className={`border rounded-md p-3 cursor-pointer transition-all ${
+                                        watch('role') === item.role
+                                          ? 'border-active bg-active-foreground text-active'
+                                          : 'border-border bg-muted text-muted-foreground'
+                                      }`}
+                                      onClick={() => setValue('role', item.role as Role)}
+                                    >
+                                      <div className="text-sm mb-1 font-bold">{item.label}</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {item.desc}
+                                      </div>
+                                    </motion.div>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
+                    )}
+
+                    <Separator className="my-8 md:my-12 max-w-md mx-auto" />
+                    <div className="grid md:grid-cols-2 gap-6 pb-4">
+                      <div className="w-full">
+                        <div className="mb-2 flex items-center">
+                          <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span className="text-sm font-medium text-muted-foreground">
+                            スタッフ画像
+                          </span>
+                        </div>
+
+                        <div className="w-full">
+                          <SingleImageDrop
+                            onFileSelect={(file) => setSelectedFile(file ?? null)}
+                            aspectType="square"
+                            className="transition-all duration-200 hover:opacity-90"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-4 w-full">
+                        <div>
+                          <ZodTextField
+                            name="name"
+                            label="名前"
+                            icon={<User className="h-4 w-4 mr-2 text-muted-foreground" />}
+                            register={register}
+                            errors={errors}
+                            placeholder="名前を入力してください"
+                            className="transition-all duration-200"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="w-full">
+                            <Label className="flex items-center mb-2 font-medium text-muted-foreground">
+                              <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                              性別
+                            </Label>
+                            <Select
+                              defaultValue="unselected"
+                              onValueChange={(value) => setValue('gender', value as Gender)}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="性別を選択してください" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {GENDER_VALUES.map((gender) => (
+                                  <SelectItem key={gender} value={gender}>
+                                    {gender === 'male'
+                                      ? '男性'
+                                      : gender === 'female'
+                                        ? '女性'
+                                        : '未選択'}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="w-full">
+                            <ZodTextField
+                              name="age"
+                              label="年齢"
+                              icon={<Calendar className="h-4 w-4 mr-2 text-muted-foreground" />}
+                              type="number"
+                              register={register}
+                              errors={errors}
+                              placeholder="年齢を入力してください"
+                            />
+                          </div>
+                        </div>
+
+                        {/* タグセクション */}
+                        <TagInput
+                          tags={currentTags}
+                          setTagsAction={(tags) => {
+                            setCurrentTags(tags)
+
+                            setValue('tags', tags, { shouldValidate: true })
+                          }}
+                          error={errors.tags?.message}
+                          title="スタッフに付与するタグ"
+                          exampleText="ヘアセット, カット, メイク"
+                        />
+
+                        <div className="flex items-center space-x-2 pt-1">
+                          <Switch
+                            id="is_active"
+                            checked={watch('is_active')}
+                            onCheckedChange={(checked) => setValue('is_active', checked)}
+                          />
+                          <Label htmlFor="is_active" className="text-xs cursor-pointer">
+                            {watch('is_active') ? (
+                              <span className="text-active font-medium">有効</span>
+                            ) : (
+                              <span className="text-destructive font-medium">無効</span>
+                            )}
+                          </Label>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          予約受け付けは有効の場合のみ可能になります。
+                        </span>
+                      </div>
                     </div>
-                  )}
+                    <div className="mt-10">
+                      <ZodTextField
+                        icon={<Instagram className="h-4 w-4 mr-2 text-muted-foreground" />}
+                        name="instagram_link"
+                        label="Instagramリンク"
+                        register={register}
+                        errors={errors}
+                        placeholder="スタッフのInstagramリンクを入力してください"
+                      />
+                    </div>
+                    <div className="mt-4">
+                      <div className="flex items-center mb-2">
+                        <Clipboard className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <Label className="font-medium text-muted-foreground">スタッフ紹介</Label>
+                      </div>
+                      <Textarea
+                        value={watch('description') ?? ''}
+                        rows={10}
+                        {...register('description')}
+                        placeholder="スタッフの紹介を入力してください"
+                        className="resize-none focus:ring-2 focus:ring-border transition-all duration-200"
+                      />
+                      {errors.description && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-sm text-destructive mt-1"
+                        >
+                          {errors.description.message}
+                        </motion.p>
+                      )}
+                    </div>
+                  </div>
 
                   <Separator />
 
                   {/* 詳細設定セクション */}
-                  {!sendInviteEmail && (
-                    <div>
-                      <div className="flex items-center mb-4">
-                        <Sparkles className="h-5 w-5 mr-2 text-blue-500" />
-                        <h3 className="font-semibold text-lg">詳細設定</h3>
+
+                  <div>
+                    <div className="flex items-center mb-4">
+                      <Sparkles className="h-5 w-5 mr-2 text-blue-500" />
+                      <h3 className="font-semibold text-lg">詳細設定</h3>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <ZodTextField
+                          name="extra_charge"
+                          label="指名料金"
+                          type="number"
+                          register={register}
+                          errors={errors}
+                          placeholder="指名料金を入力してください"
+                          className="transition-all duration-200"
+                        />
+                        <p className="text-xs mt-1 text-gray-500">
+                          お客様がこのスタッフを指名した場合に追加料金を設定します。
+                        </p>
                       </div>
 
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div>
-                          <ZodTextField
-                            name="extra_charge"
-                            label="指名料金"
-                            type="number"
-                            register={register}
-                            errors={errors}
-                            placeholder="指名料金を入力してください"
-                            className="transition-all duration-200"
-                          />
-                          <p className="text-xs mt-1 text-gray-500">
-                            お客様がこのスタッフを指名した場合に追加料金を設定します。
-                          </p>
-                        </div>
-
-                        <div>
-                          <ZodTextField
-                            name="priority"
-                            label="優先度"
-                            type="number"
-                            register={register}
-                            errors={errors}
-                            placeholder="優先度を入力してください"
-                            className="transition-all duration-200"
-                          />
-                          <p className="text-xs mt-1 text-gray-500">
-                            数値が大きいほど予約画面などで上位に表示されます。
-                          </p>
-                        </div>
+                      <div>
+                        <ZodTextField
+                          name="priority"
+                          label="優先度"
+                          type="number"
+                          register={register}
+                          errors={errors}
+                          placeholder="優先度を入力してください"
+                          className="transition-all duration-200"
+                        />
+                        <p className="text-xs mt-1 text-gray-500">
+                          数値が大きいほど予約画面などで上位に表示されます。
+                        </p>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>

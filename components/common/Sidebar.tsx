@@ -47,16 +47,6 @@ export default function Sidebar({ children }: SidebarProps) {
   const filteredNav = isLoaded
     ? NAV_ITEMS.filter((item) => hasAccess(role!, currentPlan, item.minRole, item.minPlan))
     : []
-
-  /*
-    filteredNav.push({
-    name: 'サブスクリプション',
-    href: `/dashboard/subscription`,
-    icon: CreditCardIcon,
-    minRole: 'admin',
-    minPlan: 'LITE',
-  })
-  */
   useEffect(() => {
     if (isLinkClicked) {
       setSidebarOpen(false)
@@ -249,6 +239,36 @@ export default function Sidebar({ children }: SidebarProps) {
                         </li>
                       )
                     })}
+                    {role === 'admin' && (
+                      <li>
+                        <Link
+                          href={'/dashboard/subscription'}
+                          onClick={() => setIsLinkClicked(true)}
+                          className={classNames(
+                            pathname === '/dashboard/subscription'
+                              ? 'text-accent-foreground bg-accent'
+                              : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                            'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                          )}
+                        >
+                          <CreditCardIcon
+                            aria-hidden="true"
+                            className={classNames(
+                              pathname === '/dashboard/subscription'
+                                ? 'text-accent-foreground bg-accent'
+                                : 'text-primary',
+                              'size-4 shrink-0'
+                            )}
+                          />
+                          <p className="w-full text-nowrap">サブスクリプション</p>
+                          {pathname === '/dashboard/subscription' && (
+                            <div className="w-full flex justify-end items-center pr-2">
+                              <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                            </div>
+                          )}
+                        </Link>
+                      </li>
+                    )}
                   </ul>
                 </li>
               </ul>

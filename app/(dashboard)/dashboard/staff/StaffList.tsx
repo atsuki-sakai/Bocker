@@ -7,7 +7,7 @@ import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Loading } from '@/components/common'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import InviteManagement from './components/InviteManagement'
+import InviteManagement from './_components/InviteManagement'
 import { useQuery } from 'convex/react'
 import { CheckCircleIcon } from 'lucide-react'
 

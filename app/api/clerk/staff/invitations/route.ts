@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
             staff_id: staff._id,
             extra_charge: staffConfig?.extra_charge,
             priority: staffConfig?.priority,
-            resent: false, // TODO: 再送フラグの管理が必要な場合は実装
+            resent: false,
           },
         };
       })
@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
     // Convexに新しい招待情報を保存
     await convex.mutation(api.staff.mutation.updateInvitationInfo, {
       staff_id: staff_id as Id<"staff">,
-      clerk_invitation_id: invitation.id,
+      invitation_id: invitation.id,
       invitation_email: email,
       invitation_status: 'pending' as const,
       role: staffData.config?.role || 'staff',
