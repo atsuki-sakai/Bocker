@@ -47,14 +47,16 @@ export default function Sidebar({ children }: SidebarProps) {
   const filteredNav = isLoaded
     ? NAV_ITEMS.filter((item) => hasAccess(role!, currentPlan, item.minRole, item.minPlan))
     : []
-  filteredNav.push({
+
+  /*
+    filteredNav.push({
     name: 'サブスクリプション',
     href: `/dashboard/subscription`,
     icon: CreditCardIcon,
     minRole: 'admin',
     minPlan: 'LITE',
   })
-
+  */
   useEffect(() => {
     if (isLinkClicked) {
       setSidebarOpen(false)

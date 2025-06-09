@@ -96,6 +96,8 @@ export default function SubscriptionForm({
           stripe_customer_id: customerId,
         })
 
+        console.log('result', result)
+
         // プレビューデータを設定
         setPreviewData(result as StripePreviewData)
         // ダイアログを表示

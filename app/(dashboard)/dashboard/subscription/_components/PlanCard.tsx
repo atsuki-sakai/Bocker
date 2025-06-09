@@ -213,17 +213,6 @@ function PlanActionButton({
   isSubmitting,
   highlightColor,
 }: PlanActionButtonProps) {
-  // ローディングボタンをメモ化
-  const loadingButton = useMemo(
-    () => (
-      <Button disabled className="w-full">
-        <Loader2 className="mr-2 h-4 w-4" />
-        処理中...
-      </Button>
-    ),
-    []
-  )
-
   // サブスクリプションアクションハンドラをメモ化
   const handleSubscribe = useCallback(() => {
     onSubscribeAction()
@@ -254,7 +243,13 @@ function PlanActionButton({
     return currentPlanName === planName && currentBillingPeriod === billingPeriod
   }, [currentPlanName, planName, currentBillingPeriod, billingPeriod])
 
-  if (isSubmitting) return loadingButton
+  if (isSubmitting)
+    return (
+      <Button disabled className="w-full">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        処理中...
+      </Button>
+    )
 
   if (isActive) {
     if (isCurrentPlan) {

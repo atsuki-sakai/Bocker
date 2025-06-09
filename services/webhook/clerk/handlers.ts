@@ -399,7 +399,6 @@ export async function handleUserDeleted(
   };
 
   console.log(`🗑️ [${eventId}] User Deleted処理開始: user_id=${id}`, context);
-
   try {
     // テナント情報の取得
     const tenantRecord = await deps.retry(() =>

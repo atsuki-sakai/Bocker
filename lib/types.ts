@@ -29,6 +29,7 @@ export interface StripePreviewData {
   previewInvoice: StripePreviewInvoice;
   prorationDate: number;
   success: boolean;
+  isManualPreview?: boolean; // 手動プレビューかどうかのフラグ
 }
 
 // Clerk

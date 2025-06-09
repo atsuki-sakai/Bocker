@@ -30,7 +30,7 @@ export default function CurrentPlanBanner({
     if (isSubmitting) {
       return (
         <>
-          <Loader2 className="mr-2 h-4 w-4" />
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           処理中...
         </>
       )
