@@ -1,3 +1,4 @@
+
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { createRecord, updateRecord, excludeFields, archiveRecord, killRecord } from '@/convex/utils/helpers';
@@ -5,7 +6,7 @@ import { validateRequired, validateStringLength, validateEmail, validateTags } f
 import { checkAuth } from '@/convex/utils/auth';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
-import { genderType, imageType, roleType, invitationStatusType } from '@/convex/types';
+import { imageType, roleType, invitationStatusType } from '@/convex/types';
 import { MAX_NOTES_LENGTH } from '../constants';
 
 export const create = mutation({
