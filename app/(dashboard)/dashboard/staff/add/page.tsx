@@ -549,6 +549,39 @@ export default function StaffAddPage() {
                                 こちらのメールアドレスに招待メールを送信します。
                               </p>
                             </div>
+                            <div className="grid grid-cols-3 gap-3">
+                              {[
+                                {
+                                  role: 'staff',
+                                  label: 'スタッフ',
+                                  desc: '基本的な予約確認と自身の情報管理のみ',
+                                },
+                                {
+                                  role: 'manager',
+                                  label: 'マネージャー',
+                                  desc: 'スタッフ管理と基本設定の変更が可能',
+                                },
+                                {
+                                  role: 'owner',
+                                  label: 'オーナー',
+                                  desc: 'すべての機能にアクセス可能',
+                                },
+                              ].map((item) => (
+                                <motion.div
+                                  key={item.role}
+                                  whileHover={{ scale: 1.02 }}
+                                  className={`border rounded-md p-3 cursor-pointer transition-all ${
+                                    watch('role') === item.role
+                                      ? 'border-active bg-active-foreground text-active'
+                                      : 'border-border bg-muted text-muted-foreground'
+                                  }`}
+                                  onClick={() => setValue('role', item.role as Role)}
+                                >
+                                  <div className="text-sm mb-1 font-bold">{item.label}</div>
+                                  <div className="text-xs text-muted-foreground">{item.desc}</div>
+                                </motion.div>
+                              ))}
+                            </div>
                           </div>
 
                           <div className="space-y-4">
@@ -560,40 +593,45 @@ export default function StaffAddPage() {
                                 </Label>
                               </div>
                               <div className="mt-1">
-                                <div className="grid grid-cols-3 gap-3">
-                                  {[
-                                    {
-                                      role: 'staff',
-                                      label: 'スタッフ',
-                                      desc: '基本的な予約確認と自身の情報管理のみ',
-                                    },
-                                    {
-                                      role: 'manager',
-                                      label: 'マネージャー',
-                                      desc: 'スタッフ管理と基本設定の変更が可能',
-                                    },
-                                    {
-                                      role: 'owner',
-                                      label: 'オーナー',
-                                      desc: 'すべての機能にアクセス可能',
-                                    },
-                                  ].map((item) => (
-                                    <motion.div
-                                      key={item.role}
-                                      whileHover={{ scale: 1.02 }}
-                                      className={`border rounded-md p-3 cursor-pointer transition-all ${
-                                        watch('role') === item.role
-                                          ? 'border-active bg-active-foreground text-active'
-                                          : 'border-border bg-muted text-muted-foreground'
-                                      }`}
-                                      onClick={() => setValue('role', item.role as Role)}
-                                    >
-                                      <div className="text-sm mb-1 font-bold">{item.label}</div>
-                                      <div className="text-xs text-muted-foreground">
-                                        {item.desc}
-                                      </div>
-                                    </motion.div>
-                                  ))}
+                                {/* 権限詳細説明 */}
+                                <div className="mb-4 p-3 bg-background rounded-md border border-border">
+                                  <h4 className="text-sm font-medium text-foreground mb-2">
+                                    🔐 権限詳細
+                                  </h4>
+                                  <div className="space-y-2 text-xs text-muted-foreground">
+                                    <div className="border-l-2 border-palette-3-foreground pl-2">
+                                      <strong className="text-palette-3-foreground">
+                                        スタッフ：
+                                      </strong>
+                                      <span className="ml-1">
+                                        ダッシュボード、予約作成・タイムライン、顧客カルテ管理
+                                      </span>
+                                    </div>
+                                    <div className="border-l-2 border-palette-4-foreground pl-2">
+                                      <strong className="text-palette-4-foreground">
+                                        マネージャー：
+                                      </strong>
+                                      <span className="ml-1">
+                                        スタッフ権限 +
+                                        スタッフ予定表、メニュー管理、顧客管理、オプション管理、クーポン管理
+                                      </span>
+                                    </div>
+                                    <div className="border-l-2 border-palette-1-foreground pl-2">
+                                      <strong className="text-palette-1-foreground">
+                                        オーナー：
+                                      </strong>
+                                      <span className="ml-1">
+                                        マネージャー権限 + スタッフ管理、ポイント設定、システム設定
+                                        + サブスクリプション管理
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="mt-3 pt-2 border-t border-border">
+                                    <p className="text-xs text-warning-foreground font-medium">
+                                      ⚠️
+                                      重要：権限は階層制になっており、上位権限は下位権限のすべての機能を利用できます。
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -602,8 +640,8 @@ export default function StaffAddPage() {
                       </div>
                     )}
 
-                    <Separator className="my-8 md:my-12 max-w-md mx-auto" />
-                    <div className="grid md:grid-cols-2 gap-6 pb-4">
+                    <Separator className="my-8 md:my-12 w-full" />
+                    <div className="grid md:grid-cols-2 gap-6 pb-4 w-full">
                       <div className="w-full">
                         <div className="mb-2 flex items-center">
                           <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
