@@ -411,9 +411,9 @@ export default function ReservationForm() {
   const isWeekendDate = isWeekend(selectedDate)
 
   return (
-    <div className="h-fit bg-background py-2">
+    <div className="h-fit bg-background w-full py-2">
       {/* ヘッダー部分 */}
-      <div className="sticky top-0 z-30 bg-background backdrop-blur-sm border-b-2 border-border space-y-4 shadow-sm">
+      <div className="sticky top-0 z-30 w-full bg-background backdrop-blur-sm border-b-2 border-border space-y-4 shadow-sm">
         {/* 日付選択とビュー切り替え */}
         <div className="flex flex-col md:flex-row items-center justify-between w-full">
           <div className="flex items-center justify-between w-full">
@@ -444,7 +444,7 @@ export default function ReservationForm() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4 w-full md:mt-0 mt-4">
+          <div className="flex items-center justify-end gap-4 w-full md:mt-0 mt-4 ">
             <Button variant="outline" onClick={() => setSelectedDate(new Date())}>
               今日
             </Button>

@@ -207,11 +207,7 @@ export default function StripeConnectStatus() {
 
       <div className="flex flex-col md:flex-row justify-start items-start md:items-center gap-2 my-6">
         {isConnected && (
-          <Button
-            onClick={handleViewDashboard}
-            disabled={isLoading}
-            className={`text-sm ${status === 'active' ? '' : 'opacity-50 pointer-events-none'}`}
-          >
+          <Button onClick={handleViewDashboard} disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
