@@ -1,4 +1,9 @@
-# スタッフ招待システム 
+# スタッフ招待システム メタデータ不整合問題の修正計画
+
+## 📊 実装ステータス: 🔴 未実装
+
+最終調査日: 2025/06/09
+
 sequenceDiagram
     participant A as 管理者（フロントエンド）
     participant B as POST /api/clerk/staff/invite
@@ -15,7 +20,7 @@ sequenceDiagram
     
     C-->>B: staff_id返却
     B->>D: Clerk招待作成
-    note over B,D: publicMetadataにstaff_id含める
+    note over B,D: ⚠️ publicMetadataに基本情報なし（現状）
     
     alt Clerk招待成功
         D-->>B: invitation_id返却
@@ -27,13 +32,13 @@ sequenceDiagram
     end
 
 
-
-
 ## 📋 修正概要
 
-スタッフ招待システムにおけるメタデータの不整合問題を根本的に解決し、招待プロセスの安定性と信頼性を向上させました。
+スタッフ招待システムにおけるメタデータの不整合問題を根本的に解決し、招待プロセスの安定性と信頼性を向上させるための修正計画です。
 
-## 🚨 修正前の問題点
+**注意**: この文書は修正計画であり、2025/06/09時点では**まだ実装されていません**。
+
+## 🚨 現在の問題点（2025/06/09時点）
 
 ### 1. 初回招待時のメタデータ不足
 - **問題**: `gender`、`age`、`instagram_link`、`tags`などの基本情報がClerkのpublicMetadataに含まれていない
@@ -51,7 +56,7 @@ sequenceDiagram
 - **問題**: publicMetadataが不完全な場合のフォールバック処理が不十分
 - **影響**: データの整合性が保たれず、エラーが発生する可能性
 
-## ✅ 実施した修正
+## 🔧 必要な修正（実装計画）
 
 ### 1. 初回招待時のpublicMetadata完全化
 
@@ -89,7 +94,7 @@ publicMetadata: {
 }
 ```
 
-**効果**: webhook処理時に必要な全ての情報が確実にpublicMetadataから取得可能
+**期待効果**: webhook処理時に必要な全ての情報が確実にpublicMetadataから取得可能
 
 ### 2. Convexでの一時的スタッフ情報保存機能
 
@@ -160,7 +165,7 @@ await createRecord(ctx, 'staff_config', {
 });
 ```
 
-**効果**: 
+**期待効果**: 
 - 招待中のデータが確実に保存される
 - 招待受諾時にデータが適切にstaff_configに移行される
 - メモリリークを防ぐためのクリーンアップが実行される
