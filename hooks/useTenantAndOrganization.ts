@@ -16,6 +16,7 @@ type UseTenantAndOrganization = {
   orgId: Id<'organization'> | null;
   userId: string | null;
   role: Role | null;
+  staffId: Id<'staff'> | null;
   subscriptionStatus: SubscriptionStatus | null;
   planName: SubscriptionPlanName | null;
   isLoaded: boolean;
@@ -38,6 +39,11 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
 
   const role = useMemo(
     () => (isLoaded ? (user?.publicMetadata?.role as Role | null) : null),
+    [isLoaded, user]
+  );
+
+  const staffId = useMemo(
+    () => (isLoaded ? (user?.publicMetadata?.staff_id as Id<'staff'> | null) : null),
     [isLoaded, user]
   );
 
@@ -73,6 +79,7 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
     orgId: org?._id ?? null,
     userId: userId as string | null,
     role: role,
+    staffId: staffId,
     planName: subscription?.plan_name ?? 'UNKNOWN',
     subscriptionStatus: subscription?.status ?? null,
     isLoaded,
