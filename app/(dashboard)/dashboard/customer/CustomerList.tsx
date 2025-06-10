@@ -105,7 +105,6 @@ export default function CustomerList() {
   const isLoading = isSearchMode ? isLoadingSearch : isLoadingAll
   const isLoadingMore = isSearchMode ? isLoadingMoreSearch : isLoadingMoreAll
   const hasMoreData = isSearchMode ? hasMoreSearch : hasMoreAll
-  const currentPage = isSearchMode ? currentSearchPage : currentAllPage
 
   // 通常リスト取得関数（検索モードでない場合のみ実行）
   const fetchAllCustomers = useCallback(
@@ -152,7 +151,7 @@ export default function CustomerList() {
         setIsLoadingMoreAll(false)
       }
     },
-    [tenantId, orgId, isLoaded, isSearchMode, customerRepo]
+    [tenantId, orgId, isLoaded, isSearchMode, customerRepo, getCustomersWithDetails]
   )
 
   // 検索専用関数（Supabaseサーバーサイド検索を使用 + キャッシュ対応）
