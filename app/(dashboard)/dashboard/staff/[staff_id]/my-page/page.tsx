@@ -13,6 +13,9 @@ import { convertGender, convertRole } from '@/convex/types'
 import { Mail, User, Calendar, Instagram, Tag, Star, FileEdit } from 'lucide-react'
 import { MAX_PRIORITY } from '@/convex/constants'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import MyWeekScheduleForm from './MyWeekScheduleForm'
+import MyExceptionScheduleForm from './MyExceptionScheduleForm'
 
 // アバターの頭文字を取得
 const getInitials = (name: string) => {
@@ -67,6 +70,10 @@ export default function StaffMyPage() {
 
   if (!isLoaded || !ready) {
     return <Loading />
+  }
+
+  if (!staffId || !tenantId || !orgId) {
+    return <div>Error: Staff ID, Tenant ID, or Organization ID is missing</div>
   }
 
   return (
@@ -241,6 +248,25 @@ export default function StaffMyPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <Tabs defaultValue="week" className="w-full">
+          <TabsList className="mb-4 w-full max-w-[500px]">
+            <TabsTrigger value="week" className="w-full">
+              週間スケジュール設定
+            </TabsTrigger>
+            <TabsTrigger value="schedule" className="w-full">
+              予定作成
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="week">
+            <MyWeekScheduleForm />
+          </TabsContent>
+          <TabsContent value="schedule">
+            <MyExceptionScheduleForm />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
