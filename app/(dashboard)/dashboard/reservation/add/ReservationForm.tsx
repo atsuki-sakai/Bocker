@@ -273,25 +273,10 @@ export default function ReservationForm() {
 
   // データの統合（メニュー・オプションは初期データから、スタッフは選択後のデータから）
   const reservationConfig = initialFormData?.reservationConfig
-  const menus = initialFormData?.menus || []
+  const menus = useMemo(() => initialFormData?.menus || [], [initialFormData?.menus])
   const options = initialFormData?.options || []
   const orgWeekSchedules = initialFormData?.weekSchedules || []
   const availableStaff = staffFormData?.availableStaff || []
-
-  // 選択中のスタッフが利用可能なスタッフリストに含まれているかチェック
-  useEffect(() => {
-    if (selectedStaffId && availableStaff.length > 0) {
-      const isStaffAvailable = availableStaff.some((staff) => staff._id === selectedStaffId)
-      if (!isStaffAvailable) {
-        // 選択中のスタッフが新しいメニューセットに対応できない場合のみリセット
-        setSelectedStaffId(null)
-        setValue('staff_id', '')
-        toast.warning(
-          '選択中のスタッフは新しいメニューに対応できません。スタッフを再選択してください。'
-        )
-      }
-    }
-  }, [availableStaff, selectedStaffId])
 
   // スタッフの週間スケジュール（個別取得が必要）
   const staffWeekSchedules = useQuery(
@@ -332,6 +317,21 @@ export default function ReservationForm() {
     setValue,
     watch,
   } = useZodForm(schemaReservation)
+
+  // 選択中のスタッフが利用可能なスタッフリストに含まれているかチェック
+  useEffect(() => {
+    if (selectedStaffId && availableStaff.length > 0) {
+      const isStaffAvailable = availableStaff.some((staff) => staff._id === selectedStaffId)
+      if (!isStaffAvailable) {
+        // 選択中のスタッフが新しいメニューセットに対応できない場合のみリセット
+        setSelectedStaffId(null)
+        setValue('staff_id', '')
+        toast.warning(
+          '選択中のスタッフは新しいメニューに対応できません。スタッフを再選択してください。'
+        )
+      }
+    }
+  }, [availableStaff, selectedStaffId, setValue])
 
   // 時間スロットの状態を追加
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeRange[]>([])
@@ -383,7 +383,7 @@ export default function ReservationForm() {
     } finally {
       setIsLoadingCustomers(false)
     }
-  }, [tenantId, orgId, debouncedSearchName])
+  }, [tenantId, orgId, debouncedSearchName, customerRepository, showErrorToast])
 
   // 顧客検索の実行
   useEffect(() => {
@@ -417,7 +417,6 @@ export default function ReservationForm() {
   const {
     totalTimeMinutes,
     menuTotalPrice,
-    optionTotalPrice,
     extraChargePrice,
     totalPrice: totalPriceCalculated,
   } = usePriceCalculation({
@@ -432,8 +431,7 @@ export default function ReservationForm() {
   useEffect(() => {
     setValue('total_price', totalPriceCalculated)
     setValue('unit_price', menuTotalPrice)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalPriceCalculated, menuTotalPrice])
+  }, [totalPriceCalculated, menuTotalPrice, setValue])
 
   // 時間スロット取得の最適化されたコールバック
   const getAvailableTimeSlots = useCallback(async () => {
@@ -465,7 +463,7 @@ export default function ReservationForm() {
       showErrorToast(error)
       setAvailableTimeSlots([])
     }
-  }, [selectedStaffId, tenantId, orgId, selectdate, totalTimeMinutes])
+  }, [selectedStaffId, tenantId, orgId, selectdate, totalTimeMinutes, showErrorToast])
 
   // 時間スロット取得の実行
   useEffect(() => {
