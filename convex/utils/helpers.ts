@@ -71,6 +71,13 @@ export function excludeFields<T extends Record<string, unknown>, K extends keyof
   ) as Omit<T, K>;
 }
 
+/**
+ * データベースに新しいレコードを作成する（系統フィールド自動設定）
+ * @param ctx - Convexミューテーションコンテキスト
+ * @param tableName - 作成先テーブル名
+ * @param data - 作成するデータ（系統フィールド以外）
+ * @returns 作成されたレコードのID
+ */
 export async function createRecord<T extends keyof DataModel>(
   ctx: MutationCtx,
   tableName: T,
@@ -85,6 +92,14 @@ export async function createRecord<T extends keyof DataModel>(
   return id;
 }
 
+/**
+ * 既存のレコードを部分更新する（updated_at自動更新）
+ * @param ctx - Convexミューテーションコンテキスト
+ * @param id - 更新対象のレコードID
+ * @param patch - 更新データ（部分更新）
+ * @returns 更新されたレコードのID
+ * @throws ConvexError レコードが存在しない場合
+ */
 export async function updateRecord<T extends keyof DataModel>(
   ctx: MutationCtx,
   id: Id<T>,

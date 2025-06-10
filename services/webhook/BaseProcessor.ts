@@ -11,6 +11,13 @@ export abstract class WebhookProcessor {
   protected abstract dispatch(evt: any, id: string, metrics: WebhookMetricsCollector, req: NextRequest): Promise<ProcessingResult>;
   protected abstract getMetricsMetadata(evt: any): { userId?: string, organizationId?: string, stripeAccountId?: string, stripeCustomerId?: string, stripeSubscriptionId?: string };
 
+  /**
+   * イベントが既に処理済みかどうかをチェックし、未処理の場合は処理中として記録する
+   * @param eventId - Webhookイベントの一意識別子
+   * @param eventType - イベントのタイプ
+   * @returns 既に処理済みの場合はtrue
+   * @throws Error Convexミューテーションエラーの場合
+   */
   protected async checkIdempotency(eventId: string, eventType: string): Promise<boolean> {
     const processedCheck = await fetchMutation(api.webhook_events.mutation.checkProcessedEvent, {
       event_id: eventId,
@@ -30,6 +37,12 @@ export abstract class WebhookProcessor {
     return false;
   }
 
+  /**
+   * イベントの処理結果を記録する
+   * @param eventId - Webhookイベントの一意識別子
+   * @param result - 処理結果 ('success' | 'error' | 'processing')
+   * @param errorMessage - エラーメッセージ（オプション）
+   */
   protected async recordProcessingResult(
     eventId: string,
     result: ProcessingResult,
@@ -54,6 +67,13 @@ export abstract class WebhookProcessor {
     }
   }
 
+  /**
+   * Webhookリクエストを処理するメインメソッド
+   * 署名検証、べき等性チェック、イベントディスパッチ、結果記録を実行する
+   * @param req - Next.jsのHTTPリクエストオブジェクト
+   * @param secret - Webhook署名検証用のシークレット
+   * @returns HTTPレスポンス
+   */
   public async process(req: NextRequest, secret: string): Promise<NextResponse> {
     let eventId = '';
     let eventType = '';

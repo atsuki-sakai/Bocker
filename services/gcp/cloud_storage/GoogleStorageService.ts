@@ -790,6 +790,8 @@ class GoogleStorageService {
   /**
    * ファイルを削除する (imgUrl指定)
    * GCSオブジェクトが見つからない(404)場合は警告ログを出力し、エラーをスローしない。
+   * @param imgUrl - 削除対象の画像URL
+   * @throws SystemError GCS通信エラーの場合（404以外）
    */
   async deleteImage(imgUrl: string): Promise<void> {
     this.initializeIfNeeded()
@@ -851,6 +853,8 @@ class GoogleStorageService {
    * オリジナル画像とサムネイル画像の両方を削除する
    * （ファイルパスの命名規則からサムネイルパスを推測）
    * imgUrl はオリジナル画像のものを期待する。
+   * @param imgUrl - オリジナル画像のURL
+   * @throws SystemError 削除処理中の予期せぬエラー
    */
   async deleteImageWithThumbnail(imgUrl: string): Promise<void> {
     this.initializeIfNeeded()
@@ -910,6 +914,15 @@ class GoogleStorageService {
     }
   }
 
+  /**
+   * GCSへの直接アップロード用の署名付きURLを生成する
+   * @param fileName - アップロードするファイル名
+   * @param contentType - ファイルのMIMEタイプ
+   * @param orgId - 組織ID
+   * @param directory - 保存先ディレクトリ
+   * @returns 署名付きURLとGCS内のファイルパス
+   * @throws SystemError URL生成に失敗した場合
+   */
   async getSignedUploadUrl(fileName: string, contentType: string, orgId: Id<'organization'>, directory: string): Promise<{ url: string; filePath: string }> {
     console.log('[GCS] 署名付きURL生成開始:', {
       fileName,

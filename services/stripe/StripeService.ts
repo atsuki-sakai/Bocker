@@ -60,6 +60,9 @@ class StripeService {
 
   /**
    * 手動でアカウントステータスを確認・更新
+   * @param stripe_account_id - Stripe Connect アカウントID
+   * @returns アカウントステータスと詳細情報
+   * @throws SystemError Stripe APIエラーの場合
    */
   async checkAndUpdateConnectAccountStatus(
     stripe_account_id: string
@@ -82,6 +85,10 @@ class StripeService {
 
   /**
    * Stripeアカウント連携用のアカウントリンクを生成
+   * @param tenant_id - テナントID
+   * @param org_id - 組織ID
+   * @returns Stripeアカウントとアカウントリンク
+   * @throws SystemError アカウント作成に失敗した場合
    */
   async createConnectAccountLink(
     tenant_id: Id<'tenant'>,
@@ -92,6 +99,9 @@ class StripeService {
 
   /**
    * Stripe Expressダッシュボードへのログインリンクを生成
+   * @param stripe_account_id - Stripe Connect アカウントID
+   * @returns ダッシュボードURL（オンボーディング中の場合はisOnboarding: true）
+   * @throws SystemError リンク生成に失敗した場合
    */
   async createConnectAccountDashboardLink(
     stripe_account_id: string
@@ -101,6 +111,18 @@ class StripeService {
 
   /**
    * Stripe Checkoutセッションを作成
+   * @param params - チェックアウトセッション作成パラメータ
+   * @param params.stripe_account_id - Stripe Connect アカウントID
+   * @param params.tenant_id - テナントID
+   * @param params.org_id - 組織ID
+   * @param params.reservation_id - 予約ID
+   * @param params.line_items - 購入アイテムリスト
+   * @param params.customer_email - 顧客のメールアドレス（オプション）
+   * @param params.success_url - 決済成功時のリダイレクトURL
+   * @param params.cancel_url - 決済キャンセル時のリダイレクトURL
+   * @param params.metadata - カスタムメタデータ（オプション）
+   * @returns チェックアウトセッションIDとURL
+   * @throws SystemError セッション作成に失敗した場合
    */
   async createCheckoutSession(params: {
     stripe_account_id: string;

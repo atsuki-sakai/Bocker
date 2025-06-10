@@ -36,11 +36,22 @@ export function convertTimestampToDateString(timestampMs: number, timeZone?: str
 }
 
 
+/**
+ * 指定された日付の曜日を英語または日本語で取得する
+ * @param date - 日付オブジェクト
+ * @param ja - 日本語で取得する場合はtrue、英語の場合はfalse（デフォルト）
+ * @returns 曜日の文字列（英語: 'sunday', 'monday'等、日本語: '日曜日', '月曜日'等）
+ */
 export function getDayOfWeek(date: Date, ja: boolean = false): DayOfWeekEN | typeof DAYS_JA[number] {
   const idx = date.getDay();
   return ja ? DAYS_JA[idx] : DAYS_EN[idx];
 }
 
+/**
+ * 英語の曜日名を日本語に変換する
+ * @param dayOfWeek - 英語の曜日名（'sunday', 'monday'等）
+ * @returns 日本語の曜日名（'日曜日', '月曜日'等）
+ */
 export function convertDayOfWeekToJa(dayOfWeek: DayOfWeekEN): typeof DAYS_JA[number] {
   const idx = DAYS_EN.indexOf(dayOfWeek);
   return idx >= 0 ? DAYS_JA[idx] : DAYS_JA[0];
@@ -135,6 +146,12 @@ export function convertHourToTimestamp(hour: string, targetDate?: string): numbe
   return jstMs;
 }
 
+/**
+ * UNIXタイムスタンプ（ミリ秒）をHH:mm形式の時刻文字列に変換する
+ * @param unixTimestampMs - UNIXタイムスタンプ（ミリ秒単位）
+ * @param timeZone - タイムゾーン（デフォルト: 'Asia/Tokyo'）
+ * @returns HH:mm形式の時刻文字列
+ */
 export function convertTimestampToHour(
   unixTimestampMs: number,
   timeZone: string = 'Asia/Tokyo'
@@ -177,6 +194,12 @@ export function formatHourFromTimestamp(unixMs: number): string {
  * したがって、重なっている場合は !(b <= c || d <= a) として検出できます。
  */
 
+/**
+ * 既存のスタッフ予約から新規予約の作成が可能かチェックする関数
+ * @param existingStaffReservations - 既存の予約の配列（start, endはタイムスタンプ）
+ * @param newStaffReservation - 新規に予約したい時間帯（start, endはタイムスタンプ）
+ * @returns 重複がなければtrue、重複している場合はfalse
+ */
 export function canStaffReservation(
   existingStaffReservations: { start: number; end: number }[],
   newStaffReservation: { start: number; end: number }
@@ -193,6 +216,11 @@ export function canStaffReservation(
  * "HH:mm" 形式 → 分単位
  * hourToMinutes("02:00") = 120
  */
+/**
+ * HH:mm形式の時刻文字列を分単位の数値に変換する
+ * @param hhmm - HH:mm形式の時刻文字列（例: "02:00"）
+ * @returns 分単位の数値（例: 120）
+ */
 export function hourToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
   return h * 60 + m;
@@ -202,6 +230,11 @@ export function hourToMinutes(hhmm: string): number {
  * 
  * 分 → "HH:mm" 形式
  * hourToMinutes(120) = "02:00" 
+ */
+/**
+ * 分単位の数値をHH:mm形式の時刻文字列に変換する
+ * @param min - 分単位の数値（例: 120）
+ * @returns HH:mm形式の時刻文字列（例: "02:00"）
  */
 export function toHourString(min: number): string {
   const h = Math.floor(min / 60)

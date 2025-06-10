@@ -3,7 +3,7 @@
 import { ModeToggle } from './'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Separator } from '@/components/ui/separator'
 import { Loading } from './'
 import Image from 'next/image'
@@ -45,9 +45,10 @@ export default function Sidebar({ children }: SidebarProps) {
   const currentPlan: SubscriptionPlanName = (subscription?.plan_name ??
     'UNKNOWN') as SubscriptionPlanName
 
-  const filteredNav = isLoaded
-    ? NAV_ITEMS.filter((item) => hasAccess(role!, currentPlan, item.minRole, item.minPlan))
-    : []
+  const filteredNav = useMemo(() => {
+    if (!isLoaded || !role) return []
+    return NAV_ITEMS.filter((item) => hasAccess(role, currentPlan, item.minRole, item.minPlan))
+  }, [isLoaded, role, subscription?.plan_name])
   useEffect(() => {
     if (isLinkClicked) {
       setSidebarOpen(false)

@@ -66,6 +66,14 @@ export class LineService {
     }
   }
 
+  /**
+   * LINE Flex Messageを送信する
+   * @param line_id - 送信先のLINEユーザーID
+   * @param messages - 送信するメッセージ配列（LINE Bot SDK形式）
+   * @param access_token - LINEチャネルアクセストークン
+   * @returns 送信結果の成否と結果メッセージ
+   * @throws Error LINE API通信エラーの場合
+   */
   async sendFlexMessage(
     line_id: string,
     messages: Message[],

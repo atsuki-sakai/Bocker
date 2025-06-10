@@ -2,6 +2,12 @@
 import { NextResponse } from 'next/server';
 import { stripeService } from '@/services/stripe/StripeService';
 
+/**
+ * Stripe Connect アカウント連携APIのPOSTエンドポイント
+ * テナントIDと組織IDを受け取り、Stripeアカウント連携用のアカウントリンクを生成する
+ * @param request - HTTPリクエストオブジェクト（tenant_id, org_idを含むJSON）
+ * @returns Stripeアカウント情報とアカウントリンクURL
+ */
 export async function POST(request: Request) {
   try {
     // リクエストからsalonIdを取得

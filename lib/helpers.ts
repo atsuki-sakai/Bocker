@@ -26,6 +26,11 @@ export const fetchAddressByPostalCode = async (postalCode: string): Promise<stri
 }
 
 
+/**
+ * 生年月日から現在の年齢を計算する
+ * @param birthday - 生年月日の文字列（YYYY-MM-DD形式）またはnull
+ * @returns 現在の年齢（満年齢）、birthdayがnullの場合はnull
+ */
 export const calcAgeFromBirthday = (birthday: string | null): number | null => {
     if (!birthday) return null;
     const today = new Date();

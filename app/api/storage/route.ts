@@ -22,6 +22,12 @@ interface ParsedFormData {
   fields: Record<string, string>;
 }
 
+/**
+ * multipart/form-data形式のHTTPリクエストからファイルとフィールドを抽出する
+ * @param request - Next.jsのHTTPリクエストオブジェクト
+ * @returns ファイルとフィールドのパース結果
+ * @throws Error Content-Typeがmultipart/form-dataでない、またはリクエストボディが読み取り不可の場合
+ */
 // FormDataをパースする関数
 async function parseMultipartFormData(request: NextRequest): Promise<ParsedFormData> {
   return new Promise(async (resolve, reject) => {
@@ -110,6 +116,12 @@ async function parseMultipartFormData(request: NextRequest): Promise<ParsedFormD
   });
 }
 
+/**
+ * ファイルアップロードAPIのPOSTエンドポイント
+ * multipart/form-data形式でアップロードされた画像を圧縮・サムネイル生成してGCSに保存する
+ * @param request - Next.jsのHTTPリクエストオブジェクト
+ * @returns アップロード結果（単数または複数の画像URL）
+ */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // マルチパート形式でFormDataをパース
@@ -204,6 +216,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
+/**
+ * ファイル削除APIのDELETEエンドポイント
+ * 指定された画像URLに対応するGCSオブジェクトを削除する
+ * @param request - Next.jsのHTTPリクエストオブジェクト
+ * @returns 削除結果（成功・失敗の詳細）
+ */
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
   const body = await request.json();
 

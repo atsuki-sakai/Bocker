@@ -88,6 +88,10 @@ const SCHEDULE_COLORS = {
 } as const
 
 // ■ ユーティリティ関数
+/**
+ * 1日のタイムスロットを生成する（10分刻み）
+ * @returns 0:00から24:00までのタイムスロット配列
+ */
 const generateTimeSlots = (): TimeSlot[] => {
   const minutes = getMinuteMultiples(TIME_SLOT_MINUTES, TOTAL_MINUTES_PER_DAY - TIME_SLOT_MINUTES)
   return minutes.map((min, index) => ({
@@ -97,6 +101,11 @@ const generateTimeSlots = (): TimeSlot[] => {
   }))
 }
 
+/**
+ * 予約データからタイムライン上の表示位置と幅を計算する
+ * @param reservation - 予約情報
+ * @returns タイムライン表示用のバー情報
+ */
 const calculateReservationBar = (reservation: ReservationWithDetails): ReservationBar => {
   const startHour = convertTimestampToHour(reservation.start_time_unix)
   const endHour = convertTimestampToHour(reservation.end_time_unix)
@@ -116,6 +125,11 @@ const calculateReservationBar = (reservation: ReservationWithDetails): Reservati
   }
 }
 
+/**
+ * スケジュールデータからタイムライン上の表示位置と幅を計算する
+ * @param schedule - スケジュール情報
+ * @returns タイムライン表示用のバー情報
+ */
 const calculateScheduleBar = (schedule: StaffSchedule): ScheduleBar => {
   // 終日スケジュールの場合は全日表示
   if (schedule.is_all_day) {
@@ -148,6 +162,14 @@ const calculateScheduleBar = (schedule: StaffSchedule): ScheduleBar => {
 }
 
 // ■ メインフック
+/**
+ * スタッフスケジュール表示用のタイムラインデータを取得・整形するメインフック
+ * @param tenantId - テナントID
+ * @param orgId - 組織ID
+ * @param date - 対象日付（YYYY-MM-DD形式）
+ * @param ready - データ取得の準備が完了しているかどうか
+ * @returns スタッフ別のタイムラインデータ、タイムスロット、統計情報
+ */
 export function useTimelineData({
   tenantId,
   orgId,
@@ -239,6 +261,11 @@ export function useTimelineData({
 }
 
 // ■ 予約バー計算用フック
+/**
+ * 予約配列からタイムライン表示用のバー情報を生成する
+ * @param reservations - 予約情報の配列
+ * @returns タイムライン表示用の予約バー配列
+ */
 export function useReservationBars(reservations: ReservationWithDetails[]): ReservationBar[] {
   return useMemo(() => 
     reservations.map(calculateReservationBar),
@@ -247,6 +274,11 @@ export function useReservationBars(reservations: ReservationWithDetails[]): Rese
 }
 
 // ■ スケジュールバー計算用フック
+/**
+ * スケジュール配列からタイムライン表示用のバー情報を生成する
+ * @param schedules - スケジュール情報の配列
+ * @returns タイムライン表示用のスケジュールバー配列
+ */
 export function useScheduleBars(schedules: StaffSchedule[]): ScheduleBar[] {
   return useMemo(() => 
     schedules.map(calculateScheduleBar),
@@ -255,6 +287,15 @@ export function useScheduleBars(schedules: StaffSchedule[]): ScheduleBar[] {
 }
 
 // ■ 個別スタッフのスケジュール取得フック
+/**
+ * 特定のスタッフの特定日のスケジュールを取得する
+ * @param tenantId - テナントID
+ * @param orgId - 組織ID
+ * @param staffId - スタッフID
+ * @param date - 対象日付（YYYY-MM-DD形式）
+ * @param ready - データ取得の準備が完了しているかどうか
+ * @returns スタッフのスケジュール配列
+ */
 export function useStaffSchedules(
   tenantId: Id<'tenant'> | null,
   orgId: Id<'organization'> | null,
