@@ -90,15 +90,22 @@ const SCHEDULE_COLORS = {
 // ■ ユーティリティ関数
 /**
  * 1日のタイムスロットを生成する（10分刻み）
- * @returns 0:00から24:00までのタイムスロット配列
+ * @returns 8:00から翌日8:00までのタイムスロット配列
  */
 const generateTimeSlots = (): TimeSlot[] => {
+  const START_HOUR = 5 // 5時から開始
+  const START_MINUTES = START_HOUR * 60 // 480分
   const minutes = getMinuteMultiples(TIME_SLOT_MINUTES, TOTAL_MINUTES_PER_DAY - TIME_SLOT_MINUTES)
-  return minutes.map((min, index) => ({
-    index,
-    timeLabel: toHourString(min),
-    minutes: min,
-  }))
+  
+  return minutes.map((min, index) => {
+    // 8時を起点とした分数に変換（8時 = 0分として扱う）
+    const adjustedMinutes = (min + START_MINUTES) % TOTAL_MINUTES_PER_DAY
+    return {
+      index,
+      timeLabel: toHourString(adjustedMinutes),
+      minutes: adjustedMinutes,
+    }
+  })
 }
 
 /**
@@ -107,14 +114,21 @@ const generateTimeSlots = (): TimeSlot[] => {
  * @returns タイムライン表示用のバー情報
  */
 const calculateReservationBar = (reservation: ReservationWithDetails): ReservationBar => {
+  const START_HOUR = 8 // 8時から開始
+  const START_MINUTES = START_HOUR * 60 // 480分
+  
   const startHour = convertTimestampToHour(reservation.start_time_unix)
   const endHour = convertTimestampToHour(reservation.end_time_unix)
   
   const startMinutes = hourToMinutes(startHour)
   const endMinutes = hourToMinutes(endHour)
   
-  const startColumn = Math.floor(startMinutes / TIME_SLOT_MINUTES)
-  const endColumn = Math.ceil(endMinutes / TIME_SLOT_MINUTES)
+  // 8時を起点として調整（8時 = 0列目）
+  const adjustedStartMinutes = (startMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
+  const adjustedEndMinutes = (endMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
+  
+  const startColumn = Math.floor(adjustedStartMinutes / TIME_SLOT_MINUTES)
+  const endColumn = Math.ceil(adjustedEndMinutes / TIME_SLOT_MINUTES)
   const spanColumns = endColumn - startColumn
   
   return {
