@@ -26,18 +26,14 @@ export function UnauthorizedAccess({
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md mx-auto">
+    <div className="h-full bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md mx-auto my-12 bg-background border-destructive">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 w-16 h-16 bg-destructive rounded-full flex items-center justify-center">
-            <ShieldX className="w-8 h-8 text-destructive" />
+            <ShieldX className="w-8 h-8 text-background" />
           </div>
-          <CardTitle className="text-xl font-semibold text-destructive-foreground">
-            {title}
-          </CardTitle>
-          <CardDescription className="text-destructive-foreground mt-2">
-            {description}
-          </CardDescription>
+          <CardTitle className="text-xl font-semibold text-destructive">{title}</CardTitle>
+          <CardDescription className="text-destructive mt-2">{description}</CardDescription>
         </CardHeader>
 
         {showHomeButton && (
