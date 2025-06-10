@@ -17,6 +17,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { useMutation } from 'convex/react'
+import { Doc } from '@/convex/_generated/dataModel'
 
 // 入力値を数値または undefined に変換するプリプロセス関数
 const preprocessNumber = (val: unknown) => {
@@ -152,7 +153,7 @@ const MenuSelectionItem = React.memo(
     onRemove,
     disabled,
   }: {
-    menu: any
+    menu: Doc<'menu'>
     count: number
     onAdd: () => void
     onRemove: () => void
@@ -246,8 +247,20 @@ export default function ReservationForm() {
   const [selectedCustomer, setSelectedCustomer] = useState<RowType<'customer'> | null>(null)
   const customerRepository = useMemo(() => new CustomerRepository(), [])
 
-  // 統合データ取得関数を使用してクエリを1本化
-  const formData = useQuery(
+  // 初期データ取得（メニュー・オプション・設定など）
+  const initialFormData = useQuery(
+    api.reservation.query.getReservationFormData,
+    tenantId && orgId
+      ? {
+          tenant_id: tenantId,
+          org_id: orgId,
+          menu_ids: [],
+        }
+      : 'skip'
+  )
+
+  // スタッフデータ取得（メニュー選択後）
+  const staffFormData = useQuery(
     api.reservation.query.getReservationFormData,
     tenantId && orgId && selectedMenus.length > 0
       ? {
@@ -258,24 +271,27 @@ export default function ReservationForm() {
       : 'skip'
   )
 
-  // 初期データ取得（メニュー選択前）
-  const initialFormData = useQuery(
-    api.reservation.query.getReservationFormData,
-    tenantId && orgId && selectedMenus.length === 0
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-          menu_ids: [],
-        }
-      : 'skip'
-  )
+  // データの統合（メニュー・オプションは初期データから、スタッフは選択後のデータから）
+  const reservationConfig = initialFormData?.reservationConfig
+  const menus = initialFormData?.menus || []
+  const options = initialFormData?.options || []
+  const orgWeekSchedules = initialFormData?.weekSchedules || []
+  const availableStaff = staffFormData?.availableStaff || []
 
-  // データの統合
-  const reservationConfig = formData?.reservationConfig || initialFormData?.reservationConfig
-  const menus = formData?.menus || initialFormData?.menus || []
-  const options = formData?.options || initialFormData?.options || []
-  const orgWeekSchedules = formData?.weekSchedules || initialFormData?.weekSchedules || []
-  const availableStaff = formData?.availableStaff || []
+  // 選択中のスタッフが利用可能なスタッフリストに含まれているかチェック
+  useEffect(() => {
+    if (selectedStaffId && availableStaff.length > 0) {
+      const isStaffAvailable = availableStaff.some((staff) => staff._id === selectedStaffId)
+      if (!isStaffAvailable) {
+        // 選択中のスタッフが新しいメニューセットに対応できない場合のみリセット
+        setSelectedStaffId(null)
+        setValue('staff_id', '')
+        toast.warning(
+          '選択中のスタッフは新しいメニューに対応できません。スタッフを再選択してください。'
+        )
+      }
+    }
+  }, [availableStaff, selectedStaffId])
 
   // スタッフの週間スケジュール（個別取得が必要）
   const staffWeekSchedules = useQuery(
@@ -482,33 +498,44 @@ export default function ReservationForm() {
     [menus]
   )
 
-  const addMenu = useCallback((menu: ReservationMenu) => {
-    if (selectedMenus.length >= MAX_MENU_ITEMS) {
-      toast.error(`メニューは最大 ${MAX_MENU_ITEMS} 件まで選択できます。`)
-      return
-    }
-    const newMenus = [...selectedMenus, menu]
-    setSelectedMenus(newMenus)
-    setValue('menus', newMenus)
-    setValue('unit_price', calcMenuSubTotal(newMenus.map((m) => m.id)))
-    // メニュー変更時はスタッフをリセット
-    setSelectedStaffId(null)
-    setValue('staff_id', '')
-  }, [selectedMenus, setValue, calcMenuSubTotal])
+  const addMenu = useCallback(
+    (menu: ReservationMenu) => {
+      if (selectedMenus.length >= MAX_MENU_ITEMS) {
+        toast.error(`メニューは最大 ${MAX_MENU_ITEMS} 件まで選択できます。`)
+        return
+      }
+      const newMenus = [...selectedMenus, menu]
+      setSelectedMenus(newMenus)
+      setValue('menus', newMenus)
+      setValue('unit_price', calcMenuSubTotal(newMenus.map((m) => m.id)))
+      // 新しいメニューが追加された場合のみスタッフをリセット（同じメニューの数量増加では不要）
+      const isNewMenu = !selectedMenus.some((m) => m.id === menu.id)
+      if (isNewMenu && selectedStaffId) {
+        // 選択中のスタッフが新しいメニューに対応可能か後でチェックされる
+        // ここではリセットしない
+      }
+    },
+    [selectedMenus, setValue, calcMenuSubTotal, selectedStaffId]
+  )
 
-  const removeMenu = useCallback((menuId: Id<'menu'>) => {
-    const idx = selectedMenus.findIndex((m) => m.id === menuId)
-    if (idx === -1) return
-    const newMenus = [...selectedMenus]
-    newMenus.splice(idx, 1)
-    setSelectedMenus(newMenus)
-    setValue('menus', newMenus)
-    setValue('unit_price', calcMenuSubTotal(newMenus.map((m) => m.id)))
-    if (newMenus.length === 0) {
-      setSelectedStaffId(null)
-      setValue('staff_id', '')
-    }
-  }, [selectedMenus, setValue, calcMenuSubTotal])
+  const removeMenu = useCallback(
+    (menuId: Id<'menu'>) => {
+      const idx = selectedMenus.findIndex((m) => m.id === menuId)
+      if (idx === -1) return
+      const newMenus = [...selectedMenus]
+      newMenus.splice(idx, 1)
+      setSelectedMenus(newMenus)
+      setValue('menus', newMenus)
+      setValue('unit_price', calcMenuSubTotal(newMenus.map((m) => m.id)))
+      // 全てのメニューが削除された場合のみスタッフをリセット
+      if (newMenus.length === 0) {
+        setSelectedStaffId(null)
+        setValue('staff_id', '')
+      }
+      // メニューが残っている場合、選択中のスタッフが対応可能かは後でチェックされる
+    },
+    [selectedMenus, setValue, calcMenuSubTotal]
+  )
 
   // 指定メニュー ID をすべて取り除く
   const removeMenuAll = (menuId: Id<'menu'>) => {
@@ -957,7 +984,7 @@ export default function ReservationForm() {
           </div>
           {selectedMenus.length > 0 && availableStaff.length > 0 && (
             <div className="flex flex-col gap-2 mb-4 p-3 rounded-md border border-border">
-              {formData === undefined && selectedMenus.length > 0 ? (
+              {staffFormData === undefined && selectedMenus.length > 0 ? (
                 <div className="flex items-center justify-center p-4 rounded-md">
                   <Loader2 className="h-5 w-5 animate-spin mr-2 text-active" />
                   <span className="text-active text-sm">スタッフを検索中...</span>
