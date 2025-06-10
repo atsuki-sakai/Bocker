@@ -318,17 +318,20 @@ export const findByAvailableStaffs = query({
       )
       .collect()
 
-    // 2. 各メニューに対応しないスタッフ（除外スタッフ）を取得して集約
+    // 2. 各メニューに対応しないスタッフ（除外スタッフ）を並列で取得して集約
     const excludedIds = new Set<string>()
-    for (const menu_id of args.menu_ids) {
-      const exclusions = await ctx.db
+    const exclusionsPromises = args.menu_ids.map(menu_id =>
+      ctx.db
         .query('menu_exclusion_staff')
         .withIndex('by_tenant_org_menu_archive', (q) =>
           q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('menu_id', menu_id).eq('is_archive', false)
         )
         .collect()
+    )
+    const allExclusions = await Promise.all(exclusionsPromises)
+    allExclusions.forEach(exclusions => {
       exclusions.forEach((ex) => excludedIds.add(ex.staff_id))
-    }
+    })
 
     // 3. 除外されたスタッフを除去
     const availableStaff = allStaff.filter((staff) => !excludedIds.has(staff._id))
