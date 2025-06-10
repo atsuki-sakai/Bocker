@@ -276,7 +276,7 @@ export default function ReservationForm() {
   const menus = useMemo(() => initialFormData?.menus || [], [initialFormData?.menus])
   const options = initialFormData?.options || []
   const orgWeekSchedules = initialFormData?.weekSchedules || []
-  const availableStaff = staffFormData?.availableStaff || []
+  const availableStaff = useMemo(() => staffFormData?.availableStaff || [], [staffFormData?.availableStaff])
 
   // スタッフの週間スケジュール（個別取得が必要）
   const staffWeekSchedules = useQuery(
