@@ -1,6 +1,9 @@
-import { DashboardSection } from '@/components/common'
+'use client';
+
+import { DashboardSection, withManagerAccess } from '@/components/common'
 import CustomerList from './CustomerList'
-export default function CustomerPage() {
+
+function CustomerPage() {
   return (
     <DashboardSection
       title="顧客一覧"
@@ -15,3 +18,5 @@ export default function CustomerPage() {
     </DashboardSection>
   )
 }
+
+export default withManagerAccess(CustomerPage);

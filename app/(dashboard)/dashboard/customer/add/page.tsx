@@ -1,7 +1,9 @@
-import { DashboardSection } from '@/components/common';
+'use client';
+
+import { DashboardSection, withManagerAccess } from '@/components/common';
 import CustomerAddForm from './CustomerAddForm';
 
-export default function CustomerAddPage() {
+function CustomerAddPage() {
   return (
     <DashboardSection
       title="顧客を追加"
@@ -12,3 +14,5 @@ export default function CustomerAddPage() {
     </DashboardSection>
   );
 }
+
+export default withManagerAccess(CustomerAddPage);

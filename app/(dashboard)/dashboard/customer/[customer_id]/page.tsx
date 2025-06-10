@@ -1,6 +1,6 @@
 'use client'
 
-import { DashboardSection } from '@/components/common' // Assuming this is your layout component
+import { DashboardSection, withManagerAccess } from '@/components/common' // Assuming this is your layout component
 import { useParams } from 'next/navigation'
 import { Loading } from '@/components/common' // Assuming this is your loading component
 import { convertGender, Gender } from '@/convex/types'
@@ -37,7 +37,7 @@ type CompleteCustomerData = {
 }
 
 // Define the CustomerDetailPage component
-export default function CustomerDetailPage() {
+function CustomerDetailPage() {
   const params = useParams()
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const customerUid = params.customer_id as string
@@ -291,3 +291,5 @@ export default function CustomerDetailPage() {
     </DashboardSection>
   )
 }
+
+export default withManagerAccess(CustomerDetailPage);

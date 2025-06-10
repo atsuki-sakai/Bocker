@@ -1,7 +1,9 @@
-import { DashboardSection } from '@/components/common';
+'use client';
+
+import { DashboardSection, withManagerAccess } from '@/components/common';
 import CustomerEditForm from './CustomerEditForm';
 
-export default async function CustomerEditPage() {
+async function CustomerEditPage() {
   return (
     <DashboardSection
       title="顧客を編集"
@@ -12,3 +14,5 @@ export default async function CustomerEditPage() {
     </DashboardSection>
   );
 }
+
+export default withManagerAccess(CustomerEditPage);
