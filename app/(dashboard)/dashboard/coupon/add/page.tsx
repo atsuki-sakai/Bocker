@@ -699,8 +699,11 @@ function CouponForm() {
   )
 }
 
+// インポートに追加
+import { withManagerAccess } from '@/components/common'
+
 // ページコンポーネント
-export default function AddCouponPage() {
+function AddCouponPage() {
   return (
     <DashboardSection
       title="クーポンを作成"
@@ -720,3 +723,5 @@ export default function AddCouponPage() {
     </DashboardSection>
   )
 }
+
+export default withManagerAccess(AddCouponPage);

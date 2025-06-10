@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import React from 'react'
 import { Controller } from 'react-hook-form'
+import { withManagerAccess } from '@/components/common'
 import { z } from 'zod'
 import { api } from '@/convex/_generated/api'
 import { useQuery, useMutation } from 'convex/react'
@@ -145,7 +146,7 @@ interface CouponEditPageProps {
   params: Promise<{ coupon_id: Id<'coupon'> }>
 }
 // ページコンポーネント
-export default function Page({ params }: CouponEditPageProps) {
+function CouponEditPage({ params }: CouponEditPageProps) {
   const unwrappedParams = React.use(params)
   const { coupon_id } = unwrappedParams
   return (
@@ -749,3 +750,5 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     </form>
   )
 }
+
+export default withManagerAccess(CouponEditPage)
