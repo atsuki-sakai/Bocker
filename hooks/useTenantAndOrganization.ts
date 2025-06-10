@@ -5,7 +5,7 @@ import { useClerk } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import { Id } from '@/convex/_generated/dataModel';
+import { Id, Doc } from '@/convex/_generated/dataModel';
 import type { Role } from '@/convex/types';
 import { api } from '@/convex/_generated/api';
 import { useQuery } from 'convex/react';
@@ -19,6 +19,7 @@ type UseTenantAndOrganization = {
   staffId: Id<'staff'> | null;
   subscriptionStatus: SubscriptionStatus | null;
   planName: SubscriptionPlanName | null;
+  subscription: Doc<"subscription"> | null | undefined;
   isLoaded: boolean;
   isSignedIn: boolean;
   ready: boolean;
@@ -82,6 +83,7 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
     staffId: staffId,
     planName: subscription?.plan_name ?? 'UNKNOWN',
     subscriptionStatus: subscription?.status ?? null,
+    subscription: subscription,
     isLoaded,
     isSignedIn: isSignedIn as boolean,
     ready,

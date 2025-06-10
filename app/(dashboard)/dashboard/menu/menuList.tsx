@@ -66,7 +66,7 @@ interface MenuItemProps {
   onDelete: (menuId: Id<'menu'>, imgPaths: string[]) => void
 }
 
-const MenuItem = memo(({ menu, onEdit, onDelete }: MenuItemProps) => {
+const MenuItem = memo(function MenuItem({ menu, onEdit, onDelete }: MenuItemProps) {
   return (
     <div className="col-span-1">
       <Card className="h-full overflow-hidden hover:shadow-md transition-all">
