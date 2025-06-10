@@ -1,7 +1,9 @@
-import PointTabs from './PointTabs';
-import { DashboardSection } from '@/components/common';
+'use client';
 
-export default function PointPage() {
+import PointTabs from './PointTabs';
+import { DashboardSection, withOwnerAccess } from '@/components/common';
+
+function PointPage() {
   return (
     <DashboardSection
       title="ポイント設定"
@@ -12,3 +14,5 @@ export default function PointPage() {
     </DashboardSection>
   );
 }
+
+export default withOwnerAccess(PointPage);
