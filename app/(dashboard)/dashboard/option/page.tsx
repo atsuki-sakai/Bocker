@@ -1,7 +1,9 @@
-import OptionList from './OptionList';
-import { DashboardSection } from '@/components/common';
+'use client';
 
-export default function OptionPage() {
+import OptionList from './OptionList';
+import { DashboardSection, withManagerAccess } from '@/components/common';
+
+function OptionPage() {
   return (
     <DashboardSection
       title="オプション一覧"
@@ -18,3 +20,5 @@ export default function OptionPage() {
     </DashboardSection>
   )
 }
+
+export default withManagerAccess(OptionPage);

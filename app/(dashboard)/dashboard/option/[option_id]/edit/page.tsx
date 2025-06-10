@@ -1,7 +1,9 @@
-import OptionEditForm from './OptionEditForm';
-import { DashboardSection } from '@/components/common';
+'use client';
 
-export default function OptionEditPage() {
+import OptionEditForm from './OptionEditForm';
+import { DashboardSection, withManagerAccess } from '@/components/common';
+
+function OptionEditPage() {
   return (
     <DashboardSection
       title="オプション編集"
@@ -12,3 +14,5 @@ export default function OptionEditPage() {
     </DashboardSection>
   );
 }
+
+export default withManagerAccess(OptionEditPage);

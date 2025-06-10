@@ -1,7 +1,9 @@
-import OptionAddForm from './OptionAddForm';
-import { DashboardSection } from '@/components/common';
+'use client';
 
-export default function OptionAddPage() {
+import OptionAddForm from './OptionAddForm';
+import { DashboardSection, withManagerAccess } from '@/components/common';
+
+function OptionAddPage() {
   return (
     <DashboardSection
       title="オプションを作成"
@@ -12,3 +14,5 @@ export default function OptionAddPage() {
     </DashboardSection>
   );
 }
+
+export default withManagerAccess(OptionAddPage);
