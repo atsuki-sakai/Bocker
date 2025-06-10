@@ -104,103 +104,101 @@ const SidebarNavigation = memo(
         </div>
       )}
       <ul role="list" className={`flex flex-1 flex-col ${isMobile ? 'gap-y-1' : 'gap-y-7'}`}>
-        {!isMobile && (
-          <li>
-            <ul role="list" className="-mx-2 space-y-1">
-              {staffId && (
-                <li>
-                  <Link
-                    href={`/dashboard/staff/${staffId}/my-page`}
-                    onClick={() => setIsLinkClicked(true)}
+        <li>
+          <ul role="list" className="-mx-2 space-y-1">
+            {staffId && (
+              <li>
+                <Link
+                  href={`/dashboard/staff/${staffId}/my-page`}
+                  onClick={() => setIsLinkClicked(true)}
+                  className={classNames(
+                    pathname === `/dashboard/staff/${staffId}/my-page`
+                      ? 'text-accent-foreground bg-accent'
+                      : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                    'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                  )}
+                >
+                  <UserIcon
+                    aria-hidden="true"
                     className={classNames(
                       pathname === `/dashboard/staff/${staffId}/my-page`
                         ? 'text-accent-foreground bg-accent'
-                        : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                      'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                        : 'text-primary',
+                      'size-4 shrink-0'
                     )}
-                  >
-                    <UserIcon
-                      aria-hidden="true"
-                      className={classNames(
-                        pathname === `/dashboard/staff/${staffId}/my-page`
-                          ? 'text-accent-foreground bg-accent'
-                          : 'text-primary',
-                        'size-4 shrink-0'
-                      )}
-                    />
-                    <p className="w-full text-nowrap">マイページ</p>
-                    {pathname === `/dashboard/staff/${staffId}/my-page` && (
-                      <div className="w-full flex justify-end items-center pr-2">
-                        <div className="h-3 w-3 bg-active border-ring border rounded-full" />
-                      </div>
-                    )}
-                  </Link>
-                </li>
-              )}
-              {filteredNav.map((item) => {
-                const isCurrent = pathname === item.href
-                return (
-                  <li key={item.name}>
-                    <Link
-                      href={item.href}
-                      onClick={() => setIsLinkClicked(true)}
-                      className={classNames(
-                        isCurrent
-                          ? 'text-accent-foreground bg-accent'
-                          : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                        'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
-                      )}
-                    >
-                      <item.icon
-                        aria-hidden="true"
-                        className={classNames(
-                          isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
-                          'size-4 shrink-0'
-                        )}
-                      />
-                      <p className="w-full text-nowrap">{item.name}</p>
-                      {isCurrent && (
-                        <div className="w-full flex justify-end items-center pr-2">
-                          <div className="h-3 w-3 bg-active border-ring border rounded-full" />
-                        </div>
-                      )}
-                    </Link>
-                  </li>
-                )
-              })}
-              {role === 'admin' && (
-                <li>
+                  />
+                  <p className="w-full text-nowrap">マイページ</p>
+                  {pathname === `/dashboard/staff/${staffId}/my-page` && (
+                    <div className="w-full flex justify-end items-center pr-2">
+                      <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                    </div>
+                  )}
+                </Link>
+              </li>
+            )}
+            {filteredNav.map((item) => {
+              const isCurrent = pathname === item.href
+              return (
+                <li key={item.name}>
                   <Link
-                    href={'/dashboard/subscription'}
+                    href={item.href}
                     onClick={() => setIsLinkClicked(true)}
                     className={classNames(
-                      pathname === '/dashboard/subscription'
+                      isCurrent
                         ? 'text-accent-foreground bg-accent'
                         : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
                       'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
                     )}
                   >
-                    <CreditCardIcon
+                    <item.icon
                       aria-hidden="true"
                       className={classNames(
-                        pathname === '/dashboard/subscription'
-                          ? 'text-accent-foreground bg-accent'
-                          : 'text-primary',
+                        isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
                         'size-4 shrink-0'
                       )}
                     />
-                    <p className="w-full text-nowrap">サブスクリプション</p>
-                    {pathname === '/dashboard/subscription' && (
+                    <p className="w-full text-nowrap">{item.name}</p>
+                    {isCurrent && (
                       <div className="w-full flex justify-end items-center pr-2">
                         <div className="h-3 w-3 bg-active border-ring border rounded-full" />
                       </div>
                     )}
                   </Link>
                 </li>
-              )}
-            </ul>
-          </li>
-        )}
+              )
+            })}
+            {role === 'admin' && (
+              <li>
+                <Link
+                  href={'/dashboard/subscription'}
+                  onClick={() => setIsLinkClicked(true)}
+                  className={classNames(
+                    pathname === '/dashboard/subscription'
+                      ? 'text-accent-foreground bg-accent'
+                      : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                    'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                  )}
+                >
+                  <CreditCardIcon
+                    aria-hidden="true"
+                    className={classNames(
+                      pathname === '/dashboard/subscription'
+                        ? 'text-accent-foreground bg-accent'
+                        : 'text-primary',
+                      'size-4 shrink-0'
+                    )}
+                  />
+                  <p className="w-full text-nowrap">サブスクリプション</p>
+                  {pathname === '/dashboard/subscription' && (
+                    <div className="w-full flex justify-end items-center pr-2">
+                      <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                    </div>
+                  )}
+                </Link>
+              </li>
+            )}
+          </ul>
+        </li>
       </ul>
     </nav>
   )
