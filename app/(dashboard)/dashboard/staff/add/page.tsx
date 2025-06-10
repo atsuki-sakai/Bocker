@@ -506,8 +506,8 @@ export default function StaffAddPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="shadow-md border-border">
-                <CardContent className="space-y-8 pt-6">
+              <Card className="shadow-md border-border overflow-hidden">
+                <CardContent className="space-y-8 pt-6 overflow-x-hidden">
                   {/* 基本情報セクション */}
                   <div>
                     <div className="flex flex-col items-start justify-between space-y-2 mb-4 bg-active-foreground text-active border border-active rounded-md p-4">
@@ -641,8 +641,8 @@ export default function StaffAddPage() {
                     )}
 
                     <Separator className="my-8 md:my-12 w-full" />
-                    <div className="flex flex-col md:flex-row gap-6 pb-4 w-full">
-                      <div className="w-full">
+                    <div className="flex flex-col md:flex-row gap-6 pb-4 w-full overflow-hidden">
+                      <div className="w-full md:w-2/5 flex-shrink-0">
                         <div className="mb-2 flex items-center">
                           <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
                           <span className="text-sm font-medium text-muted-foreground">
@@ -650,7 +650,7 @@ export default function StaffAddPage() {
                           </span>
                         </div>
 
-                        <div className="w-full">
+                        <div className="w-full max-w-full">
                           <SingleImageDrop
                             onFileSelect={(file) => setSelectedFile(file ?? null)}
                             aspectType="square"
@@ -658,7 +658,7 @@ export default function StaffAddPage() {
                           />
                         </div>
                       </div>
-                      <div className="space-y-4 w-full">
+                      <div className="space-y-4 w-full md:w-3/5 min-w-0">
                         <div>
                           <ZodTextField
                             name="name"

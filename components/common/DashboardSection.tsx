@@ -25,7 +25,7 @@ export default function DashboardSection({
   subBtn,
 }: SectionContainerProps) {
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto overflow-x-hidden">
       <div className="flex justify-between items-center">
         {title ? (
           <div className=" flex flex-col w-full mb-6 z-10">
@@ -62,7 +62,7 @@ export default function DashboardSection({
           )}
         </div>
       </div>
-      <div className="mb-24 max-w-[100vw]">{children}</div>
+      <div className="mb-24 max-w-[100vw] overflow-x-hidden">{children}</div>
     </div>
   )
 }

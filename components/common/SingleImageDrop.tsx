@@ -122,7 +122,7 @@ export default function SingleImageDrop({
       onDragLeave={() => setIsDragging(false)}
     >
       {previewImageUrl ? (
-        <div className="relative flex flex-col items-center justify-center w-full max-w-xl h-full">
+        <div className="relative flex flex-col items-center justify-center w-full h-full">
           <Image
             src={previewImageUrl}
             alt="Preview"
@@ -153,15 +153,13 @@ export default function SingleImageDrop({
             </Button>
           </div>
           {selectedFile && (
-            <div className="flex items-center justify-between w-full gap-4 text-xs text-muted-foreground mt-2 text-start">
-              <p>
+            <div className="flex items-center justify-between w-full gap-2 text-xs text-muted-foreground mt-2 text-start">
+              <p className="truncate flex-1 min-w-0">
                 <span className="font-bold">ファイル名:</span>
                 <br />
-                {selectedFile.name.length > 12
-                  ? selectedFile.name.slice(0, 12) + '...'
-                  : selectedFile.name}
+                <span className="truncate block">{selectedFile.name}</span>
               </p>
-              <p>
+              <p className="flex-shrink-0">
                 <span className="font-bold">サイズ:</span>
                 <br />
                 {(selectedFile.size / 1024).toFixed(1)} KB
