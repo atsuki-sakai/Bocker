@@ -53,7 +53,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ExclusionMenu } from '@/components/common'
+import { ExclusionMenu, withOwnerAccess } from '@/components/common'
 
 // sendInviteEmailフラグに応じて動的にバリデーションを変更するスキーマファクトリー関数
 const createStaffAddSchema = (sendInviteEmail: boolean) =>
@@ -166,7 +166,7 @@ const createStaffAddSchema = (sendInviteEmail: boolean) =>
     selected_menu_ids: z.array(z.string()).optional(),
   })
 
-export default function StaffAddPage() {
+function StaffAddPage() {
   const router = useRouter()
   const { tenantId, orgId, planName } = useTenantAndOrganization()
   const { user } = useUser()
@@ -870,3 +870,5 @@ export default function StaffAddPage() {
     </DashboardSection>
   )
 }
+
+export default withOwnerAccess(StaffAddPage);

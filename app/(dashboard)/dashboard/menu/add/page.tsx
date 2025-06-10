@@ -1,7 +1,9 @@
-import MenuAddForm from './MenuAddForm';
-import { DashboardSection } from '@/components/common';
+'use client';
 
-export default function MenuAddPage() {
+import MenuAddForm from './MenuAddForm';
+import { DashboardSection, withManagerAccess } from '@/components/common';
+
+function MenuAddPage() {
   return (
     <DashboardSection
       title="新規メニュー作成"
@@ -12,3 +14,5 @@ export default function MenuAddPage() {
     </DashboardSection>
   );
 }
+
+export default withManagerAccess(MenuAddPage);

@@ -1,6 +1,10 @@
+'use client';
+
 import { DashboardSection } from '@/components/common';
+import { withOwnerAccess } from '@/components/common';
 import StaffList from './StaffList';
-export default function StaffPage() {
+
+function StaffPage() {
   return (
     <DashboardSection
       title="スタッフ一覧"
@@ -19,3 +23,5 @@ export default function StaffPage() {
     </DashboardSection>
   );
 }
+
+export default withOwnerAccess(StaffPage);

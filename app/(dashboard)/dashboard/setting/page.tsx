@@ -2,6 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useState } from 'react'
+import { withOwnerAccess } from '@/components/common'
 import OrgConfigForm from './_components/OrgConfigForm'
 import OrgApiConfigForm from './_components/OrgApiConfigForm'
 import OrgReservationConfigForm from './_components/OrgReservationConfigForm'
@@ -9,7 +10,7 @@ import OrgExceptionScheduleForm from './_components/OrgExceptionScheduleForm'
 import OrgStripeConnectStatus from './_components/OrgStripeConnectStatus'
 import OrgWeekHourSchedule from './_components/OrgWeekHourSchedule'
 
-export default function SettingPage() {
+function SettingPage() {
   const [currentTab, setCurrentTab] = useState('basic')
 
   return (
@@ -46,3 +47,5 @@ export default function SettingPage() {
     </Tabs>
   )
 }
+
+export default withOwnerAccess(SettingPage);

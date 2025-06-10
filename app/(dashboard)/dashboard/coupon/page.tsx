@@ -1,7 +1,9 @@
-import { DashboardSection } from '@/components/common';
+'use client';
+
+import { DashboardSection, withManagerAccess } from '@/components/common';
 import CouponList from './CouponList';
 
-export default async function CouponPage() {
+function CouponPage() {
   return (
     <DashboardSection
       title="クーポン一覧"
@@ -16,3 +18,5 @@ export default async function CouponPage() {
     </DashboardSection>
   );
 }
+
+export default withManagerAccess(CouponPage);

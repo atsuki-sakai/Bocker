@@ -45,30 +45,84 @@ export default function CustomerList() {
   const [debouncedSearchTerm] = useDebounce(searchTerm, 1000)
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false)
   const [selectedCustomerUid, setSelectedCustomerUid] = useState<string | null>(null)
-  const [customers, setCustomers] = useState<CustomerWithDetails[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [hasMoreData, setHasMoreData] = useState(true)
+  // 通常リスト用と検索結果用で状態を分離
+  const [allCustomers, setAllCustomers] = useState<CustomerWithDetails[]>([]) // 通常リスト
+  const [searchResults, setSearchResults] = useState<CustomerWithDetails[]>([]) // 検索結果
+  const [isSearchMode, setIsSearchMode] = useState(false) // 検索モード判定
+
+  // ローディング状態の細分化
+  const [isLoadingAll, setIsLoadingAll] = useState(true) // 通常リスト
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false) // 検索
+  const [isLoadingMoreAll, setIsLoadingMoreAll] = useState(false) // 通常リスト追加読み込み
+  const [isLoadingMoreSearch, setIsLoadingMoreSearch] = useState(false) // 検索結果追加読み込み
+
+  // ページネーション状態の分離
+  const [currentAllPage, setCurrentAllPage] = useState(1) // 通常リスト用
+  const [currentSearchPage, setCurrentSearchPage] = useState(1) // 検索結果用
+  const [hasMoreAll, setHasMoreAll] = useState(true) // 通常リスト用
+  const [hasMoreSearch, setHasMoreSearch] = useState(true) // 検索結果用
 
   // CustomerRepositoryのインスタンスをメモ化
   const customerRepo = useMemo(() => new CustomerRepository(), [])
 
-  // 顧客データを取得する関数
-  const fetchCustomers = useCallback(
-    async (page: number = 1, search: string = '', append: boolean = false) => {
-      if (!tenantId || !orgId || !isLoaded) {
+  // 検索結果のキャッシュ
+  const [searchCache, setSearchCache] = useState<Map<string, CustomerWithDetails[]>>(new Map())
+
+  // キャッシュされた検索結果を取得
+  const getCachedResults = useCallback((searchTerm: string): CustomerWithDetails[] | null => {
+    return searchCache.get(searchTerm.toLowerCase().trim()) || null
+  }, [searchCache])
+
+  // 詳細データ取得の最適化（バッチ処理）
+  const getCustomersWithDetails = useCallback(async (customers: RowType<'customer'>[]): Promise<CustomerWithDetails[]> => {
+    const BATCH_SIZE = 10
+    const results: CustomerWithDetails[] = []
+    
+    for (let i = 0; i < customers.length; i += BATCH_SIZE) {
+      const batch = customers.slice(i, i + BATCH_SIZE)
+      const batchResults = await Promise.all(
+        batch.map(async (customer) => {
+          const completeData = await customerRepo.getCompleteCustomerData(
+            customer.uid,
+            tenantId!,
+            orgId!
+          )
+          return {
+            customer,
+            customerDetail: completeData.customerDetail,
+            customerPoints: completeData.customerPoints,
+          }
+        })
+      )
+      results.push(...batchResults)
+    }
+    
+    return results
+  }, [customerRepo, tenantId, orgId])
+
+  // 表示用データを動的に切り替え
+  const displayCustomers = isSearchMode ? searchResults : allCustomers
+  const isLoading = isSearchMode ? isLoadingSearch : isLoadingAll
+  const isLoadingMore = isSearchMode ? isLoadingMoreSearch : isLoadingMoreAll
+  const hasMoreData = isSearchMode ? hasMoreSearch : hasMoreAll
+  const currentPage = isSearchMode ? currentSearchPage : currentAllPage
+
+  // 通常リスト取得関数（検索モードでない場合のみ実行）
+  const fetchAllCustomers = useCallback(
+    async (page: number = 1, append: boolean = false) => {
+      // 検索モードでない場合のみ実行
+      if (!tenantId || !orgId || !isLoaded || isSearchMode) {
         return
       }
 
       try {
         if (!append) {
-          setIsLoading(true)
+          setIsLoadingAll(true)
         } else {
-          setIsLoadingMore(true)
+          setIsLoadingMoreAll(true)
         }
 
-        // 顧客リストを取得
+        // 顧客リストを取得（検索フィルタリングなし）
         const { data: customerList, count } = await customerRepo.list({
           page,
           pageSize: PAGE_SIZE,
@@ -76,74 +130,129 @@ export default function CustomerList() {
             tenant_id: tenantId,
             org_id: orgId,
             is_archive: false,
-            ...(search &&
-              {
-                // 検索語がある場合、名前、電話番号、メールアドレスでフィルタリング
-                // 注意: 実際のSupabaseクエリでは、より高度な検索機能が必要な場合があります
-              }),
           } as Partial<RowType<'customer'>>,
         })
 
-        // 各顧客の詳細情報とポイント情報を並行取得
-        const customersWithDetails: CustomerWithDetails[] = await Promise.all(
-          customerList.map(async (customer) => {
-            const completeData = await customerRepo.getCompleteCustomerData(
-              customer.uid,
-              tenantId,
-              orgId
-            )
-            return {
-              customer,
-              customerDetail: completeData.customerDetail,
-              customerPoints: completeData.customerPoints,
-            }
-          })
-        )
-
-        // 検索フィルタリング（クライアントサイドで実施）
-        const filteredCustomers = search
-          ? customersWithDetails.filter((item) => {
-              const searchLower = search.toLowerCase().trim()
-              const customer = item.customer
-              const searchableText =
-                `${customer.first_name || ''} ${customer.last_name || ''} ${customer.email || ''} ${customer.phone || ''} ${customer.line_user_name || ''}`.toLowerCase()
-              return searchableText.includes(searchLower)
-            })
-          : customersWithDetails
+        // バッチ処理で詳細データを効率的に取得
+        const customersWithDetails = await getCustomersWithDetails(customerList)
 
         if (append) {
-          setCustomers((prev) => [...prev, ...filteredCustomers])
+          setAllCustomers((prev) => [...prev, ...customersWithDetails])
         } else {
-          setCustomers(filteredCustomers)
+          setAllCustomers(customersWithDetails)
         }
 
         // ページネーション制御
-        const totalCustomers = search ? filteredCustomers.length : count || 0
-        setHasMoreData(filteredCustomers.length === PAGE_SIZE && page * PAGE_SIZE < totalCustomers)
+        setHasMoreAll(customersWithDetails.length === PAGE_SIZE && page * PAGE_SIZE < (count || 0))
       } catch (error) {
         console.error('顧客データの取得に失敗しました:', error)
         toast.error('顧客データの取得に失敗しました')
       } finally {
-        setIsLoading(false)
-        setIsLoadingMore(false)
+        setIsLoadingAll(false)
+        setIsLoadingMoreAll(false)
       }
     },
-    [tenantId, orgId, isLoaded, customerRepo]
+    [tenantId, orgId, isLoaded, isSearchMode, customerRepo]
   )
 
-  // 初回データ取得
-  useEffect(() => {
-    if (tenantId && orgId && isLoaded) {
-      fetchCustomers(1, debouncedSearchTerm, false)
-      setCurrentPage(1)
-    }
-  }, [tenantId, orgId, isLoaded, debouncedSearchTerm, fetchCustomers])
+  // 検索専用関数（Supabaseサーバーサイド検索を使用 + キャッシュ対応）
+  const searchCustomers = useCallback(
+    async (searchTerm: string, page: number = 1, append: boolean = false) => {
+      if (!tenantId || !orgId || !searchTerm.trim()) {
+        setIsSearchMode(false)
+        return
+      }
 
-  // さらに読み込み
+      const cacheKey = searchTerm.toLowerCase().trim()
+
+      // 初回検索でキャッシュチェック
+      if (page === 1 && !append) {
+        const cachedResults = getCachedResults(searchTerm)
+        if (cachedResults) {
+          setIsSearchMode(true)
+          setSearchResults(cachedResults)
+          setHasMoreSearch(false) // キャッシュされた結果は完全なものとして扱う
+          return
+        }
+      }
+
+      try {
+        setIsSearchMode(true)
+        if (!append) {
+          setIsLoadingSearch(true)
+        } else {
+          setIsLoadingMoreSearch(true)
+        }
+
+        // Supabaseのサーバーサイド検索を使用
+        const result = await customerRepo.findBySearchableText(tenantId, orgId, searchTerm.trim(), {
+          page,
+          pageSize: PAGE_SIZE,
+        })
+
+        // バッチ処理で詳細データを効率的に取得
+        const customersWithDetails = await getCustomersWithDetails(result.data)
+
+        if (append) {
+          setSearchResults((prev) => [...prev, ...customersWithDetails])
+        } else {
+          setSearchResults(customersWithDetails)
+          // 初回検索結果をキャッシュ（小さな結果のみ）
+          if (customersWithDetails.length <= 20) {
+            setSearchCache(prev => new Map(prev).set(cacheKey, customersWithDetails))
+          }
+        }
+
+        // ページネーション制御
+        setHasMoreSearch(result.hasMore)
+      } catch (error) {
+        console.error('顧客検索に失敗しました:', error)
+        toast.error('顧客検索に失敗しました')
+        setSearchResults([])
+      } finally {
+        setIsLoadingSearch(false)
+        setIsLoadingMoreSearch(false)
+      }
+    },
+    [tenantId, orgId, customerRepo, getCachedResults, getCustomersWithDetails]
+  )
+
+  // 初回データ取得（通常リスト）
+  useEffect(() => {
+    if (tenantId && orgId && isLoaded && !isSearchMode) {
+      fetchAllCustomers(1, false)
+      setCurrentAllPage(1)
+    }
+  }, [tenantId, orgId, isLoaded, isSearchMode, fetchAllCustomers])
+
+  // デバウンス検索処理
+  useEffect(() => {
+    if (debouncedSearchTerm.trim()) {
+      searchCustomers(debouncedSearchTerm, 1, false)
+      setCurrentSearchPage(1)
+    } else {
+      // 検索語が空の場合は通常モードに戻る
+      setIsSearchMode(false)
+      setSearchResults([])
+      // 通常リストがない場合は取得
+      if (allCustomers.length === 0) {
+        fetchAllCustomers(1, false)
+        setCurrentAllPage(1)
+      }
+    }
+  }, [debouncedSearchTerm, searchCustomers, fetchAllCustomers, allCustomers.length])
+
+  // さらに読み込み（検索モードと通常モードに対応）
   const loadMore = () => {
-    const nextPage = currentPage + 1
-    setCurrentPage(nextPage)
-    fetchCustomers(nextPage, debouncedSearchTerm, true)
+    if (isSearchMode) {
+      const nextPage = currentSearchPage + 1
+      setCurrentSearchPage(nextPage)
+      searchCustomers(debouncedSearchTerm, nextPage, true)
+    } else {
+      const nextPage = currentAllPage + 1
+      setCurrentAllPage(nextPage)
+      fetchAllCustomers(nextPage, true)
+    }
   }
 
   // 削除モーダルを表示
@@ -160,9 +269,14 @@ export default function CustomerList() {
       toast.success('顧客を削除しました')
       setShowDeleteModal(false)
       setSelectedCustomerUid(null)
-      // リストを再取得
-      fetchCustomers(1, debouncedSearchTerm, false)
-      setCurrentPage(1)
+      // 適切なリストを再取得
+      if (isSearchMode) {
+        searchCustomers(debouncedSearchTerm, 1, false)
+        setCurrentSearchPage(1)
+      } else {
+        fetchAllCustomers(1, false)
+        setCurrentAllPage(1)
+      }
     } catch (error) {
       console.error('顧客の削除に失敗しました:', error)
       toast.error('顧客の削除に失敗しました')
@@ -181,18 +295,40 @@ export default function CustomerList() {
 
   return (
     <div className="w-full space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="relative w-64">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="顧客を検索..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="relative w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="顧客を検索..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
         </div>
+
+        {/* 検索状態の可視化 */}
+        {isSearchMode && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-2 rounded-md">
+            <Search size={16} />
+            <span>「{debouncedSearchTerm}」の検索結果</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchTerm('')
+                setIsSearchMode(false)
+                setSearchResults([])
+              }}
+              className="ml-auto"
+            >
+              クリア
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="rounded-md border overflow-hidden shadow-sm">
@@ -205,21 +341,21 @@ export default function CustomerList() {
               <TableHead className="px-4 text-nowrap w-fit font-bold">連絡先</TableHead>
               <TableHead className="px-4 text-nowrap w-fit font-bold">来店回数</TableHead>
               <TableHead className="px-4 text-nowrap w-fit font-bold">最終来店日</TableHead>
-              <TableHead className="px-2 w-fit font-bold">タグ</TableHead>
+              <TableHead className="px-2 text-nowrap w-fit font-bold">タグ</TableHead>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {customers.length === 0 ? (
+            {displayCustomers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                   {searchTerm ? '検索条件に一致する顧客が見つかりません' : '顧客データがありません'}
                 </TableCell>
               </TableRow>
             ) : (
-              customers.map((customerData) => (
+              displayCustomers.map((customerData) => (
                 <TableRow key={customerData.customer.uid} className="hover:bg-transparent">
                   <TableCell className="font-medium px-4">
                     <div className="flex items-center text-sm text-muted-foreground gap-4 text-nowrap">
@@ -272,7 +408,7 @@ export default function CustomerList() {
                   </TableCell>
                   <TableCell className="w-full">
                     {customerData.customer.tags && customerData.customer.tags.length > 0 ? (
-                      <div className="flex flex-wrap gap-1 w-full min-w-[140px]">
+                      <div className="flex flex-wrap gap-1 w-full min-w-[140px] text-nowrap">
                         {customerData.customer.tags.map((tag: string, index: number) => (
                           <Badge key={index} className="text-xs py-1 px-1 font-light">
                             {tag}
