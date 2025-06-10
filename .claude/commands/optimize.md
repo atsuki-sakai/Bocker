@@ -17,6 +17,31 @@ Next.js 15.3.3 (App Router) + TypeScript + Convex/Supabaseのハイブリッド�
 
 【重点分析項目】
 
+クエリを1本にまとめる（いわゆる「Backend for Frontend」パターン）メリットは、主に以下の点に集約されます。
+
+1. **必要なデータだけを効率的に取得できる**  
+   クライアントが必要とする状態をピンポイントで返すクエリを作成できるため、余計なデータ取得や複数回のリクエストを避けられます。これにより、通信回数やデータ転送量が減り、パフォーマンスが向上します。  
+   >「サーバー側で派生状態（derived state）を提供でき、クライアントが必要とする状態をターゲットにしたクエリを書ける」  
+   [Why Convex Queries are the Ultimate Form of Derived State](https://stack.convex.dev/why-convex-queries-are-the-ultimate-form-of-derived-state#state-in-a-convex-world)
+
+2. **クライアント側のロジックがシンプルになる**  
+   クライアントで複雑な状態管理やデータの結合処理を行う必要がなくなり、実装や保守が容易になります。
+
+3. **一貫性のあるデータ取得**  
+   サーバー側でまとめてデータを取得・整形することで、クライアントごとに異なるデータ取得ロジックによる不整合を防げます。
+
+4. **パフォーマンスの予測がしやすい**  
+   Convexではクエリごとにどのインデックスを使うか明示的に指定できるため、SQLのようにクエリプランナーの気まぐれでパフォーマンスが大きく変動することがありません。  
+   >「Convexクエリは指定したインデックスを必ず使うため、パフォーマンスが予測しやすい」  
+   [Translate SQL into Convex Queries](https://stack.convex.dev/translate-sql-into-convex-queries)
+
+5. **リアクティブなUIとの親和性**  
+   Convexのクエリは自動的にリアクティブに保たれるため、クライアントはサーバーの状態を「単一のソース・オブ・トゥルース」として扱えます。  
+   >「サーバー状態を単一の“source of truth”として扱える」  
+   [Why Convex Queries are the Ultimate Form of Derived State](https://stack.convex.dev/why-convex-queries-are-the-ultimate-form-of-derived-state#state-in-a-convex-world)
+
+このように、クエリを1本にまとめることで、効率・一貫性・保守性・パフォーマンスの面で多くのメリットがあります。ただ過度な最適化は煩雑性を高め拡張性が高まるので必要に応じて判断を仰いでください。
+
 1. **リアルタイム処理の最適化**
    - Convex関数の実行時間短縮（10秒制限対策）
    - WebSocketサブスクリプションの効率化

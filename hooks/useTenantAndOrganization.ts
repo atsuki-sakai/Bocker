@@ -3,7 +3,7 @@
 import { useUser, useAuth } from '@clerk/nextjs';
 import { useClerk } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Id, Doc } from '@/convex/_generated/dataModel';
 import type { Role } from '@/convex/types';
@@ -31,22 +31,12 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
   const { user } = useUser();
   const { userId, isLoaded, isSignedIn } = useAuth();
   const { session } = useClerk();
+  const [retryCount, setRetryCount] = useState(0);
 
-  // user ロード後にメタデータを読む
-  const tenantId = useMemo(
-    () => (isLoaded ? (user?.publicMetadata?.tenant_id as Id<'tenant'> | null) : null),
-    [isLoaded, user]
-  );
-
-  const role = useMemo(
-    () => (isLoaded ? (user?.publicMetadata?.role as Role | null) : null),
-    [isLoaded, user]
-  );
-
-  const staffId = useMemo(
-    () => (isLoaded ? (user?.publicMetadata?.staff_id as Id<'staff'> | null) : null),
-    [isLoaded, user]
-  );
+  // 不要なuseMemoを削除し、直接計算
+  const tenantId = isLoaded ? (user?.publicMetadata?.tenant_id as Id<'tenant'> | null) : null;
+  const role = isLoaded ? (user?.publicMetadata?.role as Role | null) : null;
+  const staffId = isLoaded ? (user?.publicMetadata?.staff_id as Id<'staff'> | null) : null;
 
   const org = useQuery(api.organization.query.getActiveOrganization, tenantId ? {
     tenant_id: tenantId,
@@ -65,15 +55,16 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
       return;
     }
 
-    // メタデータが揃うまで Clerk セッションを 3 秒ごとにリロード
-    if (isLoaded && isSignedIn && !ready) {
-      const id = setInterval(() => {
+    // メタデータが揃うまで Clerk セッションをリロード（最大3回まで）
+    if (isLoaded && isSignedIn && !ready && retryCount < 3) {
+      const id = setTimeout(() => {
         session?.reload();
+        setRetryCount(prev => prev + 1);
       }, 3_000);
 
-      return () => clearInterval(id);
+      return () => clearTimeout(id);
     }
-  }, [isLoaded, isSignedIn, pathname, ready, session]);
+  }, [isLoaded, isSignedIn, pathname, ready, retryCount, session, router]);
 
   return {
     tenantId: tenantId,
