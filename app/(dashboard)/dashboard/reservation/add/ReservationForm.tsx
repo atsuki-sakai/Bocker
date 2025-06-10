@@ -17,6 +17,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { useMutation } from 'convex/react'
+import { Doc } from '@/convex/_generated/dataModel'
 
 // 入力値を数値または undefined に変換するプリプロセス関数
 const preprocessNumber = (val: unknown) => {
@@ -60,6 +61,7 @@ import { ZodTextField } from '@/components/common'
 import { Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { usePriceCalculation } from '@/hooks/usePriceCalculation'
 
 import { RESERVATION_STATUS_VALUES, PAYMENT_METHOD_VALUES, GENDER_VALUES } from '@/convex/types'
 const schemaReservation = z
@@ -128,7 +130,7 @@ const schemaReservation = z
   )
 
 import { Input } from '@/components/ui/input'
-import { usePaginatedQuery, useQuery } from 'convex/react'
+import { useQuery, usePaginatedQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import {
   Select,
@@ -141,31 +143,77 @@ import { fetchQuery } from 'convex/nextjs'
 import { Id } from '@/convex/_generated/dataModel'
 import { Gender } from '@/convex/types'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { ImageType } from '@/convex/types'
 
-type AvailableStaff = {
-  _id: Id<'staff'>
-  name: string
-  age: number | undefined
-  instagram_link: string | undefined
-  gender: Gender | undefined
-  description: string | undefined
-  images: ImageType[] | undefined
-  is_active: boolean
-  _creationTime: number
-  featured_hair_images: ImageType[] | undefined
-  extra_charge: number | undefined
-  priority: number | undefined
-  week_schedules:
-    | {
-        _id: Id<'staff_week_schedule'>
-        _creationTime: number
-        is_archive?: boolean | undefined
-        updated_at?: number | undefined
-        is_open: boolean
-      }[]
-    | undefined
-}
+// メモ化されたメニュー選択アイテムコンポーネント
+const MenuSelectionItem = React.memo(
+  ({
+    menu,
+    count,
+    onAdd,
+    onRemove,
+    disabled,
+  }: {
+    menu: Doc<'menu'>
+    count: number
+    onAdd: () => void
+    onRemove: () => void
+    disabled: boolean
+  }) => (
+    <CommandItem className="flex items-center justify-between w-full">
+      {menu.images && menu.images[0]?.original_url && (
+        <Image
+          src={menu.images[0].original_url}
+          alt={menu.name ?? ''}
+          className="w-10 h-10 rounded-full max-w-[40px] max-h-[40px] min-w-[40px] min-h-[40px]"
+          width={40}
+          height={40}
+        />
+      )}
+      <div className="flex flex-col justify-start w-full items-start gap-1 text-xs">
+        <p className="text-sm">{menu.name}</p>
+        <div>
+          {menu.sale_price && menu.sale_price > 0 ? (
+            <>
+              <span className="line-through text-muted-foreground">
+                ￥{menu.unit_price?.toLocaleString()}
+              </span>
+              <span className="font-semibold text-active">
+                ￥{menu.sale_price.toLocaleString()}
+              </span>
+            </>
+          ) : (
+            <span className="">￥{menu.unit_price?.toLocaleString()}</span>
+          )}
+          <div className="flex items-center gap-1">
+            <p>{menu.duration_min}分</p>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={onRemove}
+          disabled={count === 0}
+          className="p-1 disabled:opacity-30 border border-destructive hover:bg-destructive-foreground"
+        >
+          <Minus className="w-4 h-4 text-destructive" />
+        </Button>
+        <span className="w-5 text-center text-sm">{count}</span>
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={onAdd}
+          disabled={disabled}
+          className="border border-active hover:bg-active-foreground"
+        >
+          <Plus className="w-4 h-4 text-active" />
+        </Button>
+      </div>
+    </CommandItem>
+  )
+)
+MenuSelectionItem.displayName = 'MenuSelectionItem'
 
 export default function ReservationForm() {
   const { tenantId, orgId } = useTenantAndOrganization()
@@ -183,8 +231,6 @@ export default function ReservationForm() {
   const [searchName, setSearchName] = useState<string>('')
   const [debouncedSearchName] = useDebounce(searchName, 1000)
   const [selectedOptions, setSelectedOptions] = useState<ReservationOption[]>([])
-  const [availableStaff, setAvailableStaff] = useState<AvailableStaff[]>([])
-  const [isLoadingStaff, setIsLoadingStaff] = useState<boolean>(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
   // メニュー & オプションのポップオーバー
   const [menuPopoverOpen, setMenuPopoverOpen] = useState(false)
@@ -201,50 +247,38 @@ export default function ReservationForm() {
   const [selectedCustomer, setSelectedCustomer] = useState<RowType<'customer'> | null>(null)
   const customerRepository = useMemo(() => new CustomerRepository(), [])
 
-  const reservationConfig = useQuery(
-    api.organization.reservation_config.query.findByTenantAndOrg,
+  // 初期データ取得（メニュー・オプション・設定など）
+  const initialFormData = useQuery(
+    api.reservation.query.getReservationFormData,
     tenantId && orgId
       ? {
           tenant_id: tenantId,
           org_id: orgId,
+          menu_ids: [],
         }
       : 'skip'
   )
 
-  const { results: menus } = usePaginatedQuery(
-    api.menu.query.listByTenantAndOrg,
-    tenantId && orgId
+  // スタッフデータ取得（メニュー選択後）
+  const staffFormData = useQuery(
+    api.reservation.query.getReservationFormData,
+    tenantId && orgId && selectedMenus.length > 0
       ? {
           tenant_id: tenantId,
           org_id: orgId,
-        }
-      : 'skip',
-    {
-      initialNumItems: 100,
-    }
-  )
-
-  const { results: options } = usePaginatedQuery(
-    api.option.query.list,
-    tenantId && orgId
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-        }
-      : 'skip',
-    { initialNumItems: 100 }
-  )
-
-  const orgWeekSchedules = useQuery(
-    api.organization.week_schedule.query.getAllByTenantAndOrg,
-    tenantId && orgId
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
+          menu_ids: selectedMenus.map((m) => m.id),
         }
       : 'skip'
   )
 
+  // データの統合（メニュー・オプションは初期データから、スタッフは選択後のデータから）
+  const reservationConfig = initialFormData?.reservationConfig
+  const menus = useMemo(() => initialFormData?.menus || [], [initialFormData?.menus])
+  const options = initialFormData?.options || []
+  const orgWeekSchedules = initialFormData?.weekSchedules || []
+  const availableStaff = staffFormData?.availableStaff || []
+
+  // スタッフの週間スケジュール（個別取得が必要）
   const staffWeekSchedules = useQuery(
     api.staff.week_schedule.query.getByTenantOrgStaff,
     tenantId && orgId && selectedStaffId
@@ -256,6 +290,7 @@ export default function ReservationForm() {
       : 'skip'
   )
 
+  // 休業日情報（TODO: 統合データ取得に含める）
   const orgExceptionSchedules = usePaginatedQuery(
     api.organization.exception_schedule.query.getByOrgAndDate,
     tenantId && orgId
@@ -282,6 +317,21 @@ export default function ReservationForm() {
     setValue,
     watch,
   } = useZodForm(schemaReservation)
+
+  // 選択中のスタッフが利用可能なスタッフリストに含まれているかチェック
+  useEffect(() => {
+    if (selectedStaffId && availableStaff.length > 0) {
+      const isStaffAvailable = availableStaff.some((staff) => staff._id === selectedStaffId)
+      if (!isStaffAvailable) {
+        // 選択中のスタッフが新しいメニューセットに対応できない場合のみリセット
+        setSelectedStaffId(null)
+        setValue('staff_id', '')
+        toast.warning(
+          '選択中のスタッフは新しいメニューに対応できません。スタッフを再選択してください。'
+        )
+      }
+    }
+  }, [availableStaff, selectedStaffId, setValue])
 
   // 時間スロットの状態を追加
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeRange[]>([])
@@ -363,91 +413,25 @@ export default function ReservationForm() {
     })
   }, [tenantId, orgId, reset])
 
-  // スタッフ取得の最適化されたコールバック
-  const getAvailableStaffForAllMenus = useCallback(async () => {
-    if (selectedMenus.length === 0 || !tenantId || !orgId) {
-      setAvailableStaff([])
-      return
-    }
-
-    setIsLoadingStaff(true)
-    try {
-      // 全メニューIDを一度に渡してスタッフを取得
-      const eligibleStaff = await fetchQuery(api.staff.query.findByAvailableStaffs, {
-        tenant_id: tenantId,
-        org_id: orgId,
-        menu_ids: selectedMenus.map((m) => m.id),
-      })
-
-      setAvailableStaff(eligibleStaff)
-    } catch (error) {
-      showErrorToast(error)
-      setAvailableStaff([])
-    } finally {
-      setIsLoadingStaff(false)
-    }
-  }, [selectedMenus, tenantId, orgId, showErrorToast])
-
-  // スタッフ取得の実行
-  useEffect(() => {
-    getAvailableStaffForAllMenus()
-  }, [getAvailableStaffForAllMenus])
-
-  // 合計所要時間 (メニューとオプションの timeToMin を合算)
-  const totalTimeMinutes = React.useMemo(() => {
-    const menuTime = selectedMenus.reduce((sum, item) => {
-      const menu = menus?.find((m) => m._id === item.id)
-      return sum + (menu?.duration_min ?? 0)
-    }, 0)
-
-    // ✅ 数量を掛ける
-    const optionTime = selectedOptions.reduce((sum, item) => {
-      const option = options?.find((o) => o._id === item.id)
-      return sum + (option?.duration_min ?? 0) * item.quantity
-    }, 0)
-
-    return menuTime + optionTime
-  }, [selectedMenus, menus, selectedOptions, options])
-
-  // 選択されたメニューの合計金額 (salePrice が 0 か未定義の場合は unitPrice)
-  const menuTotalPrice = React.useMemo(() => {
-    return selectedMenus.reduce((sum, item) => {
-      const menu = menus?.find((m) => m._id === item.id)
-      if (!menu) return sum
-      const price =
-        menu.sale_price && menu.sale_price > 0 ? menu.sale_price : (menu.unit_price ?? 0)
-      return sum + price
-    }, 0)
-  }, [selectedMenus, menus])
-
-  // optionTotalPrice
-  const optionTotalPrice = React.useMemo(() => {
-    return selectedOptions.reduce((sum, item) => {
-      const option = options?.find((o) => o._id === item.id)
-      if (!option) return sum
-      const price =
-        option.sale_price && option.sale_price > 0 ? option.sale_price : (option.unit_price ?? 0)
-      return sum + price * item.quantity
-    }, 0)
-  }, [selectedOptions, options])
-
-  // スタッフ指名料
-  const extraChargePrice = React.useMemo(() => {
-    return selectedStaffId
-      ? (availableStaff.find((s) => s._id === selectedStaffId)?.extra_charge ?? 0)
-      : 0
-  }, [selectedStaffId, availableStaff])
-
-  // 総合計金額をフォームの totalPrice にセット
-  const totalPriceCalculated = React.useMemo(() => {
-    return menuTotalPrice + optionTotalPrice + extraChargePrice
-  }, [menuTotalPrice, optionTotalPrice, extraChargePrice])
+  // 価格計算の統合フック使用
+  const {
+    totalTimeMinutes,
+    menuTotalPrice,
+    extraChargePrice,
+    totalPrice: totalPriceCalculated,
+  } = usePriceCalculation({
+    selectedMenus,
+    selectedOptions,
+    menus,
+    options,
+    selectedStaffId,
+    availableStaff,
+  })
 
   useEffect(() => {
     setValue('total_price', totalPriceCalculated)
     setValue('unit_price', menuTotalPrice)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalPriceCalculated, menuTotalPrice])
+  }, [totalPriceCalculated, menuTotalPrice, setValue])
 
   // 時間スロット取得の最適化されたコールバック
   const getAvailableTimeSlots = useCallback(async () => {
@@ -512,33 +496,44 @@ export default function ReservationForm() {
     [menus]
   )
 
-  const addMenu = (menu: ReservationMenu) => {
-    if (selectedMenus.length >= MAX_MENU_ITEMS) {
-      toast.error(`メニューは最大 ${MAX_MENU_ITEMS} 件まで選択できます。`)
-      return
-    }
-    const newMenus = [...selectedMenus, menu]
-    setSelectedMenus(newMenus)
-    setValue('menus', newMenus)
-    setValue('unit_price', calcMenuSubTotal(newMenus.map((m) => m.id)))
-    // メニュー変更時はスタッフをリセット
-    setSelectedStaffId(null)
-    setValue('staff_id', '')
-  }
+  const addMenu = useCallback(
+    (menu: ReservationMenu) => {
+      if (selectedMenus.length >= MAX_MENU_ITEMS) {
+        toast.error(`メニューは最大 ${MAX_MENU_ITEMS} 件まで選択できます。`)
+        return
+      }
+      const newMenus = [...selectedMenus, menu]
+      setSelectedMenus(newMenus)
+      setValue('menus', newMenus)
+      setValue('unit_price', calcMenuSubTotal(newMenus.map((m) => m.id)))
+      // 新しいメニューが追加された場合のみスタッフをリセット（同じメニューの数量増加では不要）
+      const isNewMenu = !selectedMenus.some((m) => m.id === menu.id)
+      if (isNewMenu && selectedStaffId) {
+        // 選択中のスタッフが新しいメニューに対応可能か後でチェックされる
+        // ここではリセットしない
+      }
+    },
+    [selectedMenus, setValue, calcMenuSubTotal, selectedStaffId]
+  )
 
-  const removeMenu = (menuId: Id<'menu'>) => {
-    const idx = selectedMenus.findIndex((m) => m.id === menuId)
-    if (idx === -1) return
-    const newMenus = [...selectedMenus]
-    newMenus.splice(idx, 1)
-    setSelectedMenus(newMenus)
-    setValue('menus', newMenus)
-    setValue('unit_price', calcMenuSubTotal(newMenus.map((m) => m.id)))
-    if (newMenus.length === 0) {
-      setSelectedStaffId(null)
-      setValue('staff_id', '')
-    }
-  }
+  const removeMenu = useCallback(
+    (menuId: Id<'menu'>) => {
+      const idx = selectedMenus.findIndex((m) => m.id === menuId)
+      if (idx === -1) return
+      const newMenus = [...selectedMenus]
+      newMenus.splice(idx, 1)
+      setSelectedMenus(newMenus)
+      setValue('menus', newMenus)
+      setValue('unit_price', calcMenuSubTotal(newMenus.map((m) => m.id)))
+      // 全てのメニューが削除された場合のみスタッフをリセット
+      if (newMenus.length === 0) {
+        setSelectedStaffId(null)
+        setValue('staff_id', '')
+      }
+      // メニューが残っている場合、選択中のスタッフが対応可能かは後でチェックされる
+    },
+    [selectedMenus, setValue, calcMenuSubTotal]
+  )
 
   // 指定メニュー ID をすべて取り除く
   const removeMenuAll = (menuId: Id<'menu'>) => {
@@ -929,68 +924,21 @@ export default function ReservationForm() {
                       {menus?.map((menu) => {
                         const count = getMenuCount(menu._id)
                         return (
-                          <CommandItem
+                          <MenuSelectionItem
                             key={menu._id}
-                            className="flex items-center justify-between w-full"
-                          >
-                            {menu.images && menu.images[0]?.original_url && (
-                              <Image
-                                src={menu.images[0].original_url}
-                                alt={menu.name ?? ''}
-                                className="w-10 h-10 rounded-full max-w-[40px] max-h-[40px] min-w-[40px] min-h-[40px]"
-                                width={40}
-                                height={40}
-                              />
-                            )}
-                            <div className="flex flex-col justify-start w-full items-start gap-1 text-xs">
-                              <p className="text-sm">{menu.name}</p>
-                              <div>
-                                {menu.sale_price && menu.sale_price > 0 ? (
-                                  <>
-                                    <span className="line-through text-muted-foreground">
-                                      ￥{menu.unit_price?.toLocaleString()}
-                                    </span>
-                                    <span className="font-semibold text-active">
-                                      ￥{menu.sale_price.toLocaleString()}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="">￥{menu.unit_price?.toLocaleString()}</span>
-                                )}
-                                <div className="flex items-center gap-1">
-                                  <p>{menu.duration_min}分</p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="icon"
-                                variant="outline"
-                                onClick={() => removeMenu(menu._id)}
-                                disabled={count === 0}
-                                className="p-1 disabled:opacity-30 border border-destructive hover:bg-destructive-foreground"
-                              >
-                                <Minus className="w-4 h-4 text-destructive" />
-                              </Button>
-                              <span className="w-5 text-center text-sm">{count}</span>
-                              <Button
-                                size="icon"
-                                variant="outline"
-                                onClick={() =>
-                                  addMenu({
-                                    id: menu._id,
-                                    name: menu.name,
-                                    price: menu.sale_price ?? menu.sale_price ?? menu.unit_price,
-                                    quantity: 1,
-                                  })
-                                }
-                                disabled={selectedMenus.length >= MAX_MENU_ITEMS}
-                                className="border border-active hover:bg-active-foreground"
-                              >
-                                <Plus className="w-4 h-4 text-active" />
-                              </Button>
-                            </div>
-                          </CommandItem>
+                            menu={menu}
+                            count={count}
+                            onAdd={() =>
+                              addMenu({
+                                id: menu._id,
+                                name: menu.name,
+                                price: menu.sale_price ?? menu.unit_price,
+                                quantity: 1,
+                              })
+                            }
+                            onRemove={() => removeMenu(menu._id)}
+                            disabled={selectedMenus.length >= MAX_MENU_ITEMS}
+                          />
                         )
                       })}
                     </CommandList>
@@ -1034,7 +982,7 @@ export default function ReservationForm() {
           </div>
           {selectedMenus.length > 0 && availableStaff.length > 0 && (
             <div className="flex flex-col gap-2 mb-4 p-3 rounded-md border border-border">
-              {isLoadingStaff ? (
+              {staffFormData === undefined && selectedMenus.length > 0 ? (
                 <div className="flex items-center justify-center p-4 rounded-md">
                   <Loader2 className="h-5 w-5 animate-spin mr-2 text-active" />
                   <span className="text-active text-sm">スタッフを検索中...</span>

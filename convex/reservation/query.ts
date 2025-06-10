@@ -16,6 +16,8 @@ import { paginationOptsValidator } from 'convex/server';
 import { reservationStatusType } from '@/convex/types';
 import { checkAuth } from '@/convex/utils/auth';
 import { api } from '@/convex/_generated/api';
+import { AvailableStaff } from '@/hooks/usePriceCalculation';
+import { Doc } from '@/convex/_generated/dataModel';
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { validateDateStrFormat, validateStringLength } from '@/convex/utils/validations';
@@ -1097,4 +1099,120 @@ export const listByStaffIds = query({
     
     return { page, isDone, continueCursor }
   },
-})     
+})
+
+
+/**
+ * 予約フォーム画面用の統合データ取得
+ * Backend for Frontendパターンで複数クエリを統合
+ */
+export const getReservationFormData = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    menu_ids: v.optional(v.array(v.id('menu'))),
+  },
+  handler: async (ctx, args): Promise<{
+    reservationConfig: Doc<'reservation_config'> | null
+    weekSchedules: Doc<'week_schedule'>[]
+    menus: Doc<'menu'>[]
+    options: Doc<'option'>[]
+    availableStaff: AvailableStaff[]
+  }> => {
+    try {
+      // 並列でデータを取得
+      const [reservationConfig, weekSchedules, menus, options, availableStaff] = await Promise.all([
+        // 予約設定取得
+        ctx.runQuery(api.organization.reservation_config.query.findByTenantAndOrg, {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+        }),
+        
+        // 営業時間取得
+        ctx.runQuery(api.organization.week_schedule.query.getAllByTenantAndOrg, {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+        }),
+        
+        // メニュー一覧取得
+        ctx.runQuery(api.menu.query.listByTenantAndOrg, {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+          paginationOpts: { numItems: 100, cursor: null },
+        }),
+        
+        // オプション一覧取得
+        ctx.runQuery(api.option.query.list, {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+          paginationOpts: { numItems: 100, cursor: null },
+        }),
+        
+        // 選択メニューがある場合のみ利用可能スタッフ取得
+        args.menu_ids && args.menu_ids.length > 0
+          ? ctx.runQuery(api.staff.query.findByAvailableStaffs, {
+              tenant_id: args.tenant_id,
+              org_id: args.org_id,
+              menu_ids: args.menu_ids,
+            })
+          : Promise.resolve([])
+      ])
+      return {
+        reservationConfig,
+        weekSchedules,
+        menus: menus.page,
+        options: options.page,
+        availableStaff,
+      }
+    } catch (error) {
+      console.error('予約フォームデータ取得エラー:', error)
+      throw new Error('予約フォームデータの取得に失敗しました')
+    }
+  },
+})
+
+/**
+ * スケジュール表示用の統合データ取得
+ */
+export const getScheduleData = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    staff_id: v.id('staff'),
+    date: v.string(),
+    duration_min: v.number(),
+  },
+  handler: async (ctx, args): Promise<{
+    availableSlots: TimeRange[]
+    organizationSchedule: Doc<'week_schedule'>[]
+  }> => {
+
+    try {
+      // 並列でデータを取得
+      const [availableSlots, organizationSchedule] = await Promise.all([
+        // 利用可能時間スロット取得
+        ctx.runQuery(api.reservation.query.calculateReservationTime, {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+          staff_id: args.staff_id,
+          date: args.date,
+          duration_min: args.duration_min,
+        }),
+        
+        // 組織営業時間取得
+        ctx.runQuery(api.organization.week_schedule.query.getAllByTenantAndOrg, {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+        }),
+      ])
+
+      return {
+        availableSlots,
+        organizationSchedule,
+      }
+    } catch (error) {
+      console.error('スケジュールデータ取得エラー:', error)
+      throw new Error('スケジュールデータの取得に失敗しました')
+    }
+  },
+})

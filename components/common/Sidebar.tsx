@@ -225,7 +225,7 @@ export default function Sidebar({ children }: SidebarProps) {
   const filteredNav = useMemo(() => {
     if (!isLoaded || !role) return []
     return NAV_ITEMS.filter((item) => hasAccess(role, currentPlan, item.minRole, item.minPlan))
-  }, [isLoaded, role, subscription?.plan_name])
+  }, [isLoaded, role, currentPlan])
   useEffect(() => {
     if (isLinkClicked) {
       setSidebarOpen(false)
