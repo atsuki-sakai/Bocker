@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, memo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -66,7 +66,7 @@ interface MenuItemProps {
   onDelete: (menuId: Id<'menu'>, imgPaths: string[]) => void
 }
 
-const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
+const MenuItem = memo(({ menu, onEdit, onDelete }: MenuItemProps) => {
   return (
     <div className="col-span-1">
       <Card className="h-full overflow-hidden hover:shadow-md transition-all">
@@ -77,6 +77,8 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
               alt={menu.name || ''}
               fill
               className="object-cover"
+              loading="lazy"
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           ) : (
             <div className="absolute inset-0 bg-muted flex items-center justify-center">
@@ -167,7 +169,7 @@ const MenuItem = ({ menu, onEdit, onDelete }: MenuItemProps) => {
       </Card>
     </div>
   )
-}
+})
 
 // メニューリスト表示コンポーネント
 interface MenuListContentProps {
@@ -226,6 +228,8 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                         alt={menu.name || ''}
                         fill
                         className="object-cover"
+                        loading="lazy"
+                        sizes="48px"
                       />
                     ) : (
                       <div className="absolute inset-0 bg-muted flex items-center justify-center">
@@ -286,7 +290,7 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 self-end sm:self-centersm:mt-0 absolute right-0 top-0 md:top-1/4">
+                <div className="flex items-center gap-2 self-end sm:self-center sm:mt-0 absolute right-0 top-0 md:top-1/4">
                   <Link href={`/dashboard/menu/${menu._id}`}>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
                       <Eye className="h-4 w-4" />
@@ -338,7 +342,6 @@ export default function MenuList() {
   // APIリクエスト用フック
   const killMenu = useMutation(api.menu.mutation.kill)
 
-  console.log('selectedCategories', selectedCategories)
   // カテゴリで絞り込むクエリと全てのメニューを取得するクエリ
   const filteredMenus = useQuery(
     api.menu.query.getMenusByCategories,
@@ -346,7 +349,6 @@ export default function MenuList() {
       ? { tenant_id: tenantId, org_id: orgId, categories: selectedCategories }
       : 'skip'
   )
-  console.log('filteredMenus', filteredMenus)
 
   // カテゴリ選択がない場合は全てのメニューを取得
   const {
