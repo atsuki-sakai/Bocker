@@ -1,7 +1,9 @@
-import MenuListContent from './menuList';
-import { DashboardSection } from '@/components/common';
+'use client';
 
-export default function MenuPage() {
+import MenuListContent from './menuList';
+import { DashboardSection, withManagerAccess } from '@/components/common';
+
+function MenuPage() {
   return (
     <DashboardSection
       title="メニュー設定"
@@ -16,3 +18,5 @@ export default function MenuPage() {
     </DashboardSection>
   );
 }
+
+export default withManagerAccess(MenuPage);
