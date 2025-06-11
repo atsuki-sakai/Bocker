@@ -13,13 +13,73 @@
 
 ## Phase 2: ダッシュボード主要画面の多言語化
 
-### 2-1. ナビゲーション・サイドバー
-**ファイル**: `components/common/Sidebar.tsx`, `lib/constants.ts`
-
-**タスク**:
-- [x] NAV_ITEMSの多言語化
+### 2-1. DashBoard・Componentsの多言語化
+**タスク管理（ここで完了したページを　x でマークしてください）**:
+- [x] NAV_ITEMSの多言語化å
 - [x] サイドバーメニュー項目の翻訳
-- [x] サブスクリプション関連メッセージの翻訳
+- [ ] サブスクリプション関連メッセージの翻訳
+- [ ] dashboard/coupon/add
+- [ ] dashboard/coupon/edit
+- [ ] dashboard/coupon/CouponList
+- [ ] dashboard/menu/add
+- [ ] dashboard/menu/[menu_id]/edit
+- [ ] dashboard/menu/[menu_id]/MenuDetailContent
+- [ ] dashboard/menu/MenuList
+- [ ] dashboard/option/add
+- [ ] dashboard/option/edit
+- [ ] dashboard/option/OptionList
+- [ ] dashboard/staff/add
+- [ ] dashboard/staff/[staff_id]/edit
+- [ ] dashboard/staff/[staff_id]/StaffDetailContent
+- [ ] dashboard/staff/StaffList
+- [ ] dashboard/customer/add
+- [ ] dashboard/customer/[customer_id]/edit/staffEditForm.tsx
+- [ ] dashboard/customer/[customer_id]/my-page/*以下全てのページ
+- [ ] dashboard/point
+- [ ] dashboard/point/pointTabs
+- [ ] dashboard/reservation/[reservation_id]/page
+- [ ] dashboard/reservation/add
+- [ ] dashboard/reservation/ReservationForm
+- [ ] dashboard/staff-schedule
+- [ ] dashboard/subscription/*以下全てのページ
+- [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+
+
+### 2-2. Componentsの多言語化
+- [ ] components/common/*以下のファイル全て
+- [ ] components/emails/*以下のファイル全て
+- [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+
+
+
+### 2-3. APIのエラーメッセージの多言語化
+- [ ] エラーメッセージの効果的な管理方法の策定、決定
+- [ ] app/api/*エラメッセージの多言語化
+- [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+
+
+
+### 2-4. (auth)フォルダ以下のページの多言語化
+- [ ] customer/reset-password/confirm/page.tsx
+- [ ] sign-in/*配下の全てのページ
+- [ ] sign-up/*は以下の全てのページ
+- [ ] staff/invite-accept/page.tsx
+- [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+
+
+### 2-5. (home)フォルダ以下のページの多言語化
+- [ ] maintenance/*配下の全てのページ
+- [ ] page.tsx、layout.tsxの翻訳
+- [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+
+
+### 2-6. (reservation)フォルダ以下のページの多言語化
+- [ ] [id]/*配下の全てのページ
+- [ ] page.tsx, layout.tsx
+- [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+
+
+
 
 **翻訳対象テキスト**:
 ```json

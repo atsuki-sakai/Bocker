@@ -2,6 +2,7 @@
   "auth": {
     "signIn": {
       "title": "ログインページ",
+      "subtitle": "アカウントにサインインして続行",
       "email": "メールアドレス",
       "password": "パスワード",
       "submit": "ログイン",
@@ -11,11 +12,17 @@
       "loading": "ログイン中...",
       "success": "ログインに成功しました",
       "emailPlaceholder": "メールアドレスを入力",
-      "passwordPlaceholder": "パスワードを入力"
+      "passwordPlaceholder": "パスワードを入力",
+      "showPassword": "パスワードを表示",
+      "hidePassword": "パスワードを隠す",
+      "staffSignIn": "スタッフの方はこちら"
     },
     "signUp": {
       "title": "サインアップページ",
+      "ownerAccountTitle": "オーナーアカウント作成",
+      "subtitle": "アカウントを作成して始めましょう",
       "organizationName": "組織名",
+      "storeName": "店舗名",
       "firstName": "名前",
       "lastName": "姓",
       "email": "メールアドレス",
@@ -24,29 +31,101 @@
       "submit": "アカウント作成",
       "signIn": "ログイン",
       "loading": "アカウント作成中...",
+      "processing": "処理中...",
+      "register": "登録する",
       "organizationNamePlaceholder": "組織名を入力",
+      "storeNamePlaceholder": "店舗名を入力",
       "firstNamePlaceholder": "名前を入力",
       "lastNamePlaceholder": "姓を入力",
       "emailPlaceholder": "メールアドレスを入力",
       "passwordPlaceholder": "パスワードを入力",
-      "confirmPasswordPlaceholder": "パスワードを再入力"
+      "confirmPasswordPlaceholder": "パスワードを再入力",
+      "passwordStrength": "パスワード強度:",
+      "passwordWeak": "弱い",
+      "passwordFair": "普通",
+      "passwordGood": "強い",
+      "passwordStrong": "非常に強い",
+      "passwordRequirements": {
+        "length": "8文字以上",
+        "uppercase": "大文字を含む",
+        "lowercase": "小文字を含む",
+        "number": "数字を含む",
+        "special": "特殊文字を含む"
+      },
+      "useReferralCode": "招待コードを使用する",
+      "referralCode": "招待コード",
+      "referralCodePlaceholder": "招待コード（任意）",
+      "accountCreated": "アカウントが作成されました。メールを確認してください",
+      "signedOutFromSession": "既存のセッションからサインアウトしました",
+      "verification": {
+        "title": "メール認証",
+        "instruction": "登録したメールアドレスに送信された6桁の認証コードを入力してください。",
+        "codeLabel": "認証コード",
+        "codePlaceholder": "000000",
+        "verify": "認証する",
+        "processing": "認証中...",
+        "resendCode": "認証コードを再送信",
+        "resending": "送信中...",
+        "resent": "認証コードを再送信しました",
+        "resendError": "認証コードの送信に失敗しました",
+        "invalidCode": "認証コードが正しくありません",
+        "verificationError": "認証に失敗しました"
+      },
+      "alreadyHaveAccount": "すでにアカウントをお持ちの方は",
+      "signInHere": "こちら"
     },
     "resetPassword": {
       "title": "パスワードリセット",
+      "newPasswordTitle": "パスワード再設定",
+      "subtitle": "新しいパスワードを設定してください",
       "email": "メールアドレス",
+      "accountEmail": "アカウントのメールアドレス",
+      "newPassword": "新しいパスワード",
+      "confirmPassword": "パスワード確認",
       "submit": "リセットメールを送信",
+      "resetPassword": "パスワードを再設定",
       "backToSignIn": "ログインページに戻る",
-      "emailPlaceholder": "メールアドレスを入力"
+      "emailPlaceholder": "メールアドレスを入力",
+      "newPasswordPlaceholder": "8文字以上のパスワード",
+      "confirmPasswordPlaceholder": "パスワードを再入力",
+      "loading": "読み込み中...",
+      "processing": "処理中...",
+      "resetting": "リセット中...",
+      "resetSuccess": "パスワードが正常にリセットされました",
+      "resetEmailSent": "パスワードリセットメールを送信しました",
+      "resetEmailInstruction": "パスワードのリセット手順をメールで送信しました。受信トレイをご確認ください。"
     },
     "validation": {
       "emailRequired": "メールアドレスは必須です",
       "emailInvalid": "メールアドレスが無効です",
       "passwordRequired": "パスワードは必須です",
       "passwordMinLength": "パスワードは8文字以上で入力してください",
+      "passwordRequirements": "パスワードは8文字以上で、大文字、小文字、数字、特殊文字を含む必要があります",
+      "passwordUppercase": "パスワードには大文字を含めてください",
+      "passwordLowercase": "パスワードには小文字を含めてください",
+      "passwordNumber": "パスワードには数字を含めてください",
+      "passwordSpecial": "パスワードには特殊文字を含めてください",
       "organizationNameRequired": "組織名は必須です",
+      "organizationNameMinLength": "組織名を入力してください",
       "firstNameRequired": "名前は必須です",
+      "firstNameMinLength": "名前を入力してください",
       "lastNameRequired": "姓は必須です",
-      "passwordMismatch": "パスワードが一致しません"
+      "lastNameMinLength": "姓を入力してください",
+      "passwordMismatch": "パスワードが一致しません",
+      "confirmPasswordRequired": "パスワード確認は必須です",
+      "invalidCredentials": "メールアドレスまたはパスワードが正しくありません",
+      "signUpFailed": "アカウント作成に失敗しました",
+      "signInFailed": "サインインに失敗しました",
+      "passwordResetFailed": "パスワードリセットに失敗しました",
+      "emailAlreadyExists": "このメールアドレスは既に使用されています",
+      "invalidResetToken": "パスワードリセットトークンが無効です",
+      "tokenExpired": "パスワードリセットトークンが期限切れです"
+    },
+    "staffInvite": {
+      "title": "スタッフ招待",
+      "loading": "読み込み中...",
+      "aboutAccountCreation": "アカウント作成について",
+      "instructions": "招待されたスタッフとしてアカウントを作成するには、管理者から共有された招待リンクを使用してアクセスしてください。直接このページにアクセスしても、スタッフアカウントの作成はできません。"
     }
   },
   "language": {
@@ -327,6 +406,7 @@
   },
   "subscription": {
     "title": "サブスクリプション",
+    "subtitle": "あなたのサロンに最適なプランをお選びください",
     "currentPlan": "現在のプラン",
     "planDetails": "プラン詳細",
     "changePlan": "プラン変更",
@@ -358,7 +438,86 @@
     "cancelReason": "解約理由",
     "price": "価格",
     "save": "お得",
-    "mostPopular": "一番人気"
+    "mostPopular": "一番人気",
+    "monthlyPayment": "月払い",
+    "yearlyPayment": "年払い",
+    "yearlyDiscount": "{percent}%お得",
+    "litePlan": "LITE",
+    "litePlanDescription": "スモールサロン向けの基本プラン",
+    "proPlan": "PRO",
+    "proPlanDescription": "中規模サロン向けの標準プラン",
+    "perMonth": "/月",
+    "perYear": "/年",
+    "yearlyBenefit": "年間契約で{percent}%お得",
+    "monthlyEquivalent": "(月あたり {amount}円)",
+    "subscriptionManagement": "サブスクリプション管理",
+    "subscriptionActive": "サブスクリプション契約は有効です。",
+    "changeBillingCycle": {
+      "toYearly": "年払いに変更",
+      "toMonthly": "月払いに変更"
+    },
+    "planAction": {
+      "currentPlan": "現在のプラン",
+      "changePlan": "プランを変更",
+      "managePlan": "プランを管理する",
+      "startNow": "今すぐ始める"
+    },
+    "trialInfo": {
+      "daysFreeTrial": "※{days}日間の無料トライアル付き",
+      "allPlansIncludeTrial": "すべてのプランには{days}日間の無料トライアル期間が含まれています。",
+      "cancelAnytime": "いつでもキャンセルまたはプラン変更が可能です。"
+    },
+    "preview": {
+      "title": "プラン変更の確認",
+      "changeDetails": "サブスクリプション変更内容",
+      "from": "現在のプラン",
+      "to": "新しいプラン",
+      "billingDetails": "料金の詳細",
+      "currentPayment": "今回のお支払い金額",
+      "nextPayment": "次回の定期支払い",
+      "prorationNote": "※ 日割り計算により、既に支払い済みの金額から調整されます。",
+      "immediateEffect": "※ プラン変更は即時に適用されます。",
+      "trialNote": "※ 現在トライアル期間中のため、プラン変更による追加料金は発生しません。"
+    },
+    "confirmDialog": {
+      "cancel": "キャンセル",
+      "confirm": "変更を確定する"
+    },
+    "processing": "処理中...",
+    "errors": {
+      "subscriptionIdNotFound": "サブスクリプションIDが見つかりません",
+      "customerIdNotFound": "Stripe顧客IDが見つかりません",
+      "previewFetch": "プレビュー取得エラー: {message}",
+      "previewUnexpected": "プレビューの取得中に予期せぬエラーが発生しました",
+      "updateFailed": "サブスクリプションの更新に失敗しました",
+      "updateError": "更新エラー: {message}",
+      "updateUnexpected": "サブスクリプションの更新中に予期せぬエラーが発生しました",
+      "checkoutUrlFailed": "チェックアウトURLの取得に失敗しました",
+      "subscriptionError": "サブスクリプションエラー: {message}",
+      "subscriptionUnexpected": "サブスクリプションの処理中に予期せぬエラーが発生しました",
+      "portalUrlFailed": "請求ポータルの取得に失敗しました",
+      "portalError": "請求ポータルエラー: {message}",
+      "portalUnexpected": "請求ポータルへのアクセス中に予期せぬエラーが発生しました"
+    },
+    "success": {
+      "planUpdated": "サブスクリプションを更新しました",
+      "title": "サブスクリプションの購入が完了しました",
+      "congratulations": "おめでとうございます！サブスクリプションが正常に処理されました。",
+      "allFeaturesAvailable": "これですべての機能をご利用いただけます。",
+      "backToDashboard": "ダッシュボードに戻る",
+      "billingInfo": "契約の更新やお支払い情報の変更は",
+      "subscriptionPageLink": "サブスクリプションページ",
+      "canBeDone": "から行えます。"
+    },
+    "cancel": {
+      "title": "サブスクリプションの購入に失敗しました",
+      "retryPurchase": "再度サブスクリプションを購入する",
+      "retryDescription": "以下のリンクから再度サブスクリプションを購入できます。",
+      "goToSubscription": "サブスクリプションページへ",
+      "contactSupport": "サポートに問い合わせる",
+      "supportDescription": "何かご不明な点がありましたら、お気軽にお問い合わせください。",
+      "backToDashboard": "ダッシュボードに戻る"
+    }
   },
   "sidebar": {
     "tagline": "サロンの運営をもっと便利に。",
