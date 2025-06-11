@@ -9,6 +9,34 @@
 ✅ 言語切り替えコンポーネントを作成  
 ✅ 認証画面（サインイン・サインアップ）を多言語化  
 
+# 日付のフォーマットの国際化
+// ■ 日付フォーマット
+import { formatDate } from '@/lib/formatDate'
+import type { SupportedLocale } from '@/lib/dateLocale'
+
+const locale = useLocale() as SupportedLocale
+
+
+const [selectedDate, setSelectedDate] = useState(() => new Date())
+const [dateLabel, setDateLabel] = useState('')
+
+
+useEffect(() => {
+  const formatSelectedDate = async () => {
+    const formatted = await formatDate(selectedDate, 'PPP', locale)
+    setDateLabel(formatted)
+  }
+  formatSelectedDate()
+}, [selectedDate, locale])
+
+
+
+<span className="text-xs md:text-base font-bold text-primary">{dateLabel}</span>
+
+---
+
+
+
 ---
 
 ## Phase 2: ダッシュボード主要画面の多言語化
@@ -17,11 +45,11 @@
 **タスク管理（ここで完了したページを　x でマークしてください）**:
 - [x] NAV_ITEMSの多言語化å
 - [x] サイドバーメニュー項目の翻訳
-- [ ] サブスクリプション関連メッセージの翻訳
-- [ ] dashboard/coupon/add
-- [ ] dashboard/coupon/edit
-- [ ] dashboard/coupon/CouponList
-- [ ] dashboard/menu/add
+- [x] サブスクリプション関連メッセージの翻訳
+- [x] dashboard/coupon/add
+- [x] dashboard/coupon/edit
+- [x] dashboard/coupon/CouponList
+- [x] dashboard/menu/add
 - [ ] dashboard/menu/[menu_id]/edit
 - [ ] dashboard/menu/[menu_id]/MenuDetailContent
 - [ ] dashboard/menu/MenuList
