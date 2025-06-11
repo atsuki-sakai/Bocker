@@ -383,7 +383,7 @@ export default function ReservationForm() {
   const locale = useLocale() as SupportedLocale
   // ■ ステート管理
   const { tenantId, orgId, ready } = useTenantAndOrganization()
-  const [selectedDate, setSelectedDate] = useState(() => new Date())
+  const [selectedDate, setSelectedDate] = useState(() => new Date()) 
   const [selectedReservation, setSelectedReservation] = useState<ReservationWithDetails | null>(
     null
   )

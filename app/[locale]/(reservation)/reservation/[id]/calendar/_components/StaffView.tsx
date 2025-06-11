@@ -79,12 +79,20 @@ export const StaffView = ({
             >
               <div className="flex items-start gap-2">
                 {staff.images && staff.images.length > 0 && staff.images[0].thumbnail_url && (
-                  <div className="relative w-14 h-14">
+                  <div className="relative w-14 h-14 flex-shrink-0">
                     <Image
                       src={staff.images[0].thumbnail_url}
                       alt={staff.name ? staff.name : 'Staff Image'}
                       fill
+                      sizes="56px"
                       className="rounded-sm object-cover"
+                      onError={(e) => {
+                        console.error('Staff image load error:', {
+                          staffName: staff.name,
+                          imageUrl: staff.images?.[0]?.thumbnail_url,
+                          error: e
+                        });
+                      }}
                     />
                   </div>
                 )}

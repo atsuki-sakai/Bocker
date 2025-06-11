@@ -349,30 +349,6 @@ export default function CalendarPage() {
 
     try {
       // 予約データを準備 (status: 'pending' で作成)
-      /**
-       * tenant_id: v.id('tenant'), // テナントID
-        org_id: v.id('organization'), // 組織ID
-        customer_id: v.optional(v.string()), // Supabase 側の customer.id
-        staff_id: v.id('staff'), // スタッフID
-        customer_name: v.string(), // 顧客名
-        staff_name: v.string(), // スタッフ名
-        status: reservationStatusType, // 予約ステータス
-        date: v.string(), // 予約日 YYYY-MM-DD
-        start_time_unix: v.number(), // 予約開始時間
-        end_time_unix: v.number(), // 予約終了時間
-        total_price: v.number(), // 合計金額
-        coupon_id: v.optional(v.id('coupon')), // クーポンID
-        payment_method: paymentMethodType, // 支払方法
-        stripe_checkout_session_id: v.optional(v.string()), // Stripe Checkout Session ID
-        payment_status: reservationPaymentStatusType, // 支払ステータス
-        menus: v.array(reservationMenuType), // メニュー
-        options: v.array(reservationOptionType), // オプション
-        extra_charge: v.optional(v.number()), // 追加料金
-        use_points: v.optional(v.number()), // 使用ポイント数
-        coupon_discount: v.optional(v.number()), // クーポン割引額
-        featured_hair_images: v.array(imageType), // フィーチャー画像
-        notes: v.optional(v.string()), // メモ
-       */
       const reservationData = {
         org_id: organizationComplete.organization._id as Id<'organization'>,
         tenant_id: sessionCustomer.tenantId,
@@ -882,14 +858,14 @@ export default function CalendarPage() {
         setIsLoading(true)
 
         // HTTPOnly Cookieの内容をAPIを経由して取得
-        const response = await fetch('/api/auth/session', {
+        const response = await fetch('/api/line/session', {
           credentials: 'include',
         })
 
-        if (!response.ok && organizationComplete) {
+        if (!response.ok) {
           // セッションが見つからない場合はリダイレクト
           console.error('認証セッションが見つかりません。予約画面に戻ります。')
-          router.push(`/reservation/${organizationComplete.organization._id}`)
+          router.push(`/reservation/${orgId}`)
           return
         }
 
@@ -960,7 +936,7 @@ export default function CalendarPage() {
     }
 
     fetchSession()
-  }, [router, liff, organizationComplete, sessionCustomer?.orgId, customerRepository])
+  }, [router, liff, orgId, customerRepository, sessionCustomer?.orgId])
 
   if (isLoading) return <Loading />
 

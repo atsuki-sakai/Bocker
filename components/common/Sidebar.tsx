@@ -33,13 +33,11 @@ const SidebarHeader = memo(
     resolvedTheme,
     isMobile = false,
     showModeToggle = false,
-    showLanguageToggle = false,
   }: {
     mounted: boolean
     resolvedTheme: string | undefined
     isMobile?: boolean
     showModeToggle?: boolean
-    showLanguageToggle?: boolean
   }) => {
     const t = useTranslations('sidebar')
     return (
@@ -71,13 +69,6 @@ const SidebarHeader = memo(
           <div className="absolute right-1 top-2">
             <div className="relative lg:hidden">
               <ModeToggle />
-            </div>
-          </div>
-        )}
-        {isMobile && showLanguageToggle && (
-          <div className="absolute right-1 top-2">
-            <div className="relative lg:hidden">
-              <LanguageSwitcher />
             </div>
           </div>
         )}
@@ -303,6 +294,7 @@ export default function Sidebar({ children }: SidebarProps) {
                 setIsLinkClicked={setIsLinkClicked}
                 isMobile={true}
               />
+              <LanguageSwitcher />
             </div>
           </DialogPanel>
         </div>

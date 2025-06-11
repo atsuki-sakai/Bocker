@@ -30,9 +30,12 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
     async function initSalon() {
       setIsLoading(true)
       // パスから店舗IDを取得し、Convex で存在チェック
-      if (pathname && pathname.startsWith('/reservation/')) {
-        const pathParts = pathname.split('/')
-        const pathOrgId = pathParts[2] // /reservation/:orgId
+      if (pathname && pathname.includes('/reservation/')) {
+        // クエリパラメータを除去してパス部分のみ取得
+        const cleanPath = pathname.split('?')[0]
+        // パスをスラッシュで分割
+        const pathParts = cleanPath.split('/').filter(Boolean)
+        const pathOrgId = pathParts[2] // [locale]/reservation/:orgId
         if (pathOrgId) {
           try {
             console.log('pathOrgId', pathOrgId)
