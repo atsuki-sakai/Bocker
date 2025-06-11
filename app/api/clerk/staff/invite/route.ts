@@ -8,8 +8,23 @@ import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { BASE_URL } from '@/lib/constants'
 import { Role } from '@/convex/types'
+import { z } from 'zod'
+import { validateRequest, createValidationErrorResponse } from '@/lib/api/validation'
+import { inviteStaffSchema } from '@/lib/validations/staff'
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+
+// Extend the inviteStaffSchema for full request
+const inviteStaffRequestSchema = inviteStaffSchema.extend({
+  description: z.string().max(500).optional(),
+  is_active: z.boolean().optional(),
+  instagram_link: z.string().url().optional(),
+  tags: z.array(z.string()).optional(),
+  featured_hair_images: z.array(z.object({
+    original_url: z.string().url(),
+    thumbnail_url: z.string().url().optional(),
+  })).optional(),
+})
 
 export async function POST(req: NextRequest) {
   console.log('▶️ 招待APIが呼び出されました')
@@ -28,8 +43,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 2. リクエストボディから必要な情報を取得
+    // 2. リクエストボディの検証
     console.log('💬 リクエストボディを解析中...')
+    const validation = await validateRequest(req, inviteStaffRequestSchema)
+    if (!validation.success) {
+      console.log('❌ バリデーションエラー:', validation.error)
+      return createValidationErrorResponse(validation.error)
+    }
+
     const { 
       email,
       tenant_id,
@@ -46,26 +67,8 @@ export async function POST(req: NextRequest) {
       featured_hair_images,
       extra_charge,
       priority,
-    } = await req.json()
+    } = validation.data
     console.log('📦 受信データ:', { email, tenant_id, org_id, role })
-
-    // 3. 必須パラメータの検証
-    if (!email || !tenant_id || !org_id || !role) {
-      console.log('❌ パラメータ不足')
-      return NextResponse.json(
-        { error: '必要なパラメータが不足しています' },
-        { status: 400 }
-      )
-    }
-
-    // 4. メールアドレスの形式チェック
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'メールアドレスの形式が正しくありません' },
-        { status: 400 }
-      )
-    }
 
     // 5. Convexに招待レコード作成（clerk_user_id = null）
     // 注: メール重複チェックはフロントエンドで事前に実施済み
@@ -77,14 +80,17 @@ export async function POST(req: NextRequest) {
       email,
       name,
       description,
-      images,
-      is_active,
+      images: images || [],
+      is_active: is_active ?? true,
       age,
       gender,
       instagram_link,
-      tags,
+      tags: tags || [],
       role,
-      featured_hair_images,
+      featured_hair_images: featured_hair_images?.map(img => ({
+        original_url: img.original_url,
+        thumbnail_url: img.thumbnail_url || ''
+      })),
       extra_charge,
       priority,
     })

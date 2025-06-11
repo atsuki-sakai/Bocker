@@ -47,7 +47,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Separator } from '@/components/ui/separator'
 import { motion } from 'framer-motion'
 import { Id } from '@/convex/_generated/dataModel'
-import { zNumberFieldOptional } from '@/lib/zod/helpers'
+import { zNumberFieldOptional } from '@/lib/validations/common'
 import {
   GENDER_VALUES,
   ACTIVE_CUSTOMER_TYPE_VALUES,

@@ -22,4 +22,15 @@ export const list = query({
   },
 });
 
+export const take = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    take: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.query('option').withIndex('by_tenant_org_active_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)).take(args.take ?? 50)
+  },
+})
+
 

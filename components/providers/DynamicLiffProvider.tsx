@@ -7,7 +7,7 @@ import { LiffProvider } from '@/components/providers/LiffProvider'
 import { Loading } from '@/components/common'
 import { Id } from '@/convex/_generated/dataModel'
 
-// ストレージキー（サロンIDごとに異なるキーを生成）
+// ストレージキー（組織IDごとに異なるキーを生成）
 const getStorageKey = (org_id: Id<'organization'>) => `liff_id_org_${org_id}`
 
 interface DynamicLiffProviderProps {
@@ -60,7 +60,7 @@ export function DynamicLiffProvider({ children, tenantId, orgId }: DynamicLiffPr
   // 3. 接続状態に関わらずクエリを実行（効率的なリトライ処理に任せる）
   const dbLiffId = useQuery(
     api.organization.api_config.query.getLiffId,
-    tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
+    orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
   )
 
   // 4. クエリ結果の処理とリトライロジック

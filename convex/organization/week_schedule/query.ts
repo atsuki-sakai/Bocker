@@ -20,6 +20,7 @@ export const get = query({
   },
 });
 
+
 // サロンIDに基づいて全ての曜日スケジュールを取得
 export const getAllByTenantAndOrg = query({
   args: {

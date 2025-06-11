@@ -69,7 +69,7 @@ import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/u
 import { Check, ChevronDown } from 'lucide-react'
 import { MAX_NOTES_LENGTH, MAX_NUM, MAX_TAG_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
-import { zNumberFieldOptional } from '@/lib/zod/helpers'
+import { zNumberFieldOptional } from '@/lib/validations/common'
 
 // バリデーションスキーマ
 const schemaMenu = z

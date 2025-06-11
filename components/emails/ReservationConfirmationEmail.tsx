@@ -18,10 +18,10 @@ import * as React from 'react'
 interface ReservationConfirmationEmailProps {
   customerName?: string | null
   customerEmail?: string | null
-  salonName: string
-  salonPhone: string
-  salonAddress: string
-  salonPostalCode: string
+  orgName: string
+  orgPhone: string
+  orgAddress: string
+  orgPostalCode: string
   reservationDate: string
   reservationTime: string
   staffName: string
@@ -183,10 +183,10 @@ const logo = {
 export const ReservationConfirmationEmail = ({
   customerName,
   customerEmail,
-  salonName,
-  salonPhone,
-  salonAddress,
-  salonPostalCode,
+  orgName,
+  orgPhone,
+  orgAddress,
+  orgPostalCode,
   reservationDate,
   reservationTime,
   staffName,
@@ -202,17 +202,17 @@ export const ReservationConfirmationEmail = ({
 }: ReservationConfirmationEmailProps) => (
   <Html>
     <Head />
-    <Preview>【{salonName}】ご予約内容の確認</Preview>
+    <Preview>【{orgName}】ご予約内容の確認</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          {logoUrl && <Img src={logoUrl} alt={`${salonName} Logo`} style={logo} />}
+          {logoUrl && <Img src={logoUrl} alt={`${orgName} Logo`} style={logo} />}
           <Heading style={headerTitle}>ご予約内容の確認</Heading>
         </Section>
         <Section style={content}>
           <Text style={text}>{customerName || customerEmail} 様</Text>
           <Text style={text}>
-            この度は、【{salonName}】にご予約いただき、誠にありがとうございます。
+            この度は、【{orgName}】にご予約いただき、誠にありがとうございます。
             <br />
             以下の内容でご予約を承りました。
           </Text>
@@ -221,7 +221,7 @@ export const ReservationConfirmationEmail = ({
             ご予約詳細
           </Heading>
           <Text style={text}>
-            <strong>店舗名:</strong> {salonName}
+            <strong>店舗名:</strong> {orgName}
             <br />
             <strong>ご予約日時:</strong> {reservationDate} {reservationTime}
             <br />
@@ -302,15 +302,15 @@ export const ReservationConfirmationEmail = ({
 
         <Section style={footer}>
           <Text style={footerText}>ご来店を心よりお待ちしております。</Text>
-          <Text style={{ ...footerText, fontWeight: 'bold' as const }}>{salonName}</Text>
+          <Text style={{ ...footerText, fontWeight: 'bold' as const }}>{orgName}</Text>
           <Text style={footerText}>
             電話:{' '}
-            <Link href={`tel:${salonPhone}`} style={link}>
-              {salonPhone}
+            <Link href={`tel:${orgPhone}`} style={link}>
+              {orgPhone}
             </Link>
           </Text>
           <Text style={footerText}>
-            住所: {salonPostalCode} {salonAddress}
+            住所: {orgPostalCode} {orgAddress}
           </Text>
           {reservationRules && (
             <Text style={footerText}>

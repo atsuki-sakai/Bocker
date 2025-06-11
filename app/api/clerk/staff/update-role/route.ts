@@ -3,6 +3,8 @@
 
 import { clerkClient, currentUser } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { updateStaffRoleSchema } from '@/lib/validations/staff'
+import { validateRequest, createValidationErrorResponse } from '@/lib/api/validation'
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -15,20 +17,13 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
-    // 2. リクエストボディから更新情報を取得
-    const { 
-      staff_id,
-      clerk_user_id,
-      new_role
-    } = await req.json()
-
-    // 3. 必須パラメータの検証
-    if (!staff_id || !new_role) {
-      return NextResponse.json(
-        { error: '必要なパラメータが不足しています' },
-        { status: 400 }
-      )
+    // 2. リクエストボディの検証
+    const validation = await validateRequest(req, updateStaffRoleSchema)
+    if (!validation.success) {
+      return createValidationErrorResponse(validation.error)
     }
+
+    const { staff_id, clerk_user_id, new_role } = validation.data
 
     // 5. Clerkユーザーが存在する場合のみpublic_metadata更新
     if (clerk_user_id) {

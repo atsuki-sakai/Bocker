@@ -116,3 +116,56 @@ export const getOrgAndConfig = query({
     };
   },
 });
+
+
+export const getRelations = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization')
+  },
+  handler: async (ctx, args) => {
+    const organization = await ctx.db.get(args.org_id);
+    if(!organization){
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'organization.query.getRelations',
+        message: '組織が見つかりません',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: {
+          ...args,
+        },
+      });
+    }
+    const config = await ctx.db.query('config')
+      .withIndex('by_tenant_org_archive', q => 
+        q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('is_archive', false)
+      )
+      .first();
+
+    const apiConfig = await ctx.db.query('api_config')
+      .withIndex('by_tenant_org_archive', q => 
+        q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('is_archive', false)
+      )
+      .first(); 
+
+    const reservationConfig = await ctx.db.query('reservation_config')
+      .withIndex('by_tenant_org_archive', q => 
+        q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('is_archive', false)
+      )
+      .first();
+    return {
+      organization,
+      config,
+      apiConfig,
+      reservationConfig,
+    };
+  },
+});

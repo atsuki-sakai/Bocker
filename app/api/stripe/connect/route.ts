@@ -1,6 +1,7 @@
-
 import { NextResponse } from 'next/server';
 import { stripeService } from '@/services/stripe/StripeService';
+import { withAuthAndValidation } from '@/lib/api/middleware';
+import { stripeConnectRequestSchema } from '@/lib/validations/stripe';
 
 /**
  * Stripe Connect アカウント連携APIのPOSTエンドポイント
@@ -8,17 +9,25 @@ import { stripeService } from '@/services/stripe/StripeService';
  * @param request - HTTPリクエストオブジェクト（tenant_id, org_idを含むJSON）
  * @returns Stripeアカウント情報とアカウントリンクURL
  */
-export async function POST(request: Request) {
-  try {
-    // リクエストからsalonIdを取得
-    const { tenant_id, org_id } = await request.json();
+export const POST = withAuthAndValidation(
+  stripeConnectRequestSchema,
+  async (request, auth, data) => {
+    const { tenant_id, org_id } = data;
 
-    if (!tenant_id) {
-      return NextResponse.json({ error: 'テナントIDが必要です' }, { status: 400 });
+    // Verify that the user has permission to create Stripe Connect for this organization
+    if (org_id !== auth.orgId) {
+      return NextResponse.json(
+        { error: 'この組織のStripe連携を設定する権限がありません' },
+        { status: 403 }
+      );
     }
 
-    if (!org_id) {
-      return NextResponse.json({ error: '組織IDが必要です' }, { status: 400 });
+    // Only admin and owner can setup Stripe Connect
+    if (!['admin', 'owner'].includes(auth.role)) {
+      return NextResponse.json(
+        { error: 'Stripe連携の設定には管理者権限が必要です' },
+        { status: 403 }
+      );
     }
 
     // StripeConnectクラスを使用してアカウント連携を行う
@@ -32,14 +41,8 @@ export async function POST(request: Request) {
       account: result.data.account.id,
       accountLink: result.data.accountLink.url
     });
-  } catch (error) {
-    console.error('Stripe Connect APIエラー:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : '不明なエラーが発生しました' },
-      { status: 500 }
-    );
   }
-}
+);
 
 /**
  * Stripe Connectエンドポイントの動作確認用GETリクエストハンドラ
