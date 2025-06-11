@@ -1,12 +1,14 @@
 import ReservationList from './ReservationList';
-
 import { DashboardSection } from '@/components/common';
+import { useTranslations } from 'next-intl';
 
 export default function ReservationPage() {
+  const t = useTranslations('reservations');
+  const tNav = useTranslations('navigation');
   return (
-    <DashboardSection title="予約タイムライン" backLink="/dashboard" backLinkTitle="ダッシュボード">
+    <DashboardSection title={t('timelineTitle')} backLink="/dashboard" backLinkTitle={tNav('dashboard')}>
       <p className="text-sm text-gray-500">
-        有効な予約を確認したり、施術完了時にステータスなどを変更します。
+        {t('timelineDescription')}
       </p>
       <ReservationList />
     </DashboardSection>

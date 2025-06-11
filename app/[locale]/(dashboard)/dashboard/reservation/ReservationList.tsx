@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useMemo, useCallback, memo } from 'react'
+import React, { useState, useMemo, useCallback, memo, useEffect } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useTimelineData, useReservationBars } from '@/hooks/useTimelineData'
 import type {
@@ -24,52 +25,56 @@ import {
   convertTimestampToDateString,
 } from '@/lib/schedules'
 import { format, addDays, subDays, isWeekend } from 'date-fns'
-import { ja } from 'date-fns/locale'
+import { formatDate } from '@/lib/formatDate'
+import type { SupportedLocale } from '@/lib/dateLocale'
 import Image from 'next/image'
 
 // 1スロット（10分）の幅(px) - 隙間をなくすために調整
 const SLOT_WIDTH = 32
 
 // ■ メモ化されたコンポーネント
-const TimelineHeader = memo(({ timeSlots }: { timeSlots: TimeSlot[] }) => (
-  <div className="flex sticky top-0 z-20 bg-background shadow-sm border-b border-border">
-    {/* スタッフ名カラムのヘッダー */}
-    <div className="sticky left-0 z-30 bg-background border-r border-border w-20 md:w-40 p-3 flex items-center justify-center font-bold text-muted-foreground">
-      <User className="w-4 h-4 mr-2" />
-      <span className="hidden md:block">スタッフ</span>
-    </div>
+const TimelineHeader = memo(({ timeSlots }: { timeSlots: TimeSlot[] }) => {
+  const t = useTranslations('reservations')
+  return (
+    <div className="flex sticky top-0 z-20 bg-background shadow-sm border-b border-border">
+      {/* スタッフ名カラムのヘッダー */}
+      <div className="sticky left-0 z-30 bg-background border-r border-border w-20 md:w-40 p-3 flex items-center justify-center font-bold text-muted-foreground">
+        <User className="w-4 h-4 mr-2" />
+        <span className="hidden md:block">{t('staff')}</span>
+      </div>
 
-    {/* 時間スロットヘッダー */}
-    <div className="flex">
-      {timeSlots.map((slot) => {
-        return (
-          <div
-            key={slot.index}
-            className={cn(
-              'relative h-12 text-xs flex items-center justify-center transition-colors bg-secondary',
-              // 太い線を削除し、通常のボーダーのみ使用
-              slot.minutes % 60 === 0
-                ? 'w-24 border-l border-border font-semibold bg-background'
-                : 'w-24 border-l border-border/50'
-            )}
-          >
-            {slot.minutes % 60 === 0 && (
-              <span className="absolute left-1 top-1/2 -translate-y-1/2 whitespace-nowrap text-primary font-semibold">
-                {slot.timeLabel}
-              </span>
-            )}
-            {/* 30分マーク */}
-            {slot.minutes % 60 === 30 && (
-              <span className="absolute left-1 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">
-                {slot.timeLabel.split(':')[0]}:30
-              </span>
-            )}
-          </div>
-        )
-      })}
+      {/* 時間スロットヘッダー */}
+      <div className="flex">
+        {timeSlots.map((slot) => {
+          return (
+            <div
+              key={slot.index}
+              className={cn(
+                'relative h-12 text-xs flex items-center justify-center transition-colors bg-secondary',
+                // 太い線を削除し、通常のボーダーのみ使用
+                slot.minutes % 60 === 0
+                  ? 'w-24 border-l border-border font-semibold bg-background'
+                  : 'w-24 border-l border-border/50'
+              )}
+            >
+              {slot.minutes % 60 === 0 && (
+                <span className="absolute left-1 top-1/2 -translate-y-1/2 whitespace-nowrap text-primary font-semibold">
+                  {slot.timeLabel}
+                </span>
+              )}
+              {/* 30分マーク */}
+              {slot.minutes % 60 === 30 && (
+                <span className="absolute left-1 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">
+                  {slot.timeLabel.split(':')[0]}:30
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
-  </div>
-))
+  )
+})
 
 TimelineHeader.displayName = 'TimelineHeader'
 
@@ -81,6 +86,7 @@ const ReservationBarComponent = memo(
     bar: ReservationBar
     onReservationClick: (reservation: ReservationWithDetails) => void
   }) => {
+    const t = useTranslations('reservations')
     const { reservation, startColumn, spanColumns } = bar
 
     // ステータスに基づいてアイコンを選択
@@ -118,7 +124,7 @@ const ReservationBarComponent = memo(
         title={`${reservation.customer_name} (${convertTimestampToHour(reservation.start_time_unix)} - ${convertTimestampToHour(reservation.end_time_unix)})`}
       >
         {getStatusIcon(reservation.status)}
-        <span className="truncate font-medium">{reservation.customer_name ?? '名称未設定'}</span>
+        <span className="truncate font-medium">{reservation.customer_name ?? t('nameNotSet')}</span>
         {/* 時間表示（幅が十分な場合のみ） */}
         {spanColumns > 6 && (
           <span className="ml-auto text-xs opacity-75">
@@ -144,6 +150,7 @@ const StaffTimelineRow = memo(
     onReservationClick: (reservation: ReservationWithDetails) => void
     isEven: boolean
   }) => {
+    const t = useTranslations('reservations')
     // 予約データをバーに変換（最適化されたフック使用）
     const reservationBars = useReservationBars(staffData.reservations)
 
@@ -175,7 +182,8 @@ const StaffTimelineRow = memo(
               </div>
               <div className="text-xs text-link-foreground flex items-center gap-1">
                 <Clock className="hidden md:block w-3 h-3" />
-                {reservationBars.length}件の予約
+                {reservationBars.length}
+                {t('reservationCount')}
               </div>
             </div>
           </div>
@@ -233,6 +241,8 @@ const ReservationDetailDialog = memo(
     isOpen: boolean
     onClose: () => void
   }) => {
+    const t = useTranslations('reservations')
+
     if (!reservation) return null
 
     const enhancedColor =
@@ -245,26 +255,26 @@ const ReservationDetailDialog = memo(
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <User className="w-5 h-5" />
-              予約詳細
+              {t('detail')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-semibold text-primary">顧客名</label>
+                <label className="text-sm font-semibold text-primary">{t('customerName')}</label>
                 <p className="text-sm text-primary mt-1 font-medium">{reservation.customer_name}</p>
               </div>
               <div>
-                <label className="text-sm font-semibold text-primary">ステータス</label>
+                <label className="text-sm font-semibold text-primary">{t('status')}</label>
                 <div className="mt-1">
                   <Badge className={cn('text-xs px-2 py-1 rounded-full', enhancedColor)}>
-                    {reservation.status}
+                    {t(`statuses.${reservation.status}`)}
                   </Badge>
                 </div>
               </div>
             </div>
             <div>
-              <label className="text-sm font-semibold text-primary">予約日時</label>
+              <label className="text-sm font-semibold text-primary">{t('dateTime')}</label>
               <div className="mt-1 p-3 bg-muted rounded-lg">
                 <p className="text-sm text-primary flex items-center gap-2">
                   <CalendarDays className="w-4 h-4" />
@@ -287,14 +297,21 @@ const ReservationDetailDialog = memo(
 ReservationDetailDialog.displayName = 'ReservationDetailDialog'
 
 // ■ 統計情報コンポーネント
-const StatsCards = memo(({ totalReservations }: { totalReservations: number }) => (
-  <div className="flex gap-4 pb-4">
-    <Card className="flex items-center justify-between gap-4 px-2 py-1 bg-active-foreground border-active">
-      <div className="text-xs text-active font-medium">総予約数</div>
-      <div className="text-sm font-bold text-active">{totalReservations}件</div>
-    </Card>
-  </div>
-))
+const StatsCards = memo(({ totalReservations }: { totalReservations: number }) => {
+  const t = useTranslations('reservations')
+
+  return (
+    <div className="flex gap-4 pb-4">
+      <Card className="flex items-center justify-between gap-4 px-2 py-1 bg-active-foreground border-active">
+        <div className="text-xs text-active font-medium">{t('totalReservations')}</div>
+        <div className="text-sm font-bold text-active">
+          {totalReservations}
+          {t('count')}
+        </div>
+      </Card>
+    </div>
+  )
+})
 
 StatsCards.displayName = 'StatsCards'
 
@@ -306,58 +323,64 @@ const ReservationList = memo(
   }: {
     reservations: ReservationWithDetails[]
     onReservationClick: (reservation: ReservationWithDetails) => void
-  }) => (
-    <div className="p-4 space-y-3">
-      {reservations.map((reservation) => {
-        const enhancedColor =
-          RESERVATION_COLORS[reservation.status as keyof typeof RESERVATION_COLORS] ||
-          RESERVATION_COLORS.confirmed
+  }) => {
+    const t = useTranslations('reservations')
+    return (
+      <div className="p-4 space-y-3">
+        {reservations.map((reservation) => {
+          const enhancedColor =
+            RESERVATION_COLORS[reservation.status as keyof typeof RESERVATION_COLORS] ||
+            RESERVATION_COLORS.confirmed
 
-        return (
-          <Card
-            key={reservation._id}
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] border-l-4"
-            style={{
-              borderLeftColor: enhancedColor.includes('emerald')
-                ? '#008724FF'
-                : enhancedColor.includes('amber')
-                  ? '#f59e0b'
-                  : '#6b7280',
-            }}
-            onClick={() => onReservationClick(reservation)}
-          >
-            <CardContent className="p-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <div className="font-semibold text-primary flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    {reservation.customer_name}
+          return (
+            <Card
+              key={reservation._id}
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] border-l-4"
+              style={{
+                borderLeftColor: enhancedColor.includes('emerald')
+                  ? '#008724FF'
+                  : enhancedColor.includes('amber')
+                    ? '#f59e0b'
+                    : '#6b7280',
+              }}
+              onClick={() => onReservationClick(reservation)}
+            >
+              <CardContent className="p-2">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <div className="font-semibold text-primary flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      {reservation.customer_name}
+                    </div>
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <span className="font-semibold">{t('assignedStaff')}</span>{' '}
+                      {reservation.staff_name}
+                    </div>
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Clock className="w-3 h-3" />
+                      {formatTimestamp(reservation.start_time_unix, { useJST: true })} -
+                      {formatTimestamp(reservation.end_time_unix, { useJST: true })}
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <span className="font-semibold">担当スタッフ</span> {reservation.staff_name}
-                  </div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Clock className="w-3 h-3" />
-                    {formatTimestamp(reservation.start_time_unix, { useJST: true })} -
-                    {formatTimestamp(reservation.end_time_unix, { useJST: true })}
-                  </div>
+                  <Badge className={cn('px-3 py-1 rounded-full', enhancedColor)}>
+                    {t(`statuses.${reservation.status}`)}
+                  </Badge>
                 </div>
-                <Badge className={cn('px-3 py-1 rounded-full', enhancedColor)}>
-                  {reservation.status}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })}
-    </div>
-  )
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+    )
+  }
 )
 
 ReservationList.displayName = 'ReservationList'
 
 // ■ メインコンポーネント
 export default function ReservationForm() {
+  const t = useTranslations('reservations')
+  const locale = useLocale() as SupportedLocale
   // ■ ステート管理
   const { tenantId, orgId, ready } = useTenantAndOrganization()
   const [selectedDate, setSelectedDate] = useState(() => new Date())
@@ -366,6 +389,7 @@ export default function ReservationForm() {
   )
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'timeline' | 'list'>('timeline')
+  const [dateLabel, setDateLabel] = useState('')
 
   // ■ データ取得（最適化されたカスタムフック使用）
   const targetDateStr = format(selectedDate, 'yyyy-MM-dd')
@@ -387,6 +411,15 @@ export default function ReservationForm() {
     () => staffTimelineData.flatMap((staff) => staff.reservations),
     [staffTimelineData]
   )
+
+  // ■ 日付フォーマット
+  useEffect(() => {
+    const formatSelectedDate = async () => {
+      const formatted = await formatDate(selectedDate, 'PPP', locale)
+      setDateLabel(formatted)
+    }
+    formatSelectedDate()
+  }, [selectedDate, locale])
 
   // ■ イベントハンドラー
   const handleReservationClick = useCallback((reservation: ReservationWithDetails) => {
@@ -431,11 +464,9 @@ export default function ReservationForm() {
                   )}
                 >
                   <CalendarDays className="w-4 h-4 text-link-foreground" />
-                  <span className="text-xs md:text-base font-bold text-primary">
-                    {format(selectedDate, 'MM月dd日(E)', { locale: ja })}
-                  </span>
+                  <span className="text-xs md:text-base font-bold text-primary">{dateLabel}</span>
                   {isWeekendDate && (
-                    <span className="text-xs text-destructive font-medium">土日</span>
+                    <span className="text-xs text-destructive font-medium">{t('weekend')}</span>
                   )}
                 </div>
                 <Button variant="outline" size="sm" onClick={() => handleDateChange(1)}>
@@ -446,7 +477,7 @@ export default function ReservationForm() {
           </div>
           <div className="flex items-center justify-end gap-4 w-full md:mt-0 mt-4 ">
             <Button variant="outline" onClick={() => setSelectedDate(new Date())}>
-              今日
+              {t('today')}
             </Button>
             <div className="flex items-center gap-3">
               <Tabs
@@ -454,8 +485,8 @@ export default function ReservationForm() {
                 onValueChange={(value) => setViewMode(value as 'timeline' | 'list')}
               >
                 <TabsList>
-                  <TabsTrigger value="timeline">タイムライン</TabsTrigger>
-                  <TabsTrigger value="list">リスト</TabsTrigger>
+                  <TabsTrigger value="timeline">{t('timeline')}</TabsTrigger>
+                  <TabsTrigger value="list">{t('list')}</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
