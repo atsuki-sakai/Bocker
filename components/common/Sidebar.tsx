@@ -13,6 +13,7 @@ import { MenuIcon, XIcon, CreditCard as CreditCardIcon } from 'lucide-react'
 import { UserButton } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
 import { useTheme } from 'next-themes'
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { hasAccess } from '@/lib/utils'
 import type { SubscriptionPlanName } from '@/convex/types'
@@ -32,46 +33,55 @@ const SidebarHeader = memo(
     resolvedTheme,
     isMobile = false,
     showModeToggle = false,
+    showLanguageToggle = false,
   }: {
     mounted: boolean
     resolvedTheme: string | undefined
     isMobile?: boolean
     showModeToggle?: boolean
+    showLanguageToggle?: boolean
   }) => {
     const t = useTranslations('sidebar')
     return (
-    <div className={`${isMobile ? 'relative' : ''} flex flex-col ${isMobile ? 'mt-2' : 'mt-2'}`}>
-      <div className="flex items-center gap-x-2">
-        <Image
-          src={
-            mounted && resolvedTheme === 'dark'
-              ? '/assets/images/logo-white.png'
-              : '/assets/images/logo-darkgreen.png'
-          }
-          alt="Bocker"
-          width={42}
-          height={42}
-          priority
-        />
-        <h1
-          className={`${isMobile ? 'text-xl bg-background bg-clip-text text-foreground font-thin' : 'text-2xl font-bold text-primary'}`}
-        >
-          Bocker
-        </h1>
-      </div>
-      <div className="flex items-center gap-x-2">
-        <p className={`text-xs ${isMobile ? 'text-primary' : 'text-muted-foreground'}`}>
-          {t('tagline')}
-        </p>
-      </div>
-      {isMobile && showModeToggle && (
-        <div className="absolute right-1 top-2">
-          <div className="relative lg:hidden">
-            <ModeToggle />
-          </div>
+      <div className={`${isMobile ? 'relative' : ''} flex flex-col ${isMobile ? 'mt-2' : 'mt-2'}`}>
+        <div className="flex items-center gap-x-2">
+          <Image
+            src={
+              mounted && resolvedTheme === 'dark'
+                ? '/assets/images/logo-white.png'
+                : '/assets/images/logo-darkgreen.png'
+            }
+            alt="Bocker"
+            width={42}
+            height={42}
+            priority
+          />
+          <h1
+            className={`${isMobile ? 'text-xl bg-background bg-clip-text text-foreground font-thin' : 'text-2xl font-bold text-primary'}`}
+          >
+            Bocker
+          </h1>
         </div>
-      )}
-    </div>
+        <div className="flex items-center gap-x-2">
+          <p className={`text-xs ${isMobile ? 'text-primary' : 'text-muted-foreground'}`}>
+            {t('tagline')}
+          </p>
+        </div>
+        {isMobile && showModeToggle && (
+          <div className="absolute right-1 top-2">
+            <div className="relative lg:hidden">
+              <ModeToggle />
+            </div>
+          </div>
+        )}
+        {isMobile && showLanguageToggle && (
+          <div className="absolute right-1 top-2">
+            <div className="relative lg:hidden">
+              <LanguageSwitcher />
+            </div>
+          </div>
+        )}
+      </div>
     )
   }
 )
@@ -99,116 +109,114 @@ const SidebarNavigation = memo(
     const t = useTranslations('sidebar')
     const tNav = useTranslations('navigation')
     return (
-    <nav className="flex flex-1 flex-col">
-      {!isSubscriptionActive && !isMobile && (
-        <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
-          <p className="text-xs text-muted-foreground">
-            <span className="inline-block font-bold mb-2">
-              {t('subscriptionRequired')}
-            </span>
-            <br />
-            {t('subscriptionRequiredDetail')}
-          </p>
-        </div>
-      )}
-      <ul role="list" className={`flex flex-1 flex-col ${isMobile ? 'gap-y-1' : 'gap-y-7'}`}>
-        <li>
-          <ul role="list" className="-mx-2 space-y-1">
-            {staffId && (
-              <li>
-                <Link
-                  href={`/dashboard/staff/${staffId}/my-page`}
-                  onClick={() => setIsLinkClicked(true)}
-                  className={classNames(
-                    pathname === `/dashboard/staff/${staffId}/my-page`
-                      ? 'text-accent-foreground bg-accent'
-                      : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                    'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
-                  )}
-                >
-                  <UserIcon
-                    aria-hidden="true"
-                    className={classNames(
-                      pathname === `/dashboard/staff/${staffId}/my-page`
-                        ? 'text-accent-foreground bg-accent'
-                        : 'text-primary',
-                      'size-4 shrink-0'
-                    )}
-                  />
-                  <p className="w-full text-nowrap">{tNav('myPage')}</p>
-                  {pathname === `/dashboard/staff/${staffId}/my-page` && (
-                    <div className="w-full flex justify-end items-center pr-2">
-                      <div className="h-3 w-3 bg-active border-ring border rounded-full" />
-                    </div>
-                  )}
-                </Link>
-              </li>
-            )}
-            {filteredNav.map((item) => {
-              const isCurrent = pathname === item.href
-              return (
-                <li key={item.name}>
+      <nav className="flex flex-1 flex-col">
+        {!isSubscriptionActive && !isMobile && (
+          <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
+            <p className="text-xs text-muted-foreground">
+              <span className="inline-block font-bold mb-2">{t('subscriptionRequired')}</span>
+              <br />
+              {t('subscriptionRequiredDetail')}
+            </p>
+          </div>
+        )}
+        <ul role="list" className={`flex flex-1 flex-col ${isMobile ? 'gap-y-1' : 'gap-y-7'}`}>
+          <li>
+            <ul role="list" className="-mx-2 space-y-1">
+              {staffId && (
+                <li>
                   <Link
-                    href={item.href}
+                    href={`/dashboard/staff/${staffId}/my-page`}
                     onClick={() => setIsLinkClicked(true)}
                     className={classNames(
-                      isCurrent
+                      pathname === `/dashboard/staff/${staffId}/my-page`
                         ? 'text-accent-foreground bg-accent'
                         : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
                       'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
                     )}
                   >
-                    <item.icon
+                    <UserIcon
                       aria-hidden="true"
                       className={classNames(
-                        isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
+                        pathname === `/dashboard/staff/${staffId}/my-page`
+                          ? 'text-accent-foreground bg-accent'
+                          : 'text-primary',
                         'size-4 shrink-0'
                       )}
                     />
-                    <p className="w-full text-nowrap">{tNav(item.name)}</p>
-                    {isCurrent && (
+                    <p className="w-full text-nowrap">{tNav('myPage')}</p>
+                    {pathname === `/dashboard/staff/${staffId}/my-page` && (
                       <div className="w-full flex justify-end items-center pr-2">
                         <div className="h-3 w-3 bg-active border-ring border rounded-full" />
                       </div>
                     )}
                   </Link>
                 </li>
-              )
-            })}
-            {role === 'admin' && (
-              <li>
-                <Link
-                  href={'/dashboard/subscription'}
-                  onClick={() => setIsLinkClicked(true)}
-                  className={classNames(
-                    pathname === '/dashboard/subscription'
-                      ? 'text-accent-foreground bg-accent'
-                      : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                    'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
-                  )}
-                >
-                  <CreditCardIcon
-                    aria-hidden="true"
+              )}
+              {filteredNav.map((item) => {
+                const isCurrent = pathname === item.href
+                return (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setIsLinkClicked(true)}
+                      className={classNames(
+                        isCurrent
+                          ? 'text-accent-foreground bg-accent'
+                          : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                        'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                      )}
+                    >
+                      <item.icon
+                        aria-hidden="true"
+                        className={classNames(
+                          isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
+                          'size-4 shrink-0'
+                        )}
+                      />
+                      <p className="w-full text-nowrap">{tNav(item.name)}</p>
+                      {isCurrent && (
+                        <div className="w-full flex justify-end items-center pr-2">
+                          <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                        </div>
+                      )}
+                    </Link>
+                  </li>
+                )
+              })}
+              {role === 'admin' && (
+                <li>
+                  <Link
+                    href={'/dashboard/subscription'}
+                    onClick={() => setIsLinkClicked(true)}
                     className={classNames(
                       pathname === '/dashboard/subscription'
                         ? 'text-accent-foreground bg-accent'
-                        : 'text-primary',
-                      'size-4 shrink-0'
+                        : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                      'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
                     )}
-                  />
-                  <p className="w-full text-nowrap">{tNav('subscription')}</p>
-                  {pathname === '/dashboard/subscription' && (
-                    <div className="w-full flex justify-end items-center pr-2">
-                      <div className="h-3 w-3 bg-active border-ring border rounded-full" />
-                    </div>
-                  )}
-                </Link>
-              </li>
-            )}
-          </ul>
-        </li>
-      </ul>
-    </nav>
+                  >
+                    <CreditCardIcon
+                      aria-hidden="true"
+                      className={classNames(
+                        pathname === '/dashboard/subscription'
+                          ? 'text-accent-foreground bg-accent'
+                          : 'text-primary',
+                        'size-4 shrink-0'
+                      )}
+                    />
+                    <p className="w-full text-nowrap">{tNav('subscription')}</p>
+                    {pathname === '/dashboard/subscription' && (
+                      <div className="w-full flex justify-end items-center pr-2">
+                        <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                      </div>
+                    )}
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </li>
+        </ul>
+      </nav>
     )
   }
 )
@@ -358,6 +366,9 @@ export default function Sidebar({ children }: SidebarProps) {
 
                 <div className="relative hidden lg:block">
                   <ModeToggle />
+                </div>
+                <div className="relative hidden lg:block">
+                  <LanguageSwitcher />
                 </div>
               </div>
             </div>

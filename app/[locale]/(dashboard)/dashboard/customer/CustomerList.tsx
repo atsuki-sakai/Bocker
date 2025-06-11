@@ -29,7 +29,6 @@ import { useState, useCallback, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
-import { formatDate } from '@/lib/formatDate'
 import type { SupportedLocale } from '@/lib/dateLocale'
 
 // 1回のロードでより多くのアイテムを表示
