@@ -6,6 +6,7 @@ import { getMessages } from 'next-intl/server'
 import { routing } from '@/i18n/routing'
 import { notFound } from 'next/navigation'
 import ClientLayout from './ClientLayout'
+import type { Languages } from '@/lib/constants'
 
 const notoJP = Noto_Sans_JP({
   weight: ['400', '500', '700'],
@@ -27,15 +28,16 @@ export const metadata: Metadata = {
 
 type Props = {
   children: React.ReactNode
-  params: { locale: string }
+  // Next.js v15 では params は Promise になる
+  params: Promise<{ locale: string }>
 }
 
-export default async function LocaleLayout({
-  children,
-  params: { locale }
-}: Props) {
+export default async function LocaleLayout({ children, params }: Props) {
+  // params は Promise となるため非同期で展開する
+  const { locale } = await params
+
   // Ensure that the incoming `locale` is valid
-  if (!routing.locales.includes(locale as any)) {
+  if (!routing.locales.includes(locale as Languages)) {
     notFound()
   }
 
