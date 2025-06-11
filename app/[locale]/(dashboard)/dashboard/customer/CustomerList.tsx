@@ -105,7 +105,7 @@ export default function CustomerList() {
 
       return results
     },
-    [customerRepo, tenantId, orgId, t]
+    [customerRepo, tenantId, orgId]
   )
 
   // 表示用データを動的に切り替え

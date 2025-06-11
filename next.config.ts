@@ -2,6 +2,13 @@ import {withSentryConfig} from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
 
+
+// 1. bundle-analyzerをrequireで読み込む
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+  // openAnalyzer: false, // 必要なら自動ブラウザ起動を抑制
+  // reportFilename: 'report.html', // 任意の出力名
+});
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 const nextConfig: NextConfig = {
@@ -30,7 +37,7 @@ const nextConfig: NextConfig = {
 };
 
 
-export default withSentryConfig(withNextIntl(nextConfig), {
+export default withSentryConfig(withBundleAnalyzer(withNextIntl(nextConfig)), {
 // For all available options, see:
 // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
