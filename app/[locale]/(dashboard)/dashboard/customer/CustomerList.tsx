@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations, useLocale } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Mail, Phone, Calendar, ChevronDown, Search, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,8 @@ import { useState, useCallback, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
+import { formatDate } from '@/lib/formatDate'
+import type { SupportedLocale } from '@/lib/dateLocale'
 
 // 1回のロードでより多くのアイテムを表示
 const PAGE_SIZE: number = 20
@@ -40,6 +43,9 @@ type CustomerWithDetails = {
 }
 
 export default function CustomerList() {
+  const t = useTranslations('customers')
+  const tCommon = useTranslations('common')
+  const locale = useLocale() as SupportedLocale
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [debouncedSearchTerm] = useDebounce(searchTerm, 1000)
@@ -144,8 +150,8 @@ export default function CustomerList() {
         // ページネーション制御
         setHasMoreAll(customersWithDetails.length === PAGE_SIZE && page * PAGE_SIZE < (count || 0))
       } catch (error) {
-        console.error('顧客データの取得に失敗しました:', error)
-        toast.error('顧客データの取得に失敗しました')
+        console.error('Failed to fetch customer data:', error)
+        toast.error(t('fetchError'))
       } finally {
         setIsLoadingAll(false)
         setIsLoadingMoreAll(false)
@@ -205,8 +211,8 @@ export default function CustomerList() {
         // ページネーション制御
         setHasMoreSearch(result.hasMore)
       } catch (error) {
-        console.error('顧客検索に失敗しました:', error)
-        toast.error('顧客検索に失敗しました')
+        console.error('Failed to search customers:', error)
+        toast.error(t('searchError'))
         setSearchResults([])
       } finally {
         setIsLoadingSearch(false)
@@ -265,7 +271,7 @@ export default function CustomerList() {
   const handleDeleteCustomer = async (customerUid: string) => {
     try {
       await customerRepo.deleteWithRelatedData(customerUid)
-      toast.success('顧客を削除しました')
+      toast.success(t('customerDeleted'))
       setShowDeleteModal(false)
       setSelectedCustomerUid(null)
       // 適切なリストを再取得
@@ -277,16 +283,16 @@ export default function CustomerList() {
         setCurrentAllPage(1)
       }
     } catch (error) {
-      console.error('顧客の削除に失敗しました:', error)
-      toast.error('顧客の削除に失敗しました')
+      console.error('Failed to delete customer:', error)
+      toast.error(t('deleteError'))
     }
   }
 
   // 予約日の書式変換
-  const formatDate = useCallback((timestamp: number | null | undefined): string => {
-    if (!timestamp) return '未予約'
-    return new Date(timestamp * 1000).toLocaleDateString('ja-JP')
-  }, [])
+  const formatReservationDate = useCallback((timestamp: number | null | undefined): string => {
+    if (!timestamp) return t('noReservation')
+    return new Date(timestamp * 1000).toLocaleDateString(locale === 'ja' ? 'ja-JP' : 'en-US')
+  }, [locale, t])
 
   if (!isLoaded || isLoading) {
     return <Loading />
@@ -300,7 +306,7 @@ export default function CustomerList() {
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="顧客を検索..."
+                placeholder={t('searchPlaceholder')}
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -313,7 +319,7 @@ export default function CustomerList() {
         {isSearchMode && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-2 rounded-md">
             <Search size={16} />
-            <span>「{debouncedSearchTerm}」の検索結果</span>
+            <span>{t('searchResultsFor', { term: debouncedSearchTerm })}</span>
             <Button
               variant="ghost"
               size="sm"
@@ -324,7 +330,7 @@ export default function CustomerList() {
               }}
               className="ml-auto"
             >
-              クリア
+              {tCommon('clear')}
             </Button>
           </div>
         )}
@@ -335,12 +341,12 @@ export default function CustomerList() {
           <TableHeader>
             <TableRow className="bg-muted text-muted-foreground">
               <TableHead className="px-4 text-nowrap w-fit font-bold">
-                顧客名/LINEユーザー名
+                {t('customerNameLineUser')}
               </TableHead>
-              <TableHead className="px-4 text-nowrap w-fit font-bold">連絡先</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit font-bold">来店回数</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit font-bold">最終来店日</TableHead>
-              <TableHead className="px-2 text-nowrap w-fit font-bold">タグ</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit font-bold">{t('contact')}</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit font-bold">{t('visitCount')}</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit font-bold">{t('lastVisit')}</TableHead>
+              <TableHead className="px-2 text-nowrap w-fit font-bold">{t('tags')}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[50px]"></TableHead>
@@ -350,7 +356,7 @@ export default function CustomerList() {
             {displayCustomers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                  {searchTerm ? '検索条件に一致する顧客が見つかりません' : '顧客データがありません'}
+                  {searchTerm ? t('noSearchResults') : t('noCustomers')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -361,7 +367,7 @@ export default function CustomerList() {
                       <span>
                         {customerData.customer.last_name && customerData.customer.first_name
                           ? `${customerData.customer.last_name} ${customerData.customer.first_name}`
-                          : '未登録'}
+                          : t('notRegistered')}
                       </span>
                       {customerData.customer.line_user_name && (
                         <span className="text-sm text-muted-foreground">
@@ -379,7 +385,7 @@ export default function CustomerList() {
                           <span className="tracking-wider">{customerData.customer.phone}</span>
                         </div>
                       ) : (
-                        <p className="text-muted-foreground">未登録</p>
+                        <p className="text-muted-foreground">{t('notRegistered')}</p>
                       )}
                       {customerData.customer.email ? (
                         <div className="flex items-center gap-2">
@@ -389,19 +395,19 @@ export default function CustomerList() {
                       ) : (
                         <div className="flex items-center gap-2">
                           <Mail size={14} className="text-muted-foreground" />
-                          <p className="text-muted-foreground">未登録</p>
+                          <p className="text-muted-foreground">{t('notRegistered')}</p>
                         </div>
                       )}
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge>{customerData.customer.total_reservation_count ?? 0} 回</Badge>
+                    <Badge>{customerData.customer.total_reservation_count ?? 0} {t('times')}</Badge>
                   </TableCell>
                   <TableCell className="px-4">
                     <div className="flex items-center gap-4">
                       <Calendar size={16} className="text-muted-foreground" />
                       <span className="text-nowrap">
-                        {formatDate(customerData.customer.last_reservation_date_unix)}
+                        {formatReservationDate(customerData.customer.last_reservation_date_unix)}
                       </span>
                     </div>
                   </TableCell>
@@ -415,7 +421,7 @@ export default function CustomerList() {
                         ))}
                       </div>
                     ) : (
-                      <span className="text-muted-foreground text-sm">タグなし</span>
+                      <span className="text-muted-foreground text-sm">{t('noTags')}</span>
                     )}
                   </TableCell>
                   <TableCell className="px-4">
@@ -424,7 +430,7 @@ export default function CustomerList() {
                       variant="ghost"
                       size="icon"
                     >
-                      <Link href={`/dashboard/customer/${customerData.customer.uid}`}>詳細</Link>
+                      <Link href={`/dashboard/customer/${customerData.customer.uid}`}>{t('details')}</Link>
                     </Button>
                   </TableCell>
                   <TableCell className="px-4">
@@ -434,7 +440,7 @@ export default function CustomerList() {
                       className="text-xs bg-muted text-muted-foreground hover:opacity-80 transition-opacity duration-300"
                     >
                       <Link href={`/dashboard/customer/${customerData.customer.uid}/edit`}>
-                        編集
+                        {tCommon('edit')}
                       </Link>
                     </Button>
                   </TableCell>
@@ -460,7 +466,7 @@ export default function CustomerList() {
       {hasMoreData && (
         <div className="flex justify-center mt-6">
           <Button onClick={loadMore} variant="outline" className="gap-2" disabled={isLoadingMore}>
-            <span>さらに表示</span>
+            <span>{tCommon('loadMore')}</span>
             {isLoadingMore ? (
               <RefreshCw size={16} className="animate-spin" />
             ) : (
@@ -474,20 +480,20 @@ export default function CustomerList() {
         <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>顧客を削除しますか？</DialogTitle>
+              <DialogTitle>{t('confirmDelete')}</DialogTitle>
               <DialogDescription>
-                この操作は元に戻すことができません。顧客に関連するすべてのデータが削除されます。
+                {t('deleteWarning')}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
-                キャンセル
+                {tCommon('cancel')}
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => handleDeleteCustomer(selectedCustomerUid)}
               >
-                削除する
+                {tCommon('delete')}
               </Button>
             </DialogFooter>
           </DialogContent>
