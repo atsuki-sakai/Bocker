@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { stripeService } from '@/services/stripe/StripeService';
 import { withAuthAndValidation } from '@/lib/api/middleware';
-import { stripeConnectRequestSchema } from '@/lib/validations/stripe';
+import { stripeConnectRequestSchema } from '@/lib/validations/api/stripe';
+import { Id } from '@/convex/_generated/dataModel';
 
 /**
  * Stripe Connect アカウント連携APIのPOSTエンドポイント
@@ -12,6 +13,10 @@ import { stripeConnectRequestSchema } from '@/lib/validations/stripe';
 export const POST = withAuthAndValidation(
   stripeConnectRequestSchema,
   async (request, auth, data) => {
+    if (!data) {
+      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
+    }
+    
     const { tenant_id, org_id } = data;
 
     // Verify that the user has permission to create Stripe Connect for this organization
@@ -31,7 +36,7 @@ export const POST = withAuthAndValidation(
     }
 
     // StripeConnectクラスを使用してアカウント連携を行う
-    const result = await stripeService.createConnectAccountLink(tenant_id, org_id);
+    const result = await stripeService.createConnectAccountLink(tenant_id as Id<'tenant'>, org_id as Id<'organization'>);
 
     if (!result.success || !result.data) {
       return NextResponse.json({ error: result.error }, { status: 400 });

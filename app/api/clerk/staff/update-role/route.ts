@@ -3,7 +3,7 @@
 
 import { clerkClient, currentUser } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { updateStaffRoleSchema } from '@/lib/validations/staff'
+import { updateStaffRoleSchema } from '@/lib/validations/api/staff'
 import { validateRequest, createValidationErrorResponse } from '@/lib/api/validation'
 
 export async function PATCH(req: NextRequest) {
