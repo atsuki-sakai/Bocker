@@ -254,6 +254,211 @@ middleware.ts                # Clerk認証ミドルウェア
 instrumentation.ts           # Sentry監視設定
 ```
 
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+## プロジェクト概要
+
+Bcker（ブッカー）は美容サロン向けの予約・顧客管理SaaSプラットフォームです。マルチテナント設計で、サロンオーナー・スタッフが効率的に予約管理や顧客管理を行えるよう設計されています。
+
+---
+
+## アーキテクチャ
+
+### 技術スタック
+
+* **フロントエンド**: Next.js 15.3.3 (App Router)、React 19、Tailwind CSS、shadcn/ui
+* **バックエンド**:
+
+  * Convex 1.23.0: リアルタイムデータベース（アクティブなデータ）
+  * Supabase: PostgreSQL（履歴データ保存・分析用）
+* **認証**: Clerk（マルチ組織対応）
+* **決済**: Stripe, Stripe Connect（マーケットプレイス型）
+* **メッセージング**: LINE（LIFF対応）
+* **ストレージ**: Google Cloud Storage
+* **モニタリング**: Sentry（Vercel統合）
+
+### アーキテクチャ上の重要な設計思想
+
+1. **ハイブリッドデータベース設計**
+
+   * Convex: 未来の予約や現在のオペレーションデータ
+   * Supabase: 完了済みデータ、分析用データ、顧客マスターデータ
+   * 毎日午前2時にバッチ処理でConvexからSupabaseへデータ移行（本番環境では現在コメントアウト中）
+
+2. **マルチテナンシー**
+
+   * 全てのConvexテーブルに`tenant_id`と`org_id`を含む
+   * Clerkの組織機能を活用したアクセス制御
+
+3. **サービスレイヤーアーキテクチャ**
+
+   * Repositoryパターンによるデータアクセス層の抽象化
+   * 外部サービス連携はServiceクラスで実装
+   * Webhookは並列処理とべき等性を考慮した設計
+
+---
+
+## 開発コマンド
+
+### 基本コマンド
+
+```bash
+# 開発環境起動（Next.js + Convex同時起動）
+pnpm dev
+
+# 開発前準備（Convexダッシュボードを開く）
+pnpm predev
+
+# ビルド
+pnpm build
+
+# リント
+pnpm lint
+
+# テスト（注：テストファイルは未実装）
+pnpm test
+pnpm test:watch
+pnpm test:coverage
+
+# Supabaseマイグレーション
+pnpm migrate:supabase
+```
+
+### Convex関連コマンド
+
+```bash
+# 開発モード
+npx convex dev
+
+# 本番デプロイ
+npx convex deploy
+
+# 関数実行
+npx convex run <function-name>
+```
+
+---
+
+## Next.js 15 App Router + TypeScript 5.5 開発ガイド
+
+この章では **Next.js v15 (App Router) と TypeScript を使用する際の最新ベストプラクティスをまとめます。プロジェクト固有のディレクトリ規約やキャッシュ戦略を定義し、Claude Code が安全かつ効率的にコード生成・修正を行えるようにします。
+
+### 1. ディレクトリ & ルーティング規約
+
+| 種別            | 規約                                                      | 補足                                         |
+| ------------- | ------------------------------------------------------- | ------------------------------------------ |
+| **セグメント**     | `(public)/`, `(auth)/`, `(dashboard)/` など **()** でグループ化 | **動的パラメータ**は`[id]`、**キャッチオール**は`[...slug]` |
+| **エラー境界**     | `error.tsx` をページと同階層に配置                                 | 500 系例外をセグメント単位でキャッチ                       |
+| **ローディング UI** | `loading.tsx` をページと同階層に配置                               | ストリーミング表示を活用                               |
+| **クライアント専用**  | `"use client"` を最上部に 1 行                                | 依存性: Zustand, React Hook Form など           |
+
+### 2. `next.config.ts` 推奨設定
+
+```ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  experimental: {
+    turbo: true,              // Turbopack Dev
+    reactCompiler: true,      // React Compiler（実験）
+    after: true,              // \nEXT15 の after() API
+  },
+  images: {
+    domains: ["storage.googleapis.com"],
+    formats: ["image/webp"],
+  },
+  redirects: async () => [
+    { source: "/", destination: "/(home)", permanent: false },
+  ],
+};
+export default nextConfig;
+```
+
+### 3. フェッチ & キャッシュ戦略
+
+| シナリオ         | 設定例                                                             | 説明                    |
+| ------------ | --------------------------------------------------------------- | --------------------- |
+| ほぼ静的         | `export const dynamic = 'force-static'`                         | CDN 配信・ビルド時生成         |
+| PPR（部分プリレンダ） | `export const dynamic = 'auto'` + `fetchCache: 'default-cache'` | 上部を先行描画、動的部はストリーミング合成 |
+| 最新データ必須      | `revalidate = 0`                                                | SSR・Route Cache 無効化   |
+
+> **Tips**: `GET` Route Handlers は v15 から既定でキャッシュ無効。静的化する場合は `force-static` を明示。
+
+### 4. Server Actions パターン
+
+```ts
+// app/(dashboard)/reservation/actions.ts
+"use server";
+import { z } from "zod";
+import { db } from "@/lib/db";
+const schema = z.object({ start: z.string(), end: z.string() });
+
+export async function createReservation(formData: FormData) {
+  const parsed = schema.parse(Object.fromEntries(formData));
+  await db.reservation.insert({
+    ...parsed,
+    tenant_id: getTenantId(),
+  });
+  revalidatePath("/(dashboard)/reservation");
+}
+```
+
+* **入力バリデーション**はサーバー側で必須 (Zod)
+* **戻り値**は JSON か `redirect()` / `revalidatePath()` を使用
+* **エッジ** 実行したい場合は `export const runtime = "edge"` を追加
+
+### 5. クライアントコンポーネント指針
+
+* RSC で渡せない関数や `useState` が必要なら `"use client"` を宣言
+* Props は **serializable** かつ **small** に保つ
+* なるべく **Server Components** でデータ取得し、クライアントは表示ロジックに集中
+
+### 6. TypeScript 5.5 特有設定
+
+```jsonc
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
+    "importsNotUsedAsValues": "error",
+    "strict": true
+  },
+  "include": ["app", "lib", "components", "hooks"]
+}
+```
+
+* **推論型述語**: `function isMenu(x: Menu | Option): x is Menu { … }` で安全な型絞り込み
+* **定数キーアクセスのナローイング**: `obj[key]` の安全性向上
+* **正規表現型チェック**: 短い CI でパターンミスを検出
+
+### 7. ESLint / Prettier
+
+* `eslint-config-next` v15 使用。App Router 用ルール自動適用。
+* 独自ルール例
+
+```jsonc
+{
+  "@next/next/no-img-element": "off",
+  "react-hooks/exhaustive-deps": "error",
+  "import/order": ["error", { "newlines-between": "always" }]
+}
+```
+
+### 8. Turbopack & ビルド最適化
+
+| 項目            | 対策                                            |
+| ------------- | --------------------------------------------- |
+| Dev 起動時間      | `turbo: true` + `.turbopack` キャッシュを gitignore |
+| First Load JS | 動的 import／`next/dynamic` で分割                  |
+| 画像最適化         | `next/image` + WebP                           |
+
 ### 責務分離の原則
 
 1. **フロントエンド**: UIコンポーネント・ユーザー操作・状態管理
@@ -488,10 +693,6 @@ gs://bcker-prod-images/
    - Cloud CDN有効化（30日キャッシュ）
    - 画像読み込みはサムネイル優先
    - Retrieval Fee軽減のため頻繁なアクセスは避ける
-
-3. **監視・アラート**:
-   - Cloud Billing Budget設定（前月比20%超過でSlack通知）
-   - 月次でBigQueryへの使用量エクスポート
 
 ### データ生成パターン
 
