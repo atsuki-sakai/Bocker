@@ -140,12 +140,12 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     return this.findOne({ searchable_text: searchableText } as Partial<RowType<'customer'>>, options); 
   }
 
-  async findBySalonAndCustomerEmail(tenantId: string, orgId: string, customerEmail: string, options?: BaseRepositoryOptions<'customer'>): Promise<RowType<'customer'> | null> {
+  async findByTenantAndOrgAndCustomerEmail(tenantId: string, orgId: string, customerEmail: string, options?: BaseRepositoryOptions<'customer'>): Promise<RowType<'customer'> | null> {
     console.log(`[CustomerRepository] findBySalonAndCustomerEmail: tenantId=${tenantId}, orgId=${orgId}, customerEmail=${customerEmail}, options=${JSON.stringify(options)}`);
     return this.findOne({ tenant_id: tenantId, org_id: orgId, email: customerEmail } as Partial<RowType<'customer'>>, options); 
   }
 
-  async findBySalonAndCustomerLineId(tenantId: string, orgId: string, customerLineId: string, options?: BaseRepositoryOptions<'customer'>): Promise<RowType<'customer'> | null> {
+  async findByTenantAndOrgAndCustomerLineId(tenantId: string, orgId: string, customerLineId: string, options?: BaseRepositoryOptions<'customer'>): Promise<RowType<'customer'> | null> {
     console.log(`[CustomerRepository] findBySalonAndCustomerLineId: tenantId=${tenantId}, orgId=${orgId}, customerLineId=${customerLineId}, options=${JSON.stringify(options)}`);
     return this.findOne({ tenant_id: tenantId, org_id: orgId, line_id: customerLineId } as Partial<RowType<'customer'>>, options); 
   }
@@ -455,4 +455,104 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       throw error;
     }
   }
+
+  /**
+   * 顧客のパスワードハッシュを更新します。
+   * @param customerUid - 更新対象の顧客UID
+   * @param passwordHash - 新しいパスワードハッシュ
+   * @returns 更新された顧客情報
+   */
+  async updatePassword(customerUid: string, passwordHash: string): Promise<RowType<'customer'>> {
+    console.log(`[CustomerRepository] updatePassword: customerUid=${customerUid}`);
+    
+    const result = await this.supabaseServiceInstance.upsert<'customer'>(
+      'customer',
+      { uid: customerUid, password_hash: passwordHash } as InsertType<'customer'>,
+      { select: '*' }
+    );
+    
+    if (result.length === 0) {
+      console.error(`[CustomerRepository] updatePassword failed: No data returned for customerUid=${customerUid}`);
+      throw new Error(`Failed to update password for customer ${customerUid}: No data returned.`);
+    }
+    
+    console.log(`[CustomerRepository] updatePassword successful for customerUid=${customerUid}`);
+    return result[0];
+  }
+
+  /**
+   * 顧客ポイント（customer_points.total_points と last_transaction_date_unix）を更新します。
+   * - 対象レコードが存在しない場合は新規作成（UPSERT）
+   * @param customerUid   顧客UID
+   * @param tenantId      テナントID
+   * @param orgId         組織ID
+   * @param totalPoints   設定する総ポイント数
+   * @param lastTransactionDateUnix  最終取引日時（UNIX 秒）
+   * @returns 更新後の customer_points レコード
+   */
+  async updateCustomerPoints(
+    customerUid: string,
+    tenantId: string,
+    orgId: string,
+    totalPoints: number,
+    lastTransactionDateUnix: number,
+  ): Promise<RowType<'customer_points'>> {
+    console.log('[CustomerRepository] updateCustomerPoints: Start', {
+      customerUid,
+      tenantId,
+      orgId,
+      totalPoints,
+      lastTransactionDateUnix,
+    });
+
+    // UPSERT 用データを構築
+    const upsertData: InsertType<'customer_points'> = {
+      uid: crypto.randomUUID(),            // 新規挿入時にのみ使用される
+      customer_uid: customerUid,
+      tenant_id: tenantId,
+      org_id: orgId,
+      total_points: totalPoints,
+      last_transaction_date_unix: lastTransactionDateUnix,
+    } as InsertType<'customer_points'>;
+
+    try {
+      // customer_uid / tenant_id / org_id の複合一意制約で UPSERT
+      const updatedRecords = await this.supabaseServiceInstance.upsert<'customer_points'>(
+        'customer_points',
+        upsertData,
+        {
+          onConflict: 'customer_uid,tenant_id,org_id',
+          select: '*',
+        },
+      );
+
+      if (updatedRecords.length === 0) {
+        throw throwSupabaseError({
+          callFunc: 'CustomerRepository.updateCustomerPoints',
+          message: '顧客のポイント更新に失敗しました。',
+          severity: 'medium',
+          code: 'DATABASE_NO_DATA',
+          details: { upsertData },
+        });
+      }
+
+      console.log('[CustomerRepository] updateCustomerPoints: Success', updatedRecords[0]);
+      return updatedRecords[0];
+    } catch (error) {
+      console.error('[CustomerRepository] updateCustomerPoints: Unexpected error', error);
+      // SupabaseError でない場合は SupabaseError にラップして再スロー
+      if (!(error instanceof Error && (error as any).name === 'SupabaseError')) {
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.updateCustomerPoints',
+          message: (error as Error).message || '顧客のポイント更新に失敗しました。',
+          error,
+          severity: 'critical',
+          details: { upsertData },
+        });
+      }
+      throw error;
+    }
+  }
 }
+
+
