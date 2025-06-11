@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { api } from '@/convex/_generated/api'
 import { convertDayOfWeekToJa } from '@/lib/schedules'
@@ -16,6 +16,12 @@ import { jwtDecode } from 'jwt-decode'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
+import {
+  CustomerRepository,
+  PointTransactionRepository,
+  PointTaskQueueRepository,
+} from '@/services/supabase/repositories'
+import { PointTransactionType } from '@/convex/types'
 
 import {
   Check,
@@ -50,6 +56,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useQuery } from 'convex/react'
+import { RowType } from '@/services/supabase/SupabaseService'
 
 // 曜日をソートするための順序を定義
 const dayOrder: Record<string, number> = {
@@ -166,10 +173,16 @@ export default function CalendarPage() {
   const { liff } = useLiff()
   const { showErrorToast } = useErrorHandler()
   // STATES
+  const customerRepository = useMemo(() => new CustomerRepository(), [])
+  const pointTransactionRepository = useMemo(() => new PointTransactionRepository(), [])
+  const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
   const [sessionCustomer, setSessionCustomer] = useState<LineSessionPayload | null>(null)
-  // FIXME: 顧客の処理をsupabaseから取得、更新するように実装する
-  // const [customer, setCustomer] = useState<Doc<'customer'> | null>(null)
   const [customerPhone, setCustomerPhone] = useState<string | null>(null)
+  const [customerData, setCustomerData] = useState<{
+    customer: RowType<'customer'> | null
+    customerDetail: RowType<'customer_detail'> | null
+    customerPoints: RowType<'customer_points'> | null
+  } | null>(null)
   const [notes, setNotes] = useState<string>('')
   const [isPhoneValid, setIsPhoneValid] = useState(false) // 電話番号の有効性ステート
   const [organizationComplete, setOrganizationComplete] = useState<OrganizationCompleteData | null>(
@@ -227,30 +240,9 @@ export default function CalendarPage() {
         }
       : 'skip'
   )
-  // FIXME: 顧客のポイントをsupabaseから取得するように実装する salonIdをorgIdとtenantIdに変更する
-  // const _customerPoints = useQuery(
-  //   api.customer.points.query.findBySalonAndCustomerUid,
-  //   sessionCustomer?.customerUid
-  //     ? {
-  //         salonId: salonId,
-  //         customerUid: sessionCustomer.customerUid as Id<'customer'>,
-  //       }
-  //     : 'skip' // sessionCustomer?.customerUidがない場合はクエリを実行しない
-  // )
-  // const customerPoints = await supabaseClientService.customerPoints.findBySalonAndCustomerUid(
-  //   salonId,
-  //   sessionCustomer?.customerUid
-  // )
-
   // Convex mutations
   const createReservationMutation = useMutation(api.reservation.mutation.create)
   const balanceStockMutation = useMutation(api.option.mutation.balanceStock)
-
-  // FIXME: 以下の処理はsupabaseに保存、更新するように実装する
-  // const updateCustomerMutation = useMutation(api.customer.core.mutation.update)
-  // const createPointQueueMutation = useMutation(api.point.task_queue.mutation.create)
-  // const createPointTransactionMutation = useMutation(api.point.transaction.mutation.create)
-  // const updateCustomerPointsMutation = useMutation(api.customer.points.mutation.update)
 
   // ステップ変更時に画面トップへ自動スクロール
   useEffect(() => {
@@ -582,7 +574,6 @@ export default function CalendarPage() {
       !selectedPaymentMethod
     ) {
       console.error('予約に必要な情報が不足しています。')
-      // TODO: ユーザーにエラーメッセージを表示 (例: トースト通知)
       alert('予約に必要な情報が不足しています。選択内容をご確認ください。')
       return
     }
@@ -590,12 +581,26 @@ export default function CalendarPage() {
     setIsProcessingPayment(true)
 
     try {
-      // if (customer && customerPhone && customerPhone !== customer.phone) {
-      //   // await updateCustomerMutation({
-      //   //   customerUid: customer.uid,
-      //   //   phone: customerPhone,
-      //   // })
-      // }
+      if (
+        customerData?.customer &&
+        customerPhone &&
+        customerPhone !== customerData.customer.phone
+      ) {
+        await customerRepository.updateCustomerWithDetailsAndPoints(
+          customerData.customer.uid,
+          sessionCustomer.tenantId,
+          organizationComplete.organization._id as Id<'organization'>,
+          { phone: customerPhone },
+          {
+            email: customerData.customerDetail?.email ?? '',
+            gender: customerData.customerDetail?.gender ?? '',
+            birthday: customerData.customerDetail?.birthday ?? '',
+            age: customerData.customerDetail?.age ?? 0,
+            notes: customerData.customerDetail?.notes ?? '',
+          },
+          customerData.customerPoints?.total_points ?? 0
+        )
+      }
       // 予約データを準備 (handleConfirmReservation内ではstatusをまだ設定しない)
       const reservationBaseData = {
         org_id: organizationComplete.organization._id as Id<'organization'>,
@@ -669,25 +674,27 @@ export default function CalendarPage() {
 
         setIsProcessingPayment(false)
 
-        // ポイントを利用していればauthPinCodeを送信してポイントを店舗で利用できるように
-
-        // if (pointConfig?.is_active && usePoints && usePoints > 0 && customerPoints?._id) {
-        //   // const pointTransaction = await createPointTransactionMutation({
-        //   //   salonId: salonComplete.salon._id,
-        //   //   reservationId: reservationId,
-        //   //   customerUid: sessionCustomer.customerUid,
-        //   //   points: usePoints,
-        //   //   transactionType: 'used', // 獲得、使用、調整、期限切れ
-        //   //   transactionDateUnix: new Date().getTime(),
-        //   // })
-        //   // console.log(pointTransaction)
-
-        //   await updateCustomerPointsMutation({
-        //     lastTransactionDateUnix: new Date().getTime(),
-        //     customerPointsId: customerPoints._id as Id<'customer_points'>,
-        //     totalPoints: customerPoints.totalPoints ? customerPoints.totalPoints - usePoints : 0,
-        //   })
-        // }
+        // ポイントを利用していれば、ポイントのトランザクション
+        if (pointConfig?.is_active && usePoints && usePoints > 0 && customerData?.customer?.uid) {
+          // Supabaseでポイントのトランザクションを作成する
+          const pointTransaction = await pointTransactionRepository.create({
+            tenant_id: sessionCustomer.tenantId,
+            org_id: organizationComplete.organization._id as Id<'organization'>,
+            reservation_id: reservationId,
+            customer_id: sessionCustomer.customerUid,
+            points: usePoints,
+            transaction_type: 'used' as PointTransactionType, // earn:獲得、used:使用、adjust:調整、expired:期限切れ
+            transaction_date_unix: new Date().getTime(),
+          })
+          console.log(pointTransaction)
+          await customerRepository.updateCustomerPoints(
+            customerData.customer.uid,
+            sessionCustomer.tenantId,
+            organizationComplete.organization._id as Id<'organization'>,
+            new Date().getTime(),
+            customerData.customerPoints?.total_points ?? 0 - usePoints
+          )
+        }
 
         if (sessionCustomer.lineUserId && organizationComplete.config) {
           // Lineにメッセージ予約の確認用Flexメッセージを作成
@@ -834,25 +841,27 @@ export default function CalendarPage() {
           )
         }
 
-        // // ポイントを付与するqueueを作成
-        // if (sessionCustomer?.customerUid && pointConfig) {
-        //   const earnPoints = Math.floor(
-        //     pointConfig.isFixedPoint
-        //       ? (pointConfig.fixedPoint ?? 0)
-        //       : calculateTotal() * ((pointConfig.pointRate ?? 0) / 100)
-        //   )
+        // ポイントを付与するqueueを作成
+        if (sessionCustomer?.customerUid && pointConfig) {
+          const earnPoints = Math.floor(
+            pointConfig.is_fixed_point
+              ? (pointConfig.fixed_point ?? 0)
+              : calculateTotal() * ((pointConfig.point_rate ?? 0) / 100)
+          )
 
-        //   const scheduledForUnix = reservationStartDateTime.getTime() + 1000 * 60 * 60 * 24 * 30 // 予約日の30日後
+          const scheduledForUnix = reservationStartDateTime.getTime() + 1000 * 60 * 60 * 24 * 30 // 予約日の30日後
 
-        //   // const pointQueue = await createPointQueueMutation({
-        //   //   salonId: salonComplete.salon._id,
-        //   //   reservationId: reservationId,
-        //   //   customerUid: sessionCustomer.customerUid,
-        //   //   points: earnPoints,
-        //   //   scheduledForUnix: scheduledForUnix,
-        //   // })
-        //   // console.log(pointQueue)
-        // }
+          // Supabaseでポイントのトランザクションを作成する
+          const pointQueue = await pointTaskQueueRepository.create({
+            tenant_id: sessionCustomer.tenantId,
+            org_id: sessionCustomer.orgId,
+            reservation_id: reservationId,
+            customer_id: sessionCustomer.customerUid,
+            points: earnPoints,
+            scheduled_for_unix: scheduledForUnix,
+          })
+          console.log(pointQueue)
+        }
 
         toast.success('予約を受け付けしました。')
         router.push(
@@ -915,20 +924,21 @@ export default function CalendarPage() {
               router.push(`/reservation/${sessionCustomer.orgId}`)
             }
 
-            // const customerPointConfig = await fetchQuery(
-            //   api.customer.points.query.findBySalonAndCustomerId,
-            //   {
-            //     salonId: sessionCustomer.salonId as Id<'salon'>,
-            //     customerId: sessionCustomer.customerId as Id<'customer'>,
-            //   }
-            // )
-            // setAvailablePoints(customerPointConfig?.totalPoints || 0)
-            // const customer = await fetchQuery(api.customer.core.query.getById, {
-            //   customerId: sessionCustomer.customerId as Id<'customer'>,
-            // })
-            // setCustomer(customer)
-            // setCustomerPhone(customer?.phone || null)
-            // setIsPhoneValid(isValidPhoneNumber(customer?.phone || null)) // 初期値のバリデーション
+            const { customer, customerDetail, customerPoints } =
+              await customerRepository.getCompleteCustomerData(
+                sessionCustomer.customerUid,
+                sessionCustomer.tenantId,
+                organizationComplete.organization._id as Id<'organization'>
+              )
+
+            setCustomerData({
+              customer,
+              customerDetail,
+              customerPoints,
+            })
+
+            setCustomerPhone(customer?.phone || null)
+            setIsPhoneValid(isValidPhoneNumber(customer?.phone || null)) // 初期値のバリデーション
           } catch (error) {
             console.error('サロン情報の取得に失敗しました:', error)
             await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
@@ -950,7 +960,7 @@ export default function CalendarPage() {
     }
 
     fetchSession()
-  }, [router, liff, organizationComplete, sessionCustomer?.orgId])
+  }, [router, liff, organizationComplete, sessionCustomer?.orgId, customerRepository])
 
   if (isLoading) return <Loading />
 

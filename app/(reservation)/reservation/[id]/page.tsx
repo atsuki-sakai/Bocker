@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Id } from '@/convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
@@ -24,6 +24,7 @@ import { Loading } from '@/components/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import Image from 'next/image'
 import Link from 'next/link'
+import { CustomerRepository } from '@/services/supabase/repositories'
 
 const emailLoginSchema = z.object({
   email: z
@@ -43,13 +44,10 @@ export default function ReservePage() {
   const router = useRouter()
   const { showErrorToast } = useErrorHandler()
   const orgId = params.id as Id<'organization'>
+  const customerRepository = useMemo(() => new CustomerRepository(), [])
   const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [isFirstLogin, setIsFirstLogin] = useState(false)
-
-  // FIXME: 顧客の処理をsupabaseから取得、更新するように実装する
-  // const createCompleteFields = useMutation(api.customer.core.mutation.createCompleteFields)
-
   const organization = useQuery(
     api.organization.config.query.findByTenantAndOrg,
     tenantId
@@ -85,83 +83,88 @@ export default function ReservePage() {
     try {
       deleteCookie(LINE_LOGIN_SESSION_KEY) // 古いクッキーは削除
 
-      // // 既存ユーザーの確認
-      // const existingCustomer = await supabaseService.customer.findBySalonAndCustomerEmail(
-      //   salonId,
-      //   data.email
-      // )
-
-      // if (existingCustomer) {
-      //   // 既存ユーザーの場合は認証APIを使用
-      //   const response = await fetch('/api/auth/session', {
-      //     method: 'POST',
-      //     headers: { 'Content-Type': 'application/json' },
-      //     body: JSON.stringify({
-      //       email: data.email,
-      //       password: data.password,
-      //       salonId: salonId,
-      //     }),
-      //   })
-
-      //   const result = await response.json()
-
-      //   if (!response.ok) {
-      //     toast.error(result.error || 'ログインに失敗しました')
-      //     return
-      //   }
-
-      //   toast.success('ログインに成功しました')
-      //   router.push(`/reservation/${salonId}/calendar`)
-      // } else {
-      // 新規登録の場合、新しいAPIルートを呼び出す
-      const registrationResponse = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password, // 生パスワードを送信
-          tenantId: tenantId,
-          orgId: orgId,
-          detailData: {
-            // APIの期待する形式に合わせる
-            email: data.email || '',
-            gender: 'unselected', // 必要に応じてフォームから取得またはデフォルト値を設定
-            birthday: null,
-            age: null,
-            notes: '',
-          },
-          initialPoints: 0,
-        }),
-      })
-
-      const registrationResult = await registrationResponse.json()
-
-      if (!registrationResponse.ok) {
-        toast.error(registrationResult.error || 'アカウント作成に失敗しました')
-        return
+      if (!tenantId) {
+        throw new Error('テナントIDが見つかりません')
       }
-      // アカウント作成成功後、そのままログイン処理（セッション作成）
-      const sessionResponse = await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password, // ログインAPIには生パスワード
-          tenantId: tenantId,
-          orgId: orgId,
-        }),
-      })
+      // 既存ユーザーの確認
+      const existingCustomer = await customerRepository.findByTenantAndOrgAndCustomerEmail(
+        tenantId,
+        orgId,
+        data.email
+      )
 
-      const sessionResult = await sessionResponse.json()
+      if (existingCustomer) {
+        // 既存ユーザーの場合は認証APIを使用
+        const response = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+            tenantId: tenantId,
+            orgId: orgId,
+          }),
+        })
 
-      if (!sessionResponse.ok) {
-        toast.error(sessionResult.error || 'アカウント作成後のログインに失敗しました')
-        return
+        const result = await response.json()
+
+        if (!response.ok) {
+          toast.error(result.error || 'ログインに失敗しました')
+          return
+        }
+
+        toast.success('ログインに成功しました')
+        router.push(`/reservation/${orgId}/calendar`)
+      } else {
+        // 新規登録の場合、新しいAPIルートを呼び出す
+        const registrationResponse = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password, // 生パスワードを送信
+            tenantId: tenantId,
+            orgId: orgId,
+            detailData: {
+              // APIの期待する形式に合わせる
+              email: data.email || '',
+              gender: 'unselected', // 必要に応じてフォームから取得またはデフォルト値を設定
+              birthday: null,
+              age: null,
+              notes: '',
+            },
+            initialPoints: 0,
+          }),
+        })
+
+        const registrationResult = await registrationResponse.json()
+
+        if (!registrationResponse.ok) {
+          toast.error(registrationResult.error || 'アカウント作成に失敗しました')
+          return
+        }
+        // アカウント作成成功後、そのままログイン処理（セッション作成）
+        const sessionResponse = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password, // ログインAPIには生パスワード
+            tenantId: tenantId,
+            orgId: orgId,
+          }),
+        })
+
+        const sessionResult = await sessionResponse.json()
+
+        if (!sessionResponse.ok) {
+          toast.error(sessionResult.error || 'アカウント作成後のログインに失敗しました')
+          return
+        }
+
+        toast.success('アカウントを作成し、ログインしました')
+        router.push(`/reservation/${orgId}/calendar`)
       }
-
-      toast.success('アカウントを作成し、ログインしました')
-      router.push(`/reservation/${orgId}/calendar`)
-      // }
     } catch (error) {
       showErrorToast(error)
     }
