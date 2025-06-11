@@ -1,5 +1,6 @@
 import React from "react";
 import { Loader } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 // よりスムーズなテキストアニメーションのためのCSS
 const loadingTextAnimation = `
@@ -16,8 +17,9 @@ const loadingTextAnimation = `
 `;
 
 export default function Loading() {
+  const t = useTranslations('common');
   // 各文字に遅延をつけてアニメーションさせる
-  const letters = "LOADING".split("");
+  const letters = t('loading').toUpperCase().split("");
 
   return (
     <div className="flex h-[calc(100vh-20vh)] w-full items-center justify-center">

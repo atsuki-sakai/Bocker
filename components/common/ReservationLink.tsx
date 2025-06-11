@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Loading } from '@/components/common'
 import { useQuery } from 'convex/react'
@@ -25,6 +26,7 @@ import {
 import { TRACKING_CODE_VALUES, TrackingCode } from '@/convex/types'
 
 export default function ReservationLink() {
+  const t = useTranslations('reservationLink')
   const { tenantId, orgId } = useTenantAndOrganization()
   const [selectedTrackingType, setSelectedTrackingType] = useState<TrackingCode>('web')
   const apiConfig = useQuery(
@@ -49,7 +51,7 @@ export default function ReservationLink() {
               onValueChange={(value) => setSelectedTrackingType(value as TrackingCode)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="リンクの設置先を選択" />
+                <SelectValue placeholder={t('selectLinkDestination')} />
               </SelectTrigger>
               <SelectContent>
                 {TRACKING_CODE_VALUES.map((key) => (
@@ -78,48 +80,48 @@ export default function ReservationLink() {
           <Accordion type="single" collapsible>
             <AccordionItem value="item-1">
               <AccordionTrigger>
-                <p className="text-primary">予約受付リンクについて</p>
+                <p className="text-primary">{t('aboutReservationLink')}</p>
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground text-sm tracking-normal leading-7 bg-muted rounded-md p-2">
                 <p className="mb-2">
-                  予約受付リンクにトラッキングパラメータを付与することで、どのチャネルからの流入を計測に使用します。
+                  {t('trackingDescription')}
                 </p>
                 <ul className="list-disc pl-4 space-y-1">
                   <li>
                     <strong>LINE</strong>:
-                    公式LINEのリッチメニューなどLINEからの流入を計測するのに使用します。
+                    {t('lineDescription')}
                   </li>
                   <li>
                     <strong>Web</strong>:
-                    ブログやHPに埋め込んでWebからの流入を計測するのに使用します。
+                    {t('webDescription')}
                   </li>
                   <li>
                     <strong>Instagram</strong>:
-                    Instagramのプロフィールリンクやストーリーズ、投稿に設定しInstagramからの流入を計測するのに使用します。
+                    {t('instagramDescription')}
                   </li>
                   <li>
                     <strong>X (Twitter)</strong>:
-                    ツイートやプロフィールに貼り付けXからの流入を計測するのに使用します。
+                    {t('twitterDescription')}
                   </li>
                   <li>
                     <strong>Facebook</strong>:
-                    Facebookページの投稿やプロフィールに設定Facebookからの流入を計測するのに使用します。
+                    {t('facebookDescription')}
                   </li>
                   <li>
                     <strong>YouTube</strong>:
-                    動画説明欄やコミュニティタブに設定YouTubeからの流入を計測するのに使用します。
+                    {t('youtubeDescription')}
                   </li>
                   <li>
                     <strong>Tiktok</strong>:
-                    プロフィールリンクや動画説明欄に設定Tiktokからの流入を計測するのに使用します。
+                    {t('tiktokDescription')}
                   </li>
                   <li>
-                    <strong>GoogleMap</strong>: Google
-                    マップのビジネス情報に設定GoogleMapからの流入を計測するのに使用します。
+                    <strong>GoogleMap</strong>:
+                    {t('googleMapDescription')}
                   </li>
                 </ul>
                 <p className="mt-2">
-                  コピーアイコンでリンクをクリップボードに保存し、各チャネルへ貼り付けてご活用ください。
+                  {t('copyInstruction')}
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -127,13 +129,12 @@ export default function ReservationLink() {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <p className="text-base font-bold text-primary">Lineとの連携を完了させてください。</p>
+          <p className="text-base font-bold text-primary">{t('lineConnectionRequired')}</p>
           <span className="text-sm text-muted-foreground">
-            外部サービス連携からLineの連携に必要な情報を入力してください。
-            取得方法は画面下部のヘルプを参照してください。
+            {t('lineConnectionDescription')}
           </span>
           <Link href={`${BASE_URL}/dashboard/setting`}>
-            <Button>Lineと連携する</Button>
+            <Button>{t('connectWithLine')}</Button>
           </Link>
         </div>
       )}

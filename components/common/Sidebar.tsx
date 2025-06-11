@@ -1,6 +1,7 @@
 'use client';
 
 import { ModeToggle } from './'
+import { useTranslations } from 'next-intl'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useState, useEffect, useMemo, memo } from 'react'
@@ -36,7 +37,9 @@ const SidebarHeader = memo(
     resolvedTheme: string | undefined
     isMobile?: boolean
     showModeToggle?: boolean
-  }) => (
+  }) => {
+    const t = useTranslations('sidebar')
+    return (
     <div className={`${isMobile ? 'relative' : ''} flex flex-col ${isMobile ? 'mt-2' : 'mt-2'}`}>
       <div className="flex items-center gap-x-2">
         <Image
@@ -58,7 +61,7 @@ const SidebarHeader = memo(
       </div>
       <div className="flex items-center gap-x-2">
         <p className={`text-xs ${isMobile ? 'text-primary' : 'text-muted-foreground'}`}>
-          サロンの運営をもっと便利に。
+          {t('tagline')}
         </p>
       </div>
       {isMobile && showModeToggle && (
@@ -69,7 +72,8 @@ const SidebarHeader = memo(
         </div>
       )}
     </div>
-  )
+    )
+  }
 )
 SidebarHeader.displayName = 'SidebarHeader'
 
@@ -91,16 +95,19 @@ const SidebarNavigation = memo(
     isSubscriptionActive: boolean
     setIsLinkClicked: (value: boolean) => void
     isMobile?: boolean
-  }) => (
+  }) => {
+    const t = useTranslations('sidebar')
+    const tNav = useTranslations('navigation')
+    return (
     <nav className="flex flex-1 flex-col">
       {!isSubscriptionActive && !isMobile && (
         <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
           <p className="text-xs text-muted-foreground">
             <span className="inline-block font-bold mb-2">
-              サブスクリプションをご契約ください。
+              {t('subscriptionRequired')}
             </span>
             <br />
-            以下のリンクから契約後にプラン毎の機能をご利用いただけます。
+            {t('subscriptionRequiredDetail')}
           </p>
         </div>
       )}
@@ -128,7 +135,7 @@ const SidebarNavigation = memo(
                       'size-4 shrink-0'
                     )}
                   />
-                  <p className="w-full text-nowrap">マイページ</p>
+                  <p className="w-full text-nowrap">{tNav('myPage')}</p>
                   {pathname === `/dashboard/staff/${staffId}/my-page` && (
                     <div className="w-full flex justify-end items-center pr-2">
                       <div className="h-3 w-3 bg-active border-ring border rounded-full" />
@@ -158,7 +165,7 @@ const SidebarNavigation = memo(
                         'size-4 shrink-0'
                       )}
                     />
-                    <p className="w-full text-nowrap">{item.name}</p>
+                    <p className="w-full text-nowrap">{tNav(item.name)}</p>
                     {isCurrent && (
                       <div className="w-full flex justify-end items-center pr-2">
                         <div className="h-3 w-3 bg-active border-ring border rounded-full" />
@@ -189,7 +196,7 @@ const SidebarNavigation = memo(
                       'size-4 shrink-0'
                     )}
                   />
-                  <p className="w-full text-nowrap">サブスクリプション</p>
+                  <p className="w-full text-nowrap">{tNav('subscription')}</p>
                   {pathname === '/dashboard/subscription' && (
                     <div className="w-full flex justify-end items-center pr-2">
                       <div className="h-3 w-3 bg-active border-ring border rounded-full" />
@@ -202,7 +209,8 @@ const SidebarNavigation = memo(
         </li>
       </ul>
     </nav>
-  )
+    )
+  }
 )
 SidebarNavigation.displayName = 'SidebarNavigation'
 
@@ -211,6 +219,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ children }: SidebarProps) {
+  const t = useTranslations('sidebar')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isLinkClicked, setIsLinkClicked] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -263,7 +272,7 @@ export default function Sidebar({ children }: SidebarProps) {
                   onClick={() => setSidebarOpen(false)}
                   className="-m-2.5 p-2.5"
                 >
-                  <span className="sr-only">閉じる</span>
+                  <span className="sr-only">{t('closeSidebar')}</span>
                   <XIcon aria-hidden="true" className="size-6 text-primary-foreground" />
                 </button>
               </div>
@@ -322,7 +331,7 @@ export default function Sidebar({ children }: SidebarProps) {
               onClick={() => setSidebarOpen(true)}
               className="-m-2.5 p-2.5  lg:hidden"
             >
-              <span className="sr-only">サイドバーを開く</span>
+              <span className="sr-only">{t('openSidebar')}</span>
               <MenuIcon aria-hidden="true" className="size-6 text-primary" />
             </button>
 
