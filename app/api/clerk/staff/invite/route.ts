@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     
     const invitationParams = {
       emailAddress: email,
-      redirectUrl: `${BASE_URL}/invite-accept?staff_id=${result.staffId}`,
+      redirectUrl: `${BASE_URL}/staff/invite-accept?staff_id=${result.staffId}`,
       publicMetadata: {
         tenant_id,
         org_id,

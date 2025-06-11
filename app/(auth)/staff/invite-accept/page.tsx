@@ -1,4 +1,4 @@
-// app/(auth)/invite-accept/page.tsx
+// app/(auth)/staff/invite-accept/page.tsx
 // 招待受け入れページ - スタッフが招待リンクからアクセスするサインアップページ
 'use client'
 

@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. リダイレクトURLの確認
-    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite-accept`
+    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/staff/invite-accept`
     console.log('🔗 リダイレクトURL:', redirectUrl)
 
     // 7. 新しい招待を作成（再送）
