@@ -75,7 +75,7 @@ export default function ReservationPage() {
     reservationData && reservationData.reservationDetail
       ? {
           menu_ids: reservationData.reservationDetail.menus.map((menu) => menu.id) as Id<'menu'>[],
-          options: reservationData.reservationDetail.options.map(
+          option_ids: reservationData.reservationDetail.options.map(
             (option) => option.id
           ) as Id<'option'>[],
         }
