@@ -1,10 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { clerkMiddleware } from '@clerk/nextjs/server'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
-import { api } from '@/convex/_generated/api'
-import { fetchQuery } from 'convex/nextjs'
-import { fetchMutation } from 'convex/nextjs'
-import { Id } from '@/convex/_generated/dataModel'
 import createMiddleware from 'next-intl/middleware'
 import { routing } from './i18n/routing'
 
