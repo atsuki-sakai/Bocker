@@ -428,7 +428,7 @@ export default function CalendarPage() {
       }
 
       // 2. Stripe Checkoutセッションを作成するためのlineItemsを準備
-      //    各アイテムの unit_amount には、独自システムで計算した割引適用後の価格を設定する
+      // 各アイテムの unit_amount には、独自システムで計算した割引適用後の価格を設定する
 
       const totalDiscountAmount = (appliedDiscount.discount || 0) + (usePoints || 0)
 
