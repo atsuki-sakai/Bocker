@@ -15,7 +15,6 @@ import { reservationFlexMessageTemplate } from '@/services/line/message_template
 import { jwtDecode } from 'jwt-decode'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import Image from 'next/image'
-import { supabaseClientService } from '@/services/supabase/SupabaseService'
 import { ReservationPaymentStatus } from '@/convex/types'
 
 import {
@@ -194,7 +193,7 @@ export default function CalendarPage() {
     couponId: Id<'coupon'> | null
   }>({ discount: 0, couponId: null })
   const [usePoints, setUsePoints] = useState<number>(0)
-  const [availablePoints, setAvailablePoints] = useState<number>(1000) // 仮の値、実際にはAPIから取得
+  const [availablePoints] = useState<number>(1000) // 仮の値、実際にはAPIから取得
   const [direction, setDirection] = useState(0) // アニメーションの方向を制御
   const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(false)
   const [questionnaireStep, setQuestionnaireStep] = useState(1)
@@ -419,7 +418,7 @@ export default function CalendarPage() {
 
       // オプション在庫数の調整
       const optionCounts = countOptionOccurrences(selectedOptions)
-      for (const { id, quantity, name, price } of optionCounts) {
+      for (const { id, quantity } of optionCounts) {
         const option = selectedOptions.find((opt) => opt._id === id)
         if (option && option.in_stock !== undefined && option.in_stock !== null) {
           const newStock = Math.max(0, option.in_stock - quantity)
@@ -447,7 +446,7 @@ export default function CalendarPage() {
           originalPrice: menu.sale_price || menu.unit_price || 0,
           type: 'menu' as const,
         })),
-        ...countOptionOccurrences(selectedOptions).map(({ id, quantity, name, price }) => {
+        ...countOptionOccurrences(selectedOptions).map(({ id, quantity }) => {
           const option = selectedOptions.find((opt) => opt._id === id)
           return {
             name: option?.name || 'オプション',
@@ -650,7 +649,7 @@ export default function CalendarPage() {
         // オプション在庫数の調整
         // 選択されたオプションの数を集計して在庫を調整
         const optionCounts = countOptionOccurrences(selectedOptions)
-        for (const { id, quantity, name, price } of optionCounts) {
+        for (const { id, quantity } of optionCounts) {
           // 選択されたオプションから対象のオプション情報を取得
           const option = selectedOptions.find((opt) => opt._id === id)
           if (option && option.in_stock !== undefined && option.in_stock !== null) {
@@ -951,7 +950,7 @@ export default function CalendarPage() {
     }
 
     fetchSession()
-  }, [router, liff])
+  }, [router, liff, organizationComplete, sessionCustomer?.orgId])
 
   if (isLoading) return <Loading />
 

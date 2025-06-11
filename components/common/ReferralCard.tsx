@@ -16,7 +16,7 @@ import Link from 'next/link'
 import { BASE_REFERRAL_DISCOUNT_AMOUNT, MAX_REFERRAL_COUNT } from '@/lib/constants'
 
 export default function ReferralCard() {
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId } = useTenantAndOrganization()
   const [copied, setCopied] = useState<boolean>(false)
 
   const referral = useQuery(

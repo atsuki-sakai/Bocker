@@ -14,7 +14,7 @@ import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 import { z } from 'zod'
 import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
-import { useMutation, useQuery } from 'convex/react'
+import { useQuery } from 'convex/react'
 import { useZodForm } from '@/hooks/useZodForm'
 import { Mail, Lock } from 'lucide-react'
 import { ZodTextField } from '@/components/common'
@@ -24,7 +24,6 @@ import { Loading } from '@/components/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import Image from 'next/image'
 import Link from 'next/link'
-import { supabaseClientService as supabaseService } from '@/services/supabase/SupabaseService'
 
 const emailLoginSchema = z.object({
   email: z

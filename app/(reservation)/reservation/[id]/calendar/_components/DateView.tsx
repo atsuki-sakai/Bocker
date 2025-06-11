@@ -10,7 +10,6 @@ import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { TimeRange } from '@/lib/types'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { useQuery, usePaginatedQuery } from 'convex/react'
 import { Loading } from '@/components/common'
@@ -121,7 +120,7 @@ export const DateView = ({
       .then(setAvailableTimes)
       .catch((err) => showErrorToast(err))
       .finally(() => setIsLoading(false))
-  }, [tenantId, orgId, selectedStaff, selectedDate, totalMinutes])
+  }, [tenantId, orgId, selectedStaff, selectedDate, totalMinutes, showErrorToast])
 
   if (staffExceptionDatesLoading || organizationExceptionDates === undefined) {
     return <Loading />
