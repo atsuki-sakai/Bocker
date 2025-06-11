@@ -1,0 +1,377 @@
+'use client'
+
+import { useState, useCallback } from 'react'
+import { useAction, Preloaded, usePreloadedQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { PlanCard, BillingPeriodToggle, PreviewDialog, CurrentPlanBanner } from './_components'
+import { AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
+import { BillingPeriod } from '@/convex/types'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Separator } from '@/components/ui/separator'
+import { SUBSCRIPTION_PLANS } from '@/lib/constants'
+import { getPriceNameFromPlanName, getPlanNameFromPriceId } from '@/lib/utils'
+import { Doc } from '@/convex/_generated/dataModel'
+import { StripePreviewData } from '@/lib/types'
+import { Id } from '@/convex/_generated/dataModel'
+import { PLAN_TRIAL_DAYS } from '@/lib/constants'
+import { BASE_URL } from '@/lib/constants'
+import { SubscriptionPlanName } from '@/convex/types'
+
+interface SubscriptionFormProps {
+  tenantId: Id<'tenant'>
+  orgId: Id<'organization'>
+  tenantPreloaded: Preloaded<typeof api.tenant.query.findByUserId>
+  subscriptionPreloaded: Preloaded<typeof api.tenant.subscription.query.findByStripeCustomerId>
+}
+
+export default function SubscriptionForm({
+  tenantId,
+  orgId,
+  tenantPreloaded,
+  subscriptionPreloaded,
+}: SubscriptionFormProps) {
+  const tenant = usePreloadedQuery(tenantPreloaded)
+  const subscription = usePreloadedQuery(subscriptionPreloaded)
+
+  const [error, setError] = useState('')
+  const [previewData, setPreviewData] = useState<StripePreviewData | null>(null)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('month')
+  const [updatePlanId, setUpdatePlanId] = useState<SubscriptionPlanName | null>(null)
+
+  const createSession = useAction(api.tenant.subscription.action.createSubscriptionSession)
+  const createBillingPortal = useAction(api.tenant.subscription.action.createBillingPortalSession)
+  const getSubscriptionUpdatePreview = useAction(
+    api.tenant.subscription.action.getSubscriptionUpdatePreview
+  )
+  const confirmSubscriptionUpdate = useAction(
+    api.tenant.subscription.action.confirmSubscriptionUpdate
+  )
+
+  // データの準備
+  // 現在のプラン名を取得（price_idからプラン名に変換）
+  const currentPlanName = subscription?.price_id
+    ? getPlanNameFromPriceId(subscription.price_id)
+    : null
+
+  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing' || false
+
+  // メモ化したbillingPeriod設定関数
+  const setBillingPeriodAction = useCallback((period: BillingPeriod) => {
+    setBillingPeriod(period)
+  }, [])
+
+
+  // プレビュー取得関数をメモ化
+  const handleGetPreview = useCallback(
+    async (
+      planName: SubscriptionPlanName,
+      billingPeriod: BillingPeriod,
+      overrideSubscriptionId?: string
+    ) => {
+      try {
+        setIsSubmitting(true)
+
+        // より厳密なバリデーション - 引数で渡されたIDを優先
+        const subscriptionId = overrideSubscriptionId || subscription?.stripe_subscription_id
+        const customerId = tenant?.stripe_customer_id
+
+
+        if (!subscriptionId || subscriptionId === '') {
+          throw new Error('サブスクリプションIDが見つかりません')
+        }
+
+        if (!customerId || customerId === '') {
+          throw new Error('Stripe顧客IDが見つかりません')
+        }
+
+        // previewデータを取得し状態を更新
+        const result = await getSubscriptionUpdatePreview({
+          tenant_id: tenant?._id,
+          subscription_id: subscriptionId,
+          org_id: orgId,
+          new_price_id: getPriceNameFromPlanName(planName, billingPeriod),
+          stripe_customer_id: customerId,
+        })
+
+        console.log('result', result)
+
+        // プレビューデータを設定
+        setPreviewData(result as StripePreviewData)
+        // ダイアログを表示
+        setShowConfirmDialog(true)
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error
+            ? `プレビュー取得エラー: ${err.message}`
+            : 'プレビューの取得中に予期せぬエラーが発生しました'
+        setError(errorMessage)
+        toast.error(errorMessage)
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
+    [
+      getSubscriptionUpdatePreview,
+      subscription?.stripe_subscription_id,
+      tenant?.stripe_customer_id,
+      tenant?._id,
+      orgId,
+    ]
+  )
+
+  // サブスクリプション更新確認関数をメモ化
+  const handleConfirmUpdate = useCallback(
+    async (subscriptionId: string, newPriceId: string) => {
+      try {
+        setIsSubmitting(true)
+        const result = await confirmSubscriptionUpdate({
+          tenant_id: tenantId,
+          org_id: orgId,
+          subscription_id: subscriptionId,
+          new_price_id: newPriceId,
+          items: previewData?.items || [],
+          proration_date: previewData?.prorationDate || 0,
+        })
+
+
+        if (result.success) {
+          toast.success('サブスクリプションを更新しました')
+
+          // ダイアログを閉じる
+          setShowConfirmDialog(false)
+
+          // プレビューデータをクリア
+          setPreviewData(null)
+          setUpdatePlanId(null)
+        } else {
+          const errorMessage = 'サブスクリプションの更新に失敗しました'
+          setError(errorMessage)
+          toast.error(errorMessage)
+        }
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error
+            ? `更新エラー: ${err.message}`
+            : 'サブスクリプションの更新中に予期せぬエラーが発生しました'
+        setError(errorMessage)
+        toast.error(errorMessage)
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
+    [confirmSubscriptionUpdate, previewData, tenantId, orgId]
+  )
+
+  // サブスクリプション作成関数をメモ化
+  const handleSubscribe = useCallback(
+    async (planName: SubscriptionPlanName, billingPeriod: BillingPeriod) => {
+
+      // subscriptionオブジェクトからサブスクリプションIDを取得
+      const subscriptionId = subscription?.stripe_subscription_id
+
+      if (
+        subscriptionId &&
+        (subscription?.status === 'active' || subscription?.status === 'trialing')
+      ) {
+        // 既契約あり → プレビュー
+        await handleGetPreview(planName, billingPeriod, subscriptionId)
+        setUpdatePlanId(planName)
+      } else {
+        // 新規 → Checkout
+        try {
+          setIsSubmitting(true)
+          const priceId = getPriceNameFromPlanName(planName, billingPeriod)
+          const isTrial = !subscription
+
+
+          const result = await createSession({
+            tenant_id: tenantId,
+            org_id: orgId,
+            stripe_customer_id: tenant?.stripe_customer_id ?? '',
+            user_id: tenant?.user_id ?? '',
+            price_id: priceId,
+            trial_days: isTrial ? 30 : undefined,
+          })
+
+          if (result?.checkoutUrl) {
+            window.location.href = result.checkoutUrl
+          } else {
+            const errorMessage = 'チェックアウトURLの取得に失敗しました'
+            setError(errorMessage)
+            toast.error(errorMessage)
+          }
+        } catch (err: unknown) {
+          const errorMessage =
+            err instanceof Error
+              ? `サブスクリプションエラー: ${err.message}`
+              : 'サブスクリプションの処理中に予期せぬエラーが発生しました'
+          setError(errorMessage)
+          toast.error(errorMessage)
+        } finally {
+          setIsSubmitting(false)
+        }
+      }
+    },
+    [tenant, subscription, createSession, handleGetPreview, tenantId, orgId]
+  )
+
+  // 請求ポータル表示関数をメモ化
+  const handleBillingPortal = useCallback(async () => {
+    try {
+      setIsSubmitting(true)
+
+      const result = await createBillingPortal({
+        tenant_id: tenantId,
+        org_id: orgId,
+        stripe_customer_id: tenant?.stripe_customer_id ?? '',
+        return_url: `${BASE_URL}/dashboard/subscription`,
+      })
+
+      if (result?.portalUrl) {
+        window.location.href = result.portalUrl
+      } else {
+        const errorMessage = '請求ポータルの取得に失敗しました'
+        setError(errorMessage)
+        toast.error(errorMessage)
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? `請求ポータルエラー: ${err.message}`
+          : '請求ポータルへのアクセス中に予期せぬエラーが発生しました'
+      setError(errorMessage)
+      toast.error(errorMessage)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [createBillingPortal, tenant?.stripe_customer_id, tenantId, orgId])
+
+  // 各プラン用のサブスクリプションハンドラをメモ化
+  const handleLiteSubscribe = useCallback(() => {
+    handleSubscribe('LITE', billingPeriod)
+  }, [handleSubscribe, billingPeriod])
+
+  const handleProSubscribe = useCallback(() => {
+    handleSubscribe('PRO', billingPeriod)
+  }, [handleSubscribe, billingPeriod])
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-20vh)]">
+      {/* ヘッダー部分 */}
+      <div className="mb-4 text-center mt-6">
+        <p className="text-muted-foreground font-bold max-w-md mx-auto text-sm mb-6">
+          あなたのサロンに最適なプランをお選びください
+        </p>
+
+        {/* 支払い期間切り替え */}
+        <BillingPeriodToggle
+          billingPeriod={billingPeriod}
+          setBillingPeriodAction={setBillingPeriodAction}
+        />
+      </div>
+
+      {/* 現在のプラン表示 */}
+      {currentPlanName && (
+        <CurrentPlanBanner
+          currentPlanName={currentPlanName}
+          isActive={isActive}
+          onPortalAction={handleBillingPortal}
+          isSubmitting={isSubmitting}
+        />
+      )}
+      <Separator className="mb-10 md:mb-16 mt-4 w-1/4" />
+
+      {/* プレビューダイアログ */}
+      <PreviewDialog
+        open={showConfirmDialog}
+        setOpenAction={setShowConfirmDialog}
+        previewData={previewData}
+        billingPeriod={billingPeriod}
+        currentPlanName={currentPlanName}
+        updatePlanName={updatePlanId ?? 'UNKNOWN'}
+        tenant={tenant as Doc<'tenant'> | null}
+        subscriptionId={subscription?.stripe_subscription_id || null}
+        isSubmitting={isSubmitting}
+        onConfirmAction={handleConfirmUpdate}
+      />
+
+      {/* プラン一覧 */}
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Lite プラン */}
+        <PlanCard
+          title="LITE"
+          description="スモールサロン向けの基本プラン"
+          price={
+            billingPeriod === 'month'
+              ? (SUBSCRIPTION_PLANS.LITE.monthly.price ?? 0)
+              : (SUBSCRIPTION_PLANS.LITE.yearly.price ?? 0)
+          }
+          savingPercent={
+            billingPeriod === 'year'
+              ? (Number(SUBSCRIPTION_PLANS.LITE.yearly.savingPercent) ?? 0)
+              : undefined
+          }
+          features={SUBSCRIPTION_PLANS.LITE.features}
+          currentPlanName={currentPlanName}
+          planName="LITE"
+          billingPeriod={billingPeriod}
+          currentBillingPeriod={subscription?.billing_period as BillingPeriod | undefined}
+          isActive={isActive}
+          onSubscribeAction={handleLiteSubscribe}
+          onPortalAction={handleBillingPortal}
+          isSubmitting={isSubmitting}
+          highlightColor="from-palette-2-foreground to-palette-2-foreground"
+        />
+
+        {/* Pro プラン */}
+        <PlanCard
+          title="PRO"
+          description="中規模サロン向けの標準プラン"
+          price={
+            billingPeriod === 'month'
+              ? (SUBSCRIPTION_PLANS.PRO.monthly.price ?? 0)
+              : (SUBSCRIPTION_PLANS.PRO.yearly.price ?? 0)
+          }
+          savingPercent={
+            billingPeriod === 'year'
+              ? (Number(SUBSCRIPTION_PLANS.PRO.yearly.savingPercent) ?? 0)
+              : undefined
+          }
+          features={SUBSCRIPTION_PLANS.PRO.features}
+          currentPlanName={currentPlanName}
+          planName="PRO"
+          billingPeriod={billingPeriod}
+          currentBillingPeriod={subscription?.billing_period as BillingPeriod | undefined}
+          isActive={isActive}
+          onSubscribeAction={handleProSubscribe}
+          onPortalAction={handleBillingPortal}
+          isSubmitting={isSubmitting}
+          isPopular={false}
+          highlightColor="from-palette-3-foreground to-palette-3-foreground"
+        />
+      </div>
+
+      {/* エラーメッセージ */}
+      {error && (
+        <div className="mt-8 w-full max-w-5xl">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {/* フッター部分 */}
+      <div className="mt-12 text-center text-sm text-muted-foreground max-w-md">
+        <p>
+          すべてのプランには{PLAN_TRIAL_DAYS}日間の無料トライアル期間が含まれています。
+          <br />
+          いつでもキャンセルまたはプラン変更が可能です。
+        </p>
+      </div>
+    </div>
+  )
+}
