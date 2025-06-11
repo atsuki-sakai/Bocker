@@ -469,53 +469,25 @@ export default function StaffEditForm() {
               <CardContent className="space-y-8 pt-6">
                 {/* 基本情報セクション */}
                 <div>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      {staffAllData?.images && staffAllData?.images.length > 0 && (
-                        <div className="flex justify-between gap-2">
-                          <div className="mb-2 flex items-center">
-                            <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span className="text-sm font-medium text-muted-foreground">
-                              スタッフ画像
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                  <Separator className="my-8 md:my-12 w-full" />
+                  <div className="flex flex-col md:flex-row gap-6 pb-4 w-full overflow-hidden">
+                    <div className="w-full md:w-2/5 flex-shrink-0">
+                      <div className="mb-2 flex items-center">
+                        <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="text-sm font-medium text-muted-foreground">
+                          スタッフ画像
+                        </span>
+                      </div>
 
-                      <div className="w-full flex flex-col gap-4">
-                        <div className="w-full flex flex-col gap-4">
-                          {staffAllData.images && staffAllData.images.length > 0 && (
-                            <div className="w-full relative aspect-square min-w-0">
-                              <Image
-                                src={staffAllData.images[0].original_url}
-                                alt="スタッフ画像"
-                                fill
-                                className="transition-all duration-200 rounded-md object-cover"
-                              />
-                              <div className="absolute top-0 right-2">
-                                <Button
-                                  variant="destructive"
-                                  size="icon"
-                                  className="mt-2"
-                                  onClick={handleShowDeleteDialog}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="w-full max-w-full">
-                            <SingleImageDrop
-                              onFileSelect={(file) => setSelectedFile(file)}
-                              aspectType="square"
-                            />
-                          </div>
-                        </div>
+                      <div className="w-full max-w-full">
+                        <SingleImageDrop
+                          onFileSelect={(file) => setSelectedFile(file ?? null)}
+                          aspectType="square"
+                          className="transition-all duration-200 hover:opacity-90"
+                        />
                       </div>
                     </div>
-
-                    <div className="space-y-6">
+                    <div className="space-y-4 w-full md:w-3/5 min-w-0">
                       <div>
                         <ZodTextField
                           name="name"
@@ -528,20 +500,15 @@ export default function StaffEditForm() {
                         />
                       </div>
 
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
                         <div className="w-full">
-                          <Label className="flex items-center mb-2 font-medium">
+                          <Label className="flex items-center mb-2 font-medium text-muted-foreground">
                             <User className="h-4 w-4 mr-2 text-muted-foreground" />
                             性別
                           </Label>
                           <Select
-                            value={watch('gender') || staffAllData?.gender}
-                            onValueChange={(value) =>
-                              setValue('gender', value as Gender, {
-                                shouldDirty: true,
-                                shouldValidate: true,
-                              })
-                            }
+                            defaultValue="unselected"
+                            onValueChange={(value) => setValue('gender', value as Gender)}
                           >
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="性別を選択してください" />
@@ -573,44 +540,36 @@ export default function StaffEditForm() {
                         </div>
                       </div>
 
+                      {/* タグセクション */}
                       <TagInput
                         tags={currentTags}
                         setTagsAction={(tags) => {
                           setCurrentTags(tags)
-                          setValue('tags', tags, { shouldDirty: true, shouldValidate: true })
+
+                          setValue('tags', tags, { shouldValidate: true })
                         }}
                         error={errors.tags?.message}
-                        title="スタッフの得意なメニュー"
+                        title="スタッフに付与するタグ"
                         exampleText="ヘアセット, カット, メイク"
                       />
-                      <div className="flex flex-col space-y-2 pt-1">
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            id="is_active"
-                            checked={watch('is_active')}
-                            onCheckedChange={(checked) =>
-                              setValue('is_active', checked, {
-                                shouldDirty: true,
-                                shouldValidate: true,
-                              })
-                            }
-                          />
-                          <Label htmlFor="is_active" className="text-sm cursor-pointer">
-                            {watch('is_active') ? (
-                              <span className="text-active font-medium bg-active-foreground px-2 py-1 rounded-md">
-                                有効
-                              </span>
-                            ) : (
-                              <span className="text-destructive font-medium bg-destructive-foreground px-2 py-1 rounded-md">
-                                無効
-                              </span>
-                            )}
-                          </Label>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          無効にすると予約画面に表示されなくなります。
-                        </p>
+
+                      <div className="flex items-center space-x-2 pt-1">
+                        <Switch
+                          id="is_active"
+                          checked={watch('is_active')}
+                          onCheckedChange={(checked) => setValue('is_active', checked)}
+                        />
+                        <Label htmlFor="is_active" className="text-xs cursor-pointer">
+                          {watch('is_active') ? (
+                            <span className="text-active font-medium">有効</span>
+                          ) : (
+                            <span className="text-destructive font-medium">無効</span>
+                          )}
+                        </Label>
                       </div>
+                      <span className="text-xs text-muted-foreground">
+                        予約受け付けは有効の場合のみ可能になります。
+                      </span>
                     </div>
                   </div>
 
