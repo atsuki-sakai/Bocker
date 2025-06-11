@@ -79,31 +79,34 @@ export default function CustomerList() {
   }, [searchCache])
 
   // 詳細データ取得の最適化（バッチ処理）
-  const getCustomersWithDetails = useCallback(async (customers: RowType<'customer'>[]): Promise<CustomerWithDetails[]> => {
-    const BATCH_SIZE = 10
-    const results: CustomerWithDetails[] = []
-    
-    for (let i = 0; i < customers.length; i += BATCH_SIZE) {
-      const batch = customers.slice(i, i + BATCH_SIZE)
-      const batchResults = await Promise.all(
-        batch.map(async (customer) => {
-          const completeData = await customerRepo.getCompleteCustomerData(
-            customer.uid,
-            tenantId!,
-            orgId!
-          )
-          return {
-            customer,
-            customerDetail: completeData.customerDetail,
-            customerPoints: completeData.customerPoints,
-          }
-        })
-      )
-      results.push(...batchResults)
-    }
-    
-    return results
-  }, [customerRepo, tenantId, orgId])
+  const getCustomersWithDetails = useCallback(
+    async (customers: RowType<'customer'>[]): Promise<CustomerWithDetails[]> => {
+      const BATCH_SIZE = 10
+      const results: CustomerWithDetails[] = []
+
+      for (let i = 0; i < customers.length; i += BATCH_SIZE) {
+        const batch = customers.slice(i, i + BATCH_SIZE)
+        const batchResults = await Promise.all(
+          batch.map(async (customer) => {
+            const completeData = await customerRepo.getCompleteCustomerData(
+              customer.uid,
+              tenantId!,
+              orgId!
+            )
+            return {
+              customer,
+              customerDetail: completeData.customerDetail,
+              customerPoints: completeData.customerPoints,
+            }
+          })
+        )
+        results.push(...batchResults)
+      }
+
+      return results
+    },
+    [customerRepo, tenantId, orgId]
+  )
 
   // 表示用データを動的に切り替え
   const displayCustomers = isSearchMode ? searchResults : allCustomers
@@ -156,7 +159,7 @@ export default function CustomerList() {
         setIsLoadingMoreAll(false)
       }
     },
-    [tenantId, orgId, isLoaded, isSearchMode, customerRepo, getCustomersWithDetails]
+    [tenantId, orgId, isLoaded, isSearchMode, customerRepo, getCustomersWithDetails, t]
   )
 
   // 検索専用関数（Supabaseサーバーサイド検索を使用 + キャッシュ対応）
@@ -203,7 +206,7 @@ export default function CustomerList() {
           setSearchResults(customersWithDetails)
           // 初回検索結果をキャッシュ（小さな結果のみ）
           if (customersWithDetails.length <= 20) {
-            setSearchCache(prev => new Map(prev).set(cacheKey, customersWithDetails))
+            setSearchCache((prev) => new Map(prev).set(cacheKey, customersWithDetails))
           }
         }
 
@@ -218,7 +221,7 @@ export default function CustomerList() {
         setIsLoadingMoreSearch(false)
       }
     },
-    [tenantId, orgId, customerRepo, getCachedResults, getCustomersWithDetails]
+    [tenantId, orgId, customerRepo, getCachedResults, getCustomersWithDetails, t]
   )
 
   // 初回データ取得（通常リスト）
