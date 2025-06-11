@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '@/convex/_generated/api'
 import jwt from 'jsonwebtoken' // JWTを扱うためにjsonwebtokenをインストールする必要があります
+import { v4 as uuidv4 } from 'uuid'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
+import { getSupabaseAdminService, InsertType } from '@/services/supabase/SupabaseService'
+import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL as string)
 
@@ -87,50 +90,77 @@ export async function POST(req: NextRequest) {
     if (tenantId && orgId) {
       console.log(`[API /api/line/verify-token] Upserting customer info for tenantId: ${tenantId} and orgId: ${orgId}`)
       try {
-        // FIXME: supabaseで顧客を作成する
-        // const supabaseAdminService = getSupabaseAdminService();
-        // const existingCustomer = await supabaseAdminService.customer.findBySalonAndCustomerLineId(salonId, lineUserId)
+        // Supabaseで顧客を検索・作成
+        const supabaseAdmin = getSupabaseAdminService();
+        const customerRepo = new CustomerRepository(supabaseAdmin);
+        
+        // 既存の顧客をLINE IDで検索
+        const existingCustomer = await customerRepo.findByTenantAndOrgAndCustomerLineId(
+          tenantId,
+          orgId,
+          lineUserId
+        );
 
-        // if (existingCustomer) {
-        //   console.log('[API /api/line/verify-token] Existing customer found, updating...')
-        //   await supabaseAdminService.upsert('customer', {
-        //     uid: existingCustomer.uid,
-        //     salon_id: salonId,
-        //     line_id: lineUserId,
-        //     line_user_name: lineUserName || existingCustomer.line_user_name || '',
-        //     email: email || existingCustomer.email || '',
-        //   })
+        if (existingCustomer) {
+          console.log('[API /api/line/verify-token] Existing customer found, updating...')
+          
+          // 顧客・詳細・ポイント情報を更新
+          const result = await customerRepo.updateCustomerWithDetailsAndPoints(
+            existingCustomer.uid,
+            tenantId,
+            orgId,
+            {
+              line_id: lineUserId,
+              line_user_name: lineUserName || existingCustomer.line_user_name || '',
+              email: email || existingCustomer.email || '',
+            },
+            {
+              email: email || existingCustomer.email || '',
+            },
+            0, // totalPoints - 既存のポイントを保持する場合は別途取得が必要
+            [] // tags
+          );
 
-        //   customerUid = existingCustomer.uid
-        //   console.log(
-        //     '[API /api/line/verify-token] Customer updated successfully. Customer ID:',
-        //     customerUid
-        //   )
-        // } else {
-        //   const customer = await supabaseAdminService.customer.createCustomerWithDetailsAndPoints(
-        //     {
-        //       email: email || null,
-        //       first_name: null,
-        //       last_name: null,
-        //       phone: null,
-        //       salon_id: salonId,
-        //       line_id: lineUserId,
-        //       line_user_name: lineUserName || '',
-        //       password_hash: null,
-        //     },
-        //     {
-        //       email: email || null,
-        //       gender: null,
-        //       birthday: null,
-        //       age: null,
-        //       notes: 'LINEから新規登録',
-        //     },
-        //     0
-        //   )
-        //   console.log('[API /api/line/verify-token] New customer, creating...')
-    
-        //   customerUid = customer.customer?.uid
-        // }
+          customerUid = result.customer?.uid || existingCustomer.uid;
+          console.log(
+            '[API /api/line/verify-token] Customer updated successfully. Customer ID:',
+            customerUid
+          );
+        } else {
+          console.log('[API /api/line/verify-token] New customer, creating...')
+          
+          // 新規顧客を作成
+          const customerCoreData: InsertType<'customer'> = {
+            uid: uuidv4(),
+            email: email || '',
+            first_name: '',
+            last_name: '',
+            phone: '',
+            tenant_id: tenantId,
+            org_id: orgId,
+            line_id: lineUserId,
+            line_user_name: lineUserName || '',
+            password_hash: null,
+          };
+          
+          const result = await customerRepo.createCustomerWithDetailsAndPoints(
+            customerCoreData,
+            {
+              email: email || '',
+              gender: null,
+              birthday: null,
+              age: null,
+              notes: 'LINEから新規登録',
+            },
+            0
+          );
+          
+          customerUid = result.customer?.uid;
+          console.log(
+            '[API /api/line/verify-token] New customer created successfully. Customer ID:',
+            customerUid
+          );
+        }
       } catch (error: unknown) {
         console.error('[API /api/line/verify-token] Convex mutation/query error:', error)
         return NextResponse.json(

@@ -20,11 +20,11 @@ const publicPaths = [
   '/reservation',
   '/reservation/:path*', // Keep this for clarity, though handled separately below
   '/api/line',
-  '/invite-accept', // hash-basedルーティングを使用するため、:path*は不要
+  '/staff/invite-accept', // hash-basedルーティングを使用するため、:path*は不要
 ]
 
 // 認証ページのパス
-const authPaths = ['/sign-in', '/sign-up', '/staff/login', '/invite-accept']
+const authPaths = ['/sign-in', '/sign-up', '/staff/login', '/staff/invite-accept']
 
 // 認証が必要なAPIエンドポイント
 const protectedApiPaths = ['/api/verify-password', '/dashboard/:path*']

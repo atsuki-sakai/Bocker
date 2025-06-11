@@ -81,7 +81,7 @@ app/
 ├── (auth)/                    # 認証関連ページ群
 │   ├── sign-in/              # サインインページ・フォーム
 │   ├── sign-up/              # サインアップページ・フォーム
-│   └── invite-accept/        # スタッフ招待受諾ページ
+│   └── staff/invite-accept/        # スタッフ招待受諾ページ
 ├── (dashboard)/              # 管理画面（認証後）
 │   └── dashboard/
 │       ├── page.tsx          # ダッシュボードホーム

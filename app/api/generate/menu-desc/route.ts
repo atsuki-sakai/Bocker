@@ -5,6 +5,7 @@ import { menuDescriptionRequestSchema, AI_SYSTEM_PROMPT, validateAIOutput } from
 
 
 // Handler function for menu description generation
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function menuDescriptionHandler(request: NextRequest, _auth: AuthContext) {
   // Validate and sanitize request body
   try{

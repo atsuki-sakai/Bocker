@@ -142,9 +142,6 @@ export const Questionnaire = ({
   // 戻るボタン
   const back = () => setStep((prev) => Math.max(prev - 1, 1))
 
-  const handleUploadComplete = (serverUrl: string) => {
-    setHairImgPreviewUrl(serverUrl)
-  }
   return (
     <div className="p-1 w-full">
       <div>

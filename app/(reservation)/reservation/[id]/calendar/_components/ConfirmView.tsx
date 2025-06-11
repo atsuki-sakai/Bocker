@@ -94,7 +94,7 @@ export const ConfirmView = ({
 
   // 指名料の計算
   const calculateExtraCharge = () => {
-    return selectedStaff?.extraCharge || 0
+    return selectedStaff?.extra_charge || 0
   }
 
   // 合計施術時間（分）

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     await clerk.invitations.revokeInvitation(invitation_id);
 
     // 環境に応じてベースURLを設定
-    const redirectUrl = `${BASE_URL}/invite-accept?invitationId=${invitation_id}`;
+    const redirectUrl = `${BASE_URL}/staff/invite-accept?invitationId=${invitation_id}`;
   
 
     const existingInvitation = await convex.query(api.staff.invitation.query.getInvitation, {

@@ -9,7 +9,7 @@ import { Id } from '@/convex/_generated/dataModel'
 import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService'
 import { z } from 'zod'
 import { validateRequest, createValidationErrorResponse } from '@/lib/api/validation'
-import { convexIdSchema } from '@/lib/validations/common'
+import { convexIdSchema } from '@/lib/validations/api/common'
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 

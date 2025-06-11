@@ -135,7 +135,7 @@ export default function CompletePage() {
   const shareReservation = () => {
     if (!reservationWithDetail?.reservation) return
 
-    const shareText = `${organizationConfig?.org.org_name}に${format(new Date(reservationWithDetail?.reservation?.start_time_unix!), 'M月d日', { locale: ja })}の${reservationWithDetail?.reservation?.end_time_unix ? format(new Date(reservationWithDetail?.reservation?.end_time_unix), 'HH:mm', { locale: ja }) : '不明'}から予約しました！!\nメニューは${reservationItems?.menus.map((menu) => menu.name).join(', ')}です。${reservationWithDetail?.reservation?.staff_name}が担当します。料金は${reservationWithDetail?.reservationDetail?.total_price ? reservationWithDetail?.reservationDetail?.total_price.toLocaleString() : '0'}円です。`
+    const shareText = `${organizationConfig?.org.org_name}に${reservationWithDetail?.reservation?.start_time_unix ? format(new Date(reservationWithDetail.reservation.start_time_unix), 'M月d日', { locale: ja }) : '未定'}の${reservationWithDetail?.reservation?.end_time_unix ? format(new Date(reservationWithDetail?.reservation?.end_time_unix), 'HH:mm', { locale: ja }) : '不明'}から予約しました！!\nメニューは${reservationItems?.menus.map((menu) => menu.name).join(', ')}です。${reservationWithDetail?.reservation?.staff_name}が担当します。料金は${reservationWithDetail?.reservationDetail?.total_price ? reservationWithDetail?.reservationDetail?.total_price.toLocaleString() : '0'}円です。`
 
     if (navigator.share) {
       navigator

@@ -178,7 +178,7 @@ export default function ReserveRedirectPage() {
     }
 
     handleLiffLogin()
-  }, [liff, liffIsLoggedIn, liffProfile, liffIsLoading, liffIsError, liffErrorMessage, router])
+  }, [liff, liffIsLoggedIn, liffProfile, liffIsLoading, liffIsError, liffErrorMessage, router, showErrorToast])
 
   if (isLoading) {
     return (

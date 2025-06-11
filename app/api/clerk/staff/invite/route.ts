@@ -10,7 +10,7 @@ import { BASE_URL } from '@/lib/constants'
 import { Role } from '@/convex/types'
 import { z } from 'zod'
 import { validateRequest, createValidationErrorResponse } from '@/lib/api/validation'
-import { inviteStaffSchema } from '@/lib/validations/staff'
+import { inviteStaffSchema } from '@/lib/validations/api/staff'
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
@@ -80,7 +80,10 @@ export async function POST(req: NextRequest) {
       email,
       name,
       description,
-      images: images || [],
+      images: (images || []).map(url => ({ 
+        original_url: url, 
+        thumbnail_url: '' 
+      })),
       is_active: is_active ?? true,
       age,
       gender,
@@ -102,7 +105,7 @@ export async function POST(req: NextRequest) {
     
     const invitationParams = {
       emailAddress: email,
-      redirectUrl: `${BASE_URL}/invite-accept?staff_id=${result.staffId}`,
+      redirectUrl: `${BASE_URL}/staff/invite-accept?staff_id=${result.staffId}`,
       publicMetadata: {
         tenant_id,
         org_id,

@@ -119,9 +119,7 @@ export default function SignInForm() {
         <Card className="border-0 shadow-lg ">
           <CardHeader className="space-y-1">
             <motion.div variants={itemVariants}>
-              <CardTitle className="text-2xl font-bold text-center">
-                オーナー専用ログインページ
-              </CardTitle>
+              <CardTitle className="text-2xl font-bold text-center">ログインページ</CardTitle>
             </motion.div>
             <motion.div variants={itemVariants}>
               <p className="text-sm text-center text-muted-foreground">
