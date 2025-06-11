@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { TagInput } from '@/components/common'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { ImageType } from '@/convex/types'
+import { useTranslations } from 'next-intl'
 import {
   Accordion,
   AccordionItem,
@@ -71,78 +72,6 @@ import { MAX_NOTES_LENGTH, MAX_NUM, MAX_TAG_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
 import { zNumberFieldOptional } from '@/lib/validations/common'
 
-// バリデーションスキーマ
-const schemaMenu = z
-  .object({
-    name: z
-      .string({
-        required_error: 'メニュー名は必須です',
-        invalid_type_error: 'メニュー名は文字列で入力してください',
-      })
-      .min(1, { message: 'メニュー名は必須です' })
-      .max(100, { message: 'メニュー名は100文字以内で入力してください' }),
-    categories: z.array(z.enum(MENU_CATEGORY_VALUES)).min(1, { message: 'カテゴリは必須です' }),
-    unit_price: z
-      .number({
-        required_error: '価格は必須です',
-        invalid_type_error: '価格は数値で入力してください',
-      })
-      .min(1, { message: '価格は必須です' })
-      .max(MAX_NUM, { message: `価格は${MAX_NUM}円以下で入力してください` })
-      .nullable()
-      .optional()
-      .refine((val) => val !== null, { message: '価格は必須です' }),
-    sale_price: zNumberFieldOptional(MAX_NUM, `セール価格は${MAX_NUM}円以下で入力してください`),
-    duration_min: z
-      .number({
-        required_error: '時間は必須です',
-      })
-      .refine((val) => val !== 0 && val !== null && val !== undefined, {
-        message: '時間は必須です',
-      }),
-    description: z
-      .string({
-        required_error: '説明は必須です',
-        invalid_type_error: '説明は文字列で入力してください',
-      })
-      .min(1, { message: '説明は必須です' })
-      .max(MAX_NOTES_LENGTH, { message: `説明は${MAX_NOTES_LENGTH}文字以内で入力してください` }),
-    target_gender: z.enum(GENDER_VALUES, { message: '性別は必須です' }),
-    target_type: z.enum(ACTIVE_CUSTOMER_TYPE_VALUES, { message: '対象タイプは必須です' }),
-    tags: z.preprocess(
-      (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
-      z
-        .string()
-        .max(MAX_TAG_LENGTH, { message: `タグは${MAX_TAG_LENGTH}文字以内で入力してください` })
-        .transform((val) =>
-          val
-            ? val
-                .replace(/[,、]/g, ',')
-                .split(',')
-                .map((tag) => tag.trim())
-                .filter((tag) => tag !== '')
-            : []
-        )
-        .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
-    ),
-    payment_method: z.enum(MENU_PAYMENT_METHOD_VALUES, {
-      message: '支払い方法は必須です',
-    }),
-    is_active: z.boolean({ message: '有効/無効フラグは必須です' }),
-  })
-  .refine(
-    (data) => {
-      // salePriceが存在する場合のみ、unitPriceとの比較を行う
-      if (data.sale_price && data.unit_price && data.sale_price >= data.unit_price) {
-        return false
-      }
-      return true
-    },
-    {
-      message: 'セール価格は通常価格より低く設定してください',
-      path: ['sale_price'], // エラーメッセージをsalePriceフィールドに表示
-    }
-  )
 // エラーメッセージコンポーネント
 const ErrorMessage = ({ message }: { message: string | undefined }) => (
   <motion.p
@@ -157,6 +86,7 @@ const ErrorMessage = ({ message }: { message: string | undefined }) => (
 
 export default function MenuAddForm() {
   const router = useRouter()
+  const t = useTranslations('menu')
   const { tenantId, orgId, planName } = useTenantAndOrganization()
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false)
   const [currentFiles, setCurrentFiles] = useState<File[]>([])
@@ -170,6 +100,85 @@ export default function MenuAddForm() {
 
   const createMenu = useMutation(api.menu.mutation.create)
   const org = useQuery(api.organization.query.findByOrgId, orgId ? { org_id: orgId } : 'skip')
+
+  // バリデーションスキーマ
+  const schemaMenu = z
+    .object({
+      name: z
+        .string({
+          required_error: t('validation.nameRequired'),
+          invalid_type_error: t('validation.nameInvalid'),
+        })
+        .min(1, { message: t('validation.nameRequired') })
+        .max(100, { message: t('validation.nameMaxLength') }),
+      categories: z
+        .array(z.enum(MENU_CATEGORY_VALUES))
+        .min(1, { message: t('validation.categoryRequired') }),
+      unit_price: z
+        .number({
+          required_error: t('validation.priceRequired'),
+          invalid_type_error: t('validation.priceInvalid'),
+        })
+        .min(1, { message: t('validation.priceRequired') })
+        .max(MAX_NUM, { message: t('validation.priceMax', { max: MAX_NUM }) })
+        .nullable()
+        .optional()
+        .refine((val) => val !== null, { message: t('validation.priceRequired') }),
+      sale_price: zNumberFieldOptional(MAX_NUM, t('validation.salePriceMax', { max: MAX_NUM })),
+      duration_min: z
+        .number({
+          required_error: t('validation.durationRequired'),
+        })
+        .refine((val) => val !== 0 && val !== null && val !== undefined, {
+          message: t('validation.durationRequired'),
+        }),
+      description: z
+        .string({
+          required_error: t('validation.descriptionRequired'),
+          invalid_type_error: t('validation.descriptionInvalid'),
+        })
+        .min(1, { message: t('validation.descriptionRequired') })
+        .max(MAX_NOTES_LENGTH, {
+          message: t('validation.descriptionMaxLength', { max: MAX_NOTES_LENGTH }),
+        }),
+      target_gender: z.enum(GENDER_VALUES, { message: t('validation.genderRequired') }),
+      target_type: z.enum(ACTIVE_CUSTOMER_TYPE_VALUES, {
+        message: t('validation.targetTypeRequired'),
+      }),
+      tags: z.preprocess(
+        (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
+        z
+          .string()
+          .max(MAX_TAG_LENGTH, { message: t('validation.tagsMaxLength', { max: MAX_TAG_LENGTH }) })
+          .transform((val) =>
+            val
+              ? val
+                  .replace(/[,、]/g, ',')
+                  .split(',')
+                  .map((tag) => tag.trim())
+                  .filter((tag) => tag !== '')
+              : []
+          )
+          .refine((val) => val.length <= 5, { message: t('validation.tagsMaxCount') })
+      ),
+      payment_method: z.enum(MENU_PAYMENT_METHOD_VALUES, {
+        message: t('validation.paymentMethodRequired'),
+      }),
+      is_active: z.boolean({ message: t('validation.isActiveRequired') }),
+    })
+    .refine(
+      (data) => {
+        // salePriceが存在する場合のみ、unitPriceとの比較を行う
+        if (data.sale_price && data.unit_price && data.sale_price >= data.unit_price) {
+          return false
+        }
+        return true
+      },
+      {
+        message: t('validation.salePriceLower'),
+        path: ['sale_price'], // エラーメッセージをsalePriceフィールドに表示
+      }
+    )
 
   const {
     register,
@@ -190,7 +199,7 @@ export default function MenuAddForm() {
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
     try {
       if (!tenantId || !orgId || !planName) {
-        toast.error('テナント or 店舗情報が必要です')
+        toast.error(t('errors.tenantOrOrgRequired'))
         return
       }
 
@@ -253,7 +262,7 @@ export default function MenuAddForm() {
           is_active: data.is_active,
         })
 
-        toast.success('メニューを登録しました')
+        toast.success(t('menuCreated'))
         router.push(`/dashboard/menu/${menuId}`)
       } catch (err) {
         // メニュー作成に失敗した場合、アップロードした画像を削除
@@ -315,7 +324,7 @@ export default function MenuAddForm() {
           <div className="md:col-span-1">
             <div className="text-base flex items-center gap-2 mb-2">
               <ImageIcon size={18} className="text-muted-foreground" />
-              メニュー画像 (3枚まで )
+              {t('images')} {t('imagesLimit')}
             </div>
             <MultiImageDrop
               currentFiles={currentFiles}
@@ -332,9 +341,9 @@ export default function MenuAddForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <ZodTextField
                 name="name"
-                label="メニュー名"
+                label={t('menuName')}
                 icon={<Tag className="text-gray-500" />}
-                placeholder="メニュー名を入力してください"
+                placeholder={t('placeholder.menuName')}
                 register={register}
                 errors={errors}
                 required
@@ -342,7 +351,7 @@ export default function MenuAddForm() {
               />
               <div>
                 <div className="text-sm flex items-start gap-2 mb-2">
-                  <Label className="text-sm flex items-center gap-2">カテゴリー</Label>
+                  <Label className="text-sm flex items-center gap-2">{t('categories')}</Label>
                   <span className="text-destructive">*</span>
                 </div>
                 <Popover open={isCategoryPopoverOpen}>
@@ -358,7 +367,7 @@ export default function MenuAddForm() {
                           ? watch('categories')
                               .map((cat: string) => cat)
                               .join(', ')
-                          : 'メニューのカテゴリを選択してください'}
+                          : t('placeholder.selectCategory')}
                       </p>
                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -380,7 +389,7 @@ export default function MenuAddForm() {
                           <X size={16} />
                         </Button>
                       </div>
-                      <CommandEmpty>カテゴリが見つかりません</CommandEmpty>
+                      <CommandEmpty>{t('validation.categoryNotFound')}</CommandEmpty>
                       <CommandGroup>
                         {MENU_CATEGORY_VALUES.map((category) => (
                           <CommandItem
@@ -397,7 +406,7 @@ export default function MenuAddForm() {
                               } else {
                                 // If the category doesn't exist, check if we can add it
                                 if (current.length >= 5) {
-                                  toast.error('カテゴリは最大5つまでです')
+                                  toast.error(t('validation.categoryMaxCount'))
                                   return
                                 } else {
                                   setValue('categories', [...current, category], {
@@ -421,9 +430,7 @@ export default function MenuAddForm() {
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <p className="text-xs text-muted-foreground mt-1">
-                  複数のカテゴリを選択した場合、自動的にセットメニューとして扱われます。
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">{t('help.multipleCategories')}</p>
 
                 {errors.categories && <ErrorMessage message={errors.categories.message} />}
               </div>
@@ -432,10 +439,10 @@ export default function MenuAddForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ZodTextField
                 name="unit_price"
-                label="通常価格"
+                label={t('unitPrice')}
                 icon={<DollarSign className="text-muted-foreground" />}
                 type="number"
-                placeholder="例: 5000"
+                placeholder={t('placeholder.unitPrice')}
                 register={register}
                 errors={errors}
                 required
@@ -444,10 +451,10 @@ export default function MenuAddForm() {
 
               <ZodTextField
                 name="sale_price"
-                label="セール価格"
+                label={t('salePrice')}
                 type="number"
                 icon={<ShoppingBag className="text-muted-foreground" />}
-                placeholder="例: 4000"
+                placeholder={t('placeholder.salePrice')}
                 register={register}
                 errors={errors}
                 className="border-link-foreground focus-within:border-link-foreground transition-colors"
@@ -457,7 +464,7 @@ export default function MenuAddForm() {
               <div className="max-w-full">
                 <Label className="text-sm flex items-center gap-2">
                   <Clock size={16} className="text-muted-foreground" />
-                  施術時間 <span className="text-destructive ml-1">*</span>
+                  {t('durationMinutes')} <span className="text-destructive ml-1">*</span>
                 </Label>
                 <Select
                   onValueChange={(value) => {
@@ -465,20 +472,19 @@ export default function MenuAddForm() {
                   }}
                 >
                   <SelectTrigger className="transition-colors">
-                    <SelectValue placeholder="施術時間を選択" />
+                    <SelectValue placeholder={t('placeholder.selectDuration')} />
                   </SelectTrigger>
                   <SelectContent>
                     {getMinuteMultiples(5, 360).map((time) => (
                       <SelectItem key={time} value={time.toString()}>
-                        {time}分
+                        {time}
+                        {t('minutes')}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {errors.duration_min && <ErrorMessage message={errors.duration_min.message} />}
-                <span className="text-xs text-muted-foreground">
-                  メニューのトータルの施術時間を設定します。
-                </span>
+                <span className="text-xs text-muted-foreground">{t('help.durationTotal')}</span>
               </div>
             </div>
 
@@ -486,7 +492,7 @@ export default function MenuAddForm() {
               <div>
                 <Label className="flex items-center gap-2 text-sm">
                   <Repeat size={16} className="text-muted-foreground" />
-                  対象
+                  {t('target')}
                 </Label>
 
                 <Select
@@ -500,19 +506,17 @@ export default function MenuAddForm() {
                     <SelectValue defaultValue={'all'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">全員</SelectItem>
-                    <SelectItem value="first">初回</SelectItem>
-                    <SelectItem value="repeat">リピート</SelectItem>
+                    <SelectItem value="all">{t('allCustomers')}</SelectItem>
+                    <SelectItem value="first">{t('firstTime')}</SelectItem>
+                    <SelectItem value="repeat">{t('repeat')}</SelectItem>
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-muted-foreground">
-                  メニューを主に利用する顧客属性を選択できます。
-                </span>
+                <span className="text-xs text-muted-foreground">{t('help.targetCustomer')}</span>
               </div>
               <div>
                 <Label className="flex items-center gap-2 text-sm">
                   <Users size={16} className="text-muted-foreground" />
-                  性別
+                  {t('gender')}
                 </Label>
 
                 <Select
@@ -527,19 +531,17 @@ export default function MenuAddForm() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unselected" className="flex items-center gap-2">
-                      男性・女性
+                      {t('allGenders')}
                     </SelectItem>
                     <SelectItem value="male" className="flex items-center gap-2">
-                      男性
+                      {t('male')}
                     </SelectItem>
                     <SelectItem value="female" className="flex items-center gap-2">
-                      女性
+                      {t('female')}
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-muted-foreground">
-                  メニュー対象の性別を選択してください
-                </span>
+                <span className="text-xs text-muted-foreground">{t('help.targetGender')}</span>
               </div>
             </div>
           </div>
@@ -554,12 +556,12 @@ export default function MenuAddForm() {
             setValue('tags', tags.join('、') as unknown as string[], { shouldValidate: true })
           }}
           error={errors.tags?.message}
-          exampleText="例: デジタルパーマ、夏にしたい髪型、面長に合う"
+          exampleText={t('placeholder.tags')}
         />
 
         <Label className="flex items-center gap-2 text-sm mb-3 mt-8">
           <CreditCard size={16} className="text-muted-foreground" />
-          支払い方法
+          {t('paymentMethod')}
         </Label>
 
         {org?.stripe_connect_status === 'active' ? (
@@ -569,25 +571,25 @@ export default function MenuAddForm() {
             value={paymentMethod}
             onValueChange={(value) => handlePaymentMethod(value as MenuPaymentMethod)}
           >
-            <ToggleGroupItem value="cash">店舗決済のみ</ToggleGroupItem>
-            <ToggleGroupItem value="credit_card">オンライン決済のみ</ToggleGroupItem>
-            <ToggleGroupItem value="all">両方対応</ToggleGroupItem>
+            <ToggleGroupItem value="cash">{t('storePaymentOnly')}</ToggleGroupItem>
+            <ToggleGroupItem value="credit_card">{t('onlinePaymentOnly')}</ToggleGroupItem>
+            <ToggleGroupItem value="all">{t('bothPayments')}</ToggleGroupItem>
           </ToggleGroup>
         ) : (
           <div className="bg-warning border border-warning-foreground rounded-md p-4">
             <p className="text-base font-medium text-warning-foreground mb-2 flex items-center gap-2">
               <Wallet size={18} />
-              現在は店舗決済のみ利用可能
+              {t('onlinePaymentNotAvailable')}
             </p>
             <p className="text-sm text-warning-foreground">
-              オンライン決済を利用する場合は、
+              {t('onlinePaymentSetupRequired')}
               <Link
                 href="/dashboard/setting"
                 className="text-link-foreground underline font-medium"
               >
-                決済設定
+                {t('paymentSettings')}
               </Link>
-              を完了してください。
+              {t('completeSetup')}
             </p>
           </div>
         )}
@@ -597,22 +599,22 @@ export default function MenuAddForm() {
             <TooltipTrigger asChild>
               <p className="text-xs  mt-2 flex items-center gap-1 cursor-help w-fit">
                 <AlertCircle size={14} />
-                オンライン決済には手数料が発生します
+                {t('onlinePaymentFee')}
               </p>
             </TooltipTrigger>
             <TooltipContent className=" p-3 shadow-lg border  text-xs ">
-              <p>オンライン決済手数料: 4% + 40円/件</p>
+              <p>{t('onlinePaymentFeeDetails')}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
         <Label className="flex items-center gap-2 text-sm mb-2 mt-6">
           <Info size={16} className="text-muted-foreground" />
-          メニュー説明 <span className="text-destructive ml-1">*</span>
+          {t('menuDescription')} <span className="text-destructive ml-1">*</span>
         </Label>
         <Textarea
           id="description"
-          placeholder="メニューの詳細説明を入力してください"
+          placeholder={t('placeholder.menuDescription')}
           {...register('description')}
           onChange={(e) => setValue('description', e.target.value, { shouldValidate: true })}
           rows={8}
@@ -622,10 +624,8 @@ export default function MenuAddForm() {
 
         <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-4">
           <div>
-            <p className="text-sm font-bold">メニューを公開する</p>
-            <p className="text-xs text-muted-foreground mt-2">
-              オフにすると、このメニューはお客様に表示されません
-            </p>
+            <p className="text-sm font-bold">{t('publishMenu')}</p>
+            <p className="text-xs text-muted-foreground mt-2">{t('publishMenuDescription')}</p>
           </div>
           <Switch
             id="is_active"
@@ -643,19 +643,19 @@ export default function MenuAddForm() {
               onClick={() => router.push('/dashboard/menu')}
               className="min-w-28 border-border"
             >
-              戻る
+              {t('backButton')}
             </Button>
             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
               <Button type="submit" disabled={isSubmitting || isUploading}>
                 {isSubmitting || isUploading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    追加中...
+                    {t('adding')}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    メニューを追加
+                    {t('addMenuButton')}
                   </>
                 )}
               </Button>
@@ -665,34 +665,28 @@ export default function MenuAddForm() {
       </form>
       <Accordion type="multiple" className="mt-8 space-y-2">
         <AccordionItem value="line-access-token">
-          <AccordionTrigger>
-            実際の稼働時間と待機時間を含めたトータルの施術時間の違いについて
-          </AccordionTrigger>
+          <AccordionTrigger>{t('help.durationInfo')}</AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
             <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
-                <strong>実際の稼働時間 :</strong>
-                スタッフが手を動かして施術に集中している正味の作業時間を指します。
+                <strong>{t('help.actualWorkTime')} :</strong>
+                {t('help.actualWorkTimeDesc')}
                 <br />
-                例）パーマの薬剤塗布・カット・シャンプーなど。
+                {t('help.actualWorkTimeExample')}
               </li>
               <li>
-                <strong>待機時間を含めたトータルの施術時間 :</strong>
-                施術席を専有する必要はあるものの、スタッフが別の作業に移れる待機時間を指します。
+                <strong>{t('help.totalDuration')} :</strong>
+                {t('help.totalDurationDesc')}
                 <br />
-                例）薬剤の放置時間・髪の乾燥時間など。
+                {t('help.totalDurationExample')}
               </li>
-              <li>
-                予約枠のアルゴリズムは <strong>実際の稼働時間</strong> を基準に空き時間を算出し、
-                <strong>待機時間を含めたトータルの施術時間</strong>{' '}
-                を待機時間として扱うことで、同じ席を効率よく回転させられます。
-              </li>
+              <li>{t('help.algorithmExplanation')}</li>
             </ol>
 
             <p className="text-xs text-muted-foreground space-y-1">
-              * 両時間とも必須入力です。
-              <br />* <strong>入力例：</strong> パーマ 90 分（実際の稼働 45 分 ＋ 確保 45
-              分）の場合、スタッフは途中 45 分間ほかの顧客を担当できます。
+              {t('help.requiredNote')}
+              <br />
+              {t('help.inputExample')}
             </p>
           </AccordionContent>
         </AccordionItem>
