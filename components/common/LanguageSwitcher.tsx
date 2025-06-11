@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useLocale, useTranslations } from 'next-intl'
+import { useLocale } from 'next-intl'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   Select,
@@ -8,16 +8,15 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Globe } from "lucide-react"
+} from '@/components/ui/select'
+import { Globe } from 'lucide-react'
 
 const locales = [
   { value: 'ja', label: '日本語', flag: '🇯🇵' },
-  { value: 'en', label: 'English', flag: '🇺🇸' }
+  { value: 'en', label: 'English', flag: '🇺🇸' },
 ]
 
 export function LanguageSwitcher() {
-  const t = useTranslations('language')
   const locale = useLocale()
   const router = useRouter()
   const pathname = usePathname()
@@ -26,9 +25,9 @@ export function LanguageSwitcher() {
     // Remove current locale from pathname and add new locale
     const segments = pathname.split('/')
     const currentLocale = segments[1]
-    
+
     let newPathname = pathname
-    if (locales.some(l => l.value === currentLocale)) {
+    if (locales.some((l) => l.value === currentLocale)) {
       // Replace current locale
       segments[1] = newLocale
       newPathname = segments.join('/')
@@ -36,11 +35,11 @@ export function LanguageSwitcher() {
       // Add locale to beginning
       newPathname = `/${newLocale}${pathname}`
     }
-    
+
     router.push(newPathname)
   }
 
-  const currentLocale = locales.find(l => l.value === locale)
+  const currentLocale = locales.find((l) => l.value === locale)
 
   return (
     <Select value={locale} onValueChange={handleLocaleChange}>
