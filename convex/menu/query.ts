@@ -19,7 +19,7 @@ export const findById = query({
 export const getDisplayByIds = query({
   args: {
     menu_ids: v.array(v.id('menu')),
-    options: v.array(v.id('option')),
+    option_ids: v.array(v.id('option')),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -31,7 +31,7 @@ export const getDisplayByIds = query({
     );
 
     const options = await Promise.all(
-      args.options.map(async (optionId) => {
+      args.option_ids.map(async (optionId) => {
         return await ctx.db.get(optionId);
       })
     );

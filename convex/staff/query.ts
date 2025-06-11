@@ -375,6 +375,7 @@ export const findByAvailableStaffs = query({
             thumbnail_url: image.thumbnail_url,
           })),
         ] : [],
+        tags: config?.tags,
         is_active: staff.is_active,
         _creationTime: staff._creationTime,
         featured_hair_images: config?.featured_hair_images ? [
