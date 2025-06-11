@@ -18,6 +18,10 @@ export const POST = withAuth(async (request, auth) => {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
+    if (!validation.data) {
+      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
+    }
+    
     const { stripe_account_id } = validation.data;
 
     // Only admin and owner can access Stripe dashboard

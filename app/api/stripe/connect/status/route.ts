@@ -8,7 +8,8 @@ const stripeConnectStatusSchema = z.object({
   stripe_account_id: z.string().startsWith('acct_', 'Invalid Stripe account ID'),
 });
 
-export const POST = withAuth(async (request, auth) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const POST = withAuth(async (request, _auth) => {
   try {
     // Validate request body
     const validation = await validateRequest(request, stripeConnectStatusSchema);
@@ -17,6 +18,15 @@ export const POST = withAuth(async (request, auth) => {
         {
           success: false,
           error: validation.error,
+        },
+        { status: 400 }
+      );
+    }
+    if (!validation.data) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'パラメータが見つかりません',
         },
         { status: 400 }
       );
