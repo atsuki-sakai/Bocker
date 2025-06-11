@@ -1,0 +1,72 @@
+{
+  "auth": {
+    "signIn": {
+      "title": "ログインページ",
+      "email": "メールアドレス",
+      "password": "パスワード",
+      "submit": "ログイン",
+      "signUp": "サインアップ",
+      "forgotPassword": "パスワードを忘れた場合",
+      "resetPassword": "パスワードをリセット",
+      "loading": "ログイン中...",
+      "success": "ログインに成功しました",
+      "emailPlaceholder": "メールアドレスを入力",
+      "passwordPlaceholder": "パスワードを入力"
+    },
+    "signUp": {
+      "title": "サインアップページ",
+      "organizationName": "組織名",
+      "firstName": "名前",
+      "lastName": "姓",
+      "email": "メールアドレス",
+      "password": "パスワード",
+      "confirmPassword": "パスワード確認",
+      "submit": "アカウント作成",
+      "signIn": "ログイン",
+      "loading": "アカウント作成中...",
+      "organizationNamePlaceholder": "組織名を入力",
+      "firstNamePlaceholder": "名前を入力",
+      "lastNamePlaceholder": "姓を入力",
+      "emailPlaceholder": "メールアドレスを入力",
+      "passwordPlaceholder": "パスワードを入力",
+      "confirmPasswordPlaceholder": "パスワードを再入力"
+    },
+    "resetPassword": {
+      "title": "パスワードリセット",
+      "email": "メールアドレス",
+      "submit": "リセットメールを送信",
+      "backToSignIn": "ログインページに戻る",
+      "emailPlaceholder": "メールアドレスを入力"
+    },
+    "validation": {
+      "emailRequired": "メールアドレスは必須です",
+      "emailInvalid": "メールアドレスが無効です",
+      "passwordRequired": "パスワードは必須です",
+      "passwordMinLength": "パスワードは8文字以上で入力してください",
+      "organizationNameRequired": "組織名は必須です",
+      "firstNameRequired": "名前は必須です",
+      "lastNameRequired": "姓は必須です",
+      "passwordMismatch": "パスワードが一致しません"
+    }
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "add": "追加",
+    "update": "更新",
+    "confirm": "確認",
+    "back": "戻る",
+    "next": "次へ",
+    "previous": "前へ",
+    "submit": "送信",
+    "close": "閉じる"
+  },
+  "language": {
+    "japanese": "日本語",
+    "english": "English",
+    "switchLanguage": "言語を切り替える"
+  }
+}

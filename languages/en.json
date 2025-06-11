@@ -1,0 +1,72 @@
+{
+  "auth": {
+    "signIn": {
+      "title": "Sign In Page",
+      "email": "Email Address",
+      "password": "Password",
+      "submit": "Sign In",
+      "signUp": "Sign Up",
+      "forgotPassword": "Forgot Password?",
+      "resetPassword": "Reset Password",
+      "loading": "Signing in...",
+      "success": "Successfully signed in",
+      "emailPlaceholder": "Enter your email address",
+      "passwordPlaceholder": "Enter your password"
+    },
+    "signUp": {
+      "title": "Sign Up Page",
+      "organizationName": "Organization Name",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email Address",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "submit": "Create Account",
+      "signIn": "Sign In",
+      "loading": "Creating account...",
+      "organizationNamePlaceholder": "Enter organization name",
+      "firstNamePlaceholder": "Enter your first name",
+      "lastNamePlaceholder": "Enter your last name",
+      "emailPlaceholder": "Enter your email address",
+      "passwordPlaceholder": "Enter your password",
+      "confirmPasswordPlaceholder": "Re-enter your password"
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "email": "Email Address",
+      "submit": "Send Reset Email",
+      "backToSignIn": "Back to Sign In",
+      "emailPlaceholder": "Enter your email address"
+    },
+    "validation": {
+      "emailRequired": "Email address is required",
+      "emailInvalid": "Email address is invalid",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 8 characters long",
+      "organizationNameRequired": "Organization name is required",
+      "firstNameRequired": "First name is required",
+      "lastNameRequired": "Last name is required",
+      "passwordMismatch": "Passwords do not match"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "update": "Update",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "close": "Close"
+  },
+  "language": {
+    "japanese": "日本語",
+    "english": "English",
+    "switchLanguage": "Switch Language"
+  }
+}
