@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
         hostname: 'placehold.jp',
       },
     ],
-  },
+  }
 };
 
 
