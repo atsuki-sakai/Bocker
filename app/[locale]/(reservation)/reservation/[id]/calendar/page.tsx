@@ -35,7 +35,7 @@ import {
   CheckCircle,
   ChevronRight,
 } from 'lucide-react'
-import type { StaffDisplay } from './_components/StaffView.tsx'
+import type { StaffDisplay } from '@/lib/types'
 import { Separator } from '@/components/ui/separator'
 import { Questionnaire } from './_components/Questionnaire'
 import {
