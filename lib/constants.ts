@@ -1,3 +1,6 @@
+export const LANGUAGES = ['ja', 'en'] as const
+export type Languages = typeof LANGUAGES[number]
+
 
 // 環境変数が設定されていない場合のデフォルト値を追加
 export const BASE_URL =
