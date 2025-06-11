@@ -20,7 +20,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { useState } from 'react'
-import { ImageType } from '@/convex/types'
+import type { StaffDisplay } from '@/lib/types'
 
 type StaffViewProps = {
   tenantId: Id<'tenant'>
@@ -30,21 +30,6 @@ type StaffViewProps = {
   onChangeStaffAction: (staff: StaffDisplay | null) => void
 }
 
-export type StaffDisplay = {
-  _id: Id<'staff'>
-  name: string | undefined
-  age: number | undefined
-  gender: Gender | undefined
-  description: string | undefined
-  images: ImageType[] | undefined
-  is_active: boolean | undefined
-  tags: string[] | undefined
-  _creationTime: number | undefined
-  extra_charge: number | undefined
-  priority: number | undefined
-  instagram_link: string | undefined
-  featured_hair_images: ImageType[]
-}
 
 export const StaffView = ({
   tenantId,

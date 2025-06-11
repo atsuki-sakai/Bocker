@@ -48,6 +48,7 @@ const SidebarHeader = memo(
           alt="Bocker"
           width={42}
           height={42}
+          priority
         />
         <h1
           className={`${isMobile ? 'text-xl bg-background bg-clip-text text-foreground font-thin' : 'text-2xl font-bold text-primary'}`}

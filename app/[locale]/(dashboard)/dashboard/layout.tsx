@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Sidebar } from '@/components/common'
-import '../../globals.css'
+import '@/app/globals.css'
 import { ThemeProvider } from 'next-themes'
 import { ChannelTalkLoader } from '@/components/common/ChannelTalkLoader'
 

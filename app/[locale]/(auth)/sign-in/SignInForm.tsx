@@ -20,6 +20,8 @@ import { Separator } from "@/components/ui/separator";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useTranslations, useLocale } from 'next-intl'
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 
 import {
   Mail,
@@ -32,12 +34,16 @@ import {
 } from "lucide-react";
 
 
-const signInSchema = z.object({
-  email: z.string().email({ message: 'メールアドレスが無効です' }),
-  password: z.string().min(8, { message: 'パスワードは8文字以上で入力してください' }),
-})
-
 export default function SignInForm() {
+  const t = useTranslations('auth.signIn')
+  const vt = useTranslations('auth.validation')
+  const locale = useLocale()
+  
+  const signInSchema = z.object({
+    email: z.string().email({ message: vt('emailInvalid') }),
+    password: z.string().min(8, { message: vt('passwordMinLength') }),
+  })
+
   const { isLoaded, signIn, setActive } = useSignIn()
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -70,8 +76,8 @@ export default function SignInForm() {
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId })
-        router.push(`/dashboard`)
-        toast.success('ログインに成功しました')
+        router.push(`/${locale}/dashboard`)
+        toast.success(t('success'))
       } else {
         showErrorToast(result)
       }
@@ -118,8 +124,9 @@ export default function SignInForm() {
       >
         <Card className="border-0 shadow-lg ">
           <CardHeader className="space-y-1">
-            <motion.div variants={itemVariants}>
-              <CardTitle className="text-2xl font-bold text-center">ログインページ</CardTitle>
+            <motion.div variants={itemVariants} className="flex justify-between items-center">
+              <CardTitle className="text-2xl font-bold text-center flex-1">{t('title')}</CardTitle>
+              <LanguageSwitcher />
             </motion.div>
             <motion.div variants={itemVariants}>
               <p className="text-sm text-center text-muted-foreground">
@@ -131,7 +138,7 @@ export default function SignInForm() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <motion.div variants={itemVariants} className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
-                  メールアドレス
+                  {t('email')}
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -139,7 +146,7 @@ export default function SignInForm() {
                     id="email"
                     type="email"
                     {...register('email')}
-                    placeholder="メールアドレスを入力"
+                    placeholder={t('emailPlaceholder')}
                     className="pl-10"
                     required
                   />
@@ -149,7 +156,7 @@ export default function SignInForm() {
 
               <motion.div variants={itemVariants} className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
-                  パスワード
+                  {t('password')}
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -157,7 +164,7 @@ export default function SignInForm() {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     {...register('password')}
-                    placeholder="パスワードを入力"
+                    placeholder={t('passwordPlaceholder')}
                     className="pl-10 pr-10"
                     required
                   />
@@ -177,7 +184,7 @@ export default function SignInForm() {
 
               <motion.div variants={itemVariants}>
                 <Button type="submit" className="w-full " disabled={isSubmitting}>
-                  {isSubmitting ? 'ログイン中...' : 'ログイン'}
+                  {isSubmitting ? t('loading') : t('submit')}
                   {isSubmitting ? (
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                   ) : (
@@ -194,10 +201,10 @@ export default function SignInForm() {
                   className="text-center pt-4"
                 >
                   <Link
-                    href={`/sign-in/reset-password?email=${email}`}
+                    href={`/${locale}/sign-in/reset-password?email=${email}`}
                     className="text-sm text-link-foreground"
                   >
-                    パスワードをお忘れですか？
+                    {t('forgotPassword')}
                   </Link>
                 </motion.div>
               )}
@@ -211,14 +218,14 @@ export default function SignInForm() {
               className="flex items-center justify-between w-full text-right text-xs"
             >
               <Link
-                href="/staff/sign-in"
+                href={`/${locale}/staff/sign-in`}
                 className="inline-flex items-center text-xs text-link-foreground"
               >
                 スタッフの方はこちら
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Link>
-              <Link href="/sign-up" className="inline-flex items-center text-xs text-blue-500">
-                新規登録はこちら
+              <Link href={`/${locale}/sign-up`} className="inline-flex items-center text-xs text-blue-500">
+                {t('signUp')}
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Link>
             </motion.div>

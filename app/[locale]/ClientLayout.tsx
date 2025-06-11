@@ -1,6 +1,6 @@
 'use client'
 
-import './globals.css'
+import '@/app/globals.css'
 import { ConvexClientProvider } from '@/components/providers'
 import { ClerkProvider } from '@clerk/nextjs'
 import { jaJP } from '@clerk/localizations'

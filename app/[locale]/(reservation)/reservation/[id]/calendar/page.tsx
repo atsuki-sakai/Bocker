@@ -35,7 +35,7 @@ import {
   CheckCircle,
   ChevronRight,
 } from 'lucide-react'
-import type { StaffDisplay } from './_components/StaffView.tsx'
+import type { StaffDisplay } from '@/lib/types'
 import { Separator } from '@/components/ui/separator'
 import { Questionnaire } from './_components/Questionnaire'
 import {
@@ -428,7 +428,7 @@ export default function CalendarPage() {
       }
 
       // 2. Stripe Checkoutセッションを作成するためのlineItemsを準備
-      //    各アイテムの unit_amount には、独自システムで計算した割引適用後の価格を設定する
+      // 各アイテムの unit_amount には、独自システムで計算した割引適用後の価格を設定する
 
       const totalDiscountAmount = (appliedDiscount.discount || 0) + (usePoints || 0)
 

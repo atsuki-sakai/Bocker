@@ -3,7 +3,7 @@ import { Doc } from '@/convex/_generated/dataModel'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { TimeRange } from '@/lib/types'
-import type { StaffDisplay } from '@/app/(reservation)/reservation/[id]/calendar/_components/StaffView'
+import type { StaffDisplay } from '@/lib/types'
 
 export const reservationFlexMessageTemplate = (
   organization: Doc<'organization'>,
