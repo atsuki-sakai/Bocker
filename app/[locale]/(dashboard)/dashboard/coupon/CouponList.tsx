@@ -10,6 +10,7 @@ import { Id } from '@/convex/_generated/dataModel'
 import { toast } from 'sonner'
 import { Doc } from '@/convex/_generated/dataModel'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,8 @@ import {
 } from '@/components/ui/dialog'
 
 export default function CouponList() {
+  const t = useTranslations('coupon')
+  const tCommon = useTranslations('common')
   const { tenantId, orgId } = useTenantAndOrganization()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedCouponId, setSelectedCouponId] = useState<Id<'coupon'> | null>(null)
@@ -43,7 +46,7 @@ export default function CouponList() {
 
   const handleDelete = (id: Id<'coupon'>) => {
     deleteCoupon({ couponId: id })
-    toast.success('クーポンを削除しました。')
+    toast.success(t('couponDeleted'))
     setIsDialogOpen(false)
   }
 
@@ -55,9 +58,9 @@ export default function CouponList() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <p className="text-sm text-muted-foreground">
-          予約時にクーポンコードを入力することでメニュー毎に独自の割引を適用できるようになります。
+          {t('description.list')}
           <br />
-          リピート率を上げる効果的な方法としてご活用ください。
+          {t('description.listSecondary')}
         </p>
       </div>
       <div className="pt-2 flow-root">
@@ -71,33 +74,33 @@ export default function CouponList() {
                       scope="col"
                       className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-primary sm:pl-6"
                     >
-                      ステータス
+                      {t('status')}
                     </th>
                     <th
                       scope="col"
                       className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-primary sm:pl-6"
                     >
-                      クーポン名
+                      {t('couponName')}
                     </th>
 
                     <th
                       scope="col"
                       className="px-3 py-3.5 text-left  text-sm  font-semibold text-primary"
                     >
-                      割引タイプ
+                      {t('discountType')}
                     </th>
                     <th
                       scope="col"
                       className="px-3 py-3.5 text-left  text-sm  font-semibold text-primary"
                     >
-                      割引額
+                      {t('discountValue')}
                     </th>
 
                     <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
-                      <span className="sr-only">編集</span>
+                      <span className="sr-only">{tCommon('edit')}</span>
                     </th>
                     <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
-                      <span className="sr-only">削除</span>
+                      <span className="sr-only">{tCommon('delete')}</span>
                     </th>
                   </tr>
                 </thead>
@@ -111,7 +114,7 @@ export default function CouponList() {
                           <span
                             className={`font-bold text-xs ${coupon.is_active ? 'bg-active text-white' : 'bg-muted-foreground text-white'} px-2 py-1 rounded-md`}
                           >
-                            {coupon.is_active ? '有効' : '無効'}
+                            {coupon.is_active ? t('active') : t('inactive')}
                           </span>
                         </td>
                         <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-muted-foreground sm:pl-6">
@@ -121,7 +124,7 @@ export default function CouponList() {
                         </td>
 
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
-                          {coupon.discount_type === 'percentage' ? '割引' : '固定割引'}
+                          {coupon.discount_type === 'percentage' ? t('percentage') : t('fixed')}
                         </td>
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                           {coupon.discount_type === 'percentage'
@@ -136,7 +139,7 @@ export default function CouponList() {
                               size="sm"
                               className="text-link-foreground bg-link hover:opacity-80"
                             >
-                              編集<span className="sr-only">, {coupon.name}</span>
+                              {tCommon('edit')}<span className="sr-only">, {coupon.name}</span>
                             </Button>
                           </Link>
                         </td>
@@ -147,7 +150,7 @@ export default function CouponList() {
                             size="sm"
                             onClick={() => showDialog(coupon._id)}
                           >
-                            削除<span className="sr-only">, {coupon.name}</span>
+                            {tCommon('delete')}<span className="sr-only">, {coupon.name}</span>
                           </Button>
                         </td>
                       </tr>
@@ -155,7 +158,7 @@ export default function CouponList() {
                   ) : (
                     <tr>
                       <td colSpan={10} className="text-muted-foreground text-sm text-center py-6">
-                        クーポンがまだありません。
+                        {t('noCoupons')}
                       </td>
                     </tr>
                   )}
@@ -167,24 +170,24 @@ export default function CouponList() {
       </div>
       <div className="flex justify-center">
         {results?.length > 10 && status === 'CanLoadMore' && (
-          <Button onClick={() => loadMore(10)}>もっと見る</Button>
+          <Button onClick={() => loadMore(10)}>{tCommon('showMore')}</Button>
         )}
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => setIsDialogOpen(open)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>クーポンを削除しますか？</DialogTitle>
-            <DialogDescription>この操作は元に戻すことができません。</DialogDescription>
+            <DialogTitle>{t('confirmDelete')}</DialogTitle>
+            <DialogDescription>{t('deleteWarning')}</DialogDescription>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                キャンセル
+                {tCommon('cancel')}
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => selectedCouponId && handleDelete(selectedCouponId)}
               >
-                削除する
+                {tCommon('delete')}
               </Button>
             </DialogFooter>
           </DialogHeader>
