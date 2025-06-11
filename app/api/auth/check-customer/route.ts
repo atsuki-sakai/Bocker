@@ -9,8 +9,8 @@ export const runtime = 'nodejs';
 // リクエストボディのスキーマ
 const checkCustomerSchema = z.object({
   email: emailSchema,
-  tenantId: z.string().uuid(),
-  orgId: z.string().uuid(),
+  tenantId: z.string().min(1),
+  orgId: z.string().min(1),
 });
 
 export async function POST(request: NextRequest) {

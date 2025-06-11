@@ -7,7 +7,7 @@ import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants';
-import PasswordChangedEmail from '@/components/emails/PasswordChangedEmail';
+import { PasswordChangedEmail } from '@/components/emails/PasswordChangedEmail';
 
 export const runtime = 'nodejs';
 

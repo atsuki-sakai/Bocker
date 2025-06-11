@@ -6,15 +6,15 @@ import { Resend } from 'resend';
 import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
 import { emailSchema } from '@/lib/validations/api/common';
-import PasswordResetEmail from '@/components/emails/PasswordResetEmail';
+import { PasswordResetEmail } from '@/components/emails/PasswordResetEmail';
 
 export const runtime = 'nodejs';
 
 // リクエストボディのスキーマ
 const resetPasswordRequestSchema = z.object({
   email: emailSchema,
-  tenantId: z.string().uuid(),
-  orgId: z.string().uuid(),
+  tenantId: z.string().min(1),
+  orgId: z.string().min(1),
 });
 
 const resend = new Resend(process.env.RESEND_API_KEY);

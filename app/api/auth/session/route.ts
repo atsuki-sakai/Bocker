@@ -14,8 +14,8 @@ export const runtime = 'nodejs';
 const loginRequestSchema = z.object({
   email: emailSchema,
   password: z.string().min(1),
-  tenantId: z.string().uuid(),
-  orgId: z.string().uuid(),
+  tenantId: z.string().min(1),
+  orgId: z.string().min(1),
 });
 
 // JWTペイロードの型

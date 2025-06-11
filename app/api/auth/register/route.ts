@@ -6,7 +6,7 @@ import { getSupabaseAdminService, InsertType } from '@/services/supabase/Supabas
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
 import { hashPassword } from '@/lib/auth/password';
 import { emailSchema, genderSchema } from '@/lib/validations/api/common';
-import CustomerRegistrationEmail from '@/components/emails/CustomerRegistrationEmail';
+import { CustomerRegistrationEmail } from '@/components/emails/CustomerRegistrationEmail';
 
 export const runtime = 'nodejs';
 
@@ -14,8 +14,8 @@ export const runtime = 'nodejs';
 const registerRequestSchema = z.object({
   email: emailSchema,
   password: z.string().min(8).max(100),
-  tenantId: z.string().uuid(),
-  orgId: z.string().uuid(),
+  tenantId: z.string().min(1),
+  orgId: z.string().min(1),
   detailData: z.object({
     email: emailSchema,
     gender: genderSchema.or(z.null()).optional(),
@@ -25,8 +25,6 @@ const registerRequestSchema = z.object({
   }),
   initialPoints: z.number().int().min(0).optional().default(0),
 });
-
-// type RegisterRequest = z.infer<typeof registerRequestSchema>;
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

@@ -90,6 +90,12 @@ export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl // 現在のパスを取得
   const pathnameWithoutLocale = getPathnameWithoutLocale(pathname)
 
+  // ★ API ルートは next-intl のロケール付与から除外 ★
+  if (pathnameWithoutLocale.startsWith('/api/')) {
+    console.log('[Middleware] API path detected, skipping intl middleware.')
+    return NextResponse.next()
+  }
+
   // メンテナンスチェックを行い、リダイレクトまたは次の処理へ進むレスポンスを取得
   const maintenanceResponse = checkMaintenance(pathnameWithoutLocale, req)
   // maintenanceResponse が NextResponse オブジェクトであれば、それを返す

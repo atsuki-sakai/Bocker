@@ -5,7 +5,7 @@ import { Resend } from 'resend';
 import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
 import { hashPassword } from '@/lib/auth/password';
-import PasswordChangedEmail from '@/components/emails/PasswordChangedEmail';
+import { PasswordChangedEmail } from '@/components/emails/PasswordChangedEmail';
 
 export const runtime = 'nodejs';
 
