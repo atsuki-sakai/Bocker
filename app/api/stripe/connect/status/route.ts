@@ -1,20 +1,28 @@
 import { NextResponse } from 'next/server';
 import { stripeService } from '@/services/stripe/StripeService';
+import { withAuth, validateRequest } from '@/lib/api/middleware';
+import { z } from 'zod';
 
-export async function POST(request: Request) {
+// Validation schema
+const stripeConnectStatusSchema = z.object({
+  stripe_account_id: z.string().startsWith('acct_', 'Invalid Stripe account ID'),
+});
+
+export const POST = withAuth(async (request, auth) => {
   try {
-    // リクエストからsalonIdとaccountIdを取得
-    const { stripe_account_id } = await request.json();
-
-    if (!stripe_account_id) {
+    // Validate request body
+    const validation = await validateRequest(request, stripeConnectStatusSchema);
+    if (validation.error) {
       return NextResponse.json(
         {
           success: false,
-          error: 'stripe_account_idが必要です',
+          error: validation.error,
         },
         { status: 400 }
       );
     }
+
+    const { stripe_account_id } = validation.data;
 
     // StripeServiceを使用してステータスを更新
     const result = await stripeService.checkAndUpdateConnectAccountStatus(stripe_account_id);
@@ -45,7 +53,7 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+})
 
 /**
  * Stripe Connect Statusエンドポイントの動作確認用GETリクエストハンドラ

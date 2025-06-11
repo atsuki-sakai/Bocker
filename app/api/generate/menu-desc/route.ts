@@ -1,49 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { withAuth, withRateLimit, validateRequest, AuthContext } from '@/lib/api/middleware';
+import { menuDescriptionRequestSchema, AI_SYSTEM_PROMPT, validateAIOutput } from '@/lib/validations/api';
 
-// 美容サロンメニュー情報の型定義
-interface MenuRequest {
-  product_name: string; // 商品名（施術名）
-  duration: string; // 施術時間
-  price: string; // 価格
-  features: string; // 主な特徴・サービス内容
-  effects: string; // 期待できる効果
-  recommended_for: string; // おすすめの人・シーン
-}
 
-// レスポンスの型定義
-interface MenuResponse {
-  success: boolean;
-  description?: string;
-  error?: string;
-}
-
-export async function POST(request: NextRequest): Promise<NextResponse<MenuResponse>> {
-  try {
-    // リクエストボディの取得とバリデーション
-    const body: MenuRequest = await request.json();
-    
-    // 必須フィールドの検証
-    const requiredFields: (keyof MenuRequest)[] = [
-      'product_name',
-      'duration', 
-      'price',
-      'features',
-      'effects',
-      'recommended_for'
-    ];
-
-    for (const field of requiredFields) {
-      if (!body[field] || typeof body[field] !== 'string' || body[field].trim() === '') {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: `必須フィールド「${field}」が入力されていません。` 
-          },
-          { status: 400 }
-        );
-      }
+// Handler function for menu description generation
+async function menuDescriptionHandler(request: NextRequest, _auth: AuthContext) {
+  // Validate and sanitize request body
+  try{
+    const validation = await validateRequest(request, menuDescriptionRequestSchema);
+    if (validation.error) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: validation.error 
+        },
+        { status: 400 }
+      );
     }
+
+    const body = validation.data;
 
     // Gemini API キーの確認
     const apiKey = process.env.GCP_AI_STUDIO_API_KEY;
@@ -66,22 +42,23 @@ export async function POST(request: NextRequest): Promise<NextResponse<MenuRespo
       model: 'gemini-1.5-flash',
       generationConfig: {
         responseMimeType: 'text/plain',
-        maxOutputTokens: 1024, // 出力制限
+        maxOutputTokens: 512, // 出力制限をさらに厳しく
         temperature: 0.7, // 創造性のバランス
-      }
+      },
+      systemInstruction: AI_SYSTEM_PROMPT
     });
 
-    // プロンプトに入力情報を埋め込む
+    // 構造化されたプロンプトで入力情報を渡す
     const inputText = `以下の情報から美容サロンの施術メニュー紹介文（300文字以内、です・ます調）を作成してください。
 
-商品名: ${body.product_name}
-施術時間: ${body.duration}
-価格: ${body.price}
-特徴: ${body.features}
-効果: ${body.effects}
-おすすめの人: ${body.recommended_for}
+  商品名: ${body?.product_name}
+  施術時間: ${body?.duration}
+  価格: ${body?.price}
+  特徴: ${body?.features}
+  効果: ${body?.effects}
+  おすすめの人: ${body?.recommended_for}
 
-すべての要素を自然な日本語で盛り込み、最後に予約を促す一言を入れてください。`;
+すべての要素を自然な日本語で盛り込み、最後に予約を促す一言を入れてください。※美容サロンのメニュー説明文以外の出力は禁止です。`;
 
     // 会話履歴の構築
     const contents = [
@@ -206,6 +183,19 @@ export async function POST(request: NextRequest): Promise<NextResponse<MenuRespo
       );
     }
 
+    // Validate AI output for prohibited content
+    const outputValidation = validateAIOutput(description);
+    if (!outputValidation.valid) {
+      console.error('AI output validation failed:', outputValidation.reason);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: '生成されたコンテンツがセキュリティポリシーに違反しています。' 
+        },
+        { status: 500 }
+      );
+    }
+
     // 成功レスポンスを返す
     return NextResponse.json(
       { 
@@ -229,6 +219,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<MenuRespo
     );
   }
 }
+
+// Apply rate limiting to the handler
+const rateLimitedHandler = withRateLimit(menuDescriptionHandler, {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 requests per window
+});
+
+// Export the rate-limited and authenticated handler
+export const POST = withAuth(rateLimitedHandler);
 
 // OPTIONSメソッドの対応（CORS対応）
 export async function OPTIONS() {

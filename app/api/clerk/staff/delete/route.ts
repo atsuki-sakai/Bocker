@@ -7,8 +7,19 @@ import { ConvexHttpClient } from 'convex/browser'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService'
+import { z } from 'zod'
+import { validateRequest, createValidationErrorResponse } from '@/lib/api/validation'
+import { convexIdSchema } from '@/lib/validations/common'
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+
+// Delete staff schema
+const deleteStaffRequestSchema = z.object({
+  staff_id: convexIdSchema,
+  tenant_id: convexIdSchema,
+  org_id: convexIdSchema,
+  staff_config_id: convexIdSchema.optional(),
+})
 
 export async function DELETE(req: NextRequest) {
   try {
@@ -28,21 +39,13 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    // 2. リクエストボディから削除情報を取得
-    const { 
-      staff_id,
-      tenant_id,
-      org_id,
-      staff_config_id,
-    } = await req.json()
-
-    // 3. 必須パラメータの検証
-    if (!staff_id || !tenant_id || !org_id) {
-      return NextResponse.json(
-        { error: '必要なパラメータが不足しています' },
-        { status: 400 }
-      )
+    // 2. リクエストボディの検証
+    const validation = await validateRequest(req, deleteStaffRequestSchema)
+    if (!validation.success) {
+      return createValidationErrorResponse(validation.error)
     }
+
+    const { staff_id, tenant_id, org_id, staff_config_id } = validation.data
 
     // 4. Convexからスタッフ情報を取得して招待状態確認
     const staffData = await convex.query(api.staff.invitation.query.getStaffWithInvitation, {

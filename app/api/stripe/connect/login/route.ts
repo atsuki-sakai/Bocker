@@ -1,16 +1,31 @@
 import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { stripeService } from '@/services/stripe/StripeService';
+import { withAuth, validateRequest } from '@/lib/api/middleware';
+import { z } from 'zod';
+
+// Validation schema
+const stripeConnectLoginSchema = z.object({
+  stripe_account_id: z.string().startsWith('acct_', 'Invalid Stripe account ID'),
+});
 
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (request, auth) => {
   try {
-    // リクエストからアカウントIDを取得
-    const { stripe_account_id } = await request.json();
+    // Validate request body
+    const validation = await validateRequest(request, stripeConnectLoginSchema);
+    if (validation.error) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
 
-    if (!stripe_account_id) {
-      console.error('Missing account ID in request');
-      return NextResponse.json({ error: 'アカウントIDが必要です' }, { status: 400 });
+    const { stripe_account_id } = validation.data;
+
+    // Only admin and owner can access Stripe dashboard
+    if (!['admin', 'owner'].includes(auth.role)) {
+      return NextResponse.json(
+        { error: 'Stripeダッシュボードへのアクセスには管理者権限が必要です' },
+        { status: 403 }
+      );
     }
 
     // StripeConnectクラスを使用してログインリンクを生成
@@ -51,7 +66,7 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+})
 
 
 /**

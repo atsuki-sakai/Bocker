@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService'
 import { Id } from '@/convex/_generated/dataModel'
-import { ImageDirectory, ImageQuality, ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
+import { ImageDirectory, ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import { AspectType } from '@/convex/types';
 import Busboy from 'busboy';
 import { Readable } from 'stream';
+import { withAuth, validateRequest } from '@/lib/api/middleware'
+import { storageDeleteSchema, ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from '@/lib/validations/api'
+import { convexIdSchema, directorySchema, qualitySchema, aspectTypeSchema, extractOrgIdFromGcsUrl } from '@/lib/validations/api'
+import { z } from 'zod'
 
 // Node.jsランタイムを使用（Edge FunctionではbusboyとStreamが使えないため）
 export const runtime = 'nodejs';
@@ -46,7 +50,7 @@ async function parseMultipartFormData(request: NextRequest): Promise<ParsedFormD
           'content-type': contentType 
         },
         limits: {
-          fileSize: 10 * 1024 * 1024, // 10MB制限
+          fileSize: MAX_FILE_SIZE, // 10MB制限
         }
       });
 
@@ -122,7 +126,7 @@ async function parseMultipartFormData(request: NextRequest): Promise<ParsedFormD
  * @param request - Next.jsのHTTPリクエストオブジェクト
  * @returns アップロード結果（単数または複数の画像URL）
  */
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export const POST = withAuth(async (request, auth) => {
   try {
     // マルチパート形式でFormDataをパース
     const { files, fields } = await parseMultipartFormData(request);
@@ -131,15 +135,43 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'アップロードするファイルが見つかりません。' }, { status: 400 });
     }
 
-    // パラメータの取得
-    const orgId = fields.orgId;
-    const directory = fields.directory;
-    const aspectType = fields.aspectType || 'mobile';
-    const quality = fields.quality as ImageQuality;
-    const isHotSpot = fields.isHotSpot === 'true';
+    // パラメータの取得と検証
+    const uploadSchema = z.object({
+      orgId: convexIdSchema,
+      directory: directorySchema,
+      aspectType: aspectTypeSchema.optional(),
+      quality: qualitySchema.optional(),
+      isHotSpot: z.string().optional().transform(val => val === 'true'),
+    });
 
-    if (!orgId || !directory) {
-      return NextResponse.json({ error: '必要なパラメータ（orgId, directory）が不足しています。' }, { status: 400 });
+    let validatedFields;
+    try {
+      validatedFields = uploadSchema.parse(fields);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json({ 
+          error: 'パラメータの形式が不正です',
+          details: error.errors 
+        }, { status: 400 });
+      }
+      return NextResponse.json({ error: 'パラメータの形式が不正です' }, { status: 400 });
+    }
+
+    const { orgId, directory, aspectType = 'mobile', quality, isHotSpot = false } = validatedFields;
+
+    // Check if orgId matches authenticated organization
+    if (orgId !== auth.orgId) {
+      return NextResponse.json({ error: 'このファイルをアップロードする権限がありません' }, { status: 403 });
+    }
+
+    // ファイルのMIMEタイプ検証
+    for (const file of files) {
+      if (!ALLOWED_MIME_TYPES.includes(file.mimeType)) {
+        return NextResponse.json({ 
+          error: `許可されていないファイル形式です: ${file.mimeType}`,
+          allowedTypes: ALLOWED_MIME_TYPES 
+        }, { status: 400 });
+      }
     }
 
     // 複数ファイルの処理
@@ -214,7 +246,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const errorMessage = error instanceof Error ? error.message : '画像のアップロード処理中に予期せぬエラーが発生しました。';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
-}
+})
 
 /**
  * ファイル削除APIのDELETEエンドポイント
@@ -222,15 +254,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  * @param request - Next.jsのHTTPリクエストオブジェクト
  * @returns 削除結果（成功・失敗の詳細）
  */
-export async function DELETE(request: NextRequest): Promise<NextResponse> {
-  const body = await request.json();
-
-  // originalUrl (単数) と originalUrls (複数) の両方に対応できるようにする
-  const { originalUrl, originalUrls, withThumbnail } = body;
-
-  if (!originalUrl && (!Array.isArray(originalUrls) || originalUrls.length === 0)) {
-    return NextResponse.json({ error: '画像URLが指定されていません。単数の場合は imgUrl、複数の場合は imgUrls を配列で指定してください。' }, { status: 400 });
+export const DELETE = withAuth(async (request, auth) => {
+  // Validate request body
+  const validation = await validateRequest(request, storageDeleteSchema)
+  if (validation.error) {
+    return NextResponse.json({ error: validation.error }, { status: 400 })
   }
+  if (!validation.data) {
+    return NextResponse.json({ error: 'パラメータが見つかりません' }, { status: 400 })
+  }
+
+  const { originalUrl, originalUrls, withThumbnail } = validation.data
 
   try {
     let urlsToDelete: string[] = [];
@@ -238,6 +272,17 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
       urlsToDelete.push(originalUrl);
     } else if (originalUrls) {
       urlsToDelete = originalUrls;
+    }
+
+    // Verify ownership of all URLs
+    for (const url of urlsToDelete) {
+      const urlOrgId = extractOrgIdFromGcsUrl(url)
+      if (!urlOrgId || urlOrgId !== auth.orgId) {
+        return NextResponse.json(
+          { error: `削除権限がありません: ${url}` },
+          { status: 403 }
+        )
+      }
     }
 
     const deletePromises = urlsToDelete.map(url => {
@@ -289,4 +334,4 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     const errorMessage = error instanceof Error ? error.message : '画像削除処理中に予期せぬエラーが発生しました。';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
-}
+})
