@@ -5,9 +5,14 @@ import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
 import { fetchMutation } from 'convex/nextjs'
 import { Id } from '@/convex/_generated/dataModel'
+import createMiddleware from 'next-intl/middleware'
+import { routing } from './i18n/routing'
 
 // メンテナンスモードが有効かどうか
 const isMaintenance = false
+
+// next-intlミドルウェアの設定
+const intlMiddleware = createMiddleware(routing)
 
 // 認証不要なパス
 const publicPaths = [
@@ -75,12 +80,22 @@ const checkMaintenance = (pathname: string, req: NextRequest) => {
   }
 }
 
+// 言語設定を除いたパスを取得する関数
+const getPathnameWithoutLocale = (pathname: string): string => {
+  const segments = pathname.split('/')
+  if (segments.length > 1 && routing.locales.includes(segments[1] as any)) {
+    return `/${segments.slice(2).join('/')}`
+  }
+  return pathname
+}
+
 // Clerkミドルウェアの設定
 export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl // 現在のパスを取得
+  const pathnameWithoutLocale = getPathnameWithoutLocale(pathname)
 
   // メンテナンスチェックを行い、リダイレクトまたは次の処理へ進むレスポンスを取得
-  const maintenanceResponse = checkMaintenance(pathname, req)
+  const maintenanceResponse = checkMaintenance(pathnameWithoutLocale, req)
   // maintenanceResponse が NextResponse オブジェクトであれば、それを返す
   if (maintenanceResponse instanceof NextResponse) {
     return maintenanceResponse
@@ -105,16 +120,16 @@ export default clerkMiddleware(async (auth, req) => {
     `[Middleware] Auth session cookie (${LINE_LOGIN_SESSION_KEY}): ${lineSessionCookie ? 'present' : 'absent'}, value: ${lineSessionCookie?.value ? 'has content' : 'empty'}`
   )
 
-  // 公開パスの判定
-  const isPublic = isPublicPath(pathname)
-  console.log(`[Middleware] Pathname: ${pathname}, Is public path? ${isPublic}`)
+  // 公開パスの判定（ロケール除去後のパスで判定）
+  const isPublic = isPublicPath(pathnameWithoutLocale)
+  console.log(`[Middleware] Pathname: ${pathname}, Without locale: ${pathnameWithoutLocale}, Is public path? ${isPublic}`)
 
-  // 認証ページの判定
-  const isAuthPg = isAuthPath(pathname)
+  // 認証ページの判定（ロケール除去後のパスで判定）
+  const isAuthPg = isAuthPath(pathnameWithoutLocale)
   console.log(`[Middleware] Is auth page? ${isAuthPg}`)
 
-  // 保護されたAPIエンドポイントの判定
-  const isProtectedApi = isProtectedApiPath(pathname)
+  // 保護されたAPIエンドポイントの判定（ロケール除去後のパスで判定）
+  const isProtectedApi = isProtectedApiPath(pathnameWithoutLocale)
   console.log(`[Middleware] Is protected API path? ${isProtectedApi}`)
 
   let response: NextResponse // 生成するレスポンスを格納する変数
@@ -124,7 +139,11 @@ export default clerkMiddleware(async (auth, req) => {
   // Clerkでログイン済みの場合はダッシュボードへリダイレクト
   if (isAuthPg) {
     if (userId) {
-      const dashboardUrl = new URL(`/dashboard`, req.url)
+      // 現在の言語を保持してダッシュボードへリダイレクト
+      const locale = pathname.split('/')[1]
+      const isValidLocale = routing.locales.includes(locale as any)
+      const redirectLocale = isValidLocale ? locale : routing.defaultLocale
+      const dashboardUrl = new URL(`/${redirectLocale}/dashboard`, req.url)
       console.log(
         `[Middleware] User is authenticated with Clerk on auth page, redirecting to dashboard: ${dashboardUrl.toString()}`
       )
@@ -133,8 +152,8 @@ export default clerkMiddleware(async (auth, req) => {
       console.log(
         `[Middleware] User is not authenticated with Clerk, proceeding to auth page: ${pathname}`
       )
-      response = NextResponse.next() // レスポンスを設定
-      // Clerk middleware will handle rendering the auth page for non-authenticated users
+      // next-intlミドルウェアを適用
+      response = intlMiddleware(req)
     }
   }
 
@@ -163,7 +182,11 @@ export default clerkMiddleware(async (auth, req) => {
     console.log(
       '[Middleware] User not authenticated (neither Clerk nor any session), redirecting to sign-in'
     )
-    const signInUrl = new URL('/sign-in', req.url)
+    // 現在の言語を保持してサインインページへリダイレクト
+    const locale = pathname.split('/')[1]
+    const isValidLocale = routing.locales.includes(locale as any)
+    const redirectLocale = isValidLocale ? locale : routing.defaultLocale
+    const signInUrl = new URL(`/${redirectLocale}/sign-in`, req.url)
     // 元のURLをクエリパラメータとして追加することも検討 (redirect_url)
     // signInUrl.searchParams.set('redirect_url', pathname);
     response = NextResponse.redirect(signInUrl) // レスポンスを設定
@@ -171,7 +194,8 @@ export default clerkMiddleware(async (auth, req) => {
   // 上記のどれにも当てはまらない場合 (公開パス or 認証済み)
   else {
     console.log('[Middleware] Request will proceed. Is public or user authenticated (Clerk/LINE).')
-    response = NextResponse.next() // レスポンスを設定
+    // next-intlミドルウェアを適用
+    response = intlMiddleware(req)
   }
 
   console.log(`[Middleware] Final response determined.`)
@@ -181,9 +205,11 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Clerk関連のAPI Routeも含めるように設定
-    '/((?!api/webhook|api/generate|api/storage|_next/static/|_next/image/|images/|img/|assets/|favicon.ico|sw.js).*)',
-    // Clerk API Routeを明示的に含める
-    '/api/clerk/:path*',
+    // Skip all paths that should bypass middleware
+    '/((?!api/webhook|api/generate|api/storage|_next/static|_next/image|assets|images|img|favicon.ico|apple-icon.*|icon.*|manifest.json|sw.js|robots.txt|sitemap.xml).*)',
+    // Include intl middleware
+    '/(ja|en)/:path*',
+    // Root path
+    '/',
   ],
 }
