@@ -28,7 +28,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import Image from 'next/image'
 import { getMinuteMultiples } from '@/lib/schedules' // getMinuteMultiplesを追加
-import { zNumberFieldOptional } from '@/lib/zod/helpers'
+import { zNumberFieldOptional } from '@/lib/validations/common'
 import {
   Tag,
   DollarSign,

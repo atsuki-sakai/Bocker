@@ -27,7 +27,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
-import { zNumberFieldOptional } from '@/lib/zod/helpers'
+import { zNumberFieldOptional } from '@/lib/validations/common'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
