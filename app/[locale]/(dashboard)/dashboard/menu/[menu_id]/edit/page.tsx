@@ -2,10 +2,13 @@
 
 import MenuEditForm from './MenuEditForm';
 import { DashboardSection, withManagerAccess } from '@/components/common';
+import { useTranslations } from 'next-intl';
 
 function MenuEditPage() {
+  const t = useTranslations('menus');
+  
   return (
-    <DashboardSection title="メニュー編集" backLink="/dashboard/menu" backLinkTitle="メニュー一覧">
+    <DashboardSection title={t('edit.title')} backLink="/dashboard/menu" backLinkTitle={t('list.title')}>
       <MenuEditForm />
     </DashboardSection>
   );

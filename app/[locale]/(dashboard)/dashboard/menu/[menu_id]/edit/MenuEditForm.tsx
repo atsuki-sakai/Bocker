@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Loading, ZodTextField } from '@/components/common'
 import { Loader2 } from 'lucide-react'
 import { MENU_CATEGORY_VALUES } from '@/convex/types'
@@ -66,101 +67,108 @@ import { MAX_NUM, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
 import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
 
-// バリデーションスキーマ
-const schemaMenu = z
-  .object({
-    name: z
-      .string({
-        required_error: 'メニュー名は必須です',
-      })
-      .min(1, { message: 'メニュー名は必須です' })
-      .max(100, { message: 'メニュー名は100文字以内で入力してください' })
-      .optional(),
-    categories: z
-      .array(z.enum(MENU_CATEGORY_VALUES))
-      .min(1, { message: 'カテゴリは必須です' })
-      .optional(),
-    unit_price: z
-      .number({
-        required_error: '価格は必須です',
-      })
-      .min(1, { message: '価格は必須です' })
-      .max(MAX_NUM, { message: `価格は${MAX_NUM}円以下で入力してください` })
-      .nullable()
-      .optional()
-      .refine((val) => val !== null, { message: '価格は必須です' })
-      .optional(),
-    sale_price: zNumberFieldOptional(MAX_NUM, `セール価格は${MAX_NUM}円以下で入力してください`),
-    duration_min: z
-      .number({
-        required_error: '実際にスタッフが稼働する施術時間は必須です',
-      })
-      .refine((val) => val !== null || val !== undefined || val !== 0, {
-        message: '実際にスタッフが稼働する施術時間は必須です',
-      })
-      .optional(),
-    images: z
-      .array(
-        z.object({
-          original_url: z.string(),
-          thumbnail_url: z.string(),
-        })
-      )
-      .optional(),
-    remove_images: z
-      .array(
-        z.object({
-          original_url: z.string(),
-          thumbnail_url: z.string(),
-        })
-      )
-      .optional(),
-    description: z
-      .string()
-      .min(1, { message: '説明は必須です' })
-      .max(MAX_NOTES_LENGTH, { message: `説明は${MAX_NOTES_LENGTH}文字以内で入力してください` })
-      .optional(),
-    target_gender: z.enum(GENDER_VALUES, { message: '性別は必須です' }).optional(),
-    target_type: z
-      .enum(ACTIVE_CUSTOMER_TYPE_VALUES, { message: '対象タイプは必須です' })
-      .optional(),
-    tags: z.preprocess(
-      (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
-      z
-        .string()
-        .max(MAX_TAG_LENGTH, { message: `タグは${MAX_TAG_LENGTH}文字以内で入力してください` })
-        .transform((val) =>
-          val
-            ? val
-                .replace(/[,、]/g, ',')
-                .split(',')
-                .map((tag) => tag.trim())
-                .filter((tag) => tag !== '')
-            : []
-        )
-        .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
-        .optional()
-    ),
-    payment_method: z
-      .enum(MENU_PAYMENT_METHOD_VALUES, { message: '支払い方法は必須です' })
-      .optional(),
-    is_active: z.boolean({ message: '有効/無効フラグは必須です' }).optional(),
-  })
-  .refine(
-    (data) => {
-      // salePriceが存在する場合のみ、priceとの比較を行う
-      if (data.sale_price && data.unit_price && data.sale_price >= data.unit_price) {
-        return false
-      }
-      return true
-    },
-    {
-      message: 'セール価格は通常価格より低く設定してください',
-      path: ['sale_price'], // エラーメッセージをsalePriceフィールドに表示
-    }
-  )
+// 翻訳関数型定義
+type TranslationValues = Record<string, string | number | Date>
+type TranslationFunction = (key: string, params?: TranslationValues) => string
 
-// エラーメッセージコンポーネント
+// バリデーションスキーマを生成する関数
+const createMenuSchema = (t: TranslationFunction) =>
+  z
+    .object({
+      name: z
+        .string({
+          required_error: t('validation.nameRequired'),
+        })
+        .min(1, { message: t('validation.nameRequired') })
+        .max(100, { message: t('validation.nameMaxLength') })
+        .optional(),
+      categories: z
+        .array(z.enum(MENU_CATEGORY_VALUES))
+        .min(1, { message: t('validation.categoryRequired') })
+        .optional(),
+      unit_price: z
+        .number({
+          required_error: t('validation.priceRequired'),
+        })
+        .min(1, { message: t('validation.priceMin') })
+        .max(MAX_NUM, { message: t('validation.priceMax', { max: MAX_NUM }) })
+        .nullable()
+        .optional()
+        .refine((val) => val !== null, { message: t('validation.priceRequired') })
+        .optional(),
+      sale_price: zNumberFieldOptional(MAX_NUM, t('validation.salePriceMax', { max: MAX_NUM })),
+      duration_min: z
+        .number({
+          required_error: t('validation.durationRequired'),
+        })
+        .refine((val) => val !== null || val !== undefined || val !== 0, {
+          message: t('validation.durationRequired'),
+        })
+        .optional(),
+      images: z
+        .array(
+          z.object({
+            original_url: z.string(),
+            thumbnail_url: z.string(),
+          })
+        )
+        .optional(),
+      remove_images: z
+        .array(
+          z.object({
+            original_url: z.string(),
+            thumbnail_url: z.string(),
+          })
+        )
+        .optional(),
+      description: z
+        .string()
+        .min(1, { message: t('validation.descriptionRequired') })
+        .max(MAX_NOTES_LENGTH, {
+          message: t('validation.descriptionMax', { max: MAX_NOTES_LENGTH }),
+        })
+        .optional(),
+      target_gender: z.enum(GENDER_VALUES, { message: t('validation.genderRequired') }).optional(),
+      target_type: z
+        .enum(ACTIVE_CUSTOMER_TYPE_VALUES, { message: t('validation.targetTypeRequired') })
+        .optional(),
+      tags: z.preprocess(
+        (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
+        z
+          .string()
+          .max(MAX_TAG_LENGTH, { message: t('validation.tagsLengthMax', { max: MAX_TAG_LENGTH }) })
+          .transform((val) =>
+            val
+              ? val
+                  .replace(/[,、]/g, ',')
+                  .split(',')
+                  .map((tag) => tag.trim())
+                  .filter((tag) => tag !== '')
+              : []
+          )
+          .refine((val) => val.length <= 5, { message: t('validation.tagsMax') })
+          .optional()
+      ),
+      payment_method: z
+        .enum(MENU_PAYMENT_METHOD_VALUES, { message: t('validation.paymentMethodRequired') })
+        .optional(),
+      is_active: z.boolean({ message: t('validation.isActiveRequired') }).optional(),
+    })
+    .refine(
+      (data) => {
+        // salePriceが存在する場合のみ、priceとの比較を行う
+        if (data.sale_price && data.unit_price && data.sale_price >= data.unit_price) {
+          return false
+        }
+        return true
+      },
+      {
+        message: t('validation.salePriceLower'),
+        path: ['sale_price'], // エラーメッセージをsalePriceフィールドに表示
+      }
+    )
+
+// Error message component
 const ErrorMessage = ({ message }: { message: string | undefined }) => (
   <motion.p
     className="text-destructive-foreground text-sm mt-1 flex items-center gap-1"
@@ -176,6 +184,7 @@ export default function MenuEditForm() {
   const router = useRouter()
   const params = useParams()
   const menuId = params.menu_id as Id<'menu'>
+  const t = useTranslations('menus')
   const { orgId, tenantId, subscriptionStatus } = useTenantAndOrganization()
   const menuData = useQuery(api.menu.query.findById, { menu_id: menuId })
 
@@ -192,6 +201,9 @@ export default function MenuEditForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const updateMenu = useMutation(api.menu.mutation.update)
+
+  // メニュー用バリデーションスキーマをメモ化
+  const schemaMenu = useMemo(() => createMenuSchema(t), [t])
 
   const {
     register,
