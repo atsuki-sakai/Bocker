@@ -9,9 +9,10 @@ import { api } from '@/convex/_generated/api'
 import { useQuery, useMutation } from 'convex/react'
 import { useZodForm } from '@/hooks/useZodForm'
 import { motion } from 'framer-motion'
-import { format } from 'date-fns'
-import { ja } from 'date-fns/locale'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import { useTranslations, useLocale } from 'next-intl'
+import { formatDate } from '@/lib/formatDate'
+import type { SupportedLocale } from '@/lib/dateLocale'
 // コンポーネントのインポート
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExclusionMenu } from '@/components/common'
@@ -48,93 +49,6 @@ import { toast } from 'sonner'
 import { ZodTextField } from '@/components/common'
 import { MAX_COUPON_UID_LENGTH } from '@/convex/constants'
 
-const couponSchema = z
-  .object({
-    name: z.string().min(1, 'クーポン名を入力してください'),
-    coupon_uid: z
-      .string()
-      .min(1, 'クーポンUIDを入力してください')
-      .max(
-        MAX_COUPON_UID_LENGTH,
-        `クーポンUIDは${MAX_COUPON_UID_LENGTH}文字以内で入力してください`
-      ),
-    discount_type: z.enum(['percentage', 'fixed']),
-    percentage_discount_value: z.preprocess(
-      (val) => {
-        if (val === '' || val === null || val === undefined) return null
-        const num = Number(val)
-        return isNaN(num) ? null : num
-      },
-      z.number().nullable() // min/maxバリデーションを削除し、superRefineで処理
-    ),
-    fixed_discount_value: z.preprocess(
-      (val) => {
-        if (val === '' || val === null || val === undefined) return null
-        const num = Number(val)
-        return isNaN(num) ? null : num
-      },
-      z.number().nullable() // min/maxバリデーションを削除し、superRefineで処理
-    ),
-    is_active: z.boolean(),
-    start_date: z.date(),
-    end_date: z.date().refine((date) => date > new Date(), {
-      message: '終了日は現在より後の日付を選択してください',
-    }),
-    max_use_count: z.number().min(0, '0以上の値を入力してください'),
-    number_of_use: z.number().min(0, '0以上の値を入力してください'),
-    selected_menu_ids: z.array(z.string()).optional(),
-    active_customer_type: z.enum(ACTIVE_CUSTOMER_TYPE_VALUES),
-  })
-  .superRefine((data, ctx) => {
-    if (data.discount_type === 'percentage') {
-      if (data.percentage_discount_value === null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: '割引率を入力してください',
-          path: ['percentage_discount_value'],
-        })
-      } else {
-        if (data.percentage_discount_value <= 0) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: '1%以上の値を入力してください',
-            path: ['percentage_discount_value'],
-          })
-        }
-        if (data.percentage_discount_value > 100) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: '割引率は100%以下で入力してください',
-            path: ['percentage_discount_value'],
-          })
-        }
-      }
-    } else if (data.discount_type === 'fixed') {
-      if (data.fixed_discount_value === null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: '割引額を入力してください',
-          path: ['fixed_discount_value'],
-        })
-      } else {
-        if (data.fixed_discount_value <= 0) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: '1円以上の値を入力してください',
-            path: ['fixed_discount_value'],
-          })
-        }
-        if (data.fixed_discount_value > 99999) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: '割引額は99999円以下で入力してください',
-            path: ['fixed_discount_value'],
-          })
-        }
-      }
-    }
-  })
-
 // アニメーション定義
 const fadeIn = {
   hidden: { opacity: 0, y: 10 },
@@ -142,24 +56,40 @@ const fadeIn = {
   exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
 }
 
+// 日付表示コンポーネント
+function DateDisplay({ date, locale }: { date: Date; locale: SupportedLocale }) {
+  const [formattedDate, setFormattedDate] = useState('')
+
+  useEffect(() => {
+    const format = async () => {
+      const formatted = await formatDate(date, 'PPP', locale)
+      setFormattedDate(formatted)
+    }
+    format()
+  }, [date, locale])
+
+  return <>{formattedDate}</>
+}
+
 interface CouponEditPageProps {
   params: Promise<{ coupon_id: Id<'coupon'> }>
 }
+
 // ページコンポーネント
 function CouponEditPage({ params }: CouponEditPageProps) {
   const unwrappedParams = React.use(params)
   const { coupon_id } = unwrappedParams
+  const t = useTranslations('coupon')
+
   return (
     <DashboardSection
-      title="クーポンを編集"
+      title={t('editCoupon')}
       backLink="/dashboard/coupon"
-      backLinkTitle="クーポン一覧へ戻る"
+      backLinkTitle={t('backToList')}
     >
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
-          <p className="text-sm text-muted-foreground">
-            クーポン情報を編集して内容を変更できます。
-          </p>
+          <p className="text-sm text-muted-foreground">{t('description.editIntro')}</p>
           <Separator className="my-2" />
         </div>
 
@@ -169,22 +99,52 @@ function CouponEditPage({ params }: CouponEditPageProps) {
   )
 }
 
+// 型定義: クーポンプレビューデータ
+interface CouponPreviewData {
+  name?: string
+  coupon_uid?: string
+  discount_type: 'percentage' | 'fixed'
+  percentage_discount_value?: number | null
+  fixed_discount_value?: number | null
+  is_active: boolean
+  start_date?: Date
+  end_date?: Date
+  number_of_use?: number
+  max_use_count?: number
+}
+
 // クーポンプレビューコンポーネント
 function CouponPreview({
   data,
   selectedMenuIds,
+  locale,
 }: {
-  data: z.infer<typeof couponSchema>
+  data: CouponPreviewData
   selectedMenuIds: Id<'menu'>[]
+  locale: SupportedLocale
 }) {
-  const formatDate = (date: Date | undefined) => {
-    if (!date) return '未設定'
-    try {
-      return format(date, 'yyyy/MM/dd', { locale: ja })
-    } catch {
-      return '無効な日付'
+  const t = useTranslations('coupon')
+  const [formattedStartDate, setFormattedStartDate] = useState('')
+  const [formattedEndDate, setFormattedEndDate] = useState('')
+
+  useEffect(() => {
+    const formatDates = async () => {
+      if (data.start_date) {
+        const start = await formatDate(data.start_date, 'PPP', locale)
+        setFormattedStartDate(start)
+      } else {
+        setFormattedStartDate(t('notSet'))
+      }
+
+      if (data.end_date) {
+        const end = await formatDate(data.end_date, 'PPP', locale)
+        setFormattedEndDate(end)
+      } else {
+        setFormattedEndDate(t('notSet'))
+      }
     }
-  }
+    formatDates()
+  }, [data.start_date, data.end_date, locale, t])
 
   return (
     <div className="w-full">
@@ -192,7 +152,7 @@ function CouponPreview({
         <CardHeader className="pb-2 bg-muted text-primary text-xl">
           <CardTitle className="flex items-center gap-2">
             <Tag size={18} />
-            {data.name || 'クーポン名'}
+            {data.name || t('couponName')}
           </CardTitle>
           <span className="text-sm tracking-wide text-muted-foreground">{data.coupon_uid}</span>
         </CardHeader>
@@ -216,26 +176,29 @@ function CouponPreview({
             <div className="grid grid-cols-2 gap-2 text-sm mt-2">
               <div className="flex items-center gap-1 text-muted-foreground">
                 <CalendarFull size={14} />
-                <span>開始日:</span>
+                <span>{t('startDate')}:</span>
               </div>
-              <div className="text-right">{formatDate(data.start_date)}</div>
+              <div className="text-right">{formattedStartDate}</div>
 
               <div className="flex items-center gap-1 text-muted-foreground">
                 <CalendarFull size={14} />
-                <span>終了日:</span>
+                <span>{t('endDate')}:</span>
               </div>
-              <div className="text-right">{formatDate(data.end_date)}</div>
+              <div className="text-right">{formattedEndDate}</div>
 
               <div className="flex items-center gap-1 text-muted-foreground">
                 <Hash size={14} />
-                <span>利用回数:</span>
+                <span>{t('usageCount')}:</span>
               </div>
               <div className="text-right ">
                 <span className="text-sm">
-                  {isNaN(data.number_of_use) ? 0 : data.number_of_use || 0}
+                  {isNaN(data.number_of_use ?? 0) ? 0 : data.number_of_use || 0}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  / {isNaN(data.max_use_count) ? '無制限' : data.max_use_count || '無制限'}
+                  /{' '}
+                  {data.max_use_count === undefined || isNaN(data.max_use_count)
+                    ? t('unlimited')
+                    : data.max_use_count}
                 </span>
               </div>
             </div>
@@ -243,13 +206,13 @@ function CouponPreview({
         </CardContent>
         <CardFooter className="bg-muted pt-2 pb-2 flex justify-between">
           <div className="text-xs text-muted-foreground">
-            クーポン適用外メニュー: {selectedMenuIds.length || 0}件
+            {t('excludedMenus')}: {selectedMenuIds.length || 0}
           </div>
           <Badge
             variant={data.is_active ? 'default' : 'destructive'}
             className={`h-6 ${data.is_active ? 'bg-active-foreground text-active' : 'bg-destructive text-destructive-foreground'}`}
           >
-            {data.is_active ? '有効' : '無効'}
+            {data.is_active ? t('active') : t('inactive')}
           </Badge>
         </CardFooter>
       </Card>
@@ -260,6 +223,9 @@ function CouponPreview({
 // メインのフォームコンポーネント
 function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
   const router = useRouter()
+  const t = useTranslations('coupon')
+  const tCommon = useTranslations('common')
+  const locale = useLocale() as SupportedLocale
   const { tenantId, orgId } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   // 状態管理
@@ -283,6 +249,91 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
   )
 
   const { coupon, couponConfig, exclusionMenus } = couponCompleteData ?? {}
+
+  const couponSchema = z
+    .object({
+      name: z.string().min(1, t('validation.nameMinLength')),
+      coupon_uid: z
+        .string()
+        .min(1, t('validation.codeMinLength'))
+        .max(MAX_COUPON_UID_LENGTH, t('validation.codeMaxLength', { max: MAX_COUPON_UID_LENGTH })),
+      discount_type: z.enum(['percentage', 'fixed']),
+      percentage_discount_value: z.preprocess(
+        (val) => {
+          if (val === '' || val === null || val === undefined) return null
+          const num = Number(val)
+          return isNaN(num) ? null : num
+        },
+        z.number().nullable() // min/maxバリデーションを削除し、superRefineで処理
+      ),
+      fixed_discount_value: z.preprocess(
+        (val) => {
+          if (val === '' || val === null || val === undefined) return null
+          const num = Number(val)
+          return isNaN(num) ? null : num
+        },
+        z.number().nullable() // min/maxバリデーションを削除し、superRefineで処理
+      ),
+      is_active: z.boolean(),
+      start_date: z.date(),
+      end_date: z.date().refine((date) => date > new Date(), {
+        message: t('validation.endDateFutureEdit'),
+      }),
+      max_use_count: z.number().min(0, t('validation.maxUseCountMin')),
+      number_of_use: z.number().min(0, t('validation.maxUseCountMin')),
+      selected_menu_ids: z.array(z.string()).optional(),
+      active_customer_type: z.enum(ACTIVE_CUSTOMER_TYPE_VALUES),
+    })
+    .superRefine((data, ctx) => {
+      if (data.discount_type === 'percentage') {
+        if (data.percentage_discount_value === null) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('validation.percentageRequired'),
+            path: ['percentage_discount_value'],
+          })
+        } else {
+          if (data.percentage_discount_value <= 0) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('validation.percentageMin'),
+              path: ['percentage_discount_value'],
+            })
+          }
+          if (data.percentage_discount_value > 100) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('validation.percentageMax'),
+              path: ['percentage_discount_value'],
+            })
+          }
+        }
+      } else if (data.discount_type === 'fixed') {
+        if (data.fixed_discount_value === null) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('validation.fixedRequired'),
+            path: ['fixed_discount_value'],
+          })
+        } else {
+          if (data.fixed_discount_value <= 0) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('validation.fixedMin'),
+              path: ['fixed_discount_value'],
+            })
+          }
+          if (data.fixed_discount_value > 99999) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('validation.fixedMax'),
+              path: ['fixed_discount_value'],
+            })
+          }
+        }
+      }
+    })
+
   // フォーム管理
   const {
     register,
@@ -303,7 +354,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     setIsSaving(true)
     try {
       if (!tenantId || !orgId) {
-        toast.error('テナントまたは店舗が存在しません')
+        toast.error(t('error.tenantOrOrgNotFound'))
         setIsSaving(false)
         return
       }
@@ -312,8 +363,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
           statusCode: ERROR_STATUS_CODE.NOT_FOUND,
           severity: ERROR_SEVERITY.ERROR,
           callFunc: 'coupon.query.getCouponRelatedTablesAndExclusionMenus',
-          message: 'クーポン設定が存在しません',
-          title: 'エラー',
+          message: t('error.couponConfigNotFound'),
+          title: tCommon('error'),
           status: 500,
           details: {
             couponId: couponId,
@@ -346,7 +397,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         coupon_id: couponId,
         selected_menu_ids: selectedMenuIds,
       })
-      toast.success('クーポンを更新しました')
+      toast.success(t('couponUpdated'))
       setTimeout(() => {
         router.push(`/dashboard/coupon`)
       }, 300)
@@ -407,8 +458,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <Tabs defaultValue="preview" className="md:col-span-2">
           <TabsList>
-            <TabsTrigger value="preview">基本設定</TabsTrigger>
-            <TabsTrigger value="detail">クーポン適用外メニュー設定</TabsTrigger>
+            <TabsTrigger value="preview">{t('basicSettings')}</TabsTrigger>
+            <TabsTrigger value="detail">{t('excludedMenus')}</TabsTrigger>
           </TabsList>
           <TabsContent value="preview">
             {/* フォーム入力部分 */}
@@ -419,36 +470,36 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                     register={register}
                     errors={errors}
                     name="name"
-                    label="クーポン名"
+                    label={t('couponName')}
                     icon={<Tag size={16} />}
-                    placeholder="例: 初回限定20%OFF"
+                    placeholder={t('placeholder.couponName')}
                   />
                   <ZodTextField
                     register={register}
                     errors={errors}
                     name="coupon_uid"
-                    label="クーポンコード"
+                    label={t('couponCode')}
                     icon={<Hash size={16} />}
-                    placeholder="例: COUPON-00123"
+                    placeholder={t('placeholder.editCouponCode')}
                   />
                   <span className="text-xs text-muted-foreground">
-                    こちらのコードをクーポンコードとして入力する事で割引が適応されます。
+                    {t('description.editCouponCode')}
                   </span>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 justify-end items-end">
                     <div className="flex flex-col gap-2 ">
                       <Label className="flex items-center gap-2 text-primary">
                         <Percent size={16} />
-                        割引タイプ
+                        {t('discountType')}
                       </Label>
                       <span className="text-xs text-muted-foreground">
-                        利用額に対する割引率と固定割引額を選択できます。
+                        {t('description.editDiscountType')}
                       </span>
                       <div className="flex items-center gap-3 bg-muted p-2 rounded-md">
                         <div
                           className={`flex-1 text-center text-sm p-2 rounded-md ${discountType === 'percentage' ? 'bg-link text-link-foreground font-medium' : 'text-muted-foreground'}`}
                         >
-                          割引率
+                          {t('percentageDiscount')}
                         </div>
                         <Controller
                           control={control}
@@ -466,7 +517,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                         <div
                           className={`flex-1 text-center text-sm  p-2 rounded-md ${discountType === 'fixed' ? 'bg-active-foreground text-active font-medium' : 'text-muted-foreground'}`}
                         >
-                          固定金額
+                          {t('fixedDiscount')}
                         </div>
                       </div>
                     </div>
@@ -477,10 +528,10 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                         register={register}
                         errors={errors}
                         name="percentage_discount_value"
-                        label="割引率 (%)"
+                        label={t('percentageDiscount')}
                         type="number"
                         icon={<Percent size={16} />}
-                        placeholder="例: 10"
+                        placeholder={t('placeholder.percentage')}
                       />
                     </div>
                     <div className={discountType === 'fixed' ? '' : 'hidden'}>
@@ -488,10 +539,10 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                         register={register}
                         errors={errors}
                         name="fixed_discount_value"
-                        label="固定割引額 (円)"
+                        label={t('fixedDiscount')}
                         type="number"
                         icon={<PiggyBank size={16} />}
-                        placeholder="例: 1000"
+                        placeholder={t('placeholder.fixed')}
                       />
                     </div>
                   </div>
@@ -502,7 +553,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                     <div className="flex flex-col gap-2">
                       <Label className="flex items-center gap-2 text-primary">
                         <CalendarIcon size={16} />
-                        開始日
+                        {t('startDate')}
                       </Label>
                       <Controller
                         control={control}
@@ -518,16 +569,15 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {field.value ? (
-                                  format(field.value, 'yyyy年MM月dd日', { locale: ja })
+                                  <DateDisplay date={field.value} locale={locale} />
                                 ) : (
-                                  <span>日付を選択</span>
+                                  <span>{t('selectDate')}</span>
                                 )}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                               <CalendarComponent
                                 mode="single"
-                                locale={ja}
                                 selected={field.value}
                                 onSelect={field.onChange}
                                 initialFocus
@@ -553,7 +603,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                     <div className="flex flex-col gap-2">
                       <Label className="flex items-center gap-2 text-primary">
                         <CalendarIcon size={16} />
-                        終了日
+                        {t('endDate')}
                       </Label>
                       <Controller
                         control={control}
@@ -569,16 +619,15 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {field.value ? (
-                                  format(field.value, 'yyyy年MM月dd日', { locale: ja })
+                                  <DateDisplay date={field.value} locale={locale} />
                                 ) : (
-                                  <span>日付を選択</span>
+                                  <span>{t('selectDate')}</span>
                                 )}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                               <CalendarComponent
                                 mode="single"
-                                locale={ja}
                                 selected={field.value}
                                 onSelect={field.onChange}
                                 initialFocus
@@ -602,14 +651,16 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    クーポンの有効期間は開始日から終了日までになります。
+                    {t('description.validPeriod')}
                     <br />
-                    期間が過ぎた場合クーポンは自動的に利用できなくなります。
+                    {t('description.validPeriodSecondary')}
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                     <div className="flex flex-col gap-2">
-                      <Label className="flex items-center gap-2 text-primary">現在の利用回数</Label>
+                      <Label className="flex items-center gap-2 text-primary">
+                        {t('currentUseCount')}
+                      </Label>
                       <p className="text-sm">
                         <span className="text-sm">
                           {isNaN(formValues.number_of_use) ? 0 : formValues.number_of_use || 0}
@@ -617,8 +668,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                         /
                         <span className="text-sm ml-1 text-muted-foreground">
                           {isNaN(formValues.max_use_count)
-                            ? '無制限'
-                            : formValues.max_use_count || '無制限'}
+                            ? t('unlimited')
+                            : formValues.max_use_count || t('unlimited')}
                         </span>
                       </p>
                     </div>
@@ -626,10 +677,10 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                       register={register}
                       errors={errors}
                       name="max_use_count"
-                      label="最大利用回数"
+                      label={t('maxUseCount')}
                       type="number"
                       icon={<Hash size={16} />}
-                      placeholder="例: 100"
+                      placeholder={t('placeholder.maxUseCount')}
                     />
                   </div>
                 </div>
@@ -646,17 +697,17 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                               htmlFor="is_active"
                               className="flex items-center gap-2 text-primary cursor-pointer"
                             >
-                              クーポンの有効/無効
+                              {t('isActive')}
                             </Label>
                             <span className="text-xs text-muted-foreground">
-                              無効にするとクーポンは利用できなくなります。
+                              {t('description.editActiveStatus')}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span
                               className={`text-xs px-2 py-0.5 rounded-md font-bold ${field.value ? 'bg-active-foreground text-active' : 'bg-destructive text-destructive-foreground'}`}
                             >
-                              {field.value ? '有効' : '無効'}
+                              {field.value ? t('active') : t('inactive')}
                             </span>
                             <Switch
                               id="is_active"
@@ -679,7 +730,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                         <>
                           <Label className="flex items-center gap-2 text-primary">
                             <User size={14} />
-                            <span>対象顧客:</span>
+                            <span>{t('targetCustomer')}:</span>
                           </Label>
                           <ToggleGroup
                             type="single"
@@ -687,16 +738,18 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                             onValueChange={field.onChange}
                             className="flex items-center justify-start w-fit gap-4 bg-muted p-3 rounded-md"
                           >
-                            <ToggleGroupItem value="all">全利用者</ToggleGroupItem>
-                            <ToggleGroupItem value="first_time">初回利用者</ToggleGroupItem>
-                            <ToggleGroupItem value="repeat">リピーター</ToggleGroupItem>
+                            <ToggleGroupItem value="all">{t('allCustomers')}</ToggleGroupItem>
+                            <ToggleGroupItem value="first_time">
+                              {t('firstTimeCustomers')}
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="repeat">{t('repeatCustomers')}</ToggleGroupItem>
                           </ToggleGroup>
                         </>
                       )}
                     />
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    クーポンを利用できる対象顧客属性を選択してください。
+                    {t('description.targetCustomer')}
                   </span>
                 </div>
               </div>
@@ -704,7 +757,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
           </TabsContent>
           <TabsContent value="detail">
             <ExclusionMenu
-              title="適用しないメニュー"
+              title={t('excludedMenuDescription')}
               selectedMenuIds={selectedMenuIds}
               setSelectedMenuIdsAction={(menuIds: Id<'menu'>[]) => {
                 setSelectedMenuIds(menuIds)
@@ -716,7 +769,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         {/* プレビュー部分 */}
         <div className="md:col-span-1">
           <div className="sticky top-4 space-y-4">
-            <CouponPreview data={previewData} selectedMenuIds={selectedMenuIds} />
+            <CouponPreview data={previewData} selectedMenuIds={selectedMenuIds} locale={locale} />
 
             <div className="mt-6">
               <Button
@@ -728,20 +781,18 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    追加中...
+                    {t('adding')}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    クーポンを更新
+                    {t('updateCoupon')}
                   </>
                 )}
               </Button>
 
               {isDirty && (
-                <p className="text-xs text-center mt-2 text-muted-foreground">
-                  変更があります。保存を忘れずに。
-                </p>
+                <p className="text-xs text-center mt-2 text-muted-foreground">{t('hasChanges')}</p>
               )}
             </div>
           </div>
