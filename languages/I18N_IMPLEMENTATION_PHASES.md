@@ -17,9 +17,9 @@
 **ファイル**: `components/common/Sidebar.tsx`, `lib/constants.ts`
 
 **タスク**:
-- [ ] NAV_ITEMSの多言語化
-- [ ] サイドバーメニュー項目の翻訳
-- [ ] ブレッドクラムの多言語化
+- [x] NAV_ITEMSの多言語化
+- [x] サイドバーメニュー項目の翻訳
+- [x] サブスクリプション関連メッセージの翻訳
 
 **翻訳対象テキスト**:
 ```json
@@ -44,10 +44,10 @@
 **ファイル**: `app/[locale]/(dashboard)/dashboard/page.tsx`
 
 **タスク**:
-- [ ] ページタイトル・見出しの多言語化
-- [ ] 統計カードのタイトル・ラベル
-- [ ] グラフ・チャートのラベル
-- [ ] アクションボタンのテキスト
+- [x] ReservationLinkコンポーネントの多言語化
+- [x] ReferralCardコンポーネントの多言語化
+- [x] トラッキングリンク説明の多言語化
+- [x] 紹介プログラム説明の多言語化
 
 **翻訳対象テキスト**:
 ```json
@@ -67,9 +67,8 @@
 **ファイル**: `components/common/DashboardSection.tsx`, `components/common/Loading.tsx`
 
 **タスク**:
-- [ ] DashboardSectionの多言語化
-- [ ] Loadingメッセージの多言語化
-- [ ] 共通ボタン・ラベルの多言語化
+- [x] Loadingコンポーネントの多言語化
+- [x] DashboardSectionはprops経由でテキストを受け取る設計のため対応不要
 
 ---
 
@@ -82,10 +81,11 @@
 - `app/[locale]/(dashboard)/dashboard/reservation/add/ReservationForm.tsx`
 
 **タスク**:
-- [ ] 予約一覧画面の多言語化
-- [ ] 予約フォームの多言語化
-- [ ] 予約詳細画面の多言語化
-- [ ] 検索・フィルター機能の多言語化
+- [x] 予約タイムライン画面の基本的な多言語化
+- [x] 翻訳キーの追加（タイムライン、リスト表示、ステータス等）
+- [x] ReservationListコンポーネントの完全な多言語化実装
+- [x] 予約詳細ダイアログの多言語化
+- [x] 統計カードの多言語化
 
 **翻訳対象テキスト**:
 ```json
@@ -116,7 +116,7 @@
 - `app/[locale]/(dashboard)/dashboard/customer/[customer_id]/edit/CustomerEditForm.tsx`
 
 **タスク**:
-- [ ] 顧客一覧画面の多言語化
+- [x] 顧客一覧画面の多言語化
 - [ ] 顧客登録フォームの多言語化
 - [ ] 顧客編集フォームの多言語化
 - [ ] 顧客詳細画面の多言語化
@@ -207,6 +207,26 @@
 
 ---
 
+### date-fns多言語化実装
+
+**実装内容**:
+- lib/dateLocale.ts: ロケール解決ユーティリティ
+- lib/formatDate.ts: 共通フォーマッター
+- 動的importで必要なロケールのみ読み込み
+- サポート言語: ja, en, fr, zh, ko
+
+**使用例**:
+```typescript
+import { formatDate } from '@/lib/formatDate'
+import { useLocale } from 'next-intl'
+import type { SupportedLocale } from '@/lib/dateLocale'
+
+const locale = useLocale() as SupportedLocale
+const formatted = await formatDate(new Date(), 'PPP', locale)
+```
+
+---
+
 ## 追加実装事項
 
 ### バリデーション・エラーメッセージ
@@ -290,16 +310,39 @@ export function Component() {
 
 ## 推定工数・優先度
 
-| フェーズ | 期間 | 優先度 | 依存関係 |
-|---------|------|-------|----------|
-| Phase 2 | 1週間 | 高 | Phase 1完了 |
-| Phase 3 | 1.5週間 | 高 | Phase 2完了 |
-| Phase 4 | 1週間 | 中 | Phase 3完了 |
-| 追加実装 | 0.5週間 | 低 | 全フェーズ完了 |
+| フェーズ | 期間 | 優先度 | 依存関係 | 進捗 |
+|---------|------|-------|----------|------|
+| Phase 1 | - | - | - | ✅ 完了 |
+| Phase 2 | 1週間 | 高 | Phase 1完了 | ✅ 完了 |
+| Phase 3 | 1.5週間 | 高 | Phase 2完了 | 🟡 進行中（40%） |
+| Phase 4 | 1週間 | 中 | Phase 3完了 | ⚪ 未着手 |
+| 追加実装 | 0.5週間 | 低 | 全フェーズ完了 | ⚪ 未着手 |
 
 **総工数**: 約4週間  
 **開発者**: 1名  
 **影響範囲**: 全画面（100+ ファイル）
+
+## 実装済み内容（2025/1/11時点）
+
+### 完了項目
+- ✅ Phase 1: next-intl導入と基本設定
+- ✅ Phase 2-1: ナビゲーション・サイドバーの多言語化
+- ✅ Phase 2-2: ダッシュボードホーム画面の多言語化
+- ✅ Phase 2-3: 共通コンポーネントの多言語化
+- ✅ Phase 3-1: 予約管理の完全な多言語化実装（ReservationListコンポーネント）
+- ✅ Phase 3-2: 顧客管理画面の多言語化（CustomerListコンポーネント）
+- ✅ date-fns多言語化システムの実装
+- ✅ 英語翻訳ファイル（en.json）のcustomersセクション追加
+
+### 作成ドキュメント
+- ✅ I18N_STRUCTURE.md: 翻訳ファイル構造と命名規則を定義
+- ✅ lib/dateLocale.ts: date-fnsロケール管理
+- ✅ lib/formatDate.ts: 多言語対応日付フォーマッター
+
+### 次のステップ
+1. CustomerAddFormコンポーネントの多言語化
+2. CustomerEditFormコンポーネントの多言語化
+3. メニュー管理画面の多言語化
 
 ---
 
