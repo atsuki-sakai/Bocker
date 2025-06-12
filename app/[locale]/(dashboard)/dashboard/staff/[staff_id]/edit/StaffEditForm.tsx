@@ -61,7 +61,6 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
-import Image from 'next/image'
 
 // Create a schema factory function to get translations
 const createStaffEditSchema = (t: ReturnType<typeof useTranslations>) =>
@@ -371,10 +370,6 @@ export default function StaffEditForm() {
     }
   }
 
-  const handleShowDeleteDialog = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    setShowDeleteDialog(true)
-  }
 
   const handleDeleteImage = async () => {
     setIsDeletingImage(true)
@@ -447,7 +442,7 @@ export default function StaffEditForm() {
     }
 
     initializeForm()
-  }, [reset, staffAllData, watch])
+  }, [reset, staffAllData, watch, t])
 
   const exclusionChanged = useMemo(() => {
     if (exclusionMenus === undefined) return false // データ未ロード時は false

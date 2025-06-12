@@ -57,6 +57,7 @@ interface MenuDetailContentProps {
 export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   const router = useRouter()
   const t = useTranslations('menus.detail')
+  const tCommon = useTranslations('common')
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const deleteMenu = useMutation(api.menu.mutation.kill)
@@ -110,10 +111,24 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   }, [menu])
 
   const getTargetTypeLabel = (type: string): string => {
+    const labels = {
+      targetType: {
+        'all': tCommon('targetType.all'),
+        'male': tCommon('targetType.male'),
+        'female': tCommon('targetType.female')
+      }
+    }
     return labels.targetType[type as keyof typeof labels.targetType] || type
   }
 
   const getPaymentMethodLabel = (method: string): string => {
+    const labels = {
+      paymentMethod: {
+        'cash': tCommon('paymentMethod.cash'),
+        'card': tCommon('paymentMethod.card'),
+        'both': tCommon('paymentMethod.both')
+      }
+    }
     return labels.paymentMethod[method as keyof typeof labels.paymentMethod] || method
   }
 
