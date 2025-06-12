@@ -10,8 +10,10 @@ import { Button } from '@/components/ui/button'
 import InviteManagement from './_components/InviteManagement'
 import { useQuery } from 'convex/react'
 import { CheckCircleIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 export default function StaffList() {
+  const t = useTranslations()
   const { tenantId, orgId } = useTenantAndOrganization()
 
   // 招待状態を含むスタッフ一覧を取得
@@ -47,32 +49,32 @@ export default function StaffList() {
                       scope="col"
                       className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
                     >
-                      ステータス
+                      {t('staff.list.status')}
                     </th>
 
                     <th
                       scope="col"
                       className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
                     >
-                      画像
+                      {t('staff.list.image')}
                     </th>
                     <th
                       scope="col"
                       className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
                     >
-                      名前
+                      {t('staff.list.name')}
                     </th>
                     <th
                       scope="col"
                       className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
                     >
-                      説明
+                      {t('staff.list.description')}
                     </th>
                     <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
-                      <span className="sr-only">詳細</span>
+                      <span className="sr-only">{t('staff.list.details')}</span>
                     </th>
                     <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
-                      <span className="sr-only">編集</span>
+                      <span className="sr-only">{t('staff.list.edit')}</span>
                     </th>
                   </tr>
                 </thead>
@@ -83,11 +85,11 @@ export default function StaffList() {
                         <td className="py-4 pr-3 pl-4 text-xs font-medium whitespace-nowrap text-muted-foreground sm:pl-6">
                           {staff.is_active ? (
                             <Badge variant="outline" className="bg-active-foreground text-active">
-                              有効
+                              {t('staff.active')}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="bg-muted  text-muted-foreground">
-                              無効
+                              {t('staff.inactive')}
                             </Badge>
                           )}
                         </td>
@@ -117,7 +119,7 @@ export default function StaffList() {
                           )}
                         </td>
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
-                          {staff.name ?? '未設定'}
+                          {staff.name ?? t('staff.list.notSet')}
                         </td>
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                           {staff.description && staff.description.length > 20 ? (
@@ -133,7 +135,7 @@ export default function StaffList() {
                             className="text-purple-600 hover:text-purple-900"
                           >
                             <Button variant="ghost" size="sm">
-                              <span>詳細</span>
+                              <span>{t('staff.list.details')}</span>
                             </Button>
                           </Link>
                         </td>
@@ -143,7 +145,7 @@ export default function StaffList() {
                             className="text-indigo-600 hover:text-indigo-900"
                           >
                             <Button variant="ghost" size="sm">
-                              <span>編集</span>
+                              <span>{t('staff.list.edit')}</span>
                             </Button>
                           </Link>
                         </td>
@@ -152,7 +154,7 @@ export default function StaffList() {
                   ) : (
                     <tr className="h-24 text-center">
                       <td colSpan={12} className="text-sm text-gray-500">
-                        スタッフが見つかりません
+                        {t('staff.list.noStaff')}
                       </td>
                     </tr>
                   )}

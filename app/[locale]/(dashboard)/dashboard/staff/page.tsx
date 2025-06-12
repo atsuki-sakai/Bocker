@@ -2,20 +2,23 @@
 
 import { DashboardSection } from '@/components/common';
 import { withOwnerAccess } from '@/components/common';
+import { useTranslations } from 'next-intl';
 import StaffList from './StaffList';
 
 function StaffPage() {
+  const t = useTranslations();
+
   return (
     <DashboardSection
-      title="スタッフ一覧"
+      title={t('staff.list.title')}
       backLink="/dashboard"
-      backLinkTitle="ダッシュボード"
+      backLinkTitle={t('navigation.dashboard')}
       infoBtn={{
-        text: 'スタッフを追加',
+        text: t('staff.addStaff'),
         link: '/dashboard/staff/add',
       }}
       subBtn={{
-        text: 'スタッフの勤務管理',
+        text: t('staff.workScheduleManagement'),
         link: '/dashboard/staff/schedule',
       }}
     >

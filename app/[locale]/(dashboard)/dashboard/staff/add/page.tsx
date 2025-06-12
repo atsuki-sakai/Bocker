@@ -38,6 +38,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ConvexError } from 'convex/values'
 import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
+import { useTranslations } from 'next-intl'
 
 import {
   Save,
@@ -56,20 +57,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExclusionMenu, withOwnerAccess } from '@/components/common'
 
 // sendInviteEmailフラグに応じて動的にバリデーションを変更するスキーマファクトリー関数
-const createStaffAddSchema = (sendInviteEmail: boolean) =>
+const createStaffAddSchema = (sendInviteEmail: boolean, t: ReturnType<typeof useTranslations>) =>
   z.object({
     // 名前：招待メール送信時は任意、通常作成時は必須
     name: z
       .string()
-      .min(1, { message: '名前は必須です' })
-      .max(MAX_TEXT_LENGTH, { message: `名前は${MAX_TEXT_LENGTH}文字以内で入力してください` }),
+      .min(1, { message: t('staff.validation.nameRequired') })
+      .max(MAX_TEXT_LENGTH, { message: t('staff.validation.nameMaxLength', { max: MAX_TEXT_LENGTH }) }),
 
     // メールアドレス：招待メール送信時は必須、通常作成時は任意
     email: sendInviteEmail
       ? z
           .string()
-          .min(1, { message: 'メールアドレスは必須です' })
-          .email({ message: 'メールアドレスが不正です' })
+          .min(1, { message: t('staff.validation.emailRequired') })
+          .email({ message: t('staff.validation.emailInvalid') })
       : z.string().optional().nullable(),
 
     instagram_link: z
@@ -82,7 +83,7 @@ const createStaffAddSchema = (sendInviteEmail: boolean) =>
           return str === '' ? undefined : str
         },
         // undefined が渡れば optional でスキップ、文字列なら URL バリデーション
-        z.string().url({ message: 'URLが不正です' }).optional()
+        z.string().url({ message: t('staff.validation.urlInvalid') }).optional()
       )
       .nullable(), // null も許容したい場合のみ残します
 
@@ -96,7 +97,7 @@ const createStaffAddSchema = (sendInviteEmail: boolean) =>
         const num = Number(val)
         return isNaN(num) ? null : num
       },
-      z.number().max(99, { message: '年齢は99以下で入力してください' }).nullable().optional()
+      z.number().max(99, { message: t('staff.validation.ageMax') }).nullable().optional()
     ),
 
     // 説明：招待メール送信時は任意、通常作成時は必須
@@ -104,7 +105,7 @@ const createStaffAddSchema = (sendInviteEmail: boolean) =>
       ? z.string().max(MAX_NOTES_LENGTH).optional().nullable()
       : z
           .string()
-          .min(1, { message: '説明は必須です' })
+          .min(1, { message: t('staff.validation.descriptionRequired') })
           .max(MAX_NOTES_LENGTH)
           .optional()
           .nullable(),
@@ -124,7 +125,7 @@ const createStaffAddSchema = (sendInviteEmail: boolean) =>
       (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
       z
         .string()
-        .max(100, { message: 'タグは合計100文字以内で入力してください' })
+        .max(100, { message: t('staff.validation.tagsMaxLength') })
         .transform((val) =>
           val
             ? val
@@ -134,7 +135,7 @@ const createStaffAddSchema = (sendInviteEmail: boolean) =>
                 .filter((tag) => tag !== '')
             : []
         )
-        .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
+        .refine((val) => val.length <= 5, { message: t('staff.validation.tagsMaxCount') })
     ),
 
     extra_charge: z.preprocess(
@@ -147,7 +148,7 @@ const createStaffAddSchema = (sendInviteEmail: boolean) =>
       },
       z
         .number()
-        .max(99999, { message: '指名料金は99999円以下で入力してください' })
+        .max(99999, { message: t('staff.validation.nominationFeeMax', { max: 99999 }) })
         .nullable()
         .optional()
     ),
@@ -160,7 +161,7 @@ const createStaffAddSchema = (sendInviteEmail: boolean) =>
         const num = Number(val)
         return isNaN(num) ? null : num
       },
-      z.number().max(999, { message: '優先度は999以下で入力してください' }).nullable().optional()
+      z.number().max(999, { message: t('staff.validation.priorityMax') }).nullable().optional()
     ),
 
     selected_menu_ids: z.array(z.string()).optional(),
@@ -168,6 +169,7 @@ const createStaffAddSchema = (sendInviteEmail: boolean) =>
 
 function StaffAddPage() {
   const router = useRouter()
+  const t = useTranslations()
   const { tenantId, orgId, planName } = useTenantAndOrganization()
   const { user } = useUser()
   const { showErrorToast } = useErrorHandler()
@@ -183,7 +185,7 @@ function StaffAddPage() {
   const menuExclusionStaffUpsert = useMutation(api.menu.menu_exclusion_staff.mutation.upsert)
 
   // sendInviteEmailフラグに応じて動的にスキーマを生成
-  const staffAddSchema = createStaffAddSchema(sendInviteEmail)
+  const staffAddSchema = createStaffAddSchema(sendInviteEmail, t)
 
   const {
     register,
@@ -202,7 +204,7 @@ function StaffAddPage() {
 
     try {
       if (!tenantId || !orgId || !planName) {
-        toast.error('店舗が見つかりません')
+        toast.error(t('staff.messages.storeNotFound'))
         return
       }
 
@@ -220,9 +222,7 @@ function StaffAddPage() {
           const isAdmin = userEmail === data.email && user?.publicMetadata.role === 'admin'
           if (sendInviteEmail && data.email) {
             if (isAdmin) {
-              toast.error(
-                '管理者はスタッフアカウントを作成できません。アカウントを作成せずにスタッフを作成してください。'
-              )
+              toast.error(t('staff.messages.adminCannotCreateStaff'))
               setIsLoading(false)
               return
             }
@@ -238,7 +238,7 @@ function StaffAddPage() {
               )
 
               if (!emailCheckResult.isAvailable) {
-                toast.error(`このメールアドレスは既に登録されています`)
+                toast.error(t('staff.messages.emailAlreadyRegistered'))
                 setIsLoading(false)
                 return
               }
@@ -310,21 +310,21 @@ function StaffAddPage() {
           if (!inviteResponse.ok) {
             // 招待失敗時のエラーハンドリング
             if (inviteResponse.status === 400 && inviteData.error?.includes('Clerk')) {
-              toast.error('このメールアドレスは既にClerkに登録されています')
+              toast.error(t('staff.messages.emailAlreadyInClerk'))
             } else {
-              toast.error(`招待メール送信失敗: ${inviteData.error || '不明なエラー'}`)
+              toast.error(t('staff.messages.inviteFailed', { error: inviteData.error || 'Unknown error' }))
             }
             return
           }
 
-          toast.success('スタッフ招待メールを送信しました', {
+          toast.success(t('staff.messages.inviteEmailSent'), {
             icon: <Check className="h-4 w-4 text-active" />,
           })
           router.push('/dashboard/staff')
           return
         } catch (inviteError) {
           console.error('🚨 招待メール送信エラー:', inviteError)
-          toast.error('招待メール送信中にエラーが発生しました')
+          toast.error(t('staff.messages.inviteError'))
           return
         }
       } else {
@@ -397,7 +397,7 @@ function StaffAddPage() {
             selected_menu_ids: exclusionMenuIds,
           })
 
-          toast.success('スタッフを追加しました', {
+          toast.success(t('staff.messages.staffAdded'), {
             icon: <Check className="h-4 w-4 text-active" />,
           })
 
@@ -490,15 +490,15 @@ function StaffAddPage() {
 
   return (
     <DashboardSection
-      title="スタッフを追加"
+      title={t('staff.add.title')}
       backLink="/dashboard/staff"
-      backLinkTitle="スタッフ一覧"
+      backLinkTitle={t('staff.list.title')}
     >
       <form onSubmit={handleSubmit(onSubmit)}>
         <Tabs defaultValue="basic">
           <TabsList>
-            <TabsTrigger value="basic">基本情報</TabsTrigger>
-            <TabsTrigger value="exclusion">対応外メニュー設定</TabsTrigger>
+            <TabsTrigger value="basic">{t('staff.add.tabBasicInfo')}</TabsTrigger>
+            <TabsTrigger value="exclusion">{t('staff.add.tabExclusionMenu')}</TabsTrigger>
           </TabsList>
           <TabsContent value="basic">
             <motion.div
@@ -518,13 +518,11 @@ function StaffAddPage() {
                           onCheckedChange={(checked) => setSendInviteEmail(checked)}
                         />
                         <Label htmlFor="send_invite_email" className="text-sm cursor-pointer">
-                          招待メールを送信してスタッフアカウントを作成
+                          {t('staff.add.sendInviteEmail')}
                         </Label>
                       </div>
                       <p className="text-xs text-muted-foreground w-fit">
-                        スタッフアカウントを作成する事でスタッフのアカウントでもログイン可能になり、スケジュールやカルテの編集を行うことができます。
-                        <br />
-                        招待メールを送信した後、認証後にスタッフアカウントでログインできるようになります。
+                        {t('staff.add.sendInviteEmailDesc')}
                       </p>
                     </div>
                     {/* 権限設定セクション */}
@@ -532,7 +530,7 @@ function StaffAddPage() {
                       <div>
                         <div className="flex items-center mb-4">
                           <Shield className="h-5 w-5 mr-2 text-active" />
-                          <h3 className="font-semibold text-lg">招待・権限設定</h3>
+                          <h3 className="font-semibold text-lg">{t('staff.add.invitePermissionSettings')}</h3>
                         </div>
                         <div className="grid md:grid-cols-2 gap-6">
                           <div className="flex flex-col space-y-4 items-center gap-2 w-full">
@@ -540,31 +538,31 @@ function StaffAddPage() {
                               <ZodTextField
                                 name="email"
                                 icon={<Mail className="h-4 w-4 mr-2 text-muted-foreground" />}
-                                label="招待先メールアドレス"
+                                label={t('staff.add.inviteEmail')}
                                 register={register}
                                 errors={errors}
-                                placeholder="メールアドレスを入力してください"
+                                placeholder={t('staff.add.inviteEmailPlaceholder')}
                               />
                               <p className="text-xs text-muted-foreground mt-2">
-                                こちらのメールアドレスに招待メールを送信します。
+                                {t('staff.add.inviteEmailHelp')}
                               </p>
                             </div>
                             <div className="grid grid-cols-3 gap-3">
                               {[
                                 {
                                   role: 'staff',
-                                  label: 'スタッフ',
-                                  desc: '基本的な予約確認と自身の情報管理のみ',
+                                  label: t('staff.roles.staff'),
+                                  desc: t('staff.edit.roleStaffDesc'),
                                 },
                                 {
                                   role: 'manager',
-                                  label: 'マネージャー',
-                                  desc: 'スタッフ管理と基本設定の変更が可能',
+                                  label: t('staff.roles.manager'),
+                                  desc: t('staff.edit.roleManagerDesc'),
                                 },
                                 {
                                   role: 'owner',
-                                  label: 'オーナー',
-                                  desc: 'すべての機能にアクセス可能',
+                                  label: t('staff.roles.owner'),
+                                  desc: t('staff.edit.roleOwnerDesc'),
                                 },
                               ].map((item) => (
                                 <motion.div
@@ -589,47 +587,44 @@ function StaffAddPage() {
                               <div className="flex items-center mb-2">
                                 <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
                                 <Label className="font-medium text-muted-foreground">
-                                  権限設定
+                                  {t('staff.add.permissionSettings')}
                                 </Label>
                               </div>
                               <div className="mt-1">
                                 {/* 権限詳細説明 */}
                                 <div className="mb-4 p-3 bg-background rounded-md border border-border">
                                   <h4 className="text-sm font-medium text-foreground mb-2">
-                                    🔐 権限詳細
+                                    {t('staff.add.permissionDetails')}
                                   </h4>
                                   <div className="space-y-2 text-xs text-muted-foreground">
                                     <div className="border-l-2 border-palette-1-foreground pl-2">
                                       <strong className="text-palette-1-foreground">
-                                        オーナー：
+                                        {t('staff.add.ownerRole')}
                                       </strong>
                                       <span className="ml-1">
-                                        マネージャー権限 + スタッフ管理、ポイント設定、システム設定
-                                        + サブスクリプション管理
+                                        {t('staff.add.ownerRoleDesc')}
                                       </span>
                                     </div>
                                     <div className="border-l-2 border-palette-4-foreground pl-2">
                                       <strong className="text-palette-4-foreground">
-                                        マネージャー：
+                                        {t('staff.add.managerRole')}
                                       </strong>
                                       <span className="ml-1">
-                                        スタッフ権限 +
-                                        スタッフ予定表、メニュー管理、顧客管理、オプション管理、クーポン管理
+                                        {t('staff.add.managerRoleDesc')}
                                       </span>
                                     </div>
                                     <div className="border-l-2 border-palette-3-foreground pl-2">
                                       <strong className="text-palette-3-foreground">
-                                        スタッフ：
+                                        {t('staff.add.staffRole')}
                                       </strong>
                                       <span className="ml-1">
-                                        ダッシュボード、予約作成・タイムライン、顧客カルテ管理
+                                        {t('staff.add.staffRoleDesc')}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="mt-3 pt-2 border-t border-border">
                                     <p className="text-xs text-warning-foreground font-medium">
-                                      ⚠️
-                                      重要：権限は階層制になっており、上位権限は下位権限のすべての機能を利用できます。
+                                      {t('staff.add.permissionNote')}
                                     </p>
                                   </div>
                                 </div>
@@ -646,7 +641,7 @@ function StaffAddPage() {
                         <div className="mb-2 flex items-center">
                           <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
                           <span className="text-sm font-medium text-muted-foreground">
-                            スタッフ画像
+                            {t('staff.add.staffImage')}
                           </span>
                         </div>
 
@@ -662,11 +657,11 @@ function StaffAddPage() {
                         <div>
                           <ZodTextField
                             name="name"
-                            label="名前"
+                            label={t('staff.name')}
                             icon={<User className="h-4 w-4 mr-2 text-muted-foreground" />}
                             register={register}
                             errors={errors}
-                            placeholder="名前を入力してください"
+                            placeholder={t('staff.add.namePlaceholder')}
                             className="transition-all duration-200"
                           />
                         </div>
@@ -675,23 +670,23 @@ function StaffAddPage() {
                           <div className="w-full">
                             <Label className="flex items-center mb-2 font-medium text-muted-foreground">
                               <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                              性別
+                              {t('staff.add.gender')}
                             </Label>
                             <Select
                               defaultValue="unselected"
                               onValueChange={(value) => setValue('gender', value as Gender)}
                             >
                               <SelectTrigger className="w-full">
-                                <SelectValue placeholder="性別を選択してください" />
+                                <SelectValue placeholder={t('staff.add.genderPlaceholder')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {GENDER_VALUES.map((gender) => (
                                   <SelectItem key={gender} value={gender}>
                                     {gender === 'male'
-                                      ? '男性'
+                                      ? t('staff.add.male')
                                       : gender === 'female'
-                                        ? '女性'
-                                        : '未選択'}
+                                        ? t('staff.add.female')
+                                        : t('staff.add.unselected')}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -701,12 +696,12 @@ function StaffAddPage() {
                           <div className="w-full">
                             <ZodTextField
                               name="age"
-                              label="年齢"
+                              label={t('staff.add.age')}
                               icon={<Calendar className="h-4 w-4 mr-2 text-muted-foreground" />}
                               type="number"
                               register={register}
                               errors={errors}
-                              placeholder="年齢を入力してください"
+                              placeholder={t('staff.add.agePlaceholder')}
                             />
                           </div>
                         </div>
@@ -720,8 +715,8 @@ function StaffAddPage() {
                             setValue('tags', tags, { shouldValidate: true })
                           }}
                           error={errors.tags?.message}
-                          title="スタッフに付与するタグ"
-                          exampleText="ヘアセット, カット, メイク"
+                          title={t('staff.add.tagsTitle')}
+                          exampleText={t('staff.add.tagsExample')}
                         />
 
                         <div className="flex items-center space-x-2 pt-1">
@@ -732,14 +727,14 @@ function StaffAddPage() {
                           />
                           <Label htmlFor="is_active" className="text-xs cursor-pointer">
                             {watch('is_active') ? (
-                              <span className="text-active font-medium">有効</span>
+                              <span className="text-active font-medium">{t('staff.active')}</span>
                             ) : (
-                              <span className="text-destructive font-medium">無効</span>
+                              <span className="text-destructive font-medium">{t('staff.inactive')}</span>
                             )}
                           </Label>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          予約受け付けは有効の場合のみ可能になります。
+                          {t('staff.add.reservationAvailable')}
                         </span>
                       </div>
                     </div>
@@ -747,22 +742,22 @@ function StaffAddPage() {
                       <ZodTextField
                         icon={<Instagram className="h-4 w-4 mr-2 text-muted-foreground" />}
                         name="instagram_link"
-                        label="Instagramリンク"
+                        label={t('staff.add.instagramLink')}
                         register={register}
                         errors={errors}
-                        placeholder="スタッフのInstagramリンクを入力してください"
+                        placeholder={t('staff.add.instagramPlaceholder')}
                       />
                     </div>
                     <div className="mt-4">
                       <div className="flex items-center mb-2">
                         <Clipboard className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <Label className="font-medium text-muted-foreground">スタッフ紹介</Label>
+                        <Label className="font-medium text-muted-foreground">{t('staff.add.staffIntroduction')}</Label>
                       </div>
                       <Textarea
                         value={watch('description') ?? ''}
                         rows={10}
                         {...register('description')}
-                        placeholder="スタッフの紹介を入力してください"
+                        placeholder={t('staff.add.staffIntroductionPlaceholder')}
                         className="resize-none focus:ring-2 focus:ring-border transition-all duration-200"
                       />
                       {errors.description && (
@@ -784,37 +779,37 @@ function StaffAddPage() {
                   <div>
                     <div className="flex items-center mb-4">
                       <Sparkles className="h-5 w-5 mr-2 text-blue-500" />
-                      <h3 className="font-semibold text-lg">詳細設定</h3>
+                      <h3 className="font-semibold text-lg">{t('staff.add.advancedSettings')}</h3>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
                       <div>
                         <ZodTextField
                           name="extra_charge"
-                          label="指名料金"
+                          label={t('staff.add.nominationFee')}
                           type="number"
                           register={register}
                           errors={errors}
-                          placeholder="指名料金を入力してください"
+                          placeholder={t('staff.add.nominationFeePlaceholder')}
                           className="transition-all duration-200"
                         />
                         <p className="text-xs mt-1 text-gray-500">
-                          お客様がこのスタッフを指名した場合に追加料金を設定します。
+                          {t('staff.add.nominationFeeHelp')}
                         </p>
                       </div>
 
                       <div>
                         <ZodTextField
                           name="priority"
-                          label="優先度"
+                          label={t('staff.add.priority')}
                           type="number"
                           register={register}
                           errors={errors}
-                          placeholder="優先度を入力してください"
+                          placeholder={t('staff.add.priorityPlaceholder')}
                           className="transition-all duration-200"
                         />
                         <p className="text-xs mt-1 text-gray-500">
-                          数値が大きいほど予約画面などで上位に表示されます。
+                          {t('staff.add.priorityHelp')}
                         </p>
                       </div>
                     </div>
@@ -825,7 +820,7 @@ function StaffAddPage() {
           </TabsContent>
           <TabsContent value="exclusion">
             <ExclusionMenu
-              title="対応外メニュー"
+              title={t('staff.add.exclusionMenuTitle')}
               selectedMenuIds={exclusionMenuIds}
               setSelectedMenuIdsAction={(menuIds) => {
                 setExclusionMenuIds(menuIds)
@@ -849,19 +844,19 @@ function StaffAddPage() {
             className="flex items-center gap-1 border-border"
           >
             <ArrowLeft className="h-4 w-4" />
-            戻る
+            {t('staff.add.back')}
           </Button>
 
           <Button type="submit" disabled={isSubmitting || isLoading || !isDirty}>
             {isSubmitting || isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                追加中...
+                {t('staff.add.adding')}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                保存する
+                {t('staff.add.save')}
               </>
             )}
           </Button>

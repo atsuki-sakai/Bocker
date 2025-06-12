@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { useEffect, useState } from 'react'
 import { SingleImageDrop, Loading, TagInput } from '@/components/common'
 import { useStaffRoleUpdate } from '@/hooks/useStaffRoleUpdate'
+import { useTranslations } from 'next-intl'
 import {
   Dialog,
   DialogContent,
@@ -62,101 +63,104 @@ import { useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
 
-const staffAddSchema = z.object({
-  name: z.string().min(1, { message: '名前は必須です' }).max(MAX_TEXT_LENGTH),
-  instagram_link: z.preprocess(
-    (val) => {
-      // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null
-      return val
-    },
-    z.string().url({ message: 'URLが不正です' }).nullable().optional()
-  ),
-  pin_code: z
-    .string()
-    .min(MAX_PIN_CODE_LENGTH, {
-      message: `ピンコードは${MAX_PIN_CODE_LENGTH}文字で入力してください`,
-    })
-    .max(MAX_PIN_CODE_LENGTH, {
-      message: `ピンコードは${MAX_PIN_CODE_LENGTH}文字で入力してください`,
-    })
-    .optional()
-    .refine(
+// Create a schema factory function to get translations
+const createStaffEditSchema = (t: ReturnType<typeof useTranslations>) =>
+  z.object({
+    name: z.string().min(1, { message: t('staff.validation.nameRequired') }).max(MAX_TEXT_LENGTH),
+    instagram_link: z.preprocess(
       (val) => {
-        if (val === null || val === undefined) return true
-        return /^[A-Za-z0-9]+$/.test(val)
+        // 空文字列の場合はnullを返す
+        if (val === '' || val === null || val === undefined) return null
+        return val
       },
-      {
-        message: 'ピンコードは英大文字、英小文字、数字を含む6文字で入力してください',
-      }
+      z.string().url({ message: t('staff.validation.urlInvalid') }).nullable().optional()
     ),
-  gender: z.enum(GENDER_VALUES),
-
-  age: z.preprocess(
-    (val) => {
-      // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null
-      // 数値に変換できない場合もnullを返す
-      const num = Number(val)
-      return isNaN(num) ? null : num
-    },
-    z.number().max(99, { message: '年齢は99以下で入力してください' }).nullable().optional()
-  ),
-  description: z.string().min(1, { message: '説明は必須です' }).max(MAX_NOTES_LENGTH),
-  images: z.array(
-    z.object({
-      original_url: z.string(),
-      thumbnail_url: z.string(),
-    })
-  ),
-  role: z.enum(ROLE_VALUES),
-  extra_charge: z.preprocess(
-    (val) => {
-      // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null
-      // 数値に変換できない場合もnullを返す
-      const num = Number(val)
-      return isNaN(num) ? null : num
-    },
-    z
-      .number()
-      .max(MAX_NUM, { message: `指名料金は${MAX_NUM}円以下で入力してください` })
-      .nullable()
-      .optional()
-  ),
-  priority: z.preprocess(
-    (val) => {
-      // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null
-      // 数値に変換できない場合もnullを返す
-      const num = Number(val)
-      return isNaN(num) ? null : num
-    },
-    z.number().max(999, { message: '優先度は999以下で入力してください' }).nullable().optional()
-  ),
-  tags: z.preprocess(
-    (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
-    z
+    pin_code: z
       .string()
-      .max(100, { message: 'タグは合計100文字以内で入力してください' })
-      .transform((val) =>
-        val
-          ? val
-              .replace(/[,、]/g, ',')
-              .split(',')
-              .map((tag) => tag.trim())
-              .filter((tag) => tag !== '')
-          : []
-      )
-      .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
+      .min(MAX_PIN_CODE_LENGTH, {
+        message: t('staff.validation.pinCodeLength', { length: MAX_PIN_CODE_LENGTH }),
+      })
+      .max(MAX_PIN_CODE_LENGTH, {
+        message: t('staff.validation.pinCodeLength', { length: MAX_PIN_CODE_LENGTH }),
+      })
       .optional()
-  ),
-  is_active: z.boolean(),
-  exclusion_menu_ids: z.array(z.string()).optional(),
-})
+      .refine(
+        (val) => {
+          if (val === null || val === undefined) return true
+          return /^[A-Za-z0-9]+$/.test(val)
+        },
+        {
+          message: t('staff.validation.pinCodeFormat'),
+        }
+      ),
+    gender: z.enum(GENDER_VALUES),
+
+    age: z.preprocess(
+      (val) => {
+        // 空文字列の場合はnullを返す
+        if (val === '' || val === null || val === undefined) return null
+        // 数値に変換できない場合もnullを返す
+        const num = Number(val)
+        return isNaN(num) ? null : num
+      },
+      z.number().max(99, { message: t('staff.validation.ageMax') }).nullable().optional()
+    ),
+    description: z.string().min(1, { message: t('staff.validation.descriptionRequired') }).max(MAX_NOTES_LENGTH),
+    images: z.array(
+      z.object({
+        original_url: z.string(),
+        thumbnail_url: z.string(),
+      })
+    ),
+    role: z.enum(ROLE_VALUES),
+    extra_charge: z.preprocess(
+      (val) => {
+        // 空文字列の場合はnullを返す
+        if (val === '' || val === null || val === undefined) return null
+        // 数値に変換できない場合もnullを返す
+        const num = Number(val)
+        return isNaN(num) ? null : num
+      },
+      z
+        .number()
+        .max(MAX_NUM, { message: t('staff.validation.nominationFeeMax', { max: MAX_NUM }) })
+        .nullable()
+        .optional()
+    ),
+    priority: z.preprocess(
+      (val) => {
+        // 空文字列の場合はnullを返す
+        if (val === '' || val === null || val === undefined) return null
+        // 数値に変換できない場合もnullを返す
+        const num = Number(val)
+        return isNaN(num) ? null : num
+      },
+      z.number().max(999, { message: t('staff.validation.priorityMax') }).nullable().optional()
+    ),
+    tags: z.preprocess(
+      (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
+      z
+        .string()
+        .max(100, { message: t('staff.validation.tagsMaxLength') })
+        .transform((val) =>
+          val
+            ? val
+                .replace(/[,、]/g, ',')
+                .split(',')
+                .map((tag) => tag.trim())
+                .filter((tag) => tag !== '')
+            : []
+        )
+        .refine((val) => val.length <= 5, { message: t('staff.validation.tagsMaxCount') })
+        .optional()
+    ),
+    is_active: z.boolean(),
+    exclusion_menu_ids: z.array(z.string()).optional(),
+  })
 
 export default function StaffEditForm() {
   const router = useRouter()
+  const t = useTranslations()
   const { staff_id } = useParams()
   const { tenantId, orgId, role } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
@@ -201,6 +205,8 @@ export default function StaffEditForm() {
     return exclusionMenus ? [...exclusionMenus].sort() : []
   }, [exclusionMenus])
 
+  const staffEditSchema = createStaffEditSchema(t)
+
   const {
     register,
     handleSubmit,
@@ -208,9 +214,9 @@ export default function StaffEditForm() {
     setValue,
     formState: { isSubmitting, errors, isDirty },
     watch,
-  } = useZodForm(staffAddSchema)
+  } = useZodForm(staffEditSchema)
 
-  const onSubmit = async (data: z.infer<typeof staffAddSchema>) => {
+  const onSubmit = async (data: z.infer<typeof staffEditSchema>) => {
     setIsLoading(true)
     let staffId: Id<'staff'> | null = null
     let staffConfigId: Id<'staff_config'> | null = null
@@ -218,7 +224,7 @@ export default function StaffEditForm() {
 
     try {
       if (!tenantId || !orgId) {
-        toast.error('店舗が見つかりません')
+        toast.error(t('staff.messages.storeNotFound'))
         return
       }
 
@@ -308,7 +314,7 @@ export default function StaffEditForm() {
           )
         }
 
-        toast.success('スタッフを更新しました', {
+        toast.success(t('staff.messages.staffUpdated'), {
           icon: <Check className="h-4 w-4 text-green-500" />,
         })
         router.push('/dashboard/staff')
@@ -389,14 +395,14 @@ export default function StaffEditForm() {
         await removeStaffImages({
           staff_id: staff_id as Id<'staff'>,
         })
-        toast.success('画像を削除しました', {
+        toast.success(t('staff.edit.imageDeleteSuccess'), {
           icon: <Check className="h-4 w-4 text-active" />,
         })
         router.push('/dashboard/staff')
       }
     } catch (error) {
       console.error('画像削除中にエラーが発生しました:', error)
-      toast.error('画像削除中にエラーが発生しました', {
+      toast.error(t('staff.edit.imageDeleteError'), {
         icon: <X className="h-4 w-4 text-destructive-foreground" />,
       })
     } finally {
@@ -434,7 +440,7 @@ export default function StaffEditForm() {
         setCurrentTags(staffAllData.tags || [])
       } catch (error) {
         console.error('フォーム初期化中にエラーが発生しました:', error)
-        toast.error('フォームの初期化に失敗しました', {
+        toast.error(t('staff.messages.formInitializationError'), {
           icon: <X className="h-4 w-4 text-red-500" />,
         })
       }

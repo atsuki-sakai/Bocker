@@ -50,12 +50,12 @@ useEffect(() => {
 - [x] dashboard/coupon/edit
 - [x] dashboard/coupon/CouponList
 - [x] dashboard/menu/add
-- [ ] dashboard/menu/[menu_id]/edit
-- [ ] dashboard/menu/[menu_id]/MenuDetailContent
-- [ ] dashboard/menu/MenuList
-- [ ] dashboard/option/add
-- [ ] dashboard/option/edit
-- [ ] dashboard/option/OptionList
+- [x] dashboard/menu/[menu_id]/edit
+- [x] dashboard/menu/[menu_id]/MenuDetailContent
+- [x] dashboard/menu/MenuList
+- [x] dashboard/option/add
+- [x] dashboard/option/edit
+- [x] dashboard/option/OptionList
 - [ ] dashboard/staff/add
 - [ ] dashboard/staff/[staff_id]/edit
 - [ ] dashboard/staff/[staff_id]/StaffDetailContent
