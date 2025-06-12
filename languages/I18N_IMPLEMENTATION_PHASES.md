@@ -63,9 +63,9 @@ useEffect(() => {
 - [x] dashboard/customer/add
 - [x] dashboard/customer/[customer_id]/edit/CustomerEditForm.tsx
 - [x] dashboard/customer/[customer_id]/page.tsx (顧客詳細ページ)
-- [ ] dashboard/point
-- [ ] dashboard/point/pointTabs
-- [ ] dashboard/reservation/[reservation_id]/page
+- [x] dashboard/point
+- [x] dashboard/point/pointTabs
+- [x] dashboard/reservation/[reservation_id]/page
 - [ ] dashboard/reservation/add
 - [ ] dashboard/reservation/ReservationForm
 - [ ] dashboard/staff-schedule

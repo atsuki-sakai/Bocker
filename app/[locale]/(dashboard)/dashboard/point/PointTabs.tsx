@@ -241,9 +241,9 @@ export default function PointTabs() {
                     </div>
                   </div>
                   <div className="flex flex-col space-y-2">
-                    <Label htmlFor="point-type">ポイント付与タイプ</Label>
+                    <Label htmlFor="point-type">{t('basicSettings.pointType')}</Label>
                     <span className="text-xs text-muted-foreground">
-                      利用額に対してポイント付与するか、固定ポイントを付与するかを選択します。
+                      {t('basicSettings.pointTypeDescription')}
                     </span>
                     <div
                       className={`flex items-center justify-between p-3 rounded-md ${
@@ -253,7 +253,7 @@ export default function PointTabs() {
                       }`}
                     >
                       <span className="text-sm font-bold">
-                        {watchedIsFixedPoint ? '固定ポイント' : 'ポイント付与率'}
+                        {watchedIsFixedPoint ? t('basicSettings.fixedPoint') : t('basicSettings.pointRate')}
                       </span>
 
                       <Switch
@@ -271,7 +271,7 @@ export default function PointTabs() {
                       register={register}
                       errors={errors}
                       name="fixed_point"
-                      label="固定ポイント"
+                      label={t('basicSettings.fixedPoint')}
                       type="number"
                       icon={<DollarSign size={16} />}
                       placeholder="例: 100"
@@ -315,7 +315,7 @@ export default function PointTabs() {
                   )}
                   <div className="space-y-2">
                     <Label htmlFor="expiration" className=" font-medium">
-                      ポイント有効期限
+                      {t('basicSettings.expirationPeriod')}
                     </Label>
                     <Select
                       value={
@@ -326,7 +326,7 @@ export default function PointTabs() {
                       onValueChange={handleExpirationChange}
                     >
                       <SelectTrigger id="expiration" className="w-full">
-                        <SelectValue placeholder="ポイント有効期限（日）" />
+                        <SelectValue placeholder={t('basicSettings.expirationPeriod')} />
                       </SelectTrigger>
                       <SelectContent>
                         {POINT_EXPIRATION_DAYS.map((data) => (
@@ -337,9 +337,9 @@ export default function PointTabs() {
                       </SelectContent>
                     </Select>
                     <span className="text-xs text-slate-500">
-                      顧客のポイントはサロンを利用した最終日から
-                      {POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)?.label}
-                      後に失効します。
+                      {t('basicSettings.expirationDescription', { 
+                        period: POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)?.label || POINT_EXPIRATION_DAYS[0].label 
+                      })}
                     </span>
                   </div>
                 </div>
@@ -352,10 +352,10 @@ export default function PointTabs() {
                   <div className="bg-muted p-3">
                     <h5 className="flex items-center text-xl font-bold gap-2">
                       <Gift className="h-5 w-5 text-primary" />
-                      ポイント設定概要
+                      {t('summary.title')}
                     </h5>
                     <p className="text-sm text-muted-foreground mt-2">
-                      現在の設定内容が適用されるとどのように適応されるのかを確認できます。
+                      {t('summary.description')}
                     </p>
                   </div>
                   <div className="p-4">
@@ -363,28 +363,28 @@ export default function PointTabs() {
                       <div className="space-y-3 text-sm">
                         {watchedIsFixedPoint ? (
                           <p className="flex justify-between items-end text-sm font-bold">
-                            <span className="text-primary">固定ポイント:</span>
+                            <span className="text-primary">{t('summary.fixedPointLabel')}</span>
                             <span className="font-medium">
-                              {watch('fixed_point') || 0} ポイント
+                              {t('common.point.points', { count: watch('fixed_point') || 0 })}
                             </span>
                           </p>
                         ) : (
                           <p className="flex justify-between items-end text-sm font-bold">
-                            <span className="text-primary">ポイント付与率:</span>
+                            <span className="text-primary">{t('summary.pointRateLabel')}</span>
                             <span className="text-base font-bold tracking-wide">
                               {watch('point_rate') || 0}%
                             </span>
                           </p>
                         )}
                         <p className="flex justify-between items-end text-sm font-bold">
-                          <span className="text-primary">ポイント有効期限:</span>
+                          <span className="text-primary">{t('summary.expirationLabel')}</span>
                           <span className="text-base font-bold tracking-wide">
                             {POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)
                               ?.label || POINT_EXPIRATION_DAYS[0].label}
                           </span>
                         </p>
                         <p className="text-sm pt-4 w-full text-primary text-end">
-                          本日付与された場合、有効期限は{' '}
+                          {t('basicSettings.todayGrantedExpiry')}{' '}
                           <span className="font-bold">
                             {watchedExpirationDays
                               ? new Date(
@@ -400,27 +400,26 @@ export default function PointTabs() {
                                   day: '2-digit',
                                 })}
                           </span>
-                          です。
                         </p>
                       </div>
                       <Separator className="" />
                       <div className="space-y-4 py-4">
                         <div className=" bg-background  rounded shadow-sm">
-                          <p className="text-sm text-muted-foreground">1,000円の決済に対して</p>
+                          <p className="text-sm text-muted-foreground">{t('summary.forPayment', { amount: '1,000' })}</p>
                           <p className="text-lg font-bold">
                             {watchedIsFixedPoint
                               ? watch('fixed_point') || 0
                               : Math.floor((watch('point_rate') || 0) * 10)}{' '}
-                            <span className="text-xs">ポイント付与</span>
+                            <span className="text-xs">{t('summary.pointsGranted', { amount: '' }).replace('{amount}', '').trim()}</span>
                           </p>
                         </div>
                         <div className=" bg-background  rounded shadow-sm">
-                          <p className="text-sm text-muted-foreground">5,000円の決済に対して</p>
+                          <p className="text-sm text-muted-foreground">{t('summary.forPayment', { amount: '5,000' })}</p>
                           <p className="text-lg font-bold">
                             {watchedIsFixedPoint
                               ? watch('fixed_point') || 0
                               : Math.floor((watch('point_rate') || 0) * 50)}{' '}
-                            <span className="text-xs">ポイント付与</span>
+                            <span className="text-xs">{t('summary.pointsGranted', { amount: '' }).replace('{amount}', '').trim()}</span>
                           </p>
                         </div>
                       </div>
@@ -434,7 +433,7 @@ export default function PointTabs() {
 
         <TabsContent value="exclusions" key="exclusions-tab">
           <ExclusionMenu
-            title="購入されてもポイントを付与しないメニュー"
+            title={t('exclusionMenu.title')}
             selectedMenuIds={selectedMenuIds}
             setSelectedMenuIdsAction={(ids) => {
               setSelectedMenuIds(ids)
@@ -453,12 +452,12 @@ export default function PointTabs() {
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              追加中...
+              {t('saving')}
             </>
           ) : (
             <>
               <Save className="h-4 w-4" />
-              設定を保存
+              {t('saveButton')}
             </>
           )}
         </Button>
@@ -466,85 +465,83 @@ export default function PointTabs() {
       <Accordion type="single" collapsible className="space-y-2">
         {/* ① 付与の仕組み */}
         <AccordionItem value="point-scheme">
-          <AccordionTrigger>ポイント付与の仕組み</AccordionTrigger>
+          <AccordionTrigger>{t('accordion.grantMechanism')}</AccordionTrigger>
           <AccordionContent className="space-y-2 text-muted-foreground text-sm leading-relaxed bg-muted p-4 rounded-lg mb-4">
             <p>
-              <strong>付与日:</strong> 施術が完了した予約をまとめて計算し、
-              <span className="font-bold">利用月の翌月15日</span>に自動でポイントを付与します。
+              <strong>{t('accordion.grantDate')}</strong> {t('accordion.grantDateDesc')}
+              <span className="font-bold">{t('accordion.nextMonth15')}</span>{t('accordion.autoGrant')}
             </p>
             <ul className="list-disc list-inside space-y-1">
-              <li>例：4月来店分 ⇒ 5月15日に付与</li>
+              <li>{t('accordion.example')}</li>
             </ul>
 
             <p className="pt-2">
-              <strong>付与方法:</strong>
+              <strong>{t('accordion.grantMethod')}</strong>
             </p>
             <ul className="list-disc list-inside space-y-1">
-              <li>ポイント付与率: 決済額 × 設定率（%）。小数点以下は切り捨て。</li>
-              <li>固定ポイント: 施術メニューに関係なく一律ポイントを付与。</li>
+              <li>{t('accordion.pointRateMethod')}</li>
+              <li>{t('accordion.fixedPointMethod')}</li>
             </ul>
 
             <p className="pt-2">
-              <strong>交換レート:</strong> 1ポイント = 1円相当として会計時に利用できます。
+              <strong>{t('accordion.exchangeRate')}</strong> {t('accordion.exchangeRateDesc')}
             </p>
           </AccordionContent>
         </AccordionItem>
 
         {/* ② 失効タイミング */}
         <AccordionItem value="point-expiration">
-          <AccordionTrigger>ポイント失効のタイミング</AccordionTrigger>
+          <AccordionTrigger>{t('accordion.expirationTiming')}</AccordionTrigger>
           <AccordionContent className="space-y-2 text-muted-foreground text-sm leading-relaxed bg-muted p-4 rounded-lg mb-4">
             <p>
-              ポイントの有効期限はサロンを利用した最終日から
+              {t('accordion.expirationDesc')}
               <span className="font-bold">
                 {POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)?.label}
               </span>
-              後です。
+              {t('accordion.expirationAfter')}
             </p>
             <ul className="list-disc list-inside space-y-1">
-              <li>失効日はポイントごとに個別管理され、自動で残高から差し引かれます。</li>
-              <li>大量失効の 7〜14 日前にリマインド通知を送ると来店促進効果が高まります。</li>
+              <li>{t('accordion.expirationManagement')}</li>
+              <li>{t('accordion.reminderEffect')}</li>
             </ul>
           </AccordionContent>
         </AccordionItem>
 
         {/* ③ 注意点 */}
         <AccordionItem value="point-caution">
-          <AccordionTrigger>ポイント利用・付与の注意点</AccordionTrigger>
+          <AccordionTrigger>{t('accordion.cautions')}</AccordionTrigger>
           <AccordionContent className="space-y-2 text-muted-foreground text-sm leading-relaxed bg-muted p-4 rounded-lg mb-4">
             <ul className="list-disc list-inside space-y-1">
               <li>
-                ポイントを利用した決済額部分には新たなポイントは付与されません（二重付与防止）。
+                {t('accordion.cautionNoDouble')}
               </li>
               <li>
-                ポイントの利用は<span className="font-bold">ポイントを付与した店舗</span>でのみ
-                有効です。
+                {t('accordion.cautionSameStore')}<span className="font-bold">{t('accordion.cautionSameStoreOnly')}</span>{t('accordion.cautionSameStoreEnd')}
               </li>
 
               {/* 利用フローを段階的に説明 */}
               <li>
-                ポイント利用フロー:
+                {t('accordion.usageFlow')}
                 <ol className="list-decimal list-inside ml-5 space-y-0.5">
-                  <li>顧客が予約時に使用ポイント数を入力・確定</li>
+                  <li>{t('accordion.usageStep1')}</li>
                   <li>
-                    予約確定後に <code className="font-mono">利用コード</code> が自動発行
+                    {t('accordion.usageStep2')} <code className="font-mono">{t('accordion.usageCode')}</code> {t('accordion.usageStep2End')}
                   </li>
-                  <li>来店時に顧客がコードを提示し、スタッフが管理画面へ入力して確定</li>
+                  <li>{t('accordion.usageStep3')}</li>
                 </ol>
               </li>
-              <li>スタッフ確認が完了しない限りポイントは消費されません（不正利用防止）。</li>
+              <li>{t('accordion.cautionStaffConfirm')}</li>
 
               <li>
-                「ポイント対象外メニュー」に設定したメニューには{' '}
-                <span className="font-bold">ポイント加算されません</span>が、保有ポイントの
-                利用は可能です。
+                {t('accordion.cautionExclusionMenu')}{' '}
+                <span className="font-bold">{t('accordion.cautionNoPointAdded')}</span>{t('accordion.cautionCanUsePoints')}
               </li>
-              <li>付与率計算の端数は切り捨て推奨です。</li>
-              <li>未使用ポイントは会計上「ポイント引当金」として負債計上を推奨します。</li>
-              <li>ポイントは現金・他社ポイント等へ換金できません。</li>
+              <li>{t('accordion.cautionRounding')}</li>
+              <li>{t('accordion.cautionAccounting')}</li>
+              <li>{t('accordion.cautionNoCash')}</li>
               <li>
-                予約キャンセル時には<strong>付与予定ポイントを無効化</strong>
-                し、利用済みポイントがあれば自動で返還されます。
+                {t('accordion.cautionCancellation')}<strong>{t('accordion.cautionInvalidate')}</strong>
+                {t('accordion.cautionRefund')}
               </li>
             </ul>
           </AccordionContent>

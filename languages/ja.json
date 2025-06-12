@@ -1201,7 +1201,12 @@
     "last": "最後",
     "goToPage": "ページへ移動",
     "clear": "クリア",
-    "loadMore": "さらに表示"
+    "loadMore": "さらに表示",
+    "enable": "有効",
+    "disable": "無効",
+    "point": {
+      "points": "{count}ポイント"
+    }
   },
   "coupons": {
     "title": "クーポン管理",
@@ -1280,6 +1285,48 @@
       "salonNotFound": "サロンが見つかりません",
       "createSuccess": "クーポンを作成しました",
       "createError": "クーポンの適応外メニューの作成に失敗しました"
+    }
+  },
+  "reservationDetail": {
+    "title": "予約詳細",
+    "backToList": "予約一覧に戻る",
+    "selectStatus": "ステータスを選択",
+    "changeStatus": "ステータス変更",
+    "delete": "削除",
+    "dateTime": "日時",
+    "totalAmount": "合計金額",
+    "paymentMethod": "支払い方法",
+    "notes": "備考",
+    "customerInfo": "お客様情報",
+    "loadingCustomerData": "顧客情報を読み込み中",
+    "customerName": "お客様名",
+    "notSet": "未設定",
+    "phoneNumber": "電話番号",
+    "email": "メールアドレス",
+    "age": "年齢",
+    "yearsOld": "{age}歳",
+    "gender": "性別",
+    "points": "保有ポイント",
+    "pointsCount": "{count}ポイント",
+    "noCustomerLinked": "この予約にはお客様情報が関連付けられていません。",
+    "assignedStaff": "担当スタッフ",
+    "reservationContent": "予約内容",
+    "quantity": "数量",
+    "duration": "時間",
+    "minutes": "分",
+    "price": "価格",
+    "options": "オプション",
+    "noMenuReserved": "予約されたメニューはありません。",
+    "statusUpdated": "ステータスを変更しました",
+    "reservationDeleted": "予約を削除しました",
+    "changeStatusDialog": {
+      "title": "予約ステータス変更"
+    },
+    "deleteDialog": {
+      "title": "予約削除"
+    },
+    "errors": {
+      "fetchCustomerData": "顧客データの取得に失敗しました"
     }
   },
   "menus": {

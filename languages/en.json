@@ -64,7 +64,12 @@
     "submit": "Submit",
     "close": "Close",
     "clear": "Clear",
-    "loadMore": "Load More"
+    "loadMore": "Load More",
+    "enable": "Enable",
+    "disable": "Disable",
+    "point": {
+      "points": "{count} points"
+    }
   },
   "point": {
     "title": "Point Settings",
@@ -977,6 +982,48 @@
       "tenantOrOrgNotFound": "Tenant or store not found",
       "couponConfigNotFound": "Coupon settings not found",
       "createFailed": "Failed to create excluded menus for coupon"
+    }
+  },
+  "reservationDetail": {
+    "title": "Reservation Details",
+    "backToList": "Back to Reservation List",
+    "selectStatus": "Select Status",
+    "changeStatus": "Change Status",
+    "delete": "Delete",
+    "dateTime": "Date & Time",
+    "totalAmount": "Total Amount",
+    "paymentMethod": "Payment Method",
+    "notes": "Notes",
+    "customerInfo": "Customer Information",
+    "loadingCustomerData": "Loading customer data",
+    "customerName": "Customer Name",
+    "notSet": "Not Set",
+    "phoneNumber": "Phone Number",
+    "email": "Email Address",
+    "age": "Age",
+    "yearsOld": "{age} years old",
+    "gender": "Gender",
+    "points": "Points",
+    "pointsCount": "{count} points",
+    "noCustomerLinked": "No customer information is linked to this reservation.",
+    "assignedStaff": "Assigned Staff",
+    "reservationContent": "Reservation Content",
+    "quantity": "Quantity",
+    "duration": "Duration",
+    "minutes": "minutes",
+    "price": "Price",
+    "options": "Options",
+    "noMenuReserved": "No menus reserved.",
+    "statusUpdated": "Status updated successfully",
+    "reservationDeleted": "Reservation deleted successfully",
+    "changeStatusDialog": {
+      "title": "Change Reservation Status"
+    },
+    "deleteDialog": {
+      "title": "Delete Reservation"
+    },
+    "errors": {
+      "fetchCustomerData": "Failed to fetch customer data"
     }
   },
   "menus": {

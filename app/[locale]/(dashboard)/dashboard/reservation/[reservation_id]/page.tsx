@@ -36,6 +36,7 @@ import { RESERVATION_STATUS_VALUES } from '@/convex/types'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { CustomerRepository } from '@/services/supabase/repositories/customer'
+import { useTranslations } from 'next-intl'
 
 const statusColorMap = {
   confirmed: 'bg-palette-2-foreground border border-palette-2 text-palette-2',
@@ -49,6 +50,8 @@ export default function ReservationPage() {
   const { reservation_id } = useParams()
   const { showErrorToast } = useErrorHandler()
   const router = useRouter()
+  const t = useTranslations('reservationDetail')
+  const commonT = useTranslations('common')
   const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
 
@@ -117,8 +120,8 @@ export default function ReservationPage() {
         )
         setCustomerData(data)
       } catch (error) {
-        console.error('顧客データの取得に失敗しました:', error)
-        setCustomerError('顧客データの取得に失敗しました')
+        console.error('Failed to fetch customer data:', error)
+        setCustomerError(t('errors.fetchCustomerData'))
       } finally {
         setCustomerLoading(false)
       }
@@ -149,7 +152,7 @@ export default function ReservationPage() {
         status: status,
       })
 
-      toast.success('ステータスを変更しました')
+      toast.success(t('statusUpdated'))
       router.push('/dashboard/reservation')
     } catch (error) {
       showErrorToast(error)
@@ -166,7 +169,7 @@ export default function ReservationPage() {
   const handleDeleteReservation = async () => {
     try {
       await deleteReservation({ reservation_id: reservationData.reservation._id })
-      toast.success('予約を削除しました')
+      toast.success(t('reservationDeleted'))
       router.push('/dashboard/reservation')
     } catch (error) {
       showErrorToast(error)
@@ -177,9 +180,9 @@ export default function ReservationPage() {
 
   return (
     <DashboardSection
-      title="予約詳細"
+      title={t('title')}
       backLink="/dashboard/reservation"
-      backLinkTitle="予約一覧に戻る"
+      backLinkTitle={t('backToList')}
     >
       <div className="flex flex-col gap-8 bg-background">
         <div className="border-b pb-4">
@@ -190,7 +193,7 @@ export default function ReservationPage() {
                 onValueChange={(value) => setStatus(value as ReservationStatus)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="ステータスを選択" />
+                  <SelectValue placeholder={t('selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
                   {RESERVATION_STATUS_VALUES.map((status, index) => (
@@ -201,11 +204,11 @@ export default function ReservationPage() {
                 </SelectContent>
               </Select>
               <Button variant="default" onClick={(e) => handleShowUpdateStatusModal(e)}>
-                ステータス変更
+                {t('changeStatus')}
               </Button>
 
               <Button variant="destructive" onClick={(e) => handleShowDeleteModal(e)}>
-                削除
+                {t('delete')}
               </Button>
             </div>
           </div>
@@ -218,20 +221,20 @@ export default function ReservationPage() {
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">日時:</p>
+              <p className="text-muted-foreground">{t('dateTime')}:</p>
               <p className="font-medium text-lg">
                 {formatUnixTimestamp(reservationData.reservation.start_time_unix ?? 0)} -{' '}
                 {format(new Date(reservationData.reservation.start_time_unix ?? 0), 'HH:mm')}
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">合計金額:</p>
+              <p className="text-muted-foreground">{t('totalAmount')}:</p>
               <p className="font-medium text-lg">
                 ¥{reservationData.reservationDetail?.total_price}
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">支払い方法:</p>
+              <p className="text-muted-foreground">{t('paymentMethod')}:</p>
               <p className="font-medium text-lg">
                 {convertPaymentMethod(
                   reservationData.reservationDetail?.payment_method as PaymentMethod
@@ -241,7 +244,7 @@ export default function ReservationPage() {
             {reservationData.reservationDetail?.notes &&
               reservationData.reservationDetail?.notes.trim() !== '' && (
                 <div className="text-muted-foreground text-sm">
-                  <p className="font-medium text-lg">備考:</p>
+                  <p className="font-medium text-lg">{t('notes')}:</p>
                   <p className="text-muted-foreground text-sm">
                     {reservationData.reservationDetail?.notes}
                   </p>
@@ -251,13 +254,13 @@ export default function ReservationPage() {
         </div>
 
         <div className="border-b pb-4">
-          <h2 className="text-xl font-semibold mb-3">お客様情報</h2>
+          <h2 className="text-xl font-semibold mb-3">{t('customerInfo')}</h2>
           {reservationData?.reservation?.customer_id ? (
             <>
               {customerLoading && (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-                  <span className="text-muted-foreground">顧客情報を読み込み中...</span>
+                  <span className="text-muted-foreground">{t('loadingCustomerData')}...</span>
                 </div>
               )}
 
@@ -266,26 +269,26 @@ export default function ReservationPage() {
               {customerData && !customerLoading && (
                 <div className="space-y-3">
                   <div>
-                    <p className="text-muted-foreground">お客様名:</p>
+                    <p className="text-muted-foreground">{t('customerName')}:</p>
                     <p className="font-medium text-lg">
                       {customerData.customer?.line_user_name
                         ? customerData.customer?.line_user_name
                         : customerData.customer?.last_name && customerData.customer?.first_name
                           ? `${customerData.customer?.last_name} ${customerData.customer?.first_name}`
-                          : '未設定'}
+                          : t('notSet')}
                     </p>
                   </div>
 
                   {customerData.customer?.phone && (
                     <div>
-                      <p className="text-muted-foreground">電話番号:</p>
+                      <p className="text-muted-foreground">{t('phoneNumber')}:</p>
                       <p className="font-medium">{customerData.customer?.phone}</p>
                     </div>
                   )}
 
                   {customerData.customer?.email && (
                     <div>
-                      <p className="text-muted-foreground">メールアドレス:</p>
+                      <p className="text-muted-foreground">{t('email')}:</p>
                       <p className="font-medium">{customerData.customer?.email}</p>
                     </div>
                   )}
@@ -294,14 +297,14 @@ export default function ReservationPage() {
                     <>
                       {customerData.customerDetail.age && (
                         <div>
-                          <p className="text-muted-foreground">年齢:</p>
-                          <p className="font-medium">{customerData.customerDetail.age}歳</p>
+                          <p className="text-muted-foreground">{t('age')}:</p>
+                          <p className="font-medium">{t('yearsOld', { age: customerData.customerDetail.age })}</p>
                         </div>
                       )}
 
                       {customerData.customerDetail.gender && (
                         <div>
-                          <p className="text-muted-foreground">性別:</p>
+                          <p className="text-muted-foreground">{t('gender')}:</p>
                           <p className="font-medium">{customerData.customerDetail.gender}</p>
                         </div>
                       )}
@@ -310,9 +313,9 @@ export default function ReservationPage() {
 
                   {customerData.customerPoints && (
                     <div>
-                      <p className="text-muted-foreground">保有ポイント:</p>
+                      <p className="text-muted-foreground">{t('points')}:</p>
                       <p className="font-medium">
-                        {customerData.customerPoints.total_points || 0}ポイント
+                        {t('pointsCount', { count: customerData.customerPoints.total_points || 0 })}
                       </p>
                     </div>
                   )}
@@ -321,12 +324,12 @@ export default function ReservationPage() {
             </>
           ) : (
             <p className="text-muted-foreground">
-              この予約にはお客様情報が関連付けられていません。
+              {t('noCustomerLinked')}
             </p>
           )}
         </div>
         <div className="border-b pb-4">
-          <h2 className="text-xl font-semibold mb-3">担当スタッフ</h2>
+          <h2 className="text-xl font-semibold mb-3">{t('assignedStaff')}</h2>
           <div className="flex flex-col md:flex-row items-center gap-4">
             {staff.images.length > 0 && (
               <div className="relative h-auto w-full max-w-xs border border-border shadow-sm rounded-md overflow-hidden flex items-center justify-center">
@@ -360,7 +363,7 @@ export default function ReservationPage() {
           </div>
         </div>
         <div className="border-b pb-4">
-          <h2 className="text-xl font-semibold mb-3">予約内容</h2>
+          <h2 className="text-xl font-semibold mb-3">{t('reservationContent')}</h2>
           {reservationMenuDetails?.menus?.length > 0 && (
             <div className="flex flex-col gap-3">
               {reservationData.reservationDetail?.menus?.map((reservationMenuItem, index) => {
@@ -374,13 +377,13 @@ export default function ReservationPage() {
                   <div key={index} className="border rounded-lg p-3">
                     <p className="font-medium text-lg">{menuDetail.name}</p>
                     <p className="text-muted-foreground text-sm">
-                      数量: {reservationMenuItem.quantity}
+                      {t('quantity')}: {reservationMenuItem.quantity}
                     </p>
                     <p className="text-muted-foreground text-sm">
-                      時間: {menuDetail.duration_min} 分
+                      {t('duration')}: {menuDetail.duration_min} {t('minutes')}
                     </p>
                     <p className="font-semibold text-md mt-1">
-                      価格: ¥
+                      {t('price')}: ¥
                       {(menuDetail.sale_price ?? menuDetail.unit_price ?? 0).toLocaleString()}
                     </p>
                   </div>
@@ -391,7 +394,7 @@ export default function ReservationPage() {
 
           {reservationMenuDetails?.options?.length > 0 && (
             <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">オプション</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('options')}</h3>
               <ul className="list-disc list-inside">
                 {reservationMenuDetails.options.map((option, index) => (
                   <li key={index} className="text-muted-foreground">
@@ -404,13 +407,13 @@ export default function ReservationPage() {
             </div>
           )}
           {reservationMenuDetails?.menus?.length === 0 && (
-            <p className="text-muted-foreground">予約されたメニューはありません。</p>
+            <p className="text-muted-foreground">{t('noMenuReserved')}</p>
           )}
         </div>
         {reservationData.reservationDetail?.notes &&
           reservationData.reservationDetail?.notes.trim() !== '' && (
             <div>
-              <h2 className="text-xl font-semibold mb-3">備考</h2>
+              <h2 className="text-xl font-semibold mb-3">{t('notes')}</h2>
               <div className="bg-muted p-3 rounded-lg text-muted-foreground">
                 {reservationData.reservationDetail?.notes}
               </div>
@@ -420,14 +423,14 @@ export default function ReservationPage() {
       <Dialog open={isUpdateStatusModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>予約ステータス変更</DialogTitle>
+            <DialogTitle>{t('changeStatusDialog.title')}</DialogTitle>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsUpdateStatusModalOpen(false)}>
-              キャンセル
+              {commonT('cancel')}
             </Button>
             <Button variant="default" onClick={handleUpdateStatus}>
-              変更
+              {commonT('update')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -435,14 +438,14 @@ export default function ReservationPage() {
       <Dialog open={isDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>予約削除</DialogTitle>
+            <DialogTitle>{t('deleteDialog.title')}</DialogTitle>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
-              キャンセル
+              {commonT('cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDeleteReservation}>
-              削除
+              {commonT('delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
