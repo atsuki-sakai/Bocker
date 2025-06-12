@@ -260,7 +260,7 @@ export default function MenuEditForm() {
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
     try {
       if (!orgId || !tenantId || !menuData) {
-        toast.error('サロン情報または既存メニュー情報が見つかりません')
+        toast.error(t('messages.salonNotFound'))
         return
       }
       setIsSubmitting(true)
@@ -368,11 +368,11 @@ export default function MenuEditForm() {
               console.log('画像削除成功レスポンス:', successData)
               toast.info(
                 successData.message ||
-                  `${finalImagesToDelete.length}件の古い画像をストレージから削除しました。`
+                  t('messages.deletingImages', { count: finalImagesToDelete.length })
               )
             } else {
               toast.info(
-                `${finalImagesToDelete.length}件の古い画像をストレージから削除しました。 (レスポンスボディなし)`
+                t('messages.deletingImages', { count: finalImagesToDelete.length }) + ' (レスポンスボディなし)'
               )
             }
           }
@@ -380,7 +380,7 @@ export default function MenuEditForm() {
           // catchの型をanyに
           console.error('ストレージからの画像削除中にクライアントサイドエラー:', err)
           toast.error(
-            `古い画像の削除中にエラーが発生しました: ${err instanceof Error ? err.message : '不明なエラー'}`
+            t('messages.deleteImageError', { error: err instanceof Error ? err.message : 'Unknown error' })
           )
         }
       }
@@ -401,7 +401,7 @@ export default function MenuEditForm() {
         payment_method: data.payment_method,
         is_active: data.is_active,
       })
-      toast.success('メニューを更新しました')
+      toast.success(t('messages.updateSuccess'))
       router.push(`/dashboard/menu/${menuId}`)
     } catch (err) {
       setIsSubmitting(false)
@@ -441,7 +441,7 @@ export default function MenuEditForm() {
               <CardHeader className="pb-0">
                 <CardTitle className="text-base flex items-center gap-2">
                   <ImageIcon size={18} className="text-muted-foreground" />
-                  メニュー画像
+                  {t('form.menuImage')}
                 </CardTitle>
               </CardHeader>
               <SortableImageGrid
@@ -469,9 +469,9 @@ export default function MenuEditForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <ZodTextField
                 name="name"
-                label="メニュー名"
+                label={t('form.menuName')}
                 icon={<Tag className="text-muted-foreground" />}
-                placeholder="メニュー名を入力してください"
+                placeholder={t('form.menuNamePlaceholder')}
                 register={register}
                 errors={errors}
                 required
@@ -479,7 +479,7 @@ export default function MenuEditForm() {
               />
               <div>
                 <div className="text-sm flex items-start gap-2 mb-2">
-                  <Label className="text-sm flex items-center gap-2">カテゴリー</Label>
+                  <Label className="text-sm flex items-center gap-2">{t('form.category')}</Label>
                   <span className="text-destructive">*</span>
                 </div>
                 <Popover open={isCategoryPopoverOpen}>
@@ -492,7 +492,7 @@ export default function MenuEditForm() {
                     >
                       {renderCategories && renderCategories.length > 0
                         ? renderCategories.map((cat: string) => cat).join(', ')
-                        : 'メニューのカテゴリを選択してください'}
+                        : t('form.categoryPlaceholder')}
                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -509,7 +509,7 @@ export default function MenuEditForm() {
                           <X size={16} />
                         </Button>
                       </div>
-                      <CommandEmpty>カテゴリが見つかりません</CommandEmpty>
+                      <CommandEmpty>{t('form.categoryNotFound')}</CommandEmpty>
                       <CommandGroup>
                         {MENU_CATEGORY_VALUES.map((category) => (
                           <CommandItem
@@ -545,11 +545,11 @@ export default function MenuEditForm() {
                   </PopoverContent>
                 </Popover>
                 <span className="text-xs text-muted-foreground">
-                  もしご希望のカテゴリがない場合は
+                  {t('form.categoryRequest')}
                   <a href="mailto:bocker.help@gmail.com" className="text-link-foreground underline">
-                    こちら
+                    {t('form.categoryRequestLink')}
                   </a>
-                  から追加申請をお願いいたします。
+                  {t('form.categoryRequestSuffix')}
                 </span>
                 {errors.categories && <ErrorMessage message={errors.categories.message} />}
               </div>
@@ -558,10 +558,10 @@ export default function MenuEditForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ZodTextField
                 name="unit_price"
-                label="通常価格"
+                label={t('form.price')}
                 icon={<DollarSign className="text-muted-foreground" />}
                 type="number"
-                placeholder="例: 5000"
+                placeholder={t('form.pricePlaceholder')}
                 register={register}
                 errors={errors}
                 required
@@ -570,10 +570,10 @@ export default function MenuEditForm() {
 
               <ZodTextField
                 name="sale_price"
-                label="セール価格"
+                label={t('form.salePrice')}
                 type="number"
                 icon={<ShoppingBag className="text-muted-foreground" />}
-                placeholder="例: 4000"
+                placeholder={t('form.salePricePlaceholder')}
                 register={register}
                 errors={errors}
                 className="border-border focus-within:border-border transition-colors"
@@ -584,7 +584,7 @@ export default function MenuEditForm() {
               <div className="max-w-full">
                 <Label className="text-sm flex items-center gap-2">
                   <Clock size={16} className="text-muted-foreground" />
-                  スタッフが稼働する施術時間 <span className="text-destructive ml-1">*</span>
+                  {t('form.duration')} <span className="text-destructive ml-1">*</span>
                 </Label>
                 <Select
                   value={watch('duration_min')?.toString() ?? renderDurationMin?.toString()}
@@ -603,18 +603,18 @@ export default function MenuEditForm() {
                   }}
                 >
                   <SelectTrigger className="border-border focus:border-border transition-colors">
-                    <SelectValue placeholder="スタッフが稼働する施術時間を選択" />
+                    <SelectValue placeholder={t('form.durationPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {getMinuteMultiples(5, 360).map((time) => (
                       <SelectItem key={time} value={time.toString()}>
-                        {time}分
+                        {time}{t('form.minutes')}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <span className="text-xs text-muted-foreground">
-                  メニューの実際の稼働時間を入力してください。
+                  {t('form.durationHelp')}
                 </span>
                 {errors.duration_min && <ErrorMessage message={errors.duration_min.message} />}
               </div>
@@ -624,10 +624,10 @@ export default function MenuEditForm() {
               <div>
                 <Label className="flex items-center gap-2 text-sm">
                   <Repeat size={16} className="text-muted-foreground" />
-                  対象
+                  {t('form.target')}
                 </Label>
                 <span className="text-xs text-muted-foreground">
-                  メニューを利用できる顧客属性を選択できます。
+                  {t('form.targetHelp')}
                 </span>
                 <Select
                   value={renderTargetType}
@@ -639,12 +639,12 @@ export default function MenuEditForm() {
                   }}
                 >
                   <SelectTrigger className="border-border focus:border-border transition-colors">
-                    <SelectValue placeholder="対象を選択" />
+                    <SelectValue placeholder={t('form.targetPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">全員</SelectItem>
-                    <SelectItem value="first">初回</SelectItem>
-                    <SelectItem value="repeat">リピート</SelectItem>
+                    <SelectItem value="all">{t('form.targetAll')}</SelectItem>
+                    <SelectItem value="first">{t('form.targetFirst')}</SelectItem>
+                    <SelectItem value="repeat">{t('form.targetRepeat')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -652,10 +652,10 @@ export default function MenuEditForm() {
               <div>
                 <Label className="flex items-center gap-2 text-sm">
                   <Users size={16} className="text-muted-foreground" />
-                  性別
+                  {t('form.gender')}
                 </Label>
                 <span className="text-xs text-muted-foreground">
-                  メニュー対象の性別を選択してください
+                  {t('form.genderHelp')}
                 </span>
                 <Select
                   value={renderTargetGender}
@@ -670,17 +670,17 @@ export default function MenuEditForm() {
                   }}
                 >
                   <SelectTrigger className="border-border focus:border-border transition-colors">
-                    <SelectValue placeholder="性別を選択" />
+                    <SelectValue placeholder={t('form.genderPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unselected" className="flex items-center gap-2">
-                      男性・女性
+                      {t('form.genderAll')}
                     </SelectItem>
                     <SelectItem value="male" className="flex items-center gap-2">
-                      男性
+                      {t('form.genderMale')}
                     </SelectItem>
                     <SelectItem value="female" className="flex items-center gap-2">
-                      女性
+                      {t('form.genderFemale')}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -698,7 +698,7 @@ export default function MenuEditForm() {
             <div className="flex flex-col w-full gap-2">
               <Label className="flex items-center gap-2 text-sm mb-3 mt-4">
                 <CreditCard size={16} className="text-muted-foreground" />
-                支払い方法
+                {t('form.paymentMethod')}
               </Label>
               {subscriptionStatus === 'active' || subscriptionStatus === 'trialing' ? (
                 <ToggleGroup
@@ -716,25 +716,25 @@ export default function MenuEditForm() {
                     }
                   }}
                 >
-                  <ToggleGroupItem value="cash">店舗決済のみ</ToggleGroupItem>
-                  <ToggleGroupItem value="credit_card">オンライン決済のみ</ToggleGroupItem>
-                  <ToggleGroupItem value="all">両方対応</ToggleGroupItem>
+                  <ToggleGroupItem value="cash">{t('form.paymentCash')}</ToggleGroupItem>
+                  <ToggleGroupItem value="credit_card">{t('form.paymentOnline')}</ToggleGroupItem>
+                  <ToggleGroupItem value="all">{t('form.paymentBoth')}</ToggleGroupItem>
                 </ToggleGroup>
               ) : (
                 <div className="bg-warning border border-warning-foreground rounded-md p-4">
                   <p className="text-base font-medium text-warning-foreground mb-2 flex items-center gap-2">
                     <Wallet size={18} />
-                    現在は店舗決済のみ利用可能
+                    {t('form.paymentOfflineOnly')}
                   </p>
                   <p className="text-sm text-warning-foreground">
-                    オンライン決済を利用する場合には、
+                    {t('form.paymentSetupRequired')}
                     <Link
                       href="/dashboard/setting"
                       className="text-link-foreground underline font-medium"
                     >
-                      決済設定
+                      {t('form.paymentSetupLink')}
                     </Link>
-                    を完了してください。
+                    {t('form.paymentSetupSuffix')}
                   </p>
                 </div>
               )}
@@ -744,11 +744,11 @@ export default function MenuEditForm() {
                 <TooltipTrigger asChild>
                   <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1 cursor-help">
                     <AlertCircle size={14} />
-                    オンライン決済には手数料が発生します
+                    {t('form.paymentFeeNotice')}
                   </p>
                 </TooltipTrigger>
                 <TooltipContent className="bg-background p-3 shadow-lg border border-border text-muted-foreground text-xs">
-                  <p>オンライン決済手数料: 4% + 40円/件</p>
+                  <p>{t('form.paymentFeeDetail')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -759,11 +759,11 @@ export default function MenuEditForm() {
 
         <Label className="flex items-center gap-2 text-sm mb-2 mt-4">
           <Info size={16} className="text-muted-foreground" />
-          メニュー説明 <span className="text-destructive ml-1">*</span>
+          {t('form.description')} <span className="text-destructive ml-1">*</span>
         </Label>
         <Textarea
           id="description"
-          placeholder="メニューの詳細説明を入力してください"
+          placeholder={t('form.descriptionPlaceholder')}
           {...register('description')}
           onChange={(e) =>
             setValue('description', e.target.value, { shouldValidate: true, shouldDirty: true })
@@ -775,9 +775,9 @@ export default function MenuEditForm() {
 
         <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-4">
           <div>
-            <p className="text-sm font-bold">メニューを公開する</p>
+            <p className="text-sm font-bold">{t('form.publish')}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              オフにすると、このメニューはお客様に表示されません
+              {t('form.publishHelp')}
             </p>
           </div>
           <Switch
@@ -797,7 +797,7 @@ export default function MenuEditForm() {
               onClick={() => router.push('/dashboard/menu')}
               className="min-w-28 border-border"
             >
-              戻る
+              {t('form.back')}
             </Button>
 
             <Button
@@ -807,12 +807,12 @@ export default function MenuEditForm() {
               {isSubmitting || isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  追加中...
+                  {t('edit.updating')}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  メニューを更新
+                  {t('form.update')}
                 </>
               )}
             </Button>

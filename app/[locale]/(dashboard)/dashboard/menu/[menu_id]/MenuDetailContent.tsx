@@ -5,6 +5,7 @@
 import Image from 'next/image'
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslations } from 'next-intl'
 import {
   CreditCard,
   Clock,
@@ -48,24 +49,6 @@ import {
   type CarouselApi,
 } from '@/components/ui/carousel'
 
-// ラベル定義をコンポーネント外に移動し、再レンダリングの影響を受けないようにする
-const labels = {
-  gender: {
-    all: '全ての性別',
-    male: '男性向け',
-    female: '女性向け',
-  },
-  targetType: {
-    repeat: 'リピーター向け',
-    first: '新規顧客向け',
-    all: '全ての顧客向け',
-  },
-  paymentMethod: {
-    credit_card: 'オンライン決済',
-    cash: '店舗決済',
-    all: '店舗決済・オンライン決済',
-  },
-}
 
 interface MenuDetailContentProps {
   menu: Doc<'menu'> | null
@@ -73,6 +56,7 @@ interface MenuDetailContentProps {
 
 export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   const router = useRouter()
+  const t = useTranslations('menus.detail')
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const deleteMenu = useMutation(api.menu.mutation.kill)
@@ -173,7 +157,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
               // HTTPステータスコードが200番台でない場合にエラーを投げる
               const errorBody = await response.text() // エラーレスポンスの内容を取得
               throw new Error(
-                `画像の削除に失敗しました: ${response.status} ${response.statusText} - ${errorBody}`
+                t('messages.imageDeleteError', { status: response.status, statusText: response.statusText, error: errorBody })
               )
             }
 
@@ -213,7 +197,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
       }
 
       router.push('/dashboard/menu')
-      toast.success('メニューを削除しました')
+      toast.success(t('messages.deleteSuccess'))
     } catch (error) {
       showErrorToast(error)
     }
@@ -241,12 +225,12 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
       <div className="flex items-center justify-end gap-3">
         <Link href={`/dashboard/menu/${menu._id}/edit`}>
           <Button variant="default" size="sm" className="group">
-            <Edit className="w-4 h-4 mr-2" /> 編集
+            <Edit className="w-4 h-4 mr-2" /> {t('edit')}
           </Button>
         </Link>
 
         <Button variant="destructive" size="sm" onClick={() => setIsDeleteDialogOpen(true)}>
-          <Trash className="w-4 h-4 mr-2" /> 削除
+          <Trash className="w-4 h-4 mr-2" /> {t('delete')}
         </Button>
       </div>
 
@@ -270,7 +254,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                       <div className="relative w-full aspect-[2/3] bg-muted group rounded-lg overflow-hidden">
                         <Image
                           src={image.original_url || ''}
-                          alt={`${menu.name || 'メニュー画像'} ${index + 1}`}
+                          alt={`${menu.name || t('image.alt')} ${index + 1}`}
                           className="w-full h-full object-contain"
                           fill
                           sizes="(max-width: 640px) 100vw, (max-width: 768px) 80vw, (max-width: 1200px) 50vw, 33vw"
@@ -301,11 +285,11 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                                       ? 'border-transparent ring-accent ring-2 ring-offset-1 sm:ring-offset-2'
                                       : 'border-foreground opacity-70 hover:opacity-100'
                                   } focus:outline-none transition-all duration-150 ease-in-out`}
-                      aria-label={`画像 ${index + 1} を表示`}
+                      aria-label={t('image.show', { index: index + 1 })}
                     >
                       <Image
                         src={image.thumbnail_url || ''}
-                        alt={`サムネイル ${index + 1}`}
+                        alt={`${t('image.thumbnail')} ${index + 1}`}
                         className="w-full h-full object-cover"
                         fill
                         sizes="64px md:80px"
@@ -319,7 +303,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
           ) : (
             <div className="flex items-center justify-center w-full aspect-[4/3] sm:aspect-[3/4] bg-muted text-muted-foreground rounded-lg">
               <Info className="w-8 h-8 mr-2 opacity-30" />
-              <span>画像がありません</span>
+              <span>{t('image.noImage')}</span>
             </div>
           )}
         </div>
@@ -344,8 +328,8 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
           <CardContent>
             <Tabs defaultValue="basic" className="w-full">
               <TabsList className="mb-4">
-                <TabsTrigger value="basic">基本情報</TabsTrigger>
-                <TabsTrigger value="details">詳細</TabsTrigger>
+                <TabsTrigger value="basic">{t('tabs.basic')}</TabsTrigger>
+                <TabsTrigger value="details">{t('tabs.details')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="basic" className="space-y-4">
@@ -354,7 +338,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   <div className="flex items-start p-3 rounded-lg  border border-border">
                     <CreditCard className="w-5 h-5 mt-1 mr-3 text-primary" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">料金</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fields.price')}</p>
                       <div className="flex items-baseline">
                         {formattedSalePrice ? (
                           <div className="flex flex-col">
@@ -378,10 +362,10 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                     <div className="flex flex-row gap-6">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">
-                          トータル施術時間
+                          {t('fields.totalDuration')}
                         </p>
                         <p className="text-lg font-medium text-primary">
-                          {menu.duration_min || 0}分
+                          {menu.duration_min || 0}{t('fields.minutes')}
                         </p>
                       </div>
                     </div>
@@ -391,12 +375,12 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   <div className="flex items-start p-3 rounded-lg border border-border">
                     <Users className="w-5 h-5 mt-1 mr-3 text-primary" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">対象</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fields.target')}</p>
 
                       <p className="text-base text-primary">
                         {menu.target_gender && menu.target_gender !== 'unselected'
                           ? convertGender(menu.target_gender as 'unselected' | 'male' | 'female')
-                          : '全ての性別'}
+                          : t('labels.gender.all')}
                       </p>
                     </div>
                   </div>
@@ -405,7 +389,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   <div className="flex items-start p-3 rounded-lg border border-border">
                     <Repeat className="w-5 h-5 mt-1 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">ターゲット</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fields.targetType')}</p>
                       <p className="text-base text-primary">
                         {getTargetTypeLabel(menu.target_type || '')}
                       </p>
@@ -416,7 +400,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   <div className="flex items-start p-3 rounded-lg border border-border">
                     <CreditCard className="w-5 h-5 mt-1 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">支払い方法</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fields.paymentMethod')}</p>
                       <p className="text-base text-primary">
                         {getPaymentMethodLabel(menu.payment_method || '')}
                       </p>
@@ -430,7 +414,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                 <div className="space-y-2">
                   <h3 className="text-md font-medium text-muted-foreground flex items-center">
                     <Info className="w-4 h-4 mr-2 text-primary" />
-                    説明
+                    {t('fields.description')}
                   </h3>
                   <div className="bg-muted p-4 rounded-lg border border-border">
                     <AnimatePresence mode="wait">
@@ -454,11 +438,11 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                       >
                         {showFullDescription ? (
                           <>
-                            <ChevronUp className="w-4 h-4 mr-1" /> 省略表示
+                            <ChevronUp className="w-4 h-4 mr-1" /> {t('showLess')}
                           </>
                         ) : (
                           <>
-                            <ChevronDown className="w-4 h-4 mr-1" /> もっと見る
+                            <ChevronDown className="w-4 h-4 mr-1" /> {t('showMore')}
                           </>
                         )}
                       </Button>
@@ -470,13 +454,13 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                 <div className="space-y-2">
                   <h3 className="text-md text-muted-foreground flex items-center">
                     <Tag className="w-4 h-4 mr-2 text-primary" />
-                    タグ
+                    {t('fields.tags')}
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {menu.tags && menu.tags.length > 0 ? (
                       menu.tags.map((tag, index) => <Badge key={index}>{tag}</Badge>)
                     ) : (
-                      <p className="text-muted-foreground text-sm italic">タグはありません</p>
+                      <p className="text-muted-foreground text-sm italic">{t('fields.noTags')}</p>
                     )}
                   </div>
                 </div>
@@ -485,10 +469,10 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                 <div className="space-y-2 pt-2 border-t border-border">
                   <h3 className="text-md font-medium text-muted-foreground flex items-center">
                     <Info className="w-4 h-4 mr-2 text-primary" />
-                    システム情報
+                    {t('fields.systemInfo')}
                   </h3>
                   <div className="text-sm text-muted-foreground">
-                    <p>作成日時: {new Date(menu._creationTime).toLocaleString('ja-JP')}</p>
+                    <p>{t('fields.createdAt')}: {new Date(menu._creationTime).toLocaleString('ja-JP')}</p>
                   </div>
                 </div>
               </TabsContent>
@@ -500,14 +484,14 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
       <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => setIsDeleteDialogOpen(open)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>メニューを削除しますか？</DialogTitle>
-            <DialogDescription>この操作は元に戻すことができません。</DialogDescription>
+            <DialogTitle>{t('confirmDeleteDialog.title')}</DialogTitle>
+            <DialogDescription>{t('confirmDeleteDialog.description')}</DialogDescription>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-                キャンセル
+                {t('confirmDeleteDialog.cancel')}
               </Button>
               <Button variant="destructive" onClick={() => handleDeleteMenu()}>
-                削除する
+                {t('confirmDeleteDialog.delete')}
               </Button>
             </DialogFooter>
           </DialogHeader>

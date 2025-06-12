@@ -2,18 +2,21 @@
 
 import OptionList from './OptionList';
 import { DashboardSection, withManagerAccess } from '@/components/common';
+import { useTranslations } from 'next-intl';
 
 function OptionPage() {
+  const t = useTranslations('options');
+  
   return (
     <DashboardSection
-      title="オプション一覧"
+      title={t('list.title')}
       backLink="/dashboard"
-      backLinkTitle="ダッシュボード"
-      infoBtn={{ text: 'オプションを作成', link: '/dashboard/option/add' }}
+      backLinkTitle={t('list.dashboard')}
+      infoBtn={{ text: t('list.addNew'), link: '/dashboard/option/add' }}
     >
       <div className="flex flex-col gap-2">
         <p className="text-sm text-gray-500">
-          オプションはスタイリング剤、トリートメントなど物販などアップセルにご利用いただけます。
+          {t('list.description')}
         </p>
       </div>
       <OptionList />

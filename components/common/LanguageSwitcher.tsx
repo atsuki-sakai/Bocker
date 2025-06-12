@@ -1,7 +1,7 @@
 'use client'
 
 import { useLocale } from 'next-intl'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname } from '@/i18n/navigation'
 import {
   Select,
   SelectContent,
@@ -22,21 +22,7 @@ export function LanguageSwitcher() {
   const pathname = usePathname()
 
   const handleLocaleChange = (newLocale: string) => {
-    // Remove current locale from pathname and add new locale
-    const segments = pathname.split('/')
-    const currentLocale = segments[1]
-
-    let newPathname = pathname
-    if (locales.some((l) => l.value === currentLocale)) {
-      // Replace current locale
-      segments[1] = newLocale
-      newPathname = segments.join('/')
-    } else {
-      // Add locale to beginning
-      newPathname = `/${newLocale}${pathname}`
-    }
-
-    router.push(newPathname)
+    router.push(pathname, { locale: newLocale })
   }
 
   const currentLocale = locales.find((l) => l.value === locale)

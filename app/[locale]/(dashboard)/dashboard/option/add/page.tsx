@@ -2,13 +2,16 @@
 
 import OptionAddForm from './OptionAddForm';
 import { DashboardSection, withManagerAccess } from '@/components/common';
+import { useTranslations } from 'next-intl';
 
 function OptionAddPage() {
+  const t = useTranslations('options');
+  
   return (
     <DashboardSection
-      title="オプションを作成"
+      title={t('add.title')}
       backLink="/dashboard/option"
-      backLinkTitle="オプション一覧"
+      backLinkTitle={t('list.title')}
     >
       <OptionAddForm />
     </DashboardSection>

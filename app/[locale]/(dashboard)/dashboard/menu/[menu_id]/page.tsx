@@ -5,6 +5,7 @@ import { fetchQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
 import { getOrganizationAuth } from '@/lib/auth/getOrganizationAuth'
 import { MenuDetailContent } from './MenuDetailContent';
+import { getTranslations } from 'next-intl/server';
 
 interface MenuDetailPageProps {
   params: Promise<{
@@ -15,6 +16,7 @@ interface MenuDetailPageProps {
 export default async function MenuDetailPage({ params }: MenuDetailPageProps) {
   const { menu_id } = await params;
   const { token } = await getOrganizationAuth()
+  const t = await getTranslations('menus');
 
   let menu = null;
   try {
@@ -32,9 +34,9 @@ export default async function MenuDetailPage({ params }: MenuDetailPageProps) {
 
   return (
     <DashboardSection
-      title="メニュー詳細"
+      title={t('detail.title')}
       backLink="/dashboard/menu"
-      backLinkTitle="メニュー設定に戻る"
+      backLinkTitle={t('list.title')}
     >
       <MenuDetailContent menu={menu} />
     </DashboardSection>

@@ -13,7 +13,7 @@ import { Skeleton } from '../ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { toast } from 'sonner'
 import { Progress } from '../ui/progress'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import { BASE_REFERRAL_DISCOUNT_AMOUNT, MAX_REFERRAL_COUNT } from '@/lib/constants'
 
 export default function ReferralCard() {

@@ -12,6 +12,7 @@ import { useMutation } from 'convex/react'
 import { Id, Doc } from '@/convex/_generated/dataModel'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useTranslations } from 'next-intl'
 
 import {
   Dialog,
@@ -25,6 +26,7 @@ import { Loader2 } from 'lucide-react'
 
 const numberOfItems = 10
 export default function OptionList() {
+  const t = useTranslations('options')
   const { tenantId, orgId } = useTenantAndOrganization()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { showErrorToast } = useErrorHandler()
@@ -72,7 +74,7 @@ export default function OptionList() {
           }),
         })
       }
-      toast.success('オプションを削除しました')
+      toast.success(t('messages.deleteSuccess'))
       setIsDialogOpen(false)
     } catch (error) {
       showErrorToast(error)
@@ -97,50 +99,50 @@ export default function OptionList() {
                     scope="col"
                     className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-primary sm:pl-6"
                   >
-                    ステータス
+                    {t('list.table.status')}
                   </th>
                   <th
                     scope="col"
                     className="py-3.5 pr-3 pl-4 text-lefts text-sm font-semibold text-primary sm:pl-6"
                   >
-                    画像
+                    {t('list.table.image')}
                   </th>
                   <th
                     scope="col"
                     className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-primary sm:pl-6"
                   >
-                    メニュー名
+                    {t('list.table.name')}
                   </th>
                   <th
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-primary"
                   >
-                    単価/セール価格
+                    {t('list.table.price')}
                   </th>
 
                   <th
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-primary"
                   >
-                    最大注文数
+                    {t('list.table.orderLimit')}
                   </th>
                   <th
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-primary"
                   >
-                    トータル施術時間
+                    {t('list.table.totalDuration')}
                   </th>
                   <th
                     scope="col"
                     className="px-3 py-3.5 text-left text-sm font-semibold text-primary"
                   >
-                    タグ
+                    {t('list.table.tags')}
                   </th>
                   <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
-                    <span className="sr-only">編集</span>
+                    <span className="sr-only">{t('list.table.edit')}</span>
                   </th>
                   <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
-                    <span className="sr-only">削除</span>
+                    <span className="sr-only">{t('list.table.delete')}</span>
                   </th>
                 </tr>
               </thead>
@@ -154,7 +156,7 @@ export default function OptionList() {
                         <span
                           className={`font-bold text-xs ${option.is_archive ? 'bg-destructive text-white' : 'bg-active text-white'} px-2 py-1 rounded-md`}
                         >
-                          {option.is_archive ? '削除' : '有効'}
+                          {option.is_archive ? t('list.table.statusDeleted') : t('list.table.statusActive')}
                         </span>
                       </td>
                       <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-primary sm:pl-6">
@@ -199,13 +201,13 @@ export default function OptionList() {
                       </td>
 
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
-                        {option.order_limit ? `${option.order_limit}個` : '未設定'}
+                        {option.order_limit ? `${option.order_limit}${t('list.table.pieces')}` : t('list.table.notSet')}
                       </td>
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
-                        {option.duration_min ? `${option.duration_min}分` : '未設定'}
+                        {option.duration_min ? `${option.duration_min}${t('list.table.minutes')}` : t('list.table.notSet')}
                       </td>
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
-                        {option.tags && option.tags.length > 0 ? option.tags.join('、') : '未設定'}
+                        {option.tags && option.tags.length > 0 ? option.tags.join('、') : t('list.table.notSet')}
                       </td>
                       <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                         <Link href={`/dashboard/option/${option._id}/edit`}>
@@ -214,7 +216,7 @@ export default function OptionList() {
                             size="sm"
                             className="text-link-foreground bg-link hover:opacity-80"
                           >
-                            編集<span className="sr-only">, {option.name}</span>
+                            {t('list.table.edit')}<span className="sr-only">, {option.name}</span>
                           </Button>
                         </Link>
                       </td>
@@ -225,7 +227,7 @@ export default function OptionList() {
                           onClick={() => showDeleteDialog(option._id)}
                           className="text-destructive-foreground bg-destructive hover:text-destructive-foreground"
                         >
-                          削除<span className="sr-only">, {option.name}</span>
+                          {t('list.table.delete')}<span className="sr-only">, {option.name}</span>
                         </Button>
                       </td>
                     </tr>
@@ -233,7 +235,7 @@ export default function OptionList() {
                 ) : (
                   <tr>
                     <td colSpan={8} className="text-center py-6 text-sm text-muted-foreground">
-                      オプションがありません
+                      {t('list.noOptions')}
                     </td>
                   </tr>
                 )}
@@ -245,19 +247,19 @@ export default function OptionList() {
       {options && options.length > 0 && status == 'CanLoadMore' && (
         <div className="flex justify-center mt-4">
           <Button variant="outline" onClick={() => loadMore(numberOfItems)}>
-            オプションをさらに読み込む
+            {t('list.table.loadMore')}
           </Button>
         </div>
       )}
       <Dialog open={isDialogOpen} onOpenChange={(open) => setIsDialogOpen(open)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>オプションを削除しますか？</DialogTitle>
-            <DialogDescription>この操作は元に戻すことができません。</DialogDescription>
+            <DialogTitle>{t('list.confirmDialog.title')}</DialogTitle>
+            <DialogDescription>{t('list.confirmDialog.description')}</DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex justify-center">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              キャンセル
+              {t('list.confirmDialog.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -267,10 +269,10 @@ export default function OptionList() {
               {isDeleting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  削除中...
+                  {t('edit.updating')}
                 </>
               ) : (
-                '削除'
+                t('list.confirmDialog.delete')
               )}
             </Button>
           </DialogFooter>

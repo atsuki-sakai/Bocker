@@ -2,8 +2,7 @@
 
 import { ModeToggle } from './'
 import { useTranslations } from 'next-intl'
-import { usePathname } from 'next/navigation'
-import Link from 'next/link'
+import { usePathname, Link } from '@/i18n/navigation'
 import { useState, useEffect, useMemo, memo } from 'react'
 import { Separator } from '@/components/ui/separator'
 import { Loading } from './'

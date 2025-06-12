@@ -2,13 +2,16 @@
 
 import OptionEditForm from './OptionEditForm';
 import { DashboardSection, withManagerAccess } from '@/components/common';
+import { useTranslations } from 'next-intl';
 
 function OptionEditPage() {
+  const t = useTranslations('options');
+  
   return (
     <DashboardSection
-      title="オプション編集"
+      title={t('edit.title')}
       backLink="/dashboard/option"
-      backLinkTitle="オプション一覧"
+      backLinkTitle={t('list.title')}
     >
       <OptionEditForm />
     </DashboardSection>

@@ -56,10 +56,10 @@ useEffect(() => {
 - [x] dashboard/option/add
 - [x] dashboard/option/edit
 - [x] dashboard/option/OptionList
-- [ ] dashboard/staff/add
-- [ ] dashboard/staff/[staff_id]/edit
-- [ ] dashboard/staff/[staff_id]/StaffDetailContent
-- [ ] dashboard/staff/StaffList
+- [x] dashboard/staff/add
+- [x] dashboard/staff/[staff_id]/edit
+- [x] dashboard/staff/[staff_id]/StaffDetailContent
+- [x] dashboard/staff/StaffList
 - [ ] dashboard/customer/add
 - [ ] dashboard/customer/[customer_id]/edit/staffEditForm.tsx
 - [ ] dashboard/customer/[customer_id]/my-page/*以下全てのページ
