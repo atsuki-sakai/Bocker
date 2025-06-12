@@ -481,7 +481,10 @@ class GoogleStorageService {
         },
       })
 
-      const publicUrl = `${STORAGE_URL}/${this.bucketName}/${encodeURI(gcsFilePath)}`
+      // パスの各セグメントを個別にエンコード
+      const pathSegments = gcsFilePath.split('/');
+      const encodedPath = pathSegments.map(segment => encodeURIComponent(segment)).join('/');
+      const publicUrl = `${STORAGE_URL}/${this.bucketName}/${encodedPath}`
 
       return {
         publicUrl,
