@@ -36,11 +36,9 @@ import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { useTranslations, useLocale } from 'next-intl'
-import { formatDate } from '@/lib/formatDate'
-import type { SupportedLocale } from '@/lib/dateLocale'
+import { useTranslations } from 'next-intl'
 
-const createPointConfigSchema = (t: any) => z.object({
+const createPointConfigSchema = (t: (key: string, values?: Record<string, string | number | Date>) => string) => z.object({
   id: z.string().optional(),
   is_active: z.boolean().default(true),
   is_fixed_point: z.boolean().default(false),
@@ -83,7 +81,6 @@ export default function PointTabs() {
   const [isSaving, setIsSaving] = useState(false)
   const { showErrorToast } = useErrorHandler()
   const t = useTranslations('point')
-  const locale = useLocale() as SupportedLocale
   
   const pointConfigSchema = createPointConfigSchema(t)
 

@@ -56,73 +56,80 @@ const calculateAge = (birthdayString: string | undefined | null): number | undef
   return age
 }
 
-const createCustomerEditFormSchema = (t: any) => z.object({
-  last_name: z.preprocess(
-    (val) => {
-      if (val === '' || val === null || val === undefined) return undefined
-      return val
-    },
-    z
-      .string()
-      .min(1, { message: t('validation.lastNameRequired') })
-      .max(MAX_TEXT_LENGTH, { message: t('validation.lastNameMaxLength', { max: MAX_TEXT_LENGTH }) })
-      .optional()
-  ),
-  first_name: z.preprocess(
-    (val) => {
-      if (val === '' || val === null || val === undefined) return undefined
-      return val
-    },
-    z
-      .string()
-      .min(1, { message: t('validation.firstNameRequired') })
-      .max(MAX_TEXT_LENGTH, { message: t('validation.firstNameMaxLength', { max: MAX_TEXT_LENGTH }) })
-      .optional()
-  ),
-  phone: z
-    .string()
-    .min(1, { message: t('validation.phoneMinLength') })
-    .max(MAX_TEXT_LENGTH, { message: t('validation.phoneMaxLength', { max: MAX_TEXT_LENGTH }) })
-    .optional(),
-  email: z
-    .string()
-    .max(MAX_TEXT_LENGTH, {
-      message: t('validation.emailMaxLength'),
-    })
-    .refine((val) => !val || z.string().email().safeParse(val).success, {
-      message: t('validation.emailInvalid'),
-    })
-    .optional(),
-  gender: z.enum(GENDER_VALUES).default('unselected'),
-  birthday: z.string().optional(),
-  notes: z
-    .string()
-    .max(MAX_NOTES_LENGTH, { message: t('validation.notesMaxLength', { max: MAX_NOTES_LENGTH }) })
-    .optional(),
-  total_points: z.preprocess(
-    (val) => {
-      if (val === '' || val === null || val === undefined) return null
-      const num = Number(val)
-      return isNaN(num) || !isFinite(num) ? null : num
-    },
-    z
-      .number()
-      .min(0, { message: t('validation.pointsMinValue') })
-      .max(99999999, { message: t('validation.pointsMax', { max: 99999999 }) })
-      .nullable()
-      .optional()
-  ),
-  tags: z
-    .array(
+const createCustomerEditFormSchema = (
+  t: (key: string, values?: Record<string, string | number | Date>) => string
+) =>
+  z.object({
+    last_name: z.preprocess(
+      (val) => {
+        if (val === '' || val === null || val === undefined) return undefined
+        return val
+      },
       z
         .string()
-        .max(MAX_TAG_LENGTH, { message: t('validation.tagMaxLength', { max: MAX_TAG_LENGTH }) })
-    )
-    .refine((tags) => tags.length <= 5, {
-      message: t('validation.tagsMaxCount', { max: 5 }),
-    })
-    .default([]),
-})
+        .min(1, { message: t('validation.lastNameRequired') })
+        .max(MAX_TEXT_LENGTH, {
+          message: t('validation.lastNameMaxLength', { max: MAX_TEXT_LENGTH }),
+        })
+        .optional()
+    ),
+    first_name: z.preprocess(
+      (val) => {
+        if (val === '' || val === null || val === undefined) return undefined
+        return val
+      },
+      z
+        .string()
+        .min(1, { message: t('validation.firstNameRequired') })
+        .max(MAX_TEXT_LENGTH, {
+          message: t('validation.firstNameMaxLength', { max: MAX_TEXT_LENGTH }),
+        })
+        .optional()
+    ),
+    phone: z
+      .string()
+      .min(1, { message: t('validation.phoneMinLength') })
+      .max(MAX_TEXT_LENGTH, { message: t('validation.phoneMaxLength', { max: MAX_TEXT_LENGTH }) })
+      .optional(),
+    email: z
+      .string()
+      .max(MAX_TEXT_LENGTH, {
+        message: t('validation.emailMaxLength'),
+      })
+      .refine((val) => !val || z.string().email().safeParse(val).success, {
+        message: t('validation.emailInvalid'),
+      })
+      .optional(),
+    gender: z.enum(GENDER_VALUES).default('unselected'),
+    birthday: z.string().optional(),
+    notes: z
+      .string()
+      .max(MAX_NOTES_LENGTH, { message: t('validation.notesMaxLength', { max: MAX_NOTES_LENGTH }) })
+      .optional(),
+    total_points: z.preprocess(
+      (val) => {
+        if (val === '' || val === null || val === undefined) return null
+        const num = Number(val)
+        return isNaN(num) || !isFinite(num) ? null : num
+      },
+      z
+        .number()
+        .min(0, { message: t('validation.pointsMinValue') })
+        .max(99999999, { message: t('validation.pointsMax', { max: 99999999 }) })
+        .nullable()
+        .optional()
+    ),
+    tags: z
+      .array(
+        z
+          .string()
+          .max(MAX_TAG_LENGTH, { message: t('validation.tagMaxLength', { max: MAX_TAG_LENGTH }) })
+      )
+      .refine((tags) => tags.length <= 5, {
+        message: t('validation.tagsMaxCount', { max: 5 }),
+      })
+      .default([]),
+  })
 
 // 完全な顧客データの型定義
 type CompleteCustomerData = {
@@ -143,7 +150,7 @@ export default function CustomerEditForm() {
   const [isLoadingData, setIsLoadingData] = useState(true)
   // customerRepo の初期化を useMemo でラップ
   const customerRepo = useMemo(() => new CustomerRepository(), [])
-  
+
   const customerEditFormSchema = createCustomerEditFormSchema(t)
 
   const {
@@ -193,7 +200,7 @@ export default function CustomerEditForm() {
     }
 
     fetchCustomerData()
-  }, [tenantId, orgId, customerUid, isLoaded, reset, customerRepo]) // resetを依存配列に追加
+  }, [tenantId, orgId, customerUid, isLoaded, reset, customerRepo, t]) // resetを依存配列に追加
 
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof customerEditFormSchema>) => {
@@ -339,9 +346,7 @@ export default function CustomerEditForm() {
                 placeholder={t('placeholder.totalPoints')}
                 type="number"
               />
-              <span className="text-xs font-normal text-gray-500">
-                {t('pointsChangeWarning')}
-              </span>
+              <span className="text-xs font-normal text-gray-500">{t('pointsChangeWarning')}</span>
             </div>
           </div>
 
@@ -374,7 +379,9 @@ export default function CustomerEditForm() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('birthday')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('birthday')}
+              </label>
               <Input
                 type="date"
                 // registerのプロパティを展開

@@ -31,7 +31,7 @@ import {
 } from '@/convex/constants'
 import { useTranslations } from 'next-intl'
 
-const createSchemaCustomer = (t: any) => z.object({
+const createSchemaCustomer = (t: (key: string, values?: Record<string, string | number | Date>) => string) => z.object({
   line_id: z
     .string()
     .max(MAX_TEXT_LENGTH, {

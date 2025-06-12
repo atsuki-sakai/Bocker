@@ -3,7 +3,6 @@
 import { DashboardSection, withManagerAccess } from '@/components/common' // Assuming this is your layout component
 import { useParams } from 'next/navigation'
 import { Loading } from '@/components/common' // Assuming this is your loading component
-import { convertGender, Gender } from '@/convex/types'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator' // Useful for separating sections
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip' // For displaying full IDs on hover
@@ -79,7 +78,7 @@ function CustomerDetailPage() {
     }
 
     fetchCustomerData()
-  }, [tenantId, orgId, customerUid, isLoaded, customerRepo])
+  }, [tenantId, orgId, customerUid, isLoaded, customerRepo, t])
 
   // Date formatting
   useEffect(() => {
