@@ -90,9 +90,16 @@ export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl // 現在のパスを取得
   const pathnameWithoutLocale = getPathnameWithoutLocale(pathname)
 
+  // ★ manifest.jsonリクエストをルートにリダイレクト ★
+  if (pathname.endsWith('/manifest.json') && pathname !== '/manifest.json') {
+    console.log('[Middleware] Redirecting manifest.json request to root')
+    return NextResponse.redirect(new URL('/manifest.json', req.url))
+  }
+
   // ★ API ルートは next-intl のロケール付与から除外 ★
   if (pathnameWithoutLocale.startsWith('/api/')) {
-    console.log('[Middleware] API path detected, skipping intl middleware.')
+    console.log('[Middleware] API path detected, processing without intl.')
+    // APIルートはClerk認証のみ処理、next-intlは適用しない
     return NextResponse.next()
   }
 
@@ -207,11 +214,9 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Skip all paths that should bypass middleware
-    '/((?!api/webhook|api/generate|api/storage|_next/static|_next/image|assets|images|img|favicon.ico|apple-icon.*|icon.*|manifest.json|sw.js|robots.txt|sitemap.xml).*)',
-    // Include intl middleware
-    '/(ja|en)/:path*',
-    // Root path
-    '/',
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|json)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
   ],
 }

@@ -1,7 +1,11 @@
 import { z } from 'zod'
+import { IMAGE_DIRECTORY_VALUES, IMAGE_QUALITY_VALUES, ROLE_VALUES, GENDER_VALUES, ASPECT_TYPE_VALUES } from '@/convex/types'
+import { STORAGE_URL } from '@/services/gcp/cloud_storage/constants'
 
-// Convex ID validation - 16 character alphanumeric string
-export const convexIdSchema = z.string().regex(/^[a-z0-9]{16}$/, 'Invalid Convex ID format')
+// Convex ID validation - minimal validation (length only)
+export const convexIdSchema = z.string()
+  .min(20, 'Convex ID is too short')
+  .max(50, 'Convex ID is too long')
 
 // Stripe account ID validation
 export const stripeAccountIdSchema = z.string().startsWith('acct_', 'Invalid Stripe account ID')
@@ -13,19 +17,19 @@ export const stripeCustomerIdSchema = z.string().startsWith('cus_', 'Invalid Str
 export const stripeSubscriptionIdSchema = z.string().startsWith('sub_', 'Invalid Stripe subscription ID')
 
 // Role enum validation
-export const roleSchema = z.enum(['admin', 'owner', 'manager', 'staff'])
+export const roleSchema = z.enum(ROLE_VALUES)
 
 // Gender enum validation  
-export const genderSchema = z.enum(['unselected', 'male', 'female'])
+export const genderSchema = z.enum(GENDER_VALUES)
 
 // Image directory enum validation
-export const directorySchema = z.enum(['staff', 'menu', 'option', 'carte', 'customer', 'other'])
+export const directorySchema = z.enum(IMAGE_DIRECTORY_VALUES)
 
 // Image quality enum validation
-export const qualitySchema = z.enum(['low', 'medium', 'high'])
+export const qualitySchema = z.enum(IMAGE_QUALITY_VALUES)
 
 // Aspect type validation
-export const aspectTypeSchema = z.enum(['mobile', 'landscape', 'square'])
+export const aspectTypeSchema = z.enum(ASPECT_TYPE_VALUES)
 
 // URL validation with GCS bucket check
 export const gcsUrlSchema = z.string().url().refine(
@@ -33,8 +37,8 @@ export const gcsUrlSchema = z.string().url().refine(
     try {
       const urlObj = new URL(url)
       // Check if it's a valid GCS URL
-      return urlObj.hostname === 'storage.googleapis.com' || 
-             urlObj.hostname.endsWith('.storage.googleapis.com')
+      return urlObj.hostname === STORAGE_URL.split('//')[1] ||  
+             urlObj.hostname.endsWith(STORAGE_URL.split('//')[1])
     } catch {
       return false
     }
@@ -48,9 +52,10 @@ export function extractOrgIdFromGcsUrl(url: string): string | null {
     const urlObj = new URL(url)
     const pathParts = urlObj.pathname.split('/')
     
-    // Expected format: /bucket-name/org_<id>/...
+    // Expected format: /bucket-name/<convex_id>/<directory>/...
+    // Convex IDs are typically 20-50 characters
     for (const part of pathParts) {
-      if (part.startsWith('org_') && part.length === 20) { // org_ + 16 chars
+      if (part.length >= 20 && part.length <= 50) {
         return part
       }
     }

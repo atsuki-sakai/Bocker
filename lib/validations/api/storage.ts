@@ -25,7 +25,7 @@ export const signedUrlRequestSchema = z.object({
   fileName: z.string().min(1).max(255),
   contentType: z.string().regex(/^(image|application|video)\/.+$/),
   orgId: convexIdSchema,
-  directory: directorySchema,
+  directory: z.string().min(1).max(255), // ※ directory/thumbnail/ と directory/original/ が入ってくる
 })
 
 // File size validation (10MB max)

@@ -24,6 +24,11 @@ export const metadata: Metadata = {
   title: 'Bocker - 予約管理システム',
   description:
     'Bockerはサロンの予約管理、顧客管理、サロン運営を一元管理し運用業務の効率化を目的としたシステムです。',
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-icon.png',
+  },
 }
 
 type Props = {

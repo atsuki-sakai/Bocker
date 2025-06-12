@@ -1,7 +1,7 @@
-import { imgDirectoryType, imageQualityType } from '@/convex/types';
+import { imageDirectoryType, imageQualityType } from '@/convex/types';
 import { Infer } from 'convex/values'
 
-export type ImageDirectory = Infer<typeof imgDirectoryType>;
+export type ImageDirectory = Infer<typeof imageDirectoryType>;
 export type ImageQuality = Infer<typeof imageQualityType>;
 
 export interface ProcessedImageResult {

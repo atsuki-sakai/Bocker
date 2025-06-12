@@ -311,6 +311,10 @@ export const IMAGE_QUALITY_VALUES = ['low', 'medium', 'high'] as const
 export const imageQualityType = v.union(...IMAGE_QUALITY_VALUES.map((quality) => v.literal(quality)))
 export type ImageQuality = Infer<typeof imageQualityType>
 
+export const IMAGE_DIRECTORY_VALUES = ['setting', 'staff', 'menu', 'option', 'carte', 'customer', 'other'] as const
+export const imageDirectoryType = v.union(...IMAGE_DIRECTORY_VALUES.map((directory) => v.literal(directory)))
+export type ImageDirectory = Infer<typeof imageDirectoryType>
+
 export const TRACKING_CODE_VALUES = [
   'web',
   'line',

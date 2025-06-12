@@ -132,6 +132,7 @@ export default function ReservationPage() {
     reservationData?.reservation?.customer_id,
     reservationData?.reservation?.tenant_id,
     reservationData?.reservation?.org_id,
+    t,
   ])
 
   if (!reservationData || !staff || !reservationMenuDetails) return <Loading />
