@@ -25,7 +25,7 @@ export const directorySchema = z.enum(['staff', 'menu', 'option', 'carte', 'cust
 export const qualitySchema = z.enum(['low', 'medium', 'high'])
 
 // Aspect type validation
-export const aspectTypeSchema = z.enum(['mobile', 'desktop', 'square'])
+export const aspectTypeSchema = z.enum(['mobile', 'landscape', 'square'])
 
 // URL validation with GCS bucket check
 export const gcsUrlSchema = z.string().url().refine(

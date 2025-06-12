@@ -39,7 +39,13 @@ export function withAuth(
       }
 
       // Get organization auth context
+      console.log('[withAuth] Getting organization auth context for userId:', userId)
       const authContext = await getOrganizationAuth()
+      console.log('[withAuth] Organization auth context retrieved:', {
+        hasAuthContext: !!authContext,
+        orgId: authContext.orgId,
+        role: authContext.role
+      })
 
       // Check role permissions if specified
       if (options?.requiredRoles && !options.requiredRoles.includes(authContext.role)) {
@@ -54,12 +60,21 @@ export function withAuth(
     } catch (error) {
       console.error('Authentication middleware error:', error)
       
-      // Handle redirect errors from getOrganizationAuth
-      if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
-        return NextResponse.json(
-          { error: '認証情報が不正です。再度ログインしてください。' },
-          { status: 401 }
-        )
+      // Handle specific authentication errors
+      if (error instanceof Error) {
+        if (error.message.includes('Unauthorized:')) {
+          return NextResponse.json(
+            { error: '認証が必要です。ログインしてください。' },
+            { status: 401 }
+          )
+        }
+        
+        if (error.message.includes('NEXT_REDIRECT')) {
+          return NextResponse.json(
+            { error: '認証情報が不正です。再度ログインしてください。' },
+            { status: 401 }
+          )
+        }
       }
       
       return NextResponse.json(
