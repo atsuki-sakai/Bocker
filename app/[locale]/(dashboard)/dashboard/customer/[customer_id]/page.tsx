@@ -24,10 +24,11 @@ import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { toast } from 'sonner'
+import { useTranslations, useLocale } from 'next-intl'
 
 // Import date formatting library
-import { format } from 'date-fns'
-import { ja } from 'date-fns/locale' // Japanese locale for date formatting
+import { formatDate } from '@/lib/formatDate'
+import type { SupportedLocale } from '@/lib/dateLocale'
 
 // 完全な顧客データの型定義
 type CompleteCustomerData = {
@@ -41,11 +42,18 @@ function CustomerDetailPage() {
   const params = useParams()
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const customerUid = params.customer_id as string
+  const t = useTranslations('customers')
+  const locale = useLocale() as SupportedLocale
 
   // 状態管理
   const [completeCustomer, setCompleteCustomer] = useState<CompleteCustomerData | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(true)
   const customerRepo = useMemo(() => new CustomerRepository(), [])
+  
+  // Date formatting states
+  const [formattedCreationTime, setFormattedCreationTime] = useState('')
+  const [formattedBirthday, setFormattedBirthday] = useState('')
+  const [formattedLastReservationDate, setFormattedLastReservationDate] = useState('')
 
   // 顧客データを取得
   useEffect(() => {
@@ -60,11 +68,11 @@ function CustomerDetailPage() {
         setCompleteCustomer(data)
 
         if (!data.customer) {
-          toast.error('顧客が見つかりません')
+          toast.error(t('customerNotFound'))
         }
       } catch (error) {
         console.error('顧客データの取得に失敗しました:', error)
-        toast.error('顧客データの取得に失敗しました')
+        toast.error(t('fetchError'))
       } finally {
         setIsLoadingData(false)
       }
@@ -73,40 +81,51 @@ function CustomerDetailPage() {
     fetchCustomerData()
   }, [tenantId, orgId, customerUid, isLoaded, customerRepo])
 
+  // Date formatting
+  useEffect(() => {
+    const formatDates = async () => {
+      if (completeCustomer?.customer?.created_at) {
+        const formatted = await formatDate(new Date(completeCustomer.customer.created_at), 'PPP p', locale)
+        setFormattedCreationTime(formatted)
+      } else {
+        setFormattedCreationTime(t('unknown'))
+      }
+
+      if (completeCustomer?.customerDetail?.birthday) {
+        const formatted = await formatDate(new Date(completeCustomer.customerDetail.birthday), 'PPP', locale)
+        setFormattedBirthday(formatted)
+      } else {
+        setFormattedBirthday(t('notRegistered'))
+      }
+
+      if (completeCustomer?.customer?.last_reservation_date_unix) {
+        const formatted = await formatDate(
+          new Date(completeCustomer.customer.last_reservation_date_unix * 1000),
+          'PPP p',
+          locale
+        )
+        setFormattedLastReservationDate(formatted)
+      } else {
+        setFormattedLastReservationDate(t('noReservationHistory'))
+      }
+    }
+
+    formatDates()
+  }, [completeCustomer, locale, t])
+
   // ローディング状態の表示
   if (!isLoaded || isLoadingData || !completeCustomer || !completeCustomer.customer) {
     return <Loading />
   }
 
-  // --- Data Formatting ---
-  // 作成日時のフォーマット
-  const formattedCreationTime = completeCustomer.customer.created_at
-    ? format(new Date(completeCustomer.customer.created_at), 'yyyy年MM月dd日 HH:mm', { locale: ja })
-    : '不明'
-
-  // 誕生日のフォーマット
-  const formattedBirthday = completeCustomer.customerDetail?.birthday
-    ? format(new Date(completeCustomer.customerDetail.birthday), 'yyyy年MM月dd日', { locale: ja })
-    : '未登録'
-
-  // 最終予約日のフォーマット
-  const formattedLastReservationDate = completeCustomer.customer.last_reservation_date_unix
-    ? format(
-        new Date(completeCustomer.customer.last_reservation_date_unix * 1000),
-        'yyyy年MM月dd日 HH:mm',
-        { locale: ja }
-      )
-    : '予約履歴なし'
-  // --- End Data Formatting ---
-
   return (
     // Use the existing DashboardSection for consistent layout
     <DashboardSection
-      title="顧客詳細"
+      title={t('customerDetails')}
       backLink="/dashboard/customer"
-      backLinkTitle="顧客一覧に戻る"
+      backLinkTitle={t('list')}
       infoBtn={{
-        text: '編集',
+        text: t('edit'),
         link: `/dashboard/customer/${customerUid}/edit`,
       }}
     >
@@ -114,14 +133,14 @@ function CustomerDetailPage() {
         <div className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
             <h3 className="text-3xl font-bold text-primary">
-              {completeCustomer.customer.last_name ?? '未登録'}{' '}
-              {completeCustomer.customer.first_name ?? '未登録'}
-              <span className="text-sm text-muted-foreground ml-1">様</span>
+              {completeCustomer.customer.last_name ?? t('notRegistered')}{' '}
+              {completeCustomer.customer.first_name ?? t('notRegistered')}
+              <span className="text-sm text-muted-foreground ml-1">{t('honorific')}</span>
             </h3>
           </div>
           <Badge>
             <div className="flex flex-col md:flex-row items-center justify-end space-x-2">
-              <span className="text-sm font-medium">保有ポイント</span>
+              <span className="text-sm font-medium">{t('totalPoints')}</span>
               <span className="text-base ml-1">
                 {completeCustomer.customerPoints?.total_points ?? 0}
               </span>
@@ -130,40 +149,40 @@ function CustomerDetailPage() {
         </div>
         {completeCustomer.customer.line_user_name && (
           <p className="w-fit text-sm mt-1 text-green-600 border-green-600 border rounded-md font-bold py-1 bg-green-50 px-3">
-            LINEユーザー名: {completeCustomer.customer.line_user_name}
+            {t('lineUserName')}: {completeCustomer.customer.line_user_name}
           </p>
         )}
         <div className="space-y-6 pt-4">
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center">
               <User className="mr-2 h-5 w-5 text-muted-foreground" />
-              基本情報
+              {t('basicInfo')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Last Name */}
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-muted-foreground">姓:</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('lastName')}:</span>
                 <span className="text-base font-semibold">
-                  {completeCustomer.customer.last_name || '未登録'}
+                  {completeCustomer.customer.last_name || t('notRegistered')}
                 </span>
               </div>
               {/* First Name */}
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-muted-foreground">名:</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('firstName')}:</span>
                 <span className="text-base font-semibold">
-                  {completeCustomer.customer.first_name || '未登録'}
+                  {completeCustomer.customer.first_name || t('notRegistered')}
                 </span>
               </div>
               {/* Phone Number - spans both columns on medium screens and above */}
               <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
                 <Phone className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">電話番号:</span>
-                <span className="text-base">{completeCustomer.customer.phone || '未登録'}</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('phone')}:</span>
+                <span className="text-base">{completeCustomer.customer.phone || t('notRegistered')}</span>
               </div>
               <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
                 <Mail className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">メールアドレス:</span>
-                <span className="text-base">{completeCustomer.customer.email || '未登録'}</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('email')}:</span>
+                <span className="text-base">{completeCustomer.customer.email || t('notRegistered')}</span>
               </div>
             </div>
           </div>
@@ -171,30 +190,32 @@ function CustomerDetailPage() {
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center">
               <NotebookPen className="mr-2 h-5 w-5 text-muted-foreground" />
-              追加情報
+              {t('additionalInfo')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
                 <Cake className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">誕生日:</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('birthday')}:</span>
                 <span className="text-base">{formattedBirthday}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Cake className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">年齢:</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('age')}:</span>
                 <span className="text-base">
                   {completeCustomer.customerDetail?.age
-                    ? `${completeCustomer.customerDetail.age}歳`
-                    : '未登録'}
+                    ? t('ageValue', { age: completeCustomer.customerDetail.age })
+                    : t('notRegistered')}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <Cake className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">性別:</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('gender')}:</span>
                 <span className="text-base">
-                  {convertGender(
-                    (completeCustomer.customerDetail?.gender as Gender) || 'unselected'
-                  )}
+                  {completeCustomer.customerDetail?.gender === 'male'
+                    ? t('male')
+                    : completeCustomer.customerDetail?.gender === 'female'
+                    ? t('female')
+                    : t('unselected')}
                 </span>
               </div>
               {/* Notes - potentially long, use ScrollArea or Collapsible */}
@@ -203,7 +224,7 @@ function CustomerDetailPage() {
                 {/* Notes span full width */}
                 <span className="text-sm font-medium text-muted-foreground flex items-center mb-2">
                   <NotebookPen className="mr-2 h-5 w-5 text-muted-foreground" />
-                  メモ:
+                  {t('notes')}:
                 </span>
                 {completeCustomer.customerDetail?.notes ? (
                   <ScrollArea className="h-24 w-full rounded-md border p-4 text-sm">
@@ -212,7 +233,7 @@ function CustomerDetailPage() {
                     {completeCustomer.customerDetail.notes}
                   </ScrollArea>
                 ) : (
-                  <p className="text-base text-muted-foreground italic">メモはありません。</p>
+                  <p className="text-base text-muted-foreground italic">{t('noNotes')}</p>
                 )}
               </div>
             </div>
@@ -221,17 +242,17 @@ function CustomerDetailPage() {
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center">
               <History className="mr-2 h-5 w-5 text-muted-foreground" />
-              利用情報
+              {t('usageInfo')}
             </h3>
 
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-muted-foreground">最終予約日:</span>
+              <span className="text-sm font-medium text-muted-foreground">{t('lastVisit')}:</span>
               <span className="text-sm">{formattedLastReservationDate}</span>
             </div>
             <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
-              <span className="text-sm font-medium text-muted-foreground">来店回数:</span>
+              <span className="text-sm font-medium text-muted-foreground">{t('visitCount')}:</span>
               <span className="text-sm">
-                {completeCustomer.customer.total_reservation_count || 0}回
+                {t('visitCountValue', { count: completeCustomer.customer.total_reservation_count || 0 })}
               </span>
             </div>
           </div>
@@ -241,7 +262,7 @@ function CustomerDetailPage() {
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center">
                   <Tag className="mr-2 h-5 w-5 text-muted-foreground" />
-                  タグ
+                  {t('tags')}
                 </h3>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {completeCustomer.customer.tags.map((tag: string, index: number) => (
@@ -257,7 +278,7 @@ function CustomerDetailPage() {
             <>
               <div className="flex items-center space-x-2 text-muted-foreground text-sm">
                 <Tag className="h-5 w-5" />
-                <span>タグは登録されていません。</span>
+                <span>{t('noTags')}</span>
               </div>
             </>
           )}
@@ -266,12 +287,12 @@ function CustomerDetailPage() {
         <div className="flex flex-col items-start space-y-2 text-sm text-muted-foreground pt-4 border-t">
           <div className="flex items-center space-x-2">
             <CalendarDays className="h-4 w-4" />
-            <span>登録日: {formattedCreationTime}</span>
+            <span>{t('registrationDate')}: {formattedCreationTime}</span>
           </div>
 
           <div className="flex items-center space-x-2">
             <Info className="h-4 w-4" />
-            <span>顧客ID: </span>
+            <span>{t('customerId')}: </span>
 
             <TooltipProvider>
               <Tooltip>

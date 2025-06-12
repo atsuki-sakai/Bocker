@@ -36,8 +36,11 @@ import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import { useTranslations, useLocale } from 'next-intl'
+import { formatDate } from '@/lib/formatDate'
+import type { SupportedLocale } from '@/lib/dateLocale'
 
-const pointConfigSchema = z.object({
+const createPointConfigSchema = (t: any) => z.object({
   id: z.string().optional(),
   is_active: z.boolean().default(true),
   is_fixed_point: z.boolean().default(false),
@@ -51,7 +54,7 @@ const pointConfigSchema = z.object({
     },
     z
       .number()
-      .max(100, { message: 'ポイント付与率は100%以下で入力してください' })
+      .max(100, { message: t('validation.pointRateMax') })
       .nullable()
       .optional()
   ),
@@ -65,7 +68,7 @@ const pointConfigSchema = z.object({
     },
     z
       .number()
-      .max(99999, { message: '固定ポイントは99999円以下で入力してください' })
+      .max(99999, { message: t('validation.fixedPointMax') })
       .nullable()
       .optional()
   ),
@@ -79,6 +82,10 @@ export default function PointTabs() {
   const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const { showErrorToast } = useErrorHandler()
+  const t = useTranslations('point')
+  const locale = useLocale() as SupportedLocale
+  
+  const pointConfigSchema = createPointConfigSchema(t)
 
   const pointConfig = useQuery(
     api.point.query.findByTenantAndOrg,
@@ -128,7 +135,7 @@ export default function PointTabs() {
     setIsSaving(true)
     try {
       if (!tenantId || !orgId) {
-        toast.error('テナントまたは店舗が見つかりません')
+        toast.error(t('errors.tenantOrOrgNotFound'))
         setIsSaving(false)
         return
       }
@@ -148,7 +155,7 @@ export default function PointTabs() {
         point_config_id: pointConfigId,
         selected_menu_ids: selectedMenuIds,
       })
-      toast.success('設定を保存しました')
+      toast.success(t('messages.settingsSaved'))
       setExclusionMenuChanged(false)
       setTimeout(() => setIsSaving(false), 300)
     } catch (error) {
@@ -182,11 +189,11 @@ export default function PointTabs() {
         <TabsList className="mb-6">
           <TabsTrigger value="basic" className="flex items-center gap-2">
             <Coins className="h-4 w-4" />
-            基本設定
+            {t('tabs.basicSettings')}
           </TabsTrigger>
           <TabsTrigger value="exclusions" className="flex items-center gap-2">
             <Gift className="h-4 w-4" />
-            ポイント対象外メニュー
+            {t('tabs.exclusionMenus')}
           </TabsTrigger>
         </TabsList>
 
@@ -197,14 +204,12 @@ export default function PointTabs() {
                 <div className="p-3 bg-muted">
                   <h5 className="flex items-center text-xl font-bold gap-2">
                     <Coins className="h-5 w-5 text-primary" />
-                    ポイント基本設定
+                    {t('basicSettings.title')}
                   </h5>
                   <p className="text-sm text-muted-foreground py-2 mb-2">
-                    サロンを利用した顧客へのポイント付与方法を設定します。
+                    {t('basicSettings.description')}
                     <br />
-                    ポイントは
-                    <span className="font-bold">1ポイント = 1円</span>
-                    で付与されます。
+                    <span className="font-bold">{t('basicSettings.pointValue')}</span>
                   </p>
                 </div>
 
@@ -218,7 +223,7 @@ export default function PointTabs() {
                       }`}
                     >
                       <p className="text-sm font-bold">
-                        {watchedIsActive ? 'ポイント機能は有効' : 'ポイント機能は無効'}
+                        {watchedIsActive ? t('basicSettings.pointStatusActive') : t('basicSettings.pointStatusInactive')}
                       </p>
                     </div>
                     <Switch
@@ -231,10 +236,10 @@ export default function PointTabs() {
                     />
                     <div>
                       <Label htmlFor="point-type">
-                        ポイント機能を{watchedIsActive ? '有効' : '無効'}にする
+                        {t('basicSettings.enablePointFeature', { status: watchedIsActive ? t('common.enable') : t('common.disable') })}
                       </Label>
                       <span className="block text-xs text-muted-foreground">
-                        ポイント機能を有効にすると、利用額に対して設定したポイント付与率でポイントが自動で付与されます。
+                        {t('basicSettings.enableDescription')}
                       </span>
                     </div>
                   </div>

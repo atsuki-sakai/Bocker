@@ -2,13 +2,16 @@
 
 import { DashboardSection, withManagerAccess } from '@/components/common';
 import CustomerAddForm from './CustomerAddForm';
+import { useTranslations } from 'next-intl';
 
 function CustomerAddPage() {
+  const t = useTranslations('customers');
+  
   return (
     <DashboardSection
-      title="顧客を追加"
+      title={t('addCustomer')}
       backLink="/dashboard/customer"
-      backLinkTitle="顧客一覧に戻る"
+      backLinkTitle={t('list')}
     >
       <CustomerAddForm />
     </DashboardSection>

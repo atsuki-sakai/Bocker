@@ -54,9 +54,11 @@ import { useMutation } from 'convex/react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { deleteCookie } from '@/lib/utils'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useQuery } from 'convex/react'
 import { RowType } from '@/services/supabase/SupabaseService'
+import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 
 // 曜日をソートするための順序を定義
 const dayOrder: Record<string, number> = {

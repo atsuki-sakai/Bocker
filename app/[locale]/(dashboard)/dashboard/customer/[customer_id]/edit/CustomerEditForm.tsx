@@ -26,6 +26,7 @@ import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
+import { useTranslations } from 'next-intl'
 
 // 'YYYY-MM-DD'形式の誕生日文字列から年齢を計算するヘルパー関数
 const calculateAge = (birthdayString: string | undefined | null): number | undefined => {
@@ -55,7 +56,7 @@ const calculateAge = (birthdayString: string | undefined | null): number | undef
   return age
 }
 
-const customerEditFormSchema = z.object({
+const createCustomerEditFormSchema = (t: any) => z.object({
   last_name: z.preprocess(
     (val) => {
       if (val === '' || val === null || val === undefined) return undefined
@@ -63,8 +64,8 @@ const customerEditFormSchema = z.object({
     },
     z
       .string()
-      .min(1, { message: '苗字は必須です' })
-      .max(MAX_TEXT_LENGTH, { message: `苗字は${MAX_TEXT_LENGTH}文字以内で入力してください` })
+      .min(1, { message: t('validation.lastNameRequired') })
+      .max(MAX_TEXT_LENGTH, { message: t('validation.lastNameMaxLength', { max: MAX_TEXT_LENGTH }) })
       .optional()
   ),
   first_name: z.preprocess(
@@ -74,29 +75,29 @@ const customerEditFormSchema = z.object({
     },
     z
       .string()
-      .min(1, { message: '名前は必須です' })
-      .max(MAX_TEXT_LENGTH, { message: `名前は${MAX_TEXT_LENGTH}文字以内で入力してください` })
+      .min(1, { message: t('validation.firstNameRequired') })
+      .max(MAX_TEXT_LENGTH, { message: t('validation.firstNameMaxLength', { max: MAX_TEXT_LENGTH }) })
       .optional()
   ),
   phone: z
     .string()
-    .min(1, { message: '電話番号は必須です' })
-    .max(MAX_TEXT_LENGTH, { message: `電話番号は${MAX_TEXT_LENGTH}文字以内で入力してください` })
+    .min(1, { message: t('validation.phoneMinLength') })
+    .max(MAX_TEXT_LENGTH, { message: t('validation.phoneMaxLength', { max: MAX_TEXT_LENGTH }) })
     .optional(),
   email: z
     .string()
     .max(MAX_TEXT_LENGTH, {
-      message: `メールアドレスは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      message: t('validation.emailMaxLength'),
     })
     .refine((val) => !val || z.string().email().safeParse(val).success, {
-      message: 'メールアドレスが不正です',
+      message: t('validation.emailInvalid'),
     })
     .optional(),
   gender: z.enum(GENDER_VALUES).default('unselected'),
   birthday: z.string().optional(),
   notes: z
     .string()
-    .max(MAX_NOTES_LENGTH, { message: `メモは${MAX_NOTES_LENGTH}文字以内で入力してください` })
+    .max(MAX_NOTES_LENGTH, { message: t('validation.notesMaxLength', { max: MAX_NOTES_LENGTH }) })
     .optional(),
   total_points: z.preprocess(
     (val) => {
@@ -106,8 +107,8 @@ const customerEditFormSchema = z.object({
     },
     z
       .number()
-      .min(0, { message: '保有ポイントは0以上で入力してください' })
-      .max(99999999, { message: `保有ポイントは99999999以下で入力してください` })
+      .min(0, { message: t('validation.pointsMinValue') })
+      .max(99999999, { message: t('validation.pointsMax', { max: 99999999 }) })
       .nullable()
       .optional()
   ),
@@ -115,10 +116,10 @@ const customerEditFormSchema = z.object({
     .array(
       z
         .string()
-        .max(MAX_TAG_LENGTH, { message: `タグは${MAX_TAG_LENGTH}文字以内で入力してください` })
+        .max(MAX_TAG_LENGTH, { message: t('validation.tagMaxLength', { max: MAX_TAG_LENGTH }) })
     )
     .refine((tags) => tags.length <= 5, {
-      message: `タグは最大で5つまで入力できます`,
+      message: t('validation.tagsMaxCount', { max: 5 }),
     })
     .default([]),
 })
@@ -135,12 +136,15 @@ export default function CustomerEditForm() {
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const router = useRouter()
   const customerUid = params.customer_id as string
+  const t = useTranslations('customers')
 
   // 状態管理
   const [completeCustomer, setCompleteCustomer] = useState<CompleteCustomerData | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(true)
   // customerRepo の初期化を useMemo でラップ
   const customerRepo = useMemo(() => new CustomerRepository(), [])
+  
+  const customerEditFormSchema = createCustomerEditFormSchema(t)
 
   const {
     register,
@@ -182,7 +186,7 @@ export default function CustomerEditForm() {
         }
       } catch (error) {
         console.error('顧客データの取得に失敗しました:', error)
-        toast.error('顧客データの取得に失敗しました')
+        toast.error(t('fetchError'))
       } finally {
         setIsLoadingData(false)
       }
@@ -196,12 +200,12 @@ export default function CustomerEditForm() {
     console.log('フォームデータを送信中:', data)
 
     if (!completeCustomer || !completeCustomer.customer) {
-      toast.error('顧客データの読み込みが完了していません。')
+      toast.error(t('dataNotLoaded'))
       return
     }
 
     if (!tenantId || !orgId) {
-      toast.error('テナントIDまたは組織IDが見つかりません')
+      toast.error(t('tenantOrOrgNotFound'))
       return
     }
 
@@ -240,14 +244,14 @@ export default function CustomerEditForm() {
       )
 
       if (result.customer) {
-        toast.success('顧客情報を更新しました')
+        toast.success(t('customerUpdated'))
         router.push(`/dashboard/customer/${customerUid}`)
       } else {
-        toast.error('顧客情報の更新に失敗しました')
+        toast.error(t('updateError'))
       }
     } catch (error) {
       console.error('更新処理でエラーが発生しました:', error)
-      const errorMessage = error instanceof Error ? error.message : '顧客情報の更新に失敗しました'
+      const errorMessage = error instanceof Error ? error.message : t('updateError')
       toast.error(errorMessage)
     }
   }
@@ -262,10 +266,10 @@ export default function CustomerEditForm() {
 
   return (
     <div className="container mx-auto py-4">
-      <h2 className="text-2xl font-bold text-slate-700 mb-4">顧客情報編集</h2>
+      <h2 className="text-2xl font-bold text-slate-700 mb-4">{t('editTitle')}</h2>
       {completeCustomer.customer?.line_user_name && (
         <p className="text-sm text-green-600 mb-4 p-2 border border-green-600 rounded-md w-fit">
-          <span className="font-bold">LINEユーザー名 </span>{' '}
+          <span className="font-bold">{t('lineUserName')} </span>{' '}
           <span className="text-slate-700 ml-2 tracking-wider font-bold">
             {completeCustomer.customer.line_user_name}
           </span>
@@ -275,35 +279,35 @@ export default function CustomerEditForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="grid grid-cols-2 gap-6 col-span-1">
             <ZodTextField
-              label="苗字"
+              label={t('lastName')}
               register={register}
               errors={errors}
               name="last_name"
-              placeholder="苗字を入力してください"
+              placeholder={t('placeholder.lastName')}
             />
             <ZodTextField
-              label="名前"
+              label={t('firstName')}
               register={register}
               errors={errors}
               name="first_name"
-              placeholder="名前を入力してください"
+              placeholder={t('placeholder.firstName')}
             />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <ZodTextField
-            label="電話番号"
+            label={t('phone')}
             register={register}
             errors={errors}
             name="phone"
-            placeholder="電話番号を入力してください"
+            placeholder={t('placeholder.phone')}
           />
           <ZodTextField
-            label="メールアドレス"
+            label={t('email')}
             register={register}
             errors={errors}
             name="email"
-            placeholder="メールアドレスを入力してください"
+            placeholder={t('placeholder.email')}
             type="email"
           />
         </div>
@@ -313,13 +317,13 @@ export default function CustomerEditForm() {
           <p className="text-lg text-slate-700">
             {/* 年齢の表示 */}
             {displayAge !== undefined && displayAge !== null ? displayAge : '-'}
-            <span className="text-base font-normal text-slate-700">歳</span>{' '}
+            <span className="text-base font-normal text-slate-700">{t('yearsOld')}</span>{' '}
             <span className="text-base font-normal text-slate-700">
               {watch('gender') === 'male'
-                ? '男性'
+                ? t('male')
                 : watch('gender') === 'female'
-                  ? '女性'
-                  : '未選択'}
+                  ? t('female')
+                  : t('unselected')}
             </span>
           </p>
         </div>
@@ -328,22 +332,22 @@ export default function CustomerEditForm() {
             {/* ポイントフィールド */}
             <div>
               <ZodTextField
-                label="保有ポイント"
+                label={t('totalPoints')}
                 register={register}
                 errors={errors}
                 name="total_points"
-                placeholder="保有ポイントを入力してください"
+                placeholder={t('placeholder.totalPoints')}
                 type="number"
               />
               <span className="text-xs font-normal text-gray-500">
-                保有ポイントの変更は慎重に行ってください。
+                {t('pointsChangeWarning')}
               </span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">性別</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('gender')}</label>
               <Select
                 onValueChange={(value) => {
                   setValue('gender', value as Gender, { shouldDirty: true })
@@ -351,16 +355,16 @@ export default function CustomerEditForm() {
                 value={watch('gender') || 'unselected'}
               >
                 <SelectTrigger className={errors.gender ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="性別を選択してください" />
+                  <SelectValue placeholder={t('selectGender')} />
                 </SelectTrigger>
                 <SelectContent>
                   {GENDER_VALUES.map((genderValue) => (
                     <SelectItem key={genderValue} value={genderValue}>
                       {genderValue === 'unselected'
-                        ? '未選択'
+                        ? t('unselected')
                         : genderValue === 'male'
-                          ? '男性'
-                          : '女性'}
+                          ? t('male')
+                          : t('female')}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -370,7 +374,7 @@ export default function CustomerEditForm() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">誕生日</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('birthday')}</label>
               <Input
                 type="date"
                 // registerのプロパティを展開
@@ -399,6 +403,8 @@ export default function CustomerEditForm() {
             setTagsAction={(tags) => {
               setValue('tags', tags, { shouldDirty: true })
             }}
+            title={t('tags')}
+            exampleText={t('tagExample')}
           />
           {errors.tags && (
             <p className="text-sm font-medium text-destructive mt-1">{errors.tags.message}</p>
@@ -406,11 +412,11 @@ export default function CustomerEditForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">メモ</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes')}</label>
           <Textarea
             {...register('notes')}
             rows={8}
-            placeholder="メモを入力してください"
+            placeholder={t('memoPlaceholder')}
             disabled={isSubmitting}
             className={errors.notes ? 'border-destructive' : ''}
           />
@@ -424,12 +430,12 @@ export default function CustomerEditForm() {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                更新中...
+                {t('updating')}
               </>
             ) : (
               <>
                 <Pencil className="w-4 h-4 mr-2" />
-                更新
+                {t('updateButton')}
               </>
             )}
           </Button>

@@ -60,9 +60,9 @@ useEffect(() => {
 - [x] dashboard/staff/[staff_id]/edit
 - [x] dashboard/staff/[staff_id]/StaffDetailContent
 - [x] dashboard/staff/StaffList
-- [ ] dashboard/customer/add
-- [ ] dashboard/customer/[customer_id]/edit/staffEditForm.tsx
-- [ ] dashboard/customer/[customer_id]/my-page/*以下全てのページ
+- [x] dashboard/customer/add
+- [x] dashboard/customer/[customer_id]/edit/CustomerEditForm.tsx
+- [x] dashboard/customer/[customer_id]/page.tsx (顧客詳細ページ)
 - [ ] dashboard/point
 - [ ] dashboard/point/pointTabs
 - [ ] dashboard/reservation/[reservation_id]/page

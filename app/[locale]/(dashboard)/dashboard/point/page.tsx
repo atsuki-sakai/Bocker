@@ -2,13 +2,17 @@
 
 import PointTabs from './PointTabs';
 import { DashboardSection, withOwnerAccess } from '@/components/common';
+import { useTranslations } from 'next-intl';
 
 function PointPage() {
+  const t = useTranslations('point');
+  const dashboardT = useTranslations('dashboard');
+  
   return (
     <DashboardSection
-      title="ポイント設定"
+      title={t('title')}
       backLink="/dashboard"
-      backLinkTitle="ダッシュボードに戻る"
+      backLinkTitle={dashboardT('title')}
     >
       <PointTabs />
     </DashboardSection>

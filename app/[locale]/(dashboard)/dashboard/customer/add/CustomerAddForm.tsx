@@ -29,30 +29,31 @@ import {
   MAX_TAG_LENGTH,
   MAX_NOTES_LENGTH,
 } from '@/convex/constants'
+import { useTranslations } from 'next-intl'
 
-const schemaCustomer = z.object({
+const createSchemaCustomer = (t: any) => z.object({
   line_id: z
     .string()
     .max(MAX_TEXT_LENGTH, {
-      message: `LINE IDは${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      message: t('validation.lineIdMaxLength', { max: MAX_TEXT_LENGTH }),
     })
     .optional(), // LINE ID
   line_user_name: z
     .string()
     .max(MAX_TEXT_LENGTH, {
-      message: `LINEユーザー名は${MAX_TEXT_LENGTH}文字以内で入力してください`,
+      message: t('validation.lineUserNameMaxLength', { max: MAX_TEXT_LENGTH }),
     })
     .optional(), // LINEユーザー名
   phone: z
     .string()
     .min(6, {
-      message: `電話番号は6文字以上で入力してください`,
+      message: t('validation.phoneMinLength'),
     })
     .max(MAX_PHONE_LENGTH, {
-      message: `電話番号は${MAX_PHONE_LENGTH}文字以内で入力してください`,
+      message: t('validation.phoneMaxLength', { max: MAX_PHONE_LENGTH }),
     })
     .refine((value) => value === undefined || /^[0-9]+$/.test(value), {
-      message: '電話番号は数字で入力してください',
+      message: t('validation.phoneFormat'),
     }), // 電話番号
   email: z.preprocess(
     (val) => {
@@ -63,33 +64,33 @@ const schemaCustomer = z.object({
     },
     z
       .string()
-      .max(100, { message: 'メールアドレスは100文字以内で入力してください' })
+      .max(100, { message: t('validation.emailMaxLength') })
       .optional()
       .refine(
         (value) =>
           value === undefined || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value),
-        { message: 'メールアドレスの形式が正しくありません' }
+        { message: t('validation.emailInvalid') }
       ) // メールアドレス
   ),
   first_name: z
     .string()
-    .min(1, { message: '名前は1文字以上で入力してください' })
-    .max(MAX_TEXT_LENGTH, { message: `名前は${MAX_TEXT_LENGTH}文字以内で入力してください` }), // 名前
+    .min(1, { message: t('validation.firstNameRequired') })
+    .max(MAX_TEXT_LENGTH, { message: t('validation.firstNameMaxLength', { max: MAX_TEXT_LENGTH }) }), // 名前
   last_name: z
     .string()
-    .min(1, { message: '苗字は1文字以上で入力してください' })
-    .max(MAX_TEXT_LENGTH, { message: `苗字は${MAX_TEXT_LENGTH}文字以内で入力してください` }), // 苗字
+    .min(1, { message: t('validation.lastNameRequired') })
+    .max(MAX_TEXT_LENGTH, { message: t('validation.lastNameMaxLength', { max: MAX_TEXT_LENGTH }) }), // 苗字
   total_reservation_count: z
     .number()
-    .max(MAX_NUM, { message: `利用回数は${MAX_NUM}回以内で入力してください` })
+    .max(MAX_NUM, { message: t('validation.visitCountMax', { max: MAX_NUM }) })
     .optional(), // 利用回数
   last_reservation_date_unix: z
     .number()
-    .max(MAX_NUM, { message: `最終予約日は${MAX_NUM}以下で入力してください` })
+    .max(MAX_NUM, { message: t('validation.lastVisitMax', { max: MAX_NUM }) })
     .optional(), // 最終予約日
   tags: z
     .array(z.string())
-    .max(MAX_TAG_LENGTH, { message: `タグは${MAX_TAG_LENGTH}つ以内で入力してください` })
+    .max(MAX_TAG_LENGTH, { message: t('validation.tagsMaxCount', { max: MAX_TAG_LENGTH }) })
     .optional(), // タグ
   age: z.preprocess(
     (val) => {
@@ -107,15 +108,15 @@ const schemaCustomer = z.object({
     z
       .number()
       .min(0)
-      .max(MAX_NUM, { message: `年齢は${MAX_NUM}以下で入力してください` })
+      .max(MAX_NUM, { message: t('validation.ageMax', { max: MAX_NUM }) })
       .nullable() // null を許容する (preprocessでundefinedに変換しているので必須ではないが残しておく)
       .optional() // undefined を許容する
   ), // 年齢
-  birthday: z.string().max(100, { message: '誕生日は100文字以内で入力してください' }).optional(), // 誕生日
+  birthday: z.string().max(100, { message: t('validation.birthdayMaxLength') }).optional(), // 誕生日
   gender: z.enum(GENDER_VALUES).optional(), // 性別
   notes: z
     .string()
-    .max(MAX_NOTES_LENGTH, { message: `メモは${MAX_NOTES_LENGTH}文字以内で入力してください` })
+    .max(MAX_NOTES_LENGTH, { message: t('validation.notesMaxLength', { max: MAX_NOTES_LENGTH }) })
     .optional(), // メモ
   total_points: z.preprocess(
     (val) => {
@@ -132,7 +133,7 @@ const schemaCustomer = z.object({
     },
     z
       .number()
-      .max(MAX_NUM, { message: `ポイントは${MAX_NUM}以下で入力してください` })
+      .max(MAX_NUM, { message: t('validation.pointsMax', { max: MAX_NUM }) })
       .optional() // ポイント
   ),
 })
@@ -143,7 +144,10 @@ export default function CustomerAddForm() {
   const [currentTags, setCurrentTags] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const customerRepo = new CustomerRepository()
+  const t = useTranslations('customers')
 
+  const schemaCustomer = createSchemaCustomer(t)
+  
   const {
     register,
     handleSubmit,
@@ -156,7 +160,7 @@ export default function CustomerAddForm() {
     console.log('フォームデータ:', data)
 
     if (!tenantId || !orgId) {
-      toast.error('テナントIDまたは組織IDが見つかりません')
+      toast.error(t('tenantOrOrgNotFound'))
       return
     }
 
@@ -203,14 +207,14 @@ export default function CustomerAddForm() {
       )
 
       if (result.customer) {
-        toast.success('顧客を追加しました')
+        toast.success(t('addSuccess'))
         router.push('/dashboard/customer')
       } else {
-        toast.error('顧客の作成に失敗しました')
+        toast.error(t('addError'))
       }
     } catch (error) {
       console.error('顧客作成エラー:', error)
-      const errorMessage = error instanceof Error ? error.message : '顧客の作成に失敗しました'
+      const errorMessage = error instanceof Error ? error.message : t('addError')
       toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
@@ -228,27 +232,27 @@ export default function CustomerAddForm() {
     <div>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <h4 className="text-sm font-bold mb-1">顧客情報</h4>
-          <p className="text-xs text-gray-500 mb-4">予約に必要な基本情報を入力してください。</p>
+          <h4 className="text-sm font-bold mb-1">{t('customerInfo')}</h4>
+          <p className="text-xs text-gray-500 mb-4">{t('customerInfoDesc')}</p>
           <div className="grid grid-cols-2 gap-4">
-            <ZodTextField label="姓(苗字)" name="last_name" register={register} errors={errors} />
-            <ZodTextField label="名(名前)" name="first_name" register={register} errors={errors} />
+            <ZodTextField label={t('lastName')} name="last_name" register={register} errors={errors} />
+            <ZodTextField label={t('firstName')} name="first_name" register={register} errors={errors} />
           </div>
           <div className="grid grid-cols-2 gap-4 mt-4">
-            <ZodTextField label="電話番号" name="phone" register={register} errors={errors} />
+            <ZodTextField label={t('phone')} name="phone" register={register} errors={errors} />
           </div>
         </div>
 
         <div>
-          <h4 className="text-sm font-bold mb-1">マーケティング情報</h4>
+          <h4 className="text-sm font-bold mb-1">{t('marketingInfo')}</h4>
           <p className="text-xs text-gray-500 mb-4">
-            以下の情報を使用して顧客を特定のグループ毎に分類することができ、マーケティングに活用することができます。
+            {t('marketingInfoDesc')}
           </p>
 
           <div className="grid grid-cols-2 gap-4">
-            <ZodTextField label="メールアドレス" name="email" register={register} errors={errors} />
+            <ZodTextField label={t('email')} name="email" register={register} errors={errors} />
             <div>
-              <Label>性別</Label>
+              <Label>{t('gender')}</Label>
               <Select
                 value={watch('gender') ?? 'unselect'}
                 onValueChange={(value) => {
@@ -256,12 +260,12 @@ export default function CustomerAddForm() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="性別を選択" />
+                  <SelectValue placeholder={t('selectGender')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="male">男性</SelectItem>
-                  <SelectItem value="female">女性</SelectItem>
-                  <SelectItem value="unselect">未選択</SelectItem>
+                  <SelectItem value="male">{t('male')}</SelectItem>
+                  <SelectItem value="female">{t('female')}</SelectItem>
+                  <SelectItem value="unselect">{t('unselected')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -270,7 +274,7 @@ export default function CustomerAddForm() {
 
         <div className="grid grid-cols-2 gap-4">
           <ZodTextField
-            label="誕生日"
+            label={t('birthday')}
             type="date"
             name="birthday"
             register={register}
@@ -282,15 +286,15 @@ export default function CustomerAddForm() {
           tags={currentTags}
           setTagsAction={setCurrentTags}
           error={errors.tags?.message}
-          title="タグ"
-          exampleText="例: リピーター, 新規, カラー利用、パーマ利用"
+          title={t('tags')}
+          exampleText={t('tagExample')}
         />
 
         <div>
-          <Label htmlFor="notes">メモ</Label>
+          <Label htmlFor="notes">{t('notes')}</Label>
           <Textarea
             id="notes"
-            placeholder="メモを入力"
+            placeholder={t('memoPlaceholder')}
             {...register('notes')}
             className="resize-none"
             rows={5}
@@ -299,13 +303,13 @@ export default function CustomerAddForm() {
         </div>
 
         <div>
-          <h4 className="text-sm font-bold mb-1">ポイント</h4>
+          <h4 className="text-sm font-bold mb-1">{t('points')}</h4>
           <p className="text-xs text-gray-500 mb-4">
-            ※登録時にポイントを入力すると、登録に顧客のポイントが加算されます。
+            {t('pointNote')}
           </p>
           <div className="grid grid-cols-2 gap-4">
             <ZodTextField
-              label="ポイント"
+              label={t('points')}
               type="number"
               name="total_points"
               register={register}
@@ -316,7 +320,7 @@ export default function CustomerAddForm() {
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting || !isDirty}>
-            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : '顧客を追加'}
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('addCustomerButton')}
           </Button>
         </div>
       </form>
