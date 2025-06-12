@@ -5,7 +5,6 @@ import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { api } from '@/convex/_generated/api'
 import { useQuery } from 'convex/react'
-import { useParams } from 'next/navigation'
 import { Loading } from '@/components/common'
 import {
   Dialog,
@@ -20,17 +19,21 @@ import { InfoIcon, Plus, Minus, AlertTriangle } from 'lucide-react'
 import Image from 'next/image'
 
 type OptionViewProps = {
+  tenantId: Id<'tenant'>
+  orgId: Id<'organization'>
   selectedOptions: Doc<'option'>[]
   onChangeOptionsAction: (options: Doc<'option'>[]) => void
 }
 
-export const OptionView = ({ selectedOptions, onChangeOptionsAction }: OptionViewProps) => {
-  const params = useParams()
+export const OptionView = ({
+  tenantId,
+  orgId,
+  selectedOptions,
+  onChangeOptionsAction,
+}: OptionViewProps) => {
   const [showOptionDetail, setShowOptionDetail] = useState(false)
   const [selectedOption, setSelectedOption] = useState<Doc<'option'> | null>(null)
   const [optionSelectionError, setOptionSelectionError] = useState<string | null>(null)
-  const tenantId = params.id as Id<'tenant'>
-  const orgId = params.orgId as Id<'organization'>
   const options = useQuery(api.option.query.take, {
     tenant_id: tenantId,
     org_id: orgId,

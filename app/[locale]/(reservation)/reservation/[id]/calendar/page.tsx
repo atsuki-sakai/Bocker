@@ -1173,6 +1173,8 @@ export default function CalendarPage() {
                     transition={{ delay: 0.2 }}
                   >
                     <OptionView
+                      tenantId={organizationComplete.organization.tenant_id as Id<'tenant'>}
+                      orgId={organizationComplete.organization._id as Id<'organization'>}
                       selectedOptions={selectedOptions}
                       onChangeOptionsAction={(options) => setSelectedOptions(options)}
                     />
