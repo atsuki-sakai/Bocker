@@ -2,6 +2,8 @@ import { AspectType } from "@/convex/types";
 import { ImageDirectory, ImageQuality } from "./types";
 import { v4 as uuidv4 } from 'uuid';
 import { Id } from "@/convex/_generated/dataModel";
+import { STORAGE_URL } from "./constants";
+import { gcsService } from "./GoogleStorageService";
 
 
 /**
@@ -521,9 +523,20 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
             throw new Error('NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME環境変数が設定されていません')
         }
         
+        // GCS URLを構築
+        const originalGcsUrl = `${STORAGE_URL}/${bucket}/${originalFilePath}`;
+        const thumbnailGcsUrl = `${STORAGE_URL}/${bucket}/${thumbFilePath}`;
+        
+        // CDN URLに変換（CDNが無効な場合はGCS URLがそのまま返される）
         const result = {
-            original: { publicUrl: `https://storage.googleapis.com/${bucket}/${originalFilePath}`, filePath: originalFilePath },
-            thumbnail: { publicUrl: `https://storage.googleapis.com/${bucket}/${thumbFilePath}`, filePath: thumbFilePath },
+            original: { 
+                publicUrl: gcsService.getCdnUrl(originalGcsUrl), 
+                filePath: originalFilePath 
+            },
+            thumbnail: { 
+                publicUrl: gcsService.getCdnUrl(thumbnailGcsUrl), 
+                filePath: thumbFilePath 
+            },
         };
         
         // ⏱️ 最終パフォーマンス報告

@@ -484,7 +484,10 @@ class GoogleStorageService {
       // パスの各セグメントを個別にエンコード
       const pathSegments = gcsFilePath.split('/');
       const encodedPath = pathSegments.map(segment => encodeURIComponent(segment)).join('/');
-      const publicUrl = `${STORAGE_URL}/${this.bucketName}/${encodedPath}`
+      const gcsUrl = `${STORAGE_URL}/${this.bucketName}/${encodedPath}`;
+      
+      // CDN URLに変換（CDNが無効な場合はGCS URLがそのまま返される）
+      const publicUrl = this.getCdnUrl(gcsUrl);
 
       return {
         publicUrl,
@@ -997,6 +1000,142 @@ class GoogleStorageService {
           },
         }
       )
+    }
+  }
+
+  /**
+   * CDN関連ユーティリティメソッド
+   */
+
+  /**
+   * GCS URLをCDN URLに変換する
+   * @param gcsUrl - GCSの直接URL（例: https://storage.googleapis.com/bucket/path/to/image.webp）
+   * @returns CDN経由のURL
+   */
+  getCdnUrl(gcsUrl: string | null | undefined): string {
+    // 空文字列、null、undefinedの場合はそのまま返す
+    if (!gcsUrl) return '';
+    
+    // 環境変数からCDNのベースURLを取得
+    const cdnBaseUrl = process.env.NEXT_PUBLIC_CDN_DOMAIN;
+    
+    // CDNが設定されていない場合はGCS URLをそのまま返す（フォールバック）
+    if (!cdnBaseUrl) {
+      return gcsUrl;
+    }
+    
+    try {
+      // GCS URLをパース
+      const url = new URL(gcsUrl);
+      
+      // storage.googleapis.com のURLでない場合はそのまま返す
+      if (url.hostname !== 'storage.googleapis.com') {
+        return gcsUrl;
+      }
+      
+      // パスからバケット名を除去（最初のセグメントがバケット名）
+      const pathSegments = url.pathname.split('/').filter(segment => segment);
+      if (pathSegments.length < 2) {
+        return gcsUrl; // 不正なパスの場合はそのまま返す
+      }
+      
+      // バケット名を除いたパスを構築
+      const pathWithoutBucket = pathSegments.slice(1).join('/');
+      
+      // CDN URLを構築
+      return `${cdnBaseUrl}/${pathWithoutBucket}`;
+    } catch (error) {
+      console.warn('[CDN] URL変換エラー:', error, { gcsUrl });
+      // エラーの場合は元のURLを返す
+      return gcsUrl;
+    }
+  }
+
+  /**
+   * 複数のGCS URLをCDN URLに一括変換する
+   * @param gcsUrls - GCS URLの配列
+   * @returns CDN URLの配列
+   */
+  getCdnUrls(gcsUrls: Array<string | null | undefined>): string[] {
+    return gcsUrls.map(url => this.getCdnUrl(url));
+  }
+
+  /**
+   * オブジェクト内の画像URLプロパティをCDN URLに変換する
+   * @param obj - 画像URLプロパティを含むオブジェクト
+   * @param urlKeys - 変換対象のプロパティ名の配列
+   * @returns CDN URLに変換されたオブジェクト
+   */
+  transformImageUrlsInObject<T extends Record<string, any>>(
+    obj: T,
+    urlKeys: Array<keyof T>
+  ): T {
+    const transformed = { ...obj };
+    
+    for (const key of urlKeys) {
+      const value = transformed[key];
+      if (typeof value === 'string') {
+        transformed[key] = this.getCdnUrl(value) as T[keyof T];
+      }
+    }
+    
+    return transformed;
+  }
+
+  /**
+   * CDNが有効かどうかを確認する
+   * @returns CDNが有効な場合true
+   */
+  isCdnEnabled(): boolean {
+    return !!process.env.NEXT_PUBLIC_CDN_DOMAIN;
+  }
+
+  /**
+   * 画像URLが既にCDN経由かどうかを確認する
+   * @param url - チェックするURL
+   * @returns CDN経由の場合true
+   */
+  isCdnUrl(url: string): boolean {
+    const cdnBaseUrl = process.env.NEXT_PUBLIC_CDN_DOMAIN;
+    if (!cdnBaseUrl || !url) return false;
+    
+    try {
+      const urlObj = new URL(url);
+      const cdnUrlObj = new URL(cdnBaseUrl);
+      return urlObj.hostname === cdnUrlObj.hostname;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * CDN URLからGCS URLに逆変換する（デバッグ用）
+   * @param cdnUrl - CDN経由のURL
+   * @returns GCSの直接URL
+   */
+  getGcsUrlFromCdn(cdnUrl: string): string {
+    const cdnBaseUrl = process.env.NEXT_PUBLIC_CDN_DOMAIN;
+    const bucketName = this.bucketName;
+    
+    if (!cdnBaseUrl || !bucketName || !cdnUrl) {
+      return cdnUrl;
+    }
+    
+    try {
+      const url = new URL(cdnUrl);
+      const cdnUrlObj = new URL(cdnBaseUrl);
+      
+      // CDN URLでない場合はそのまま返す
+      if (url.hostname !== cdnUrlObj.hostname) {
+        return cdnUrl;
+      }
+      
+      // パスを抽出してGCS URLを構築
+      const path = url.pathname;
+      return `https://storage.googleapis.com/${bucketName}${path}`;
+    } catch (error) {
+      console.warn('[CDN] 逆変換エラー:', error, { cdnUrl });
+      return cdnUrl;
     }
   }
 }
