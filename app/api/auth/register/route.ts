@@ -7,11 +7,14 @@ import { CustomerRepository } from '@/services/supabase/repositories/customer/Cu
 import { hashPassword } from '@/lib/auth/password';
 import { emailSchema, genderSchema } from '@/lib/validations/api/common';
 import { CustomerRegistrationEmail } from '@/components/emails/CustomerRegistrationEmail';
+import { MAX_NOTES_LENGTH } from '@/convex/constants';
+import { BASE_URL } from '@/lib/constants';
 
 export const runtime = 'nodejs';
 
 // リクエストボディのスキーマ
 const registerRequestSchema = z.object({
+  orgName: z.string().min(1).max(200),
   email: emailSchema,
   password: z.string().min(8).max(100),
   tenantId: z.string().min(1),
@@ -21,7 +24,7 @@ const registerRequestSchema = z.object({
     gender: genderSchema.or(z.null()).optional(),
     birthday: z.string().nullable().optional(),
     age: z.number().int().min(0).max(150).nullable().optional(),
-    notes: z.string().max(1000).optional().default(''),
+    notes: z.string().max(MAX_NOTES_LENGTH).optional().default(''),
   }),
   initialPoints: z.number().int().min(0).optional().default(0),
 });
@@ -101,16 +104,16 @@ export async function POST(request: NextRequest) {
 
     // 登録完了メールを送信
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${request.headers.get('host')}`;
-      const loginUrl = `${baseUrl}/reservation/${validatedData.orgId}`;
+     
+      const loginUrl = `${BASE_URL}/reservation/${validatedData.orgId}`;
 
       await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'noreply@bcker.jp',
+        from: process.env.RESEND_FROM_EMAIL || '<noreply@bocker.jp>',
         to: validatedData.email,
         subject: '会員登録完了のお知らせ',
         react: CustomerRegistrationEmail({
           customerEmail: validatedData.email,
-          orgName: '美容サロン', // TODO: 組織名を動的に取得
+          orgName: validatedData.orgName,
           loginUrl,
         }),
       });

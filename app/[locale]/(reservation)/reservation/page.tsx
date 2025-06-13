@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useLiff } from '@/hooks/useLiff'
-import { getCookie, deleteCookie } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { toast } from 'sonner'
@@ -55,18 +54,39 @@ export default function ReserveRedirectPage() {
       setIsLoading(true)
       setErrorMessage(null)
 
-      const initialSession = getCookie(LINE_LOGIN_SESSION_KEY)
+      // URLからstate IDを取得
+      const urlParams = new URLSearchParams(window.location.search)
+      const stateId = urlParams.get('state')
+
       let tenantIdFromSession: string | null = null
       let orgIdFromSession: string | null = null
 
-      if (initialSession) {
+      if (stateId) {
+        // セキュアなstate検証APIを呼び出し
         try {
-          const parsedSession = JSON.parse(initialSession)
-          tenantIdFromSession = parsedSession.tenantId
-          orgIdFromSession = parsedSession.orgId
+          const stateResponse = await fetch(`/api/auth/line-state?stateId=${stateId}`, {
+            method: 'GET',
+            credentials: 'include',
+          })
+
+          if (!stateResponse.ok) {
+            const error = await stateResponse.json()
+            throw new Error(error.error || 'State validation failed')
+          }
+
+          const stateData = await stateResponse.json()
+          tenantIdFromSession = stateData.tenantId
+          orgIdFromSession = stateData.orgId
+
+          console.log('[ReserveRedirectPage] State validated successfully:', {
+            tenantIdFromSession,
+            orgIdFromSession,
+          })
         } catch (e) {
-          console.error('[ReserveRedirectPage] Failed to parse initial session cookie:', e)
-          setErrorMessage('セッション情報の解析に失敗しました')
+          console.error('[ReserveRedirectPage] Failed to validate state:', e)
+          setErrorMessage(
+            'セッション情報の検証に失敗しました。セキュリティのため、最初からやり直してください。'
+          )
           setIsLoading(false)
           return
         }
@@ -84,7 +104,7 @@ export default function ReserveRedirectPage() {
       console.log(
         `[ReserveRedirectPage] Retrieved tenantId and orgId from session: ${tenantIdFromSession} ${orgIdFromSession}`
       )
-      const computedRedirectUrl = `/reservation/${tenantIdFromSession}/${orgIdFromSession}/calendar`
+      const computedRedirectUrl = `/reservation/${orgIdFromSession}/calendar`
       setRedirectUrl(computedRedirectUrl)
 
       if (liff && liff.isLoggedIn()) {
@@ -106,7 +126,6 @@ export default function ReserveRedirectPage() {
           )
           setErrorMessage('LINE情報の取得に失敗しました。ログインし直してください')
           if (liff) liff.logout()
-          deleteCookie(LINE_LOGIN_SESSION_KEY)
           setIsLoading(false)
           toast.error('認証に失敗しました。ログインし直してください')
           router.push(`/reservation/${orgIdFromSession}`)
@@ -129,8 +148,7 @@ export default function ReserveRedirectPage() {
 
           if (response.ok && data.success) {
             console.log('[ReserveRedirectPage] API call successful. Server issued session cookie.')
-            deleteCookie(LINE_LOGIN_SESSION_KEY)
-            console.log('[ReserveRedirectPage] Deleted old LINE_LOGIN_SESSION_KEY.')
+            // stateは使い捨てなので、削除処理は不要（サーバー側で削除済み）
             toast.success('認証に成功しました。予約ページへ移動します')
             router.push(computedRedirectUrl)
           } else {
@@ -147,7 +165,7 @@ export default function ReserveRedirectPage() {
         }
       } else if (liff && !liffIsLoading) {
         console.log('[ReserveRedirectPage] LIFF is not logged in. Initiating LIFF login.')
-        if (!initialSession || !tenantIdFromSession || !orgIdFromSession) {
+        if (!tenantIdFromSession || !orgIdFromSession) {
           console.error(
             '[ReserveRedirectPage] tenantId or orgId was not in session before trying to log in with LIFF.'
           )
@@ -178,7 +196,16 @@ export default function ReserveRedirectPage() {
     }
 
     handleLiffLogin()
-  }, [liff, liffIsLoggedIn, liffProfile, liffIsLoading, liffIsError, liffErrorMessage, router, showErrorToast])
+  }, [
+    liff,
+    liffIsLoggedIn,
+    liffProfile,
+    liffIsLoading,
+    liffIsError,
+    liffErrorMessage,
+    router,
+    showErrorToast,
+  ])
 
   if (isLoading) {
     return (

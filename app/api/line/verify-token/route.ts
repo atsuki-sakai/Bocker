@@ -6,13 +6,15 @@ import { v4 as uuidv4 } from 'uuid'
 import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 import { getSupabaseAdminService, InsertType } from '@/services/supabase/SupabaseService'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
+import { SystemError } from '@/lib/errors/custom_errors'
+import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL as string)
 
 // LINEのIDトークン検証エンドポイント
 const LINE_VERIFY_URL = 'https://api.line.me/oauth2/v2.1/verify'
 // JWT署名用のシークレットキー (環境変数から取得)
-const JWT_SECRET = process.env.JWT_SECRET || 'bocker-auth-session-secret-key'
+const APP_JWT_SECRET = process.env.APP_JWT_SECRET || 'bocker-auth-session-secret-key'
 
 interface LineVerifyResponse {
   iss: string // https://access.line.me
@@ -85,7 +87,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'LINE User ID not found in token' }, { status: 400 })
     }
 
-    // salonIdがある場合のみConvex処理 (予約フローを想定)
+    // tenantIdとorgIdがある場合のみConvex処理 (予約フローを想定)
     let customerUid
     if (tenantId && orgId) {
       console.log(`[API /api/line/verify-token] Upserting customer info for tenantId: ${tenantId} and orgId: ${orgId}`)
@@ -94,34 +96,32 @@ export async function POST(req: NextRequest) {
         const supabaseAdmin = getSupabaseAdminService();
         const customerRepo = new CustomerRepository(supabaseAdmin);
         
-        // 既存の顧客をLINE IDで検索
-        const existingCustomer = await customerRepo.findByTenantAndOrgAndCustomerLineId(
+        // 既存の顧客をEmailで検索(テナントIDと組織IDとEmailでユニークを保証する, テナントIDと組織IDが違えば同じEmailで登録可能)
+        const existingCustomer = await customerRepo.findByTenantAndOrgAndCustomerEmail(
           tenantId,
           orgId,
-          lineUserId
+          email || ''
         );
 
         if (existingCustomer) {
           console.log('[API /api/line/verify-token] Existing customer found, updating...')
           
-          // 顧客・詳細・ポイント情報を更新
-          const result = await customerRepo.updateCustomerWithDetailsAndPoints(
+          // 顧客・詳細を更新
+          const result = await customerRepo.updateCustomer(
             existingCustomer.uid,
             tenantId,
             orgId,
             {
-              line_id: lineUserId,
+              first_name: existingCustomer.first_name || '',
+              last_name: existingCustomer.last_name || '',
+              phone: existingCustomer.phone || '',
+              line_id: lineUserId || existingCustomer.line_id || '',
               line_user_name: lineUserName || existingCustomer.line_user_name || '',
               email: email || existingCustomer.email || '',
-            },
-            {
-              email: email || existingCustomer.email || '',
-            },
-            0, // totalPoints - 既存のポイントを保持する場合は別途取得が必要
-            [] // tags
+            }
           );
 
-          customerUid = result.customer?.uid || existingCustomer.uid;
+          customerUid = result.uid || existingCustomer.uid;
           console.log(
             '[API /api/line/verify-token] Customer updated successfully. Customer ID:',
             customerUid
@@ -132,24 +132,24 @@ export async function POST(req: NextRequest) {
           // 新規顧客を作成
           const customerCoreData: InsertType<'customer'> = {
             uid: uuidv4(),
-            email: email || '',
+            email: email,
             first_name: '',
             last_name: '',
             phone: '',
             tenant_id: tenantId,
             org_id: orgId,
             line_id: lineUserId,
-            line_user_name: lineUserName || '',
-            password_hash: null,
+            line_user_name: lineUserName,
+            password_hash: null, // パスワードはLINEログインでは使用しない
           };
           
           const result = await customerRepo.createCustomerWithDetailsAndPoints(
             customerCoreData,
             {
-              email: email || '',
-              gender: null,
-              birthday: null,
-              age: null,
+              email: email,
+              gender: null, // 性別はLINEログインでは取得できない
+              birthday: null, // 誕生日はLINEログインでは取得できない
+              age: null, // 年齢はLINEログインでは取得できない
               notes: 'LINEから新規登録',
             },
             0
@@ -172,18 +172,32 @@ export async function POST(req: NextRequest) {
         )
       }
     } else {
-      // salonIdがない場合、汎用的なLINEログインとして扱う (例: LINEユーザーIDのみをセッション情報とする)
-      // このユースケースがなければ、salonIdがない場合はエラーとしても良い
+      // tenantIdとorgIdがない場合、汎用的なLINEログインとして扱う (例: LINEユーザーIDのみをセッション情報とする)
+      // このユースケースがなければ、tenantIdとorgIdがない場合はエラーとしても良い
       console.warn(
-        '[API /api/line/verify-token] salonId not provided. Session will be based on LINE user ID only.'
+        '[API /api/line/verify-token] tenantId and orgId not provided. Session will be based on LINE user ID only.'
       )
-      customerUid = lineUserId // この場合、customerUIdはLINEのユーザーIDそのものになる
+      throw new SystemError('tenantId and orgId not provided', {
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.WARNING,
+        message: 'tenantId and orgId not provided',
+        title: 'tenantId and orgId not provided',
+        callFunc: 'api/line/verify-token',
+        code: 'LINE_VERIFY_TOKEN_ERROR',
+        details: {
+          tenantId: tenantId,
+          orgId: orgId,
+          lineUserId: lineUserId,
+          lineUserName: lineUserName,
+          email: email,
+        }
+      })
     }
 
     // 3. セッションCookieを発行 (JWTを使用)
     const sessionPayload = {
       lineUserId: lineUserId,
-      customerUid: customerUid, // Convexの顧客ID or LINE User ID
+      customerUid: customerUid, // Supabaseの顧客UID
       tenantId: tenantId, // 予約フローのためにtenantIdもセッションに含める
       orgId: orgId, // 予約フローのためにorgIdもセッションに含める
       name: lineUserName,
@@ -191,7 +205,7 @@ export async function POST(req: NextRequest) {
       // 他にセッションに含めたい情報
     }
 
-    const sessionToken = jwt.sign(sessionPayload, JWT_SECRET, { expiresIn: '30d' }) // 30日間有効
+    const sessionToken = jwt.sign(sessionPayload, APP_JWT_SECRET, { expiresIn: '30d' }) // 30日間有効
     console.log('[API /api/line/verify-token] Issuing session cookie (bcker_login_session)')
 
     // NextResponseオブジェクトを作成して、それにCookieを設定します

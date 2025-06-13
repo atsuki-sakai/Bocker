@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { useParams, useRouter } from 'next/navigation'
-import { setCookie } from '@/lib/utils'
 import { useLiff } from '@/hooks/useLiff'
 import { ChevronRight, Loader2, Eye, EyeOff } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -58,16 +57,39 @@ export default function ReservePage() {
       : 'skip'
   )
 
-  const handleLineLogin = () => {
+  const handleLineLogin = async () => {
     console.log('liff', liff)
     if (!liff?.isInClient()) {
       console.log('liff?.isInClient()', liff?.isInClient())
-      const session = JSON.stringify({
-        tenantId,
-        orgId,
-      })
-      setCookie(LINE_LOGIN_SESSION_KEY, session, 60)
-      liff?.login()
+      
+      try {
+        // セキュアなstateをサーバーで生成
+        const response = await fetch('/api/auth/line-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tenantId,
+            orgId,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to create LINE state')
+        }
+
+        const { stateId } = await response.json()
+        
+        // LINEログイン時にstateパラメータを含める
+        const currentUrl = new URL(window.location.href)
+        currentUrl.searchParams.set('state', stateId)
+        
+        liff?.login({
+          redirectUri: currentUrl.toString()
+        })
+      } catch (error) {
+        console.error('Failed to initiate LINE login:', error)
+        toast.error('LINEログインの準備に失敗しました')
+      }
     }
   }
 
@@ -81,7 +103,7 @@ export default function ReservePage() {
     setIsFirstLogin(true)
 
     try {
-      deleteCookie(LINE_LOGIN_SESSION_KEY) // 古いクッキーは削除
+      // 古いセッションは自動的に管理されるため、明示的な削除は不要
 
       if (!tenantId) {
         throw new Error('テナントIDが見つかりません')
@@ -99,7 +121,7 @@ export default function ReservePage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: data.email,
+            email: existingCustomer.email,
             password: data.password,
             tenantId: tenantId,
             orgId: orgId,
@@ -121,6 +143,7 @@ export default function ReservePage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            orgName: organization?.org.org_name || '',
             email: data.email,
             password: data.password, // 生パスワードを送信
             tenantId: tenantId,

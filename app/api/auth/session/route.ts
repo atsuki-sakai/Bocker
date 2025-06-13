@@ -28,7 +28,7 @@ interface SessionPayload {
 
 // type LoginRequest = z.infer<typeof loginRequestSchema>;
 
-const JWT_SECRET = process.env.JWT_SECRET || 'bocker-auth-session-secret-key';
+const APP_JWT_SECRET = process.env.APP_JWT_SECRET || 'bocker-auth-session-secret-key';
 const JWT_EXPIRES_IN = '30d';
 
 export async function POST(request: NextRequest) {
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     };
 
     // JWTトークンを生成
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = jwt.sign(payload, APP_JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
     // HTTPOnlyクッキーを設定
     const cookieStore = await cookies();

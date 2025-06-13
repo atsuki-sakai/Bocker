@@ -553,6 +553,57 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       throw error;
     }
   }
+
+  async updateCustomer(
+    customerUid: string, 
+    tenantId: string, 
+    orgId: string, 
+    customerData: Partial<Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'phone' | 'line_id' | 'line_user_name'>>
+  ): Promise<RowType<'customer'>> {
+    console.log('[CustomerRepository] updateCustomer: Start', {
+      customerUid,
+      tenantId,
+      orgId,
+      customerData,
+    });
+
+    try { 
+      const updatedRecords = await this.supabaseServiceInstance.upsert<'customer'>(
+        'customer',
+        {
+          uid: customerUid,
+          tenant_id: tenantId,
+          org_id: orgId,
+          email: customerData.email,
+          first_name: customerData.first_name,
+          last_name: customerData.last_name,
+          phone: customerData.phone,
+          line_id: customerData.line_id,
+          line_user_name: customerData.line_user_name
+        },
+        {
+          onConflict: 'customer_uid,tenant_id,org_id',
+          select: '*',  
+        },
+      );
+
+      if (updatedRecords.length === 0) {
+        throw throwSupabaseError({
+          callFunc: 'CustomerRepository.updateCustomer',
+          message: '顧客の更新に失敗しました。',
+          severity: 'medium',
+          code: 'DATABASE_NO_DATA',
+          details: { customerData },
+        });
+      }
+
+      console.log('[CustomerRepository] updateCustomer: Success', updatedRecords[0]);
+      return updatedRecords[0];
+    } catch (error) {
+      console.error('[CustomerRepository] updateCustomer: Unexpected error', error);
+      throw error;
+    }
+  }
 }
 
 

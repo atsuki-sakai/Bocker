@@ -534,6 +534,7 @@ throw new ValidationError('Invalid input', { field: 'email' });
 - **[PRODUCT.md](./PRODUCT.md)**: ビジネス仕様・市場分析
 - **[PRODUCT_COST.md](./PRODUCT_COST.md)**: 運用コスト詳細分析
 - **[FEAT.md](./FEAT.md)**: スケーリング戦略・技術分析
+- **[API_ENDPOINTS.md](./API_ENDPOINTS.md)**: APIエンドポイント仕様書
 
 ---
 
@@ -653,15 +654,30 @@ Bckerの予約システムは、メールアドレスとLINEの2つのログイ�
 
 ### 3. LINEログイン → 現金決済パターン
 
-#### 3.1 LINEログイン処理
+#### 3.1 LINEログイン処理（セキュア実装）
 
 **エントリーポイント**: `/reservation/[id]/page.tsx`
 
 ```typescript
-// handleLineLogin関数 (61行目)
+// handleLineLogin関数 (61行目〜)
 1. LIFF SDK初期化チェック
-2. setCookie()でtenant/org情報を一時保存
+2. POST /api/auth/line-state でセキュアなstate生成
+   - tenantId/orgIdをHTTPOnlyクッキーに保存
+   - ユニークなstate IDを取得
 3. liff.login()でLINE認証画面へリダイレクト
+   - state IDをURLパラメータに含める
+```
+
+**LINEリダイレクト処理**: `/reservation/page.tsx`
+
+```typescript
+// 認証後の処理 (58行目〜)
+1. URLからstate IDを取得
+2. GET /api/auth/line-state でstate検証
+   - HTTPOnlyクッキーとstate IDの照合
+   - 有効期限（10分）チェック
+   - 使用後は自動削除（CSRF対策）
+3. 検証成功時のみtenantId/orgIdを取得
 ```
 
 **LINE認証後の処理**: `/app/api/line/verify-token/route.ts`
@@ -710,10 +726,16 @@ LINEログイン後のクレジットカード決済は、メールログイン�
 ```
 
 **セキュリティ設定**:
-- HTTPOnlyクッキー
-- Secure属性（本番環境）
-- SameSite=lax
+- HTTPOnlyクッキー（XSS攻撃対策）
+- Secure属性（本番環境でHTTPS必須）
+- SameSite=lax（CSRF攻撃対策）
 - 30日間有効期限
+
+**LINEログインのセキュリティ強化**:
+- OAuth 2.0 state parameterによるCSRF対策
+- state情報はHTTPOnlyクッキーで管理（XSS対策）
+- stateは使い捨て（リプレイ攻撃対策）
+- 10分間の有効期限（セッション固定攻撃対策）
 
 ### エラーハンドリング
 

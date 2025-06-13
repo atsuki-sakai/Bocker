@@ -26,7 +26,7 @@ interface ResetTokenPayload {
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const JWT_SECRET = process.env.JWT_SECRET || 'bocker-auth-session-secret-key';
+const APP_JWT_SECRET = process.env.APP_JWT_SECRET || 'bocker-auth-session-secret-key';
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     // JWTトークンを検証・デコード
     let tokenPayload: ResetTokenPayload;
     try {
-      tokenPayload = jwt.verify(validatedData.token, JWT_SECRET) as ResetTokenPayload;
+      tokenPayload = jwt.verify(validatedData.token, APP_JWT_SECRET) as ResetTokenPayload;
       
       // トークンタイプを確認
       if (tokenPayload.type !== 'password_reset') {

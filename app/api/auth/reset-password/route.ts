@@ -18,7 +18,7 @@ const resetPasswordRequestSchema = z.object({
 });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const JWT_SECRET = process.env.JWT_SECRET || 'bocker-auth-session-secret-key';
+const APP_JWT_SECRET = process.env.APP_JWT_SECRET || 'bocker-auth-session-secret-key';
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         type: 'password_reset',
         tokenId: uuidv4(), // 一意性のため
       },
-      JWT_SECRET,
+      APP_JWT_SECRET,
       { expiresIn: '1h' }
     );
 

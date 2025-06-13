@@ -13,6 +13,7 @@ export const runtime = 'nodejs';
 
 // リクエストボディのスキーマ
 const changePasswordSchema = z.object({
+  orgName: z.string().min(1).max(200),
   currentPassword: z.string().min(1),
   newPassword: z.string().min(8).max(100),
 });
@@ -26,7 +27,7 @@ interface SessionPayload {
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const JWT_SECRET = process.env.JWT_SECRET || 'bocker-auth-session-secret-key';
+const APP_JWT_SECRET = process.env.APP_JWT_SECRET || 'bocker-auth-session-secret-key';
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     // JWTセッションを検証
     let sessionPayload: SessionPayload;
     try {
-      sessionPayload = jwt.verify(sessionToken, JWT_SECRET) as SessionPayload;
+      sessionPayload = jwt.verify(sessionToken, APP_JWT_SECRET) as SessionPayload;
     } catch (jwtError) {
       console.error('[API /api/auth/change-password] Invalid session token:', jwtError);
       return NextResponse.json(
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
         subject: 'パスワード変更完了のお知らせ',
         react: PasswordChangedEmail({
           customerEmail: customer.email || sessionPayload.email,
-          orgName: '美容サロン', // TODO: 組織名を動的に取得
+          orgName: validatedData.orgName,
           changedAt,
         }),
       });
