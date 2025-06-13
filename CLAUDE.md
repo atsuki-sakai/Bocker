@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-Bcker（ブッカー）は美容サロン向けの予約・顧客管理SaaSプラットフォームです。マルチテナント設計で、サロンオーナー・スタッフが効率的に予約管理や顧客管理を行えるよう設計されています。
+Bocker（ブッカー）は美容サロン向けの予約・顧客管理SaaSプラットフォームです。マルチテナント設計で、サロンオーナー・スタッフが効率的に予約管理や顧客管理を行えるよう設計されています。
 
 
 ## アーキテクチャ
@@ -262,7 +262,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-Bcker（ブッカー）は美容サロン向けの予約・顧客管理SaaSプラットフォームです。マルチテナント設計で、サロンオーナー・スタッフが効率的に予約管理や顧客管理を行えるよう設計されています。
+Bocker（ブッカー）は美容サロン向けの予約・顧客管理SaaSプラットフォームです。マルチテナント設計で、サロンオーナー・スタッフが効率的に予約管理や顧客管理を行えるよう設計されています。
 
 ---
 
@@ -671,7 +671,7 @@ export const listWithExtraArg = query({
 ### ストレージアーキテクチャ
 
 ```
-gs://bcker-prod-images/
+gs://Bocker-prod-images/
 ├── yyyy/mm/dd/<uuid>.webp  # 原画像
 └── yyyy/mm/dd/<uuid>_thumb.webp  # サムネイル
 ```

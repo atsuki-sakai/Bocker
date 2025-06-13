@@ -9,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Globe } from 'lucide-react'
 
 const locales = [
   { value: 'ja', label: '日本語', flag: '🇯🇵' },

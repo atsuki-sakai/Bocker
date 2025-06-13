@@ -2,7 +2,7 @@
 
 ## 概要
 
-本ドキュメントは、Bcker プロジェクトにおいて Google Cloud Storage (GCS) の画像を Cloud CDN 経由で配信するための実装計画書です。
+本ドキュメントは、Bocker プロジェクトにおいて Google Cloud Storage (GCS) の画像を Cloud CDN 経由で配信するための実装計画書です。
 
 ## 現状分析
 

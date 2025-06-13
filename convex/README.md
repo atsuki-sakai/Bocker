@@ -1,6 +1,6 @@
-# Bcker Convex バックエンド設計ガイド
+# Bocker Convex バックエンド設計ガイド
 
-美容サロン向けSaaS「Bcker」のConvexバックエンド実装における設計思想、スケーラビリティ戦略、および実装ガイドライン。
+美容サロン向けSaaS「Bocker」のConvexバックエンド実装における設計思想、スケーラビリティ戦略、および実装ガイドライン。
 
 ## 目次
 
@@ -15,7 +15,7 @@
 
 ### ハイブリッドデータベース設計
 
-Bckerはハイブリッドデータベース構成を採用しています：
+Bockerはハイブリッドデータベース構成を採用しています：
 
 ```
 Convex (リアルタイム層)           Supabase (永続化層)
@@ -439,7 +439,7 @@ async function debugQuery<T>(
 - [Convex with TanStack Query: gcTime説明](https://docs.convex.dev/client/tanstack-query#differences-from-using-fetch-with-tanstack-query)
 - [Discord: ConvexQueryCacheProvider Behavior](https://discord.com/channels/1019350475847499849/1301891937556762634)
 - [TanStack Query gcTime Documentation](https://tanstack.com/query/latest/docs/reference/QueryClient)
-- [Bcker FEAT.md - 詳細スケーリング分析](../FEAT.md)
+- [Bocker FEAT.md - 詳細スケーリング分析](../FEAT.md)
 
 ---
 

@@ -332,7 +332,7 @@ export default function ReservationForm() {
         toast.warning(t('staffUnavailableWarning'))
       }
     }
-  }, [availableStaff, selectedStaffId, setValue])
+  }, [availableStaff, selectedStaffId, setValue, t])
 
   // 時間スロットの状態を追加
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeRange[]>([])
@@ -514,7 +514,7 @@ export default function ReservationForm() {
         // ここではリセットしない
       }
     },
-    [selectedMenus, setValue, calcMenuSubTotal, selectedStaffId]
+    [selectedMenus, setValue, calcMenuSubTotal, selectedStaffId, t]
   )
 
   const removeMenu = useCallback(

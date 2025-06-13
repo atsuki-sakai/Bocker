@@ -64,7 +64,7 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
 
       return () => clearTimeout(id);
     }
-  }, [isLoaded, isSignedIn, pathname, ready, retryCount, session, router]);
+  }, [isLoaded, isSignedIn, pathname, ready, retryCount, session?.id]);
 
   return {
     tenantId: tenantId,

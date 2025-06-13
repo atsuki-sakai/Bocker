@@ -1,4 +1,4 @@
-# Bcker SaaS 多言語化実装フェーズ
+# Bocker SaaS 多言語化実装フェーズ
 
 ## Phase 1: next-intl導入 (完了)
 ✅ next-intlパッケージをインストール  
