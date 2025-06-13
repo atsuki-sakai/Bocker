@@ -414,8 +414,7 @@ class GoogleStorageService {
     fileName: string, // ここで渡されるfileNameは拡張子を含むことを期待
     contentType: string, // このcontentTypeは圧縮後のもの(this.mimeType)を期待
     directory: string,
-    org_id: Id<'organization'>,
-    isHotSpot: boolean = false
+    org_id: Id<'organization'>
   ): Promise<UploadedFileResult> {
     this.initializeIfNeeded()
 
@@ -438,8 +437,7 @@ class GoogleStorageService {
             fileName: safeFileName,
             contentType,
             directory,
-            org_id,
-            isHotSpot,
+            org_id
           },
       });
     }
@@ -457,21 +455,11 @@ class GoogleStorageService {
       // 圧縮処理と組み合わせる uploadCompressedImageWithThumbnail で拡張子 (this.extension) は制御される。
       // fileName パラメータには既に意図した拡張子が含まれている想定とする。
 
-      if (isHotSpot) {
-        const uuid = uuidv4();
-        const hash = crypto.createHash('sha1').update(uuid).digest('hex').slice(0, 6);
-        const hashDir = `${hash.slice(0,2)}/${hash.slice(2,4)}/${hash.slice(4,6)}`;
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = ('0' + (now.getMonth() + 1)).slice(-2);
-        const day = ('0' + now.getDate()).slice(-2);
-        // isHotSpotの場合、ファイル名はUUIDとし、拡張子はfileNameから取得したものをそのまま使う
-        gcsFilePath = `${org_id}/${directory}/${year}/${month}/${day}/${hashDir}/${uuid}${safeFileName.substring(safeFileName.lastIndexOf('.'))}`;
-      } else {
+     
         const timestamp = new Date().toISOString().replace(/[-:Z]/g, '').split('.')[0];
         // 通常時も、fileNameに含まれる拡張子をそのまま使用
-        gcsFilePath = `${org_id}/${directory}/${timestamp}_${safeFileName}`;
-      }
+        gcsFilePath = `${directory}/${org_id}/${timestamp}_${safeFileName}`;
+   
       const blob = bucket.file(gcsFilePath)
 
       await blob.save(buffer, {
@@ -514,7 +502,6 @@ class GoogleStorageService {
             bufferSize: buffer.length,
             directory,
             org_id,
-            isHotSpot,
             error: errorDetails,
           },
         }
@@ -531,7 +518,6 @@ class GoogleStorageService {
    * @param aspectType アスペクト比の種類 (square, landscape, mobile)
    * @param quality 画像品質設定 ('low' | medium |  'high')
    * @param aspectType アスペクト比の種類 (square, landscape, mobile)
-   * @param isHotSpot ホットスポット対策を適用するかどうか
    * @returns オリジナル画像とサムネイル画像の公開URLとGCSパス
    */
   async uploadCompressedImageWithThumbnail(
@@ -540,8 +526,7 @@ class GoogleStorageService {
     directory: ImageDirectory,
     org_id: Id<'organization'>,
     aspectType: AspectType ,
-    quality?: ImageQuality,
-    isHotSpot: boolean = false
+    quality?: ImageQuality
   ): Promise<ProcessedImageResult> {
     this.initializeIfNeeded();
 
@@ -563,8 +548,7 @@ class GoogleStorageService {
             originalFileName: safeOriginalFileName,
             directory,
             org_id,
-            quality,
-            isHotSpot,
+            quality
           },
         }
       );
@@ -587,7 +571,7 @@ class GoogleStorageService {
           details: {
             error: this.formatErrorDetails(bufferError),
             originalFileName: safeOriginalFileName,
-            directory, org_id, quality, isHotSpot
+            directory, org_id, quality
           },
         }
       );
@@ -607,7 +591,7 @@ class GoogleStorageService {
           details: {
             error: 'Decoded image buffer is empty.',
             originalFileName: safeOriginalFileName,
-            directory, org_id, quality, isHotSpot
+            directory, org_id, quality
           },
         }
       );
@@ -639,7 +623,7 @@ class GoogleStorageService {
               originalFileName: safeOriginalFileName,
               originalBufferLength: originalCompressedBuffer.length,
               thumbnailBufferLength: thumbnailCompressedBuffer.length,
-              directory, org_id, quality, isHotSpot, activeCompressFormat: this.activeFormat,
+              directory, org_id, quality, activeCompressFormat: this.activeFormat,
             },
           }
         );
@@ -653,16 +637,12 @@ class GoogleStorageService {
       let finalOriginalName: string;
       let finalThumbnailName: string;
 
-      if (isHotSpot) {
-        // ホットスポット回避: UUIDベースのファイル名 + 圧縮後の拡張子 (this.extension)
-        finalOriginalName = `${uuidv4()}${this.extension}`;
-        finalThumbnailName = `${uuidv4()}${this.extension}`;
-      } else {
+     
         // 通常: タイムスタンプ + サニタイズされたベース名 + 圧縮後の拡張子 (this.extension)
         const timestamp = new Date().toISOString().replace(/[-:Z]/g, '').split('.')[0];
         finalOriginalName = `${timestamp}_${baseName}${this.extension}`;
         finalThumbnailName = `${timestamp}_${baseName}${this.extension}`;
-      }
+      
 
       // GCSへのアップロード (Promise.allで並列処理)
       // uploadFileBuffer に渡すディレクトリパスを具体的に指定
@@ -672,16 +652,14 @@ class GoogleStorageService {
           finalOriginalName,      // 拡張子(this.extension) を含んだユニークなファイル名
           this.mimeType,          // 圧縮後のMIMEタイプ (this.mimeType)
           directory + '/original', // GCS上の具体的なディレクトリパス
-          org_id,
-          isHotSpot
+          org_id
         ),
         this.uploadFileBuffer(
           thumbnailCompressedBuffer,
           finalThumbnailName,     // 拡張子(this.extension) を含んだユニークなファイル名 (サムネイル用)
           this.mimeType,          // 圧縮後のMIMEタイプ (this.mimeType)
           directory + '/thumbnail',// GCS上の具体的なディレクトリパス
-          org_id,
-          isHotSpot             // サムネイルも同様にホットスポット対策を適用
+          org_id
         ),
       ]);
       uploadedOriginalFile = originalResult;
@@ -735,7 +713,6 @@ class GoogleStorageService {
             originalFileName: safeOriginalFileName,
             directory,
             org_id,
-            isHotSpot,
             quality,
             activeCompressFormat: this.activeFormat,
             uploadedOriginalPath: uploadedOriginalFile?.filePath,

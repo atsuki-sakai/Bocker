@@ -358,8 +358,7 @@ export function createSingleImageFormData(
   directory: string,
   options: {
     quality?: string;
-    aspectType?: string;
-    isHotSpot?: boolean;
+    aspectType?: string
   } = {}
 ): FormData {
   const formData = new FormData();
@@ -372,9 +371,6 @@ export function createSingleImageFormData(
   }
   if (options.aspectType) {
     formData.append('aspectType', options.aspectType);
-  }
-  if (options.isHotSpot !== undefined) {
-    formData.append('isHotSpot', options.isHotSpot.toString());
   }
   
   return formData;
@@ -395,7 +391,6 @@ export function createMultipleImageFormData(
   options: {
     quality?: string;
     aspectType?: string;
-    isHotSpot?: boolean;
   } = {}
 ): FormData {
   const formData = new FormData();
@@ -413,9 +408,6 @@ export function createMultipleImageFormData(
   }
   if (options.aspectType) {
     formData.append('aspectType', options.aspectType);
-  }
-  if (options.isHotSpot !== undefined) {
-    formData.append('isHotSpot', options.isHotSpot.toString());
   }
   
   return formData;

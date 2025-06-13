@@ -12,8 +12,7 @@ interface UploadImageParams {
   directory: ImageDirectory;
   orgId: Id<'organization'>;
   aspectType: AspectType;
-  quality?: ImageQuality;
-  isHotSpot?: boolean;
+  quality?: ImageQuality
 }
 
 interface UploadImageResult {

@@ -140,8 +140,7 @@ export const POST = withAuth(async (request, auth) => {
       orgId: convexIdSchema,
       directory: directorySchema,
       aspectType: aspectTypeSchema.optional(),
-      quality: qualitySchema.optional(),
-      isHotSpot: z.string().optional().transform(val => val === 'true'),
+      quality: qualitySchema.optional()
     });
 
     let validatedFields;
@@ -157,7 +156,7 @@ export const POST = withAuth(async (request, auth) => {
       return NextResponse.json({ error: 'パラメータの形式が不正です' }, { status: 400 });
     }
 
-    const { orgId, directory, aspectType = 'mobile', quality, isHotSpot = false } = validatedFields;
+    const { orgId, directory, aspectType = 'mobile', quality } = validatedFields;
 
     // Check if orgId matches authenticated organization
     if (orgId !== auth.orgId) {
@@ -183,8 +182,7 @@ export const POST = withAuth(async (request, auth) => {
           directory as ImageDirectory,
           orgId as Id<'organization'>,
           aspectType as AspectType,
-          quality,
-          isHotSpot
+          quality
         );
       });
 
@@ -234,8 +232,7 @@ export const POST = withAuth(async (request, auth) => {
         directory as ImageDirectory,
         orgId as Id<'organization'>,
         aspectType as AspectType,
-        quality,
-        isHotSpot
+        quality
       );
       
       return NextResponse.json([result]);

@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
         hostname: 'storage.googleapis.com',
         pathname: '/bocker_storage/**', // 必要ならパス制限
       },
+      { protocol: 'https', hostname: 'cdn.bocker.jp', pathname: '**' },
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',

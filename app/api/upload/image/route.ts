@@ -13,8 +13,7 @@ export async function POST(request: NextRequest) {
       directory, 
       orgId, 
       aspectType, 
-      quality,
-      isHotSpot = false 
+      quality
     } = body;
 
     // バリデーション
@@ -32,8 +31,7 @@ export async function POST(request: NextRequest) {
       directory as ImageDirectory,
       orgId as Id<'organization'>,
       aspectType as AspectType,
-      quality as ImageQuality,
-      isHotSpot
+      quality as ImageQuality
     );
 
     return NextResponse.json(result);

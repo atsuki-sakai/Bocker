@@ -6,8 +6,7 @@ export const storageUploadSchema = z.object({
   orgId: convexIdSchema,
   directory: directorySchema,
   aspectType: aspectTypeSchema.optional().default('mobile'),
-  quality: qualitySchema.optional(),
-  isHotSpot: z.boolean().optional().default(false),
+  quality: qualitySchema.optional()
 })
 
 // Storage delete validation schema
