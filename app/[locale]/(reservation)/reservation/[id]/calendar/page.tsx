@@ -69,14 +69,15 @@ const dayOrder: Record<string, number> = {
   sunday: 7, // 日曜日を最後にする場合は 7, 最初にする場合は 0
 }
 
-type LineSessionPayload = {
-  lineUserId: string
+// 統一されたセッション型 - LINE/Email両方のログインに対応
+type SessionPayload = {
   customerUid: string
   tenantId: Id<'tenant'>
   orgId: Id<'organization'>
-  name?: string
   email?: string
-  // 必要に応じて他のフィールドも追加
+  // LINE特有のフィールドはオプショナル
+  lineUserId?: string
+  name?: string
 }
 
 // 予約ステップの定義
@@ -176,7 +177,7 @@ export default function CalendarPage() {
   const customerRepository = useMemo(() => new CustomerRepository(), [])
   const pointTransactionRepository = useMemo(() => new PointTransactionRepository(), [])
   const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
-  const [sessionCustomer, setSessionCustomer] = useState<LineSessionPayload | null>(null)
+  const [sessionCustomer, setSessionCustomer] = useState<SessionPayload | null>(null)
   const [customerPhone, setCustomerPhone] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<{
     customer: RowType<'customer'> | null
@@ -746,7 +747,7 @@ export default function CalendarPage() {
             const mailSubject = `【${organizationComplete.organization.org_name}】ご予約内容の確認`
 
             const emailTemplateProps = {
-              customerName: sessionCustomer.name,
+              customerName: sessionCustomer.name || customerData?.customer?.first_name || 'お客様',
               customerEmail: sessionCustomer.email,
               orgName: organizationComplete.organization.org_name,
               orgPhone: organizationComplete.config?.phone,
@@ -778,7 +779,7 @@ export default function CalendarPage() {
               totalAmount: calculateTotal(),
               reservationRules: organizationComplete.config?.reservation_rules,
               reservationDetailUrl: `${process.env.NEXT_PUBLIC_APP_URL}/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`,
-              logoUrl: organizationComplete.config?.images[0].thumbnail_url ?? null, // サロンのロゴ画像のURLなど
+              logoUrl: organizationComplete.config?.images?.[0]?.thumbnail_url ?? null,
             }
 
             const emailResponse = await fetch('/api/resend', {
@@ -858,7 +859,7 @@ export default function CalendarPage() {
         setIsLoading(true)
 
         // HTTPOnly Cookieの内容をAPIを経由して取得
-        const response = await fetch('/api/line/session', {
+        const response = await fetch('/api/auth/session', {
           credentials: 'include',
         })
 
@@ -872,11 +873,11 @@ export default function CalendarPage() {
         console.log('response', response)
 
         const data = await response.json()
-        let sessionCustomer: LineSessionPayload | null = null
+        let sessionCustomer: SessionPayload | null = null
 
         if (data.session) {
           try {
-            sessionCustomer = jwtDecode<LineSessionPayload>(data.session)
+            sessionCustomer = jwtDecode<SessionPayload>(data.session)
             console.log('sessionCustomer', sessionCustomer)
           } catch (e) {
             console.error('JWTデコード失敗:', e)

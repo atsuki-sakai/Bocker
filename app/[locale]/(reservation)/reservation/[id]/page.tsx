@@ -172,7 +172,7 @@ export default function ReservePage() {
 
   useEffect(() => {
     // サーバーAPI経由でセッション有無を判定
-    fetch('/api/line/session', { credentials: 'include' })
+    fetch('/api/auth/session', { credentials: 'include' })
       .then((res) => res.json())
       .then((data) => {
         if (data.session) {

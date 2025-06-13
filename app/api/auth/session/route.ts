@@ -13,7 +13,7 @@ export const runtime = 'nodejs';
 // POSTリクエスト用のスキーマ
 const loginRequestSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1),
+  password: z.string().min(1).max(100),
   tenantId: z.string().min(1),
   orgId: z.string().min(1),
 });
@@ -134,35 +134,29 @@ export async function GET() {
     if (!token) {
       console.log('[API /api/auth/session] No session token found');
       return NextResponse.json(
-        { error: 'セッションが見つかりません' },
-        { status: 401 }
+        { error: 'Session not found' },
+        { status: 404 }
       );
     }
 
-    // JWTを検証・デコード
-    try {
-      const payload = jwt.verify(token, JWT_SECRET) as SessionPayload;
-      
-      console.log(`[API /api/auth/session] Session retrieved for customer: ${payload.customerUid}`);
-      
-      return NextResponse.json(payload, { status: 200 });
-    } catch (jwtError) {
-      console.error('[API /api/auth/session] Invalid JWT token:', jwtError);
-      
-      // 無効なトークンの場合はクッキーを削除
-      cookieStore.delete(LINE_LOGIN_SESSION_KEY);
-      
-      return NextResponse.json(
-        { error: '無効なセッションです' },
-        { status: 401 }
-      );
-    }
+    console.log('[API /api/auth/session] Returning session token');
+    
+    // /api/line/sessionと同じ形式でレスポンスを返す
+    return NextResponse.json(
+      {
+        session: token,
+      },
+      { status: 200 }
+    );
 
   } catch (error) {
     console.error('[API /api/auth/session] Error during session retrieval:', error);
     
     return NextResponse.json(
-      { error: '内部サーバーエラーが発生しました' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

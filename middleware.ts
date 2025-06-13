@@ -16,7 +16,6 @@ const publicPaths = [
   '/api/webhook/clerk',
   '/api/webhook/stripe',
   '/api/line/verify-token',
-  '/api/line/session',
   '/api/auth/session',
   '/reservation',
   '/reservation/:path*', // Keep this for clarity, though handled separately below
