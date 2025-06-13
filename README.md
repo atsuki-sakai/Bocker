@@ -537,6 +537,216 @@ throw new ValidationError('Invalid input', { field: 'email' });
 
 ---
 
+## 🔄 予約フロー詳細実装ガイド
+
+### 顧客予約フローの全体像
+
+Bckerの予約システムは、メールアドレスとLINEの2つのログイン方式と、現金とクレジットカードの2つの決済方式を組み合わせた4つのパターンをサポートしています。
+
+```
+顧客アクセス
+    ↓
+ログイン（メール/LINE）
+    ↓
+予約ステップ（メニュー→スタッフ→オプション→日時→決済方法→確認）
+    ↓
+決済処理（現金/クレジットカード）
+    ↓
+通知送信（メール/LINE）
+    ↓
+予約完了
+```
+
+### 1. メールアドレスログイン → 現金決済パターン
+
+#### 1.1 ログイン処理
+
+**エントリーポイント**: `/reservation/[id]/page.tsx`
+
+```typescript
+// ファイル: app/[locale]/(reservation)/reservation/[id]/page.tsx
+// 関数: onSubmit (80行目)
+
+1. メールアドレスとパスワードを入力
+2. CustomerRepository.findByTenantAndOrgAndCustomerEmail()で既存顧客を検索
+3. 既存顧客の場合:
+   - POST /api/auth/session でパスワード認証
+   - JWTトークンを'bocker_login_session'クッキーに保存（30日間有効）
+4. 新規顧客の場合:
+   - POST /api/auth/register で顧客アカウント作成
+   - Supabase customer/customer_detail/customer_pointsテーブルに保存
+   - POST /api/auth/session で自動ログイン
+5. router.push(`/reservation/${orgId}/calendar`)で予約画面へ遷移
+```
+
+**関連API**: 
+- `/app/api/auth/session/route.ts` - パスワード認証・セッション作成
+- `/app/api/auth/register/route.ts` - 新規顧客登録
+
+#### 1.2 予約画面での処理
+
+**メインファイル**: `/app/[locale]/(reservation)/reservation/[id]/calendar/page.tsx`
+
+```typescript
+// セッション取得処理 (useEffect - 707行目)
+1. GET /api/auth/session でセッショントークン取得
+2. jwtDecode()でセッション情報をデコード
+3. Convexから組織情報取得: fetchQuery(api.organization.query.getRelations)
+4. Supabaseから顧客情報取得: CustomerRepository.getCompleteCustomerData()
+
+// 予約ステップ (currentStep state管理)
+- 'menu': メニュー選択 (MenuView component)
+- 'staff': スタッフ選択 (StaffView component)  
+- 'option': オプション選択 (OptionView component)
+- 'date': 日時選択 (DateView component)
+- 'payment': 決済方法選択 (PaymentView component)
+- 'confirm': 最終確認 (ConfirmView component)
+```
+
+#### 1.3 現金決済処理
+
+**関数**: `handleConfirmReservation` (396行目)
+
+```typescript
+// 現金決済の場合 (selectedPaymentMethod === 'cash')
+1. 予約データを作成 (status: 'confirmed')
+2. createReservationMutation()でConvexに予約保存
+3. オプション在庫調整: balanceStockMutation()
+4. ポイント使用処理:
+   - PointTransactionRepository.create()でトランザクション作成
+   - CustomerRepository.updateCustomerPoints()でポイント更新
+5. 通知送信:
+   - メールの場合: POST /api/resend でメール送信
+   - LINEの場合: POST /api/line/flex-message でLINE通知
+6. ポイント付与キュー作成: PointTaskQueueRepository.create()
+7. router.push()で完了画面へ遷移
+```
+
+### 2. メールアドレスログイン → クレジットカード決済パターン
+
+#### 2.1 クレジットカード決済処理
+
+**関数**: `processCreditCardPayment` (190行目)
+
+```typescript
+1. 予約データ作成 (status: 'pending', payment_status: 'pending')
+2. createReservationMutation()でConvexに仮予約保存
+3. オプション在庫調整: balanceStockMutation()
+4. Stripe Checkoutセッション作成:
+   - lineItemsの準備（メニュー、オプション、指名料）
+   - 割引・ポイント使用の按分計算
+   - POST /api/stripe/connect/checkout でセッション作成
+5. router.push(checkoutUrl)でStripe決済画面へリダイレクト
+```
+
+**Stripe Webhook処理**: `/app/api/webhook/stripe/connect/route.ts`
+
+```typescript
+// checkout.session.completedイベント処理
+1. StripeWebhookProcessor.processWebhook()で署名検証
+2. handleCheckoutSessionCompleted():
+   - Convexで予約ステータスを'confirmed'に更新
+   - payment_statusを'completed'に更新
+   - 顧客へ確認メール/LINE送信
+   - ポイント付与キュー作成
+```
+
+### 3. LINEログイン → 現金決済パターン
+
+#### 3.1 LINEログイン処理
+
+**エントリーポイント**: `/reservation/[id]/page.tsx`
+
+```typescript
+// handleLineLogin関数 (61行目)
+1. LIFF SDK初期化チェック
+2. setCookie()でtenant/org情報を一時保存
+3. liff.login()でLINE認証画面へリダイレクト
+```
+
+**LINE認証後の処理**: `/app/api/line/verify-token/route.ts`
+
+```typescript
+1. LINEのIDトークンを検証（LINE APIへPOST）
+2. 既存顧客の検索:
+   - CustomerRepository.findByTenantAndOrgAndCustomerEmail()
+3. 顧客情報の作成/更新:
+   - 既存: updateCustomer()で情報更新
+   - 新規: createCustomerWithDetailsAndPoints()で作成
+4. JWTセッション作成:
+   - lineUserId, customerUid, name, email含む
+   - 'bocker_login_session'クッキーに保存
+```
+
+#### 3.2 LINE通知送信
+
+**ファイル**: `/app/api/line/flex-message/route.ts`
+
+```typescript
+1. LINE Messaging APIでFlex Message送信
+2. reservationFlexMessageTemplate()でメッセージ作成
+3. 予約詳細・キャンセルボタン含む
+```
+
+### 4. LINEログイン → クレジットカード決済パターン
+
+LINEログイン後のクレジットカード決済は、メールログインの場合と同じ処理フローです。
+唯一の違いは、決済完了後の通知がLINEで送信される点です。
+
+### セッション管理の詳細
+
+**統一セッションAPI**: `/app/api/auth/session/route.ts`
+
+```typescript
+// SessionPayload型 (両ログイン方式対応)
+{
+  customerUid: string      // 顧客ID（必須）
+  tenantId: string        // テナントID（必須）
+  orgId: string           // 組織ID（必須）
+  email?: string          // メール（メールログイン時必須）
+  lineUserId?: string     // LINE ID（LINEログイン時のみ）
+  name?: string           // 表示名（LINEログイン時のみ）
+}
+```
+
+**セキュリティ設定**:
+- HTTPOnlyクッキー
+- Secure属性（本番環境）
+- SameSite=lax
+- 30日間有効期限
+
+### エラーハンドリング
+
+**共通エラー処理**: `useErrorHandler` hook
+
+```typescript
+// 各種エラーの処理
+- ネットワークエラー: トースト通知表示
+- 認証エラー: ログイン画面へリダイレクト
+- バリデーションエラー: フォームエラー表示
+- 決済エラー: エラーメッセージ表示・ログ記録
+```
+
+### ポイントシステムの処理
+
+**ポイント使用時**:
+- 予約作成時に即座に減算
+- PointTransactionRepository.create()で履歴記録
+
+**ポイント付与時**:
+- 予約日の30日後に付与予定
+- PointTaskQueueRepository.create()でキュー作成
+- バッチ処理で自動付与
+
+### 在庫管理
+
+**オプション在庫**:
+- 予約確定時に即座に減算
+- balanceStockMutation()で在庫更新
+- 同時実行制御により在庫の整合性保証
+
+---
+
 **最終更新**: 2025年06月  
 **プロジェクト状況**: 商用レベル実装完了・スケーリング準備完了  
 **技術責任者**: Claude Code Assistant
