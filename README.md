@@ -589,9 +589,9 @@ Bckerの予約システムは、メールアドレスとLINEの2つのログイ�
 **メインファイル**: `/app/[locale]/(reservation)/reservation/[id]/calendar/page.tsx`
 
 ```typescript
-// セッション取得処理 (useEffect - 707行目)
+// セッション取得処理 (useEffect - 855行目)
 1. GET /api/auth/session でセッショントークン取得
-2. jwtDecode()でセッション情報をデコード
+2. jwtDecode()でセッション情報をデコード (880行目)
 3. Convexから組織情報取得: fetchQuery(api.organization.query.getRelations)
 4. Supabaseから顧客情報取得: CustomerRepository.getCompleteCustomerData()
 
@@ -606,7 +606,7 @@ Bckerの予約システムは、メールアドレスとLINEの2つのログイ�
 
 #### 1.3 現金決済処理
 
-**関数**: `handleConfirmReservation` (396行目)
+**関数**: `handleConfirmReservation` (544行目)
 
 ```typescript
 // 現金決済の場合 (selectedPaymentMethod === 'cash')
@@ -627,7 +627,7 @@ Bckerの予約システムは、メールアドレスとLINEの2つのログイ�
 
 #### 2.1 クレジットカード決済処理
 
-**関数**: `processCreditCardPayment` (190行目)
+**関数**: `processCreditCardPayment` (338行目)
 
 ```typescript
 1. 予約データ作成 (status: 'pending', payment_status: 'pending')
@@ -643,9 +643,11 @@ Bckerの予約システムは、メールアドレスとLINEの2つのログイ�
 **Stripe Webhook処理**: `/app/api/webhook/stripe/connect/route.ts`
 
 ```typescript
-// checkout.session.completedイベント処理
+// ⚠️ 注意: checkout.session.completedイベントハンドラーは未実装
+// 現在の実装では、クレジットカード決済完了後の予約確定処理が不足
+// TODO: 以下の処理を実装する必要あり
 1. StripeWebhookProcessor.processWebhook()で署名検証
-2. handleCheckoutSessionCompleted():
+2. handleCheckoutSessionCompleted()の実装:
    - Convexで予約ステータスを'confirmed'に更新
    - payment_statusを'completed'に更新
    - 顧客へ確認メール/LINE送信
@@ -767,8 +769,37 @@ LINEログイン後のクレジットカード決済は、メールログイン�
 - balanceStockMutation()で在庫更新
 - 同時実行制御により在庫の整合性保証
 
+### 実装上の重要な課題
+
+**⚠️ クレジットカード決済の未完成部分**:
+1. **Stripe Webhook Handler未実装**
+   - `checkout.session.completed`イベントのハンドラーが存在しない
+   - 決済完了後も予約が'pending'状態のまま確定されない
+   - 顧客への確認通知が送信されない
+   
+2. **必要な実装**:
+   ```typescript
+   // /services/webhook/stripe/handlers.connect.ts に追加必要
+   export async function handleCheckoutSessionCompleted(
+     evt: Stripe.CheckoutSessionCompletedEvent,
+     eventId: string,
+     deps: WebhookDependencies,
+     metrics: WebhookMetricsCollector
+   ): Promise<EventProcessingResult> {
+     // 1. メタデータから予約IDを取得
+     // 2. Convexで予約ステータスを'confirmed'に更新
+     // 3. payment_statusを'completed'に更新
+     // 4. 顧客へ確認メール/LINE送信
+     // 5. ポイント付与キューの作成
+   }
+   ```
+
+3. **一時的な回避策**:
+   - 現在はクレジットカード決済を使用しない
+   - または手動で予約ステータスを更新する必要がある
+
 ---
 
 **最終更新**: 2025年06月  
-**プロジェクト状況**: 商用レベル実装完了・スケーリング準備完了  
+**プロジェクト状況**: 商用レベル実装完了・スケーリング準備完了（※クレジットカード決済は要追加実装）  
 **技術責任者**: Claude Code Assistant
