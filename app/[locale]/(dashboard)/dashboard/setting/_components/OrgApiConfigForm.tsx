@@ -286,6 +286,7 @@ const ApiSettingsCard = () => {
         <AccordionItem value="line-access-token">
           <AccordionTrigger>LINE アクセストークンの取得方法</AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+            {/* 動画リンク */}
             <div className="flex items-center text-xs text-secondary-foreground">
               <p className="mr-1">動画での取得方法はこちら</p>
               <Link
@@ -297,7 +298,9 @@ const ApiSettingsCard = () => {
                 https://share.zight.com/d5uk5ZQL
               </Link>
             </div>
-            <p className="font-semibold">取得手順</p>
+
+            {/* 取得手順（2025年版） */}
+            <p className="font-semibold">取得手順（2025年版）</p>
             <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 <Link
@@ -308,19 +311,35 @@ const ApiSettingsCard = () => {
                 >
                   LINE Developers コンソール
                 </Link>
-                で対象の <strong>Messaging API チャネル</strong> を開きます。
+                にログインします。
               </li>
               <li>
-                <strong>[Messaging&nbsp;API&nbsp;設定]</strong> タブ最下部の
-                <strong>「チャネルアクセストークン（長期）」</strong> を生成します。
+                対象のプロバイダーを選択し、<strong>Messaging API チャネル</strong>
+                をクリックします。
               </li>
               <li>
-                発行されたトークンを<strong>コピー</strong>し、このフォームの
-                「LINE&nbsp;アクセストークン」欄へ貼り付けます。
+                画面上部のタブから <strong>Messaging API</strong> タブを選択します。
+              </li>
+              <li>
+                ページをスクロールして<strong>「チャンネルアクセストークン」</strong>
+                セクションを探します。
+              </li>
+              <li>
+                初回は<strong>「発行」</strong>ボタンをクリックしてトークンを生成します。
+              </li>
+              <li>
+                発行されたトークンをコピーし、このフォームの「LINE&nbsp;アクセストークン」欄へ貼り付けます。
               </li>
             </ol>
+
+            {/* 補足情報 */}
             <p className="text-xs text-secondary-foreground">
-              ※ トークンは一度しか表示されません。安全な場所へ保管してください。
+              ※ 2025年現在、4種類のトークンが利用可能です。初心者の方は
+              <strong>長期チャンネルアクセストークン</strong>から始めることをお勧めします。
+            </p>
+            <p className="text-xs text-secondary-foreground">
+              ※ より高いセキュリティが必要な場合は、有効期限付きの
+              <strong>チャンネルアクセストークンv2.1</strong>の使用を検討してください。
             </p>
           </AccordionContent>
         </AccordionItem>
@@ -329,6 +348,7 @@ const ApiSettingsCard = () => {
         <AccordionItem value="line-channel-secret">
           <AccordionTrigger>LINE チャンネルシークレットの取得方法</AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+            {/* 動画リンク */}
             <div className="flex items-center text-xs text-secondary-foreground">
               <p className="mr-1">動画での取得方法はこちら</p>
               <Link
@@ -340,7 +360,8 @@ const ApiSettingsCard = () => {
                 https://share.zight.com/ApuWd52q
               </Link>
             </div>
-            <p className="font-semibold">取得手順</p>
+            {/* 取得手順（2025年版） */}
+            <p className="font-semibold">取得手順（2025年版）</p>
             <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 <Link
@@ -351,16 +372,26 @@ const ApiSettingsCard = () => {
                 >
                   LINE Developers コンソール
                 </Link>
-                で<strong>基本設定</strong>タブを開きます。
+                にログインし、対象のチャンネルを開きます。
               </li>
               <li>
-                「<strong>チャネルシークレット</strong>」横の<strong>コピーアイコン</strong>
-                をクリックします。
+                画面上部のタブメニューから<strong>基本設定</strong>タブを選択します。
+              </li>
+              <li>
+                ページを下にスクロールして<strong>「チャンネルシークレット」</strong>
+                の項目を探します。
+              </li>
+              <li>
+                セキュリティのため初期状態では非表示になっています。
+                <strong>クリックして表示</strong>させます。
+              </li>
+              <li>
+                表示された32文字以上の英数字を<strong>コピーアイコン</strong>でコピーします。
               </li>
               <li>
                 コピーした値を本フォームの「LINE&nbsp;チャンネルシークレット」欄に貼り付けます。
               </li>
-            </ol>
+            </ol>{' '}
           </AccordionContent>
         </AccordionItem>
 
@@ -368,6 +399,7 @@ const ApiSettingsCard = () => {
         <AccordionItem value="liff-id">
           <AccordionTrigger>LIFF ID の取得方法</AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+            {/* 動画リンク */}
             <div className="flex items-center text-xs text-secondary-foreground">
               <p className="mr-1">動画での取得方法はこちら</p>
               <Link
@@ -379,8 +411,14 @@ const ApiSettingsCard = () => {
                 https://share.zight.com/v1uzkZwn
               </Link>
             </div>
-            <p className="font-semibold">取得手順</p>
+
+            {/* 取得手順（2025年版） */}
+            <p className="font-semibold">取得手順（2025年版）</p>
             <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
+              <li className="text-sm text-secondary-foreground font-semibold my-3">
+                📌 重要：LIFF IDを取得するには、まず<strong>LINEログインチャンネル</strong>
+                の作成が必要です。
+              </li>
               <li>
                 <Link
                   href="https://developers.line.biz/console/"
@@ -390,20 +428,49 @@ const ApiSettingsCard = () => {
                 >
                   LINE Developers コンソール
                 </Link>
-                で<strong>LIFF</strong>タブを開き、「<strong>追加</strong>」をクリックします。
+                でプロバイダー画面を開きます。
               </li>
               <li>
-                <strong>アプリタイプ</strong>を「ウェブアプリ」にし、エンドポイント URL に
+                「<strong>チャンネルを作成</strong>」をクリックし、チャンネルタイプで「
+                <strong>LINEログイン</strong>」を選択します。
+              </li>
+              <li>
+                アプリタイプは「ウェブアプリ」を選択し、必要な情報を入力してチャンネルを作成します。
+              </li>
+              <li>
+                作成したLINEログインチャンネルを開き、「<strong>LIFF</strong>」タブを選択します。
+              </li>
+              <li>
+                「<strong>追加</strong>」ボタンをクリックしてLIFFアプリを作成します。
+              </li>
+              <li>
+                LIFFアプリの設定画面で以下を入力します：
+                <br />
+                ・サイズ：Full、Tall、Compactから選択
+                <br />
+                ・エンドポイントURL：
                 <code className="ml-1 bg-slate-200 px-1 rounded">
                   https://{process.env.NEXT_PUBLIC_SITE_DOMAIN}/liff
                 </code>
-                を入力して保存します。
+                <br />
+                ・スコープ：必要に応じてprofile、openid、emailなどを選択
               </li>
               <li>
-                作成されたアプリの<strong>LIFF&nbsp;ID</strong>
-                をコピーし、本フォームの「LIFF&nbsp;ID」欄に貼り付けます。
+                設定完了後、「<span className="font-mono">1234567890-AbcdEfgh</span>」形式の
+                <strong>LIFF ID</strong>が発行されます。
               </li>
+              <li>このIDをコピーして、本フォームの「LIFF&nbsp;ID」欄に貼り付けます。</li>
             </ol>
+
+            {/* 補足情報 */}
+            <p className="text-xs text-secondary-foreground">※ LIFF IDは公開しても安全な情報です</p>
+            <p className="text-xs text-secondary-foreground">
+              ※ Messaging
+              APIチャンネルと同じプロバイダー内に作成することで、チャンネル間の連携が可能になります
+            </p>
+            <p className="text-xs text-secondary-foreground">
+              ※ 2025年2月以降、LIFFとLINE MINI Appの統合が予定されています
+            </p>
           </AccordionContent>
         </AccordionItem>
 
@@ -411,6 +478,7 @@ const ApiSettingsCard = () => {
         <AccordionItem value="line-channel-id">
           <AccordionTrigger>LINE チャンネルID の取得方法</AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+            {/* 動画リンク */}
             <div className="flex items-center text-xs text-secondary-foreground">
               <p className="mr-1">動画での取得方法はこちら</p>
               <Link
@@ -422,7 +490,19 @@ const ApiSettingsCard = () => {
                 https://share.zight.com/yAuRqdwK
               </Link>
             </div>
-            <p className="font-semibold">取得手順</p>
+
+            {/* 重要な変更点 */}
+            <div className="bg-background p-4 rounded-md">
+              <p className="text-xs text-secondary-foreground mb-1">2024年9月以降の変更点</p>
+              <p className="text-xs text-secondary-foreground font-semibold">
+                Messaging
+                APIチャンネルは、まずLINE公式アカウントマネージャーで公式アカウントを作成してから、Messaging
+                APIを有効化する必要があります。
+              </p>
+            </div>
+
+            {/* 取得手順（2025年版） */}
+            <p className="font-semibold">取得手順（2025年版）</p>
             <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
                 <Link
@@ -433,20 +513,33 @@ const ApiSettingsCard = () => {
                 >
                   LINE Developers コンソール
                 </Link>
-                で<strong>LIFF</strong>タブを開き、「<strong>追加</strong>」をクリックします。
+                にログインします。
               </li>
               <li>
-                <strong>アプリタイプ</strong>を「ウェブアプリ」にし、エンドポイント URL に
-                <code className="ml-1 bg-slate-200 px-1 rounded">
-                  https://{process.env.NEXT_PUBLIC_SITE_DOMAIN}/liff
-                </code>
-                を入力して保存します。
+                対象のプロバイダーを選択し、<strong>Messaging API チャンネル</strong>
+                をクリックします。
               </li>
               <li>
-                作成されたアプリの<strong>LIFF&nbsp;ID</strong>
-                をコピーし、本フォームの「LIFF&nbsp;ID」欄に貼り付けます。
+                画面上部のタブメニューから<strong>基本設定</strong>
+                タブが選択されていることを確認します。
               </li>
+              <li>
+                ページ上部に表示される<strong>「チャンネルID」</strong>
+                の数値（例：1234567890）を確認します。
+              </li>
+              <li>
+                チャンネルID横の<strong>コピーアイコン</strong>をクリックしてコピーします。
+              </li>
+              <li>コピーした値を本フォームの「LINE&nbsp;チャンネルID」欄に貼り付けます。</li>
             </ol>
+
+            {/* 補足情報 */}
+            <p className="text-xs text-secondary-foreground font-semibold">💡 初めての方へ</p>
+            <p className="text-xs text-secondary-foreground">
+              もしMessaging
+              APIチャンネルが見つからない場合は、LINE公式アカウントマネージャーとDevelopers
+              Consoleで同じアカウントを使用しているか確認してください。
+            </p>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
