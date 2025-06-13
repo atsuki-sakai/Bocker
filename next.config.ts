@@ -33,10 +33,19 @@ const nextConfig: NextConfig = {
         hostname: 'placehold.jp',
       },
       // CDNドメインのサポート（環境変数から動的に設定）
-      ...(process.env.NEXT_PUBLIC_CDN_DOMAIN ? [{
-        protocol: 'https' as const,
-        hostname: new URL(process.env.NEXT_PUBLIC_CDN_DOMAIN).hostname,
-      }] : []),
+      ...((() => {
+        if (!process.env.NEXT_PUBLIC_CDN_DOMAIN) return [];
+        try {
+          const cdnUrl = new URL(process.env.NEXT_PUBLIC_CDN_DOMAIN);
+          return [{
+            protocol: 'https' as const,
+            hostname: cdnUrl.hostname,
+          }];
+        } catch (e) {
+          console.warn('Invalid CDN domain:', process.env.NEXT_PUBLIC_CDN_DOMAIN);
+          return [];
+        }
+      })()),
     ],
   }
 };
