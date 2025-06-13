@@ -1304,7 +1304,7 @@ export default function ReservationForm() {
                     </div>
                   ) : (
                     <div className="bg-background p-4 rounded-md mt-2 text-center">
-                      <p className="text-muted-foreground">選択した日時に空き枠がありません</p>
+                      <p className="text-muted-foreground">{t('noAvailableSlots')}</p>
                     </div>
                   )}
                 </div>
@@ -1359,7 +1359,7 @@ export default function ReservationForm() {
                   )
                 })
               ) : (
-                <p className="text-muted-foreground text-sm">メニューを選択してください</p>
+                <p className="text-muted-foreground text-sm">{t('selectMenusFirst')}</p>
               )}
             </div>
           </div>
@@ -1387,13 +1387,13 @@ export default function ReservationForm() {
                   )
                 })
               ) : (
-                <p className="text-muted-foreground text-sm">オプションは選択されていません</p>
+                <p className="text-muted-foreground text-sm">{t('noOptionsSelected')}</p>
               )}
             </div>
           </div>
 
           <div className="flex flex-col gap-2 mb-4">
-            <p className="text-muted-foreground text-xs text-nowrap">施術者</p>
+            <p className="text-muted-foreground text-xs text-nowrap">{t('assignedStaff')}</p>
             <div className="flex items-center gap-2 bg-background p-2 border-b border-border">
               {selectStaff?.images?.[0]?.thumbnail_url ? (
                 <Avatar className="w-8 h-8">
@@ -1411,7 +1411,7 @@ export default function ReservationForm() {
               <div className="flex items-center justify-between gap-2 w-full">
                 <p className="text-sm font-bold text-primary">{selectStaff?.name ?? '—'}</p>
                 <p className="text-sm text-primary font-bold">
-                  <span className="text-primary font-light text-xs">指名料</span> ¥
+                  <span className="text-primary font-light text-xs">{t('designationFee')}</span> ¥
                   {selectStaff?.extra_charge ? selectStaff?.extra_charge.toLocaleString() : '0'}
                 </p>
               </div>
@@ -1427,10 +1427,10 @@ export default function ReservationForm() {
             {isSubmitting ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                予約中...
+                {t('creating')}
               </span>
             ) : (
-              '予約を作成'
+              t('createReservationButton')
             )}
           </Button>
         </div>
@@ -1458,7 +1458,7 @@ export default function ReservationForm() {
                 )}
               </div>
               <div className="flex items-center justify-end gap-2">
-                <Label className="text-xs">合計金額</Label>
+                <Label className="text-xs">{t('totalAmount')}</Label>
                 <p className="text-lg font-bold ml-2 md:ml-0">
                   ¥{totalPriceCalculated.toLocaleString()}
                 </p>
@@ -1466,8 +1466,8 @@ export default function ReservationForm() {
             </div>
             <div className="flex flex-wrap justify-between md:justify-end gap-2 md:gap-4 text-xs mt-2 md:mt-0 w-full md:w-2/3">
               <div className="border bg-background border-active p-1.5 rounded-md text-active flex  md:flex-row items-center w-fit sm:w-auto">
-                <Label className="text-xs text-active">トータル施術時間 / </Label>{' '}
-                <p className=" font-bold">{totalTimeMinutes} 分</p>
+                <Label className="text-xs text-active">{t('totalTreatmentTime')} / </Label>{' '}
+                <p className=" font-bold">{totalTimeMinutes} {tCommon('minutes')}</p>
               </div>
             </div>
           </div>
