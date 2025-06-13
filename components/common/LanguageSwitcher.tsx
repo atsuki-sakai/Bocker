@@ -31,11 +31,10 @@ export function LanguageSwitcher() {
     <Select value={locale} onValueChange={handleLocaleChange}>
       <SelectTrigger className="w-auto min-w-[120px] h-9">
         <div className="flex items-center gap-2">
-          <Globe className="w-4 h-4" />
           <SelectValue>
             <span className="flex items-center gap-1">
               <span>{currentLocale?.flag}</span>
-              <span className="hidden sm:inline">{currentLocale?.label}</span>
+              <span className="text-xs">{currentLocale?.label}</span>
             </span>
           </SelectValue>
         </div>
