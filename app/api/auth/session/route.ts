@@ -6,7 +6,7 @@ import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
 import { verifyPassword } from '@/lib/auth/password';
 import { emailSchema } from '@/lib/validations/api/common';
-import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants';
+import { LOGIN_SESSION_KEY } from '@/services/line/constants';
 
 export const runtime = 'nodejs';
 
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     // HTTPOnlyクッキーを設定
     const cookieStore = await cookies();
-    cookieStore.set(LINE_LOGIN_SESSION_KEY, token, {
+    cookieStore.set(LOGIN_SESSION_KEY, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -129,13 +129,13 @@ export async function GET() {
 
     // クッキーからトークンを取得
     const cookieStore = await cookies();
-    const token = cookieStore.get(LINE_LOGIN_SESSION_KEY)?.value;
+    const token = cookieStore.get(LOGIN_SESSION_KEY)?.value;
 
     if (!token) {
       console.log('[API /api/auth/session] No session token found');
       return NextResponse.json(
         { error: 'Session not found' },
-        { status: 404 }
+        { status: 401 }
       );
     }
 

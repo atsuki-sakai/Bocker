@@ -12,6 +12,7 @@
     "build:t": "next build --turbo",
     "build:wp": "next build",
     "start": "next start",
+    "sync-env": "scripts/sync-vercel-env.sh",
     "analyze": "ANALYZE=true pnpm run build",
     "analyze:t": "ANALYZE=true pnpm run build:turbo",
     "lint": "next lint",
@@ -104,7 +105,7 @@
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.4",
     "uuid": "^11.1.0",
-    "vercel": "^42.1.1",
+    "vercel": "^43.1.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

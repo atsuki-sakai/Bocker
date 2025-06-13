@@ -6,7 +6,7 @@ import { Resend } from 'resend';
 import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants';
+import { LOGIN_SESSION_KEY } from '@/services/line/constants';
 import { PasswordChangedEmail } from '@/components/emails/PasswordChangedEmail';
 
 export const runtime = 'nodejs';
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // セッション確認
     const cookieStore = await cookies();
-    const sessionToken = cookieStore.get(LINE_LOGIN_SESSION_KEY)?.value;
+    const sessionToken = cookieStore.get(LOGIN_SESSION_KEY)?.value;
 
     if (!sessionToken) {
       console.log('[API /api/auth/change-password] No session token found');

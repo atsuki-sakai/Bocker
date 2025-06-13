@@ -9,7 +9,6 @@ import { useParams, useRouter } from 'next/navigation'
 import { useLiff } from '@/hooks/useLiff'
 import { ChevronRight, Loader2, Eye, EyeOff } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
 import { z } from 'zod'
 import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
@@ -17,7 +16,6 @@ import { useQuery } from 'convex/react'
 import { useZodForm } from '@/hooks/useZodForm'
 import { Mail, Lock } from 'lucide-react'
 import { ZodTextField } from '@/components/common'
-import { deleteCookie } from '@/lib/utils'
 import { toast } from 'sonner'
 import { Loading } from '@/components/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
@@ -196,11 +194,21 @@ export default function ReservePage() {
   useEffect(() => {
     // サーバーAPI経由でセッション有無を判定
     fetch('/api/auth/session', { credentials: 'include' })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          // セッションが見つからない場合は正常な動作なので、エラーとして扱わない
+          return null
+        }
+        return res.json()
+      })
       .then((data) => {
-        if (data.session) {
+        if (data && data.session) {
           router.push(`/reservation/${orgId}/calendar`)
         }
+      })
+      .catch((error) => {
+        // ネットワークエラーなど、本当のエラーのみログ出力
+        console.error('Session check failed:', error)
       })
 
     // 組織情報を取得して、テナントIDを設定

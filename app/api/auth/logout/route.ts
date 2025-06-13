@@ -3,7 +3,7 @@
 
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
+import { LOGIN_SESSION_KEY } from '@/services/line/constants'
 
 export const runtime = 'nodejs'
 
@@ -16,13 +16,13 @@ const performLogout = async (): Promise<NextResponse> => {
   const cookieStore = await cookies()
 
   // クッキーを削除 (メモリ上)
-  cookieStore.delete(LINE_LOGIN_SESSION_KEY)
+  cookieStore.delete(LOGIN_SESSION_KEY)
 
   // ブラウザ側にも削除指示を返す
   const response = NextResponse.json({ success: true })
 
   // 失効済みクッキーを設定 (Max-Age=0)
-  response.cookies.set(LINE_LOGIN_SESSION_KEY, '', {
+  response.cookies.set(LOGIN_SESSION_KEY, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

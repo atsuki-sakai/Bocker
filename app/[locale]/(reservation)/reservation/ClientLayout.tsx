@@ -6,7 +6,7 @@ import { DynamicLiffProviderWithSuspense } from '@/components/providers/DynamicL
 import type { NextFontWithVariable } from 'next/dist/compiled/@next/font'
 import { getCookie } from '@/lib/utils'
 import { Id } from '@/convex/_generated/dataModel'
-import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
+import { LOGIN_SESSION_KEY } from '@/services/line/constants'
 import { Loading } from '@/components/common'
 import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
@@ -67,7 +67,7 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
         ])
         // セッションクッキーの取得を試みる
         try {
-          const sessionCookie = getCookie(LINE_LOGIN_SESSION_KEY)
+          const sessionCookie = getCookie(LOGIN_SESSION_KEY)
           console.log('sessionCookie', sessionCookie)
           if (sessionCookie) {
             const sessionData = JSON.parse(sessionCookie)

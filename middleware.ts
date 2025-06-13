@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { clerkMiddleware } from '@clerk/nextjs/server'
-import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
+import { LOGIN_SESSION_KEY } from '@/services/line/constants'
 import createMiddleware from 'next-intl/middleware'
 import { routing } from './i18n/routing'
 
@@ -120,13 +120,13 @@ export default clerkMiddleware(async (auth, req) => {
   console.log(`[Middleware] Origin: ${origin}`)
   console.log(`[Middleware] Clerk userId: ${userId}`)
 
-  // LINEセッションCookieの確認 (Assuming LINE_LOGIN_SESSION_KEY is used for both LINE and potentially other auth sessions)
-  const lineSessionCookie = req.cookies.get(LINE_LOGIN_SESSION_KEY)
-  // const authSessionCookie = req.cookies.get(LINE_LOGIN_SESSION_KEY); // authSessionCookieも同じ変数を見ているようです
+  // LINEセッションCookieの確認 (Assuming LOGIN_SESSION_KEY is used for both LINE and potentially other auth sessions)
+  const lineSessionCookie = req.cookies.get(LOGIN_SESSION_KEY)
+  // const authSessionCookie = req.cookies.get(LOGIN_SESSION_KEY); // authSessionCookieも同じ変数を見ているようです
 
   // 有効なセッションかをログに記録
   console.log(
-    `[Middleware] Auth session cookie (${LINE_LOGIN_SESSION_KEY}): ${lineSessionCookie ? 'present' : 'absent'}, value: ${lineSessionCookie?.value ? 'has content' : 'empty'}`
+    `[Middleware] Auth session cookie (${LOGIN_SESSION_KEY}): ${lineSessionCookie ? 'present' : 'absent'}, value: ${lineSessionCookie?.value ? 'has content' : 'empty'}`
   )
 
   // 公開パスの判定（ロケール除去後のパスで判定）

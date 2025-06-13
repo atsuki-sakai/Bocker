@@ -3,7 +3,7 @@ import { ConvexHttpClient } from 'convex/browser'
 import { api } from '@/convex/_generated/api'
 import jwt from 'jsonwebtoken' // JWTを扱うためにjsonwebtokenをインストールする必要があります
 import { v4 as uuidv4 } from 'uuid'
-import { LINE_LOGIN_SESSION_KEY } from '@/services/line/constants'
+import { LOGIN_SESSION_KEY } from '@/services/line/constants'
 import { getSupabaseAdminService, InsertType } from '@/services/supabase/SupabaseService'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { SystemError } from '@/lib/errors/custom_errors'
@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     )
 
-    response.cookies.set(LINE_LOGIN_SESSION_KEY, sessionToken, {
+    response.cookies.set(LOGIN_SESSION_KEY, sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
