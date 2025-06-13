@@ -1,7 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
+import { uploadCompressedImage } from '@/lib/upload-client'
+import { fileToBase64 } from '@/lib/file-to-base64'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation } from 'convex/react'
@@ -105,18 +106,20 @@ export default function OrgConfigForm() {
         setIsUploading(true)
 
         // ▼ ここで「フロント圧縮・署名URL・GCS直送」一括
-        const result = await uploadCompressedImageWithThumbnailSignedUrl(
-          currentFile,
+        const base64Data = await fileToBase64(currentFile);
+        const result = await uploadCompressedImage({
+          base64Data,
+          fileName: currentFile.name,
+          directory: 'setting',
           orgId,
-          'setting', // 保存先ディレクトリ
-          'landscape', // aspectType: 'square' | 'landscape' | 'mobile'
-          'high' // quality: 'low' | 'medium' | 'high'
-        )
+          aspectType: 'landscape',
+          quality: 'high'
+        })
         // result.original.publicUrl, result.thumbnail.publicUrl を使ってConvex等に登録
         newUploadedImageUrls = [
           {
-            original_url: result.original.publicUrl,
-            thumbnail_url: result.thumbnail.publicUrl,
+            original_url: result.originalUrl,
+            thumbnail_url: result.thumbnailUrl,
           },
         ]
 

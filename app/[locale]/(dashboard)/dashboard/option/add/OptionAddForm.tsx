@@ -34,7 +34,8 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MAX_NUM, MAX_TEXT_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
-import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
+import { uploadCompressedImage } from '@/lib/upload-client'
+import { fileToBase64 } from '@/lib/file-to-base64'
 
 // 施術時間：0〜360分の5分刻みをキャッシュ
 // 0分を許容する事で物販にも対応する
@@ -188,18 +189,20 @@ function OptionAddForm() {
       if (currentFile) {
         try {
           setIsUploading(true)
-          const result = await uploadCompressedImageWithThumbnailSignedUrl(
-            currentFile!,
+          const base64Data = await fileToBase64(currentFile!);
+          const result = await uploadCompressedImage({
+            base64Data,
+            fileName: currentFile!.name,
+            directory: 'option',
             orgId,
-            'option',
-            'square', // aspectType: 'square' | 'landscape' | 'mobile'
-            'medium' // quality: 'low' | 'medium' | 'high'
-          )
+            aspectType: 'square',
+            quality: 'medium'
+          })
           // 新方式のレスポンス形式に合わせて修正
           newUploadedImageUrls = [
             {
-              original_url: result.original.publicUrl,
-              thumbnail_url: result.thumbnail.publicUrl,
+              original_url: result.originalUrl,
+              thumbnail_url: result.thumbnailUrl,
             },
           ]
           setIsUploading(false)

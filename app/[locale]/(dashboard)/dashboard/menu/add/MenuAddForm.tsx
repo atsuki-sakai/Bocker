@@ -9,7 +9,8 @@ import { fetchQuery } from 'convex/nextjs'
 import { useZodForm } from '@/hooks/useZodForm'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { MultiImageDrop } from '@/components/common'
-import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
+import { uploadCompressedImage } from '@/lib/upload-client'
+import { fileToBase64 } from '@/lib/file-to-base64'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
@@ -216,20 +217,22 @@ export default function MenuAddForm() {
         setIsUploading(true)
         try {
           // Promise.allを使って複数の画像を並列アップロード
-          const uploadPromises = currentFiles.map((file) =>
-            uploadCompressedImageWithThumbnailSignedUrl(
-              file,
+          const uploadPromises = currentFiles.map(async (file) => {
+            const base64Data = await fileToBase64(file);
+            return uploadCompressedImage({
+              base64Data,
+              fileName: file.name,
+              directory: 'menu',
               orgId,
-              'menu',
-              'mobile', // aspectType: 'square' | 'landscape' | 'mobile'
-              'medium' // quality: 'low' | 'medium' | 'high'
-            )
-          )
+              aspectType: 'mobile',
+              quality: 'medium'
+            });
+          })
 
           const uploadResults = await Promise.all(uploadPromises)
           newUploadedImageUrls = uploadResults.map((result) => ({
-            original_url: result.original.publicUrl,
-            thumbnail_url: result.thumbnail.publicUrl,
+            original_url: result.originalUrl,
+            thumbnail_url: result.thumbnailUrl,
           }))
 
           setIsUploading(false)

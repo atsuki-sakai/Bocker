@@ -48,7 +48,8 @@ import {
   SelectItem,
 } from '@/components/ui/select' // Select関連を追加
 import { Card, CardContent } from '@/components/ui/card'
-import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
+import { uploadCompressedImage } from '@/lib/upload-client'
+import { fileToBase64 } from '@/lib/file-to-base64'
 import { ImageType } from '@/convex/types'
 import { MAX_NUM } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
@@ -230,18 +231,20 @@ export default function OptionEditForm() {
       if (currentFile) {
         try {
           setIsUploading(true)
-          const result = await uploadCompressedImageWithThumbnailSignedUrl(
-            currentFile,
+          const base64Data = await fileToBase64(currentFile);
+          const result = await uploadCompressedImage({
+            base64Data,
+            fileName: currentFile.name,
+            directory: 'option',
             orgId,
-            'option',
-            'square', // aspectType: 'square' | 'landscape' | 'mobile'
-            'medium' // quality: 'low' | 'medium' | 'high'
-          )
+            aspectType: 'square',
+            quality: 'medium'
+          })
 
           newUploadedImageUrls = [
             {
-              original_url: result.original.publicUrl,
-              thumbnail_url: result.thumbnail.publicUrl,
+              original_url: result.originalUrl,
+              thumbnail_url: result.thumbnailUrl,
             },
           ]
           setIsUploading(false)

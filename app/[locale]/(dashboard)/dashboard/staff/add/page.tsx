@@ -335,18 +335,20 @@ function StaffAddPage() {
         // 通常のスタッフ作成処理
         if (selectedFile) {
           try {
-            const result = await uploadCompressedImageWithThumbnailSignedUrl(
-              selectedFile!,
+            const base64Data = await fileToBase64(selectedFile!);
+            const result = await uploadCompressedImage({
+              base64Data,
+              fileName: selectedFile!.name,
+              directory: 'staff',
               orgId,
-              'staff',
-              'square', // aspectType: 'square' | 'landscape' | 'mobile'
-              'medium' // quality: 'low' | 'medium' | 'high'
-            )
+              aspectType: 'square',
+              quality: 'medium'
+            })
             // 新方式のレスポンス形式に合わせて修正
             newUploadedImageUrls = [
               {
-                original_url: result.original.publicUrl,
-                thumbnail_url: result.thumbnail.publicUrl,
+                original_url: result.originalUrl,
+                thumbnail_url: result.thumbnailUrl,
               },
             ]
           } catch (error) {
