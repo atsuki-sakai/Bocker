@@ -286,6 +286,17 @@ const ApiSettingsCard = () => {
         <AccordionItem value="line-access-token">
           <AccordionTrigger>LINE アクセストークンの取得方法</AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center text-xs text-secondary-foreground">
+              <p className="mr-1">動画での取得方法はこちら</p>
+              <Link
+                href="https://share.zight.com/d5uk5ZQL"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={externalLinkCls}
+              >
+                https://share.zight.com/d5uk5ZQL
+              </Link>
+            </div>
             <p className="font-semibold">取得手順</p>
             <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
@@ -318,6 +329,17 @@ const ApiSettingsCard = () => {
         <AccordionItem value="line-channel-secret">
           <AccordionTrigger>LINE チャンネルシークレットの取得方法</AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center text-xs text-secondary-foreground">
+              <p className="mr-1">動画での取得方法はこちら</p>
+              <Link
+                href="https://share.zight.com/ApuWd52q"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={externalLinkCls}
+              >
+                https://share.zight.com/ApuWd52q
+              </Link>
+            </div>
             <p className="font-semibold">取得手順</p>
             <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
@@ -346,6 +368,60 @@ const ApiSettingsCard = () => {
         <AccordionItem value="liff-id">
           <AccordionTrigger>LIFF ID の取得方法</AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center text-xs text-secondary-foreground">
+              <p className="mr-1">動画での取得方法はこちら</p>
+              <Link
+                href="https://share.zight.com/v1uzkZwn"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={externalLinkCls}
+              >
+                https://share.zight.com/v1uzkZwn
+              </Link>
+            </div>
+            <p className="font-semibold">取得手順</p>
+            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
+              <li>
+                <Link
+                  href="https://developers.line.biz/console/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={externalLinkCls}
+                >
+                  LINE Developers コンソール
+                </Link>
+                で<strong>LIFF</strong>タブを開き、「<strong>追加</strong>」をクリックします。
+              </li>
+              <li>
+                <strong>アプリタイプ</strong>を「ウェブアプリ」にし、エンドポイント URL に
+                <code className="ml-1 bg-slate-200 px-1 rounded">
+                  https://{process.env.NEXT_PUBLIC_SITE_DOMAIN}/liff
+                </code>
+                を入力して保存します。
+              </li>
+              <li>
+                作成されたアプリの<strong>LIFF&nbsp;ID</strong>
+                をコピーし、本フォームの「LIFF&nbsp;ID」欄に貼り付けます。
+              </li>
+            </ol>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* LINE Channel ID */}
+        <AccordionItem value="line-channel-id">
+          <AccordionTrigger>LINE チャンネルID の取得方法</AccordionTrigger>
+          <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center text-xs text-secondary-foreground">
+              <p className="mr-1">動画での取得方法はこちら</p>
+              <Link
+                href="https://share.zight.com/yAuRqdwK"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={externalLinkCls}
+              >
+                https://share.zight.com/yAuRqdwK
+              </Link>
+            </div>
             <p className="font-semibold">取得手順</p>
             <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
