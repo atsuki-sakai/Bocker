@@ -2,7 +2,7 @@
 
 import Image, { ImageProps } from 'next/image'
 import { useState, useEffect } from 'react'
-import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService'
+import { getCdnUrl, isCdnEnabled } from '@/lib/cdn-client-utils'
 
 interface OptimizedImageProps extends Omit<ImageProps, 'src' | 'onError'> {
   src: string | null | undefined
@@ -41,7 +41,7 @@ export function OptimizedImage({
     }
 
     // CDN変換が有効で、transformSrcがtrueの場合はCDN URLに変換
-    const processedSrc = transformSrc && gcsService.isCdnEnabled() ? gcsService.getCdnUrl(src) : src
+    const processedSrc = transformSrc && isCdnEnabled() ? getCdnUrl(src) : src
     setImgSrc(processedSrc)
     setIsLoading(false)
   }, [src, fallbackSrc, transformSrc])

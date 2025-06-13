@@ -37,7 +37,8 @@ import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ConvexError } from 'convex/values'
-import { uploadCompressedImageWithThumbnailSignedUrl } from '@/services/gcp/cloud_storage/helpers'
+import { uploadCompressedImage } from '@/lib/upload-client'
+import { fileToBase64 } from '@/lib/file-to-base64'
 import { useTranslations } from 'next-intl'
 
 import {
@@ -258,18 +259,21 @@ function StaffAddPage() {
 
           if (selectedFile) {
             try {
-              const result = await uploadCompressedImageWithThumbnailSignedUrl(
-                selectedFile!,
+              const base64Data = await fileToBase64(selectedFile!);
+              
+              const result = await uploadCompressedImage({
+                base64Data,
+                fileName: selectedFile!.name,
+                directory: 'staff',
                 orgId,
-                'staff',
-                'square', // aspectType: 'square' | 'landscape' | 'mobile'
-                'medium' // quality: 'low' | 'medium' | 'high'
-              )
+                aspectType: 'square',
+                quality: 'medium'
+              })
               // 新方式のレスポンス形式に合わせて修正
               newUploadedImageUrls = [
                 {
-                  original_url: result.original.publicUrl,
-                  thumbnail_url: result.thumbnail.publicUrl,
+                  original_url: result.originalUrl,
+                  thumbnail_url: result.thumbnailUrl,
                 },
               ]
             } catch (error) {
