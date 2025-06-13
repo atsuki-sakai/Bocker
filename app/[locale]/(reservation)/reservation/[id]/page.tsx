@@ -15,13 +15,13 @@ import { fetchQuery } from 'convex/nextjs'
 import { useQuery } from 'convex/react'
 import { useZodForm } from '@/hooks/useZodForm'
 import { Mail, Lock } from 'lucide-react'
-import { ZodTextField } from '@/components/common'
 import { toast } from 'sonner'
 import { Loading } from '@/components/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CustomerRepository } from '@/services/supabase/repositories'
+import { ZodTextField } from '@/components/common'
 
 const emailLoginSchema = z.object({
   email: z
@@ -59,7 +59,7 @@ export default function ReservePage() {
     console.log('liff', liff)
     if (!liff?.isInClient()) {
       console.log('liff?.isInClient()', liff?.isInClient())
-      
+
       try {
         // セキュアなstateをサーバーで生成
         const response = await fetch('/api/auth/line-state', {
@@ -76,13 +76,13 @@ export default function ReservePage() {
         }
 
         const { stateId } = await response.json()
-        
+
         // LINEログイン時にstateパラメータを含める
         const currentUrl = new URL(window.location.href)
         currentUrl.searchParams.set('state', stateId)
-        
+
         liff?.login({
-          redirectUri: currentUrl.toString()
+          redirectUri: currentUrl.toString(),
         })
       } catch (error) {
         console.error('Failed to initiate LINE login:', error)
@@ -94,8 +94,12 @@ export default function ReservePage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useZodForm(emailLoginSchema)
+
+  // 現在のメール入力値を監視
+  const watchedEmail = watch('email')
 
   const onSubmit = async (data: z.infer<typeof emailLoginSchema>) => {
     setIsFirstLogin(true)
@@ -320,7 +324,18 @@ export default function ReservePage() {
             {isFirstLogin && (
               <p className="text-xs text-center text-muted-foreground mb-4 px-4 mt-4">
                 パスワードを忘れましたか？
-                <span className="underline text-link-foreground cursor-pointer mx-1">こちら</span>
+                <Link
+                  href={`/customer/reset-password${watchedEmail ? `?e=${encodeURIComponent(watchedEmail)}` : ''}`}
+                  className="underline text-link-foreground cursor-pointer mx-1"
+                  onClick={() => {
+                    if (tenantId) {
+                      sessionStorage.setItem('tenantId', tenantId as string)
+                    }
+                    sessionStorage.setItem('orgId', orgId as string)
+                  }}
+                >
+                  こちら
+                </Link>
                 から再設定できます。
               </p>
             )}
