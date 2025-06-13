@@ -66,8 +66,8 @@ useEffect(() => {
 - [x] dashboard/point
 - [x] dashboard/point/pointTabs
 - [x] dashboard/reservation/[reservation_id]/page
-- [ ] dashboard/reservation/add
-- [ ] dashboard/reservation/ReservationForm
+- [x] dashboard/reservation/add
+- [x] dashboard/reservation/ReservationForm
 - [ ] dashboard/staff-schedule
 - [ ] dashboard/subscription/*以下全てのページ
 - [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化

@@ -8,6 +8,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
 import { api } from '@/convex/_generated/api'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useRef, useState, useEffect, useMemo } from 'react'
 import {
   startOfWeek as startOfWeekFns,
@@ -38,6 +39,7 @@ export default function StaffSchedulePage() {
   const { tenantId, orgId } = useTenantAndOrganization()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const t = useTranslations('reservations')
 
   // クエリパラメータから初期値を取得
   const initialStaffId = searchParams.get('staffId') as Id<'staff'> | null
@@ -426,12 +428,12 @@ export default function StaffSchedulePage() {
   }, [reservations])
 
   return (
-    <DashboardSection backLink="/dashboard" backLinkTitle="ダッシュボードに戻る">
+    <DashboardSection backLink="/dashboard" backLinkTitle={t('backToDashboard')}>
       <div className="flex h-full flex-col">
         <div className="sticky bg-background z-10 md:pt-5">
           <header className="flex flex-none items-center justify-between border-b border-border md:px-6 pb-2">
             <div className="flex flex-col">
-              <p className="text-sm md:text-lg font-semibold text-primary mb-1">スタッフ予定表</p>
+              <p className="text-sm md:text-lg font-semibold text-primary mb-1">{t('staffSchedule')}</p>
               <h1 className="text-sm md:text-lg font-semibold text-active">
                 {viewMode === 'week' ? (
                   <time
@@ -443,7 +445,7 @@ export default function StaffSchedulePage() {
                         locale: ja,
                       })}
                     </span>
-                    <div className=" text-muted-foreground text-xs">から</div>
+                    <div className=" text-muted-foreground text-xs">{t('from')}</div>
                     <span className="font-bold text-base md:text-xl">
                       {format(endOfWeekFns(currentDate, { weekStartsOn: 1 }), 'yyyy年MM月dd日', {
                         locale: ja,
@@ -465,7 +467,7 @@ export default function StaffSchedulePage() {
                 <div className="w-fit min-w-[180px]">
                   <Select value={selectedStaffId ?? ''} onValueChange={handleStaffChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="スタッフを選択" />
+                      <SelectValue placeholder={t('selectStaff')} />
                     </SelectTrigger>
                     <SelectContent>
                       {staffs.results?.map((staff) => (
@@ -484,7 +486,7 @@ export default function StaffSchedulePage() {
                     className="flex h-9 w-12 items-center justify-center rounded-l-md border-y border-l border-border pr-1 text-muted-foreground hover:text-primary focus:relative md:w-9 md:pr-0 md:hover:bg-muted"
                     onClick={moveToPrevious}
                   >
-                    <span className="sr-only">{viewMode === 'week' ? '前週' : '前日'}</span>
+                    <span className="sr-only">{viewMode === 'week' ? t('prevWeek') : t('prevDay')}</span>
                     <ChevronLeft className="size-5" aria-hidden="true" />
                   </button>
                   <button
@@ -492,7 +494,7 @@ export default function StaffSchedulePage() {
                     className="hidden border-y border-border px-3.5 text-sm font-semibold text-primary hover:bg-muted focus:relative md:block"
                     onClick={moveToToday}
                   >
-                    今日
+                    {t('today')}
                   </button>
                   <span className="relative -mx-px h-5 w-px bg-border md:hidden" />
                   <button
@@ -500,7 +502,7 @@ export default function StaffSchedulePage() {
                     className="flex h-9 w-12 items-center justify-center rounded-r-md border-y border-r border-border pl-1 text-primary hover:text-primary focus:relative md:w-9 md:pl-0 md:hover:bg-muted"
                     onClick={moveToNext}
                   >
-                    <span className="sr-only">{viewMode === 'week' ? '次週' : '翌日'}</span>
+                    <span className="sr-only">{viewMode === 'week' ? t('nextWeek') : t('nextDay')}</span>
                     <ChevronRight className="size-5" aria-hidden="true" />
                   </button>
                 </div>
@@ -510,12 +512,12 @@ export default function StaffSchedulePage() {
                   onClick={handleViewModeToggle}
                   className="ml-4 hidden md:inline-flex items-center rounded-md border border-border bg-background px-3.5 py-2 text-sm font-semibold text-primary shadow-sm hover:bg-muted"
                 >
-                  {viewMode === 'day' ? '週表示' : '日表示'}
+                  {viewMode === 'day' ? t('weekView') : t('dayView')}
                 </button>
                 <div className="hidden md:ml-4 md:flex md:flex-col md:items-center">
                   <Select value={selectedStaffId ?? ''} onValueChange={handleStaffChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="スタッフを選択" />
+                      <SelectValue placeholder={t('selectStaff')} />
                     </SelectTrigger>
                     <SelectContent>
                       {staffs.results?.map((staff) => (
@@ -528,7 +530,7 @@ export default function StaffSchedulePage() {
                 </div>
                 <Menu as="div" className="relative ml-6 md:hidden">
                   <MenuButton className="-mx-2 flex items-center rounded-full border border-transparent p-2 text-muted-foreground hover:text-primary">
-                    <span className="sr-only">メニューを開く</span>
+                    <span className="sr-only">{t('openMenu')}</span>
                     <Ellipsis className="size-5" aria-hidden="true" />
                   </MenuButton>
 
@@ -543,7 +545,7 @@ export default function StaffSchedulePage() {
                           className="block px-4 py-2 text-sm text-muted-foreground data-focus:bg-muted data-focus:text-primary data-focus:outline-hidden"
                           onClick={moveToToday}
                         >
-                          今日へ移動
+                          {t('today')}へ移動
                         </a>
                       </MenuItem>
                       <MenuItem>

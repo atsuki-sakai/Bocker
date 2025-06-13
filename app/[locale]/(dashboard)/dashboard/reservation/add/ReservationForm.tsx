@@ -17,6 +17,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { useMutation } from 'convex/react'
+import { useTranslations } from 'next-intl'
 import { Doc } from '@/convex/_generated/dataModel'
 
 // 入力値を数値または undefined に変換するプリプロセス関数
@@ -124,7 +125,7 @@ const schemaReservation = z
       return true
     },
     {
-      message: '新規顧客の場合、姓・名・電話番号は必須です',
+      message: 'newCustomerValidation', // 新規顧客の場合、姓・名・電話番号は必須です
       path: ['customerFirstName'], // エラー表示位置（必要に応じて他も追加可）
     }
   )
@@ -219,6 +220,8 @@ export default function ReservationForm() {
   const { tenantId, orgId } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const router = useRouter()
+  const t = useTranslations('reservations')
+  const tCommon = useTranslations('common')
   const [isFirstCustomer, setIsFirstCustomer] = useState<boolean>(true)
   // 複数選択に対応するためにstateを配列に変更
   const [selectedMenus, setSelectedMenus] = useState<ReservationMenu[]>([])
@@ -326,9 +329,7 @@ export default function ReservationForm() {
         // 選択中のスタッフが新しいメニューセットに対応できない場合のみリセット
         setSelectedStaffId(null)
         setValue('staff_id', '')
-        toast.warning(
-          '選択中のスタッフは新しいメニューに対応できません。スタッフを再選択してください。'
-        )
+        toast.warning(t('staffUnavailableWarning'))
       }
     }
   }, [availableStaff, selectedStaffId, setValue])
@@ -499,7 +500,7 @@ export default function ReservationForm() {
   const addMenu = useCallback(
     (menu: ReservationMenu) => {
       if (selectedMenus.length >= MAX_MENU_ITEMS) {
-        toast.error(`メニューは最大 ${MAX_MENU_ITEMS} 件まで選択できます。`)
+        toast.error(t('maxMenuError', { max: MAX_MENU_ITEMS }))
         return
       }
       const newMenus = [...selectedMenus, menu]
@@ -557,7 +558,7 @@ export default function ReservationForm() {
 
     // まだ存在しないオプションを追加する際、上限チェック
     if (!existing && selectedOptions.length >= MAX_OPTION_ITEMS) {
-      toast.error(`オプションは最大 ${MAX_OPTION_ITEMS} 件まで選択できます。`)
+      toast.error(t('maxOptionError', { max: MAX_OPTION_ITEMS }))
       return
     }
 
@@ -640,7 +641,7 @@ export default function ReservationForm() {
         notes: data.notes ?? '', // メモ
       })
 
-      toast.success('予約が完了しました')
+      toast.success(t('reservationCompleted'))
       router.push('/dashboard/reservation')
     } catch (error) {
       showErrorToast(error)
@@ -687,7 +688,7 @@ export default function ReservationForm() {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col items-start gap-2 mt-4">
-              <p className="text-muted-foreground text-sm font-bold">顧客属性の選択</p>
+              <p className="text-muted-foreground text-sm font-bold">{t('customerType')}</p>
               <ToggleGroup
                 type="single"
                 className="w-fit"
@@ -695,10 +696,10 @@ export default function ReservationForm() {
                 onValueChange={(value) => setIsFirstCustomer(value === 'first')}
               >
                 <ToggleGroupItem className="border border-border" value="first">
-                  既存顧客の予約
+                  {t('existingCustomer')}
                 </ToggleGroupItem>
                 <ToggleGroupItem className="border border-border" value="new">
-                  新規顧客の予約
+                  {t('newCustomer')}
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
@@ -707,15 +708,15 @@ export default function ReservationForm() {
                 <div className="flex flex-col items-start gap-2">
                   <div className="flex flex-col items-start gap-2">
                     <div className="flex items-center text-xl gap-2">
-                      <p className="text-primary font-bold">顧客検索</p>
+                      <p className="text-primary font-bold">{t('customerSearch')}</p>
                     </div>
                     <p className="text-muted-foreground text-xs">
-                      顧客無しでも予約は作成できます。
+                      {t('customerOptional')}
                     </p>
                   </div>
                   <Input
                     className="w-full my-3"
-                    placeholder="顧客を検索"
+                    placeholder={t('searchCustomer')}
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
                   />
@@ -723,15 +724,15 @@ export default function ReservationForm() {
                 {isLoadingCustomers ? (
                   <div className="flex items-center justify-center p-4 rounded-md">
                     <Loader2 className="h-5 w-5 animate-spin mr-2 text-active" />
-                    <span className="text-active text-sm">顧客を検索中...</span>
+                    <span className="text-active text-sm">{t('searching')}</span>
                   </div>
                 ) : customers && customers.length > 0 ? (
                   <div>
-                    <p className="text-primary text-sm font-bold mb-1">検索結果</p>
+                    <p className="text-primary text-sm font-bold mb-1">{t('searchResults')}</p>
                     <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
                       <PopoverTrigger asChild>
                         <p className="text-primary text-sm mb-1 border border-border p-2 rounded-md bg-input">
-                          一致した顧客を選択する
+                          {t('selectMatchingCustomer')}
                         </p>
                       </PopoverTrigger>
                       <PopoverContent
@@ -740,14 +741,14 @@ export default function ReservationForm() {
                       >
                         <Command>
                           <div className="flex items-center justify-between border-b">
-                            <p className="text-muted-foreground text-sm">検索結果</p>
+                            <p className="text-muted-foreground text-sm">{t('searchResults')}</p>
                             <button
                               type="button"
                               onClick={() => setCustomerPopoverOpen(false)}
                               className="p-2 text-muted-foreground "
                             >
                               <X className="w-4 h-4" aria-hidden="true" />
-                              <span className="sr-only">閉じる</span>
+                              <span className="sr-only">{tCommon('close')}</span>
                             </button>
                           </div>
                           <CommandList className="max-h-[300px] py-2 overflow-y-auto">
@@ -783,16 +784,16 @@ export default function ReservationForm() {
                   </div>
                 ) : searchName.length > 0 ? (
                   <p className="text-warning-foreground text-sm text-center bg-warning border border-warning-foreground p-4 rounded-md">
-                    顧客が見つかりません
+                    {t('noCustomersFound')}
                   </p>
                 ) : (
                   <p className="text-muted-foreground text-sm text-center bg-muted border border-border p-4 rounded-md">
-                    顧客を検索してください。
+                    {t('searchCustomerPlaceholder')}
                   </p>
                 )}
                 {selectedCustomer && (
                   <div className="flex flex-col gap-2 mt-2 bg-active-foreground border border-active p-3 rounded-md">
-                    <p className="text-active text-sm font-bold">予約する顧客</p>
+                    <p className="text-active text-sm font-bold">{t('reservationCustomer')}</p>
                     <p className="text-active text-sm">
                       {selectedCustomer.last_name ? selectedCustomer.last_name + ' ' : null}
                       {selectedCustomer.first_name ? selectedCustomer.first_name + ' ' : null}
@@ -806,23 +807,23 @@ export default function ReservationForm() {
               </div>
             ) : (
               <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
-                <h4 className="text-primary text-xl font-bold">顧客情報</h4>
+                <h4 className="text-primary text-xl font-bold">{t('customerInfo')}</h4>
                 <div className="grid grid-cols-2 gap-2">
                   <ZodTextField
                     register={register}
                     name="customer_last_name"
-                    placeholder="姓"
+                    placeholder={t('lastName')}
                     className="w-full"
                     errors={errors}
-                    label="姓"
+                    label={t('lastName')}
                   />
                   <ZodTextField
                     register={register}
                     name="customer_first_name"
-                    placeholder="名"
+                    placeholder={t('firstName')}
                     className="w-full"
                     errors={errors}
-                    label="名"
+                    label={t('firstName')}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -830,13 +831,13 @@ export default function ReservationForm() {
                     register={register}
                     type="tel"
                     name="customer_phone"
-                    placeholder="電話番号"
+                    placeholder={t('tel')}
                     className="w-full"
                     errors={errors}
-                    label="電話番号"
+                    label={t('tel')}
                   />
                   <div className="flex flex-col">
-                    <Label className="text-sm ml-2">性別</Label>
+                    <Label className="text-sm ml-2">{tCommon('gender')}</Label>
                     <Select
                       value={watch('customer_gender') ?? ''}
                       onValueChange={(value: string) => {
@@ -844,7 +845,7 @@ export default function ReservationForm() {
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="性別" />
+                        <SelectValue placeholder={tCommon('gender')} />
                       </SelectTrigger>
                       <SelectContent>
                         {GENDER_VALUES.map((gender) => (
@@ -857,7 +858,7 @@ export default function ReservationForm() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm ml-2">生年月日</Label>
+                  <Label className="text-sm ml-2">{tCommon('birthday')}</Label>
                   <Input
                     type="date"
                     value={watch('customer_birthday') ?? ''}
@@ -869,7 +870,7 @@ export default function ReservationForm() {
                   setTagsAction={(value: string[]) => setValue('customer_tags', value)}
                 />
                 <Textarea
-                  placeholder="備考"
+                  placeholder={tCommon('notes')}
                   rows={8}
                   value={watch('customer_notes') ?? ''}
                   onChange={(e) => setValue('customer_notes', e.target.value)}
@@ -878,10 +879,10 @@ export default function ReservationForm() {
             )}
             <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
               <div className="flex items-center gap-2">
-                <p className="text-primary font-bold text-xl">予約するメニュー</p>
+                <p className="text-primary font-bold text-xl">{t('reservationMenus')}</p>
               </div>
               <span className="text-muted-foreground text-xs">
-                ※メニューは最大5件まで選択できます。
+                {t('menuSelectionLimit')}
               </span>
               <Popover open={menuPopoverOpen} onOpenChange={setMenuPopoverOpen}>
                 <PopoverTrigger asChild>
@@ -901,7 +902,7 @@ export default function ReservationForm() {
                         })}
                       </span>
                     ) : (
-                      'メニューを選択'
+                      t('selectMenus')
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -917,7 +918,7 @@ export default function ReservationForm() {
                         className="p-2"
                       >
                         <X className="w-4 h-4" aria-hidden="true" />
-                        <span className="sr-only">閉じる</span>
+                        <span className="sr-only">{tCommon('close')}</span>
                       </button>
                     </div>
                     <CommandList className=" py-8 overflow-y-auto">
@@ -948,7 +949,7 @@ export default function ReservationForm() {
               {errors.menus && <p className="text-destructive text-sm">{errors.menus.message}</p>}
               {selectedMenus.length > 0 && (
                 <div className="mt-2 bg-active-foreground p-3 rounded-md border border-active">
-                  <Label className=" block text-active font-bold mb-2">選択中のメニュー</Label>
+                  <Label className=" block text-active font-bold mb-2">{t('selectedMenus')}</Label>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {uniqMenuIds.map((menuId) => {
                       const menu = menus?.find((m) => m._id === menuId)
@@ -985,12 +986,12 @@ export default function ReservationForm() {
               {staffFormData === undefined && selectedMenus.length > 0 ? (
                 <div className="flex items-center justify-center p-4 rounded-md">
                   <Loader2 className="h-5 w-5 animate-spin mr-2 text-active" />
-                  <span className="text-active text-sm">スタッフを検索中...</span>
+                  <span className="text-active text-sm">{t('searchingStaff')}</span>
                 </div>
               ) : selectedMenus.length > 0 && availableStaff.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <Label className="text-primary text-xl font-bold">施術するスタッフ</Label>
+                    <Label className="text-primary text-xl font-bold">{t('staffForTreatment')}</Label>
                   </div>
                   <Select
                     value={watch('staff_id') ?? ''}
@@ -1000,7 +1001,7 @@ export default function ReservationForm() {
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="スタッフを選択" />
+                      <SelectValue placeholder={t('selectStaff')} />
                     </SelectTrigger>
                     <SelectContent>
                       {availableStaff.map((staff) => (
@@ -1015,7 +1016,7 @@ export default function ReservationForm() {
                   )}
                   {selectedStaffId && (
                     <div className="flex flex-col bg-active-foreground p-3 rounded-md border border-active mt-3">
-                      <p className="text-active text-sm font-bold mb-2">選択中のスタッフ</p>
+                      <p className="text-active text-sm font-bold mb-2">{t('selectedStaff')}</p>
                       <div className="flex items-center gap-2">
                         {selectStaff?.images?.[0]?.original_url ? (
                           <Image
@@ -1033,7 +1034,7 @@ export default function ReservationForm() {
                         <div className="flex flex-col">
                           <p className="text-active font-bold text-sm">{selectStaff?.name}</p>
                           <p className="text-active text-sm">
-                            指名料 / ¥
+                            {t('designationFee')} / ¥
                             {selectStaff?.extra_charge
                               ? selectStaff?.extra_charge.toLocaleString()
                               : '0'}
@@ -1047,7 +1048,7 @@ export default function ReservationForm() {
                 selectedMenus.length > 0 && (
                   <div className="flex flex-col bg-destructive-foreground w-fit p-3 rounded-md border border-destructive">
                     <p className="text-destructive text-sm">
-                      選択したすべてのメニューに対応できるスタッフが見つかりません。メニューの組み合わせを変更してください。
+                      {t('noAvailableStaff')}
                     </p>
                   </div>
                 )
@@ -1059,7 +1060,7 @@ export default function ReservationForm() {
               {selectedMenus.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2">
-                    <Label className="text-primary text-xl font-bold">オプション(任意)</Label>
+                    <Label className="text-primary text-xl font-bold">{t('optionsOptional')}</Label>
                   </div>
                   <Popover open={optionPopoverOpen} onOpenChange={setOptionPopoverOpen}>
                     <PopoverTrigger asChild>
@@ -1079,7 +1080,7 @@ export default function ReservationForm() {
                             })}
                           </div>
                         ) : (
-                          'オプションを選択'
+                          t('selectOptions')
                         )}
                       </Button>
                     </PopoverTrigger>
@@ -1095,7 +1096,7 @@ export default function ReservationForm() {
                             className="p-2 text-muted-foreground hover:text-muted-foreground"
                           >
                             <X className="w-4 h-4" aria-hidden="true" />
-                            <span className="sr-only">閉じる</span>
+                            <span className="sr-only">{tCommon('close')}</span>
                           </button>
                         </div>
                         <CommandList className="overflow-y-auto py-8">
@@ -1163,7 +1164,7 @@ export default function ReservationForm() {
               )}
               {selectedOptions.length > 0 && (
                 <div className="bg-active-foreground p-3 rounded-md border border-active mt-2">
-                  <Label className="mb-2 block text-active font-bold">選択中のオプション</Label>
+                  <Label className="mb-2 block text-active font-bold">{t('selectedOptions')}</Label>
                   <div className="flex flex-wrap gap-2 pt-1 ">
                     {selectedOptions.map((selectedOption) => {
                       const option = options?.find((o) => o._id === selectedOption.id)
@@ -1199,7 +1200,7 @@ export default function ReservationForm() {
               {selectedMenus.length > 0 && (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <Label className="text-primary text-xl font-bold">予約日</Label>
+                    <Label className="text-primary text-xl font-bold">{t('reservationDate')}</Label>
                   </div>
                   <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                     <PopoverTrigger asChild>
@@ -1211,7 +1212,7 @@ export default function ReservationForm() {
                         )}
                       >
                         <CalendarIcon />
-                        {selectdate ? format(selectdate, 'yyyy/MM/dd') : <span>予約日を選択</span>}
+                        {selectdate ? format(selectdate, 'yyyy/MM/dd') : <span>{t('selectReservationDate')}</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -1254,7 +1255,7 @@ export default function ReservationForm() {
               {selectdate && selectedStaffId && selectedMenus.length > 0 && (
                 <div className="mt-4">
                   <Label className="mb-2 block text-primary font-bold">
-                    予約可能時間
+                    {t('availableTimeSlots')}
                     <span className="ml-3 text-muted-foreground text-sm font-bold">
                       {selectdate.toLocaleDateString('ja-JP', {
                         year: 'numeric',
@@ -1328,7 +1329,7 @@ export default function ReservationForm() {
           )}
           <Textarea
             {...register('notes')}
-            placeholder="例:くせ毛が強いので、扱いやすいスタイルにして欲しいとの事でした。"
+            placeholder={t('notesPlaceholder')}
             className="resize-none mt-4"
             rows={8}
           />

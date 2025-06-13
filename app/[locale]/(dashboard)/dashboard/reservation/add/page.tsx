@@ -1,12 +1,15 @@
 import { DashboardSection } from '@/components/common';
+import { useTranslations } from 'next-intl';
 import ReservationForm from './ReservationForm';
 
 export default function ReservationAddPage() {
+  const t = useTranslations('reservations');
+  
   return (
     <DashboardSection
-      title="予約の作成"
+      title={t('createReservation')}
       backLink="/dashboard/reservation"
-      backLinkTitle="ダッシュボードへ"
+      backLinkTitle={t('backToDashboard')}
     >
       <ReservationForm />
     </DashboardSection>
