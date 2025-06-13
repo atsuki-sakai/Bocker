@@ -940,7 +940,7 @@ class GoogleStorageService {
       
       // ここでSDKを直接使って署名付きURLを発行
       const bucket = this.storage!.bucket(this.bucketName!);
-      const filePath = `${orgId}/${directory}/${fileName}`;
+      const filePath = `${directory}/${orgId}/${fileName}`;
       
       console.log('[GCS] 署名付きURL生成パラメータ:', {
         bucketName: this.bucketName,

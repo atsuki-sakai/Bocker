@@ -1,6 +1,7 @@
 import { AspectType } from "@/convex/types";
-import { ImageQuality } from "./types";
+import { ImageDirectory, ImageQuality } from "./types";
 import { v4 as uuidv4 } from 'uuid';
+import { Id } from "@/convex/_generated/dataModel";
 
 
 /**
@@ -86,7 +87,7 @@ function isLowMemoryDevice(): boolean {
 export async function compressAndCropImage(
   file: File,
   maxWidth: number,
-  aspectType: 'square' | 'landscape' | 'mobile',
+  aspectType: AspectType,
   quality: number
 ): Promise<File> {
   console.log('[画像圧縮] 処理開始:', { fileName: file.name, size: file.size, type: file.type });
@@ -210,7 +211,7 @@ export async function compressAndCropImage(
 async function executeCanvasFallback(
   file: File,
   effectiveMaxWidth: number,
-  aspectType: 'square' | 'landscape' | 'mobile',
+  aspectType: AspectType,
   effectiveQuality: number,
   mime: string,
   ext: string,
@@ -297,8 +298,8 @@ async function executeCanvasFallback(
  */
 export async function uploadCompressedImageWithThumbnailSignedUrl(
     file: File,
-    orgId: string,
-    directory: string,
+    orgId: Id<'organization'>,
+    directory: ImageDirectory,
     aspectType: AspectType,
     quality: ImageQuality
     ): Promise<{ original: { publicUrl: string; filePath: string }; thumbnail: { publicUrl: string; filePath: string } }> {
