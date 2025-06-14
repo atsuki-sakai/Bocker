@@ -5,6 +5,7 @@ import { uploadCompressedImage } from '@/lib/upload-client'
 import { fileToBase64 } from '@/lib/file-to-base64'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { SingleImageDrop, Loading } from '@/components/common'
@@ -23,38 +24,42 @@ import { Loader2 } from 'lucide-react'
 import { Mail, Phone, MapPin, Save, Upload, Building } from 'lucide-react'
 import Uploader from '@/components/common/Uploader'
 
-const orgAndConfigFormSchema = z.object({
-  org_name: z.string().max(120, 'サロン名は120文字以内で入力してください'), // サロン名
-  org_email: z
-    .string()
-    .optional()
-    .refine(
-      (val) => val === undefined || val === '' || /^[\w\-._]+@[\w\-._]+\.[A-Za-z]{2,}$/.test(val),
-      { message: 'メールアドレスの形式が正しくありません' }
-    ),
-  phone: z
-    .string()
-    .optional()
-    .refine((val) => val === undefined || val === '' || /^\d{8,11}$/.test(val), {
-      message: '電話番号は8-11桁の数字で入力してください',
-    }),
-  postal_code: z
-    .string()
-    .optional()
-    .refine((val) => val === undefined || val === '' || /^\d{3}-?\d{4}$/.test(val), {
-      message: '郵便番号は7桁の数字（ハイフンあり/なし）で入力してください',
-    }),
-  address: z.string().max(200, '住所は200文字以内で入力してください').optional(), // 住所（入力された場合は最低1文字必要）
-  reservation_rules: z.string().max(2000, '予約ルールは2000文字以内で入力してください').optional(), // 予約ルール（入力された場合は最大500文字）
-  description: z.string().max(2000, '説明は2000文字以内で入力してください').optional(), // 説明（入力された場合は最大500文字）
-})
+const createOrgAndConfigFormSchema = (t: (key: string) => string) =>
+  z.object({
+    org_name: z.string().max(120, t('validation.salonNameMax')), // サロン名
+    org_email: z
+      .string()
+      .optional()
+      .refine(
+        (val) => val === undefined || val === '' || /^[\w\-._]+@[\w\-._]+\.[A-Za-z]{2,}$/.test(val),
+        { message: t('validation.emailInvalid') }
+      ),
+    phone: z
+      .string()
+      .optional()
+      .refine((val) => val === undefined || val === '' || /^\d{8,11}$/.test(val), {
+        message: t('validation.phoneFormat'),
+      }),
+    postal_code: z
+      .string()
+      .optional()
+      .refine((val) => val === undefined || val === '' || /^\d{3}-?\d{4}$/.test(val), {
+        message: t('validation.postalCodeFormat'),
+      }),
+    address: z.string().max(200, t('validation.addressMax')).optional(), // 住所（入力された場合は最低1文字必要）
+    reservation_rules: z.string().max(2000, t('validation.reservationRulesMax')).optional(), // 予約ルール（入力された場合は最大500文字）
+    description: z.string().max(2000, t('validation.descriptionMax')).optional(), // 説明（入力された場合は最大500文字）
+  })
 
 export default function OrgConfigForm() {
   const router = useRouter()
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
+  const t = useTranslations('settings.orgConfig')
   const [currentFile, setCurrentFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+
+  const orgAndConfigFormSchema = createOrgAndConfigFormSchema(t)
 
   const orgAndConfig = useQuery(
     api.organization.query.getOrgAndConfig,
@@ -106,14 +111,14 @@ export default function OrgConfigForm() {
         setIsUploading(true)
 
         // ▼ ここで「フロント圧縮・署名URL・GCS直送」一括
-        const base64Data = await fileToBase64(currentFile);
+        const base64Data = await fileToBase64(currentFile)
         const result = await uploadCompressedImage({
           base64Data,
           fileName: currentFile.name,
           directory: 'setting',
           orgId,
           aspectType: 'landscape',
-          quality: 'high'
+          quality: 'high',
         })
         // result.original.publicUrl, result.thumbnail.publicUrl を使ってConvex等に登録
         newUploadedImageUrls = [
@@ -128,9 +133,7 @@ export default function OrgConfigForm() {
 
         // 空URLはエラー扱い
         if (!newUploadedImageUrls[0]?.original_url || !newUploadedImageUrls[0]?.thumbnail_url) {
-          toast.error(
-            '画像のアップロードに失敗しました。画像形式（HEIC不可）やサイズをご確認ください。'
-          )
+          toast.error(t('messages.imageUploadFailed'))
           setIsUploading(false)
           return
         }
@@ -173,7 +176,7 @@ export default function OrgConfigForm() {
 
         setCurrentFile(null)
         router.push('/dashboard/setting')
-        toast.success('画像を保存しました')
+        toast.success(t('messages.imageSaved'))
       } catch (error) {
         // [ログ] エラー発生
         console.error('[画像アップロード] エラー発生', error)
@@ -184,7 +187,7 @@ export default function OrgConfigForm() {
         setIsUploading(false)
       }
     },
-    [currentFile, orgAndConfig, updateImages, orgId, showErrorToast, tenantId, router]
+    [currentFile, orgAndConfig, updateImages, orgId, showErrorToast, tenantId, router, t]
   )
 
   // フォーム送信処理（useCallbackでメモ化）
@@ -206,12 +209,12 @@ export default function OrgConfigForm() {
           description: data.description,
         })
 
-        toast.success('サロン設定を保存しました')
+        toast.success(t('messages.settingsSaved'))
       } catch (error) {
         showErrorToast(error)
       }
     },
-    [upsertOrgAndConfig, tenantId, orgId, showErrorToast, orgAndConfig]
+    [upsertOrgAndConfig, tenantId, orgId, showErrorToast, orgAndConfig, t]
   )
   // orgConfigが変更されたらフォームをリセット
   useEffect(() => {
@@ -250,16 +253,16 @@ export default function OrgConfigForm() {
         }}
       >
         <div className="flex items-center gap-2">
-          <h4 className="text-2xl font-bold">基本設定</h4>
+          <h4 className="text-2xl font-bold">{t('title')}</h4>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">こちらの情報は顧客に公開されます。</p>
+        <p className="text-sm text-muted-foreground mt-1">{t('description')}</p>
         <div className="pt-4">
           <div className="flex flex-col gap-3 space-y-2">
             <ZodTextField
               name="org_name"
               register={register}
-              label="サロン名"
-              placeholder="例: ブライダルサロン"
+              label={t('fields.salonName')}
+              placeholder={t('placeholders.salonName')}
               icon={<Building className="h-4 w-4 text-muted-foreground" />}
               errors={errors}
             />
@@ -267,8 +270,8 @@ export default function OrgConfigForm() {
               <ZodTextField
                 name="org_email"
                 register={register}
-                label="メールアドレス"
-                placeholder="例: salon@example.com"
+                label={t('fields.email')}
+                placeholder={t('placeholders.email')}
                 icon={<Mail className="h-4 w-4 text-muted-foreground" />}
                 errors={errors}
               />
@@ -277,8 +280,8 @@ export default function OrgConfigForm() {
             <ZodTextField
               name="phone"
               register={register}
-              label="電話番号"
-              placeholder="例: 09012345678"
+              label={t('fields.phone')}
+              placeholder={t('placeholders.phone')}
               icon={<Phone className="h-4 w-4 text-muted-foreground" />}
               errors={errors}
             />
@@ -287,8 +290,8 @@ export default function OrgConfigForm() {
                 <ZodTextField
                   name="postal_code"
                   register={register}
-                  label="郵便番号"
-                  placeholder="例: 273-5521"
+                  label={t('fields.postalCode')}
+                  placeholder={t('placeholders.postalCode')}
                   icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
                   errors={errors}
                 />
@@ -298,8 +301,8 @@ export default function OrgConfigForm() {
                 <ZodTextField
                   name="address"
                   register={register}
-                  label="住所"
-                  placeholder="例: 東京都渋谷区渋谷1-2-3"
+                  label={t('fields.address')}
+                  placeholder={t('placeholders.address')}
                   errors={errors}
                   icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
                 />
@@ -310,12 +313,12 @@ export default function OrgConfigForm() {
         <Separator className="my-10 w-2/3 mx-auto" />
         <div className="flex flex-col md:flex-row gap-6 items-start my-4 mt-12">
           <div className="w-full md:w-1/2 flex flex-col gap-4">
-            <h4 className="text-2xl font-bold">店舗画像</h4>
+            <h4 className="text-2xl font-bold">{t('fields.storeImage')}</h4>
             {orgAndConfig?.config?.images[0]?.original_url && (
               <div className="relative w-full h-full aspect-[16/9] max-h-[350px]">
                 <Image
                   src={orgAndConfig.config.images[0].original_url}
-                  alt="店舗画像"
+                  alt={t('fields.storeImage')}
                   fill
                   className="w-full h-full object-cover rounded-md border border-border"
                 />
@@ -326,7 +329,7 @@ export default function OrgConfigForm() {
                 setCurrentFile(file)
               }}
               currentFile={currentFile}
-              placeholderText="店舗画像を選択してください"
+              placeholderText={t('placeholders.storeImage')}
               aspectType="landscape"
             />
             <Button
@@ -338,28 +341,28 @@ export default function OrgConfigForm() {
               {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  保存中...
+                  {t('buttons.saving')}
                 </>
               ) : (
                 <>
                   <Upload className="mr-2 h-4 w-4" />
-                  画像を保存
+                  {t('buttons.saveImage')}
                 </>
               )}
             </Button>
           </div>
           <div className="w-full md:w-1/2 flex flex-col gap-4 mt-5">
-            <Label>店舗説明</Label>
+            <Label>{t('fields.description')}</Label>
             <Textarea
               {...register('description')}
-              placeholder="サロンの特徴や魅力を記入してください"
+              placeholder={t('placeholders.description')}
               rows={12}
             />
 
-            <Label>予約ルール</Label>
+            <Label>{t('fields.reservationRules')}</Label>
             <Textarea
               {...register('reservation_rules')}
-              placeholder="予約時のルールやご注意点を入力してください"
+              placeholder={t('placeholders.reservationRules')}
               rows={12}
             />
           </div>
@@ -369,12 +372,12 @@ export default function OrgConfigForm() {
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                保存中...
+                {t('buttons.saving')}
               </>
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
-                保存する
+                {t('buttons.save')}
               </>
             )}
           </Button>

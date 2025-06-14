@@ -5,6 +5,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Loading, ZodTextField } from '@/components/common'
 import { Key, Save, EyeOff, Eye, Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import {
   Accordion,
   AccordionItem,
@@ -38,6 +39,7 @@ type OrganizationApiConfigFormValues = z.infer<typeof organizationApiConfigFormS
 const ApiSettingsCard = () => {
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
+  const t = useTranslations('settings.apiConfig')
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [showFields, setShowFields] = useState<{ [key: string]: boolean }>({
     lineAccessToken: false,
@@ -83,14 +85,14 @@ const ApiSettingsCard = () => {
           ...data,
         })
 
-        toast.success('API設定を保存しました')
+        toast.success(t('messages.settingsSaved'))
       } catch (error) {
         showErrorToast(error)
       } finally {
         setSubmitting(false)
       }
     },
-    [upsertOrganizationApiConfig, orgId, tenantId, showErrorToast]
+    [upsertOrganizationApiConfig, orgId, tenantId, showErrorToast, t]
   )
 
   const handleShowFields = (
@@ -112,13 +114,13 @@ const ApiSettingsCard = () => {
     <div className="">
       <div className="">
         <div className="flex items-center gap-2">
-          <p className="text-2xl font-bold">外部サービス連携</p>
+          <p className="text-2xl font-bold">{t('title')}</p>
         </div>
 
         <p className="flex items-center mt-1 text-sm text-muted-foreground">
-          外部サービスとの連携に必要なAPI設定を行います。
+          {t('description')}
           <br />
-          設定を行うと、LINE公式アカウントと連携した予約システムを使用できるようになります。
+          {t('lineIntegrationNote')}
         </p>
       </div>
 
@@ -137,7 +139,7 @@ const ApiSettingsCard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <div className="flex items-center w-full relative">
                 <ZodTextField
-                  label="LINE アクセストークン"
+                  label={t('fields.lineAccessToken')}
                   icon={<Key className="h-4 w-4 text-primary" />}
                   errors={errors}
                   register={register}
@@ -161,7 +163,7 @@ const ApiSettingsCard = () => {
 
               <div className="flex items-center w-full relative">
                 <ZodTextField
-                  label="LINE チャンネルシークレット"
+                  label={t('fields.lineChannelSecret')}
                   icon={<Key className="h-4 w-4 text-primary" />}
                   errors={errors}
                   register={register}
