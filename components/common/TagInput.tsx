@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Label } from '@/components/ui/label'
 import { Tag, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,6 +31,7 @@ type TagInputProps = {
 
 const TagInput: React.FC<TagInputProps> = ({ tags, setTagsAction, error, exampleText, title }) => {
   const [input, setInput] = useState('')
+  const t = useTranslations('common.tagInput')
 
   // タグ追加
   const addTag = (
@@ -44,7 +46,7 @@ const TagInput: React.FC<TagInputProps> = ({ tags, setTagsAction, error, example
       .filter((t) => t && !tags.includes(t))
 
     if (tags.length + tagsToAdd.length > 5) {
-      toast.warning('タグは最大5つまでです')
+      toast.warning(t('maxTagsWarning'))
       return
     }
 
@@ -64,7 +66,7 @@ const TagInput: React.FC<TagInputProps> = ({ tags, setTagsAction, error, example
     <div>
       <Label className="flex items-center gap-2 text-sm mb-2">
         <Tag size={16} className="text-muted-foreground" />
-        {title ?? 'タグ'} (最大5つ)
+        {title ?? t('title')} {t('maxTags')}
       </Label>
 
       <div className="flex flex-wrap gap-2 mb-2 max-w-full overflow-x-auto">
@@ -85,7 +87,7 @@ const TagInput: React.FC<TagInputProps> = ({ tags, setTagsAction, error, example
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addTag(e)}
-          placeholder="タグを入力（カンマ区切りで複数入力可）"
+          placeholder={t('placeholder')}
           className="flex-1 py-2 px-1 bg-input border border-ring rounded-md text-base focus:outline-none focus:border-primary transition-colors min-w-0"
           disabled={tags.length >= 5}
         />
@@ -95,13 +97,13 @@ const TagInput: React.FC<TagInputProps> = ({ tags, setTagsAction, error, example
           disabled={tags.length >= 5 || !input.trim()}
           className="text-sm w-auto"
         >
-          追加
+          {t('addButton')}
         </Button>
       </div>
 
       {error && <ErrorMessage message={error} />}
       <p className="text-xs text-muted-foreground mt-1">
-        例: {exampleText ?? 'カット、パーマ、トリートメント（最大5つ）'}
+        {t('example')}: {exampleText ?? t('defaultExample')}
       </p>
     </div>
   )

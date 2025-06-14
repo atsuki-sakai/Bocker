@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent } from '@/components/ui/card'
 import Loading from './Loading'
+import { useTranslations } from 'next-intl'
 
 const numberOfMenus = 10
 
@@ -27,6 +28,7 @@ export default function ExclusionMenu({
   selectedMenuIds,
   setSelectedMenuIdsAction,
 }: ExclusionMenuProps) {
+  const t = useTranslations('common.exclusionMenu')
   const { tenantId, orgId } = useTenantAndOrganization()
   const [searchTerm, setSearchTerm] = useState('')
   const [localSelectedIds, setLocalSelectedIds] = useState<Id<'menu'>[]>(selectedMenuIds)
@@ -94,10 +96,10 @@ export default function ExclusionMenu({
   const totalMenusCount = filteredMenus.length
   const selectionText =
     selectedMenusCount === 0
-      ? '選択なし'
+      ? t('noSelection')
       : selectedMenusCount === totalMenusCount
-        ? 'すべて選択'
-        : `${selectedMenusCount}件選択`
+        ? t('selectAll')
+        : t('selectedCount', { count: selectedMenusCount })
 
   const allVisibleSelected =
     filteredMenus.length > 0 && filteredMenus.every((menu) => localSelectedIds.includes(menu._id))
@@ -107,7 +109,7 @@ export default function ExclusionMenu({
   if (filteredMenus.length === 0)
     return (
       <div className="text-center py-12 bg-muted text-muted-foreground rounded-md border">
-        登録されているメニューがありません。
+        {t('noMenus')}
       </div>
     )
 
@@ -119,7 +121,7 @@ export default function ExclusionMenu({
           <div className="flex items-center justify-between">
             <Label className="flex items-center gap-2 text-primary font-medium text-sm">
               <Menu size={16} />
-              {title ?? '除外するメニュー'}
+              {title ?? t('title')}
             </Label>
             <div className="flex flex-col md:flex-row gap-2 items-center">
               <span className="text-sm text-muted-foreground">{selectionText}</span>
@@ -127,12 +129,12 @@ export default function ExclusionMenu({
                 {totalMenusCount > 0 && allVisibleSelected ? (
                   <span className="flex items-center gap-1">
                     <Minus size={14} />
-                    全て解除
+                    {t('clearAll')}
                   </span>
                 ) : (
                   <span className="flex items-center gap-1">
                     <Plus size={14} />
-                    全て選択
+                    {t('selectAll')}
                   </span>
                 )}
               </Button>
@@ -143,7 +145,7 @@ export default function ExclusionMenu({
           <div className="relative bg-background rounded-md">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="メニューを検索..."
+              placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8"
@@ -198,7 +200,7 @@ export default function ExclusionMenu({
                     onClick={() => loadMore(numberOfMenus)}
                     type="button"
                   >
-                    さらに読み込む
+                    {t('loadMore')}
                   </Button>
                 </div>
               )}

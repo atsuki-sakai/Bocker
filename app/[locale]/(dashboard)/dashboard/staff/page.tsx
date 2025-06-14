@@ -6,25 +6,26 @@ import { useTranslations } from 'next-intl';
 import StaffList from './StaffList';
 
 function StaffPage() {
-  const t = useTranslations();
+  const t = useTranslations('staff')
+  const tCommon = useTranslations('common')
 
   return (
     <DashboardSection
-      title={t('staff.list.title')}
+      title={t('title')}
       backLink="/dashboard"
-      backLinkTitle={t('navigation.dashboard')}
+      backLinkTitle={tCommon('backToDashboard')}
       infoBtn={{
-        text: t('staff.addStaff'),
+        text: t('addStaff'),
         link: '/dashboard/staff/add',
       }}
       subBtn={{
-        text: t('staff.workScheduleManagement'),
+        text: t('workScheduleManagement'),
         link: '/dashboard/staff/schedule',
       }}
     >
       <StaffList />
     </DashboardSection>
-  );
+  )
 }
 
 export default withOwnerAccess(StaffPage);

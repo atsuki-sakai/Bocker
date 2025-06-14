@@ -215,7 +215,7 @@ export default function PointTabs() {
                     <div
                       className={`px-2 py-1 rounded-md ${
                         watchedIsActive
-                          ? 'text-active bg-active-foreground border border-active'
+                          ? 'text-accent-2 bg-accent-2-foreground border border-accent-2'
                           : 'text-destructive-foreground bg-destructive border border-destructive-foreground'
                       }`}
                     >
@@ -234,11 +234,6 @@ export default function PointTabs() {
                       className="mx-2 "
                     />
                     <div>
-                      <Label htmlFor="point-type">
-                        {t('basicSettings.enablePointFeature', {
-                          status: watchedIsActive ? t('common.enable') : t('common.disable'),
-                        })}
-                      </Label>
                       <span className="block text-xs text-muted-foreground">
                         {t('basicSettings.enableDescription')}
                       </span>
@@ -252,8 +247,8 @@ export default function PointTabs() {
                     <div
                       className={`flex items-center justify-between p-3 rounded-md ${
                         watchedIsFixedPoint
-                          ? 'bg-link text-link-foreground'
-                          : 'bg-active-foreground text-active'
+                          ? 'bg-accent-2-foreground text-accent-2'
+                          : 'bg-neon-foreground text-neon'
                       }`}
                     >
                       <span className="text-sm font-bold">
@@ -268,7 +263,6 @@ export default function PointTabs() {
                         onCheckedChange={(checked) => {
                           setValue('is_fixed_point', checked, { shouldDirty: true })
                         }}
-                        className="data-[state=checked]:bg-active data-[state=unchecked]:bg-active-foreground"
                       />
                     </div>
                   </div>
@@ -286,7 +280,7 @@ export default function PointTabs() {
                     <div className="space-y-2">
                       <Label htmlFor="point_rate" className="flex items-center gap-2">
                         <Percent size={16} />
-                        ポイント付与率 (%)
+                        {t('basicSettings.pointRate')} (%)
                       </Label>
                       <Input
                         id="point_rate"
@@ -371,7 +365,7 @@ export default function PointTabs() {
                           <p className="flex justify-between items-end text-sm font-bold">
                             <span className="text-primary">{t('summary.fixedPointLabel')}</span>
                             <span className="font-medium">
-                              {t('common.point.points', { count: watch('fixed_point') || 0 })}
+                              {watch('fixed_point') || 0} {t('common.points')}
                             </span>
                           </p>
                         ) : (
@@ -543,12 +537,7 @@ export default function PointTabs() {
                 {t('accordion.usageFlow')}
                 <ol className="list-decimal list-inside ml-5 space-y-0.5">
                   <li>{t('accordion.usageStep1')}</li>
-                  <li>
-                    {t('accordion.usageStep2')}{' '}
-                    <code className="font-mono">{t('accordion.usageCode')}</code>{' '}
-                    {t('accordion.usageStep2End')}
-                  </li>
-                  <li>{t('accordion.usageStep3')}</li>
+                  <li>{t('accordion.usageStep2')}</li>
                 </ol>
               </li>
               <li>{t('accordion.cautionStaffConfirm')}</li>

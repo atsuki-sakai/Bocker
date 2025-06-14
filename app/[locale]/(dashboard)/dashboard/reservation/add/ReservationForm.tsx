@@ -178,7 +178,7 @@ const MenuSelectionItem = React.memo(
               <span className="line-through text-muted-foreground">
                 ￥{menu.unit_price?.toLocaleString()}
               </span>
-              <span className="font-semibold text-active">
+              <span className="font-semibold text-accent-2">
                 ￥{menu.sale_price.toLocaleString()}
               </span>
             </>
@@ -206,9 +206,9 @@ const MenuSelectionItem = React.memo(
           variant="outline"
           onClick={onAdd}
           disabled={disabled}
-          className="border border-active hover:bg-active-foreground"
+          className="border border-accent-2 hover:bg-accent-2-foreground"
         >
-          <Plus className="w-4 h-4 text-active" />
+          <Plus className="w-4 h-4 text-accent-2" />
         </Button>
       </div>
     </CommandItem>
@@ -279,7 +279,10 @@ export default function ReservationForm() {
   const menus = useMemo(() => initialFormData?.menus || [], [initialFormData?.menus])
   const options = initialFormData?.options || []
   const orgWeekSchedules = initialFormData?.weekSchedules || []
-  const availableStaff = useMemo(() => staffFormData?.availableStaff || [], [staffFormData?.availableStaff])
+  const availableStaff = useMemo(
+    () => staffFormData?.availableStaff || [],
+    [staffFormData?.availableStaff]
+  )
 
   // スタッフの週間スケジュール（個別取得が必要）
   const staffWeekSchedules = useQuery(
@@ -710,9 +713,7 @@ export default function ReservationForm() {
                     <div className="flex items-center text-xl gap-2">
                       <p className="text-primary font-bold">{t('customerSearch')}</p>
                     </div>
-                    <p className="text-muted-foreground text-xs">
-                      {t('customerOptional')}
-                    </p>
+                    <p className="text-muted-foreground text-xs">{t('customerOptional')}</p>
                   </div>
                   <Input
                     className="w-full my-3"
@@ -723,8 +724,8 @@ export default function ReservationForm() {
                 </div>
                 {isLoadingCustomers ? (
                   <div className="flex items-center justify-center p-4 rounded-md">
-                    <Loader2 className="h-5 w-5 animate-spin mr-2 text-active" />
-                    <span className="text-active text-sm">{t('searching')}</span>
+                    <Loader2 className="h-5 w-5 animate-spin mr-2 text-accent-2" />
+                    <span className="text-accent-2 text-sm">{t('searching')}</span>
                   </div>
                 ) : customers && customers.length > 0 ? (
                   <div>
@@ -792,9 +793,9 @@ export default function ReservationForm() {
                   </p>
                 )}
                 {selectedCustomer && (
-                  <div className="flex flex-col gap-2 mt-2 bg-active-foreground border border-active p-3 rounded-md">
-                    <p className="text-active text-sm font-bold">{t('reservationCustomer')}</p>
-                    <p className="text-active text-sm">
+                  <div className="flex flex-col gap-2 mt-2 bg-accent-2-foreground border border-accent-2 p-3 rounded-md">
+                    <p className="text-accent-2 text-sm font-bold">{t('reservationCustomer')}</p>
+                    <p className="text-accent-2 text-sm">
                       {selectedCustomer.last_name ? selectedCustomer.last_name + ' ' : null}
                       {selectedCustomer.first_name ? selectedCustomer.first_name + ' ' : null}
                       {selectedCustomer.line_user_name
@@ -881,9 +882,7 @@ export default function ReservationForm() {
               <div className="flex items-center gap-2">
                 <p className="text-primary font-bold text-xl">{t('reservationMenus')}</p>
               </div>
-              <span className="text-muted-foreground text-xs">
-                {t('menuSelectionLimit')}
-              </span>
+              <span className="text-muted-foreground text-xs">{t('menuSelectionLimit')}</span>
               <Popover open={menuPopoverOpen} onOpenChange={setMenuPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -948,8 +947,10 @@ export default function ReservationForm() {
               </Popover>
               {errors.menus && <p className="text-destructive text-sm">{errors.menus.message}</p>}
               {selectedMenus.length > 0 && (
-                <div className="mt-2 bg-active-foreground p-3 rounded-md border border-active">
-                  <Label className=" block text-active font-bold mb-2">{t('selectedMenus')}</Label>
+                <div className="mt-2 bg-accent-2-foreground p-3 rounded-md border border-accent-2">
+                  <Label className=" block text-accent-2 font-bold mb-2">
+                    {t('selectedMenus')}
+                  </Label>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {uniqMenuIds.map((menuId) => {
                       const menu = menus?.find((m) => m._id === menuId)
@@ -985,13 +986,15 @@ export default function ReservationForm() {
             <div className="flex flex-col gap-2 mb-4 p-3 rounded-md border border-border">
               {staffFormData === undefined && selectedMenus.length > 0 ? (
                 <div className="flex items-center justify-center p-4 rounded-md">
-                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-active" />
-                  <span className="text-active text-sm">{t('searchingStaff')}</span>
+                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-accent-2" />
+                  <span className="text-accent-2 text-sm">{t('searchingStaff')}</span>
                 </div>
               ) : selectedMenus.length > 0 && availableStaff.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <Label className="text-primary text-xl font-bold">{t('staffForTreatment')}</Label>
+                    <Label className="text-primary text-xl font-bold">
+                      {t('staffForTreatment')}
+                    </Label>
                   </div>
                   <Select
                     value={watch('staff_id') ?? ''}
@@ -1015,8 +1018,8 @@ export default function ReservationForm() {
                     <p className="text-destructive text-sm">{errors.staff_id.message}</p>
                   )}
                   {selectedStaffId && (
-                    <div className="flex flex-col bg-active-foreground p-3 rounded-md border border-active mt-3">
-                      <p className="text-active text-sm font-bold mb-2">{t('selectedStaff')}</p>
+                    <div className="flex flex-col bg-accent-2-foreground p-3 rounded-md border border-accent-2 mt-3">
+                      <p className="text-accent-2 text-sm font-bold mb-2">{t('selectedStaff')}</p>
                       <div className="flex items-center gap-2">
                         {selectStaff?.images?.[0]?.original_url ? (
                           <Image
@@ -1032,8 +1035,8 @@ export default function ReservationForm() {
                           </div>
                         )}
                         <div className="flex flex-col">
-                          <p className="text-active font-bold text-sm">{selectStaff?.name}</p>
-                          <p className="text-active text-sm">
+                          <p className="text-accent-2 font-bold text-sm">{selectStaff?.name}</p>
+                          <p className="text-accent-2 text-sm">
                             {t('designationFee')} / ¥
                             {selectStaff?.extra_charge
                               ? selectStaff?.extra_charge.toLocaleString()
@@ -1047,9 +1050,7 @@ export default function ReservationForm() {
               ) : (
                 selectedMenus.length > 0 && (
                   <div className="flex flex-col bg-destructive-foreground w-fit p-3 rounded-md border border-destructive">
-                    <p className="text-destructive text-sm">
-                      {t('noAvailableStaff')}
-                    </p>
+                    <p className="text-destructive text-sm">{t('noAvailableStaff')}</p>
                   </div>
                 )
               )}
@@ -1105,7 +1106,7 @@ export default function ReservationForm() {
                             return (
                               <CommandItem
                                 key={option._id}
-                                className="flex items-center justify-between w-full"
+                                className="flex items-center justify-between w-full min-w-[250px]"
                               >
                                 <div className="flex flex-col items-start gap-1 text-xs w-3/5">
                                   <p className="text-sm text-wrap overflow-hidden whitespace-nowrap">
@@ -1145,9 +1146,9 @@ export default function ReservationForm() {
                                     disabled={
                                       count === 0 && selectedOptions.length >= MAX_OPTION_ITEMS
                                     }
-                                    className="border border-active hover:bg-active-foreground"
+                                    className="border border-accent-2 hover:bg-accent-2-foreground"
                                   >
-                                    <Plus className="w-4 h-4 text-active" />
+                                    <Plus className="w-4 h-4 text-accent-2" />
                                   </Button>
                                 </div>
                               </CommandItem>
@@ -1163,8 +1164,10 @@ export default function ReservationForm() {
                 </div>
               )}
               {selectedOptions.length > 0 && (
-                <div className="bg-active-foreground p-3 rounded-md border border-active mt-2">
-                  <Label className="mb-2 block text-active font-bold">{t('selectedOptions')}</Label>
+                <div className="bg-accent-2-foreground p-3 rounded-md border border-accent-2 mt-2">
+                  <Label className="mb-2 block text-accent-2 font-bold">
+                    {t('selectedOptions')}
+                  </Label>
                   <div className="flex flex-wrap gap-2 pt-1 ">
                     {selectedOptions.map((selectedOption) => {
                       const option = options?.find((o) => o._id === selectedOption.id)
@@ -1212,7 +1215,11 @@ export default function ReservationForm() {
                         )}
                       >
                         <CalendarIcon />
-                        {selectdate ? format(selectdate, 'yyyy/MM/dd') : <span>{t('selectReservationDate')}</span>}
+                        {selectdate ? (
+                          format(selectdate, 'yyyy/MM/dd')
+                        ) : (
+                          <span>{t('selectReservationDate')}</span>
+                        )}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -1274,7 +1281,7 @@ export default function ReservationForm() {
                           className={`flex items-center justify-center py-2 px-4 text-sm font-medium rounded-md border ${
                             watch('start_time_unix') ===
                             convertHourToTimestamp(slot.startHour, formattedDate)
-                              ? 'bg-active-foreground text-active border-active'
+                              ? 'bg-accent-2-foreground text-accent-2 border-accent-2'
                               : 'border-border bg-background hover:bg-muted hover:text-muted-foreground'
                           }`}
                           onClick={() => {
@@ -1337,7 +1344,7 @@ export default function ReservationForm() {
 
         <div className="grid gap-6 lg:grid-cols-2 mt-12">
           <div>
-            <p className="mb-2 text-xs font-medium text-muted-foreground">選択したメニュー</p>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">{t('selectedMenus')}</p>
             <div className="flex flex-col">
               {uniqMenuIds.length > 0 ? (
                 uniqMenuIds.map((menuId) => {
@@ -1364,7 +1371,7 @@ export default function ReservationForm() {
             </div>
           </div>
           <div>
-            <p className="mb-2 text-xs font-medium text-muted-foreground">選択したオプション</p>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">{t('selectedOptions')}</p>
             <div className="flex flex-col">
               {selectedOptions.length > 0 ? (
                 selectedOptions.map((selectedOption) => {
@@ -1465,9 +1472,11 @@ export default function ReservationForm() {
               </div>
             </div>
             <div className="flex flex-wrap justify-between md:justify-end gap-2 md:gap-4 text-xs mt-2 md:mt-0 w-full md:w-2/3">
-              <div className="border bg-background border-active p-1.5 rounded-md text-active flex  md:flex-row items-center w-fit sm:w-auto">
-                <Label className="text-xs text-active">{t('totalTreatmentTime')} / </Label>{' '}
-                <p className=" font-bold">{totalTimeMinutes} {tCommon('minutes')}</p>
+              <div className="border bg-background border-accent-2 p-1.5 rounded-md text-accent-2 flex  md:flex-row items-center w-fit sm:w-auto">
+                <Label className="text-xs text-accent-2">{t('totalTreatmentTime')} / </Label>{' '}
+                <p className=" font-bold">
+                  {totalTimeMinutes} {tCommon('minutes')}
+                </p>
               </div>
             </div>
           </div>

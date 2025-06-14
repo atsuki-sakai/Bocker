@@ -14,6 +14,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import type { ImageType } from '@/convex/types'
+import { useTranslations } from 'next-intl'
 
 export interface SortableImageGridProps {
   images: ImageType[]
@@ -69,6 +70,7 @@ function SortableImageItem({
 }
 
 export default function SortableImageGrid({ images, onChange }: SortableImageGridProps) {
+  const t = useTranslations('common.imageDrop')
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -88,7 +90,7 @@ export default function SortableImageGrid({ images, onChange }: SortableImageGri
       <SortableContext items={images.map((img) => img.original_url)}>
         <div className="grid grid-cols-2 gap-4 md:gap-6 items-center justify-start w-full mb-4">
           {images.length === 0 ? (
-            <div className="text-sm text-muted-foreground mx-auto">画像がありません</div>
+            <div className="text-sm text-muted-foreground mx-auto">{t('noImages')}</div>
           ) : (
             images.map((image, idx) => (
               <SortableImageItem

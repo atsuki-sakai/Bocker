@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuery, useMutation } from 'convex/react'
+import { useTranslations } from 'next-intl'
 import {
   Dialog,
   DialogContent,
@@ -55,95 +56,96 @@ import { MAX_NUM } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
 
 // バリデーションスキーマ
-const optionSchema = z
-  .object({
-    name: z
-      .string()
-      .min(1, { message: 'オプション名は必須です' })
-      .max(100, { message: 'オプション名は100文字以内で入力してください' }),
-    unit_price: z
-      .number()
-      .min(1, { message: '単価は必須です' })
-      .max(MAX_NUM, { message: `単価は${MAX_NUM}円以下で入力してください` })
-      .nullable()
-      .optional()
-      .refine((val): val is number => val !== null && val !== undefined, {
-        message: '単価は必須です',
-      }), // refineを更新
-    sale_price: zNumberFieldOptional(MAX_NUM, `セール価格は${MAX_NUM}円以下で入力してください`), // セール価格
-    images: z.array(
-      z.object({
-        original_url: z.string().optional(),
-        thumbnail_url: z.string().optional(),
-      })
-    ),
-    order_limit: z
-      .number()
-      .min(1, { message: '最大注文数は1以上で入力してください' })
-      .max(99, { message: '最大注文数は99個以下で入力してください' })
-      .refine((val): val is number => val !== null && val !== undefined, {
-        message: '最大注文数は必須です',
-      }), // refineを更新
-    in_stock: z.preprocess(
-      (val) => {
-        if (val === '' || val === null || val === undefined) return undefined
-        const num = Number(val)
-        return isNaN(num) ? undefined : num
-      },
-      z
-        .number()
-        .max(MAX_NUM, { message: `在庫数は${MAX_NUM}個以下で入力してください` })
-        .optional()
-    ),
-    duration_min: z // timeToMinのバリデーションを追加
-      .string()
-      .min(1, { message: '時間は必須です' })
-      .max(5, { message: '時間は5文字で入力してください' })
-      .refine((val) => val !== '', { message: '時間は必須です' })
-      .optional(),
-    tags: z.preprocess(
-      // tagsのバリデーションを追加
-      (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
-      z
+const optionSchema = (t: ReturnType<typeof useTranslations>) =>
+  z
+    .object({
+      name: z
         .string()
-        .max(100, { message: 'タグは合計100文字以内で入力してください' })
-        .transform((val) =>
-          val
-            ? val
-                .replace(/[,、]/g, ',')
-                .split(',')
-                .map((tag) => tag.trim())
-                .filter((tag) => tag !== '')
-            : []
-        )
-        .refine((val) => val.length <= 5, { message: 'タグは最大5つまでです' })
+        .min(1, { message: t('validation.nameRequired') })
+        .max(100, { message: t('validation.nameMaxLength') }),
+      unit_price: z
+        .number()
+        .min(1, { message: t('validation.unitPriceRequired') })
+        .max(MAX_NUM, { message: t('validation.unitPriceMax', { max: MAX_NUM }) })
+        .nullable()
         .optional()
-    ),
-    description: z
-      .string()
-      .max(1000, { message: '説明は1000文字以内で入力してください' })
-      .optional(),
-    is_active: z.boolean().optional(),
-  })
-  .refine(
-    (data) => {
-      // salePriceが存在し、unitPriceも存在する場合のみ比較
-      if (
-        data.sale_price !== null &&
-        data.sale_price !== undefined &&
-        data.unit_price !== null &&
-        data.unit_price !== undefined &&
-        data.sale_price >= data.unit_price
-      ) {
-        return false
+        .refine((val): val is number => val !== null && val !== undefined, {
+          message: '単価は必須です',
+        }), // refineを更新
+      sale_price: zNumberFieldOptional(MAX_NUM, t('validation.salePriceMax', { max: MAX_NUM })), // セール価格
+      images: z.array(
+        z.object({
+          original_url: z.string().optional(),
+          thumbnail_url: z.string().optional(),
+        })
+      ),
+      order_limit: z
+        .number()
+        .min(1, { message: t('validation.orderLimitMin') })
+        .max(99, { message: t('validation.orderLimitMax') })
+        .refine((val): val is number => val !== null && val !== undefined, {
+          message: t('validation.targetMenusRequired'),
+        }), // refineを更新
+      in_stock: z.preprocess(
+        (val) => {
+          if (val === '' || val === null || val === undefined) return undefined
+          const num = Number(val)
+          return isNaN(num) ? undefined : num
+        },
+        z
+          .number()
+          .max(MAX_NUM, { message: t('validation.inStockMax', { max: MAX_NUM }) })
+          .optional()
+      ),
+      duration_min: z // timeToMinのバリデーションを追加
+        .string()
+        .min(1, { message: t('validation.durationRequired') })
+        .max(5, { message: t('validation.durationMax') })
+        .refine((val) => val !== '', { message: t('validation.durationRequired') })
+        .optional(),
+      tags: z.preprocess(
+        // tagsのバリデーションを追加
+        (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
+        z
+          .string()
+          .max(100, { message: t('validation.tagMax') })
+          .transform((val) =>
+            val
+              ? val
+                  .replace(/[,、]/g, ',')
+                  .split(',')
+                  .map((tag) => tag.trim())
+                  .filter((tag) => tag !== '')
+              : []
+          )
+          .refine((val) => val.length <= 5, { message: t('validation.tagMaxCount') })
+          .optional()
+      ),
+      description: z
+        .string()
+        .max(2000, { message: t('validation.descriptionMax') })
+        .optional(),
+      is_active: z.boolean().optional(),
+    })
+    .refine(
+      (data) => {
+        // salePriceが存在し、unitPriceも存在する場合のみ比較
+        if (
+          data.sale_price !== null &&
+          data.sale_price !== undefined &&
+          data.unit_price !== null &&
+          data.unit_price !== undefined &&
+          data.sale_price >= data.unit_price
+        ) {
+          return false
+        }
+        return true
+      },
+      {
+        message: t('validation.salePriceLower'),
+        path: ['sale_price'],
       }
-      return true
-    },
-    {
-      message: 'セール価格は通常価格より低く設定してください',
-      path: ['sale_price'],
-    }
-  )
+    )
 
 // エラーメッセージコンポーネント
 const ErrorMessage = ({ message }: { message: string | undefined }) => (
@@ -159,6 +161,7 @@ const ErrorMessage = ({ message }: { message: string | undefined }) => (
 
 export default function OptionEditForm() {
   const router = useRouter()
+  const t = useTranslations('options')
   const params = useParams()
   const optionId = params.option_id as Id<'option'>
   console.log('optionId', optionId)
@@ -180,7 +183,7 @@ export default function OptionEditForm() {
     setValue,
     watch,
     formState: { isSubmitting: formIsSubmitting, errors, isDirty },
-  } = useZodForm(optionSchema)
+  } = useZodForm(optionSchema(t))
   const isActive = watch('is_active')
   const durationMin = watch('duration_min')
 
@@ -216,10 +219,10 @@ export default function OptionEditForm() {
   }, [optionData, setValue, isInitialized])
 
   // フォーム送信処理
-  const onSubmit = async (data: z.infer<typeof optionSchema>) => {
+  const onSubmit = async (data: z.infer<ReturnType<typeof optionSchema>>) => {
     try {
       if (!orgId || !optionId) {
-        toast.error('サロン情報またはオプション情報が見つかりません')
+        toast.error(t('error.notFound'))
         return
       }
 
@@ -231,14 +234,14 @@ export default function OptionEditForm() {
       if (currentFile) {
         try {
           setIsUploading(true)
-          const base64Data = await fileToBase64(currentFile);
+          const base64Data = await fileToBase64(currentFile)
           const result = await uploadCompressedImage({
             base64Data,
             fileName: currentFile.name,
             directory: 'option',
             orgId,
             aspectType: 'square',
-            quality: 'medium'
+            quality: 'medium',
           })
 
           newUploadedImageUrls = [
@@ -273,7 +276,7 @@ export default function OptionEditForm() {
           description: data.description,
           is_active: data.is_active,
           // 新しい画像がある場合は新しいパス、ない場合は既存画像を維持
-          images: newUploadedImageUrls.length > 0 ? newUploadedImageUrls : (existingImageUrls || []),
+          images: newUploadedImageUrls.length > 0 ? newUploadedImageUrls : existingImageUrls || [],
           option_id: optionId, // idは必須
         }
 
@@ -318,7 +321,7 @@ export default function OptionEditForm() {
           option_id: optionId,
         })
 
-        toast.success('オプションを更新しました')
+        toast.success(t('messages.updateSuccess'))
         router.push('/dashboard/option')
       } catch (updateErr) {
         // メニュー更新に失敗した場合、新しくアップロードした画像を削除
@@ -347,9 +350,7 @@ export default function OptionEditForm() {
 
         // 既存の画像を削除していた場合はエラーメッセージを変更
         if (hasDeletedOldImages) {
-          toast.error(
-            'オプション更新に失敗しました。画像が変更されている場合は、再度ご確認ください。'
-          )
+          toast.error(t('error.updateFailed'))
         } else {
           showErrorToast(updateErr)
         }
@@ -479,9 +480,9 @@ export default function OptionEditForm() {
               <div className="flex flex-col md:flex-row gap-4 w-full">
                 <ZodTextField
                   name="name"
-                  label="オプション名"
+                  label={t('form.optionName')}
                   icon={<Tag className="text-primary" />}
-                  placeholder="オプション名を入力してください"
+                  placeholder={t('form.optionNamePlaceholder')}
                   register={register}
                   errors={errors}
                   required
@@ -490,10 +491,10 @@ export default function OptionEditForm() {
 
                 <ZodTextField
                   name="order_limit"
-                  label="最大注文数"
+                  label={t('form.orderLimit')}
                   icon={<Boxes className="text-primary" />}
                   type="number"
-                  placeholder="例: 5"
+                  placeholder={t('form.orderLimitPlaceholder')}
                   register={register}
                   errors={errors}
                   required
@@ -501,10 +502,10 @@ export default function OptionEditForm() {
                 />
                 <ZodTextField
                   name="in_stock"
-                  label="在庫数"
+                  label={t('form.stock')}
                   icon={<Boxes className="text-primary" />}
                   type="number"
-                  placeholder="例: 5"
+                  placeholder={t('form.stockPlaceholder')}
                   register={register}
                   errors={errors}
                   required
@@ -515,10 +516,10 @@ export default function OptionEditForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <ZodTextField
                   name="unit_price"
-                  label="単価"
+                  label={t('form.unitPrice')}
                   icon={<DollarSign className="text-primary" />}
                   type="number"
-                  placeholder="例: 1000"
+                  placeholder="1000"
                   register={register}
                   errors={errors}
                   required
@@ -527,10 +528,10 @@ export default function OptionEditForm() {
 
                 <ZodTextField
                   name="sale_price"
-                  label="セール価格"
+                  label={t('form.salePrice')}
                   type="number"
                   icon={<ShoppingBag className="text-primary" />}
-                  placeholder="例: 800"
+                  placeholder="800"
                   register={register}
                   errors={errors}
                   className="border-border w-full"
@@ -541,7 +542,7 @@ export default function OptionEditForm() {
                 <div className="w-full">
                   <Label className="text-sm flex items-center gap-2">
                     <Clock size={16} className="text-primary" />
-                    スタッフが稼働する施術時間
+                    {t('form.durationTitle')}
                   </Label>
 
                   <Select
@@ -554,19 +555,17 @@ export default function OptionEditForm() {
                     }}
                   >
                     <SelectTrigger className="border-border transition-colors">
-                      <SelectValue placeholder="スタッフが稼働する施術時間を選択" />
+                      <SelectValue placeholder={t('form.durationPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {getMinuteMultiples(5, 360).map((time) => (
                         <SelectItem key={time} value={time.toString()}>
-                          {time}分
+                          {time} {t('form.minutes')}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <span className="text-xs text-muted-foreground">
-                    メニューの施術時間を設定します。
-                  </span>
+                  <span className="text-xs text-muted-foreground">{t('form.timeHelp')}</span>
                   {errors.duration_min && <ErrorMessage message={errors.duration_min.message} />}
                 </div>
               </div>
@@ -586,11 +585,11 @@ export default function OptionEditForm() {
         {/* 説明セクション */}
         <Label className="flex items-center gap-2 text-sm mb-2 mt-4">
           <Info size={16} className="text-primary" />
-          オプション説明
+          {t('form.description')}
         </Label>
         <Textarea
           id="description"
-          placeholder="オプションの詳細説明を入力してください（任意）"
+          placeholder={t('form.descriptionPlaceholder')}
           {...register('description')}
           onChange={(e) =>
             setValue('description', e.target.value, { shouldValidate: true, shouldDirty: true })
@@ -603,10 +602,8 @@ export default function OptionEditForm() {
         {/* 公開/非公開スイッチ */}
         <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-6">
           <div>
-            <p className="text-sm font-medium">オプションを公開する</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              オフにすると、このオプションはお客様に表示されません
-            </p>
+            <p className="text-sm font-medium">{t('form.publishToggle')}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('form.publishHelp')}</p>
           </div>
           <Switch
             id="isActive"
@@ -626,7 +623,7 @@ export default function OptionEditForm() {
               onClick={() => router.push('/dashboard/option')}
               className="min-w-28 border-border"
             >
-              戻る
+              {t('form.back')}
             </Button>
 
             <Button
@@ -636,12 +633,12 @@ export default function OptionEditForm() {
               {isSubmitting || isUploading || formIsSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  更新中...
+                  {t('form.updating')}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  オプションを更新
+                  {t('form.updateButton')}
                 </>
               )}
             </Button>
@@ -653,14 +650,14 @@ export default function OptionEditForm() {
       <Dialog open={isDeleteImageModalOpen} onOpenChange={setIsDeleteImageModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-destructive">画像を削除しますか？</DialogTitle>
+            <DialogTitle className="text-destructive">{t('form.deleteImageTitle')}</DialogTitle>
           </DialogHeader>
           <DialogDescription className="text-muted-foreground">
-            この操作は元に戻すことができません。
+            {t('form.deleteImageDescription')}
           </DialogDescription>
           <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={() => setIsDeleteImageModalOpen(false)}>
-              キャンセル
+              {t('form.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -673,10 +670,10 @@ export default function OptionEditForm() {
               {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  削除中...
+                  {t('form.deleting')}
                 </>
               ) : (
-                '削除する'
+                t('form.deleteImageButton')
               )}
             </Button>
           </DialogFooter>

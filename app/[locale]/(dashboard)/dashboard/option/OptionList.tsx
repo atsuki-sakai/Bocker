@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
 import { api } from '@/convex/_generated/api'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import { Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { useMutation } from 'convex/react'
@@ -154,9 +154,11 @@ export default function OptionList() {
                         className={`py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-primary sm:pl-6 `}
                       >
                         <span
-                          className={`font-bold text-xs ${option.is_archive ? 'bg-destructive text-white' : 'bg-active text-white'} px-2 py-1 rounded-md`}
+                          className={`font-bold text-xs ${option.is_archive ? 'bg-muted-foreground text-muted-background' : 'bg-accent-2-foreground text-accent-2'} px-2 py-1 rounded-md`}
                         >
-                          {option.is_archive ? t('list.table.statusDeleted') : t('list.table.statusActive')}
+                          {option.is_archive
+                            ? t('list.table.statusDeleted')
+                            : t('list.table.statusActive')}
                         </span>
                       </td>
                       <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-primary sm:pl-6">
@@ -201,13 +203,19 @@ export default function OptionList() {
                       </td>
 
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
-                        {option.order_limit ? `${option.order_limit}${t('list.table.pieces')}` : t('list.table.notSet')}
+                        {option.order_limit
+                          ? `${option.order_limit}${t('list.table.pieces')}`
+                          : t('list.table.notSet')}
                       </td>
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
-                        {option.duration_min ? `${option.duration_min}${t('list.table.minutes')}` : t('list.table.notSet')}
+                        {option.duration_min
+                          ? `${option.duration_min}${t('list.table.minutes')}`
+                          : t('list.table.notSet')}
                       </td>
                       <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
-                        {option.tags && option.tags.length > 0 ? option.tags.join('、') : t('list.table.notSet')}
+                        {option.tags && option.tags.length > 0
+                          ? option.tags.join('、')
+                          : t('list.table.notSet')}
                       </td>
                       <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                         <Link href={`/dashboard/option/${option._id}/edit`}>
@@ -216,7 +224,8 @@ export default function OptionList() {
                             size="sm"
                             className="text-link-foreground bg-link hover:opacity-80"
                           >
-                            {t('list.table.edit')}<span className="sr-only">, {option.name}</span>
+                            {t('list.table.edit')}
+                            <span className="sr-only">, {option.name}</span>
                           </Button>
                         </Link>
                       </td>
@@ -227,7 +236,8 @@ export default function OptionList() {
                           onClick={() => showDeleteDialog(option._id)}
                           className="text-destructive-foreground bg-destructive hover:text-destructive-foreground"
                         >
-                          {t('list.table.delete')}<span className="sr-only">, {option.name}</span>
+                          {t('list.table.delete')}
+                          <span className="sr-only">, {option.name}</span>
                         </Button>
                       </td>
                     </tr>

@@ -6,6 +6,7 @@
 import { Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useMemo, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface CurrentPlanBannerProps {
   currentPlanName: string // プラン名（'Lite', 'Pro'）
@@ -20,6 +21,8 @@ export default function CurrentPlanBanner({
   onPortalAction,
   isSubmitting,
 }: CurrentPlanBannerProps) {
+  const t = useTranslations('subscription')
+
   // 現在のプラン名をメモ化（currentPlanNameは既にプラン名）
   const planName = useMemo(() => {
     return currentPlanName
@@ -31,12 +34,12 @@ export default function CurrentPlanBanner({
       return (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          処理中...
+          {t('processing')}
         </>
       )
     }
-    return 'サブスクリプション管理'
-  }, [isSubmitting])
+    return t('planAction.managePlan')
+  }, [isSubmitting, t])
 
   // ポータルボタンクリックハンドラをメモ化
   const handlePortalClick = useCallback(() => {
@@ -54,7 +57,8 @@ export default function CurrentPlanBanner({
           </div>
           <div>
             <p className="font-semibold text-primary">
-              現在のプラン <span className="font-bold text-active text-2xl ml-1">{planName}</span>
+              {t('currentPlan')}{' '}
+              <span className="font-bold text-active text-2xl ml-1">{planName}</span>
             </p>
           </div>
         </div>
@@ -62,9 +66,7 @@ export default function CurrentPlanBanner({
           {buttonContent}
         </Button>
       </div>
-      <p className=" text-sm text-slate-500 dark:text-slate-400 mt-3">
-        サブスクリプション契約は有効です。
-      </p>
+      <p className=" text-sm text-slate-500 dark:text-slate-400 mt-3">{t('subscriptionActive')}</p>
     </div>
   )
 }

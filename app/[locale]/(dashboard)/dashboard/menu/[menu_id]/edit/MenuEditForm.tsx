@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation'
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -186,7 +186,7 @@ export default function MenuEditForm() {
   const params = useParams()
   const menuId = params.menu_id as Id<'menu'>
   const t = useTranslations('menus')
-  const { orgId, tenantId, subscriptionStatus } = useTenantAndOrganization()
+  const { orgId, tenantId, stripeConnectStatus } = useTenantAndOrganization()
   const menuData = useQuery(api.menu.query.findById, { menu_id: menuId })
 
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false)
@@ -272,15 +272,15 @@ export default function MenuEditForm() {
         try {
           // Promise.allを使って複数の画像を並列アップロード
           const uploadPromises = newFiles.map(async (file) => {
-            const base64Data = await fileToBase64(file);
+            const base64Data = await fileToBase64(file)
             return uploadCompressedImage({
               base64Data,
               fileName: file.name,
               directory: 'menu',
               orgId,
               aspectType: 'mobile',
-              quality: 'medium'
-            });
+              quality: 'medium',
+            })
           })
           console.log('アップロード開始 - ファイル数:', newFiles.length)
 
@@ -375,7 +375,8 @@ export default function MenuEditForm() {
               )
             } else {
               toast.info(
-                t('messages.deletingImages', { count: finalImagesToDelete.length }) + ' (レスポンスボディなし)'
+                t('messages.deletingImages', { count: finalImagesToDelete.length }) +
+                  ' (レスポンスボディなし)'
               )
             }
           }
@@ -383,7 +384,9 @@ export default function MenuEditForm() {
           // catchの型をanyに
           console.error('ストレージからの画像削除中にクライアントサイドエラー:', err)
           toast.error(
-            t('messages.deleteImageError', { error: err instanceof Error ? err.message : 'Unknown error' })
+            t('messages.deleteImageError', {
+              error: err instanceof Error ? err.message : 'Unknown error',
+            })
           )
         }
       }
@@ -611,14 +614,13 @@ export default function MenuEditForm() {
                   <SelectContent>
                     {getMinuteMultiples(5, 360).map((time) => (
                       <SelectItem key={time} value={time.toString()}>
-                        {time}{t('form.minutes')}
+                        {time}
+                        {t('form.minutes')}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-muted-foreground">
-                  {t('form.durationHelp')}
-                </span>
+                <span className="text-xs text-muted-foreground">{t('form.durationHelp')}</span>
                 {errors.duration_min && <ErrorMessage message={errors.duration_min.message} />}
               </div>
             </div>
@@ -629,9 +631,7 @@ export default function MenuEditForm() {
                   <Repeat size={16} className="text-muted-foreground" />
                   {t('form.target')}
                 </Label>
-                <span className="text-xs text-muted-foreground">
-                  {t('form.targetHelp')}
-                </span>
+                <span className="text-xs text-muted-foreground">{t('form.targetHelp')}</span>
                 <Select
                   value={renderTargetType}
                   onValueChange={(value: ActiveCustomerType) => {
@@ -657,9 +657,7 @@ export default function MenuEditForm() {
                   <Users size={16} className="text-muted-foreground" />
                   {t('form.gender')}
                 </Label>
-                <span className="text-xs text-muted-foreground">
-                  {t('form.genderHelp')}
-                </span>
+                <span className="text-xs text-muted-foreground">{t('form.genderHelp')}</span>
                 <Select
                   value={renderTargetGender}
                   onValueChange={(value: Gender) => {
@@ -703,7 +701,7 @@ export default function MenuEditForm() {
                 <CreditCard size={16} className="text-muted-foreground" />
                 {t('form.paymentMethod')}
               </Label>
-              {subscriptionStatus === 'active' || subscriptionStatus === 'trialing' ? (
+              {stripeConnectStatus === 'active' ? (
                 <ToggleGroup
                   type="single"
                   className="w-full flex flex-wrap justify-start items-center gap-6"
@@ -779,9 +777,7 @@ export default function MenuEditForm() {
         <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-4">
           <div>
             <p className="text-sm font-bold">{t('form.publish')}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t('form.publishHelp')}
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{t('form.publishHelp')}</p>
           </div>
           <Switch
             id="isActive"

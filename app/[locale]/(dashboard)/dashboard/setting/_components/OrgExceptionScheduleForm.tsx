@@ -22,6 +22,7 @@ import { Loader2 } from 'lucide-react'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 // カスタムカレンダーコンポーネントをインポート
 import CalendarMultiSelect from '@/components/common/CalendarMultiSelect'
+import { useTranslations } from 'next-intl'
 
 // 日付をフォーマットするユーティリティ関数
 const formatDate = (date: Date): string => {
@@ -36,6 +37,7 @@ export default function OrgExceptionScheduleForm() {
   // 変更検知用の初期日付配列とダーティフラグ
   const [initialDates, setInitialDates] = useState<string[] | null>(null)
   const [isDirty, setIsDirty] = useState(false)
+  const t = useTranslations('settings.exceptionSchedule')
 
   // 初期データロード完了フラグ
   const initialDataLoaded = useRef<boolean>(false)
@@ -104,13 +106,16 @@ export default function OrgExceptionScheduleForm() {
   }, [selectedDates, initialDates])
 
   // 日付選択時の処理 - コールバック関数化
-  const handleDatesChange = useCallback((dates: Date[]) => {
-    if (dates.length > 30) {
-      toast.error('休業日は最大30日までしか選択できません')
-      return
-    }
-    setSelectedDates(dates)
-  }, [])
+  const handleDatesChange = useCallback(
+    (dates: Date[]) => {
+      if (dates.length > 30) {
+        toast.error(t('maxDaysError'))
+        return
+      }
+      setSelectedDates(dates)
+    },
+    [t]
+  )
 
   // 選択された日付を保存
   const handleSave = useCallback(
@@ -176,12 +181,15 @@ export default function OrgExceptionScheduleForm() {
           }
 
           // 成功通知
-          toast.success('休業日を保存しました', {
-            description: `${datesToAdd.length}日追加・${idsToDelete.length}日削除しました`,
+          toast.success(t('saveSuccess'), {
+            description: t('saveDescription', {
+              added: datesToAdd.length,
+              deleted: idsToDelete.length,
+            }),
             duration: 3000,
           })
         } catch (error: unknown) {
-          console.error('休業日の保存に失敗しました', error)
+          console.error(t('saveError'), error)
           showErrorToast(error)
         }
       }
@@ -199,6 +207,7 @@ export default function OrgExceptionScheduleForm() {
       orgId,
       today,
       showErrorToast,
+      t,
     ]
   )
 
@@ -213,12 +222,10 @@ export default function OrgExceptionScheduleForm() {
     <div className="w-full px-2 sm:px-4 md:px-0">
       <div className="mb-4">
         <div className="flex items-center gap-2">
-          <h4 className="text-2xl font-bold text-primary">休業日設定</h4>
+          <h4 className="text-2xl font-bold text-primary">{t('title')}</h4>
         </div>
         <div>
-          <p className="text-xs sm:text-sm mt-1 text-muted-foreground">
-            カレンダーから予約を受け付けない日を選択してください。選択された日は休業日として設定されます。
-          </p>
+          <p className="text-xs sm:text-sm mt-1 text-muted-foreground">{t('description')}</p>
         </div>
       </div>
 
@@ -227,7 +234,7 @@ export default function OrgExceptionScheduleForm() {
         <div className="w-full">
           <div className="bg-background rounded-lg border shadow-sm p-3 sm:p-4">
             <h3 className="text-sm sm:text-base font-semibold flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4 text-primary">
-              休業日を選択
+              {t('selectHolidays')}
             </h3>
 
             {isLoading ? (
@@ -262,27 +269,21 @@ export default function OrgExceptionScheduleForm() {
           {isSaving ? (
             <>
               <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5 animate-spin" />
-              保存中...
+              {t('saving')}
             </>
           ) : (
             <>
               <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
-              休業日を保存
+              {t('saveButton')}
             </>
           )}
         </Button>
       </div>
       <Accordion type="multiple">
         <AccordionItem value="business-days">
-          <AccordionTrigger>休業日設定について</AccordionTrigger>
+          <AccordionTrigger>{t('accordion.title')}</AccordionTrigger>
           <AccordionContent className="text-sm text-muted-foreground space-y-4">
-            <p>
-              休業日に設定した日は、カレンダーに表示されず予約を受け付けなくなります。
-              定休日とは別に、臨時休業やイベント日、長期休暇などを設定でき、臨時の休業日を設定できます。
-              <span className="font-bold">{formatDate(today)}</span>以降の日付が選択可能です。
-              <br />
-              {/* 休業日は期日を過ぎると自動的に削除されます。 */}
-            </p>
+            <p>{t('accordion.content', { date: formatDate(today) })}</p>
           </AccordionContent>
         </AccordionItem>
       </Accordion>

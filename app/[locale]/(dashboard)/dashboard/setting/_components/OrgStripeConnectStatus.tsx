@@ -20,19 +20,7 @@ import {
 } from '@/components/ui/accordion'
 import { ExternalLink } from 'lucide-react'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-
-// ステータスの日本語表記
-const statusNameMap: Record<string, string> = {
-  not_connected: '未連携',
-  pending: '連携中',
-  incomplete: '登録未完了',
-  restricted: '一部制限あり',
-  active: '有効',
-  payouts_disabled: '振込停止中',
-  external_account_removed: '口座削除',
-  bank_account_missing: '口座未登録',
-  deauthorized: '連携解除済み',
-}
+import { useTranslations } from 'next-intl'
 
 const statusColorMap: Record<string, string> = {
   not_connected: 'border border-palette-1-foreground text-palette-1-foreground bg-palette-1',
@@ -47,41 +35,12 @@ const statusColorMap: Record<string, string> = {
   deauthorized: 'border border-palette-1-foreground text-palette-1-foreground bg-palette-1',
 }
 
-// ステータスの説明
-const statusDescriptionMap: Record<string, string> = {
-  not_connected:
-    'Stripeアカウントがまだ連携されていません。右上の「Stripeと連携する」ボタンからビジネス情報登録を開始してください。',
-
-  pending:
-    'Stripeアカウントの設定フォームがまだ提出されていません。「Stripeで設定を続ける」から基本情報の入力・提出を完了してください。',
-
-  incomplete:
-    'Stripeから追加書類または情報の提出が求められています。期限内に不足項目を提出してください。未対応の場合は決済・振込が制限される可能性があります。',
-
-  restricted:
-    '過去に提出が必要とされた書類が未提出のため、一部機能（振込・入金など）が制限されています。Stripeダッシュボードで案内されている書類を提出してください。',
-
-  payouts_disabled:
-    'カード決済機能は有効ですが、売上の振込（入金）が一時的に停止されています。銀行口座の登録状況や追加提出書類の有無をご確認ください。',
-
-  external_account_removed:
-    '登録済みの銀行口座が削除されたため、振込ができません。Stripeダッシュボードで新しい銀行口座を登録してください。',
-
-  bank_account_missing:
-    '銀行口座情報が未登録です。売上金を受け取るために、Stripeダッシュボードから銀行口座を登録してください。',
-
-  active:
-    'Stripeアカウントの審査と全ての設定が完了し、決済・振込機能が有効になっています。ダッシュボードで売上・入金状況を確認できます。',
-
-  deauthorized:
-    'Stripeとの連携が解除されています。再度連携するには「Stripeと連携する」ボタンから設定をやり直してください。',
-}
-
 export default function StripeConnectStatus() {
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const t = useTranslations('settings.stripeConnect')
   // Stripe Connect アカウント情報を取得
   const connectAccount = useQuery(
     api.organization.query.getConnectAccountDetails,
@@ -107,7 +66,7 @@ export default function StripeConnectStatus() {
       const responseData = await response.json()
 
       if (!response.ok) {
-        const errorMessage = responseData.error || `エラーが発生しました (${response.status})`
+        const errorMessage = responseData.error || t('messages.error', { status: response.status })
         toast.error(errorMessage)
         return { error: errorMessage }
       }
@@ -127,15 +86,15 @@ export default function StripeConnectStatus() {
     const refresh = query.get('refresh')
 
     if (success === 'true') {
-      toast.success('Stripeアカウントの連携が完了しました')
+      toast.success(t('messages.connectSuccess'))
       // クエリパラメータを削除
       window.history.replaceState({}, document.title, window.location.pathname)
     } else if (refresh === 'true') {
-      toast.info('Stripeアカウントの設定を続けてください')
+      toast.info(t('messages.continueSetup'))
       // クエリパラメータを削除
       window.history.replaceState({}, document.title, window.location.pathname)
     }
-  }, [])
+  }, [t])
 
   // Stripe Connectアカウントを作成する処理
   const handleConnectStripe = async () => {
@@ -198,10 +157,10 @@ export default function StripeConnectStatus() {
     <div>
       <div className="mb-4">
         <div className="flex items-center gap-2">
-          <h4 className="text-2xl font-bold mb-1">Stripe決済連携</h4>
+          <h4 className="text-2xl font-bold mb-1">{t('title')}</h4>
         </div>
         <p className="text-sm text-muted-foreground">
-          Stripeアカウントを連携して、お客様からのクレジットカード決済を受け付けることができます。
+          {t('description')}
         </p>
       </div>
 
@@ -211,16 +170,16 @@ export default function StripeConnectStatus() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                リダイレクト中...
+                {t('redirecting')}
               </>
             ) : (
               <>
                 <ExternalLink className="mr-1 h-4 w-4" />
                 {status === 'incomplete' || status === 'pending'
-                  ? '設定を完了する'
+                  ? t('completeSetting')
                   : status === 'restricted'
-                    ? '制限を解除する'
-                    : 'Stripeダッシュボードを開く'}
+                    ? t('liftRestrictions')
+                    : t('viewDashboard')}
               </>
             )}
           </Button>
@@ -232,10 +191,10 @@ export default function StripeConnectStatus() {
           <span
             className={`text-xs tracking-widest font-bold px-3 py-1 rounded-md ${statusColorMap[status]}`}
           >
-            {statusNameMap[status]}
+            {t(`status.${status}`)}
           </span>
         </AlertTitle>
-        <AlertDescription className="mt-1 text-sm">{statusDescriptionMap[status]}</AlertDescription>
+        <AlertDescription className="mt-1 text-sm">{t(`statusDescription.${status}`)}</AlertDescription>
       </Alert>
 
       {(status === 'pending' || status === 'incomplete' || status === 'restricted') && (
@@ -248,10 +207,10 @@ export default function StripeConnectStatus() {
           <h3 className="mb-2 font-bold flex items-center">
             <RefreshCw className="mr-2 h-4 w-4 text-active" />
             {status === 'pending'
-              ? 'Stripeアカウント設定の完了が必要です'
+              ? t('setupRequired.title')
               : status === 'incomplete'
-                ? '追加情報の入力が必要です'
-                : '引き出し機能の制限があります'}
+                ? t('setupRequired.incompleteTitle')
+                : t('setupRequired.restrictedTitle')}
           </h3>
 
           {status === 'pending' && (
@@ -261,9 +220,9 @@ export default function StripeConnectStatus() {
                   1
                 </div>
                 <div>
-                  <p className="font-medium">基本情報の入力</p>
+                  <p className="font-medium">{t('setupRequired.step1.title')}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    ビジネス名、住所、事業形態などの基本情報を入力してください
+                    {t('setupRequired.step1.description')}
                   </p>
                 </div>
               </div>
@@ -272,9 +231,9 @@ export default function StripeConnectStatus() {
                   2
                 </div>
                 <div>
-                  <p className="font-medium">銀行口座の登録</p>
+                  <p className="font-medium">{t('setupRequired.step2.title')}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    売上金の振込先となる銀行口座情報を登録してください
+                    {t('setupRequired.step2.description')}
                   </p>
                 </div>
               </div>
@@ -283,9 +242,9 @@ export default function StripeConnectStatus() {
                   3
                 </div>
                 <div>
-                  <p className="font-medium">本人確認の完了</p>
+                  <p className="font-medium">{t('setupRequired.step3.title')}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    本人確認書類をアップロードして、身元確認を完了してください
+                    {t('setupRequired.step3.description')}
                   </p>
                 </div>
               </div>
@@ -295,11 +254,11 @@ export default function StripeConnectStatus() {
           {status === 'incomplete' && (
             <div className="space-y-3 mt-3 leading-6">
               <p className="text-sm text-muted-foreground">
-                以下の情報が不足しています。「設定を完了する」ボタンをクリックして、残りの手続きを完了してください。
+                {t('setupRequired.incompleteMessage')}
               </p>
               <ul className="ml-6 list-disc space-y-1 text-sm">
-                <li>不足している情報を入力</li>
-                <li>追加の確認書類を提出</li>
+                <li>{t('setupRequired.incompleteItems.item1')}</li>
+                <li>{t('setupRequired.incompleteItems.item2')}</li>
               </ul>
             </div>
           )}
@@ -307,18 +266,18 @@ export default function StripeConnectStatus() {
           {status === 'restricted' && (
             <div className="space-y-3 mt-3">
               <p className="text-sm text-muted-foreground">
-                決済処理は可能ですが、引き出し機能に制限があります。
+                {t('setupRequired.restrictedMessage')}
               </p>
               <ul className="ml-6 list-disc space-y-1 text-sm">
-                <li>追加の事業情報を提供</li>
-                <li>銀行口座情報の確認</li>
+                <li>{t('setupRequired.restrictedItems.item1')}</li>
+                <li>{t('setupRequired.restrictedItems.item2')}</li>
               </ul>
             </div>
           )}
 
           <div className="mt-4">
             <Button size="sm" className="text-xs" onClick={handleViewDashboard}>
-              Stripeで設定を続ける
+              {t('setupRequired.continueButton')}
               <ChevronRight className="mr-1 h-3 w-3" />
             </Button>
           </div>
@@ -329,10 +288,10 @@ export default function StripeConnectStatus() {
         <div className="w-full flex flex-col-reverse sm:flex-row justify-between gap-3">
           <div className="text-xs text-muted-foreground">
             <p className="text-sm font-semibold mb-1 text-muted-foreground">
-              決済手数料: 4% + 40円/件
+              {t('fee.title')}
             </p>
             <div className="flex items-center gap-2 mt-1">
-              <p className="text-xs">※ 売り上げは毎月25日に設定した銀行口座へ振込まれます。</p>
+              <p className="text-xs">{t('fee.description')}</p>
             </div>
 
             {(status === 'incomplete' || status === 'pending') && (
@@ -340,7 +299,7 @@ export default function StripeConnectStatus() {
                 onClick={() => {
                   if (
                     window.confirm(
-                      '現在の連携を解除して、新しくアカウントを作成しますか？\n※以前の設定内容は失われます'
+                      t('reconnectConfirm')
                     )
                   ) {
                     handleConnectStripe()
@@ -348,7 +307,7 @@ export default function StripeConnectStatus() {
                 }}
                 className="block mt-2 text-xs text-link-foreground underline"
               >
-                アカウントを再作成する
+                {t('reconnect')}
               </button>
             )}
           </div>
@@ -364,11 +323,11 @@ export default function StripeConnectStatus() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                  処理中...
+                  {t('processing')}
                 </>
               ) : (
                 <>
-                  Stripeと連携する <ArrowRight className="ml-1 h-4 w-4" />
+                  {t('connectButton')} <ArrowRight className="ml-1 h-4 w-4" />
                 </>
               )}
             </Button>
@@ -378,7 +337,7 @@ export default function StripeConnectStatus() {
       <Accordion type="multiple" className="mt-8 space-y-2 tracking-normal">
         {/* What is Stripe */}
         <AccordionItem value="stripe-overview">
-          <AccordionTrigger>Stripe とは？</AccordionTrigger>
+          <AccordionTrigger>{t('accordion.whatIsStripe.title')}</AccordionTrigger>
           <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <p>
               <strong>Stripe（ストライプ）</strong> は、米国発のオンライン決済サービスで、 世界 120
@@ -406,7 +365,7 @@ export default function StripeConnectStatus() {
 
         {/* Requirements & Flow */}
         <AccordionItem value="stripe-signup">
-          <AccordionTrigger>登録に必要なもの・手続きの流れ</AccordionTrigger>
+          <AccordionTrigger>{t('accordion.requirements.title')}</AccordionTrigger>
           <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <p className="font-medium">登録に必要なもの</p>
             <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
@@ -439,7 +398,7 @@ export default function StripeConnectStatus() {
 
         {/* Safety & Security */}
         <AccordionItem value="stripe-safety">
-          <AccordionTrigger>安全性・セキュリティ</AccordionTrigger>
+          <AccordionTrigger>{t('accordion.security.title')}</AccordionTrigger>
           <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
@@ -462,7 +421,7 @@ export default function StripeConnectStatus() {
 
         {/* Liability & Risk */}
         <AccordionItem value="stripe-liability">
-          <AccordionTrigger>責任分担とリスクのない理由</AccordionTrigger>
+          <AccordionTrigger>{t('accordion.liability.title')}</AccordionTrigger>
           <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <p>
               Bocker とサロン様は <strong>決済代行業務</strong> を Stripe に委託しています。
@@ -492,7 +451,7 @@ export default function StripeConnectStatus() {
 
         {/* Payout flow */}
         <AccordionItem value="stripe-payout">
-          <AccordionTrigger>売上の入金サイクル</AccordionTrigger>
+          <AccordionTrigger>{t('accordion.payoutFlow.title')}</AccordionTrigger>
           <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>お客様が Bocker でカード決済</li>
@@ -514,7 +473,7 @@ export default function StripeConnectStatus() {
 
         {/* Fees */}
         <AccordionItem value="stripe-fee">
-          <AccordionTrigger>手数料について</AccordionTrigger>
+          <AccordionTrigger>{t('accordion.fees.title')}</AccordionTrigger>
           <AccordionContent className="space-y-3 text-sm text-muted-foreground">
             <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-md">
               <li>
@@ -539,7 +498,7 @@ export default function StripeConnectStatus() {
 
         {/* FAQ */}
         <AccordionItem value="stripe-faq">
-          <AccordionTrigger>よくある質問</AccordionTrigger>
+          <AccordionTrigger>{t('accordion.faq.title')}</AccordionTrigger>
           <AccordionContent className="space-y-4 text-sm text-muted-foreground">
             <div>
               <p className="font-semibold">カード決済が失敗した場合は？</p>

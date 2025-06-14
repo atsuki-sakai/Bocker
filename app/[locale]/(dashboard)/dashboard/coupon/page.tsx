@@ -2,21 +2,25 @@
 
 import { DashboardSection, withManagerAccess } from '@/components/common';
 import CouponList from './CouponList';
+import { useTranslations } from 'next-intl'
 
 function CouponPage() {
+  const t = useTranslations('coupon')
+  const tCommon = useTranslations('common')
+
   return (
     <DashboardSection
-      title="クーポン一覧"
+      title={t('list')}
       backLink="/dashboard"
-      backLinkTitle="ダッシュボードへ戻る"
+      backLinkTitle={tCommon('backToDashboard')}
       infoBtn={{
-        text: 'クーポンを作成',
+        text: t('createButton'),
         link: '/dashboard/coupon/add',
       }}
     >
       <CouponList />
     </DashboardSection>
-  );
+  )
 }
 
 export default withManagerAccess(CouponPage);

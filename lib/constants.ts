@@ -139,17 +139,17 @@ export const SUBSCRIPTION_PLANS = {
     id: 'lite',
     name: 'Lite', // HTMLの表示は'LITE'ですが、例の形式に合わせて'Lite'とします
     features: [
-      '予約カレンダー基本機能',
-      '基本的なお客様情報管理',
-      '予約管理 (予約カレンダー, スタッフスケジュール設定, 予約確認・変更・キャンセル, 24/365オンライン予約)',
-      '顧客管理（基本情報, 予約・購入履歴）',
-      'スタッフ管理 (アカウント作成, 基本的な予約・シフト管理) ※最大3名まで',
-      'メニュー設定 (サービス登録, 料金・所要時間設定) ※最大10件まで',
-      '顧客カルテ機能 (施術内容の詳細記録, 画像添付機能, 薬剤使用履歴管理, カルテテンプレート機能, 施術者引継ぎ機能)　※写真添付無し',
-      'オプション販売機能 (オプションの追加, オプションの選択) ※最大5件まで',
-      'ポイント・クーポン機能 (カスタマイズ可能なポイント付与システム, クーポン管理)',
-      '自動リマインド・通知 (メール・LINE)',
-      'スタッフ数(3名)、メニュー数(10件)、オプション数(5件)、予約数(200件/月)',
+      'features.lite.1',
+      'features.lite.2',
+      'features.lite.3',
+      'features.lite.4',
+      'features.lite.5',
+      'features.lite.6',
+      'features.lite.7',
+      'features.lite.8',
+      'features.lite.9',
+      'features.lite.10',
+      'features.lite.11',
     ],
     monthly: {
       priceId: process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID || '',
@@ -164,12 +164,7 @@ export const SUBSCRIPTION_PLANS = {
   PRO: {
     id: 'pro',
     name: 'Pro',
-    features: [
-      'LITEプランの全機能',
-      '予約時に理想の髪型の画像(1枚)を添付できる様になります。',
-      'カルテ管理 (最大4枚の画像添付)',
-      'スタッフ数(10名)、メニュー数(20件)、オプション数(10件)、予約数(500件/月)',
-    ],
+    features: ['features.pro.1', 'features.pro.2', 'features.pro.3', 'features.pro.4'],
     monthly: {
       priceId: process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID || '',
       price: PLAN_MONTHLY_PRICES.PRO,

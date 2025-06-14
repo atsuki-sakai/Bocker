@@ -7,7 +7,7 @@ import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
 import { api } from '@/convex/_generated/api'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRef, useState, useEffect, useMemo } from 'react'
 import {

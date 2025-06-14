@@ -43,34 +43,34 @@ useEffect(() => {
 
 ### 2-1. DashBoard・Componentsの多言語化
 **タスク管理（ここで完了したページを　x でマークしてください）**:
-- [x] NAV_ITEMSの多言語化å
-- [x] サイドバーメニュー項目の翻訳
-- [x] サブスクリプション関連メッセージの翻訳
-- [x] dashboard/coupon/add
-- [x] dashboard/coupon/edit
-- [x] dashboard/coupon/CouponList
-- [x] dashboard/menu/add
-- [x] dashboard/menu/[menu_id]/edit
-- [x] dashboard/menu/[menu_id]/MenuDetailContent
-- [x] dashboard/menu/MenuList
-- [x] dashboard/option/add
-- [x] dashboard/option/edit
-- [x] dashboard/option/OptionList
-- [x] dashboard/staff/add
-- [x] dashboard/staff/[staff_id]/edit
-- [x] dashboard/staff/[staff_id]/StaffDetailContent
-- [x] dashboard/staff/StaffList
-- [x] dashboard/customer/add
-- [x] dashboard/customer/[customer_id]/edit/CustomerEditForm.tsx
-- [x] dashboard/customer/[customer_id]/page.tsx (顧客詳細ページ)
-- [x] dashboard/point
-- [x] dashboard/point/pointTabs
-- [x] dashboard/reservation/[reservation_id]/page
-- [x] dashboard/reservation/add
-- [x] dashboard/reservation/ReservationForm
-- [x] dashboard/staff-schedule
-- [x] dashboard/subscription/*以下全てのページ
-- [x] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+- [ ] NAV_ITEMSの多言語化å
+- [ ] サイドバーメニュー項目の翻訳
+- [ ] サブスクリプション関連メッセージの翻訳
+- [ ] dashboard/coupon/add
+- [ ] dashboard/coupon/edit
+- [ ] dashboard/coupon/CouponList
+- [ ] dashboard/menu/add
+- [ ] dashboard/menu/[menu_id]/edit
+- [ ] dashboard/menu/[menu_id]/MenuDetailContent
+- [ ] dashboard/menu/MenuList
+- [ ] dashboard/option/add
+- [ ] dashboard/option/edit
+- [ ] dashboard/option/OptionList
+- [ ] dashboard/staff/add
+- [ ] dashboard/staff/[staff_id]/edit
+- [ ] dashboard/staff/[staff_id]/StaffDetailContent
+- [ ] dashboard/staff/StaffList
+- [ ] dashboard/customer/add
+- [ ] dashboard/customer/[customer_id]/edit/CustomerEditForm.tsx 
+- [ ] dashboard/customer/[customer_id]/page.tsx  (顧客詳細ページ)
+- [ ] dashboard/point
+- [ ] dashboard/point/pointTabs
+- [ ] dashboard/reservation/[reservation_id]/page
+- [ ] dashboard/reservation/add
+- [ ] dashboard/reservation/ReservationForm
+- [ ] dashboard/staff-schedule
+- [ ] dashboard/subscription/*以下全てのページ
+- [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
 
 
 ### 2-2. Componentsの多言語化
@@ -398,8 +398,9 @@ import { useLocale } from 'next-intl'
 export function Component() {
   const locale = useLocale()
   
+  
   return (
-    <Link href={`/${locale}/dashboard`}>
+    <Link href={`/dashboard`}> // Localeは自動で付与
       {t('navigation.dashboard')}
     </Link>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
 import { api } from '@/convex/_generated/api'
 import { usePaginatedQuery, useMutation } from 'convex/react'
@@ -112,7 +112,7 @@ export default function CouponList() {
                           className={`py-4 pr-3 pl-4  text-sm  font-medium whitespace-nowrap text-muted-foreground sm:pl-6 `}
                         >
                           <span
-                            className={`font-bold text-xs ${coupon.is_active ? 'bg-active text-background' : 'bg-muted-foreground text-background'} px-2 py-1 rounded-md`}
+                            className={`font-bold text-xs ${coupon.is_active ? 'bg-accent-2-foreground text-accent-2' : 'bg-muted-foreground text-background'} px-2 py-1 rounded-md`}
                           >
                             {coupon.is_active ? t('active') : t('inactive')}
                           </span>
@@ -129,7 +129,7 @@ export default function CouponList() {
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                           {coupon.discount_type === 'percentage'
                             ? `${coupon.percentage_discount_value}%`
-                            : `${coupon.fixed_discount_value}円`}
+                            : `${coupon.fixed_discount_value}${tCommon('currencySymbol')}`}
                         </td>
 
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">

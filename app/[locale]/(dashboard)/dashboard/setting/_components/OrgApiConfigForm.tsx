@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import { useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Loading, ZodTextField } from '@/components/common'
@@ -211,7 +211,7 @@ const ApiSettingsCard = () => {
 
               <div className="flex items-center w-full relative">
                 <ZodTextField
-                  label="LINE チャンネルID"
+                  label={t('fields.lineChannelId')}
                   icon={<Key className="h-4 w-4 text-primary" />}
                   errors={errors}
                   register={register}
@@ -270,12 +270,12 @@ const ApiSettingsCard = () => {
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  保存中...
+                  {t('messages.saving')}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  API設定を保存
+                  {t('messages.save')}
                 </>
               )}
             </Button>

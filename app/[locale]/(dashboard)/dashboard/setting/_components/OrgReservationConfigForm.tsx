@@ -29,6 +29,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 const orgReservationConfigFormSchema = z.object({
   tenant_id: z.string(),
@@ -66,6 +67,7 @@ const defaultReservationConfig = {
 
 export default function OrgReservationConfigForm() {
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
+  const t = useTranslations('settings.reservationConfig')
   const { showErrorToast } = useErrorHandler()
   const reservationConfig = useQuery(
     api.organization.reservation_config.query.findByTenantAndOrg,
@@ -188,7 +190,7 @@ export default function OrgReservationConfigForm() {
           today_first_later_minutes: todayFirstLaterMinutes,
         })
 
-        toast.success('スケジュール設定を保存しました')
+        toast.success(t('saved'))
 
         // フォームのdirty状態をリセット
         reset(
@@ -205,7 +207,7 @@ export default function OrgReservationConfigForm() {
         showErrorToast(error)
       }
     },
-    [upsertReservationConfig, orgId, tenantId, reset, showErrorToast]
+    [upsertReservationConfig, orgId, tenantId, reset, showErrorToast, t]
   )
 
   if (reservationConfig === undefined) {
@@ -218,11 +220,9 @@ export default function OrgReservationConfigForm() {
   return (
     <div>
       <div className="flex items-center gap-2">
-        <h4 className="text-2xl font-bold">予約受付設定</h4>
+        <h4 className="text-2xl font-bold">{t('title')}</h4>
       </div>
-      <p className="text-sm text-muted-foreground mt-1">
-        予約受付設定は、サロンの予約の受け付け時間の設定を変更する編集できます。
-      </p>
+      <p className="text-sm text-muted-foreground mt-1">{t('description')}</p>
       <form
         className="pt-6"
         onSubmit={handleSubmit(onSubmit)}
@@ -242,7 +242,7 @@ export default function OrgReservationConfigForm() {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="予約受付最大日数を選択" />
+                  <SelectValue placeholder={t('reservationLimitDays')} />
                 </SelectTrigger>
                 <SelectContent>
                   {RESERVATION_LIMIT_DAYS.map((value) => (
@@ -252,9 +252,7 @@ export default function OrgReservationConfigForm() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                何日先まで予約を受付可能にするかの設定
-              </p>
+              <p className="text-xs text-muted-foreground">{t('reservationLimitDaysHelp')}</p>
               {errors.reservation_limit_days && (
                 <p className="text-xs text-destructive mt-1">
                   {errors.reservation_limit_days.message}
@@ -269,7 +267,7 @@ export default function OrgReservationConfigForm() {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="キャンセル可能日数を選択" />
+                  <SelectValue placeholder={t('cancelDays')} />
                 </SelectTrigger>
                 <SelectContent>
                   {RESERVATION_CANCEL_LIMIT_DAYS.map((value) => (
@@ -279,9 +277,7 @@ export default function OrgReservationConfigForm() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                予約日の何日前までキャンセル可能かの設定
-              </p>
+              <p className="text-xs text-muted-foreground">{t('cancelDaysHelp')}</p>
               {errors.available_cancel_days && (
                 <p className="text-xs text-destructive mt-1">
                   {errors.available_cancel_days.message}
@@ -303,7 +299,7 @@ export default function OrgReservationConfigForm() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="予約間隔を選択" />
+                  <SelectValue placeholder={t('reservationInterval')} />
                 </SelectTrigger>
                 <SelectContent>
                   {RESERVATION_INTERVAL_MINUTES_VALUES.map((value) => (
@@ -313,7 +309,7 @@ export default function OrgReservationConfigForm() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">予約枠を生成する間隔を設定</p>
+              <p className="text-xs text-muted-foreground">{t('reservationIntervalHelp')}</p>
               {errors.reservation_interval_minutes && (
                 <p className="text-xs text-destructive mt-1">
                   {errors.reservation_interval_minutes.message}
@@ -331,7 +327,7 @@ export default function OrgReservationConfigForm() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="予約可能席数を選択" />
+                  <SelectValue placeholder={t('availableSeats')} />
                 </SelectTrigger>
                 <SelectContent>
                   {Array.from({ length: 20 }, (_, i) => (
@@ -341,7 +337,7 @@ export default function OrgReservationConfigForm() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">同一時間帯に予約可能な席数を設定</p>
+              <p className="text-xs text-muted-foreground">{t('availableSeatsHelp')}</p>
               {errors.available_sheet && (
                 <p className="text-xs text-destructive mt-1">{errors.available_sheet.message}</p>
               )}
@@ -359,7 +355,7 @@ export default function OrgReservationConfigForm() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="最短の予約開始時間を選択" />
+                  <SelectValue placeholder={t('shortestReservationTime')} />
                 </SelectTrigger>
                 <SelectContent>
                   {RESERVATION_INTERVAL_MINUTES_VALUES.map((value) => (
@@ -369,9 +365,7 @@ export default function OrgReservationConfigForm() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                当日予約でかつ現在空き枠がある場合に最短で何分後から予約を受け付けるかを設定
-              </p>
+              <p className="text-xs text-muted-foreground">{t('shortestReservationTimeHelp')}</p>
               {errors.today_first_later_minutes && (
                 <p className="text-xs text-destructive mt-1">
                   {errors.today_first_later_minutes.message}
@@ -386,12 +380,12 @@ export default function OrgReservationConfigForm() {
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                保存中...
+                {t('saving')}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                予約受付設定を保存
+                {t('save')}
               </>
             )}
           </Button>

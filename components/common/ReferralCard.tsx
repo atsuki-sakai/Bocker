@@ -119,7 +119,7 @@ export default function ReferralCard() {
                               onClick={copyToClipboard}
                             >
                               {copied ? (
-                                <Check size={16} className="text-active" />
+                                <Check size={16} className="text-accent-2" />
                               ) : (
                                 <Copy size={16} />
                               )}
@@ -143,7 +143,7 @@ export default function ReferralCard() {
                     <p className="text-sm font-semibold text-primary">{t('referralBenefit')}</p>
                     <p className="text-sm font-bold text-primary">
                       {t('maxDiscount')}
-                      <span className="text-active text-xl px-1">
+                      <span className="text-accent-2 text-xl px-1">
                         {(MAX_REFERRAL_COUNT * BASE_REFERRAL_DISCOUNT_AMOUNT).toLocaleString()}
                       </span>
                       {t('receiveDiscount')}
@@ -151,10 +151,12 @@ export default function ReferralCard() {
                   </div>
                   <p className="text-xs tracking-wide text-primary">
                     {t('referralExplanation')}
-                    <span className="text-active text-xl px-1">
+                    <span className="text-accent-2 text-xl px-1">
                       {BASE_REFERRAL_DISCOUNT_AMOUNT.toLocaleString()}
                     </span>
-                    {t('discountApplied')}{MAX_REFERRAL_COUNT}{t('timesMax')} {t('checkStatusAt')}
+                    {t('discountApplied')}
+                    {MAX_REFERRAL_COUNT}
+                    {t('timesMax')} {t('checkStatusAt')}
                     <Link
                       className="text-link-foreground font-medium underline"
                       href="/dashboard/subscription"
@@ -165,11 +167,12 @@ export default function ReferralCard() {
                   </p>
                   <p className="text-xs tracking-wide  text-primary">
                     {t('bothPartyBenefit')}
-                    <span className="text-active text-xl px-1">
+                    <span className="text-accent-2 text-xl px-1">
                       {BASE_REFERRAL_DISCOUNT_AMOUNT.toLocaleString()}
                     </span>
                     {t('oneTimeDiscount')}
-                    {MAX_REFERRAL_COUNT}{t('carryOverNext')}
+                    {MAX_REFERRAL_COUNT}
+                    {t('carryOverNext')}
                   </p>
                   <p className="text-xs tracking-wide text-primary mt-2">
                     {t('discountApplyDate')}
@@ -180,7 +183,7 @@ export default function ReferralCard() {
                   <div className="flex justify-between items-center">
                     <p className="text-xs font-bold tracking-tighter text-primary">
                       {t('earnedDiscount')}
-                      <span className="text-active text-2xl px-1">
+                      <span className="text-accent-2 text-2xl px-1">
                         {(
                           referral.total_referral_count! * BASE_REFERRAL_DISCOUNT_AMOUNT
                         ).toLocaleString()}

@@ -2,15 +2,19 @@
 
 import { DashboardSection, withManagerAccess } from '@/components/common'
 import CustomerList from './CustomerList'
+import { useTranslations } from 'next-intl'
 
 function CustomerPage() {
+  const t = useTranslations('customers')
+  const tCommon = useTranslations('common')
+  
   return (
     <DashboardSection
-      title="顧客一覧"
+      title={t('list')}
       backLink="/dashboard"
-      backLinkTitle="ダッシュボードに戻る"
+      backLinkTitle={tCommon('backToDashboard')}
       infoBtn={{
-        text: '顧客を追加',
+        text: t('addCustomer'),
         link: '/dashboard/customer/add',
       }}
     >

@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { usePaginatedQuery, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
 import { Loading } from '@/components/common'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { AlertTitle } from '@/components/ui/alert'
 import {
   CheckCircle2,
   Circle,
@@ -24,86 +23,92 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
 
 interface TutorialStep {
   id: number
-  title: string
-  description: string
+  titleKey: string
+  descriptionKey: string
   icon: React.ElementType
   required: boolean
   href: string
-  checkLabel: string
+  checkLabelKey: string
 }
-
-const tutorialSteps: TutorialStep[] = [
-  {
-    id: 1,
-    title: '店舗基本情報',
-    description: '店舗名、住所、連絡先を設定',
-    icon: Store,
-    required: true,
-    href: '/dashboard/setting',
-    checkLabel: '店舗名と住所の設定',
-  },
-  {
-    id: 2,
-    title: '営業時間',
-    description: '営業日と営業時間を設定',
-    icon: Calendar,
-    required: true,
-    href: '/dashboard/setting',
-    checkLabel: '営業時間の設定',
-  },
-  {
-    id: 3,
-    title: 'メニュー登録',
-    description: '提供するメニューを最低1つ登録',
-    icon: Menu,
-    required: true,
-    href: '/dashboard/menu',
-    checkLabel: 'メニューの登録（最低1つ）',
-  },
-  {
-    id: 4,
-    title: 'スタッフ登録',
-    description: 'スタッフを最低1名登録',
-    icon: Users,
-    required: true,
-    href: '/dashboard/staff/add',
-    checkLabel: 'スタッフの登録（最低1名）',
-  },
-  {
-    id: 5,
-    title: '予約設定',
-    description: '予約受付の基本設定',
-    icon: Clock,
-    required: true,
-    href: '/dashboard/setting',
-    checkLabel: '予約受付の設定',
-  },
-  {
-    id: 6,
-    title: 'スタッフ勤務スケジュール',
-    description: 'スタッフの勤務時間を設定',
-    icon: Calendar,
-    required: true,
-    href: '/dashboard/staff/schedule',
-    checkLabel: 'スタッフの勤務スケジュール設定',
-  },
-  {
-    id: 7,
-    title: 'LINE連携',
-    description: 'LINE APIの設定を行う',
-    icon: ExternalLink,
-    required: true,
-    href: '/dashboard/setting',
-    checkLabel: 'LINE連携の設定',
-  },
-]
 
 export const Tutorial = () => {
   const { tenantId, orgId, ready } = useTenantAndOrganization()
+  const t = useTranslations('common.tutorial')
+
+  // 翻訳キーのみを保持するチュートリアル手順をメモ化して無限再レンダリングを防止
+  const tutorialSteps: TutorialStep[] = useMemo(
+    () => [
+      {
+        id: 1,
+        titleKey: 'steps.storeInfo.title',
+        descriptionKey: 'steps.storeInfo.description',
+        icon: Store,
+        required: true,
+        href: '/dashboard/setting',
+        checkLabelKey: 'steps.storeInfo.checkLabel',
+      },
+      {
+        id: 2,
+        titleKey: 'steps.businessHours.title',
+        descriptionKey: 'steps.businessHours.description',
+        icon: Calendar,
+        required: true,
+        href: '/dashboard/setting',
+        checkLabelKey: 'steps.businessHours.checkLabel',
+      },
+      {
+        id: 3,
+        titleKey: 'steps.reservationSettings.title',
+        descriptionKey: 'steps.reservationSettings.description',
+        icon: Clock,
+        required: true,
+        href: '/dashboard/setting',
+        checkLabelKey: 'steps.reservationSettings.checkLabel',
+      },
+      {
+        id: 4,
+        titleKey: 'steps.lineIntegration.title',
+        descriptionKey: 'steps.lineIntegration.description',
+        icon: ExternalLink,
+        required: true,
+        href: '/dashboard/setting',
+        checkLabelKey: 'steps.lineIntegration.checkLabel',
+      },
+      {
+        id: 5,
+        titleKey: 'steps.menuRegistration.title',
+        descriptionKey: 'steps.menuRegistration.description',
+        icon: Menu,
+        required: true,
+        href: '/dashboard/menu',
+        checkLabelKey: 'steps.menuRegistration.checkLabel',
+      },
+      {
+        id: 6,
+        titleKey: 'steps.staffRegistration.title',
+        descriptionKey: 'steps.staffRegistration.description',
+        icon: Users,
+        required: true,
+        href: '/dashboard/staff/add',
+        checkLabelKey: 'steps.staffRegistration.checkLabel',
+      },
+      {
+        id: 7,
+        titleKey: 'steps.staffSchedule.title',
+        descriptionKey: 'steps.staffSchedule.description',
+        icon: Calendar,
+        required: true,
+        href: '/dashboard/staff/schedule',
+        checkLabelKey: 'steps.staffSchedule.checkLabel',
+      },
+    ],
+    []
+  )
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
   const [missingItems, setMissingItems] = useState<string[]>([])
 
@@ -194,49 +199,49 @@ export const Tutorial = () => {
     if (org?.org.org_name && org?.config?.address) {
       completed.push(1)
     } else {
-      missing.push(tutorialSteps[0].checkLabel)
+      missing.push(t(tutorialSteps[0].checkLabelKey))
     }
 
     // Step 2: 営業時間
     if (weekSchedules && weekSchedules.length > 0) {
       completed.push(2)
     } else {
-      missing.push(tutorialSteps[1].checkLabel)
+      missing.push(t(tutorialSteps[1].checkLabelKey))
     }
 
-    // Step 3: メニュー
-    if (menus && menus.results.length > 0) {
+    // Step 3: 予約設定
+    if (reservationConfig) {
       completed.push(3)
     } else {
-      missing.push(tutorialSteps[2].checkLabel)
+      missing.push(t(tutorialSteps[2].checkLabelKey))
     }
 
-    // Step 4: スタッフ
-    if (staffList && staffList.results.length > 0) {
+    // Step 4: LINE連携
+    if (apiConfig?.liff_id && apiConfig?.line_channel_secret && apiConfig?.line_access_token) {
       completed.push(4)
     } else {
-      missing.push(tutorialSteps[3].checkLabel)
+      missing.push(t(tutorialSteps[3].checkLabelKey))
     }
 
-    // Step 5: 予約設定
-    if (reservationConfig) {
+    // Step 5: メニュー
+    if (menus && menus.results.length > 0) {
       completed.push(5)
     } else {
-      missing.push(tutorialSteps[4].checkLabel)
+      missing.push(t(tutorialSteps[4].checkLabelKey))
     }
 
-    // Step 6: スタッフ勤務スケジュール
-    if (staffSchedules && staffSchedules.length > 0) {
+    // Step 6: スタッフ
+    if (staffList && staffList.results.length > 0) {
       completed.push(6)
     } else {
-      missing.push(tutorialSteps[5].checkLabel)
+      missing.push(t(tutorialSteps[5].checkLabelKey))
     }
 
-    // Step 7: LINE連携
-    if (apiConfig?.liff_id && apiConfig?.line_channel_secret && apiConfig?.line_access_token) {
+    // Step 7: スタッフ勤務スケジュール
+    if (staffSchedules && staffSchedules.length > 0) {
       completed.push(7)
     } else {
-      missing.push(tutorialSteps[6].checkLabel)
+      missing.push(t(tutorialSteps[6].checkLabelKey))
     }
 
     setCompletedSteps(completed)
@@ -252,6 +257,7 @@ export const Tutorial = () => {
     apiConfig?.liff_id,
     apiConfig?.line_channel_secret,
     apiConfig?.line_access_token,
+    t,
   ])
 
   const isStepCompleted = (stepId: number) => completedSteps.includes(stepId)
@@ -269,7 +275,7 @@ export const Tutorial = () => {
   const copyReservationUrl = () => {
     const url = getReservationUrl()
     navigator.clipboard.writeText(url)
-    toast.success('URLをコピーしました')
+    toast.success(t('urlCopied'))
   }
 
   // Check if all data is loaded
@@ -289,73 +295,78 @@ export const Tutorial = () => {
 
   return (
     <div className="container max-w-6xl mx-auto pb-8">
-      {/* Alert for missing settings */}
-      {missingItems.length > 0 && (
-        <Alert className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>未設定の項目があります</AlertTitle>
-          <AlertDescription>
-            予約受付を開始するには、以下の設定を完了してください：
-            <ul className="list-disc pl-5 mt-2">
-              {missingItems.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
-
       {!isAllRequiredStepsCompleted() && (
         <>
-          <div className="mb-8">
+          <div className="mb-6 bg-neon-foreground p-4 rounded-lg border border-neon">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-3xl font-bold mb-2">初期設定ガイド</h1>
-                <p className="text-muted-foreground">
-                  予約受付を開始するための設定状況を確認します
-                </p>
+                <h1 className="text-2xl font-bold mb-2 text-neon">{t('setupGuide.title')}</h1>
+                <p className="text-muted-foreground text-sm">{t('setupGuide.subtitle')}</p>
               </div>
             </div>
-
-            <Progress value={progress} className="h-2" />
+            <div className="flex items-center gap-2 mb-2">
+              <Progress value={progress} className="h-2 w-full" />
+              <span className="text-sm font-bold text-nowrap px-2">
+                {progress.toFixed(0)}%
+                <span className="text-muted-foreground font-light ml-1 text-xs">
+                  {t('completed')}
+                </span>
+              </span>
+            </div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
             {/* Step Cards */}
-            {tutorialSteps.map((step) => {
+            {tutorialSteps.map((step, index) => {
               const Icon = step.icon
               const completed = isStepCompleted(step.id)
 
               return (
-                <Card key={step.id} className={completed ? 'border-green-200' : ''}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          {completed ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
-                          ) : (
-                            <Circle className="h-5 w-5 text-muted-foreground" />
-                          )}
-                        </div>
+                <Card
+                  key={step.id}
+                  className={`${completed ? 'border-accent-2 border' : 'border-destructive border'}`}
+                >
+                  <div className="relative p-2 pt-8 flex flex-col justify-center items-center w-full">
+                    <div
+                      className={`${
+                        completed
+                          ? 'bg-accent-2-foreground text-accent-2 border-accent-2'
+                          : 'bg-destructive-foreground text-destructive border-destructive'
+                      } absolute top-1 left-1 rounded-full px-2 py-1 flex items-center justify-center`}
+                    >
+                      <div className="text-xs">
+                        {completed ? (
+                          <div className="flex items-center gap-2 font-bold">
+                            <CheckCircle2 className="h-4 w-4" />
+                            {t('stepCompleted', { step: index + 1 })}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 font-bold">
+                            {t('stepIncomplete', { step: index + 1 })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-start justify-center">
+                      <div className="flex items-center justify-center gap-2">
                         <div>
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <Icon className="h-4 w-4" />
-                            {step.title}
-                          </CardTitle>
-                          <CardDescription className="mt-1">{step.description}</CardDescription>
+                          <div className="text-sm font-bold mt-2 flex items-center gap-1">
+                            <Icon className="min-h-4 min-w-4 max-h-4 max-w-4 text-accent" />
+                            {t(step.titleKey)}
+                          </div>
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            {t(step.descriptionKey)}
+                          </div>
                         </div>
                       </div>
-                      {step.required && (
-                        <Badge variant="secondary" className="text-xs">
-                          必須
-                        </Badge>
-                      )}
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Link href={step.href}>
-                      <Button variant={completed ? 'outline' : 'default'} className="w-full">
-                        {completed ? '設定を確認' : '設定する'}
+                  </div>
+                  <CardContent className="p-2">
+                    <Link href={step.href} className="w-full">
+                      <Button
+                        variant={completed ? 'default' : 'destructive'}
+                        className="w-full text-sm"
+                      >
+                        {completed ? t('checkSettings') : t('configure')}
                         <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </Link>
@@ -363,6 +374,27 @@ export const Tutorial = () => {
                 </Card>
               )
             })}
+
+            {missingItems.length > 0 && missingItems.length < 3 && (
+              <Card className="bg-warning border-warning-foreground text-warning-foreground">
+                <CardHeader className="flex items-center gap-2">
+                  <AlertTitle className="flex items-center gap-2 text-warning-foreground font-bold">
+                    <AlertCircle className="h-5 w-5 !text-warning-foreground" />
+                    {t('missingItems.title')}
+                  </AlertTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs">{t('missingItems.description')}</p>
+                  <ul className="list-disc pl-5 mt-2">
+                    {missingItems.map((item, index) => (
+                      <li key={index} className="text-sm font-bold">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </>
       )}
@@ -371,14 +403,14 @@ export const Tutorial = () => {
       {isAllRequiredStepsCompleted() && (
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle className="text-active">初期設定が完了しました！</CardTitle>
+            <CardTitle className="text-active">{t('completion.title')}</CardTitle>
             <CardDescription className="text-muted-foreground">
-              予約受付の準備が整いました。下記のURLをお客様に共有してください。
+              {t('completion.description')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-background rounded-lg border border-border">
-              <label className="text-sm font-medium">予約ページURL</label>
+              <label className="text-sm font-medium">{t('completion.reservationUrlLabel')}</label>
               <div className="flex items-center gap-2 mt-2">
                 <input
                   value={getReservationUrl()}
@@ -399,7 +431,7 @@ export const Tutorial = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="border border-border bg-background">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">次のステップ</CardTitle>
+                  <CardTitle className="text-base">{t('nextSteps.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm">
@@ -410,9 +442,8 @@ export const Tutorial = () => {
                           href="/dashboard/setting"
                           className="text-link-foreground hover:underline"
                         >
-                          サロンの休業日の設定
+                          {t('nextSteps.items.closedDays')}
                         </Link>
-                        を設定
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
@@ -422,9 +453,8 @@ export const Tutorial = () => {
                           href="/dashboard/option"
                           className="text-link-foreground hover:underline"
                         >
-                          オプションメニュー
+                          {t('nextSteps.items.optionMenu')}
                         </Link>
-                        を追加
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
@@ -434,9 +464,8 @@ export const Tutorial = () => {
                           href="/dashboard/point"
                           className="text-link-foreground hover:underline"
                         >
-                          ポイント機能
+                          {t('nextSteps.items.pointFeature')}
                         </Link>
-                        を設定
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
@@ -446,9 +475,8 @@ export const Tutorial = () => {
                           href="/dashboard/coupon"
                           className="text-link-foreground hover:underline"
                         >
-                          クーポン機能
+                          {t('nextSteps.items.couponFeature')}
                         </Link>
-                        を設定
                       </span>
                     </li>
                   </ul>
@@ -458,22 +486,28 @@ export const Tutorial = () => {
               <Card className="border border-border bg-link">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base text-link-foreground">
-                    お客様への案内方法
+                    {t('customerGuidance.title')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
                       <Circle className="h-4 w-4 text-link-foreground mt-0.5" />
-                      <span className="text-link-foreground">ホームページにリンクを掲載</span>
+                      <span className="text-link-foreground">
+                        {t('customerGuidance.items.website')}
+                      </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Circle className="h-4 w-4 text-link-foreground mt-0.5" />
-                      <span className="text-link-foreground">SNSで予約開始をお知らせ</span>
+                      <span className="text-link-foreground">
+                        {t('customerGuidance.items.sns')}
+                      </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Circle className="h-4 w-4 text-link-foreground mt-0.5" />
-                      <span className="text-link-foreground">店内にQRコードを掲示</span>
+                      <span className="text-link-foreground">
+                        {t('customerGuidance.items.qrCode')}
+                      </span>
                     </li>
                   </ul>
                 </CardContent>

@@ -20,6 +20,7 @@ type UseTenantAndOrganization = {
   subscriptionStatus: SubscriptionStatus | null;
   planName: SubscriptionPlanName | null;
   subscription: Doc<"subscription"> | null | undefined;
+  stripeConnectStatus: string | null;
   isLoaded: boolean;
   isSignedIn: boolean;
   ready: boolean;
@@ -74,6 +75,7 @@ export function useTenantAndOrganization(): UseTenantAndOrganization {
     staffId: staffId,
     planName: subscription?.plan_name ?? 'UNKNOWN',
     subscriptionStatus: subscription?.status ?? null,
+    stripeConnectStatus: org?.stripe_connect_status ?? null,
     subscription: subscription,
     isLoaded,
     isSignedIn: isSignedIn as boolean,

@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import Image from 'next/image'
 import React from 'react'
 import { useParams } from 'next/navigation'
@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useTranslations } from 'next-intl'
 
 // アイコン
 import { User, Trash, Star, Tag, Mail, Calendar, FileEdit } from 'lucide-react'
@@ -37,6 +38,7 @@ export default function StaffDetails() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const t = useTranslations()
 
   // メモ化されたクエリを使用してパフォーマンス向上
   const staffAllData = useQuery(
@@ -103,21 +105,16 @@ export default function StaffDetails() {
 
   // 性別を日本語で表示
   const getGenderText = (gender: string) => {
-    return gender === 'male' ? '男性' : gender === 'female' ? '女性' : '未選択'
+    return gender === 'male'
+      ? t('staff.add.male')
+      : gender === 'female'
+        ? t('staff.add.female')
+        : t('staff.add.unselected')
   }
 
   // roleをわかりやすい表示に変換
   const getRoleDisplay = (role: string) => {
-    switch (role) {
-      case 'staff':
-        return 'スタッフ権限'
-      case 'manager':
-        return 'マネージャー権限'
-      case 'owner':
-        return 'オーナー権限'
-      default:
-        return role
-    }
+    return t(`staff.roles.${role}`)
   }
 
   const handleShowDeleteDialog = () => {
@@ -209,7 +206,7 @@ export default function StaffDetails() {
                     <h2 className="text-2xl font-bold text-primary">{staffAllData.name}</h2>
                     <div className="flex items-center gap-4 mt-2">
                       <Badge variant={staffAllData.is_active ? 'default' : 'outline'}>
-                        {staffAllData.is_active ? 'アクティブ' : '非アクティブ'}
+                        {staffAllData.is_active ? t('common.active') : t('common.inactive')}
                       </Badge>
                       <Badge
                         variant="outline"
@@ -220,7 +217,7 @@ export default function StaffDetails() {
                       {staffWithInvitation && staffWithInvitation.connect_clerk && (
                         <Badge variant="outline">
                           <Mail className="h-3 w-3 mr-1" />
-                          認証スタッフ
+                          {t('staff.common.authenticatedStaff')}
                         </Badge>
                       )}
                     </div>
@@ -230,13 +227,15 @@ export default function StaffDetails() {
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <span className="text-primary font-bold text-lg">
-                        {getGenderText(staffAllData.gender || '未選択')}
+                        {getGenderText(staffAllData.gender || 'unselected')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="text-primary font-bold text-lg">
-                        {staffAllData.age ? `${staffAllData.age}歳` : '年齢未設定'}
+                        {staffAllData.age
+                          ? t('staff.common.ageValue', { age: staffAllData.age })
+                          : t('staff.common.ageNotSet')}
                       </span>
                     </div>
                     {staffAllData.instagram_link && (
@@ -264,9 +263,11 @@ export default function StaffDetails() {
                   </div>
                 )}
 
-                <span className="text-xs text-muted-foreground">スタッフ紹介</span>
+                <span className="text-xs text-muted-foreground">
+                  {t('staff.details.introduction')}
+                </span>
                 <p className=" text-primary tracking-wide leading-6  mb-5  border-border">
-                  {staffAllData.description || '説明がありません'}
+                  {staffAllData.description || t('staff.details.noIntroduction')}
                 </p>
 
                 {staffAllData.tags && staffAllData.tags.length > 0 && (
@@ -283,13 +284,13 @@ export default function StaffDetails() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 text-palette-1-foreground">
                         <Tag className="h-4 w-4" />
-                        <p className="text-xs font-bold">指名料金</p>
+                        <p className="text-xs font-bold">{t('staff.add.nominationFee')}</p>
                       </div>
                       <p className="font-bold text-lg text-palette-1-foreground">
                         ¥{staffAllData.extra_charge || 0}
                       </p>
                       <p className="mt-1 text-xs text-palette-1-foreground max-w-xs">
-                        指名料金は予約時のサービス料金に影響します。
+                        {t('staff.add.nominationFeeHelp')}
                       </p>
                     </div>
                   </div>
@@ -299,14 +300,14 @@ export default function StaffDetails() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 text-palette-2-foreground">
                         <Star className="h-4 w-4" />
-                        <p className="text-xs font-bold">優先度</p>
+                        <p className="text-xs font-bold">{t('staff.add.priority')}</p>
                       </div>
                       <p className="font-bold text-lg text-palette-2-foreground">
                         {staffAllData.priority || 0}
                         <span className="text-xs text-palette-2-foreground">/{MAX_PRIORITY}</span>
                       </p>
                       <p className="mt-1 text-xs text-palette-2-foreground max-w-xs">
-                        数値が大きいほど予約画面などで上位に表示されます。
+                        {t('staff.add.priorityHelp')}
                       </p>
                     </div>
                   </div>
@@ -317,7 +318,7 @@ export default function StaffDetails() {
                   <div className="mt-4 p-3 bg-muted rounded-md border border-border">
                     <h3 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
                       <Tag className="h-4 w-4" />
-                      対応外メニュー
+                      {t('staff.add.exclusionMenuTitle')}
                     </h3>
                     <ul className="flex flex-wrap gap-2">
                       {exclusionMenus.map((menu) => (
@@ -337,7 +338,7 @@ export default function StaffDetails() {
 
           <div className=" py-3 flex justify-between">
             <div className="text-xs text-muted-foreground tracking-wider">
-              <span>作成日: </span>
+              <span>{t('staff.details.createdAt')}: </span>
               {new Date(staffAllData._creationTime).toLocaleDateString()}
             </div>
             <div className="flex gap-2">
@@ -348,12 +349,12 @@ export default function StaffDetails() {
                 onClick={handleShowDeleteDialog}
               >
                 <Trash className="h-4 w-4" />
-                削除
+                {t('common.delete')}
               </Button>
               <Link href={`/dashboard/staff/${staff_id}/edit`}>
                 <Button variant="default" size="sm" className="gap-1">
                   <FileEdit className="h-4 w-4" />
-                  編集
+                  {t('common.edit')}
                 </Button>
               </Link>
             </div>
@@ -365,12 +366,12 @@ export default function StaffDetails() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>スタッフを削除しますか？</DialogTitle>
-            <DialogDescription>この操作は元に戻すことができません。</DialogDescription>
+            <DialogTitle>{t('staff.common.deleteConfirm')}</DialogTitle>
+            <DialogDescription>{t('staff.common.deleteConfirmDesc')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="destructive" onClick={handleDeleteStaff}>
-              削除
+              {t('staff.edit.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

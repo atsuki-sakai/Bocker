@@ -60,6 +60,10 @@ export default {
           DEFAULT: 'var(--accent)',
           foreground: 'var(--accent-foreground)',
         },
+        'accent-2': {
+          DEFAULT: 'var(--accent-2)',
+          foreground: 'var(--accent-2-foreground)',
+        },
         destructive: {
           DEFAULT: 'var(--destructive)',
           foreground: 'var(--destructive-foreground)',

@@ -17,6 +17,7 @@ import { Doc } from '@/convex/_generated/dataModel'
 import { StripePreviewData } from '@/lib/types'
 import { SubscriptionPlanName } from '@/convex/types'
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 
 // Utility functions
 // ------------------------------------------------------
@@ -100,12 +101,13 @@ export default function PreviewDialog({
   isSubmitting,
   onConfirmAction,
 }: PreviewDialogProps) {
+  const t = useTranslations('subscription')
+
   // Dialogのcloseハンドラ
   const handleDialogClose = (open: boolean) => setOpenAction(open)
 
   // 確認ボタン
   const handleConfirm = () => {
-
     if (!subscriptionId || !updatePlanName) {
       return
     }
@@ -148,16 +150,18 @@ export default function PreviewDialog({
     if (!subItem) return null
     // @ts-expect-error 年払いの場合 amount が plan 内にある
     const amount = subItem?.plan?.amount || 0
-    return `次回の定期支払い: ¥${amount.toLocaleString()}/${billingPeriod === 'month' ? '月' : '年'}`
-  }, [previewData, billingPeriod])
+    return `${t('preview.nextPayment')}: ¥${amount.toLocaleString()}/${
+      billingPeriod === 'month' ? t('perMonth') : t('perYear')
+    }`
+  }, [previewData, billingPeriod, t])
 
   const confirmButtonContent = isSubmitting ? (
     <>
       <Loader2 className="mr-2 h-4 w-4" />
-      処理中...
+      {t('processing')}
     </>
   ) : (
-    '変更を確定する'
+    t('confirmDialog.confirm')
   )
 
   if (!previewData || !tenant) return null
@@ -167,24 +171,24 @@ export default function PreviewDialog({
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold bg-primary bg-clip-text text-transparent">
-            プラン変更の確認
+            {t('preview.title')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 my-4">
           {/* 概要 */}
           <div className="p-4 rounded-lg bg-muted">
-            <h3 className="font-medium text-xs mb-2">サブスクリプション変更内容</h3>
+            <h3 className="font-medium text-xs mb-2">{t('preview.changeDetails')}</h3>
             <div className="flex justify-between items-center">
               {currentPlanName && (
                 <div>
-                  <div className="text-sm text-muted-foreground">現在のプラン</div>
+                  <div className="text-sm text-muted-foreground">{t('preview.from')}</div>
                   <div className="font-medium">{currentPlanName}</div>
                 </div>
               )}
               <div className="text-muted-foreground">→</div>
               <div>
-                <div className="text-sm text-muted-foreground">新しいプラン</div>
+                <div className="text-sm text-muted-foreground">{t('preview.to')}</div>
                 <div className="font-medium">{updatePlanName}</div>
               </div>
             </div>
@@ -192,11 +196,11 @@ export default function PreviewDialog({
 
           {/* 料金詳細 */}
           <div className="border rounded-lg overflow-hidden">
-            <div className="bg-background p-3 font-medium">料金の詳細</div>
+            <div className="bg-background p-3 font-medium">{t('preview.billingDetails')}</div>
             <div className="p-4 space-y-3">
               {invoiceLines}
               <div className="border-t pt-2 mt-2 flex justify-between font-bold">
-                <span>今回のお支払い金額</span>
+                <span>{t('preview.currentPayment')}</span>
                 <span>¥{totalAmount}</span>
               </div>
               {nextPaymentInfo && (
@@ -207,19 +211,17 @@ export default function PreviewDialog({
 
           {/* 注意 */}
           <div className="text-sm text-muted-foreground">
-            <p>※ 日割り計算により、既に支払い済みの金額から調整されます。</p>
-            <p>※ プラン変更は即時に適用されます。</p>
+            <p>{t('preview.prorationNote')}</p>
+            <p>{t('preview.immediateEffect')}</p>
             {previewData.status === 'trialing' && (
-              <p className="text-active font-semibold mt-1">
-                ※ 現在トライアル期間中のため、プラン変更による追加料金は発生しません。
-              </p>
+              <p className="text-active font-semibold mt-1">{t('preview.trialNote')}</p>
             )}
           </div>
         </div>
 
         <DialogFooter className="flex gap-3">
           <Button variant="outline" className="flex-1" onClick={handleCancel}>
-            キャンセル
+            {t('confirmDialog.cancel')}
           </Button>
           <Button className="flex-1" onClick={handleConfirm} disabled={isSubmitting}>
             {confirmButtonContent}

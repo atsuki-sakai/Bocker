@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { FileImage, X } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import {
   DndContext,
   PointerSensor,
@@ -44,11 +45,12 @@ export default function MultiImageDrop({
   onFilesSelect,
   maxSizeMB = 6,
   className = '',
-  placeholderText = '画像をドラッグするか、クリックして選択',
+  placeholderText,
   accept = 'image/*',
   limitFiles = 4,
   hasSelected = 0,
 }: MultiImageDropProps) {
+  const t = useTranslations('common.imageDrop')
   /* ------------------------------------------------------------------
    * state 管理
    * ------------------------------------------------------------------*/
@@ -126,13 +128,11 @@ export default function MultiImageDrop({
 
     for (const file of files) {
       if (!file.type.startsWith('image/')) {
-        toast.error(`ファイル「${file.name}」は画像ファイルではありません。`)
+        toast.error(t('notImage', { fileName: file.name }))
         continue
       }
       if (file.size > maxSize) {
-        toast.error(
-          `ファイル「${file.name}」のサイズが大きすぎます。${maxSizeMB}MB以下にしてください。`
-        )
+        toast.error(t('tooLarge', { fileName: file.name, maxSize: maxSizeMB }))
         continue
       }
       acceptedFiles.push(file)
@@ -149,9 +149,7 @@ export default function MultiImageDrop({
     const currentCount = previewImageUrls.length
     const available = limitFiles - (currentCount + hasSelected)
     if (acceptedFiles.length > available) {
-      toast.error(
-        `${limitFiles > 0 ? `最大 ${limitFiles} 枚までです。` : ''}追加できるのはあと ${available} 枚です。`
-      )
+      toast.error(t('limitReached', { limitFiles, available }))
     }
 
     const filesToAdd = acceptedFiles.slice(0, available)
@@ -265,10 +263,13 @@ export default function MultiImageDrop({
         className={`h-12 w-12 mx-auto mb-2 ${isDragging ? 'text-active' : 'text-muted-foreground'}`}
       />
       <p className={`text-sm mb-2 ${isDragging ? 'text-active' : 'text-muted-foreground'}`}>
-        {isDragging ? 'ここにファイルをドロップ' : placeholderText}
+        {isDragging ? t('dropHere') : placeholderText || t('placeholder')}
       </p>
       <p className="text-xs text-muted-foreground">
-        JPG, PNG など / 最大 {maxSizeMB}MB (最大{limitFiles}枚)
+        {t('formatsWithLimit', {
+          maxSize: Number(maxSizeMB) > 0 ? Number(maxSizeMB) : 6,
+          limitFiles: Number(limitFiles) > 0 ? Number(limitFiles) : 4,
+        })}
       </p>
     </div>
   )
@@ -288,7 +289,7 @@ export default function MultiImageDrop({
           {renderDragAreaPlaceholder()}
           <div className="mt-4">
             <Button type="button" onClick={() => fileInputRef.current?.click()}>
-              ファイルを選択
+              {t('selectFile')}
             </Button>
           </div>
         </div>
@@ -314,7 +315,7 @@ export default function MultiImageDrop({
           </DndContext>
           <div className="flex items-center justify-end gap-2 mt-auto  text-center">
             <Button size="sm" onClick={() => fileInputRef.current?.click()}>
-              ファイルを追加
+              {t('addFile')}
             </Button>
             {previewImageUrls.length > 0 && (
               <div className="text-center">
@@ -335,7 +336,7 @@ export default function MultiImageDrop({
                     onFilesSelect?.([])
                   }}
                 >
-                  すべての画像をクリア
+                  {t('clearAll')}
                 </Button>
               </div>
             )}

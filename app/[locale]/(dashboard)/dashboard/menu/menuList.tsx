@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useCallback, memo } from 'react'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -67,6 +68,10 @@ interface MenuItemProps {
 }
 
 const MenuItem = memo(function MenuItem({ menu, onEdit, onDelete }: MenuItemProps) {
+  const t = useTranslations('menus')
+
+  const tCommon = useTranslations('common')
+
   return (
     <div className="col-span-1">
       <Card className="h-full overflow-hidden hover:shadow-md transition-all">
@@ -98,19 +103,19 @@ const MenuItem = memo(function MenuItem({ menu, onEdit, onDelete }: MenuItemProp
                 className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background backdrop-blur-sm"
               >
                 <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">メニューを開く</span>
+                <span className="sr-only">{tCommon('openMenu')}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <Link href={`/dashboard/menu/${menu._id}`}>
                 <DropdownMenuItem>
                   <Eye className="mr-2 h-4 w-4" />
-                  <span>詳細</span>
+                  <span>{tCommon('detail')}</span>
                 </DropdownMenuItem>
               </Link>
               <DropdownMenuItem onClick={() => onEdit(menu._id)}>
                 <Pencil className="mr-2 h-4 w-4" />
-                <span>編集</span>
+                <span>{tCommon('edit')}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() =>
@@ -119,7 +124,7 @@ const MenuItem = memo(function MenuItem({ menu, onEdit, onDelete }: MenuItemProp
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                <span>削除</span>
+                <span>{tCommon('delete')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -141,16 +146,26 @@ const MenuItem = memo(function MenuItem({ menu, onEdit, onDelete }: MenuItemProp
               <div className="text-sm text-muted-foreground">
                 {menu.sale_price ? (
                   <div className="flex items-center gap-2">
-                    <span className="line-through text-xs">{menu.unit_price}円</span>
-                    <span className="font-bold text-primary">{menu.sale_price}円</span>
+                    <span className="line-through text-xs">
+                      {menu.unit_price}
+                      {tCommon('currencySymbol')}
+                    </span>
+                    <span className="font-bold text-primary">
+                      {menu.sale_price}
+                      {tCommon('currencySymbol')}
+                    </span>
                   </div>
                 ) : (
-                  <span className="font-medium">{menu.unit_price}円</span>
+                  <span className="font-medium">
+                    {menu.unit_price}
+                    {tCommon('currencySymbol')}
+                  </span>
                 )}
               </div>
               <div className="flex items-center text-sm text-muted-foreground mt-1">
                 <Clock className="h-3 w-3 mr-1" />
-                {menu.duration_min}分
+                {menu.duration_min}
+                {tCommon('timeUnit')}
               </div>
             </div>
           </div>
@@ -159,10 +174,10 @@ const MenuItem = memo(function MenuItem({ menu, onEdit, onDelete }: MenuItemProp
             <div className="mt-2 flex items-center text-xs text-muted-foreground">
               <CreditCard className="h-3 w-3 mr-1" />
               {menu.payment_method === 'all'
-                ? '両方対応'
+                ? t('paymentMethods.both')
                 : menu.payment_method === 'credit_card'
-                  ? 'オンライン決済'
-                  : '店舗決済'}
+                  ? t('paymentMethods.online')
+                  : t('paymentMethods.inStore')}
             </div>
           )}
         </CardContent>
@@ -178,6 +193,9 @@ interface MenuListContentProps {
 }
 
 const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
+  const t = useTranslations('menus')
+  const tCommon = useTranslations('common')
+
   const listContainerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -213,11 +231,11 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
               <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 border-b border-border pb-4 mb-4">
                 {menu.is_active ? (
                   <Badge variant="default" className=" bg-active text-active-foreground">
-                    公開中
+                    {t('list.messages.active')}
                   </Badge>
                 ) : (
                   <Badge variant="secondary" className=" bg-muted text-muted-foreground">
-                    非公開
+                    {t('list.messages.inactive')}
                   </Badge>
                 )}
                 <div className="flex items-center gap-2">
@@ -256,11 +274,20 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                       <div className="flex items-center">
                         {menu.sale_price ? (
                           <div className="flex items-center gap-2">
-                            <span className="line-through text-xs">{menu.unit_price}円</span>
-                            <span className="font-medium text-primary">{menu.sale_price}円</span>
+                            <span className="line-through text-xs">
+                              {tCommon('currencySymbol')}
+                              {menu.unit_price}
+                            </span>
+                            <span className="font-medium text-primary">
+                              {tCommon('currencySymbol')}
+                              {menu.sale_price}
+                            </span>
                           </div>
                         ) : (
-                          <span>{menu.unit_price}円</span>
+                          <span>
+                            {tCommon('currencySymbol')}
+                            {menu.unit_price}
+                          </span>
                         )}
                       </div>
 
@@ -273,10 +300,10 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                         <div className="flex items-center">
                           <CreditCard className="h-3 w-3 mr-1" />
                           {menu.payment_method === 'all'
-                            ? '両方対応'
+                            ? t('detail.labels.paymentMethod.all')
                             : menu.payment_method === 'credit_card'
-                              ? 'オンライン決済'
-                              : '店舗決済'}
+                              ? t('detail.labels.paymentMethod.credit_card')
+                              : t('detail.labels.paymentMethod.cash')}
                         </div>
                       )}
                       <div className="flex flex-wrap gap-1 mt-2">
@@ -294,16 +321,15 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                   <Link href={`/dashboard/menu/${menu._id}`}>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
                       <Eye className="h-4 w-4" />
-                      <span className="sr-only">詳細</span>
+                      <span className="sr-only">{tCommon('detail')}</span>
                     </Button>
                   </Link>
                   <Link href={`/dashboard/menu/${menu._id}/edit`}>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
                       <Pencil className="h-4 w-4" />
-                      <span className="sr-only">編集</span>
+                      <span className="sr-only">{tCommon('edit')}</span>
                     </Button>
                   </Link>
-
                   <Button
                     variant="ghost"
                     size="icon"
@@ -316,7 +342,7 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                     }
                   >
                     <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">削除</span>
+                    <span className="sr-only">{tCommon('delete')}</span>
                   </Button>
                 </div>
               </div>
@@ -330,6 +356,8 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
 
 // メインコンポーネント
 export default function MenuList() {
+  const t = useTranslations('menus')
+  const tCommon = useTranslations('common')
   const { tenantId, orgId } = useTenantAndOrganization()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
   const [deletingMenuId, setDeletingMenuId] = useState<Id<'menu'> | null>(null)
@@ -508,8 +536,8 @@ export default function MenuList() {
         <Card className="col-span-full p-10 text-center bg-muted">
           <p className="text-muted-foreground">
             {selectedCategories.length > 0
-              ? '選択されたカテゴリに該当するメニューがありません'
-              : 'メニューがありません'}
+              ? t('list.messages.noMenusInCategory')
+              : t('list.messages.noMenus')}
           </p>
         </Card>
       )
@@ -551,7 +579,7 @@ export default function MenuList() {
         <div className="flex flex-col w-full sm:w-auto gap-2">
           <div className="flex items-center gap-1">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium">カテゴリで絞り込む</span>
+            <span className="text-xs font-medium">{t('list.messages.filterByCategory')}</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -565,7 +593,7 @@ export default function MenuList() {
                   <span className="text-sm">
                     {selectedCategories.length > 0
                       ? `${selectedCategories.length}件選択中`
-                      : 'カテゴリを選択'}
+                      : t('list.messages.selectCategory')}
                   </span>
                   <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
                 </Button>
@@ -582,7 +610,7 @@ export default function MenuList() {
                 </div>
                 <Command>
                   <CommandList>
-                    <CommandEmpty>カテゴリが見つかりません</CommandEmpty>
+                    <CommandEmpty>{t('list.messages.categoryNotFound')}</CommandEmpty>
                     <CommandGroup>
                       {allCategories.map((category) => (
                         <CommandItem
@@ -608,7 +636,7 @@ export default function MenuList() {
             {selectedCategories.length > 0 && (
               <Button size="sm" className="h-9 px-2" onClick={clearCategoryFilter}>
                 <X className="h-4 w-4 mr-1" />
-                クリア
+                {tCommon('delete')}
               </Button>
             )}
           </div>
@@ -634,7 +662,7 @@ export default function MenuList() {
         </div>
 
         <div className="flex flex-col items-center gap-2">
-          <span className="text-xs font-medium">表示形式</span>
+          <span className="text-xs font-medium">{t('list.messages.viewMode')}</span>
           <div className="bg-muted rounded-md p-1 flex items-center">
             <Button
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
@@ -643,7 +671,7 @@ export default function MenuList() {
               onClick={() => setViewMode('grid')}
             >
               <Grid className="h-4 w-4" />
-              <span className="sr-only">グリッド表示</span>
+              <span className="sr-only">{t('list.messages.gridView')}</span>
             </Button>
             <Button
               variant={viewMode === 'list' ? 'secondary' : 'ghost'}
@@ -652,7 +680,7 @@ export default function MenuList() {
               onClick={() => setViewMode('list')}
             >
               <List className="h-4 w-4" />
-              <span className="sr-only">リスト表示</span>
+              <span className="sr-only">{t('list.messages.listView')}</span>
             </Button>
           </div>
         </div>
@@ -687,7 +715,7 @@ export default function MenuList() {
                 className="gap-2"
                 disabled={isLoading}
               >
-                もっと見る
+                {t('list.messages.loadMore')}
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </motion.div>
@@ -697,17 +725,17 @@ export default function MenuList() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-destructive">メニューの削除</DialogTitle>
+            <DialogTitle className="text-destructive">{t('list.messages.deleteMenu')}</DialogTitle>
           </DialogHeader>
           <DialogDescription className="text-muted-foreground">
-            この操作は元に戻すことができません。
+            {t('list.messages.deleteConfirmation')}
           </DialogDescription>
           <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              キャンセル
+              {tCommon('cancel')}
             </Button>
             <Button variant="destructive" onClick={() => handleDeleteMenu()}>
-              削除
+              {tCommon('delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

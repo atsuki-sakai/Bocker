@@ -257,7 +257,7 @@ export default function CustomerEditForm() {
         toast.error(t('updateError'))
       }
     } catch (error) {
-      console.error('更新処理でエラーが発生しました:', error)
+      console.error('Update process error:', error)
       const errorMessage = error instanceof Error ? error.message : t('updateError')
       toast.error(errorMessage)
     }

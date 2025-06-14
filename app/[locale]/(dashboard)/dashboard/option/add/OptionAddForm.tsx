@@ -1,6 +1,7 @@
 'use client'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { z } from 'zod'
+import { useTranslations } from 'next-intl'
 import { Info } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { useZodForm } from '@/hooks/useZodForm'
@@ -10,12 +11,6 @@ import { fetchQuery } from 'convex/nextjs'
 import { TagInput, SingleImageDrop, Loading, ZodTextField } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from '@/components/ui/accordion'
 import { useEffect, useState, memo } from 'react'
 import { toast } from 'sonner'
 import { DollarSign, ShoppingBag, Clock, Save, Loader2, ImageIcon } from 'lucide-react'
@@ -150,6 +145,7 @@ const optionSchema = z
   )
 
 function OptionAddForm() {
+  const t = useTranslations('options')
   const { tenantId, orgId, planName } = useTenantAndOrganization()
   const router = useRouter()
   const [currentTags, setCurrentTags] = useState<string[]>([])
@@ -189,14 +185,14 @@ function OptionAddForm() {
       if (currentFile) {
         try {
           setIsUploading(true)
-          const base64Data = await fileToBase64(currentFile!);
+          const base64Data = await fileToBase64(currentFile!)
           const result = await uploadCompressedImage({
             base64Data,
             fileName: currentFile!.name,
             directory: 'option',
             orgId,
             aspectType: 'square',
-            quality: 'medium'
+            quality: 'medium',
           })
           // 新方式のレスポンス形式に合わせて修正
           newUploadedImageUrls = [
@@ -310,7 +306,7 @@ function OptionAddForm() {
               <CardHeader className="pb-0">
                 <CardTitle className="text-base flex items-center gap-2 mb-2">
                   <ImageIcon size={18} className="text-muted-foreground" />
-                  オプションメニュー画像
+                  {t('form.optionImage')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-grow flex items-center justify-center">
@@ -329,20 +325,20 @@ function OptionAddForm() {
           </div>
 
           <div className="md:col-span-2">
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col md:flex-row items-end gap-4">
               <div className="w-full">
                 <ZodTextField
                   register={register}
                   name="name"
-                  label="オプションメニュー名"
-                  placeholder="オプションメニュー名"
+                  label={t('form.optionName')}
+                  placeholder={t('form.optionNamePlaceholder')}
                   errors={errors}
                   required
                 />
               </div>
               <ZodTextField
                 name="order_limit"
-                label="最大注文数"
+                label={t('form.maxOrder')}
                 type="number"
                 placeholder="例: 1"
                 register={register}
@@ -352,7 +348,7 @@ function OptionAddForm() {
               />
               <ZodTextField
                 name="in_stock"
-                label="在庫数"
+                label={t('form.stock')}
                 type="number"
                 placeholder="例: 1"
                 register={register}
@@ -365,7 +361,7 @@ function OptionAddForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <ZodTextField
                 name="unit_price"
-                label="通常価格"
+                label={t('form.unitPrice')}
                 icon={<DollarSign className="text-primary" />}
                 type="number"
                 placeholder="例: 5000"
@@ -377,7 +373,7 @@ function OptionAddForm() {
 
               <ZodTextField
                 name="sale_price"
-                label="セール価格"
+                label={t('form.salePrice')}
                 type="number"
                 icon={<ShoppingBag className="text-primary" />}
                 placeholder="例: 4000"
@@ -391,7 +387,7 @@ function OptionAddForm() {
               <div className="w-full">
                 <Label className="text-sm flex items-center gap-2 mb-2">
                   <Clock size={16} className="text-primary" />
-                  スタッフが稼働する施術時間 <span className="text-destructive ml-1">*</span>
+                  {t('form.durationTitle')} <span className="text-destructive ml-1">*</span>
                 </Label>
                 <Select
                   onValueChange={(value) => {
@@ -399,19 +395,18 @@ function OptionAddForm() {
                   }}
                 >
                   <SelectTrigger className="border-border transition-colors">
-                    <SelectValue placeholder="スタッフが稼働する施術時間を選択" />
+                    <SelectValue placeholder={t('form.durationPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {MINUTE_OPTIONS.map((time) => (
                       <SelectItem key={time} value={time.toString()}>
-                        {time}分
+                        {time}
+                        {t('form.minutes')}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-muted-foreground">
-                  メニューの実作業時間を設定します。
-                </span>
+                <span className="text-xs text-muted-foreground">{t('form.timeHelp')}</span>
                 {errors.duration_min && (
                   <p className="text-destructive text-sm mt-1">{errors.duration_min.message}</p>
                 )}
@@ -422,19 +417,19 @@ function OptionAddForm() {
               tags={currentTags}
               setTagsAction={setCurrentTags}
               error={errors.tags?.message}
-              title="タグ"
-              exampleText="例: 期間限定、セール、デートなど"
+              title={t('form.tags')}
+              exampleText={t('form.tagsPlaceholder')}
             />
           </div>
         </div>
 
         <Label className="flex items-center gap-2 text-sm mt-4">
           <Info size={16} className="text-primary" />
-          オプションメニュー説明 <span className="text-destructive ml-1">*</span>
+          {t('form.description')} <span className="text-destructive ml-1">*</span>
         </Label>
         <Textarea
           id="description"
-          placeholder="オプションメニューの詳細説明を入力してください"
+          placeholder={t('form.descriptionPlaceholder')}
           {...register('description')}
           onChange={(e) => setValue('description', e.target.value, { shouldValidate: true })}
           rows={8}
@@ -446,10 +441,8 @@ function OptionAddForm() {
 
         <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-4">
           <div>
-            <p className="text-sm font-bold">オプションメニューを公開する</p>
-            <p className="text-xs text-muted-foreground">
-              オフにすると、このオプションメニューはお客様に表示されません
-            </p>
+            <p className="text-sm font-bold">{t('form.publishToggle')}</p>
+            <p className="text-xs text-muted-foreground">{t('form.publishHelp')}</p>
           </div>
           <Switch
             id="is_archive"
@@ -468,52 +461,17 @@ function OptionAddForm() {
             {isSubmitting || isUploading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                追加中...
+                {t('form.adding')}
               </>
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
-                オプションを追加
+                {t('form.addButton')}
               </>
             )}
           </Button>
         </div>
       </div>
-      <Accordion type="multiple" className="mt-8 space-y-2">
-        {/* 実際の稼働時間と確保する時間の違いについて */}
-        <AccordionItem value="line-access-token">
-          <AccordionTrigger>
-            実際の稼働時間と待機時間を含めたトータルの施術時間の違いについて
-          </AccordionTrigger>
-          <AccordionContent className="space-y-2 text-sm text-muted-foreground leading-6">
-            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
-              <li>
-                <strong>実際の稼働時間 :</strong>
-                スタッフが手を動かして施術に集中している正味の作業時間を指します。
-                <br />
-                例）パーマの薬剤塗布・カット・シャンプーなど。
-              </li>
-              <li>
-                <strong>待機時間を含めたトータルの施術時間 :</strong>
-                施術席を専有する必要はあるものの、スタッフが別の作業に移れる待機時間を指します。
-                <br />
-                例）薬剤の放置時間・髪の乾燥時間など。
-              </li>
-              <li>
-                予約枠のアルゴリズムは <strong>実際の稼働時間</strong> を基準に空き時間を算出し、
-                <strong>待機時間を含めたトータルの施術時間</strong>{' '}
-                を待機時間として扱うことで、同じ席を効率よく回転させられます。
-              </li>
-            </ol>
-
-            <p className="text-xs text-slate-500 space-y-1">
-              * 両時間とも必須入力です。
-              <br />* <strong>入力例：</strong> パーマ 90 分（実際の稼働 45 分 ＋ 確保 45
-              分）の場合、スタッフは途中 45 分間ほかの顧客を担当できます。
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
     </form>
   )
 }

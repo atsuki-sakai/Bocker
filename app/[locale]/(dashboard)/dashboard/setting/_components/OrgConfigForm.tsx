@@ -55,7 +55,7 @@ export default function OrgConfigForm() {
   const router = useRouter()
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
-  const t = useTranslations('settings.orgConfig')
+  const t = useTranslations('settings')
   const [currentFile, setCurrentFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 

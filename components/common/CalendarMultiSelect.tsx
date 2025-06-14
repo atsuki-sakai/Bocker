@@ -9,6 +9,7 @@ import { CalendarIcon, X, CalendarCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useTranslations } from 'next-intl';
 
 /**
  * 複数日選択用カレンダーコンポーネントのProps定義
@@ -86,6 +87,8 @@ function CalendarMultiSelect({
   fromDate,
   disabled,
 }: CalendarMultiSelectProps) {
+  const t = useTranslations('common.calendarMultiSelect');
+  
   // 日付選択ハンドラ
   const handleDatesSelect = (dates: Date[] | undefined) => {
     onDatesChangeAction(dates || []);
@@ -145,8 +148,8 @@ function CalendarMultiSelect({
       <div className="border rounded-md p-4 w-full bg-background border-border">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-bold text-primary flex items-center gap-2">
-            <Badge className="ml-1 text-nowrap text-base">{selectedDates.length}件</Badge>{' '}
-            選択済みの日
+            <Badge className="ml-1 text-nowrap text-base">{t('selectedCount', { count: selectedDates.length })}</Badge>{' '}
+            {t('selectedDates')}
           </h3>
 
           {hasSelectedDates && (
@@ -159,11 +162,11 @@ function CalendarMultiSelect({
                     className="h-7 text-xs text-destructive hover:bg-destructive hover:text-white"
                     onClick={clearAllDates}
                   >
-                    全て削除
+                    {t('clearAll')}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>選択した全ての日付を削除します</p>
+                  <p>{t('clearAllTooltip')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -223,7 +226,7 @@ function CalendarMultiSelect({
                               })}
                               {isToday(date) && (
                                 <span className="ml-1 text-[10px] bg-amber-200 dark:bg-amber-700 px-1 py-0.5 rounded text-amber-800 dark:text-amber-200">
-                                  今日
+                                  {t('today')}
                                 </span>
                               )}
                             </span>
@@ -250,9 +253,9 @@ function CalendarMultiSelect({
               className="flex flex-col items-center justify-center h-full py-8 text-center text-muted-foreground"
             >
               <CalendarCheck className="w-12 h-12 mb-3 text-muted-foreground" />
-              <p className="text-sm font-medium mb-1">まだ休業日が選択されていません</p>
+              <p className="text-sm font-medium mb-1">{t('emptyStateTitle')}</p>
               <p className="text-xs max-w-xs">
-                左側のカレンダーから休業日として設定したい日付を選択してください
+                {t('emptyStateDescription')}
               </p>
             </motion.div>
           )}

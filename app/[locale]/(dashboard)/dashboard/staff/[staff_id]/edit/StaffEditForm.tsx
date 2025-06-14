@@ -394,7 +394,7 @@ export default function StaffEditForm() {
           staff_id: staff_id as Id<'staff'>,
         })
         toast.success(t('staff.edit.imageDeleteSuccess'), {
-          icon: <Check className="h-4 w-4 text-active" />,
+          icon: <Check className="h-4 w-4 text-accent-2" />,
         })
         router.push('/dashboard/staff')
       }
@@ -465,8 +465,8 @@ export default function StaffEditForm() {
       <form onSubmit={handleSubmit(onSubmit)}>
         <Tabs defaultValue="basic">
           <TabsList>
-            <TabsTrigger value="basic">基本情報</TabsTrigger>
-            <TabsTrigger value="exclusion">対応外メニュー</TabsTrigger>
+            <TabsTrigger value="basic">{t('staff.add.tabBasicInfo')}</TabsTrigger>
+            <TabsTrigger value="exclusion">{t('staff.add.tabExclusionMenu')}</TabsTrigger>
           </TabsList>
           <TabsContent value="basic">
             <Card className="shadow-md border-border">
@@ -479,7 +479,7 @@ export default function StaffEditForm() {
                       <div className="mb-2 flex items-center">
                         <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
                         <span className="text-sm font-medium text-muted-foreground">
-                          スタッフ画像
+                          {t('staff.add.staffImage')}
                         </span>
                       </div>
 
@@ -495,11 +495,11 @@ export default function StaffEditForm() {
                       <div>
                         <ZodTextField
                           name="name"
-                          label="名前"
+                          label={t('staff.list.name')}
                           icon={<User className="h-4 w-4 mr-2 text-muted-foreground" />}
                           register={register}
                           errors={errors}
-                          placeholder="名前を入力してください"
+                          placeholder={t('staff.add.namePlaceholder')}
                           className="transition-all duration-200"
                         />
                       </div>
@@ -508,23 +508,19 @@ export default function StaffEditForm() {
                         <div className="w-full">
                           <Label className="flex items-center mb-2 font-medium text-muted-foreground">
                             <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                            性別
+                            {t('staff.add.gender')}
                           </Label>
                           <Select
                             defaultValue="unselected"
                             onValueChange={(value) => setValue('gender', value as Gender)}
                           >
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="性別を選択してください" />
+                              <SelectValue placeholder={t('staff.add.genderPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                               {GENDER_VALUES.map((gender) => (
                                 <SelectItem key={gender} value={gender}>
-                                  {gender === 'male'
-                                    ? '男性'
-                                    : gender === 'female'
-                                      ? '女性'
-                                      : '未選択'}
+                                  {t(`staff.add.${gender}`)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -534,12 +530,12 @@ export default function StaffEditForm() {
                         <div className="w-full">
                           <ZodTextField
                             name="age"
-                            label="年齢"
+                            label={t('staff.add.age')}
                             icon={<Calendar className="h-4 w-4 mr-2 text-muted-foreground" />}
                             type="number"
                             register={register}
                             errors={errors}
-                            placeholder="年齢を入力してください"
+                            placeholder={t('staff.add.agePlaceholder')}
                           />
                         </div>
                       </div>
@@ -553,8 +549,8 @@ export default function StaffEditForm() {
                           setValue('tags', tags, { shouldValidate: true })
                         }}
                         error={errors.tags?.message}
-                        title="スタッフに付与するタグ"
-                        exampleText="ヘアセット, カット, メイク"
+                        title={t('staff.add.tagsTitle')}
+                        exampleText={t('staff.add.tagsExample')}
                       />
 
                       <div className="flex items-center space-x-2 pt-1">
@@ -565,14 +561,16 @@ export default function StaffEditForm() {
                         />
                         <Label htmlFor="is_active" className="text-xs cursor-pointer">
                           {watch('is_active') ? (
-                            <span className="text-active font-medium">有効</span>
+                            <span className="text-accent-2 font-medium">{t('common.enabled')}</span>
                           ) : (
-                            <span className="text-destructive font-medium">無効</span>
+                            <span className="text-destructive font-medium">
+                              {t('common.disabled')}
+                            </span>
                           )}
                         </Label>
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        予約受け付けは有効の場合のみ可能になります。
+                        {t('staff.add.reservationAvailable')}
                       </span>
                     </div>
                   </div>
@@ -581,23 +579,25 @@ export default function StaffEditForm() {
                     <ZodTextField
                       icon={<Instagram className="h-4 w-4 mr-2 text-muted-foreground" />}
                       name="instagram_link"
-                      label="Instagramリンク"
+                      label={t('staff.add.instagramLink')}
                       register={register}
                       errors={errors}
-                      placeholder="スタッフのInstagramリンクを入力してください"
+                      placeholder={t('staff.add.instagramPlaceholder')}
                     />
                   </div>
 
                   <div className="mt-4">
                     <div className="flex items-center mb-2">
                       <Clipboard className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <Label className="font-medium text-primary">スタッフ紹介</Label>
+                      <Label className="font-medium text-primary">
+                        {t('staff.add.staffIntroduction')}
+                      </Label>
                     </div>
                     <Textarea
                       value={watch('description')}
                       rows={12}
                       {...register('description')}
-                      placeholder="スタッフの紹介を入力してください"
+                      placeholder={t('staff.add.staffIntroductionPlaceholder')}
                       className="transition-all duration-200"
                     />
                     {errors.description && (
@@ -620,12 +620,14 @@ export default function StaffEditForm() {
                     <div>
                       <div className="flex items-center mb-4">
                         <Shield className="h-5 w-5 mr-2 text-muted-foreground" />
-                        <h3 className="font-semibold text-lg">権限設定</h3>
+                        <h3 className="font-semibold text-lg">
+                          {t('staff.add.invitePermissionSettings')}
+                        </h3>
                       </div>
 
                       <Alert className="bg-warning border border-warning-foreground rounded-md mb-4">
                         <AlertDescription className="text-warning-foreground text-sm">
-                          スタッフの権限を設定します。権限によってアクセスできる機能が異なります。
+                          {t('staff.edit.permissionNotice')}
                         </AlertDescription>
                       </Alert>
 
@@ -633,32 +635,34 @@ export default function StaffEditForm() {
                         <div>
                           <div className="flex items-center mb-2">
                             <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <Label className="font-medium text-primary">権限</Label>
+                            <Label className="font-medium text-primary">
+                              {t('staff.edit.permission')}
+                            </Label>
                           </div>
                           <div className="mt-1">
                             <div className="grid grid-cols-3 gap-3">
                               {[
                                 {
                                   role: 'staff',
-                                  label: 'スタッフ',
-                                  desc: '基本的な予約確認と自身の情報管理のみ',
+                                  label: t('staff.roles.staff'),
+                                  desc: t('staff.edit.roleStaffDesc'),
                                 },
                                 {
                                   role: 'manager',
-                                  label: 'マネージャー',
-                                  desc: 'スタッフ管理と基本設定の変更が可能',
+                                  label: t('staff.roles.manager'),
+                                  desc: t('staff.edit.roleManagerDesc'),
                                 },
                                 {
                                   role: 'owner',
-                                  label: 'オーナー',
-                                  desc: 'すべての機能にアクセス可能',
+                                  label: t('staff.roles.owner'),
+                                  desc: t('staff.edit.roleOwnerDesc'),
                                 },
                               ].map((item) => (
                                 <div
                                   key={item.role}
                                   className={`border rounded-md p-3 cursor-pointer transition-all ${
                                     watch('role') === item.role
-                                      ? 'border-active bg-active-foreground text-active'
+                                      ? 'border-accent-2 bg-accent-2-foreground text-accent-2'
                                       : 'border-border bg-muted text-muted-foreground'
                                   }`}
                                   onClick={() =>
@@ -687,68 +691,69 @@ export default function StaffEditForm() {
                     <div>
                       <div className="flex items-center mb-4">
                         <Sparkles className="h-5 w-5 mr-2 text-primary" />
-                        <h3 className="font-semibold text-lg">詳細設定</h3>
+                        <h3 className="font-semibold text-lg">{t('staff.add.advancedSettings')}</h3>
                       </div>
 
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <div className="flex items-center mb-2">
                             <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <Label className="font-medium text-muted-foreground">指名料金</Label>
+                            <Label className="font-medium text-muted-foreground">
+                              {t('staff.add.nominationFee')}
+                            </Label>
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Info className="h-4 w-4 ml-1 text-muted-foreground cursor-help" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p className="text-xs w-56">
-                                    お客様がこのスタッフを指名した場合の追加料金です。
-                                  </p>
+                                  <p className="text-xs w-56">{t('staff.add.nominationFeeHelp')}</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           </div>
                           <ZodTextField
                             name="extra_charge"
-                            label="指名料金"
+                            label={t('staff.add.nominationFee')}
                             type="number"
                             register={register}
                             errors={errors}
-                            placeholder="指名料金を入力してください"
+                            placeholder={t('staff.add.nominationFeePlaceholder')}
                             className="transition-all duration-200"
                           />
                         </div>
                         <div>
                           <div className="flex items-center mb-2">
                             <Sparkles className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <Label className="font-medium text-muted-foreground">優先度</Label>
+                            <Label className="font-medium text-muted-foreground">
+                              {t('staff.add.priority')}
+                            </Label>
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Info className="h-4 w-4 ml-1 text-muted-foreground cursor-help" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p className="text-xs w-56">
-                                    数値が大きいほど予約画面などで上位に表示されます。
-                                  </p>
+                                  <p className="text-xs w-56">{t('staff.add.priorityHelp')}</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           </div>
                           <ZodTextField
                             name="priority"
-                            label="優先度"
+                            label={t('staff.add.priority')}
                             type="number"
                             register={register}
                             errors={errors}
-                            placeholder="優先度を入力してください"
+                            placeholder={t('staff.add.priorityPlaceholder')}
                             className="transition-all duration-200"
                           />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            数値が大きいほど予約画面などで上位に表示されます。
-                            <br />
-                            指名無しの予約などで優先的に予約を確保したい場合は高い数値を設定してください。
-                          </p>
+                          <p
+                            className="text-xs text-muted-foreground mt-1"
+                            dangerouslySetInnerHTML={{
+                              __html: t('staff.edit.priorityHelp').replace(/\n/g, '<br />'),
+                            }}
+                          />
                         </div>
                       </div>
                     </div>
@@ -759,7 +764,7 @@ export default function StaffEditForm() {
           </TabsContent>
           <TabsContent value="exclusion">
             <ExclusionMenu
-              title="対応外メニュー"
+              title={t('staff.add.exclusionMenuTitle')}
               selectedMenuIds={selectedExclusionMenuIds}
               setSelectedMenuIdsAction={setSelectedExclusionMenuIds}
             />
@@ -780,7 +785,7 @@ export default function StaffEditForm() {
             className="flex items-center gap-1"
           >
             <ArrowLeft className="h-4 w-4" />
-            戻る
+            {t('common.back')}
           </Button>
 
           <Button
@@ -790,12 +795,12 @@ export default function StaffEditForm() {
             {isSubmitting || isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                追加中...
+                {t('staff.edit.updating')}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                スタッフを更新
+                {t('staff.edit.updateStaff')}
               </>
             )}
           </Button>
@@ -804,21 +809,21 @@ export default function StaffEditForm() {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>スタッフ画像を削除しますか？</DialogTitle>
-            <DialogDescription>この操作は元に戻すことができません。</DialogDescription>
+            <DialogTitle>{t('staff.edit.deleteImageTitle')}</DialogTitle>
+            <DialogDescription>{t('staff.edit.deleteImageDesc')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              キャンセル
+              {t('staff.edit.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDeleteImage}>
               {isDeletingImage ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  削除中...
+                  {t('staff.edit.deleting')}
                 </>
               ) : (
-                '削除'
+                t('staff.edit.delete')
               )}
             </Button>
           </DialogFooter>

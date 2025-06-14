@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Doc } from '@/convex/_generated/dataModel'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import {
   Dialog,
   DialogContent,
@@ -49,7 +49,6 @@ import {
   type CarouselApi,
 } from '@/components/ui/carousel'
 
-
 interface MenuDetailContentProps {
   menu: Doc<'menu'> | null
 }
@@ -57,7 +56,6 @@ interface MenuDetailContentProps {
 export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   const router = useRouter()
   const t = useTranslations('menus.detail')
-  const tCommon = useTranslations('common')
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const deleteMenu = useMutation(api.menu.mutation.kill)
@@ -113,10 +111,10 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   const getTargetTypeLabel = (type: string): string => {
     const labels = {
       targetType: {
-        'all': tCommon('targetType.all'),
-        'male': tCommon('targetType.male'),
-        'female': tCommon('targetType.female')
-      }
+        repeat: t('labels.targetType.repeat'),
+        first: t('labels.targetType.first'),
+        all: t('labels.targetType.all'),
+      },
     }
     return labels.targetType[type as keyof typeof labels.targetType] || type
   }
@@ -124,10 +122,10 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   const getPaymentMethodLabel = (method: string): string => {
     const labels = {
       paymentMethod: {
-        'cash': tCommon('paymentMethod.cash'),
-        'card': tCommon('paymentMethod.card'),
-        'both': tCommon('paymentMethod.both')
-      }
+        cash: t('labels.paymentMethod.cash'),
+        credit_card: t('labels.paymentMethod.credit_card'),
+        all: t('labels.paymentMethod.all'),
+      },
     }
     return labels.paymentMethod[method as keyof typeof labels.paymentMethod] || method
   }
@@ -145,7 +143,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
 
   const handleDeleteMenu = async () => {
     if (!menu) {
-      toast.error('メニューが見つかりません')
+      toast.error(t('messages.notFound'))
       return
     }
 
@@ -172,7 +170,11 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
               // HTTPステータスコードが200番台でない場合にエラーを投げる
               const errorBody = await response.text() // エラーレスポンスの内容を取得
               throw new Error(
-                t('messages.imageDeleteError', { status: response.status, statusText: response.statusText, error: errorBody })
+                t('messages.imageDeleteError', {
+                  status: response.status,
+                  statusText: response.statusText,
+                  error: errorBody,
+                })
               )
             }
 
@@ -353,7 +355,9 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   <div className="flex items-start p-3 rounded-lg  border border-border">
                     <CreditCard className="w-5 h-5 mt-1 mr-3 text-primary" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('fields.price')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {t('fields.price')}
+                      </p>
                       <div className="flex items-baseline">
                         {formattedSalePrice ? (
                           <div className="flex flex-col">
@@ -380,7 +384,8 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                           {t('fields.totalDuration')}
                         </p>
                         <p className="text-lg font-medium text-primary">
-                          {menu.duration_min || 0}{t('fields.minutes')}
+                          {menu.duration_min || 0}
+                          {t('fields.minutes')}
                         </p>
                       </div>
                     </div>
@@ -390,7 +395,9 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   <div className="flex items-start p-3 rounded-lg border border-border">
                     <Users className="w-5 h-5 mt-1 mr-3 text-primary" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('fields.target')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {t('fields.target')}
+                      </p>
 
                       <p className="text-base text-primary">
                         {menu.target_gender && menu.target_gender !== 'unselected'
@@ -404,7 +411,9 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   <div className="flex items-start p-3 rounded-lg border border-border">
                     <Repeat className="w-5 h-5 mt-1 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('fields.targetType')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {t('fields.targetType')}
+                      </p>
                       <p className="text-base text-primary">
                         {getTargetTypeLabel(menu.target_type || '')}
                       </p>
@@ -415,7 +424,9 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                   <div className="flex items-start p-3 rounded-lg border border-border">
                     <CreditCard className="w-5 h-5 mt-1 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('fields.paymentMethod')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {t('fields.paymentMethod')}
+                      </p>
                       <p className="text-base text-primary">
                         {getPaymentMethodLabel(menu.payment_method || '')}
                       </p>
@@ -487,7 +498,10 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                     {t('fields.systemInfo')}
                   </h3>
                   <div className="text-sm text-muted-foreground">
-                    <p>{t('fields.createdAt')}: {new Date(menu._creationTime).toLocaleString('ja-JP')}</p>
+                    <p>
+                      {t('fields.createdAt')}:{' '}
+                      {new Date(menu._creationTime).toLocaleString('ja-JP')}
+                    </p>
                   </div>
                 </div>
               </TabsContent>

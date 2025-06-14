@@ -164,7 +164,7 @@ function CouponPreview({
                 className={`px-3 py-1 text-lg font-bold  ${
                   data.discount_type === 'percentage'
                     ? 'bg-link text-link-foreground'
-                    : 'bg-active-foreground text-active'
+                    : 'bg-accent-2-foreground text-accent-2'
                 }`}
               >
                 {data.discount_type === 'percentage'
@@ -210,7 +210,7 @@ function CouponPreview({
           </div>
           <Badge
             variant={data.is_active ? 'default' : 'destructive'}
-            className={`h-6 ${data.is_active ? 'bg-active-foreground text-active' : 'bg-destructive text-destructive-foreground'}`}
+            className={`h-6 ${data.is_active ? 'bg-accent-2-foreground text-accent-2' : 'bg-destructive text-destructive-foreground'}`}
           >
             {data.is_active ? t('active') : t('inactive')}
           </Badge>
@@ -510,12 +510,12 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                               onCheckedChange={(checked) => {
                                 field.onChange(checked ? 'fixed' : 'percentage')
                               }}
-                              className="data-[state=checked]:bg-active data-[state=unchecked]:bg-link-foreground"
+                              className="data-[state=checked]:bg-accent-2 data-[state=unchecked]:bg-link-foreground"
                             />
                           )}
                         />
                         <div
-                          className={`flex-1 text-center text-sm  p-2 rounded-md ${discountType === 'fixed' ? 'bg-active-foreground text-active font-medium' : 'text-muted-foreground'}`}
+                          className={`flex-1 text-center text-sm  p-2 rounded-md ${discountType === 'fixed' ? 'bg-accent-2-foreground text-accent-2 font-medium' : 'text-muted-foreground'}`}
                         >
                           {t('fixedDiscount')}
                         </div>
@@ -705,7 +705,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                           </div>
                           <div className="flex items-center gap-2">
                             <span
-                              className={`text-xs px-2 py-0.5 rounded-md font-bold ${field.value ? 'bg-active-foreground text-active' : 'bg-destructive text-destructive-foreground'}`}
+                              className={`text-xs px-2 py-0.5 rounded-md font-bold ${field.value ? 'bg-accent-2-foreground text-accent-2' : 'bg-destructive text-destructive-foreground'}`}
                             >
                               {field.value ? t('active') : t('inactive')}
                             </span>
@@ -713,7 +713,7 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                               id="is_active"
                               checked={field.value}
                               onCheckedChange={field.onChange}
-                              className="data-[state=checked]:bg-active data-[state=unchecked]:bg-destructive-foreground"
+                              className="data-[state=checked]:bg-accent-2 data-[state=unchecked]:bg-destructive-foreground"
                             />
                           </div>
                         </div>

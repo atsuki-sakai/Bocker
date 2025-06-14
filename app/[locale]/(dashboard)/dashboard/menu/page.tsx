@@ -5,15 +5,16 @@ import { DashboardSection, withManagerAccess } from '@/components/common';
 import { useTranslations } from 'next-intl'
 
 function MenuPage() {
-  const t = useTranslations('options')
+  const t = useTranslations('menus.list')
+  const tCommon = useTranslations('common')
 
   return (
     <DashboardSection
-      title={t('menus.list.title')}
+      title={t('title')}
       backLink="/dashboard"
-      backLinkTitle={t('menus.list.dashboard')}
+      backLinkTitle={tCommon('backToDashboard')}
       infoBtn={{
-        text: t('menus.list.addNew'),
+        text: t('addNew'),
         link: '/dashboard/menu/add',
       }}
     >

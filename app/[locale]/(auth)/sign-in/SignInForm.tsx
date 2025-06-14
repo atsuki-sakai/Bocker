@@ -4,41 +4,26 @@ import { useRouter } from "next/navigation";
 import { useSignIn } from "@clerk/nextjs";
 import { useZodForm } from "@/hooks/useZodForm";
 import { useState } from "react";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { z } from "zod";
-import { toast } from "sonner";
+import { Link } from '@/i18n/navigation'
+import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { z } from 'zod'
+import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTranslations, useLocale } from 'next-intl'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 
-import {
-  Mail,
-  Lock,
-  ArrowRight,
-  Loader2,
-  LogIn,
-  Eye,
-  EyeOff,
-} from "lucide-react";
-
+import { Mail, Lock, ArrowRight, Loader2, LogIn, Eye, EyeOff } from 'lucide-react'
 
 export default function SignInForm() {
   const t = useTranslations('auth.signIn')
   const vt = useTranslations('auth.validation')
   const locale = useLocale()
-  
+
   const signInSchema = z.object({
     email: z.string().email({ message: vt('emailInvalid') }),
     password: z.string().min(8, { message: vt('passwordMinLength') }),
@@ -201,7 +186,7 @@ export default function SignInForm() {
                   className="text-center pt-4"
                 >
                   <Link
-                    href={`/${locale}/sign-in/reset-password?email=${email}`}
+                    href={`/sign-in/reset-password?email=${email}`}
                     className="text-sm text-link-foreground"
                   >
                     {t('forgotPassword')}
@@ -217,10 +202,7 @@ export default function SignInForm() {
               variants={itemVariants}
               className="flex items-center justify-end w-full text-right text-xs"
             >
-              <Link
-                href={`/${locale}/sign-up`}
-                className="inline-flex items-center text-xs text-blue-500"
-              >
+              <Link href={`/sign-up`} className="inline-flex items-center text-xs text-blue-500">
                 {t('signUp')}
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Link>

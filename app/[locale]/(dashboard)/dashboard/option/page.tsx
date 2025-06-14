@@ -6,12 +6,13 @@ import { useTranslations } from 'next-intl';
 
 function OptionPage() {
   const t = useTranslations('options');
+  const tCommon = useTranslations('common')
   
   return (
     <DashboardSection
       title={t('list.title')}
       backLink="/dashboard"
-      backLinkTitle={t('list.dashboard')}
+      backLinkTitle={tCommon('backToDashboard')}
       infoBtn={{ text: t('list.addNew'), link: '/dashboard/option/add' }}
     >
       <div className="flex flex-col gap-2">

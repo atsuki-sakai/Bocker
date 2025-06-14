@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 
 export default function ControlledProgressBar() {
   const [progress, setProgress] = useState<number>(0)
+  const t = useTranslations('common.uploader')
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -24,10 +26,10 @@ export default function ControlledProgressBar() {
   const getStatusIcon = () => {
     return (
       <div className="relative">
-        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-active to-active flex items-center justify-center">
-          <Upload className="w-3 h-3 text-active-foreground" />
+        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-accent-2 to-accent-2 flex items-center justify-center">
+          <Upload className="w-3 h-3 text-accent-2-foreground" />
         </div>
-        <div className="absolute inset-0 bg-active rounded-full animate-ping opacity-20" />
+        <div className="absolute inset-0 bg-accent-2 rounded-full animate-ping opacity-20" />
       </div>
     )
   }
@@ -49,10 +51,10 @@ export default function ControlledProgressBar() {
             {getStatusIcon()}
             <div className="text-center">
               <h3 className="text-lg font-semibold text-foreground">
-                {progress !== 100 ? '画像をアップロード中' : 'アップロード完了'}
+                {progress !== 100 ? t('uploading') : t('uploadComplete')}
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                {progress === 100 ? '処理が完了しました' : `${progress}% 完了`}
+                {progress === 100 ? t('processingComplete') : t('progressPercent', { progress })}
               </p>
             </div>
           </div>
@@ -64,17 +66,17 @@ export default function ControlledProgressBar() {
                 className={`absolute inset-y-0 left-0 bg-gradient-to-r ${getProgressColor()} rounded-full transition-all duration-300 ease-out`}
                 style={{ width: `${progress}%` }}
               >
-                <div className="absolute inset-0 bg-active animate-pulse rounded-full" />
+                <div className="absolute inset-0 bg-accent-2 animate-pulse rounded-full" />
                 {/* グリッター効果 */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-active to-transparent animate-shimmer" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent-2 to-transparent animate-shimmer" />
               </div>
             </div>
 
             {/* 進捗テキスト */}
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>開始</span>
+              <span>{t('start')}</span>
               <span className="font-medium">{progress}%</span>
-              <span>完了</span>
+              <span>{t('complete')}</span>
             </div>
           </div>
 
@@ -83,9 +85,9 @@ export default function ControlledProgressBar() {
             <div className="flex items-start gap-3 p-3 bg-destructive border border-destructive-foreground rounded-xl">
               <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
               <div className="text-xs text-destructive-foreground">
-                <p className="text-destructive-foreground font-bold">重要な注意事項</p>
+                <p className="text-destructive-foreground font-bold">{t('importantNote')}</p>
                 <p className="text-destructive-foreground mt-1">
-                  戻るボタンやページ遷移をするとアップロードがキャンセルされます。
+                  {t('navigationWarning')}
                 </p>
               </div>
             </div>
@@ -93,10 +95,10 @@ export default function ControlledProgressBar() {
 
           {/* 完了メッセージ */}
           {progress === 100 && (
-            <div className="text-center p-4 bg-active-foreground border border-active rounded-xl">
-              <div className="flex items-center justify-center gap-2 text-active">
+            <div className="text-center p-4 bg-accent-2-foreground border border-accent-2 rounded-xl">
+              <div className="flex items-center justify-center gap-2 text-accent-2">
                 <CheckCircle className="w-5 h-5" />
-                <span className="font-medium text-sm">アップロードが正常に完了しました</span>
+                <span className="font-medium text-sm">{t('uploadSuccess')}</span>
               </div>
             </div>
           )}
@@ -107,7 +109,7 @@ export default function ControlledProgressBar() {
           {[...Array(6)].map((_, i: number) => (
             <div
               key={i}
-              className="absolute w-1 h-1 bg-active rounded-full animate-float opacity-60"
+              className="absolute w-1 h-1 bg-accent-2 rounded-full animate-float opacity-60"
               style={{
                 left: `${20 + i * 15}%`,
                 animationDelay: `${i * 0.5}s`,

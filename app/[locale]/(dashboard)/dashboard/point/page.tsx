@@ -6,17 +6,17 @@ import { useTranslations } from 'next-intl';
 
 function PointPage() {
   const t = useTranslations('point');
-  const dashboardT = useTranslations('dashboard');
+  const tCommon = useTranslations('common')
   
   return (
     <DashboardSection
       title={t('title')}
       backLink="/dashboard"
-      backLinkTitle={dashboardT('title')}
+      backLinkTitle={tCommon('backToDashboard')}
     >
       <PointTabs />
     </DashboardSection>
-  );
+  )
 }
 
 export default withOwnerAccess(PointPage);

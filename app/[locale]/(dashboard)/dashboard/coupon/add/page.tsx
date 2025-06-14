@@ -136,7 +136,7 @@ function CouponPreview({ data, locale }: { data: CouponPreviewData; locale: Supp
             <div className="text-center">
               <Badge
                 variant="outline"
-                className={`flex-1 text-center p-2 rounded-md text-sm ${data.discount_type === 'percentage' ? 'bg-link text-link-foreground font-medium' : 'bg-active-foreground text-active font-medium'}`}
+                className={`flex-1 text-center p-2 rounded-md text-sm ${data.discount_type === 'percentage' ? 'bg-link text-link-foreground font-medium' : 'bg-accent-2-foreground text-accent-2 font-medium'}`}
               >
                 {data.discount_type === 'percentage'
                   ? `${data.percentage_discount_value || 0}% OFF`
@@ -173,7 +173,7 @@ function CouponPreview({ data, locale }: { data: CouponPreviewData; locale: Supp
           </div>
           <Badge
             variant={data.is_active ? 'default' : 'destructive'}
-            className={`h-6 ${data.is_active ? 'bg-active-foreground text-active' : 'bg-destructive-foreground text-destructive'}`}
+            className={`h-6 ${data.is_active ? 'bg-accent-2-foreground text-accent-2' : 'bg-destructive-foreground text-destructive'}`}
           >
             {data.is_active ? t('active') : t('inactive')}
           </Badge>
@@ -463,12 +463,12 @@ function CouponForm() {
                               onCheckedChange={(checked) => {
                                 field.onChange(checked ? 'fixed' : 'percentage')
                               }}
-                              className="data-[state=checked]:bg-active data-[state=unchecked]:bg-link"
+                              className="data-[state=checked]:bg-accent-2 data-[state=unchecked]:bg-link"
                             />
                           )}
                         />
                         <div
-                          className={`flex-1 text-center p-2 rounded-md text-sm ${discountType === 'fixed' ? 'bg-active-foreground text-active font-medium' : 'text-muted-foreground'}`}
+                          className={`flex-1 text-center p-2 rounded-md text-sm ${discountType === 'fixed' ? 'bg-accent-2-foreground text-accent-2 font-medium' : 'text-muted-foreground'}`}
                         >
                           {t('fixedDiscount')}
                         </div>
@@ -653,7 +653,7 @@ function CouponForm() {
                           <div className="flex items-center gap-2">
                             <Badge
                               variant={field.value ? 'default' : 'destructive'}
-                              className={`px-2 py-0.5 ${field.value ? 'bg-active text-active-foreground' : 'bg-destructive text-destructive-foreground'}`}
+                              className={`px-2 py-0.5 ${field.value ? 'bg-accent-2-foreground text-accent-2' : 'bg-destructive text-destructive-foreground'}`}
                             >
                               {field.value ? t('active') : t('inactive')}
                             </Badge>

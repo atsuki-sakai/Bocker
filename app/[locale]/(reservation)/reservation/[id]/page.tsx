@@ -19,7 +19,7 @@ import { toast } from 'sonner'
 import { Loading } from '@/components/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import Image from 'next/image'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import { CustomerRepository } from '@/services/supabase/repositories'
 import { ZodTextField } from '@/components/common'
 

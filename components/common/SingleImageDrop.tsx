@@ -7,6 +7,7 @@ import { FileImage } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { AspectType } from '@/convex/types'
+import { useTranslations } from 'next-intl'
 
 interface SingleImageDropProps {
   currentFile?: File | null
@@ -28,10 +29,11 @@ export default function SingleImageDrop({
   previewWidth = 1280,
   previewHeight = 1280,
   className = '',
-  placeholderText = '画像をドラッグするか、クリックして選択',
+  placeholderText,
   accept = 'image/*',
   aspectType = 'square',
 }: SingleImageDropProps) {
+  const t = useTranslations('common.imageDrop')
   // 選択されたファイルとプレビューURLの状態管理
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null)
@@ -42,12 +44,12 @@ export default function SingleImageDrop({
   const processFile = (file: File) => {
     const maxSize = maxSizeMB * 1024 * 1024
     if (!file.type.startsWith('image/')) {
-      toast.error(`ファイル「${file.name}」は画像ファイルではありません。`)
+      toast.error(t('notImage', { fileName: file.name }))
       return
     }
     if (file.size > maxSize) {
       toast.error(
-        `ファイル「${file.name}」のサイズが大きすぎます。${maxSizeMB}MB以下にしてください。`
+        t('tooLarge', { fileName: file.name, maxSize: maxSizeMB })
       )
       return
     }
@@ -105,9 +107,9 @@ export default function SingleImageDrop({
         className={`h-12 w-12 mx-auto mb-2 ${isDragging ? 'text-active' : 'text-muted-foreground'}`}
       />
       <p className={`text-sm mb-2 ${isDragging ? 'text-active' : 'text-muted-foreground'}`}>
-        {isDragging ? 'ここにファイルをドロップ' : placeholderText}
+        {isDragging ? t('dropHere') : placeholderText || t('placeholder')}
       </p>
-      <p className="text-xs text-muted-foreground">JPG, PNG など / 最大 {maxSizeMB}MB</p>
+      <p className="text-xs text-muted-foreground">{t('formats', { maxSize: maxSizeMB })}</p>
     </div>
   )
 
@@ -128,7 +130,7 @@ export default function SingleImageDrop({
             alt="Preview"
             unoptimized
             loader={({ src }) => src}
-            className={`mx-auto object-cover h-auto w-full rounded-md overflow-hidden ${aspectType === 'square' ? 'aspect-[1/1]' : aspectType === 'landscape' ? 'aspect-[16/9]' : 'aspect-49/6]'}`}
+            className={`mx-auto object-cover h-auto w-full rounded-md overflow-hidden ${aspectType === 'square' ? 'aspect-[1/1]' : aspectType === 'landscape' ? 'aspect-[16/9]' : 'aspect-[2/3]'}`}
             width={previewWidth}
             height={previewHeight}
           />
@@ -140,7 +142,7 @@ export default function SingleImageDrop({
               className="mt-2"
               onClick={() => fileInputRef.current?.click()}
             >
-              画像を変更
+              {t('changeImage')}
             </Button>
             <Button
               type="button"
@@ -149,18 +151,18 @@ export default function SingleImageDrop({
               className="mt-2"
               onClick={clearImage}
             >
-              画像を削除
+              {t('deleteImage')}
             </Button>
           </div>
           {selectedFile && (
             <div className="flex items-center justify-between w-full gap-2 text-xs text-muted-foreground mt-2 text-start">
               <p className="truncate flex-1 min-w-0">
-                <span className="font-bold">ファイル名:</span>
+                <span className="font-bold">{t('fileName')}</span>
                 <br />
                 <span className="truncate block">{selectedFile.name}</span>
               </p>
               <p className="flex-shrink-0">
-                <span className="font-bold">サイズ:</span>
+                <span className="font-bold">{t('fileSize')}</span>
                 <br />
                 {(selectedFile.size / 1024).toFixed(1)} KB
               </p>
@@ -172,7 +174,7 @@ export default function SingleImageDrop({
           {renderDragAreaPlaceholder()}
           <div className="mt-4">
             <Button type="button" onClick={() => fileInputRef.current?.click()} className="w-full">
-              ファイルを選択
+              {t('selectFile')}
             </Button>
           </div>
         </>
@@ -192,13 +194,11 @@ export default function SingleImageDrop({
       />
       <p className="text-xs scale-90 text-muted-foreground mt-2">
         <span className="font-bold">
-          推奨のアスペクト比は
           {aspectType === 'square'
-            ? '1/1の正方形'
+            ? t('recommendedSquare')
             : aspectType === 'landscape'
-              ? '16/9の横長'
-              : '2/3の縦長'}
-          です。
+              ? t('recommendedLandscape')
+              : t('recommendedPortrait')}
         </span>
       </p>
     </div>

@@ -153,7 +153,7 @@ const PlanCard = memo(function PlanCard({
                 <span className="mt-0.5 text-active flex-shrink-0">
                   <Check className="h-4 w-4" />
                 </span>
-                <span>{feature}</span>
+                <span>{t(feature)}</span>
               </li>
             ))}
           </ul>

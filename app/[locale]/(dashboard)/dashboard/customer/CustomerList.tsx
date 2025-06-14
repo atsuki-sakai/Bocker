@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Mail, Phone, Calendar, ChevronDown, Search, RefreshCw, Trash2 } from 'lucide-react'
@@ -74,9 +74,12 @@ export default function CustomerList() {
   const [searchCache, setSearchCache] = useState<Map<string, CustomerWithDetails[]>>(new Map())
 
   // キャッシュされた検索結果を取得
-  const getCachedResults = useCallback((searchTerm: string): CustomerWithDetails[] | null => {
-    return searchCache.get(searchTerm.toLowerCase().trim()) || null
-  }, [searchCache])
+  const getCachedResults = useCallback(
+    (searchTerm: string): CustomerWithDetails[] | null => {
+      return searchCache.get(searchTerm.toLowerCase().trim()) || null
+    },
+    [searchCache]
+  )
 
   // 詳細データ取得の最適化（バッチ処理）
   const getCustomersWithDetails = useCallback(
@@ -291,10 +294,13 @@ export default function CustomerList() {
   }
 
   // 予約日の書式変換
-  const formatReservationDate = useCallback((timestamp: number | null | undefined): string => {
-    if (!timestamp) return t('noReservation')
-    return new Date(timestamp * 1000).toLocaleDateString(locale === 'ja' ? 'ja-JP' : 'en-US')
-  }, [locale, t])
+  const formatReservationDate = useCallback(
+    (timestamp: number | null | undefined): string => {
+      if (!timestamp) return t('noReservation')
+      return new Date(timestamp * 1000).toLocaleDateString(locale === 'ja' ? 'ja-JP' : 'en-US')
+    },
+    [locale, t]
+  )
 
   if (!isLoaded || isLoading) {
     return <Loading />
@@ -403,7 +409,9 @@ export default function CustomerList() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge>{customerData.customer.total_reservation_count ?? 0} {t('times')}</Badge>
+                    <Badge>
+                      {customerData.customer.total_reservation_count ?? 0} {t('times')}
+                    </Badge>
                   </TableCell>
                   <TableCell className="px-4">
                     <div className="flex items-center gap-4">
@@ -430,9 +438,10 @@ export default function CustomerList() {
                     <Button
                       className="text-xs bg-link text-link-foreground hover:opacity-80 transition-opacity duration-300"
                       variant="ghost"
-                      size="icon"
                     >
-                      <Link href={`/dashboard/customer/${customerData.customer.uid}`}>{t('details')}</Link>
+                      <Link href={`/dashboard/customer/${customerData.customer.uid}`}>
+                        {t('details')}
+                      </Link>
                     </Button>
                   </TableCell>
                   <TableCell className="px-4">
@@ -483,9 +492,7 @@ export default function CustomerList() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('confirmDelete')}</DialogTitle>
-              <DialogDescription>
-                {t('deleteWarning')}
-              </DialogDescription>
+              <DialogDescription>{t('deleteWarning')}</DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowDeleteModal(false)}>

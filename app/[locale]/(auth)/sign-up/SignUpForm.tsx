@@ -21,10 +21,20 @@ import {
   CardDescription,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import { useZodForm } from '@/hooks/useZodForm'
 import { toast } from 'sonner'
-import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle, User, Loader2 } from 'lucide-react'
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  ArrowRight,
+  CheckCircle,
+  User,
+  Loader2,
+  Store,
+} from 'lucide-react'
 import { UseFormRegister, FieldErrors } from 'react-hook-form'
 import { z } from 'zod'
 import { api } from '@/convex/_generated/api'
@@ -506,7 +516,7 @@ export default function SignUpPage() {
                       {t('storeName')}
                     </Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Store className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="org_name"
                         type="text"

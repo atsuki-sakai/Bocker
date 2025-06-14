@@ -12,19 +12,19 @@ import OrgStripeConnectStatus from './_components/OrgStripeConnectStatus'
 import OrgWeekHourSchedule from './_components/OrgWeekHourSchedule'
 
 function SettingPage() {
-  const t = useTranslations('settings.tabs')
+  const t = useTranslations('settings')
   const [currentTab, setCurrentTab] = useState('basic')
 
   return (
     <Tabs value={currentTab} onValueChange={setCurrentTab}>
       <div className="overflow-x-scroll">
         <TabsList className="flex w-fit gap-2 mb-6">
-          <TabsTrigger value="basic">{t('basic')}</TabsTrigger>
-          <TabsTrigger value="api">{t('api')}</TabsTrigger>
-          <TabsTrigger value="reservation-setting">{t('reservationSetting')}</TabsTrigger>
-          <TabsTrigger value="week-schedule">{t('weekSchedule')}</TabsTrigger>
-          <TabsTrigger value="exception-schedule">{t('exceptionSchedule')}</TabsTrigger>
-          <TabsTrigger value="payment">{t('payment')}</TabsTrigger>
+          <TabsTrigger value="basic">{t('organizationSettings')}</TabsTrigger>
+          <TabsTrigger value="api">{t('apiSettings')}</TabsTrigger>
+          <TabsTrigger value="reservation-setting">{t('reservationSettings')}</TabsTrigger>
+          <TabsTrigger value="week-schedule">{t('businessHours.title')}</TabsTrigger>
+          <TabsTrigger value="exception-schedule">{t('specialHolidays')}</TabsTrigger>
+          <TabsTrigger value="payment">{t('paymentSettings')}</TabsTrigger>
         </TabsList>
       </div>
 

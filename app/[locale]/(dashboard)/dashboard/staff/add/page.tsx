@@ -259,15 +259,15 @@ function StaffAddPage() {
 
           if (selectedFile) {
             try {
-              const base64Data = await fileToBase64(selectedFile!);
-              
+              const base64Data = await fileToBase64(selectedFile!)
+
               const result = await uploadCompressedImage({
                 base64Data,
                 fileName: selectedFile!.name,
                 directory: 'staff',
                 orgId,
                 aspectType: 'square',
-                quality: 'medium'
+                quality: 'medium',
               })
               // 新方式のレスポンス形式に合わせて修正
               newUploadedImageUrls = [
@@ -316,13 +316,15 @@ function StaffAddPage() {
             if (inviteResponse.status === 400 && inviteData.error?.includes('Clerk')) {
               toast.error(t('staff.messages.emailAlreadyInClerk'))
             } else {
-              toast.error(t('staff.messages.inviteFailed', { error: inviteData.error || 'Unknown error' }))
+              toast.error(
+                t('staff.messages.inviteFailed', { error: inviteData.error || 'Unknown error' })
+              )
             }
             return
           }
 
           toast.success(t('staff.messages.inviteEmailSent'), {
-            icon: <Check className="h-4 w-4 text-active" />,
+            icon: <Check className="h-4 w-4 text-accent-2" />,
           })
           router.push('/dashboard/staff')
           return
@@ -335,14 +337,14 @@ function StaffAddPage() {
         // 通常のスタッフ作成処理
         if (selectedFile) {
           try {
-            const base64Data = await fileToBase64(selectedFile!);
+            const base64Data = await fileToBase64(selectedFile!)
             const result = await uploadCompressedImage({
               base64Data,
               fileName: selectedFile!.name,
               directory: 'staff',
               orgId,
               aspectType: 'square',
-              quality: 'medium'
+              quality: 'medium',
             })
             // 新方式のレスポンス形式に合わせて修正
             newUploadedImageUrls = [
@@ -404,7 +406,7 @@ function StaffAddPage() {
           })
 
           toast.success(t('staff.messages.staffAdded'), {
-            icon: <Check className="h-4 w-4 text-active" />,
+            icon: <Check className="h-4 w-4 text-accent-2" />,
           })
 
           router.push('/dashboard/staff')
@@ -516,7 +518,7 @@ function StaffAddPage() {
                 <CardContent className="space-y-8 pt-6 overflow-x-hidden">
                   {/* 基本情報セクション */}
                   <div>
-                    <div className="flex flex-col items-start justify-between space-y-2 mb-4 bg-active-foreground text-active border border-active rounded-md p-4">
+                    <div className="flex flex-col items-start justify-between space-y-2 mb-4 bg-accent-2-foreground text-accent-2 border border-accent-2 rounded-md p-4">
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="send_invite_email"
@@ -535,8 +537,10 @@ function StaffAddPage() {
                     {sendInviteEmail && (
                       <div>
                         <div className="flex items-center mb-4">
-                          <Shield className="h-5 w-5 mr-2 text-active" />
-                          <h3 className="font-semibold text-lg">{t('staff.add.invitePermissionSettings')}</h3>
+                          <Shield className="h-5 w-5 mr-2 text-accent-2" />
+                          <h3 className="font-semibold text-lg">
+                            {t('staff.add.invitePermissionSettings')}
+                          </h3>
                         </div>
                         <div className="grid md:grid-cols-2 gap-6">
                           <div className="flex flex-col space-y-4 items-center gap-2 w-full">
@@ -576,7 +580,7 @@ function StaffAddPage() {
                                   whileHover={{ scale: 1.02 }}
                                   className={`border rounded-md p-3 cursor-pointer transition-all ${
                                     watch('role') === item.role
-                                      ? 'border-active bg-active-foreground text-active'
+                                      ? 'border-accent-2 bg-accent-2-foreground text-accent-2'
                                       : 'border-border bg-muted text-muted-foreground'
                                   }`}
                                   onClick={() => setValue('role', item.role as Role)}
@@ -607,25 +611,19 @@ function StaffAddPage() {
                                       <strong className="text-palette-1-foreground">
                                         {t('staff.add.ownerRole')}
                                       </strong>
-                                      <span className="ml-1">
-                                        {t('staff.add.ownerRoleDesc')}
-                                      </span>
+                                      <span className="ml-1">{t('staff.add.ownerRoleDesc')}</span>
                                     </div>
                                     <div className="border-l-2 border-palette-4-foreground pl-2">
                                       <strong className="text-palette-4-foreground">
                                         {t('staff.add.managerRole')}
                                       </strong>
-                                      <span className="ml-1">
-                                        {t('staff.add.managerRoleDesc')}
-                                      </span>
+                                      <span className="ml-1">{t('staff.add.managerRoleDesc')}</span>
                                     </div>
                                     <div className="border-l-2 border-palette-3-foreground pl-2">
                                       <strong className="text-palette-3-foreground">
                                         {t('staff.add.staffRole')}
                                       </strong>
-                                      <span className="ml-1">
-                                        {t('staff.add.staffRoleDesc')}
-                                      </span>
+                                      <span className="ml-1">{t('staff.add.staffRoleDesc')}</span>
                                     </div>
                                   </div>
                                   <div className="mt-3 pt-2 border-t border-border">
@@ -733,9 +731,11 @@ function StaffAddPage() {
                           />
                           <Label htmlFor="is_active" className="text-xs cursor-pointer">
                             {watch('is_active') ? (
-                              <span className="text-active font-medium">{t('staff.active')}</span>
+                              <span className="text-accent-2 font-medium">{t('staff.active')}</span>
                             ) : (
-                              <span className="text-destructive font-medium">{t('staff.inactive')}</span>
+                              <span className="text-destructive font-medium">
+                                {t('staff.inactive')}
+                              </span>
                             )}
                           </Label>
                         </div>
@@ -757,7 +757,9 @@ function StaffAddPage() {
                     <div className="mt-4">
                       <div className="flex items-center mb-2">
                         <Clipboard className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <Label className="font-medium text-muted-foreground">{t('staff.add.staffIntroduction')}</Label>
+                        <Label className="font-medium text-muted-foreground">
+                          {t('staff.add.staffIntroduction')}
+                        </Label>
                       </div>
                       <Textarea
                         value={watch('description') ?? ''}
@@ -784,7 +786,7 @@ function StaffAddPage() {
 
                   <div>
                     <div className="flex items-center mb-4">
-                      <Sparkles className="h-5 w-5 mr-2 text-blue-500" />
+                      <Sparkles className="h-5 w-5 mr-2 text-muted-foreground" />
                       <h3 className="font-semibold text-lg">{t('staff.add.advancedSettings')}</h3>
                     </div>
 
@@ -799,7 +801,7 @@ function StaffAddPage() {
                           placeholder={t('staff.add.nominationFeePlaceholder')}
                           className="transition-all duration-200"
                         />
-                        <p className="text-xs mt-1 text-gray-500">
+                        <p className="text-xs mt-1 text-muted-foreground">
                           {t('staff.add.nominationFeeHelp')}
                         </p>
                       </div>
@@ -814,7 +816,7 @@ function StaffAddPage() {
                           placeholder={t('staff.add.priorityPlaceholder')}
                           className="transition-all duration-200"
                         />
-                        <p className="text-xs mt-1 text-gray-500">
+                        <p className="text-xs mt-1 text-muted-foreground">
                           {t('staff.add.priorityHelp')}
                         </p>
                       </div>
@@ -834,7 +836,7 @@ function StaffAddPage() {
               }}
             />
             {Object.keys(errors).length > 0 && (
-              <ul className="text-red-500 bg-red-50 p-2 rounded-md space-y-1 text-xs mt-2 list-disc pl-5">
+              <ul className="text-destructive bg-destructive-foreground p-2 rounded-md space-y-1 text-xs mt-2 list-disc pl-5">
                 {Object.values(errors).map((error, index) => (
                   <li key={index}>{error.message}</li>
                 ))}

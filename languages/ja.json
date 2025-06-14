@@ -47,7 +47,6 @@
       "passwordFair": "普通",
       "passwordGood": "強い",
       "passwordStrong": "非常に強い",
-
       "passwordRequirements": {
         "length": "8文字以上",
         "maxLength": "100文字以内",
@@ -197,6 +196,11 @@
     "switchLanguage": "言語を切り替える"
   },
   "point": {
+    "common": {
+      "enabled": "有効",
+      "disabled": "無効",
+      "points": "ポイント"
+    },
     "title": "ポイント設定",
     "tabs": {
       "basicSettings": "基本設定",
@@ -259,11 +263,8 @@
       "cautionSameStoreEnd": "でのみ有効です。",
       "usageFlow": "ポイント利用フロー:",
       "usageStep1": "顧客が予約時に使用ポイント数を入力・確定",
-      "usageStep2": "予約確定後に ",
-      "usageCode": "利用コード",
-      "usageStep2End": " が自動発行",
-      "usageStep3": "来店時に顧客がコードを提示し、スタッフが管理画面へ入力して確定",
-      "cautionStaffConfirm": "スタッフ確認が完了しない限りポイントは消費されません（不正利用防止）。",
+      "usageStep2": "施術完了時に顧客にポイントが付与されます。",
+      "cautionStaffConfirm": "スタッフ確認が施術を完了しない限りポイントは付与されません。",
       "cautionExclusionMenu": "「ポイント対象外メニュー」に設定したメニューには ",
       "cautionNoPointAdded": "ポイント加算されません",
       "cautionCanUsePoints": "が、保有ポイントの利用は可能です。",
@@ -377,7 +378,10 @@
     "minutes": "分",
     "hours": "時間",
     "reservationCount": "件の予約",
-    "noReservations": "予約がありません",
+    "totalReservations": "総予約数",
+    "count": "件",
+    "assignedStaff": "担当スタッフ",
+    "noReservations": "予約がありません。",
     "reservationTimeline": "予約タイムライン",
     "nameNotSet": "名称未設定",
     "weekend": "土日",
@@ -391,7 +395,7 @@
     "reservationInfo": "予約情報",
     "close": "閉じる",
     "createReservation": "予約の作成",
-    "backToDashboard": "ダッシュボードへ",
+    "backToDashboard": "ダッシュボードに戻る",
     "customerType": "顧客属性の選択",
     "existingCustomer": "既存顧客の予約",
     "newCustomer": "新規顧客の予約",
@@ -414,7 +418,6 @@
     "selectedMenus": "選択中のメニュー",
     "staffForTreatment": "施術するスタッフ",
     "searchingStaff": "スタッフを検索中...",
-    "selectStaff": "スタッフを選択",
     "selectedStaff": "選択中のスタッフ",
     "designationFee": "指名料",
     "noAvailableStaff": "選択したすべてのメニューに対応できるスタッフが見つかりません。メニューの組み合わせを変更してください。",
@@ -438,11 +441,9 @@
     "noOptionsSelected": "オプションは選択されていません",
     "selectMenusFirst": "メニューを選択してください",
     "staffSchedule": "スタッフ予定表",
-    "selectStaff": "スタッフを選択",
-    "prevWeek": "前週", 
+    "prevWeek": "前週",
     "nextWeek": "次週",
     "prevDay": "前日",
-    "nextDay": "翌日",
     "today": "今日",
     "weekView": "週表示",
     "dayView": "日表示",
@@ -455,125 +456,75 @@
     "fullDay": "全日",
     "weekdayHeader": "曜日ヘッダー",
     "hasReservations": "予約あり",
-    "noReservations": "予約がありません。",
     "selectStaffToShow": "右上のプルダウンからスタッフを選択して予約を表示してください。",
     "am": "午前",
     "pm": "午後",
     "oclock": "時",
     "from": "から",
-    "backToDashboard": "ダッシュボードに戻る"
+    "weekdays": {
+      "monday": "月",
+      "tuesday": "火",
+      "wednesday": "水",
+      "thursday": "木",
+      "friday": "金",
+      "saturday": "土",
+      "sunday": "日"
+    },
+    "weekdaysFull": {
+      "monday": "月曜日",
+      "tuesday": "火曜日",
+      "wednesday": "水曜日",
+      "thursday": "木曜日",
+      "friday": "金曜日",
+      "saturday": "土曜日",
+      "sunday": "日曜日"
+    }
   },
   "customers": {
     "title": "顧客管理",
     "list": "顧客一覧",
-    "addCustomer": "顧客追加",
+    "addCustomer": "顧客登録",
     "editCustomer": "顧客編集",
     "customerDetails": "顧客詳細",
     "firstName": "名前",
     "lastName": "姓",
-    "firstNameKana": "名前（カナ）",
-    "lastNameKana": "姓（カナ）",
-    "fullName": "氏名",
     "email": "メールアドレス",
     "phone": "電話番号",
     "birthday": "生年月日",
-    "age": "年齢",
-    "gender": "性別",
-    "male": "男性",
-    "female": "女性",
-    "other": "その他",
     "address": "住所",
-    "postalCode": "郵便番号",
-    "prefecture": "都道府県",
-    "city": "市区町村",
-    "addressLine": "番地",
-    "building": "建物名",
     "notes": "備考",
     "visitHistory": "来店履歴",
+    "totalVisits": "総来店回数",
     "lastVisit": "最終来店日",
-    "visitCount": "来店回数",
-    "totalSpent": "累計金額",
-    "averageSpent": "平均単価",
+    "totalSpent": "総利用金額",
+    "averageSpent": "平均利用金額",
     "tags": "タグ",
-    "memberSince": "登録日",
-    "points": "保有ポイント",
-    "pointHistory": "ポイント履歴",
-    "carte": "カルテ",
-    "carteHistory": "カルテ履歴",
+    "searchPlaceholder": "顧客を検索...",
+    "noCustomers": "顧客データがありません",
     "customerCreated": "顧客が登録されました",
     "customerUpdated": "顧客情報が更新されました",
-    "customerDeleted": "顧客が削除されました",
-    "importCustomers": "顧客インポート",
-    "exportCustomers": "顧客エクスポート",
-    "searchByName": "名前で検索",
-    "searchByPhone": "電話番号で検索",
-    "searchByEmail": "メールで検索",
-    "noCustomers": "顧客が登録されていません",
-    "lineId": "LINE ID",
-    "lineUserName": "LINEユーザー名",
-    "unselected": "未選択",
-    "customerInfo": "顧客情報",
-    "customerInfoDesc": "予約に必要な基本情報を入力してください。",
-    "marketingInfo": "マーケティング情報",
-    "marketingInfoDesc": "以下の情報を使用して顧客を特定のグループ毎に分類することができ、マーケティングに活用することができます。",
-    "memoPlaceholder": "メモを入力",
-    "pointNote": "※登録時にポイントを入力すると、登録に顧客のポイントが加算されます。",
-    "tagExample": "例: リピーター, 新規, カラー利用、パーマ利用",
-    "selectGender": "性別を選択",
-    "addCustomerButton": "顧客を追加",
-    "tenantOrOrgNotFound": "テナントIDまたは組織IDが見つかりません",
-    "addSuccess": "顧客を追加しました",
-    "addError": "顧客の作成に失敗しました",
-    "validation": {
-      "lineIdMaxLength": "LINE IDは{max}文字以内で入力してください",
-      "lineUserNameMaxLength": "LINEユーザー名は{max}文字以内で入力してください",
-      "phoneMinLength": "電話番号は6文字以上で入力してください",
-      "phoneMaxLength": "電話番号は{max}文字以内で入力してください",
-      "phoneFormat": "電話番号は数字で入力してください",
-      "emailMaxLength": "メールアドレスは100文字以内で入力してください",
-      "emailInvalid": "メールアドレスの形式が正しくありません",
-      "firstNameRequired": "名前は1文字以上で入力してください",
-      "firstNameMaxLength": "名前は{max}文字以内で入力してください",
-      "lastNameRequired": "苗字は1文字以上で入力してください",
-      "lastNameMaxLength": "苗字は{max}文字以内で入力してください",
-      "visitCountMax": "利用回数は{max}回以内で入力してください",
-      "lastVisitMax": "最終予約日は{max}以下で入力してください",
-      "tagsMaxCount": "タグは{max}つ以内で入力してください",
-      "ageMax": "年齢は{max}以下で入力してください",
-      "birthdayMaxLength": "誕生日は100文字以内で入力してください",
-      "notesMaxLength": "メモは{max}文字以内で入力してください",
-      "pointsMax": "ポイントは{max}以下で入力してください",
-      "pointsMinValue": "保有ポイントは0以上で入力してください",
-      "tagMaxLength": "タグは{max}文字以内で入力してください"
-    },
-    "editTitle": "顧客情報編集",
-    "dataNotLoaded": "顧客データの読み込みが完了していません。",
-    "updateError": "顧客情報の更新に失敗しました",
-    "yearsOld": "歳",
-    "totalPoints": "保有ポイント",
-    "pointsChangeWarning": "保有ポイントの変更は慎重に行ってください。",
-    "updating": "更新中...",
-    "updateButton": "更新",
-    "placeholder": {
-      "lastName": "苗字を入力してください",
-      "firstName": "名前を入力してください",
-      "phone": "電話番号を入力してください",
-      "email": "メールアドレスを入力してください",
-      "totalPoints": "保有ポイントを入力してください"
-    },
-    "edit": "編集",
-    "honorific": "様",
-    "unknown": "不明",
-    "noReservationHistory": "予約履歴なし",
-    "customerNotFound": "顧客が見つかりません",
-    "basicInfo": "基本情報",
-    "additionalInfo": "追加情報",
-    "usageInfo": "利用情報",
-    "ageValue": "{age}歳",
-    "noNotes": "メモはありません。",
-    "visitCountValue": "{count}回",
-    "noTagsRegistered": "タグは登録されていません。",
-    "customerId": "顧客ID"
+    "customerDeleted": "顧客を削除しました",
+    "confirmDelete": "顧客を削除しますか？",
+    "deleteWarning": "この操作は元に戻すことができません。顧客に関連するすべてのデータが削除されます。",
+    "registrationDate": "登録日",
+    "membershipType": "会員種別",
+    "regular": "通常会員",
+    "vip": "VIP会員",
+    "points": "ポイント",
+    "carte": "カルテ",
+    "customerNameLineUser": "顧客名/LINEユーザー名",
+    "contact": "連絡先",
+    "visitCount": "来店回数",
+    "searchResultsFor": "「{term}」の検索結果",
+    "noSearchResults": "検索条件に一致する顧客が見つかりません",
+    "notRegistered": "未登録",
+    "times": "回",
+    "noTags": "タグなし",
+    "details": "詳細",
+    "noReservation": "未予約",
+    "fetchError": "顧客データの取得に失敗しました",
+    "searchError": "顧客検索に失敗しました",
+    "deleteError": "顧客の削除に失敗しました"
   },
   "menu": {
     "title": "メニュー管理",
@@ -690,11 +641,36 @@
     "errors": {
       "tenantOrOrgRequired": "テナント or 店舗情報が必要です"
     },
-    "minutes": "分"
+    "minutes": "分",
+    "filterByCategory": "カテゴリで絞り込む",
+    "selectCategory": "カテゴリを選択",
+    "selectedCategoriesCount": "{count}件選択中",
+    "categoryNotFound": "カテゴリが見つかりません",
+    "paymentMethods": {
+      "both": "両方対応",
+      "online": "オンライン決済",
+      "inStore": "店舗決済"
+    },
+    "messages": {
+      "noMenus": "メニューがありません",
+      "noMenusInCategory": "選択されたカテゴリに該当するメニューがありません"
+    }
   },
   "staff": {
     "title": "スタッフ管理",
-    "list": "スタッフ一覧",
+    "list": {
+      "title": "スタッフ一覧",
+      "status": "ステータス",
+      "image": "画像",
+      "name": "名前",
+      "description": "説明",
+      "details": "詳細",
+      "edit": "編集",
+      "noStaff": "スタッフがまだ登録されていません",
+      "addFirstStaff": "最初のスタッフを追加しましょう",
+      "addStaffButton": "スタッフを追加",
+      "notSet": "未設定"
+    },
     "addStaff": "スタッフを追加",
     "addStaffBtn": "スタッフ追加",
     "editStaff": "スタッフ編集",
@@ -717,7 +693,10 @@
     "active": "有効",
     "inactive": "無効",
     "invited": "招待中",
-    "schedule": "スケジュール",
+    "schedule": {
+      "selectStaffLabel": "予定を追加するスタッフ",
+      "alertSelectStaff": "先にスタッフを選択してください。"
+    },
     "weeklySchedule": "週間スケジュール",
     "workingHours": "勤務時間",
     "breakTime": "休憩時間",
@@ -738,7 +717,31 @@
     "invitationResent": "招待メールを再送信しました",
     "invitationCancelled": "招待をキャンセルしました",
     "scheduleUpdated": "スケジュールが更新されました",
-    "myPage": "マイページ",
+    "myPage": {
+      "title": "マイページ",
+      "weekSchedule": "週間スケジュール設定",
+      "scheduleCreation": "予定作成",
+      "workingDays": "スタッフの勤務日・勤務時間設定",
+      "scheduleSettings": "勤務時間設定",
+      "commonSettings": "共通設定",
+      "daySpecificSettings": "曜日ごとの設定",
+      "salonBusinessDays": "サロンの営業日",
+      "businessDay": "営業日",
+      "regularHoliday": "定休日",
+      "workingDay": "勤務日",
+      "holiday": "休日",
+      "saveWorkingHours": "勤務時間を保存",
+      "saving": "保存中...",
+      "exclusionMenu": "対応外メニュー",
+      "createdSchedule": "作成された予定",
+      "allDay": "終日",
+      "startTime": "開始時間",
+      "endTime": "終了時間",
+      "notes": "備考",
+      "saveSchedule": "予定を保存",
+      "scheduleSaved": "予定を保存しました",
+      "timeValidationError": "終日の予定ではない場合は開始時間と終了時間を設定してください"
+    },
     "changePassword": "パスワード変更",
     "emailPreferences": "メール設定",
     "add": {
@@ -810,19 +813,6 @@
       "imageDeleteSuccess": "画像を削除しました",
       "imageDeleteError": "画像削除中にエラーが発生しました"
     },
-    "list": {
-      "title": "スタッフ一覧",
-      "status": "ステータス",
-      "image": "画像",
-      "name": "名前",
-      "description": "説明",
-      "details": "詳細",
-      "edit": "編集",
-      "noStaff": "スタッフがまだ登録されていません",
-      "addFirstStaff": "最初のスタッフを追加しましょう",
-      "addStaffButton": "スタッフを追加",
-      "notSet": "未設定"
-    },
     "details": {
       "title": "スタッフ詳細",
       "basicInfo": "基本情報",
@@ -874,6 +864,21 @@
       "tagsMaxLength": "タグは合計100文字以内で入力してください",
       "tagsMaxCount": "タグは最大5つまでです"
     },
+    "common": {
+      "authenticatedStaff": "認証スタッフ",
+      "ageNotSet": "年齢未設定",
+      "deleteStaff": "スタッフを削除",
+      "deleteConfirm": "スタッフを削除しますか？",
+      "deleteConfirmDesc": "この操作は元に戻すことができません。",
+      "monday": "月曜日",
+      "tuesday": "火曜日",
+      "wednesday": "水曜日",
+      "thursday": "木曜日",
+      "friday": "金曜日",
+      "saturday": "土曜日",
+      "sunday": "日曜日",
+      "ageValue": "{age}歳"
+    },
     "messages": {
       "storeNotFound": "店舗が見つかりません",
       "emailAlreadyRegistered": "このメールアドレスは既に登録されています",
@@ -890,10 +895,38 @@
     }
   },
   "settings": {
-    "title": "設定",
-    "organizationSettings": "組織設定",
+    "title": "サロン設定",
+    "description": "サロンの基本情報を入力してください。",
+    "organizationSettings": "基本設定",
     "organizationName": "組織名",
-    "businessHours": "営業時間",
+    "businessHours": {
+      "title": "営業日・営業時間設定",
+      "description": "サロンの営業日と営業時間を設定します。定休日には予約を受け付けません。",
+      "businessDay": "営業日",
+      "regularHoliday": "定休日",
+      "commonSettings": "共通設定",
+      "daySpecificSettings": "曜日ごとの設定",
+      "useCommonHours": "すべての営業日に共通の営業時間を設定する",
+      "commonBusinessHours": "共通の営業時間",
+      "openTime": "開店時間",
+      "closeTime": "閉店時間",
+      "settingsTitle": "営業時間設定",
+      "businessDayNotSet": "営業日が設定されていません",
+      "selectBusinessDay": "営業日を選択してください。",
+      "savingSettings": "保存中...",
+      "saveBusinessHours": "営業日・営業時間を保存",
+      "settingsSaved": "営業時間を更新しました",
+      "laterThanOpenTime": "開店時間より後の時間を選択できます",
+      "days": {
+        "monday": "月曜日",
+        "tuesday": "火曜日",
+        "wednesday": "水曜日",
+        "thursday": "木曜日",
+        "friday": "金曜日",
+        "saturday": "土曜日",
+        "sunday": "日曜日"
+      }
+    },
     "regularHolidays": "定休日",
     "specialHolidays": "特別休業日",
     "reservationSettings": "予約設定",
@@ -902,7 +935,173 @@
     "simultaneousReservations": "同時予約可能数",
     "reservationInterval": "予約間隔",
     "paymentSettings": "決済設定",
-    "stripeConnect": "Stripe連携",
+    "stripeConnect": {
+      "title": "Stripe決済連携",
+      "description": "Stripeアカウントを連携して、お客様からのクレジットカード決済を受け付けることができます。",
+      "connectButton": "Stripeと連携する",
+      "processing": "処理中...",
+      "redirecting": "リダイレクト中...",
+      "viewDashboard": "Stripeダッシュボードを開く",
+      "completeSetting": "設定を完了する",
+      "liftRestrictions": "制限を解除する",
+      "reconnect": "アカウントを再作成する",
+      "reconnectConfirm": "現在の連携を解除して、新しくアカウントを作成しますか？\n※以前の設定内容は失われます",
+      "status": {
+        "notConnected": "未連携",
+        "pending": "連携中",
+        "incomplete": "登録未完了",
+        "restricted": "一部制限あり",
+        "active": "有効",
+        "payoutsDisabled": "振込停止中",
+        "externalAccountRemoved": "口座削除",
+        "bankAccountMissing": "口座未登録",
+        "deauthorized": "連携解除済み"
+      },
+      "statusDescription": {
+        "notConnected": "Stripeアカウントがまだ連携されていません。右上の「Stripeと連携する」ボタンからビジネス情報登録を開始してください。",
+        "pending": "Stripeアカウントの設定フォームがまだ提出されていません。「Stripeで設定を続ける」から基本情報の入力・提出を完了してください。",
+        "incomplete": "Stripeから追加書類または情報の提出が求められています。期限内に不足項目を提出してください。未対応の場合は決済・振込が制限される可能性があります。",
+        "restricted": "過去に提出が必要とされた書類が未提出のため、一部機能（振込・入金など）が制限されています。Stripeダッシュボードで案内されている書類を提出してください。",
+        "payoutsDisabled": "カード決済機能は有効ですが、売上の振込（入金）が一時的に停止されています。銀行口座の登録状況や追加提出書類の有無をご確認ください。",
+        "externalAccountRemoved": "登録済みの銀行口座が削除されたため、振込ができません。Stripeダッシュボードで新しい銀行口座を登録してください。",
+        "bankAccountMissing": "銀行口座情報が未登録です。売上金を受け取るために、Stripeダッシュボードから銀行口座を登録してください。",
+        "active": "Stripeアカウントの審査と全ての設定が完了し、決済・振込機能が有効になっています。ダッシュボードで売上・入金状況を確認できます。",
+        "deauthorized": "Stripeとの連携が解除されています。再度連携するには「Stripeと連携する」ボタンから設定をやり直してください。"
+      },
+      "setupRequired": {
+        "title": "Stripeアカウント設定の完了が必要です",
+        "incompleteTitle": "追加情報の入力が必要です",
+        "restrictedTitle": "引き出し機能の制限があります",
+        "step1": {
+          "title": "基本情報の入力",
+          "description": "ビジネス名、住所、事業形態などの基本情報を入力してください"
+        },
+        "step2": {
+          "title": "銀行口座の登録",
+          "description": "売上金の振込先となる銀行口座情報を登録してください"
+        },
+        "step3": {
+          "title": "本人確認の完了",
+          "description": "本人確認書類をアップロードして、身元確認を完了してください"
+        },
+        "incompleteMessage": "以下の情報が不足しています。「設定を完了する」ボタンをクリックして、残りの手続きを完了してください。",
+        "incompleteItems": {
+          "item1": "不足している情報を入力",
+          "item2": "追加の確認書類を提出"
+        },
+        "restrictedMessage": "決済処理は可能ですが、引き出し機能に制限があります。",
+        "restrictedItems": {
+          "item1": "追加の事業情報を提供",
+          "item2": "銀行口座情報の確認"
+        },
+        "continueButton": "Stripeで設定を続ける"
+      },
+      "fee": {
+        "title": "決済手数料: 4% + 40円/件",
+        "description": "※ 売り上げは毎月25日に設定した銀行口座へ振込まれます。"
+      },
+      "messages": {
+        "connectSuccess": "Stripeアカウントの連携が完了しました",
+        "continueSetup": "Stripeアカウントの設定を続けてください",
+        "error": "エラーが発生しました ({status})"
+      },
+      "accordion": {
+        "whatIsStripe": {
+          "title": "Stripe とは？",
+          "content": {
+            "intro": "<strong>Stripe（ストライプ）</strong> は、米国発のオンライン決済サービスで、 世界 120 か国以上・数百万社以上のビジネスで利用されています。Bocker は<strong>Stripe</strong> を採用することで、 サロン様が複雑な契約やシステム開発を行うことなく、クレジットカード決済を すぐに導入できる環境を提供しています。",
+            "benefits": "Stripeアカウントを作成すると、カード決済・売上管理・振込管理が すべて Stripe で完結。サロン様は「売上を見る」「いつ入金されるか確認する」 だけのシンプルな運用で済みます。",
+            "keyPoints": {
+              "title": "<strong>ポイント</strong>",
+              "point1": "・Bocker もサロン様もカード番号を保持しないため情報漏えいリスクを最小化",
+              "point2": "・国内外の主要カードブランド（Visa/Mastercard/JCB 等）に標準対応",
+              "point3": "・決済手段の追加（Apple Pay や Google Pay 等）も将来的に拡張可能"
+            }
+          }
+        },
+        "requirements": {
+          "title": "登録に必要なもの・手続きの流れ",
+          "requirements": {
+            "title": "登録に必要なもの",
+            "item1": "サロンの正式名称・所在地・電話番号",
+            "item2": "運営責任者（代表者）の氏名・生年月日・住所",
+            "item3": "本人確認書類（運転免許証・パスポート等）の画像",
+            "item4": "売上振込用の日本国内銀行口座情報",
+            "item5": "連絡用メールアドレスと SMS 受信用携帯番号"
+          },
+          "flow": {
+            "title": "手続きの流れ（所要時間 10〜15 分）",
+            "step1": "Bocker で <strong>「Stripeと連携する」</strong> をクリック",
+            "step2": "Stripe のオンボーディング画面が開く",
+            "step3": "ビジネス情報の入力（名称・所在地・業種など）",
+            "step4": "運営責任者情報と本人確認書類のアップロード",
+            "step5": "銀行口座情報の入力",
+            "step6": "内容を確認して <strong>送信</strong>",
+            "step7": "審査完了のメールを受信後、カード決済が利用可能に"
+          },
+          "note": "情報に不備がある場合は Stripe から追加提出のメールが届きます。"
+        },
+        "security": {
+          "title": "安全性・セキュリティ",
+          "points": {
+            "item1": "国際基準 <strong>PCI‑DSS レベル&nbsp;1</strong>（最高位）を取得",
+            "item2": "通信は全て <strong>256bit&nbsp;TLS</strong> で暗号化",
+            "item3": "AI 不正検知システムが <strong>24&nbsp;時間&nbsp;365&nbsp;日</strong> 監視"
+          },
+          "description": "これらの仕組みにより、カード情報の盗難・不正利用リスクを大幅に低減できます。 Bocker / サロン様は決済データに直接触れないため、追加で高額な セキュリティ認証を取得する必要もありません。"
+        },
+        "liability": {
+          "title": "責任分担とリスクのない理由",
+          "content": {
+            "intro": "Bocker とサロン様は <strong>決済代行業務</strong> を Stripe に委託しています。 そのため、カード情報の保管・不正監視・チャージバック対応など、 高度なセキュリティ管理は Stripe が担います。",
+            "points": {
+              "item1": "カード番号は <strong>Bocker / サロン様のサーバーに一切保存されません</strong>",
+              "item2": "チャージバック発生時のカード会社対応は Stripe が一次窓口となり、 必要に応じて Bocker が仲介します",
+              "item3": "PCI‑DSS、改正割賦販売法、資金決済法 等の <strong>法令遵守</strong> は Stripe が実施",
+              "item4": "決済障害時は Stripe が 24 時間体制で復旧対応・顧客への返金手続きも自動化"
+            },
+            "conclusion": "これにより、サロン様はクレジットカード決済の <strong>法的・技術的リスクから解放</strong>され、 本業に専念できます。"
+          }
+        },
+        "payoutFlow": {
+          "title": "売上の入金サイクル",
+          "steps": {
+            "step1": "お客様が Bocker でカード決済",
+            "step2": "決済額は Stripe 上の残高に即時反映",
+            "step3": "毎月 <strong>25&nbsp;日</strong> に前月 1〜末日の総売上をまとめて振込",
+            "step4": "登録口座に <strong>1‑2&nbsp;営業日</strong> で着金"
+          },
+          "note": "振込スケジュールは Stripe ダッシュボードでいつでも確認できるため、 キャッシュフローの見通しが立てやすくなります。"
+        },
+        "fees": {
+          "title": "手数料について",
+          "items": {
+            "processingFee": "<strong>決済手数料:</strong> 売上の <strong>4%</strong> + <strong>40円</strong> / 件",
+            "transferFee": "<strong>振込手数料:</strong> 0円（Bocker が負担）",
+            "monthlyFee": "<strong>月額固定費:</strong> 0円（Bocker が負担）"
+          },
+          "example": "例）10,000 円のお会計の場合：10,000 × 4% + 40 = <strong>440 円</strong> のみが手数料として引かれ、<strong>9,560&nbsp;円</strong> が振込対象額となります。",
+          "note": "※ 一部ブランドの海外発行カードは追加 1.5% が発生する場合があります。"
+        },
+        "faq": {
+          "title": "よくある質問",
+          "questions": {
+            "paymentFailed": {
+              "question": "カード決済が失敗した場合は？",
+              "answer": "Stripe が自動で再試行し、それでも失敗した場合は Bocker からお客様へメールで お知らせします。サロン側での個別請求も可能です。"
+            },
+            "refund": {
+              "question": "返金はどう行いますか？",
+              "answer": "Stripe ダッシュボードからワンクリックで即時返金 できます。返金手数料は <strong>無料</strong>です。ただ<strong>決済時に発生した手数料4%</strong> は返金されません。"
+            },
+            "setupTime": {
+              "question": "導入にどのくらい時間がかかりますか？",
+              "answer": "オンライン申請のみで<strong>最短 10 分</strong>で利用開始できます。 本人確認書類の提出が必要ですが、審査状況はダッシュボードでリアルタイムに 確認できます。"
+            }
+          }
+        }
+      }
+    },
     "connected": "連携済み",
     "notConnected": "未連携",
     "connectStripe": "Stripeに接続",
@@ -929,6 +1128,46 @@
     "openTime": "開店時間",
     "closeTime": "閉店時間",
     "timezone": "タイムゾーン",
+    "fields": {
+      "salonName": "サロン名",
+      "email": "メールアドレス",
+      "phone": "電話番号",
+      "postalCode": "郵便番号",
+      "address": "住所",
+      "storeImage": "サロン画像",
+      "description": "サロン説明",
+      "reservationRules": "予約ルール"
+    },
+    "placeholders": {
+      "salonName": "サロン名を入力してください",
+      "email": "メールアドレスを入力してください",
+      "phone": "電話番号を入力してください",
+      "postalCode": "000-0000",
+      "address": "住所を入力してください",
+      "storeImage": "サロンの画像をアップロードしてください",
+      "description": "サロンの詳細説明を入力してください",
+      "reservationRules": "予約に関するルールや注意事項を入力してください"
+    },
+    "buttons": {
+      "save": "保存",
+      "saving": "保存中...",
+      "saveImage": "画像を保存",
+      "uploading": "アップロード中..."
+    },
+    "validation": {
+      "salonNameMax": "サロン名は120文字以内で入力してください",
+      "emailInvalid": "有効なメールアドレスを入力してください",
+      "phoneFormat": "電話番号は8〜11桁の数字で入力してください",
+      "postalCodeFormat": "郵便番号は7桁で入力してください（例：1234567）",
+      "addressMax": "住所は200文字以内で入力してください",
+      "reservationRulesMax": "予約ルールは2000文字以内で入力してください",
+      "descriptionMax": "説明は2000文字以内で入力してください"
+    },
+    "messages": {
+      "settingsSaved": "設定を保存しました",
+      "imageUploadFailed": "画像のアップロードに失敗しました",
+      "imageSaved": "画像を保存しました"
+    },
     "changeEmail": {
       "title": "メールアドレス変更",
       "subtitle": "アカウントに関連付けられているメールアドレスを変更します",
@@ -1014,6 +1253,56 @@
           "cancel": "キャンセル",
           "confirm": "削除"
         }
+      }
+    },
+    "apiConfig": {
+      "title": "API設定",
+      "description": "外部サービスとの連携を設定します。",
+      "lineIntegrationNote": "LINE連携に必要な情報は設定画面下部のヘルプを参照してください。",
+      "fields": {
+        "lineAccessToken": "LINEアクセストークン",
+        "lineChannelSecret": "LINEチャンネルシークレット",
+        "lineChannelId": "LINEチャンネルID"
+      },
+      "messages": {
+        "settingsSaved": "API設定を保存しました",
+        "save": "API設定を保存",
+        "saving": "保存中..."
+      }
+    },
+    "reservationConfig": {
+      "title": "予約受付設定",
+      "description": "予約受付設定では、サロンの予約受付時間の設定を変更できます。",
+      "reservationLimitDays": "予約受付最大日数を選択",
+      "reservationLimitDaysHelp": "何日先まで予約を受付可能にするかの設定",
+      "cancelDays": "キャンセル可能日数を選択",
+      "cancelDaysHelp": "予約日の何日前までキャンセル可能かの設定",
+      "reservationInterval": "予約間隔を選択",
+      "reservationIntervalHelp": "予約枠を生成する間隔を設定",
+      "availableSeats": "予約可能席数を選択",
+      "availableSeatsHelp": "同一時間帯に予約可能な席数を設定",
+      "shortestReservationTime": "最短の予約開始時間を選択",
+      "shortestReservationTimeHelp": "当日予約で空き枠がある場合、現在時刻から何分後の予約を受付可能にするかを設定",
+      "saving": "保存中...",
+      "save": "予約受付設定を保存",
+      "saved": "スケジュール設定を保存しました",
+      "daysUnit": "日",
+      "minutesUnit": "分",
+      "seatsUnit": "席"
+    },
+    "exceptionSchedule": {
+      "title": "休業日設定",
+      "description": "カレンダーから予約を受け付けない日を選択してください。選択された日は休業日として設定されます。",
+      "selectHolidays": "休業日を選択",
+      "saveButton": "休業日を保存",
+      "saving": "保存中...",
+      "maxDaysError": "休業日は最大30日までしか選択できません",
+      "saveSuccess": "休業日を保存しました",
+      "saveDescription": "{added}日追加・{deleted}日削除しました",
+      "saveError": "休業日の保存に失敗しました",
+      "accordion": {
+        "title": "休業日設定について",
+        "content": "休業日に設定した日は、カレンダーに表示されず予約を受け付けなくなります。 定休日とは別に、臨時休業やイベント日、長期休暇などを設定でき、臨時の休業日を設定できます。 {date}以降の日付が選択可能です。"
       }
     }
   },
@@ -1130,6 +1419,27 @@
       "contactSupport": "サポートに問い合わせる",
       "supportDescription": "何かご不明な点がありましたら、お気軽にお問い合わせください。",
       "backToDashboard": "ダッシュボードに戻る"
+    },
+    "features": {
+      "lite": {
+        "1": "予約カレンダー基本機能",
+        "2": "基本的なお客様情報管理",
+        "3": "予約管理 (予約カレンダー, スタッフスケジュール設定, 予約確認・変更・キャンセル, 24/365オンライン予約)",
+        "4": "顧客管理（基本情報, 予約・購入履歴）",
+        "5": "スタッフ管理 (アカウント作成, 基本的な予約・シフト管理) ※最大3名まで",
+        "6": "メニュー設定 (サービス登録, 料金・所要時間設定) ※最大10件まで",
+        "7": "顧客カルテ機能 (施術内容の詳細記録, 画像添付機能, 薬剤使用履歴管理, カルテテンプレート機能, 施術者引継ぎ機能)　※写真添付無し",
+        "8": "オプション販売機能 (オプションの追加, オプションの選択) ※最大5件まで",
+        "9": "ポイント・クーポン機能 (カスタマイズ可能なポイント付与システム, クーポン管理)",
+        "10": "自動リマインド・通知 (メール・LINE)",
+        "11": "スタッフ数(3名)、メニュー数(10件)、オプション数(5件)、予約数(200件/月)"
+      },
+      "pro": {
+        "1": "LITEプランの全機能",
+        "2": "予約時に理想の髪型の画像(1枚)を添付できる様になります。",
+        "3": "カルテ管理 (最大4枚の画像添付)",
+        "4": "スタッフ数(10名)、メニュー数(20件)、オプション数(10件)、予約数(500件/月)"
+      }
     }
   },
   "sidebar": {
@@ -1182,52 +1492,6 @@
     "inviteLinkCopied": "招待リンクをコピーしました",
     "inviteLinkCopiedDescription": "クリップボードに招待リンクがコピーされました",
     "openLink": "リンクを開く"
-  },
-  "customers": {
-    "title": "顧客管理",
-    "list": "顧客一覧",
-    "addCustomer": "顧客登録",
-    "editCustomer": "顧客編集",
-    "customerDetails": "顧客詳細",
-    "firstName": "名前",
-    "lastName": "姓",
-    "email": "メールアドレス",
-    "phone": "電話番号",
-    "birthday": "生年月日",
-    "address": "住所",
-    "notes": "備考",
-    "visitHistory": "来店履歴",
-    "totalVisits": "総来店回数",
-    "lastVisit": "最終来店日",
-    "totalSpent": "総利用金額",
-    "averageSpent": "平均利用金額",
-    "tags": "タグ",
-    "searchPlaceholder": "顧客を検索...",
-    "noCustomers": "顧客データがありません",
-    "customerCreated": "顧客が登録されました",
-    "customerUpdated": "顧客情報が更新されました",
-    "customerDeleted": "顧客を削除しました",
-    "confirmDelete": "顧客を削除しますか？",
-    "deleteWarning": "この操作は元に戻すことができません。顧客に関連するすべてのデータが削除されます。",
-    "registrationDate": "登録日",
-    "membershipType": "会員種別",
-    "regular": "通常会員",
-    "vip": "VIP会員",
-    "points": "ポイント",
-    "carte": "カルテ",
-    "customerNameLineUser": "顧客名/LINEユーザー名",
-    "contact": "連絡先",
-    "visitCount": "来店回数",
-    "searchResultsFor": "「{term}」の検索結果",
-    "noSearchResults": "検索条件に一致する顧客が見つかりません",
-    "notRegistered": "未登録",
-    "times": "回",
-    "noTags": "タグなし",
-    "details": "詳細",
-    "noReservation": "未予約",
-    "fetchError": "顧客データの取得に失敗しました",
-    "searchError": "顧客検索に失敗しました",
-    "deleteError": "顧客の削除に失敗しました"
   },
   "coupon": {
     "title": "クーポン管理",
@@ -1369,6 +1633,7 @@
     "off": "オフ",
     "enabled": "有効",
     "disabled": "無効",
+    "backToDashboard": "ダッシュボードへ戻る",
     "active": "アクティブ",
     "inactive": "非アクティブ",
     "new": "新規",
@@ -1386,7 +1651,6 @@
     "between": "から",
     "and": "まで",
     "gender": "性別",
-    "unselected": "未選択",
     "birthday": "生年月日",
     "tags": "タグ",
     "notes": "備考",
@@ -1439,6 +1703,157 @@
     "disable": "無効",
     "point": {
       "points": "{count}ポイント"
+    },
+    "currencySymbol": "¥",
+    "timeUnit": "分",
+    "openMenu": "メニューを開く",
+    "detail": "詳細",
+    "tutorial": {
+      "setupGuide": {
+        "title": "初期設定ガイド",
+        "subtitle": "予約受付を開始するための初期設定を完了させましょう🚀"
+      },
+      "completed": "完了",
+      "stepCompleted": "STEP {step} / 完了",
+      "stepIncomplete": "STEP {step} / 未設定",
+      "checkSettings": "設定を確認",
+      "configure": "設定する",
+      "urlCopied": "URLをコピーしました",
+      "steps": {
+        "storeInfo": {
+          "title": "店舗基本情報",
+          "description": "店舗名、住所、電話番号、メールアドレス等の基本情報を設定します。お客様への案内や予約ページに表示されます。",
+          "checkLabel": "店舗名と住所の設定"
+        },
+        "businessHours": {
+          "title": "営業時間",
+          "description": "曜日ごとの営業時間や定休日を設定します。お客様がその時間内でのみ予約できるようになります。",
+          "checkLabel": "営業時間の設定"
+        },
+        "reservationSettings": {
+          "title": "予約設定",
+          "description": "何日先まで予約可能か、予約受付の締切時間、キャンセル締切などの基本ルールを設定します。",
+          "checkLabel": "予約受付の設定"
+        },
+        "lineIntegration": {
+          "title": "LINE連携",
+          "description": "お客様がLINEから簡単に予約できるようになります。24時間いつでも予約受付が可能になります。",
+          "checkLabel": "LINE連携の設定"
+        },
+        "menuRegistration": {
+          "title": "メニュー登録",
+          "description": "カット、カラー、パーマなどの提供メニューを登録します。料金・所要時間・説明も設定できます。",
+          "checkLabel": "メニューの登録（最低1つ）"
+        },
+        "staffRegistration": {
+          "title": "スタッフ登録",
+          "description": "施術を担当するスタッフを登録します。お客様はスタッフを指名して予約することができます。",
+          "checkLabel": "スタッフの登録（最低1名）"
+        },
+        "staffSchedule": {
+          "title": "スタッフ勤務スケジュール",
+          "description": "各スタッフの勤務時間や休みを設定します。設定した時間内でのみ予約を受け付けます。",
+          "checkLabel": "スタッフの勤務スケジュール設定"
+        }
+      },
+      "missingItems": {
+        "title": "未設定の項目があります！",
+        "description": "予約受付を開始するには、以下の設定を完了してください！"
+      },
+      "completion": {
+        "title": "初期設定が完了しました！",
+        "description": "予約受付の準備が整いました。下記のURLをお客様に共有してください。",
+        "reservationUrlLabel": "予約ページURL"
+      },
+      "nextSteps": {
+        "title": "次のステップ",
+        "items": {
+          "closedDays": "サロンの休業日の設定",
+          "optionMenu": "オプションメニュー",
+          "pointFeature": "ポイント機能",
+          "couponFeature": "クーポン機能"
+        }
+      },
+      "customerGuidance": {
+        "title": "お客様への案内方法",
+        "items": {
+          "website": "ホームページにリンクを掲載",
+          "sns": "SNSで予約開始をお知らせ",
+          "qrCode": "店内にQRコードを掲示"
+        }
+      }
+    },
+    "theme": {
+      "toggle": "テーマ切り替え",
+      "light": "ライトモード",
+      "dark": "ダークモード"
+    },
+    "imageDrop": {
+      "placeholder": "画像をドラッグするか、クリックして選択",
+      "dropHere": "ここにファイルをドロップ",
+      "notImage": "ファイル「{fileName}」は画像ファイルではありません。",
+      "tooLarge": "ファイル「{fileName}」のサイズが大きすぎます。{maxSize}MB以下にしてください。",
+      "limitReached": "{limitFiles}枚までです。追加できるのはあと {available} 枚です。",
+      "formats": "JPG, PNG など / 最大 {maxSize}MB",
+      "formatsWithLimit": "JPG, PNG など / 最大 {maxSize}MB (最大{limitFiles}枚)",
+      "selectFile": "ファイルを選択",
+      "addFile": "ファイルを追加",
+      "clearAll": "すべての画像をクリア",
+      "changeImage": "画像を変更",
+      "deleteImage": "画像を削除",
+      "fileName": "ファイル名:",
+      "fileSize": "サイズ:",
+      "recommendedSquare": "推奨のアスペクト比は1/1の正方形です。",
+      "recommendedLandscape": "推奨のアスペクト比は16/9の横長です。",
+      "recommendedPortrait": "推奨のアスペクト比は2/3の縦長です。",
+      "noImages": "画像がありません"
+    },
+    "tagInput": {
+      "title": "タグ",
+      "titleWithLimit": "タグ (最大5つ)",
+      "placeholder": "タグを入力（カンマ区切りで複数入力可）",
+      "addButton": "追加",
+      "example": "例: カット、パーマ、トリートメント（最大5つ）",
+      "maxTags": "タグは最大5つまでです",
+      "maxTagsWarning": "タグは最大5つまで追加できます。",
+      "defaultExample": "カット、パーマ、トリートメント"
+    },
+    "exclusionMenu": {
+      "title": "除外するメニュー",
+      "noSelection": "選択なし",
+      "selectAll": "すべて選択",
+      "selectedCount": "{count}件選択",
+      "noMenus": "登録されているメニューがありません。",
+      "clearAll": "全て解除",
+      "selectAllButton": "全て選択",
+      "searchPlaceholder": "メニューを検索...",
+      "loadMore": "さらに読み込む"
+    },
+    "calendarMultiSelect": {
+      "selectedDates": "選択済みの日",
+      "selectedCount": "{count}件",
+      "clearAll": "全て削除",
+      "clearAllTooltip": "選択した全ての日付を削除します",
+      "today": "今日",
+      "emptyStateTitle": "まだ休業日が選択されていません",
+      "emptyStateDescription": "左側のカレンダーから休業日として設定したい日付を選択してください"
+    },
+    "uploader": {
+      "uploading": "画像をアップロード中",
+      "uploadComplete": "アップロード完了",
+      "processingComplete": "処理が完了しました",
+      "progressPercent": "{progress}% 完了",
+      "start": "開始",
+      "complete": "完了",
+      "importantNote": "重要な注意事項",
+      "navigationWarning": "戻るボタンやページ遷移をするとアップロードがキャンセルされます。",
+      "uploadSuccess": "アップロードが正常に完了しました"
+    },
+    "zodTextField": {
+      "readOnly": "※編集不可"
+    },
+    "optimizedImage": {
+      "loadError": "画像を読み込めません"
     }
   },
   "coupons": {
@@ -1572,7 +1987,22 @@
       "allCategories": "すべてのカテゴリ",
       "active": "有効",
       "inactive": "無効",
-      "noMenus": "メニューがありません"
+      "noMenus": "メニューがありません",
+      "messages": {
+        "noMenusInCategory": "選択されたカテゴリに該当するメニューがありません",
+        "noMenus": "メニューがありません",
+        "deleteConfirmation": "この操作は元に戻すことができません。",
+        "filterByCategory": "カテゴリで絞り込む",
+        "selectCategory": "カテゴリを選択",
+        "categoryNotFound": "カテゴリが見つかりません",
+        "viewMode": "表示形式",
+        "gridView": "グリッド表示",
+        "listView": "リスト表示",
+        "loadMore": "もっと見る",
+        "deleteMenu": "メニューの削除",
+        "active": "公開中",
+        "inactive": "非公開"
+      }
     },
     "add": {
       "title": "メニュー追加",
@@ -1638,6 +2068,7 @@
       },
       "messages": {
         "notFound": "メニューが見つかりません",
+        "deleteConfirmation": "この操作は元に戻すことができません。",
         "deleteSuccess": "メニューを削除しました",
         "imageDeleteSuccess": "画像削除成功: {url}",
         "imageDeleteFailed": "画像削除失敗: {url}",
@@ -1767,39 +2198,64 @@
       "success": "オプションを更新しました",
       "error": "オプションの更新に失敗しました"
     },
-    "form": {
-      "basicInfo": "基本情報",
-      "optionName": "オプション名",
-      "optionNamePlaceholder": "オプション名を入力してください",
-      "description": "説明",
-      "descriptionPlaceholder": "オプションの詳細説明を入力してください",
-      "price": "価格",
-      "pricePlaceholder": "例: 1000",
-      "targetMenus": "対象メニュー",
-      "targetMenusPlaceholder": "対象メニューを選択",
-      "targetMenusHelp": "このオプションを適用できるメニューを選択します",
-      "allMenus": "すべてのメニュー",
-      "specificMenus": "特定のメニュー",
-      "publish": "オプションを公開する",
-      "publishHelp": "オフにすると、このオプションはお客様に表示されません",
-      "back": "戻る",
-      "save": "オプションを保存",
-      "update": "オプションを更新"
-    },
     "validation": {
       "nameRequired": "オプション名は必須です",
       "nameMaxLength": "オプション名は100文字以内で入力してください",
       "descriptionRequired": "説明は必須です",
-      "descriptionMax": "説明は{max}文字以内で入力してください",
+      "descriptionMax": "説明は2,000文字以内で入力してください",
+      "unitPriceRequired": "単価は必須です",
+      "unitPriceMax": "単価は{max}円以下で入力してください",
+      "salePriceMax": "セール価格は{max}円以下で入力してください",
       "priceRequired": "価格は必須です",
       "priceMin": "価格は1円以上で入力してください",
-      "priceMax": "価格は{max}円以下で入力してください"
+      "priceMax": "価格は{max}円以下で入力してください",
+      "orderLimitMin": "最大注文数は1以上で入力してください",
+      "orderLimitMax": "最大注文数は99個以下で入力してください",
+      "targetMenusRequired": "対象メニューは必須です",
+      "durationRequired": "スタッフが稼働する施術時間は必須です",
+      "durationMax": "スタッフが稼働する施術時間は5文字以内で入力してください",
+      "inStockMax": "在庫数は{max}個以下で入力してください",
+      "tagMax": "タグは合計100文字以内で入力してください",
+      "tagMaxCount": "タグは最大5つまでです",
+      "salePriceLower": "セール価格は通常価格より低く設定してください"
     },
     "messages": {
       "createSuccess": "オプションを作成しました",
       "updateSuccess": "オプションを更新しました",
       "deleteSuccess": "オプションを削除しました",
       "notFound": "オプションが見つかりません"
+    },
+    "form": {
+      "optionImage": "オプションメニュー画像",
+      "optionName": "オプションメニュー名",
+      "optionNamePlaceholder": "オプションメニュー名",
+      "maxOrder": "最大注文数",
+      "orderLimit": "最大注文数",
+      "orderLimitPlaceholder": "例: 5",
+      "stock": "在庫数",
+      "stockPlaceholder": "例: 100",
+      "unitPrice": "通常価格",
+      "salePrice": "セール価格",
+      "durationTitle": "スタッフが稼働する施術時間",
+      "durationPlaceholder": "スタッフが稼働する施術時間を選択",
+      "minutes": "分",
+      "timeHelp": "メニューの実作業時間を設定します。",
+      "tags": "タグ",
+      "tagsPlaceholder": "例: 期間限定、セール、デートなど",
+      "description": "オプションメニュー説明",
+      "descriptionPlaceholder": "オプションメニューの詳細説明を入力してください",
+      "publishToggle": "オプションメニューを公開する",
+      "publishHelp": "オフにすると、このオプションメニューはお客様に表示されません",
+      "adding": "追加中...",
+      "addButton": "オプションを追加",
+      "updating": "更新中...",
+      "updateButton": "オプションを更新",
+      "back": "戻る",
+      "deleteImageTitle": "画像を削除しますか？",
+      "deleteImageDescription": "この操作は元に戻すことができません。",
+      "deleteImageButton": "画像を削除",
+      "cancel": "キャンセル",
+      "deleting": "削除中..."
     }
   }
 }
