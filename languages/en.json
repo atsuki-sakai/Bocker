@@ -33,20 +33,47 @@
     },
     "resetPassword": {
       "title": "Reset Password",
+      "newPasswordTitle": "Set New Password",
+      "subtitle": "Please set a new password",
       "email": "Email Address",
+      "accountEmail": "Account Email Address",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "code": "Verification Code",
       "submit": "Send Reset Email",
+      "resetPassword": "Reset Password",
       "backToSignIn": "Back to Sign In",
-      "emailPlaceholder": "Enter your email address"
+      "emailPlaceholder": "Enter your email address",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPasswordPlaceholder": "Re-enter the same password",
+      "codePlaceholder": "000000",
+      "loading": "Loading...",
+      "processing": "Processing...",
+      "resetting": "Resetting...",
+      "sendingCode": "Sending...",
+      "resetSuccess": "Password has been successfully reset",
+      "resetEmailSent": "Password reset email has been sent",
+      "resetEmailInstruction": "We've sent password reset instructions to your email. Please check your inbox.",
+      "codeInstruction": "Please enter the verification code sent to your email address.",
+      "sendVerificationCode": "Send Verification Code",
+      "confirmPasswordRequired": "Password confirmation is required",
+      "codeRequired": "Verification code is required",
+      "invalidCode": "Verification code is incorrect",
+      "codeSendSuccess": "Verification code has been sent. Please check your email.",
+      "codeSendError": "Failed to send verification code.",
+      "resetError": "Failed to reset password"
     },
     "validation": {
       "emailRequired": "Email address is required",
-      "emailInvalid": "Email address is invalid",
+      "emailInvalid": "Please enter a valid email address",
       "passwordRequired": "Password is required",
       "passwordMinLength": "Password must be at least 8 characters long",
+      "newPasswordRequired": "New password is required",
+      "confirmPasswordRequired": "Password confirmation is required",
+      "passwordMismatch": "Password and confirmation password do not match",
       "organizationNameRequired": "Organization name is required",
       "firstNameRequired": "First name is required",
-      "lastNameRequired": "Last name is required",
-      "passwordMismatch": "Passwords do not match"
+      "lastNameRequired": "Last name is required"
     }
   },
   "common": {
@@ -923,7 +950,94 @@
     "reservationConfirmation": "Reservation Confirmation",
     "reservationReminder": "Reservation Reminder",
     "reservationCancellation": "Reservation Cancellation",
-    "marketingEmails": "Marketing Emails"
+    "marketingEmails": "Marketing Emails",
+    "changeEmail": {
+      "title": "Change Email Address",
+      "subtitle": "Update the email address associated with your account",
+      "newEmail": "New Email Address",
+      "newEmailPlaceholder": "Enter your new email address",
+      "confirmEmail": "Confirm Email Address",
+      "confirmEmailPlaceholder": "Re-enter your new email address",
+      "submit": "Change Email Address",
+      "submitting": "Changing...",
+      "success": "Email address changed successfully",
+      "error": "Failed to change email address",
+      "validationErrors": {
+        "emailRequired": "Email address is required",
+        "emailInvalid": "Please enter a valid email address",
+        "confirmEmailRequired": "Email confirmation is required",
+        "emailMismatch": "Email addresses do not match"
+      },
+      "info": {
+        "verificationRequired": "A verification email will be sent to your new email address after the change",
+        "currentEmail": "Current email address: {email}",
+        "changeWarning": "After changing your email address, you will need to use the new address when signing in"
+      },
+      "tooltip": {
+        "emailFormat": "Please enter a valid email address format",
+        "confirmMatch": "Enter the same email address as above"
+      }
+    },
+    "emailPreferences": {
+      "title": "Registered Email Addresses",
+      "subtitle": "The primary email address is used for login and system notifications.",
+      "loading": "Loading...",
+      "authError": {
+        "title": "Authentication Error",
+        "description": "Unable to load user information"
+      },
+      "noEmails": "No email addresses are registered",
+      "emailStatus": {
+        "primary": "Primary",
+        "verified": "Verified",
+        "unverified": "Unverified"
+      },
+      "buttons": {
+        "setPrimary": "Set as Primary",
+        "delete": "Delete",
+        "resendVerification": "Resend Verification Email",
+        "sending": "Sending..."
+      },
+      "messages": {
+        "primaryUpdated": {
+          "title": "Primary email address updated",
+          "description": "Login information has been updated"
+        },
+        "primaryUpdateFailed": {
+          "title": "Failed to update email address",
+          "description": "Please try again"
+        },
+        "cannotDeletePrimary": {
+          "title": "Cannot delete primary email address",
+          "description": "Please set another email address as primary before deleting"
+        },
+        "cannotDeleteUnverified": {
+          "title": "Only verified email addresses can be deleted",
+          "description": "Please verify the email first before deleting"
+        },
+        "emailDeleted": "Email address deleted",
+        "emailDeleteFailed": {
+          "title": "Failed to delete email address",
+          "description": "Please try again"
+        },
+        "verificationSent": {
+          "title": "Verification email sent",
+          "description": "Please check your email to complete verification"
+        },
+        "verificationSendFailed": {
+          "title": "Failed to send verification email",
+          "description": "Please try again"
+        }
+      },
+      "dialog": {
+        "delete": {
+          "title": "Delete email address?",
+          "description": "You will no longer be able to log in with this email address.",
+          "cancel": "Cancel",
+          "confirm": "Delete"
+        }
+      }
+    }
   },
   "subscription": {
     "title": "Subscription",

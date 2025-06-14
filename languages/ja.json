@@ -865,7 +865,94 @@
     "closed": "休業",
     "openTime": "開店時間",
     "closeTime": "閉店時間",
-    "timezone": "タイムゾーン"
+    "timezone": "タイムゾーン",
+    "changeEmail": {
+      "title": "メールアドレス変更",
+      "subtitle": "アカウントに関連付けられているメールアドレスを変更します",
+      "newEmail": "新しいメールアドレス",
+      "newEmailPlaceholder": "新しいメールアドレスを入力してください",
+      "confirmEmail": "メールアドレス確認",
+      "confirmEmailPlaceholder": "新しいメールアドレスを再入力してください",
+      "submit": "メールアドレスを変更",
+      "submitting": "変更中...",
+      "success": "メールアドレスが正常に変更されました",
+      "error": "メールアドレスの変更に失敗しました",
+      "validationErrors": {
+        "emailRequired": "メールアドレスは必須です",
+        "emailInvalid": "有効なメールアドレスを入力してください",
+        "confirmEmailRequired": "メールアドレス確認は必須です",
+        "emailMismatch": "メールアドレスが一致しません"
+      },
+      "info": {
+        "verificationRequired": "変更後、新しいメールアドレスに確認メールが送信されます",
+        "currentEmail": "現在のメールアドレス: {email}",
+        "changeWarning": "メールアドレスを変更すると、ログイン時に新しいアドレスを使用する必要があります"
+      },
+      "tooltip": {
+        "emailFormat": "有効なメールアドレス形式で入力してください",
+        "confirmMatch": "上記で入力したメールアドレスと同じものを入力してください"
+      }
+    },
+    "emailPreferences": {
+      "title": "登録済みメールアドレス",
+      "subtitle": "プライマリーに設定されたメールアドレスがログインとシステム通知に使用されます。",
+      "loading": "読み込み中...",
+      "authError": {
+        "title": "認証エラー",
+        "description": "ユーザー情報が読み込めません"
+      },
+      "noEmails": "メールアドレスが登録されていません",
+      "emailStatus": {
+        "primary": "プライマリー",
+        "verified": "認証済み",
+        "unverified": "未認証"
+      },
+      "buttons": {
+        "setPrimary": "プライマリーに設定",
+        "delete": "削除",
+        "resendVerification": "認証メール再送信",
+        "sending": "送信中..."
+      },
+      "messages": {
+        "primaryUpdated": {
+          "title": "プライマリーメールアドレスを変更しました",
+          "description": "ログイン情報が更新されました"
+        },
+        "primaryUpdateFailed": {
+          "title": "メールアドレスの更新に失敗しました",
+          "description": "もう一度お試しください"
+        },
+        "cannotDeletePrimary": {
+          "title": "プライマリーメールアドレスは削除できません",
+          "description": "別のメールアドレスをプライマリーに設定してから削除してください"
+        },
+        "cannotDeleteUnverified": {
+          "title": "認証済みのメールアドレスのみ削除できます",
+          "description": "まずはメールを認証してから削除してください"
+        },
+        "emailDeleted": "メールアドレスを削除しました",
+        "emailDeleteFailed": {
+          "title": "メールアドレスの削除に失敗しました",
+          "description": "もう一度お試しください"
+        },
+        "verificationSent": {
+          "title": "認証メールを送信しました",
+          "description": "メールを確認して認証を完了してください"
+        },
+        "verificationSendFailed": {
+          "title": "認証メールの送信に失敗しました",
+          "description": "もう一度お試しください"
+        }
+      },
+      "dialog": {
+        "delete": {
+          "title": "メールアドレスを削除しますか？",
+          "description": "このメールアドレスでのログインができなくなります。",
+          "cancel": "キャンセル",
+          "confirm": "削除"
+        }
+      }
+    }
   },
   "subscription": {
     "title": "サブスクリプション",
