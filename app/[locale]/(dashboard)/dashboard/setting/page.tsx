@@ -3,6 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useState } from 'react'
 import { withOwnerAccess } from '@/components/common'
+import { useTranslations } from 'next-intl'
 import OrgConfigForm from './_components/OrgConfigForm'
 import OrgApiConfigForm from './_components/OrgApiConfigForm'
 import OrgReservationConfigForm from './_components/OrgReservationConfigForm'
@@ -11,18 +12,19 @@ import OrgStripeConnectStatus from './_components/OrgStripeConnectStatus'
 import OrgWeekHourSchedule from './_components/OrgWeekHourSchedule'
 
 function SettingPage() {
+  const t = useTranslations('settings.tabs')
   const [currentTab, setCurrentTab] = useState('basic')
 
   return (
     <Tabs value={currentTab} onValueChange={setCurrentTab}>
       <div className="overflow-x-scroll">
         <TabsList className="flex w-fit gap-2 mb-6">
-          <TabsTrigger value="basic">基本設定</TabsTrigger>
-          <TabsTrigger value="api">外部サービス連携</TabsTrigger>
-          <TabsTrigger value="reservation-setting">予約受付設定</TabsTrigger>
-          <TabsTrigger value="week-schedule">営業日設定</TabsTrigger>
-          <TabsTrigger value="exception-schedule">休業日設定</TabsTrigger>
-          <TabsTrigger value="payment">決済設定</TabsTrigger>
+          <TabsTrigger value="basic">{t('basic')}</TabsTrigger>
+          <TabsTrigger value="api">{t('api')}</TabsTrigger>
+          <TabsTrigger value="reservation-setting">{t('reservationSetting')}</TabsTrigger>
+          <TabsTrigger value="week-schedule">{t('weekSchedule')}</TabsTrigger>
+          <TabsTrigger value="exception-schedule">{t('exceptionSchedule')}</TabsTrigger>
+          <TabsTrigger value="payment">{t('payment')}</TabsTrigger>
         </TabsList>
       </div>
 
