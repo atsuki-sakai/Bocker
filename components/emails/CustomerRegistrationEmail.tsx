@@ -15,6 +15,30 @@ interface CustomerRegistrationEmailProps {
   customerEmail: string
   orgName: string
   loginUrl: string
+  locale?: 'ja' | 'en'
+}
+
+const translations = {
+  ja: {
+    subject: '【{orgName}】会員登録完了のお知らせ',
+    title: '会員登録完了',
+    greeting: '{email} 様',
+    welcomeMessage: 'この度は、【{orgName}】にご登録いただき、誠にありがとうございます。',
+    completionMessage: '会員登録が正常に完了いたしました。',
+    loginMessage: 'ご登録いただいたメールアドレスとパスワードで、いつでもログインいただけます。',
+    loginButton: 'ログインはこちら',
+    disclaimer: '※このメールに心当たりがない場合は、お手数ですが削除してください。',
+  },
+  en: {
+    subject: '[{orgName}] Registration Complete',
+    title: 'Registration Complete',
+    greeting: 'Dear {email},',
+    welcomeMessage: 'Thank you for registering with [{orgName}].',
+    completionMessage: 'Your registration has been completed successfully.',
+    loginMessage: 'You can log in anytime using your registered email address and password.',
+    loginButton: 'Login Here',
+    disclaimer: '※If you did not expect this email, please delete it.',
+  },
 }
 
 const main = {
@@ -83,35 +107,39 @@ export const CustomerRegistrationEmail = ({
   customerEmail,
   orgName,
   loginUrl,
-}: CustomerRegistrationEmailProps) => (
+  locale = 'ja',
+}: CustomerRegistrationEmailProps) => {
+  const t = translations[locale]
+  
+  return (
   <Html>
     <Head />
-    <Preview>【{orgName}】会員登録完了のお知らせ</Preview>
+    <Preview>{t.subject.replace('{orgName}', orgName)}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Heading style={headerTitle}>会員登録完了</Heading>
+          <Heading style={headerTitle}>{t.title}</Heading>
         </Section>
         <Section style={content}>
-          <Text style={text}>{customerEmail} 様</Text>
+          <Text style={text}>{t.greeting.replace('{email}', customerEmail)}</Text>
           <Text style={text}>
-            この度は、【{orgName}】にご登録いただき、誠にありがとうございます。
+            {t.welcomeMessage.replace('{orgName}', orgName)}
             <br />
-            会員登録が正常に完了いたしました。
+            {t.completionMessage}
           </Text>
           
           <Text style={text}>
-            ご登録いただいたメールアドレスとパスワードで、いつでもログインいただけます。
+            {t.loginMessage}
           </Text>
 
           <Section style={{ textAlign: 'center' as const, marginTop: '30px' }}>
             <Link href={loginUrl} style={buttonStyle}>
-              ログインはこちら
+              {t.loginButton}
             </Link>
           </Section>
 
           <Text style={{ ...text, marginTop: '30px', fontSize: '14px', color: '#586A7E' }}>
-            ※このメールに心当たりがない場合は、お手数ですが削除してください。
+            {t.disclaimer}
           </Text>
         </Section>
 
@@ -123,6 +151,7 @@ export const CustomerRegistrationEmail = ({
       </Container>
     </Body>
   </Html>
-)
+  )
+}
 
 export default CustomerRegistrationEmail

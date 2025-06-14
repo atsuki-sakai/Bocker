@@ -16,6 +16,40 @@ interface PasswordChangedEmailProps {
   orgName: string
   changedAt: string
   supportUrl?: string
+  locale?: 'ja' | 'en'
+}
+
+const translations = {
+  ja: {
+    subject: '【{orgName}】パスワード変更完了のお知らせ',
+    title: 'パスワード変更完了',
+    greeting: '{email} 様',
+    message: '【{orgName}】のアカウントのパスワードが正常に変更されました。',
+    changeInfo: '変更完了情報：',
+    changeDate: '変更日時：{date}',
+    instruction: '新しいパスワードを使用して、次回からログインしてください。',
+    securityNotice: 'セキュリティに関するお知らせ：',
+    unauthorizedWarning: 'もしこの変更にお心当たりがない場合は、第三者によるアカウントへの不正アクセスの可能性があります。',
+    contactSupport: 'すぐにサポートまでご連絡ください。',
+    contactSupportWithLink: 'すぐに {link} ください。',
+    supportLinkText: 'サポートまでご連絡',
+    securityTip: 'アカウントのセキュリティを保つため、定期的にパスワードを変更することをお勧めします。',
+  },
+  en: {
+    subject: '[{orgName}] Password Change Confirmation',
+    title: 'Password Changed Successfully',
+    greeting: 'Dear {email},',
+    message: 'Your password for [{orgName}] has been successfully changed.',
+    changeInfo: 'Change Information:',
+    changeDate: 'Changed at: {date}',
+    instruction: 'Please use your new password for future logins.',
+    securityNotice: 'Security Notice:',
+    unauthorizedWarning: 'If you did not make this change, there may be unauthorized access to your account.',
+    contactSupport: 'Please contact support immediately.',
+    contactSupportWithLink: 'Please {link} immediately.',
+    supportLinkText: 'contact support',
+    securityTip: 'We recommend changing your password regularly to keep your account secure.',
+  },
 }
 
 const main = {
@@ -94,58 +128,62 @@ export const PasswordChangedEmail = ({
   orgName,
   changedAt,
   supportUrl,
-}: PasswordChangedEmailProps) => (
+  locale = 'ja',
+}: PasswordChangedEmailProps) => {
+  const t = translations[locale]
+  
+  return (
   <Html>
     <Head />
-    <Preview>【{orgName}】パスワード変更完了のお知らせ</Preview>
+    <Preview>{t.subject.replace('{orgName}', orgName)}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Heading style={headerTitle}>パスワード変更完了</Heading>
+          <Heading style={headerTitle}>{t.title}</Heading>
         </Section>
         <Section style={content}>
-          <Text style={text}>{customerEmail} 様</Text>
+          <Text style={text}>{t.greeting.replace('{email}', customerEmail)}</Text>
           <Text style={text}>
-            【{orgName}】のアカウントのパスワードが正常に変更されました。
+            {t.message.replace('{orgName}', orgName)}
           </Text>
 
           <Section style={infoBox}>
             <Text style={{ ...text, marginBottom: '10px', fontSize: '14px', color: '#155724' }}>
-              <strong>変更完了情報：</strong>
+              <strong>{t.changeInfo}</strong>
             </Text>
             <Text style={{ ...text, marginBottom: '0', fontSize: '14px', color: '#155724' }}>
-              変更日時：{changedAt}
+              {t.changeDate.replace('{date}', changedAt)}
             </Text>
           </Section>
 
           <Text style={text}>
-            新しいパスワードを使用して、次回からログインしてください。
+            {t.instruction}
           </Text>
 
           <Section style={warningBox}>
             <Text style={{ ...text, marginBottom: '10px', fontSize: '14px', color: '#721C24' }}>
-              <strong>セキュリティに関するお知らせ：</strong>
+              <strong>{t.securityNotice}</strong>
             </Text>
             <Text style={{ ...text, marginBottom: '5px', fontSize: '14px', color: '#721C24' }}>
-              もしこの変更にお心当たりがない場合は、第三者によるアカウントへの不正アクセスの可能性があります。
+              {t.unauthorizedWarning}
             </Text>
             <Text style={{ ...text, marginBottom: '0', fontSize: '14px', color: '#721C24' }}>
               {supportUrl ? (
                 <>
-                  すぐに{' '}
+                  {t.contactSupportWithLink.split('{link}')[0]}
                   <Link href={supportUrl} style={link}>
-                    サポートまでご連絡
-                  </Link>{' '}
-                  ください。
+                    {t.supportLinkText}
+                  </Link>
+                  {t.contactSupportWithLink.split('{link}')[1]}
                 </>
               ) : (
-                'すぐにサポートまでご連絡ください。'
+                t.contactSupport
               )}
             </Text>
           </Section>
 
           <Text style={{ ...text, marginTop: '30px', fontSize: '14px', color: '#586A7E' }}>
-            アカウントのセキュリティを保つため、定期的にパスワードを変更することをお勧めします。
+            {t.securityTip}
           </Text>
         </Section>
 
@@ -157,6 +195,7 @@ export const PasswordChangedEmail = ({
       </Container>
     </Body>
   </Html>
-)
+  )
+}
 
 export default PasswordChangedEmail

@@ -34,6 +34,54 @@ interface ReservationConfirmationEmailProps {
   reservationRules?: string | null
   reservationDetailUrl: string
   logoUrl?: string
+  locale?: 'ja' | 'en'
+}
+
+const translations = {
+  ja: {
+    subject: '【{orgName}】ご予約内容の確認',
+    title: 'ご予約内容の確認',
+    greeting: '{customerName} 様',
+    thankYouMessage: 'この度は、【{orgName}】にご予約いただき、誠にありがとうございます。',
+    confirmationMessage: '以下の内容でご予約を承りました。',
+    reservationDetails: 'ご予約詳細',
+    shopName: '店舗名:',
+    reservationDateTime: 'ご予約日時:',
+    assignedStaff: '担当スタッフ:',
+    selectedMenus: '選択されたメニュー',
+    selectedOptions: '選択されたオプション',
+    subtotal: '小計',
+    pointsUsed: '使用ポイント',
+    couponDiscount: 'クーポン割引',
+    totalAmount: '合計金額',
+    thankYouVisit: 'ご来店を心よりお待ちしております。',
+    phone: '電話:',
+    address: '住所:',
+    reservationRules: '予約ルール:',
+    reservationDetailsButton: '予約詳細・キャンセルはこちら',
+  },
+  en: {
+    subject: '[{orgName}] Reservation Confirmation',
+    title: 'Reservation Confirmation',
+    greeting: 'Dear {customerName},',
+    thankYouMessage: 'Thank you for making a reservation at [{orgName}].',
+    confirmationMessage: 'We have confirmed your reservation with the following details.',
+    reservationDetails: 'Reservation Details',
+    shopName: 'Shop Name:',
+    reservationDateTime: 'Date & Time:',
+    assignedStaff: 'Staff:',
+    selectedMenus: 'Selected Menus',
+    selectedOptions: 'Selected Options',
+    subtotal: 'Subtotal',
+    pointsUsed: 'Points Used',
+    couponDiscount: 'Coupon Discount',
+    totalAmount: 'Total Amount',
+    thankYouVisit: 'We look forward to seeing you.',
+    phone: 'Phone:',
+    address: 'Address:',
+    reservationRules: 'Reservation Rules:',
+    reservationDetailsButton: 'View Details / Cancel',
+  },
 }
 
 const main = {
@@ -199,39 +247,44 @@ export const ReservationConfirmationEmail = ({
   reservationRules,
   reservationDetailUrl,
   logoUrl,
-}: ReservationConfirmationEmailProps) => (
+  locale = 'ja',
+}: ReservationConfirmationEmailProps) => {
+  const t = translations[locale]
+  const displayName = customerName || customerEmail
+  
+  return (
   <Html>
     <Head />
-    <Preview>【{orgName}】ご予約内容の確認</Preview>
+    <Preview>{t.subject.replace('{orgName}', orgName)}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
           {logoUrl && <Img src={logoUrl} alt={`${orgName} Logo`} style={logo} />}
-          <Heading style={headerTitle}>ご予約内容の確認</Heading>
+          <Heading style={headerTitle}>{t.title}</Heading>
         </Section>
         <Section style={content}>
-          <Text style={text}>{customerName || customerEmail} 様</Text>
+          <Text style={text}>{t.greeting.replace('{customerName}', displayName || '')}</Text>
           <Text style={text}>
-            この度は、【{orgName}】にご予約いただき、誠にありがとうございます。
+            {t.thankYouMessage.replace('{orgName}', orgName)}
             <br />
-            以下の内容でご予約を承りました。
+            {t.confirmationMessage}
           </Text>
 
           <Heading as="h2" style={sectionTitle}>
-            ご予約詳細
+            {t.reservationDetails}
           </Heading>
           <Text style={text}>
-            <strong>店舗名:</strong> {orgName}
+            <strong>{t.shopName}</strong> {orgName}
             <br />
-            <strong>ご予約日時:</strong> {reservationDate} {reservationTime}
+            <strong>{t.reservationDateTime}</strong> {reservationDate} {reservationTime}
             <br />
-            <strong>担当スタッフ:</strong> {staffName}
+            <strong>{t.assignedStaff}</strong> {staffName}
           </Text>
 
           {menus && menus.length > 0 && (
             <>
               <Heading as="h3" style={{ ...sectionTitle, fontSize: '16px', borderBottom: 'none' }}>
-                選択されたメニュー
+                {t.selectedMenus}
               </Heading>
               {menus.map((menu, index) => (
                 <Section key={`menu-${index}`} style={listItem}>
@@ -255,7 +308,7 @@ export const ReservationConfirmationEmail = ({
                   marginTop: '15px',
                 }}
               >
-                選択されたオプション
+                {t.selectedOptions}
               </Heading>
               {options.map((option, index) => (
                 <Section key={`option-${index}`} style={listItem}>
@@ -275,24 +328,24 @@ export const ReservationConfirmationEmail = ({
 
           <Section style={totalSection}>
             <Row style={totalRow}>
-              <Column style={totalLabel}>小計</Column>
+              <Column style={totalLabel}>{t.subtotal}</Column>
               <Column style={totalValue}>¥{subtotal.toLocaleString()}</Column>
             </Row>
             {pointsUsed && pointsUsed > 0 && (
               <Row style={totalRow}>
-                <Column style={totalLabel}>使用ポイント</Column>
+                <Column style={totalLabel}>{t.pointsUsed}</Column>
                 <Column style={totalValue}>-{pointsUsed.toLocaleString()} P</Column>
               </Row>
             )}
             {couponDiscount && couponDiscount > 0 && (
               <Row style={totalRow}>
-                <Column style={totalLabel}>クーポン割引</Column>
+                <Column style={totalLabel}>{t.couponDiscount}</Column>
                 <Column style={totalValue}>-¥{couponDiscount.toLocaleString()}</Column>
               </Row>
             )}
             <Hr style={{ borderColor: '#cccccc', margin: '10px 0' }} />
             <Row style={{ ...totalRow, ...grandTotalRow }}>
-              <Column>合計金額</Column>
+              <Column>{t.totalAmount}</Column>
               <Column style={{ textAlign: 'right' as const }}>
                 ¥{totalAmount.toLocaleString()}
               </Column>
@@ -301,31 +354,32 @@ export const ReservationConfirmationEmail = ({
         </Section>
 
         <Section style={footer}>
-          <Text style={footerText}>ご来店を心よりお待ちしております。</Text>
+          <Text style={footerText}>{t.thankYouVisit}</Text>
           <Text style={{ ...footerText, fontWeight: 'bold' as const }}>{orgName}</Text>
           <Text style={footerText}>
-            電話:{' '}
+            {t.phone}{' '}
             <Link href={`tel:${orgPhone}`} style={link}>
               {orgPhone}
             </Link>
           </Text>
           <Text style={footerText}>
-            住所: {orgPostalCode} {orgAddress}
+            {t.address} {orgPostalCode} {orgAddress}
           </Text>
           {reservationRules && (
             <Text style={footerText}>
-              <strong>予約ルール:</strong> {reservationRules}
+              <strong>{t.reservationRules}</strong> {reservationRules}
             </Text>
           )}
           <Section style={{ textAlign: 'center' as const, marginTop: '20px' }}>
             <Link href={reservationDetailUrl} style={buttonStyle}>
-              予約詳細・キャンセルはこちら
+              {t.reservationDetailsButton}
             </Link>
           </Section>
         </Section>
       </Container>
     </Body>
   </Html>
-)
+  )
+}
 
 export default ReservationConfirmationEmail

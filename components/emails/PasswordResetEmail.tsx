@@ -16,6 +16,34 @@ interface PasswordResetEmailProps {
   orgName: string
   resetUrl: string
   expiresAt: string
+  locale?: 'ja' | 'en'
+}
+
+const translations = {
+  ja: {
+    subject: '【{orgName}】パスワードリセットのご案内',
+    title: 'パスワードリセット',
+    greeting: '{email} 様',
+    requestMessage: '【{orgName}】のパスワードリセットのご依頼を承りました。',
+    instructionMessage: '以下のボタンをクリックして、新しいパスワードを設定してください。',
+    resetButton: 'パスワードを再設定する',
+    importantNotice: '重要なお知らせ：',
+    expirationNotice: '• このリンクの有効期限は {expiresAt} までです',
+    singleUseNotice: '• リンクは一度のみ使用可能です',
+    disclaimer: '※このメールに心当たりがない場合は、第三者がメールアドレスを間違って入力した可能性があります。その場合は、このメールを削除してください。',
+  },
+  en: {
+    subject: '[{orgName}] Password Reset Request',
+    title: 'Password Reset',
+    greeting: 'Dear {email},',
+    requestMessage: 'We have received a password reset request for your [{orgName}] account.',
+    instructionMessage: 'Click the button below to set a new password.',
+    resetButton: 'Reset Password',
+    importantNotice: 'Important Notice:',
+    expirationNotice: '• This link expires on {expiresAt}',
+    singleUseNotice: '• This link can only be used once',
+    disclaimer: '※If you did not request this email, someone may have entered your email address by mistake. In that case, please delete this email.',
+  },
 }
 
 const main = {
@@ -93,44 +121,47 @@ export const PasswordResetEmail = ({
   orgName,
   resetUrl,
   expiresAt,
-}: PasswordResetEmailProps) => (
+  locale = 'ja',
+}: PasswordResetEmailProps) => {
+  const t = translations[locale]
+  
+  return (
   <Html>
     <Head />
-    <Preview>【{orgName}】パスワードリセットのご案内</Preview>
+    <Preview>{t.subject.replace('{orgName}', orgName)}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Heading style={headerTitle}>パスワードリセット</Heading>
+          <Heading style={headerTitle}>{t.title}</Heading>
         </Section>
         <Section style={content}>
-          <Text style={text}>{customerEmail} 様</Text>
+          <Text style={text}>{t.greeting.replace('{email}', customerEmail)}</Text>
           <Text style={text}>
-            【{orgName}】のパスワードリセットのご依頼を承りました。
+            {t.requestMessage.replace('{orgName}', orgName)}
             <br />
-            以下のボタンをクリックして、新しいパスワードを設定してください。
+            {t.instructionMessage}
           </Text>
 
           <Section style={{ textAlign: 'center' as const, marginTop: '30px' }}>
             <Link href={resetUrl} style={buttonStyle}>
-              パスワードを再設定する
+              {t.resetButton}
             </Link>
           </Section>
 
           <Section style={warningBox}>
             <Text style={{ ...text, marginBottom: '10px', fontSize: '14px', color: '#856404' }}>
-              <strong>重要なお知らせ：</strong>
+              <strong>{t.importantNotice}</strong>
             </Text>
             <Text style={{ ...text, marginBottom: '5px', fontSize: '14px', color: '#856404' }}>
-              • このリンクの有効期限は {expiresAt} までです
+              {t.expirationNotice.replace('{expiresAt}', expiresAt)}
             </Text>
             <Text style={{ ...text, marginBottom: '0', fontSize: '14px', color: '#856404' }}>
-              • リンクは一度のみ使用可能です
+              {t.singleUseNotice}
             </Text>
           </Section>
 
           <Text style={{ ...text, marginTop: '30px', fontSize: '14px', color: '#586A7E' }}>
-            ※このメールに心当たりがない場合は、第三者がメールアドレスを間違って入力した可能性があります。
-            その場合は、このメールを削除してください。
+            {t.disclaimer}
           </Text>
         </Section>
 
@@ -142,6 +173,7 @@ export const PasswordResetEmail = ({
       </Container>
     </Body>
   </Html>
-)
+  )
+}
 
 export default PasswordResetEmail
