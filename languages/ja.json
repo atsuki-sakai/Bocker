@@ -33,6 +33,8 @@
       "loading": "アカウント作成中...",
       "processing": "処理中...",
       "register": "登録する",
+      "showPassword": "パスワードを表示",
+      "hidePassword": "パスワードを隠す",
       "organizationNamePlaceholder": "組織名を入力",
       "storeNamePlaceholder": "店舗名を入力",
       "firstNamePlaceholder": "名前を入力",
@@ -45,6 +47,7 @@
       "passwordFair": "普通",
       "passwordGood": "強い",
       "passwordStrong": "非常に強い",
+
       "passwordRequirements": {
         "length": "8文字以上",
         "uppercase": "大文字を含む",
@@ -52,6 +55,7 @@
         "number": "数字を含む",
         "special": "特殊文字を含む"
       },
+      "passwordConfirmationError": "パスワードと確認用パスワードが一致しません",
       "useReferralCode": "招待コードを使用する",
       "referralCode": "招待コード",
       "referralCodePlaceholder": "招待コード（任意）",
@@ -66,6 +70,7 @@
         "processing": "認証中...",
         "resendCode": "認証コードを再送信",
         "resending": "送信中...",
+        "resend": "再送信",
         "resent": "認証コードを再送信しました",
         "resendError": "認証コードの送信に失敗しました",
         "invalidCode": "認証コードが正しくありません",
@@ -93,7 +98,21 @@
       "resetting": "リセット中...",
       "resetSuccess": "パスワードが正常にリセットされました",
       "resetEmailSent": "パスワードリセットメールを送信しました",
-      "resetEmailInstruction": "パスワードのリセット手順をメールで送信しました。受信トレイをご確認ください。"
+      "resetEmailInstruction": "パスワードのリセット手順をメールで送信しました。受信トレイをご確認ください。",
+      "code": "確認コード",
+      "codePlaceholder": "000000",
+      "sendingCode": "送信中...",
+      "codeInstruction": "メールアドレスに届いた確認コードを入力してください。",
+      "sendVerificationCode": "確認コードを送信",
+      "codeRequired": "確認コードは必須です",
+      "invalidCode": "確認コードが正しくありません",
+      "codeSendSuccess": "確認コードを送信しました。メールをご確認ください。",
+      "codeSendError": "確認コードの送信に失敗しました。",
+      "resetError": "パスワードのリセットに失敗しました",
+      "emailSentSubtitle": "メールアドレスを入力して確認コードを受け取ってください",
+      "newPasswordSubtitle": "新しいパスワードを設定してください",
+      "newPasswordRequired": "新しいパスワードを入力してください",
+      "confirmPasswordPlaceholderNew": "同じパスワードを再入力"
     },
     "validation": {
       "emailRequired": "メールアドレスは必須です",
@@ -126,6 +145,39 @@
       "loading": "読み込み中...",
       "aboutAccountCreation": "アカウント作成について",
       "instructions": "招待されたスタッフとしてアカウントを作成するには、管理者から共有された招待リンクを使用してアクセスしてください。直接このページにアクセスしても、スタッフアカウントの作成はできません。"
+    },
+    "customerResetPassword": {
+      "notFound": "無効なリセットページです。",
+      "notFoundToken": "トークンが見つかりません",
+      "title": "パスワードリセット申請",
+      "subtitle": "パスワードをリセットしてください",
+      "email": "メールアドレス",
+      "newPassword": "新しいパスワード",
+      "confirmPassword": "パスワード確認",
+      "submit": "リセットメールを送信",
+      "loading": "読み込み中...",
+      "emailInvalid": "有効なメールアドレスを入力してください",
+      "processing": "処理中...",
+      "resetPassword": "パスワードをリセット",
+      "emailSentSubtitle": "メールアドレスを入力して確認コードを受け取ってください",
+      "newPasswordSubtitle": "新しいパスワードを設定してください",
+      "newPasswordRequired": "新しいパスワードを入力してください",
+      "confirmPasswordPlaceholderNew": "同じパスワードを再入力",
+      "message": {
+        "resetPassword": "パスワードリセットメールを送信しました",
+        "resetPasswordFailed": "パスワードリセットメールの送信に失敗しました",
+        "resetPasswordError": "内部エラーが発生しました"
+      },
+      "validation": {
+        "emailRequired": "メールアドレスは必須です",
+        "emailInvalid": "有効なメールアドレスを入力してください",
+        "passwordMinLength": "パスワードは8文字以上で入力してください",
+        "passwordMaxLength": "パスワードは100文字以内で入力してください",
+        "passwordRequired": "パスワードは必須です",
+        "passwordConfirmationError": "パスワードと確認用パスワードが一致しません"
+      },
+      "resetPasswordFailed": "パスワードの変更に失敗しました",
+      "resetPasswordError": "パスワード変更中にエラーが発生しました"
     }
   },
   "language": {
