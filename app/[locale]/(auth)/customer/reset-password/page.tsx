@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState, useMemo } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { z } from 'zod'
 import { useZodForm } from '@/hooks/useZodForm'
@@ -13,21 +13,18 @@ import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 
 // メールアドレス入力バリデーション
-const createRequestResetSchema = (t: (key: string) => string) =>
+const requestResetSchema = (t: ReturnType<typeof useTranslations>) =>
   z.object({
     email: z
       .string()
-      .email({ message: t('validation.emailInvalid') })
+      .email({ message: t('emailInvalid') })
       .max(255),
   })
 
 function RequestResetContent() {
-  const t = useTranslations('auth.resetPassword')
   const searchParams = useSearchParams()
   const router = useRouter()
-
-  // email クエリ (省略可)
-  const emailFromQuery = searchParams.get('e') || ''
+  const t = useTranslations('auth.customerResetPassword')
 
   // sessionStorage から ID を取得（URL からは排除）
   const [ids, setIds] = useState<{ tenantId: string | null; orgId: string | null }>({
@@ -35,14 +32,15 @@ function RequestResetContent() {
     orgId: null,
   })
 
-  const requestResetSchema = useMemo(() => createRequestResetSchema(t), [t])
+  // email クエリ (省略可)
+  const emailFromQuery = searchParams.get('e') || ''
 
   // フォームフックは常に呼び出して Hooks の順序を安定させる
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useZodForm(requestResetSchema, {
+  } = useZodForm(requestResetSchema(t), {
     defaultValues: {
       email: emailFromQuery,
     },
@@ -61,12 +59,12 @@ function RequestResetContent() {
   if (!ids.tenantId || !ids.orgId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-sm text-destructive">{t('messages.invalidResetPage')}</p>
+        <p className="text-sm text-destructive">{t('notFound')}</p>
       </div>
     )
   }
 
-  const onSubmit = async (data: z.infer<typeof requestResetSchema>) => {
+  const onSubmit = async (data: z.infer<ReturnType<typeof requestResetSchema>>) => {
     try {
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
@@ -78,18 +76,16 @@ function RequestResetContent() {
         }),
       })
 
-      const result = await res.json()
-
       if (res.ok) {
-        toast.success(result.message || t('messages.emailSent'))
+        toast.success(t('message.resetPassword'))
         // 送信完了後は予約ログイン画面へ戻す
         router.back()
       } else {
-        toast.error(result.error || t('messages.emailSendFailed'))
+        toast.error(t('message.resetPasswordFailed'))
       }
     } catch (error) {
       console.error('reset-password request error', error)
-      toast.error(t('messages.internalError'))
+      toast.error(t('message.resetPasswordError'))
     }
   }
 
@@ -110,7 +106,7 @@ function RequestResetContent() {
                   type="email"
                   {...register('email')}
                   className="pl-10"
-                  placeholder={t('emailPlaceholder')}
+                  placeholder="example@example.com"
                 />
               </div>
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
@@ -118,7 +114,7 @@ function RequestResetContent() {
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" /> {t('sending')}
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t('processing')}
                 </span>
               ) : (
                 t('submit')
@@ -127,7 +123,9 @@ function RequestResetContent() {
           </form>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground text-center w-full">{t('description')}</p>
+          <p className="text-xs text-muted-foreground text-center w-full">
+            {t('emailSentSubtitle')}
+          </p>
         </CardFooter>
       </Card>
     </div>

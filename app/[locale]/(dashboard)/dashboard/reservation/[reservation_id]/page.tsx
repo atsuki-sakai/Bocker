@@ -260,12 +260,12 @@ export default function ReservationPage() {
             <>
               {customerLoading && (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-border"></div>
                   <span className="text-muted-foreground">{t('loadingCustomerData')}...</span>
                 </div>
               )}
 
-              {customerError && <p className="text-red-500">{customerError}</p>}
+              {customerError && <p className="text-destructive">{customerError}</p>}
 
               {customerData && !customerLoading && (
                 <div className="space-y-3">
@@ -299,7 +299,9 @@ export default function ReservationPage() {
                       {customerData.customerDetail.age && (
                         <div>
                           <p className="text-muted-foreground">{t('age')}:</p>
-                          <p className="font-medium">{t('yearsOld', { age: customerData.customerDetail.age })}</p>
+                          <p className="font-medium">
+                            {t('yearsOld', { age: customerData.customerDetail.age })}
+                          </p>
                         </div>
                       )}
 
@@ -324,9 +326,7 @@ export default function ReservationPage() {
               )}
             </>
           ) : (
-            <p className="text-muted-foreground">
-              {t('noCustomerLinked')}
-            </p>
+            <p className="text-muted-foreground">{t('noCustomerLinked')}</p>
           )}
         </div>
         <div className="border-b pb-4">

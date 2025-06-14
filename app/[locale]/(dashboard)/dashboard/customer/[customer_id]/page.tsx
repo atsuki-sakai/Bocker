@@ -147,7 +147,7 @@ function CustomerDetailPage() {
           </Badge>
         </div>
         {completeCustomer.customer.line_user_name && (
-          <p className="w-fit text-sm mt-1 text-green-600 border-green-600 border rounded-md font-bold py-1 bg-green-50 px-3">
+          <p className="w-fit text-sm mt-1 text-active border-active border rounded-md font-bold py-1 px-3">
             {t('lineUserName')}: {completeCustomer.customer.line_user_name}
           </p>
         )}
@@ -176,12 +176,16 @@ function CustomerDetailPage() {
               <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
                 <Phone className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">{t('phone')}:</span>
-                <span className="text-base">{completeCustomer.customer.phone || t('notRegistered')}</span>
+                <span className="text-base">
+                  {completeCustomer.customer.phone || t('notRegistered')}
+                </span>
               </div>
               <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
                 <Mail className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">{t('email')}:</span>
-                <span className="text-base">{completeCustomer.customer.email || t('notRegistered')}</span>
+                <span className="text-base">
+                  {completeCustomer.customer.email || t('notRegistered')}
+                </span>
               </div>
             </div>
           </div>
@@ -213,8 +217,8 @@ function CustomerDetailPage() {
                   {completeCustomer.customerDetail?.gender === 'male'
                     ? t('male')
                     : completeCustomer.customerDetail?.gender === 'female'
-                    ? t('female')
-                    : t('unselected')}
+                      ? t('female')
+                      : t('unselected')}
                 </span>
               </div>
               {/* Notes - potentially long, use ScrollArea or Collapsible */}
@@ -251,7 +255,9 @@ function CustomerDetailPage() {
             <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
               <span className="text-sm font-medium text-muted-foreground">{t('visitCount')}:</span>
               <span className="text-sm">
-                {t('visitCountValue', { count: completeCustomer.customer.total_reservation_count || 0 })}
+                {t('visitCountValue', {
+                  count: completeCustomer.customer.total_reservation_count || 0,
+                })}
               </span>
             </div>
           </div>
@@ -286,7 +292,9 @@ function CustomerDetailPage() {
         <div className="flex flex-col items-start space-y-2 text-sm text-muted-foreground pt-4 border-t">
           <div className="flex items-center space-x-2">
             <CalendarDays className="h-4 w-4" />
-            <span>{t('registrationDate')}: {formattedCreationTime}</span>
+            <span>
+              {t('registrationDate')}: {formattedCreationTime}
+            </span>
           </div>
 
           <div className="flex items-center space-x-2">

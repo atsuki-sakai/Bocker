@@ -6,10 +6,12 @@ export default function ReservationPage() {
   const t = useTranslations('reservations');
   const tNav = useTranslations('navigation');
   return (
-    <DashboardSection title={t('timelineTitle')} backLink="/dashboard" backLinkTitle={tNav('dashboard')}>
-      <p className="text-sm text-gray-500">
-        {t('timelineDescription')}
-      </p>
+    <DashboardSection
+      title={t('timelineTitle')}
+      backLink="/dashboard"
+      backLinkTitle={tNav('dashboard')}
+    >
+      <p className="text-sm text-muted-foreground">{t('timelineDescription')}</p>
       <ReservationList />
     </DashboardSection>
   )

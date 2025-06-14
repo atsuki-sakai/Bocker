@@ -273,11 +273,11 @@ export default function CustomerEditForm() {
 
   return (
     <div className="container mx-auto py-4">
-      <h2 className="text-2xl font-bold text-slate-700 mb-4">{t('editTitle')}</h2>
+      <h2 className="text-2xl font-bold text-muted-foreground mb-4">{t('editTitle')}</h2>
       {completeCustomer.customer?.line_user_name && (
-        <p className="text-sm text-green-600 mb-4 p-2 border border-green-600 rounded-md w-fit">
+        <p className="text-sm text-active mb-4 p-2 border border-active rounded-md w-fit">
           <span className="font-bold">{t('lineUserName')} </span>{' '}
-          <span className="text-slate-700 ml-2 tracking-wider font-bold">
+          <span className="text-muted-foreground ml-2 tracking-wider font-bold">
             {completeCustomer.customer.line_user_name}
           </span>
         </p>
@@ -321,11 +321,13 @@ export default function CustomerEditForm() {
 
         {/* 年齢と性別の表示 */}
         <div className="flex items-center gap-2">
-          <p className="text-lg text-slate-700">
+          <p className="text-lg text-muted-foreground">
             {/* 年齢の表示 */}
             {displayAge !== undefined && displayAge !== null ? displayAge : '-'}
-            <span className="text-base font-normal text-slate-700">{t('yearsOld')}</span>{' '}
-            <span className="text-base font-normal text-slate-700">
+            <span className="text-base font-normal text-muted-foreground">
+              {t('yearsOld')}
+            </span>{' '}
+            <span className="text-base font-normal text-muted-foreground">
               {watch('gender') === 'male'
                 ? t('male')
                 : watch('gender') === 'female'
@@ -346,13 +348,17 @@ export default function CustomerEditForm() {
                 placeholder={t('placeholder.totalPoints')}
                 type="number"
               />
-              <span className="text-xs font-normal text-gray-500">{t('pointsChangeWarning')}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {t('pointsChangeWarning')}
+              </span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('gender')}</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
+                {t('gender')}
+              </label>
               <Select
                 onValueChange={(value) => {
                   setValue('gender', value as Gender, { shouldDirty: true })
@@ -379,7 +385,7 @@ export default function CustomerEditForm() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
                 {t('birthday')}
               </label>
               <Input
@@ -419,7 +425,9 @@ export default function CustomerEditForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes')}</label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
+            {t('notes')}
+          </label>
           <Textarea
             {...register('notes')}
             rows={8}

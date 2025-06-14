@@ -1,44 +1,41 @@
 'use client'
 
-import { Suspense, useEffect, useState, useMemo } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Eye, EyeOff, Lock, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { z } from 'zod'
 import { useZodForm } from '@/hooks/useZodForm'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Loader2, Eye, EyeOff, Lock } from 'lucide-react'
-import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 
-// パスワード確認バリデーション
-const createResetPasswordSchema = (t: (key: string) => string) =>
+const resetPasswordSchema = (t: ReturnType<typeof useTranslations>) =>
   z
     .object({
       newPassword: z
         .string()
-        .min(8, { message: t('validation.passwordMin') })
-        .max(100, { message: t('validation.passwordMax') }),
-      confirmPassword: z.string().min(1, { message: t('validation.confirmPasswordRequired') }),
+        .min(8, { message: t('validation.passwordMinLength') })
+        .max(100, { message: t('validation.passwordMaxLength') }),
+      confirmPassword: z.string().min(1, { message: t('validation.passwordRequired') }),
     })
     .refine((data) => data.newPassword === data.confirmPassword, {
-      message: t('validation.passwordMismatch'),
+      message: t('validation.passwordConfirmationError'),
       path: ['confirmPassword'],
     })
 
 function ResetPasswordConfirmContent() {
-  const t = useTranslations('auth.resetPassword')
   const searchParams = useSearchParams()
   const router = useRouter()
+  const t = useTranslations('auth.customerResetPassword')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const token = searchParams.get('token')
+  const [token, setToken] = useState<string | null>(null)
 
-  const resetPasswordSchema = useMemo(() => createResetPasswordSchema(t), [t])
-
-  const form = useZodForm(resetPasswordSchema, {
+  const form = useZodForm(resetPasswordSchema(t), {
     defaultValues: {
       newPassword: '',
       confirmPassword: '',
@@ -46,15 +43,18 @@ function ResetPasswordConfirmContent() {
   })
 
   useEffect(() => {
-    if (!token) {
-      toast.error(t('messages.invalidResetLink'))
+    const tokenParam = searchParams.get('token')
+    if (!tokenParam) {
+      toast.error(t('notFound'))
       router.push('/')
+      return
     }
-  }, [token, router, t])
+    setToken(tokenParam)
+  }, [searchParams, router, t])
 
-  const onSubmit = async (data: z.infer<typeof resetPasswordSchema>) => {
+  const onSubmit = async (data: z.infer<ReturnType<typeof resetPasswordSchema>>) => {
     if (!token) {
-      toast.error(t('messages.tokenNotFound'))
+      toast.error(t('notFoundToken'))
       return
     }
 
@@ -65,25 +65,23 @@ function ResetPasswordConfirmContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          token,
+          token: token,
           newPassword: data.newPassword,
         }),
       })
 
-      const result = await response.json()
-
       if (response.ok) {
-        toast.success(result.message || t('messages.passwordChanged'))
-        // 3秒後にホームへリダイレクト
+        toast.success(t('message.resetPassword'))
+        // 3秒後にリダイレクト
         setTimeout(() => {
           router.push('/')
         }, 3000)
       } else {
-        toast.error(result.error || t('messages.passwordChangeFailed'))
+        toast.error(t('message.resetPasswordFailed'))
       }
     } catch (error) {
       console.error('Password reset error:', error)
-      toast.error(t('messages.internalError'))
+      toast.error(t('message.resetPasswordError'))
     } finally {
       setIsLoading(false)
     }
@@ -111,8 +109,8 @@ function ResetPasswordConfirmContent() {
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <Lock className="w-6 h-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">{t('confirmTitle')}</CardTitle>
-          <p className="text-sm text-muted-foreground">{t('confirmDescription')}</p>
+          <CardTitle className="text-2xl">{t('title')}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t('newPasswordSubtitle')}</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -139,7 +137,9 @@ function ResetPasswordConfirmContent() {
                 </button>
               </div>
               {form.formState.errors.newPassword && (
-                <p className="text-sm text-destructive">{form.formState.errors.newPassword.message}</p>
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.newPassword.message}
+                </p>
               )}
             </div>
 
@@ -149,7 +149,7 @@ function ResetPasswordConfirmContent() {
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder={t('confirmPasswordPlaceholder')}
+                  placeholder={t('confirmPasswordPlaceholderNew')}
                   {...form.register('confirmPassword')}
                   className="pr-10"
                 />
@@ -176,10 +176,10 @@ function ResetPasswordConfirmContent() {
               {isLoading ? (
                 <div className="flex items-center">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('changing')}
+                  {t('processing')}
                 </div>
               ) : (
-                t('changePassword')
+                t('submit')
               )}
             </Button>
           </form>
@@ -189,21 +189,25 @@ function ResetPasswordConfirmContent() {
   )
 }
 
+function LoadingFallback() {
+  const t = useTranslations('auth.customerResetPassword')
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Card className="w-full max-w-md">
+        <CardContent className="pt-6">
+          <div className="text-center">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="mt-2 text-sm text-muted-foreground">{t('loading')}</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 export default function ResetPasswordConfirmPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingFallback />}>
       <ResetPasswordConfirmContent />
     </Suspense>
   )

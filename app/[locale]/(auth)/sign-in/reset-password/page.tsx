@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useMemo } from 'react'
+import { useState, useEffect, Suspense } from "react";
 import { useSignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,26 +41,27 @@ import {
 } from "react-hook-form";
 import { useTranslations } from 'next-intl'
 
-
-
-const createResetPasswordSchema = (t: (key: string) => string) =>
+const createResetPasswordSchema = (t: ReturnType<typeof useTranslations>) =>
   z
     .object({
-      email: z.string().email({ message: t('validation.emailInvalid') }),
+      email: z.string().email({ message: t('auth.validation.emailInvalid') }),
       newPassword: z
         .string()
-        .min(1, { message: t('validation.newPasswordRequired') })
+        .min(1, { message: t('auth.resetPassword.newPasswordRequired') })
         .optional(),
       confirmPassword: z
         .string()
-        .min(1, { message: t('validation.confirmPasswordRequired') })
+        .min(1, { message: t('auth.validation.confirmPasswordRequired') })
         .optional(),
       code: z.string().optional(),
     })
     .refine((data) => data.newPassword === data.confirmPassword, {
-      message: t('validation.passwordMismatch'),
+      message: t('auth.validation.passwordMismatch'),
       path: ['confirmPassword'],
     })
+
+// 型推論を簡潔に扱うためのエイリアス
+type ResetPasswordFormValues = z.infer<ReturnType<typeof createResetPasswordSchema>>
 
 // アニメーションバリアント
 const containerVariants = {
@@ -77,21 +78,21 @@ const containerVariants = {
       duration: 0.2,
     },
   },
-};
+}
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
     opacity: 1,
-    transition: { type: "spring", stiffness: 100 },
+    transition: { type: 'spring', stiffness: 100 },
   },
   exit: {
     y: -20,
     opacity: 0,
     transition: { duration: 0.2 },
   },
-};
+}
 
 // フォーム共通のエラーメッセージ表示を含むリセットコード送信用コンポーネント
 function ResetCodeForm({
@@ -100,15 +101,14 @@ function ResetCodeForm({
   handleSubmit,
   onSubmit,
   isSubmitting,
-  t,
 }: {
-  register: UseFormRegister<z.infer<ReturnType<typeof createResetPasswordSchema>>>
-  errors: FieldErrors<z.infer<ReturnType<typeof createResetPasswordSchema>>>
-  handleSubmit: UseFormHandleSubmit<z.infer<ReturnType<typeof createResetPasswordSchema>>>
-  onSubmit: (data: z.infer<ReturnType<typeof createResetPasswordSchema>>) => void
+  register: UseFormRegister<ResetPasswordFormValues>
+  errors: FieldErrors<ResetPasswordFormValues>
+  handleSubmit: UseFormHandleSubmit<ResetPasswordFormValues>
+  onSubmit: (data: ResetPasswordFormValues) => void
   isSubmitting: boolean
-  t: (key: string) => string
 }) {
+  const t = useTranslations('auth.resetPassword')
   return (
     <motion.form
       variants={containerVariants}
@@ -120,10 +120,10 @@ function ResetCodeForm({
     >
       <motion.div variants={itemVariants} className="space-y-2">
         <Label htmlFor="email" className="text-xs font-medium">
-          {t('accountEmail')}
+          {t('auth.resetPassword.accountEmail')}
         </Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             id="email"
             type="email"
@@ -134,7 +134,7 @@ function ResetCodeForm({
           />
         </div>
         {errors.email && (
-          <div className="flex items-center gap-2 text-red-500 text-xs mt-1">
+          <div className="flex items-center gap-2 text-destructive text-xs mt-1">
             <AlertCircle className="h-3 w-3" />
             <p>{errors.email.message}</p>
           </div>
@@ -146,12 +146,12 @@ function ResetCodeForm({
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t('sending')}
+              {t('sendingCode')}
             </>
           ) : (
             <>
               <Send className="mr-2 h-4 w-4" />
-              {t('sendCode')}
+              {t('sendVerificationCode')}
             </>
           )}
         </Button>
@@ -167,15 +167,14 @@ function ResetPasswordForm({
   handleSubmit,
   onSubmit,
   isSubmitting,
-  t,
 }: {
-  register: UseFormRegister<z.infer<ReturnType<typeof createResetPasswordSchema>>>
-  errors: FieldErrors<z.infer<ReturnType<typeof createResetPasswordSchema>>>
-  handleSubmit: UseFormHandleSubmit<z.infer<ReturnType<typeof createResetPasswordSchema>>>
-  onSubmit: (data: z.infer<ReturnType<typeof createResetPasswordSchema>>) => void
+  register: UseFormRegister<ResetPasswordFormValues>
+  errors: FieldErrors<ResetPasswordFormValues>
+  handleSubmit: UseFormHandleSubmit<ResetPasswordFormValues>
+  onSubmit: (data: ResetPasswordFormValues) => void
   isSubmitting: boolean
-  t: (key: string) => string
 }) {
+  const t = useTranslations('auth.resetPassword')
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -183,10 +182,10 @@ function ResetPasswordForm({
     <motion.div variants={containerVariants} initial="hidden" animate="visible" exit="exit">
       <motion.div
         variants={itemVariants}
-        className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100 flex items-center gap-3"
+        className="mb-6 p-4 bg-secondary rounded-lg border border-secondary flex items-center gap-3"
       >
-        <Mail className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-        <p className="text-xs text-blue-600">{t('codeInstruction')}</p>
+        <Mail className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-primary">{t('codeInstruction')}</p>
       </motion.div>
 
       <motion.form
@@ -196,21 +195,21 @@ function ResetPasswordForm({
       >
         <motion.div variants={itemVariants} className="space-y-2">
           <Label htmlFor="code" className="text-xs font-medium">
-            {t('verificationCode')}
+            {t('code')}
           </Label>
           <div className="relative">
-            <KeyRound className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               id="code"
               {...register('code')}
               className="pl-10 text-center font-mono tracking-wider"
-              placeholder="000000"
+              placeholder={t('codePlaceholder')}
               maxLength={6}
               autoFocus
             />
           </div>
           {errors.code && (
-            <div className="flex items-center gap-2 text-red-500 text-xs mt-1">
+            <div className="flex items-center gap-2 text-destructive text-xs mt-1">
               <AlertCircle className="h-3 w-3" />
               <p>{errors.code.message}</p>
             </div>
@@ -222,7 +221,7 @@ function ResetPasswordForm({
             {t('newPassword')}
           </Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               id="newPassword"
               type={showNewPassword ? 'text' : 'password'}
@@ -233,13 +232,13 @@ function ResetPasswordForm({
             <button
               type="button"
               onClick={() => setShowNewPassword(!showNewPassword)}
-              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
+              className="absolute right-3 top-3 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
             >
               {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           {errors.newPassword && (
-            <div className="flex items-center gap-2 text-red-500 text-xs mt-1">
+            <div className="flex items-center gap-2 text-destructive text-xs mt-1">
               <AlertCircle className="h-3 w-3" />
               <p>{errors.newPassword.message}</p>
             </div>
@@ -251,24 +250,24 @@ function ResetPasswordForm({
             {t('confirmPassword')}
           </Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               id="confirmPassword"
               type={showConfirmPassword ? 'text' : 'password'}
               {...register('confirmPassword')}
               className="pl-10 pr-10"
-              placeholder={t('confirmPasswordPlaceholder')}
+              placeholder={t('confirmPasswordPlaceholderNew')}
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
+              className="absolute right-3 top-3 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
             >
               {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           {errors.confirmPassword && (
-            <div className="flex items-center gap-2 text-red-500 text-xs mt-1">
+            <div className="flex items-center gap-2 text-destructive text-xs mt-1">
               <AlertCircle className="h-3 w-3" />
               <p>{errors.confirmPassword.message}</p>
             </div>
@@ -297,91 +296,87 @@ function ResetPasswordForm({
 
 // クライアントコンポーネントでuseSearchParamsを使用するコンポーネント
 function ResetPasswordContent() {
-  const t = useTranslations('auth.resetPassword')
+  const t = useTranslations()
   const router = useRouter()
   const searchParams = useSearchParams()
   const email = searchParams.get('email')
   const { signIn, setActive, isLoaded: signInLoaded } = useSignIn()
   const [emailSent, setEmailSent] = useState(false)
 
-  const resetPasswordSchema = useMemo(() => createResetPasswordSchema(t), [t])
-
   const {
     register,
     handleSubmit,
     setValue,
     formState: { errors, isSubmitting },
-  } = useZodForm(resetPasswordSchema);
+  } = useZodForm(createResetPasswordSchema(t))
 
   // リセットコード送信処理
-  const handleSendResetCode = async (
-    data: z.infer<typeof resetPasswordSchema>
-  ) => {
-    if (!signInLoaded) return;
+  const handleSendResetCode = async (data: ResetPasswordFormValues) => {
+    if (!signInLoaded) return
     try {
       const createdSignIn = await signIn.create({
         identifier: data.email,
-      });
+      })
 
       const emailAddressId = createdSignIn.supportedFirstFactors?.find(
-        (factor) => factor.strategy === "reset_password_email_code"
-      )?.emailAddressId;
+        (factor) => factor.strategy === 'reset_password_email_code'
+      )?.emailAddressId
 
       if (!emailAddressId) {
-        throw new Error("メールアドレスが見つかりませんでした。");
+        throw new Error('メールアドレスが見つかりませんでした。')
       }
 
       await signIn.prepareFirstFactor({
-        strategy: "reset_password_email_code",
+        strategy: 'reset_password_email_code',
         emailAddressId,
-      });
-      setEmailSent(true);
-      toast.success(t('messages.codeSent'))
+      })
+      setEmailSent(true)
+      toast.success(t('auth.resetPassword.codeSendSuccess'))
     } catch (err) {
-      console.error(err);
-      toast.error(t('messages.codeSendFailed'))
+      console.error(err)
+      toast.error(t('auth.resetPassword.codeSendError'))
     }
-  };
+  }
 
   // パスワードリセット処理
-  const handleResetPassword = async (
-    data: z.infer<typeof resetPasswordSchema>
-  ) => {
-    console.log(data);
-    console.log(signInLoaded);
-    if (!signInLoaded) return;
+  const handleResetPassword = async (data: ResetPasswordFormValues) => {
+    console.log(data)
+    console.log(signInLoaded)
+    if (!signInLoaded) return
     try {
       const result = await signIn.attemptFirstFactor({
-        strategy: "reset_password_email_code",
-        code: data.code ?? "",
+        strategy: 'reset_password_email_code',
+        code: data.code ?? '',
         password: data.newPassword,
-      });
+      })
 
-      if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
-        toast.success(t('messages.resetSuccess'))
-        router.push("/sign-in");
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId })
+        toast.success(t('resetSuccess'))
+        router.push('/sign-in')
       }
     } catch (err) {
-      console.error(err);
-      toast.error(t('messages.resetFailed'))
+      console.error(err)
+      toast.error('パスワードのリセットに失敗しました')
     }
-  };
+  }
 
   useEffect(() => {
     if (email) {
-      setValue("email", email);
+      setValue('email', email)
     }
-  }, [email, setValue]);
+  }, [email, setValue])
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="w-full max-w-md p-2">
-        <Card className="border-0 shadow-lg shadow-blue-100/20 dark:shadow-gray-900/40 backdrop-blur-sm bg-white/90 dark:bg-gray-900/80">
+        <Card className="border-0 shadow-lg shadow-secondary backdrop-blur-sm bg-background">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">{t('title')}</CardTitle>
-            <CardDescription className="text-center text-gray-500 dark:text-gray-400">
-              {!emailSent ? t('subtitle') : t('newPasswordSubtitle')}
+            <CardTitle className="text-2xl font-bold text-center">
+              {t('auth.resetPassword.resetPassword')}
+            </CardTitle>
+            <CardDescription className="text-center text-muted-foreground bg-muted rounded-lg p-2 border border-secondary">
+              {!emailSent ? t('emailSentSubtitle') : t('newPasswordSubtitle')}
             </CardDescription>
           </CardHeader>
 
@@ -395,7 +390,6 @@ function ResetPasswordContent() {
                   handleSubmit={handleSubmit}
                   onSubmit={handleSendResetCode}
                   isSubmitting={isSubmitting}
-                  t={t}
                 />
               ) : (
                 <ResetPasswordForm
@@ -405,15 +399,14 @@ function ResetPasswordContent() {
                   handleSubmit={handleSubmit}
                   onSubmit={handleResetPassword}
                   isSubmitting={isSubmitting}
-                  t={t}
                 />
               )}
             </AnimatePresence>
           </CardContent>
           <Separator className="my-2 w-1/2 mx-auto" />
           <CardFooter className="flex justify-center pt-2">
-            <Link href="/sign-in" className="text-xs text-blue-500 flex items-center gap-1">
-              {t('backToSignIn')}
+            <Link href="/sign-in" className="text-xs text-active flex items-center gap-1">
+              {t('backToLogin')}
               <ArrowRight className="h-3 w-3 ml-2" />
             </Link>
           </CardFooter>

@@ -750,7 +750,7 @@ export default function OrgWeekHourSchedule() {
                   </li>
                 </ul>
 
-                <p className="font-bold text-slate-800 mt-2">注意点</p>
+                <p className="font-bold text-muted-foreground mt-2">注意点</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>
                     定休日を変更すると<strong>既存予約</strong>

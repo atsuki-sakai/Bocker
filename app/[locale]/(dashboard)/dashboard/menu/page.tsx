@@ -2,21 +2,24 @@
 
 import MenuListContent from './menuList';
 import { DashboardSection, withManagerAccess } from '@/components/common';
+import { useTranslations } from 'next-intl'
 
 function MenuPage() {
+  const t = useTranslations('options')
+
   return (
     <DashboardSection
-      title="メニュー設定"
+      title={t('menus.list.title')}
       backLink="/dashboard"
-      backLinkTitle="ダッシュボードに戻る"
+      backLinkTitle={t('menus.list.dashboard')}
       infoBtn={{
-        text: '新規メニューを作成',
+        text: t('menus.list.addNew'),
         link: '/dashboard/menu/add',
       }}
     >
       <MenuListContent />
     </DashboardSection>
-  );
+  )
 }
 
 export default withManagerAccess(MenuPage);

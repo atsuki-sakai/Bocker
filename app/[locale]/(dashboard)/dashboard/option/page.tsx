@@ -15,9 +15,7 @@ function OptionPage() {
       infoBtn={{ text: t('list.addNew'), link: '/dashboard/option/add' }}
     >
       <div className="flex flex-col gap-2">
-        <p className="text-sm text-gray-500">
-          {t('list.description')}
-        </p>
+        <p className="text-sm text-muted-foreground">{t('list.description')}</p>
       </div>
       <OptionList />
     </DashboardSection>

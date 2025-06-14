@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useZodForm } from '@/hooks/useZodForm'
 import { UseFormRegister, FieldError } from 'react-hook-form'
 import { z } from 'zod'
-import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -24,28 +23,25 @@ import { CardDescription, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-
-type ChangeEmailFormData = {
-  newEmail: string
-  confirmNewEmail: string
-}
+import { useTranslations } from 'next-intl'
 
 // メールアドレス変更用のバリデーションスキーマ
-const createChangeEmailSchema = (t: (key: string) => string) => z
-  .object({
-    newEmail: z
-      .string()
-      .email(t('validation.emailInvalid'))
-      .min(1, t('validation.emailRequired')),
-    confirmNewEmail: z
-      .string()
-      .email(t('validation.emailInvalid'))
-      .min(1, t('validation.confirmEmailRequired')),
-  })
-  .refine((data) => data.newEmail === data.confirmNewEmail, {
-    message: t('validation.emailMismatch'),
-    path: ['confirmNewEmail'],
-  })
+const createChangeEmailSchema = (t: ReturnType<typeof useTranslations>) =>
+  z
+    .object({
+      newEmail: z
+        .string()
+        .email(t('validationErrors.emailInvalid'))
+        .min(1, t('validationErrors.emailRequired')),
+      confirmNewEmail: z
+        .string()
+        .email(t('validationErrors.emailInvalid'))
+        .min(1, t('validationErrors.confirmEmailRequired')),
+    })
+    .refine((data) => data.newEmail === data.confirmNewEmail, {
+      message: t('validationErrors.emailMismatch'),
+      path: ['confirmNewEmail'],
+    })
 
 // パスワードトグルボタンのコンポーネント（パフォーマンス向上のためmemo化）
 const PasswordToggleButton = memo(({ show, onToggle }: { show: boolean; onToggle: () => void }) => (
@@ -77,7 +73,7 @@ const PasswordInput = memo(
     label: string
     icon: React.ReactNode
     placeholder: string
-    register: UseFormRegister<ChangeEmailFormData>
+    register: UseFormRegister<z.infer<ReturnType<typeof createChangeEmailSchema>>>
     showPassword: boolean
     togglePassword: () => void
     error: FieldError | undefined
@@ -98,7 +94,7 @@ const PasswordInput = memo(
           type={showPassword ? 'text' : 'password'}
           placeholder={placeholder}
           className="pr-10 transition-all duration-200"
-          {...register(id as keyof ChangeEmailFormData)}
+          {...register(id as keyof z.infer<ReturnType<typeof createChangeEmailSchema>>)}
         />
         <PasswordToggleButton show={showPassword} onToggle={togglePassword} />
       </div>
@@ -134,7 +130,7 @@ const EmailInput = memo(
     label: string
     icon: React.ReactNode
     placeholder: string
-    register: UseFormRegister<ChangeEmailFormData>
+    register: UseFormRegister<z.infer<ReturnType<typeof createChangeEmailSchema>>>
     error: FieldError | undefined
   }) => (
     <div className="space-y-2">
@@ -148,7 +144,7 @@ const EmailInput = memo(
           type="email"
           placeholder={placeholder}
           className="transition-all duration-200 "
-          {...register(id as keyof ChangeEmailFormData)}
+          {...register(id as keyof z.infer<ReturnType<typeof createChangeEmailSchema>>)}
         />
       </div>
       {error && (
@@ -166,7 +162,7 @@ export default function ChangeEmailPage() {
   const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
   const t = useTranslations('settings.changeEmail')
-
+  
   const changeEmailSchema = createChangeEmailSchema(t)
 
   const {
@@ -175,9 +171,9 @@ export default function ChangeEmailPage() {
     formState: { errors, isSubmitting },
   } = useZodForm(changeEmailSchema)
 
-  const onSubmit = async (data: ChangeEmailFormData) => {
+  const onSubmit = async (data: z.infer<typeof changeEmailSchema>) => {
     if (!isLoaded || !isSignedIn || !user) {
-      toast.error(t('messages.userLoadFailed'))
+      toast.error(t('error'))
       return
     }
 
@@ -197,16 +193,16 @@ export default function ChangeEmailPage() {
           redirectUrl: window.location.origin + `/dashboard`,
         })
 
-        toast.success(t('messages.confirmationSent'), {
-          description: t('messages.confirmationDescription'),
+        toast.success(t('success'), {
+          description: t('info.verificationRequired'),
           icon: <MailIcon className="h-4 w-4 text-active" />,
           duration: 6000,
         })
 
         // 成功メッセージの後に詳細情報を表示
         setTimeout(() => {
-          toast.info(t('messages.managementInfo'), {
-            description: t('messages.managementDescription'),
+          toast.info(t('info.changeWarning'), {
+            description: t('info.verificationRequired'),
             icon: <InfoIcon className="h-4 w-4 text-link" />,
             duration: 8000,
           })
@@ -214,28 +210,28 @@ export default function ChangeEmailPage() {
         }, 4000)
       } catch (error) {
         console.error('Email creation error:', error)
-        let errorMessage = t('messages.tryAgain')
+        let errorMessage = 'もう一度お試しください'
 
         // エラーメッセージの詳細を取得
         console.log(error)
         if (error instanceof Error) {
           // すでに使用されているメールアドレスの場合のエラー処理
           if (error.message.includes('That email address is taken. Please try another.')) {
-            errorMessage = t('messages.emailTaken')
+            errorMessage = t('validationErrors.emailInvalid')
           } else {
             errorMessage = error.message
           }
         }
 
-        toast.error(t('messages.addFailed'), {
+        toast.error(t('error'), {
           description: errorMessage,
           icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
         })
       }
     } catch (error) {
       console.error('Overall error:', error)
-      toast.error(t('messages.updateFailed'), {
-        description: t('messages.tryAgain'),
+      toast.error(t('error'), {
+        description: t('info.verificationRequired'),
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
       })
     }
@@ -254,7 +250,7 @@ export default function ChangeEmailPage() {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{t('updateTooltip')}</p>
+                  <p>{t('tooltip.emailFormat')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -299,12 +295,12 @@ export default function ChangeEmailPage() {
               {isSubmitting ? (
                 <span className="flex items-center justify-center">
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t('processing')}
+                  {t('submitting')}
                 </span>
               ) : (
                 <span className="flex items-center justify-center">
                   <MailIcon className="h-4 w-4 mr-2" />
-                  {t('updateButton')}
+                  {t('submit')}
                 </span>
               )}
             </Button>
@@ -312,7 +308,7 @@ export default function ChangeEmailPage() {
         </form>
 
         <div className="flex flex-col justify-center text-xs text-center text-muted-foreground mt-4">
-          <p>{t('confirmationMessage')}</p>
+          <p>{t('info.verificationRequired')}</p>
         </div>
       </div>
     </div>

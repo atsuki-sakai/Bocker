@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useUser } from '@clerk/nextjs'
-import { useTranslations } from 'next-intl'
 import {
   MailIcon,
   CheckCircleIcon,
@@ -25,6 +24,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import { useTranslations } from 'next-intl'
 import type { ClerkEmailAddress } from '@/lib/types'
 
 export default function EmailPreferencesPage() {
@@ -38,6 +38,7 @@ export default function EmailPreferencesPage() {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <LoaderCircleIcon className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">{t('loading')}</span>
       </div>
     )
   }
@@ -46,8 +47,8 @@ export default function EmailPreferencesPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-2">
         <AlertCircleIcon className="h-12 w-12 text-destructive" />
-        <h2 className="text-xl font-semibold">{t('authError')}</h2>
-        <p className="text-muted-foreground">{t('userInfoError')}</p>
+        <h2 className="text-xl font-semibold">{t('authError.title')}</h2>
+        <p className="text-muted-foreground">{t('authError.description')}</p>
       </div>
     )
   }
@@ -71,15 +72,15 @@ export default function EmailPreferencesPage() {
           primaryEmailAddressId: emailId,
         })
 
-        toast.success(t('messages.primaryEmailChanged'), {
-          description: t('messages.loginInfoUpdated'),
+        toast.success(t('success.primaryUpdated'), {
+          description: t('success.primaryDescription'),
           icon: <CheckCircleIcon className="h-4 w-4 text-active" />,
         })
       }
     } catch (error) {
       console.error('Error setting primary email:', error)
-      toast.error(t('messages.emailUpdateFailed'), {
-        description: t('messages.tryAgain'),
+      toast.error(t('error.updateFailed'), {
+        description: t('error.tryAgain'),
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
       })
     } finally {
@@ -95,16 +96,16 @@ export default function EmailPreferencesPage() {
       if (emailToDelete) {
         // プライマリーメールアドレスは削除できない
         if (emailToDelete.id === user.primaryEmailAddressId) {
-          toast.error(t('messages.cannotDeletePrimary'), {
-            description: t('messages.setPrimaryFirst'),
+          toast.error(t('error.cannotDeletePrimary'), {
+            description: t('error.setPrimaryFirst'),
             icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
           })
           return
         }
         // 認証済みのメールアドレスのみ削除可能
         if (emailToDelete.verification?.status !== 'verified') {
-          toast.error(t('messages.onlyVerifiedCanDelete'), {
-            description: t('messages.verifyFirst'),
+          toast.error(t('error.onlyVerifiedCanDelete'), {
+            description: t('error.verifyFirst'),
             icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
           })
           return
@@ -112,14 +113,14 @@ export default function EmailPreferencesPage() {
 
         // メールアドレスを削除
         await emailToDelete.destroy()
-        toast.success(t('messages.emailDeleted'), {
+        toast.success(t('success.emailDeleted'), {
           icon: <CheckCircleIcon className="h-4 w-4 text-active" />,
         })
       }
     } catch (error) {
       console.error('Error deleting email:', error)
-      toast.error(t('messages.deleteEmailFailed'), {
-        description: t('messages.tryAgain'),
+      toast.error(t('error.deleteFailed'), {
+        description: t('error.tryAgain'),
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
       })
     } finally {
@@ -140,15 +141,15 @@ export default function EmailPreferencesPage() {
           redirectUrl: window.location.origin + `/dashboard/setting/email-preferences`,
         })
 
-        toast.success(t('messages.verificationEmailSent'), {
-          description: t('messages.checkEmailAndVerify'),
+        toast.success(t('success.verificationSent'), {
+          description: t('success.verificationDescription'),
           icon: <SendIcon className="h-4 w-4 text-active" />,
         })
       }
     } catch (error) {
       console.error('Error resending verification email:', error)
-      toast.error(t('messages.verificationEmailFailed'), {
-        description: t('messages.tryAgain'),
+      toast.error(t('error.verificationFailed'), {
+        description: t('error.tryAgain'),
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
       })
     } finally {
@@ -166,7 +167,7 @@ export default function EmailPreferencesPage() {
           </div>
           <div className="text-sm text-muted-foreground">
             <p className="my-2 text-sm">
-              {t('description')}
+              {t('subtitle')}
             </p>
           </div>
         </div>
@@ -174,7 +175,7 @@ export default function EmailPreferencesPage() {
           {emailAddresses.length === 0 ? (
             <div className="p-4 border rounded-lg text-center text-muted-foreground flex flex-col items-center gap-2">
               <MailQuestionIcon className="h-10 w-10" />
-              <p>{t('noEmailsRegistered')}</p>
+              <p>{t('noEmails')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -210,7 +211,7 @@ export default function EmailPreferencesPage() {
                           {email.primary && (
                             <Badge className="bg-primary text-primary-foreground">
                               <StarIcon className="h-3 w-3 mr-1" />
-                              {t('primary')}
+                              {t('badges.primary')}
                             </Badge>
                           )}
                           {email.verification?.status === 'verified' ? (
@@ -219,7 +220,7 @@ export default function EmailPreferencesPage() {
                               className="text-active-foreground border-active-foreground bg-active"
                             >
                               <CheckCircleIcon className="h-3 w-3 mr-1" />
-                              {t('verified')}
+                              {t('badges.verified')}
                             </Badge>
                           ) : (
                             <Badge
@@ -227,7 +228,7 @@ export default function EmailPreferencesPage() {
                               className="text-warning-foreground border-warning-foreground bg-warning"
                             >
                               <AlertCircleIcon className="h-3 w-3 mr-1" />
-                              {t('unverified')}
+                              {t('badges.unverified')}
                             </Badge>
                           )}
                         </div>
@@ -277,17 +278,17 @@ export default function EmailPreferencesPage() {
                       >
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>{t('deleteEmailDialog.title')}</DialogTitle>
+                            <DialogTitle>{t('deleteDialog.title')}</DialogTitle>
                             <DialogDescription>
-                              {t('deleteEmailDialog.description')}
+                              {t('deleteDialog.description')}
                             </DialogDescription>
                           </DialogHeader>
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                              {t('deleteEmailDialog.cancel')}
+                              {t('deleteDialog.cancel')}
                             </Button>
                             <Button variant="destructive" onClick={() => deleteEmail(email.id)}>
-                              {t('deleteEmailDialog.delete')}
+                              {t('deleteDialog.delete')}
                             </Button>
                           </DialogFooter>
                         </DialogContent>

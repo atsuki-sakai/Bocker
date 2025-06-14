@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useZodForm } from '@/hooks/useZodForm'
 import { UseFormRegister, FieldError } from 'react-hook-form'
 import { z } from 'zod'
-import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -25,24 +24,23 @@ import { CardDescription, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-
-type ChangePasswordFormData = {
-  currentPassword: string
-  newPassword: string
-  confirmNewPassword: string
-}
+import { useTranslations } from 'next-intl'
 
 // パスワード変更用のバリデーションスキーマ
-const createChangePasswordSchema = (t: (key: string) => string) => z
-  .object({
-    currentPassword: z.string().min(6, t('validation.currentPasswordRequired')),
-    newPassword: z.string().min(6, t('validation.newPasswordMin')),
-    confirmNewPassword: z.string().min(6, t('validation.confirmPasswordMin')),
-  })
-  .refine((data) => data.newPassword === data.confirmNewPassword, {
-    message: t('validation.passwordMismatch'),
-    path: ['confirmNewPassword'],
-  })
+const createChangePasswordSchema = (t: ReturnType<typeof useTranslations>) =>
+  z
+    .object({
+      currentPassword: z.string().min(6, t('errors.currentPasswordRequired')),
+      newPassword: z.string().min(6, t('errors.minimumLength')),
+      confirmNewPassword: z.string().min(6, t('errors.minimumLength')),
+    })
+    .refine((data) => data.newPassword === data.confirmNewPassword, {
+      message: t('errors.passwordMismatch'),
+      path: ['confirmNewPassword'],
+    })
+
+// スキーマの型定義
+type ChangePasswordSchema = z.infer<ReturnType<typeof createChangePasswordSchema>>
 
 // パスワード強度を評価する関数
 const calculatePasswordStrength = (password: string) => {
@@ -64,7 +62,7 @@ const calculatePasswordStrength = (password: string) => {
 }
 
 // パスワード強度のラベルを取得する関数
-const getStrengthLabel = (strength: number, t: (key: string) => string) => {
+const getStrengthLabel = (strength: number, t: ReturnType<typeof useTranslations>) => {
   if (strength < 30) return { label: t('passwordStrength.veryWeak'), color: 'bg-destructive' }
   if (strength < 50) return { label: t('passwordStrength.weak'), color: 'bg-orange-500' }
   if (strength < 70) return { label: t('passwordStrength.fair'), color: 'bg-yellow-500' }
@@ -102,7 +100,7 @@ const PasswordInput = memo(
     label: string
     icon: React.ReactNode
     placeholder: string
-    register: UseFormRegister<ChangePasswordFormData>
+    register: UseFormRegister<ChangePasswordSchema>
     showPassword: boolean
     togglePassword: () => void
     error: FieldError | undefined
@@ -118,7 +116,7 @@ const PasswordInput = memo(
           type={showPassword ? 'text' : 'password'}
           placeholder={placeholder}
           className="pr-10 transition-all duration-200"
-          {...register(id as keyof ChangePasswordFormData)}
+          {...register(id as keyof ChangePasswordSchema)}
         />
         <PasswordToggleButton show={showPassword} onToggle={togglePassword} />
       </div>
@@ -134,38 +132,40 @@ const PasswordInput = memo(
 PasswordInput.displayName = 'PasswordInput'
 
 // パスワード強度インジケーター
-const PasswordStrengthIndicator = memo(({ password, t }: { password: string; t: (key: string) => string }) => {
-  const strength = calculatePasswordStrength(password)
-  const { label, color } = getStrengthLabel(strength, t)
+const PasswordStrengthIndicator = memo(
+  ({ password, t }: { password: string; t: ReturnType<typeof useTranslations> }) => {
+    const strength = calculatePasswordStrength(password)
+    const { label, color } = getStrengthLabel(strength, t)
 
-  return (
-    <div className="mt-3 space-y-1">
-      <div className="flex justify-between items-center text-xs">
-        <span>{t('passwordStrengthLabel')}:</span>
-        <span className="font-medium">{label}</span>
-      </div>
-      <Progress value={strength} className="h-2" color={color} />
+    return (
+      <div className="mt-3 space-y-1">
+        <div className="flex justify-between items-center text-xs">
+          <span>{t('passwordStrength.label')}:</span>
+          <span className="font-medium">{label}</span>
+        </div>
+        <Progress value={strength} className="h-2" color={color} />
 
-      <div className="grid grid-cols-4 gap-1 mt-2">
-        {[
-          { label: t('criteria.uppercase'), match: /[A-Z]/ },
-          { label: t('criteria.lowercase'), match: /[a-z]/ },
-          { label: t('criteria.number'), match: /[0-9]/ },
-          { label: t('criteria.special'), match: /[^A-Za-z0-9]/ },
-        ].map((criteria, index) => (
-          <div key={index} className="flex items-center text-xs">
-            {criteria.match.test(password) ? (
-              <CheckCircle2Icon className="h-3 w-3 mr-1 text-active" />
-            ) : (
-              <AlertCircleIcon className="h-3 w-3 mr-1 text-muted-foreground" />
-            )}
-            {criteria.label}
-          </div>
-        ))}
+        <div className="grid grid-cols-4 gap-1 mt-2">
+          {[
+            { label: t('criteria.uppercase'), match: /[A-Z]/ },
+            { label: t('criteria.lowercase'), match: /[a-z]/ },
+            { label: t('criteria.number'), match: /[0-9]/ },
+            { label: t('criteria.symbol'), match: /[^A-Za-z0-9]/ },
+          ].map((criteria, index) => (
+            <div key={index} className="flex items-center text-xs">
+              {criteria.match.test(password) ? (
+                <CheckCircle2Icon className="h-3 w-3 mr-1 text-active" />
+              ) : (
+                <AlertCircleIcon className="h-3 w-3 mr-1 text-muted-foreground" />
+              )}
+              {criteria.label}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
-  )
-})
+    )
+  }
+)
 PasswordStrengthIndicator.displayName = 'PasswordStrengthIndicator'
 
 export default function ChangePasswordPage() {
@@ -176,7 +176,7 @@ export default function ChangePasswordPage() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [newPasswordValue, setNewPasswordValue] = useState('')
-
+  
   const changePasswordSchema = createChangePasswordSchema(t)
 
   const {
@@ -208,7 +208,7 @@ export default function ChangePasswordPage() {
     setShowConfirmPassword((prev) => !prev)
   }, [])
 
-  const onSubmit = async (data: ChangePasswordFormData) => {
+  const onSubmit = async (data: z.infer<typeof changePasswordSchema>) => {
     if (!isLoaded) {
       return
     }
@@ -223,8 +223,8 @@ export default function ChangePasswordPage() {
         currentPassword: data.currentPassword,
       })
 
-      toast.success(t('messages.updateSuccess'), {
-        description: t('messages.securityEnhanced'),
+      toast.success(t('success.title'), {
+        description: t('success.description'),
         icon: <CheckCircle2Icon className="h-4 w-4 text-active" />,
       })
 
@@ -232,13 +232,13 @@ export default function ChangePasswordPage() {
     } catch (error) {
       const errorMessage = typeof error === 'string' ? error : (error as Error)?.message || ''
       if (errorMessage.includes('data breach')) {
-        toast.error(t('messages.passwordCompromised'), {
-          description: t('messages.useOtherPassword'),
+        toast.error(t('errors.breachedPassword'), {
+          description: t('errors.breachedPasswordDescription'),
           icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
         })
       } else {
-        toast.error(t('messages.updateFailed'), {
-          description: t('messages.tryAgain'),
+        toast.error(t('errors.updateFailed'), {
+          description: t('errors.tryAgain'),
           icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
         })
       }
@@ -258,7 +258,7 @@ export default function ChangePasswordPage() {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{t('securityTooltip')}</p>
+                  <p>{t('tooltips.security')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -325,7 +325,7 @@ export default function ChangePasswordPage() {
               ) : (
                 <span className="flex items-center justify-center">
                   <ShieldCheckIcon className="h-4 w-4 mr-2" />
-                  {t('updateButton')}
+                  {t('submitButton')}
                 </span>
               )}
             </Button>
@@ -333,7 +333,7 @@ export default function ChangePasswordPage() {
         </form>
 
         <div className="flex flex-col justify-center text-xs text-center text-muted-foreground">
-          <p>{t('passwordTip')}</p>
+          <p>{t('requirementsText')}</p>
         </div>
       </div>
     </div>

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as Sentry from '@sentry/nextjs'
 import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import {
   Card,
   CardContent,
@@ -28,33 +29,6 @@ import { z } from 'zod'
 import { api } from '@/convex/_generated/api'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { MAX_REFERRAL_COUNT } from '@/lib/constants'
-import { useTranslations } from 'next-intl'
-
-const createSignUpSchema = (t: (key: string) => string) =>
-  z
-    .object({
-      org_name: z
-        .string({ required_error: t('validation.organizationNameRequired') })
-        .min(1, { message: t('validation.organizationNameRequired') })
-        .max(40, { message: t('validation.organizationNameMaxLength') }),
-      referralCode: z.string().optional(),
-      email: z
-        .string()
-        .min(1, { message: t('validation.emailRequired') })
-        .email({ message: t('validation.emailInvalid') }),
-      password: z
-        .string()
-        .min(8, { message: t('validation.passwordMinLength') })
-        .max(100, { message: t('validation.passwordMaxLength') })
-        .regex(/[a-z]/, { message: t('validation.passwordLowercase') })
-        .regex(/[A-Z]/, { message: t('validation.passwordUppercase') })
-        .regex(/[0-9]/, { message: t('validation.passwordNumber') }),
-      confirmPassword: z.string().min(1, { message: t('validation.confirmPasswordRequired') }),
-    })
-    .refine((data) => data.password === data.confirmPassword, {
-      message: t('validation.passwordMismatch'),
-      path: ['confirmPassword'],
-    })
 
 // パスワード強度の型定義
 type PasswordStrength = 'empty' | 'weak' | 'medium' | 'strong' | 'veryStrong'
@@ -76,16 +50,16 @@ const getStrengthColor = (strength: PasswordStrength) => {
 }
 
 // パスワード強度に基づくテキストを取得
-const getStrengthText = (strength: PasswordStrength, t: (key: string) => string) => {
+const getStrengthText = (t: ReturnType<typeof useTranslations>, strength: PasswordStrength) => {
   switch (strength) {
     case 'weak':
-      return t('passwordStrength.weak')
+      return t('passwordWeak')
     case 'medium':
-      return t('passwordStrength.medium')
+      return t('passwordFair')
     case 'strong':
-      return t('passwordStrength.strong')
+      return t('passwordGood')
     case 'veryStrong':
-      return t('passwordStrength.veryStrong')
+      return t('passwordStrong')
     default:
       return ''
   }
@@ -101,14 +75,39 @@ const CheckIcon = ({ fulfilled }: { fulfilled: boolean }) => (
   </div>
 )
 
-type SignUpFormData = z.infer<ReturnType<typeof createSignUpSchema>>
+export const signUpSchema = (t: ReturnType<typeof useTranslations>) =>
+  z
+    .object({
+      org_name: z
+        .string({ required_error: t('orgNameRequired') })
+        .min(1, { message: t('orgNameRequired') })
+        .max(40, { message: t('orgNameMaxLength') }),
+      referralCode: z.string().optional(),
+      email: z
+        .string()
+        .min(1, { message: t('emailRequired') })
+        .email({ message: t('emailInvalid') }),
+      password: z
+        .string()
+        .min(8, { message: t('passwordMinLength') })
+        .max(100, { message: t('passwordMaxLength') })
+        .regex(/[a-z]/, { message: t('passwordLowercase') })
+        .regex(/[A-Z]/, { message: t('passwordUppercase') })
+        .regex(/[0-9]/, { message: t('passwordNumber') }),
+      confirmPassword: z.string().min(1, { message: t('confirmPasswordRequired') }),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('passwordConfirmationError'),
+      path: ['confirmPassword'],
+    })
+
+type SignUpFormData = z.infer<ReturnType<typeof signUpSchema>>
 
 type PasswordInputProps = {
   register: UseFormRegister<SignUpFormData>
   errors: FieldErrors<SignUpFormData>
   showPassword: boolean
   toggleShowPassword: () => void
-  t: (key: string) => string
 }
 
 const PasswordInput = ({
@@ -116,8 +115,8 @@ const PasswordInput = ({
   showPassword,
   toggleShowPassword,
   errors,
-  t,
 }: PasswordInputProps) => {
+  const t = useTranslations('auth.signUp')
   return (
     <div className="space-y-2">
       <div className="flex w-full justify-between items-center">
@@ -193,15 +192,13 @@ export default function SignUpPage() {
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('empty')
   const [showPassword, setShowPassword] = useState(false)
 
-  const signUpSchema = useMemo(() => createSignUpSchema(t), [t])
-
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     watch,
     setValue,
-  } = useZodForm(signUpSchema)
+  } = useZodForm(signUpSchema(t))
 
   const referralCode = watch('referralCode')
 
@@ -278,7 +275,7 @@ export default function SignUpPage() {
         className="mt-2"
       >
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-primary">{t('passwordStrengthLabel')}:</span>
+          <span className="text-xs text-primary">{t('passwordStrength')}:</span>
           <span
             className={`text-xs font-medium ${
               passwordStrength === 'weak'
@@ -292,7 +289,7 @@ export default function SignUpPage() {
                       : ''
             }`}
           >
-            {getStrengthText(passwordStrength, t)}
+            {getStrengthText(t, passwordStrength)}
           </span>
         </div>
         <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
@@ -335,7 +332,7 @@ export default function SignUpPage() {
             <span
               className={`text-xs ${passwordCriteria.length ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
-              {t('criteria.length')}
+              {t('passwordRequirements.length')}
             </span>
           </div>
 
@@ -344,7 +341,7 @@ export default function SignUpPage() {
             <span
               className={`text-xs ${passwordCriteria.uppercase ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
-              {t('criteria.uppercase')}
+              {t('passwordRequirements.uppercase')}
             </span>
           </div>
 
@@ -353,7 +350,7 @@ export default function SignUpPage() {
             <span
               className={`text-xs ${passwordCriteria.lowercase ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
-              {t('criteria.lowercase')}
+              {t('passwordRequirements.lowercase')}
             </span>
           </div>
 
@@ -362,7 +359,7 @@ export default function SignUpPage() {
             <span
               className={`text-xs ${passwordCriteria.number ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
-              {t('criteria.number')}
+              {t('passwordRequirements.number')}
             </span>
           </div>
 
@@ -371,7 +368,7 @@ export default function SignUpPage() {
             <span
               className={`text-xs ${passwordCriteria.special ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
-              {t('criteria.special')}
+              {t('passwordRequirements.special')}
             </span>
           </div>
         </div>
@@ -396,12 +393,12 @@ export default function SignUpPage() {
           referral_code: referralCode,
         })
         if (!referral) {
-          toast.error(t('messages.referralCodeNotFound'))
+          toast.error('招待コードが見つかりません')
           return
         }
 
         if (referral.total_referral_count && referral.total_referral_count >= MAX_REFERRAL_COUNT) {
-          toast.error(t('messages.referralCodeLimitReached'))
+          toast.error('招待コードの利用回数が上限に達しています。')
           return
         }
       }
@@ -420,7 +417,7 @@ export default function SignUpPage() {
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
       setPendingVerification(true)
 
-      toast.success(t('messages.accountCreated'))
+      toast.success('アカウントが作成されました。メールを確認してください')
     } catch (err) {
       showErrorToast(err)
     }
@@ -439,10 +436,10 @@ export default function SignUpPage() {
       if (result.status === 'complete') {
         if (result.createdSessionId) {
           await setActive({ session: result.createdSessionId })
-          toast.success(t('messages.verificationSuccess'))
+          toast.success('認証に成功しました')
         }
       } else {
-        toast.error(t('messages.verificationFailed'))
+        toast.error('認証に失敗しました')
       }
     } catch (err) {
       Sentry.captureException(err, {
@@ -472,10 +469,12 @@ export default function SignUpPage() {
         variants={containerVariants}
         className="w-full max-w-md p-2"
       >
-        <Card className="border-0 shadow-lg shadow-blue-100/20">
+        <Card className="border-0 shadow-lg shadow-secondary backdrop-blur-sm bg-background">
           <CardHeader className="space-y-1">
             <motion.div variants={itemVariants}>
-              <CardTitle className="text-2xl font-bold text-center">{t('title')}</CardTitle>
+              <CardTitle className="text-2xl font-bold text-center">
+                {t('ownerAccountTitle')}
+              </CardTitle>
             </motion.div>
             <motion.div variants={itemVariants}>
               <CardDescription className="text-center text-muted-foreground">
@@ -498,8 +497,8 @@ export default function SignUpPage() {
                   noValidate
                 >
                   <motion.div variants={itemVariants} className="space-y-2">
-                    <Label htmlFor="org_name" className="text-sm font-medium">
-                      {t('organizationName')}
+                    <Label htmlFor="email" className="text-sm font-medium">
+                      {t('storeName')}
                     </Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -507,7 +506,7 @@ export default function SignUpPage() {
                         id="org_name"
                         type="text"
                         {...register('org_name')}
-                        placeholder={t('organizationNamePlaceholder')}
+                        placeholder={t('storeNamePlaceholder')}
                         className="pl-10"
                         required
                         aria-invalid={errors.org_name ? 'true' : 'false'}
@@ -538,6 +537,7 @@ export default function SignUpPage() {
                         aria-invalid={errors.email ? 'true' : 'false'}
                         aria-describedby={errors.email ? 'email-error' : undefined}
                         autoComplete="email"
+                        autoFocus
                       />
                     </div>
                     {errors.email && (
@@ -553,7 +553,6 @@ export default function SignUpPage() {
                       showPassword={showPassword}
                       toggleShowPassword={toggleShowPassword}
                       errors={errors}
-                      t={t}
                     />
                   </motion.div>
 
@@ -647,7 +646,7 @@ export default function SignUpPage() {
                       disabled={isSubmitting}
                       aria-busy={isSubmitting}
                     >
-                      {isSubmitting ? t('loading') : t('submit')}
+                      {isSubmitting ? t('processing') : t('register')}
                       {isSubmitting ? (
                         <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                       ) : (
@@ -672,19 +671,20 @@ export default function SignUpPage() {
                     transition={{ delay: 0.2 }}
                     className="p-4 bg-link rounded-lg border border-link-foreground"
                   >
+                    <h4 className="text-center text-sm font-medium">{t('verification.title')}</h4>
                     <p className="text-center text-xs text-link-foreground">
-                      {t('verificationMessage')}
+                      {t('verification.instruction')}
                     </p>
                   </motion.div>
 
                   <div className="space-y-2">
                     <Label htmlFor="verification-code" className="text-xs font-medium">
-                      {t('verificationCode')}
+                      {t('verification.codeLabel')}
                     </Label>
                     <Input
                       id="verification-code"
                       value={verificationCode}
-                      placeholder="000000"
+                      placeholder={t('verification.codePlaceholder')}
                       onChange={(e) => setVerificationCode(e.target.value)}
                       maxLength={6}
                       inputMode="numeric"
@@ -723,15 +723,15 @@ export default function SignUpPage() {
                             />
                           </svg>
                         </motion.div>
-                        {t('verifying')}
+                        {t('verification.processing')}
                       </>
                     ) : (
-                      t('verify')
+                      t('verification.verify')
                     )}
                   </Button>
 
                   <div className="text-center text-sm text-muted-foreground">
-                    {t('didntReceiveCode')}
+                    {t('verification.resendCode')}
                     <button
                       type="button"
                       className="ml-1 text-link-foreground hover:opacity-80 underline focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-link-foreground rounded"
@@ -740,7 +740,7 @@ export default function SignUpPage() {
                           await signUp?.prepareEmailAddressVerification({
                             strategy: 'email_code',
                           })
-                          toast.success(t('messages.codeResent'))
+                          toast.success(t('verification.resent'))
                         } catch (err) {
                           Sentry.captureException(err, {
                             level: 'error',
@@ -749,11 +749,11 @@ export default function SignUpPage() {
                               email: email,
                             },
                           })
-                          toast.error(t('messages.codeResendFailed'))
+                          toast.error(t('verification.resendError'))
                         }
                       }}
                     >
-                      {t('resendCode')}
+                      {t('verification.resend')}
                     </button>
                   </div>
                 </motion.form>
@@ -764,13 +764,13 @@ export default function SignUpPage() {
           <CardFooter className="flex flex-col space-y-4">
             <Separator className="bg-muted w-1/2 mx-auto my-2" />
             <motion.div variants={itemVariants} className="w-full text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {t('alreadyHaveAccount')}{' '}
+              <p className="text-xs text-muted-foreground">
+                {t('alreadyHaveAccount')}
                 <Link
                   href="/sign-in"
                   className="inline-flex items-center text-link-foreground hover:opacity-80 font-medium transition-colors"
                 >
-                  {t('signIn')}
+                  {t('signInHere')}
                   <ArrowRight className="ml-1 h-3 w-3" />
                 </Link>
               </p>
