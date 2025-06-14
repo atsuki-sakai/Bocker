@@ -210,7 +210,7 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
               exit="exit"
               layoutId={`menu-${menu._id}`}
             >
-              <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 border-b border-gray-200 pb-4 mb-4">
+              <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 border-b border-border pb-4 mb-4">
                 {menu.is_active ? (
                   <Badge variant="default" className=" bg-active text-active-foreground">
                     公開中

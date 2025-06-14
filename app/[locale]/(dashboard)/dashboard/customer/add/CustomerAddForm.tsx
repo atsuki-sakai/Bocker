@@ -233,10 +233,20 @@ export default function CustomerAddForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <h4 className="text-sm font-bold mb-1">{t('customerInfo')}</h4>
-          <p className="text-xs text-gray-500 mb-4">{t('customerInfoDesc')}</p>
+          <p className="text-xs text-muted-foreground mb-4">{t('customerInfoDesc')}</p>
           <div className="grid grid-cols-2 gap-4">
-            <ZodTextField label={t('lastName')} name="last_name" register={register} errors={errors} />
-            <ZodTextField label={t('firstName')} name="first_name" register={register} errors={errors} />
+            <ZodTextField
+              label={t('lastName')}
+              name="last_name"
+              register={register}
+              errors={errors}
+            />
+            <ZodTextField
+              label={t('firstName')}
+              name="first_name"
+              register={register}
+              errors={errors}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4 mt-4">
             <ZodTextField label={t('phone')} name="phone" register={register} errors={errors} />
@@ -245,9 +255,7 @@ export default function CustomerAddForm() {
 
         <div>
           <h4 className="text-sm font-bold mb-1">{t('marketingInfo')}</h4>
-          <p className="text-xs text-gray-500 mb-4">
-            {t('marketingInfoDesc')}
-          </p>
+          <p className="text-xs text-muted-foreground mb-4">{t('marketingInfoDesc')}</p>
 
           <div className="grid grid-cols-2 gap-4">
             <ZodTextField label={t('email')} name="email" register={register} errors={errors} />
@@ -299,14 +307,12 @@ export default function CustomerAddForm() {
             className="resize-none"
             rows={5}
           />
-          {errors.notes && <p className="text-sm text-red-600 mt-1">{errors.notes.message}</p>}
+          {errors.notes && <p className="text-sm text-destructive mt-1">{errors.notes.message}</p>}
         </div>
 
         <div>
           <h4 className="text-sm font-bold mb-1">{t('points')}</h4>
-          <p className="text-xs text-gray-500 mb-4">
-            {t('pointNote')}
-          </p>
+          <p className="text-xs text-muted-foreground mb-4">{t('pointNote')}</p>
           <div className="grid grid-cols-2 gap-4">
             <ZodTextField
               label={t('points')}

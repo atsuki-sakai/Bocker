@@ -112,7 +112,7 @@ export default function CouponList() {
                           className={`py-4 pr-3 pl-4  text-sm  font-medium whitespace-nowrap text-muted-foreground sm:pl-6 `}
                         >
                           <span
-                            className={`font-bold text-xs ${coupon.is_active ? 'bg-active text-white' : 'bg-muted-foreground text-white'} px-2 py-1 rounded-md`}
+                            className={`font-bold text-xs ${coupon.is_active ? 'bg-active text-background' : 'bg-muted-foreground text-background'} px-2 py-1 rounded-md`}
                           >
                             {coupon.is_active ? t('active') : t('inactive')}
                           </span>
@@ -139,7 +139,8 @@ export default function CouponList() {
                               size="sm"
                               className="text-link-foreground bg-link hover:opacity-80"
                             >
-                              {tCommon('edit')}<span className="sr-only">, {coupon.name}</span>
+                              {tCommon('edit')}
+                              <span className="sr-only">, {coupon.name}</span>
                             </Button>
                           </Link>
                         </td>
@@ -150,7 +151,8 @@ export default function CouponList() {
                             size="sm"
                             onClick={() => showDialog(coupon._id)}
                           >
-                            {tCommon('delete')}<span className="sr-only">, {coupon.name}</span>
+                            {tCommon('delete')}
+                            <span className="sr-only">, {coupon.name}</span>
                           </Button>
                         </td>
                       </tr>

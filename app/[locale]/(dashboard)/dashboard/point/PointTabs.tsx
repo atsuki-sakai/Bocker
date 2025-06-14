@@ -220,7 +220,9 @@ export default function PointTabs() {
                       }`}
                     >
                       <p className="text-sm font-bold">
-                        {watchedIsActive ? t('basicSettings.pointStatusActive') : t('basicSettings.pointStatusInactive')}
+                        {watchedIsActive
+                          ? t('basicSettings.pointStatusActive')
+                          : t('basicSettings.pointStatusInactive')}
                       </p>
                     </div>
                     <Switch
@@ -233,7 +235,9 @@ export default function PointTabs() {
                     />
                     <div>
                       <Label htmlFor="point-type">
-                        {t('basicSettings.enablePointFeature', { status: watchedIsActive ? t('common.enable') : t('common.disable') })}
+                        {t('basicSettings.enablePointFeature', {
+                          status: watchedIsActive ? t('common.enable') : t('common.disable'),
+                        })}
                       </Label>
                       <span className="block text-xs text-muted-foreground">
                         {t('basicSettings.enableDescription')}
@@ -253,7 +257,9 @@ export default function PointTabs() {
                       }`}
                     >
                       <span className="text-sm font-bold">
-                        {watchedIsFixedPoint ? t('basicSettings.fixedPoint') : t('basicSettings.pointRate')}
+                        {watchedIsFixedPoint
+                          ? t('basicSettings.fixedPoint')
+                          : t('basicSettings.pointRate')}
                       </span>
 
                       <Switch
@@ -262,7 +268,7 @@ export default function PointTabs() {
                         onCheckedChange={(checked) => {
                           setValue('is_fixed_point', checked, { shouldDirty: true })
                         }}
-                        className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-green-600"
+                        className="data-[state=checked]:bg-active data-[state=unchecked]:bg-active-foreground"
                       />
                     </div>
                   </div>
@@ -306,7 +312,7 @@ export default function PointTabs() {
                         }}
                       />
                       {errors.point_rate && (
-                        <p className="text-sm text-red-500 flex items-center gap-1">
+                        <p className="text-sm text-destructive flex items-center gap-1">
                           <AlertCircle size={14} />
                           {errors.point_rate.message as string}
                         </p>
@@ -336,9 +342,11 @@ export default function PointTabs() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <span className="text-xs text-slate-500">
-                      {t('basicSettings.expirationDescription', { 
-                        period: POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)?.label || POINT_EXPIRATION_DAYS[0].label 
+                    <span className="text-xs text-muted-foreground">
+                      {t('basicSettings.expirationDescription', {
+                        period:
+                          POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)
+                            ?.label || POINT_EXPIRATION_DAYS[0].label,
                       })}
                     </span>
                   </div>
@@ -348,15 +356,13 @@ export default function PointTabs() {
 
             <div className="lg:col-span-7">
               <div>
-                <div className="h-full shadow-md hover:shadow-lg transition-shadow duration-300 border border-slate-200 rounded-lg overflow-hidden">
+                <div className="h-full shadow-md hover:shadow-lg transition-shadow duration-300 border border-border rounded-lg overflow-hidden">
                   <div className="bg-muted p-3">
                     <h5 className="flex items-center text-xl font-bold gap-2">
                       <Gift className="h-5 w-5 text-primary" />
                       {t('summary.title')}
                     </h5>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {t('summary.description')}
-                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">{t('summary.description')}</p>
                   </div>
                   <div className="p-4">
                     <div className="space-y-5">
@@ -405,21 +411,33 @@ export default function PointTabs() {
                       <Separator className="" />
                       <div className="space-y-4 py-4">
                         <div className=" bg-background  rounded shadow-sm">
-                          <p className="text-sm text-muted-foreground">{t('summary.forPayment', { amount: '1,000' })}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {t('summary.forPayment', { amount: '1,000' })}
+                          </p>
                           <p className="text-lg font-bold">
                             {watchedIsFixedPoint
                               ? watch('fixed_point') || 0
                               : Math.floor((watch('point_rate') || 0) * 10)}{' '}
-                            <span className="text-xs">{t('summary.pointsGranted', { amount: '' }).replace('{amount}', '').trim()}</span>
+                            <span className="text-xs">
+                              {t('summary.pointsGranted', { amount: '' })
+                                .replace('{amount}', '')
+                                .trim()}
+                            </span>
                           </p>
                         </div>
                         <div className=" bg-background  rounded shadow-sm">
-                          <p className="text-sm text-muted-foreground">{t('summary.forPayment', { amount: '5,000' })}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {t('summary.forPayment', { amount: '5,000' })}
+                          </p>
                           <p className="text-lg font-bold">
                             {watchedIsFixedPoint
                               ? watch('fixed_point') || 0
                               : Math.floor((watch('point_rate') || 0) * 50)}{' '}
-                            <span className="text-xs">{t('summary.pointsGranted', { amount: '' }).replace('{amount}', '').trim()}</span>
+                            <span className="text-xs">
+                              {t('summary.pointsGranted', { amount: '' })
+                                .replace('{amount}', '')
+                                .trim()}
+                            </span>
                           </p>
                         </div>
                       </div>
@@ -469,7 +487,8 @@ export default function PointTabs() {
           <AccordionContent className="space-y-2 text-muted-foreground text-sm leading-relaxed bg-muted p-4 rounded-lg mb-4">
             <p>
               <strong>{t('accordion.grantDate')}</strong> {t('accordion.grantDateDesc')}
-              <span className="font-bold">{t('accordion.nextMonth15')}</span>{t('accordion.autoGrant')}
+              <span className="font-bold">{t('accordion.nextMonth15')}</span>
+              {t('accordion.autoGrant')}
             </p>
             <ul className="list-disc list-inside space-y-1">
               <li>{t('accordion.example')}</li>
@@ -512,11 +531,11 @@ export default function PointTabs() {
           <AccordionTrigger>{t('accordion.cautions')}</AccordionTrigger>
           <AccordionContent className="space-y-2 text-muted-foreground text-sm leading-relaxed bg-muted p-4 rounded-lg mb-4">
             <ul className="list-disc list-inside space-y-1">
+              <li>{t('accordion.cautionNoDouble')}</li>
               <li>
-                {t('accordion.cautionNoDouble')}
-              </li>
-              <li>
-                {t('accordion.cautionSameStore')}<span className="font-bold">{t('accordion.cautionSameStoreOnly')}</span>{t('accordion.cautionSameStoreEnd')}
+                {t('accordion.cautionSameStore')}
+                <span className="font-bold">{t('accordion.cautionSameStoreOnly')}</span>
+                {t('accordion.cautionSameStoreEnd')}
               </li>
 
               {/* 利用フローを段階的に説明 */}
@@ -525,7 +544,9 @@ export default function PointTabs() {
                 <ol className="list-decimal list-inside ml-5 space-y-0.5">
                   <li>{t('accordion.usageStep1')}</li>
                   <li>
-                    {t('accordion.usageStep2')} <code className="font-mono">{t('accordion.usageCode')}</code> {t('accordion.usageStep2End')}
+                    {t('accordion.usageStep2')}{' '}
+                    <code className="font-mono">{t('accordion.usageCode')}</code>{' '}
+                    {t('accordion.usageStep2End')}
                   </li>
                   <li>{t('accordion.usageStep3')}</li>
                 </ol>
@@ -534,13 +555,15 @@ export default function PointTabs() {
 
               <li>
                 {t('accordion.cautionExclusionMenu')}{' '}
-                <span className="font-bold">{t('accordion.cautionNoPointAdded')}</span>{t('accordion.cautionCanUsePoints')}
+                <span className="font-bold">{t('accordion.cautionNoPointAdded')}</span>
+                {t('accordion.cautionCanUsePoints')}
               </li>
               <li>{t('accordion.cautionRounding')}</li>
               <li>{t('accordion.cautionAccounting')}</li>
               <li>{t('accordion.cautionNoCash')}</li>
               <li>
-                {t('accordion.cautionCancellation')}<strong>{t('accordion.cautionInvalidate')}</strong>
+                {t('accordion.cautionCancellation')}
+                <strong>{t('accordion.cautionInvalidate')}</strong>
                 {t('accordion.cautionRefund')}
               </li>
             </ul>
