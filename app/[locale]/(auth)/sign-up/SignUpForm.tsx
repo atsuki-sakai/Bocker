@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as Sentry from '@sentry/nextjs'
 import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import {
   Card,
   CardContent,
@@ -28,31 +29,6 @@ import { z } from 'zod'
 import { api } from '@/convex/_generated/api'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { MAX_REFERRAL_COUNT } from '@/lib/constants'
-
-export const signUpSchema = z
-  .object({
-    org_name: z
-      .string({ required_error: '組織名を入力してください' })
-      .min(1, { message: '組織名を入力してください' })
-      .max(40, { message: '組織名は40文字以下で入力してください' }),
-    referralCode: z.string().optional(),
-    email: z
-      .string()
-      .min(1, { message: 'メールアドレスを入力してください' })
-      .email({ message: '有効なメールアドレスを入力してください' }),
-    password: z
-      .string()
-      .min(8, { message: 'パスワードは8文字以上で入力してください' })
-      .max(100, { message: 'パスワードは100文字以下で入力してください' })
-      .regex(/[a-z]/, { message: 'パスワードには小文字を含める必要があります' })
-      .regex(/[A-Z]/, { message: 'パスワードには大文字を含める必要があります' })
-      .regex(/[0-9]/, { message: 'パスワードには数字を含める必要があります' }),
-    confirmPassword: z.string().min(1, { message: '確認用パスワードを入力してください' }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'パスワードと確認用パスワードが一致しません',
-    path: ['confirmPassword'],
-  })
 
 // パスワード強度の型定義
 type PasswordStrength = 'empty' | 'weak' | 'medium' | 'strong' | 'veryStrong'
@@ -74,16 +50,16 @@ const getStrengthColor = (strength: PasswordStrength) => {
 }
 
 // パスワード強度に基づくテキストを取得
-const getStrengthText = (strength: PasswordStrength) => {
+const getStrengthText = (t: ReturnType<typeof useTranslations>, strength: PasswordStrength) => {
   switch (strength) {
     case 'weak':
-      return '弱い'
+      return t('passwordWeak')
     case 'medium':
-      return '普通'
+      return t('passwordFair')
     case 'strong':
-      return '強い'
+      return t('passwordGood')
     case 'veryStrong':
-      return '非常に強い'
+      return t('passwordStrong')
     default:
       return ''
   }
@@ -99,7 +75,33 @@ const CheckIcon = ({ fulfilled }: { fulfilled: boolean }) => (
   </div>
 )
 
-type SignUpFormData = z.infer<typeof signUpSchema>
+export const signUpSchema = (t: ReturnType<typeof useTranslations>) =>
+  z
+    .object({
+      org_name: z
+        .string({ required_error: t('orgNameRequired') })
+        .min(1, { message: t('orgNameRequired') })
+        .max(40, { message: t('orgNameMaxLength') }),
+      referralCode: z.string().optional(),
+      email: z
+        .string()
+        .min(1, { message: t('emailRequired') })
+        .email({ message: t('emailInvalid') }),
+      password: z
+        .string()
+        .min(8, { message: t('passwordMinLength') })
+        .max(100, { message: t('passwordMaxLength') })
+        .regex(/[a-z]/, { message: t('passwordLowercase') })
+        .regex(/[A-Z]/, { message: t('passwordUppercase') })
+        .regex(/[0-9]/, { message: t('passwordNumber') }),
+      confirmPassword: z.string().min(1, { message: t('confirmPasswordRequired') }),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('passwordConfirmationError'),
+      path: ['confirmPassword'],
+    })
+
+type SignUpFormData = z.infer<ReturnType<typeof signUpSchema>>
 
 type PasswordInputProps = {
   register: UseFormRegister<SignUpFormData>
@@ -114,11 +116,12 @@ const PasswordInput = ({
   toggleShowPassword,
   errors,
 }: PasswordInputProps) => {
+  const t = useTranslations('auth.signUp')
   return (
     <div className="space-y-2">
       <div className="flex w-full justify-between items-center">
         <Label htmlFor="password" className="text-sm font-medium">
-          パスワード
+          {t('password')}
         </Label>
       </div>
       <div className="relative">
@@ -127,7 +130,7 @@ const PasswordInput = ({
           id="password"
           type={showPassword ? 'text' : 'password'}
           {...register('password')}
-          placeholder="パスワードを入力"
+          placeholder={t('passwordPlaceholder')}
           required
           className="pl-10 pr-10"
           aria-invalid={errors.password ? 'true' : 'false'}
@@ -139,7 +142,7 @@ const PasswordInput = ({
           size="icon"
           onClick={toggleShowPassword}
           className="absolute right-0 top-1/2 -translate-y-1/2 text  -muted-foreground focus:outline-none transition-colors"
-          aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
+          aria-label={showPassword ? t('hidePassword') : t('showPassword')}
         >
           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </Button>
@@ -175,6 +178,7 @@ const itemVariants = {
 }
 
 export default function SignUpPage() {
+  const t = useTranslations('auth.signUp')
   const searchParams = useSearchParams()
   const paramsReferralCode = searchParams.get('referral_code')
   const { showErrorToast } = useErrorHandler()
@@ -194,7 +198,7 @@ export default function SignUpPage() {
     formState: { errors, isSubmitting },
     watch,
     setValue,
-  } = useZodForm(signUpSchema)
+  } = useZodForm(signUpSchema(t))
 
   const referralCode = watch('referralCode')
 
@@ -271,7 +275,7 @@ export default function SignUpPage() {
         className="mt-2"
       >
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-primary">パスワード強度:</span>
+          <span className="text-xs text-primary">{t('passwordStrength')}:</span>
           <span
             className={`text-xs font-medium ${
               passwordStrength === 'weak'
@@ -285,7 +289,7 @@ export default function SignUpPage() {
                       : ''
             }`}
           >
-            {getStrengthText(passwordStrength)}
+            {getStrengthText(t, passwordStrength)}
           </span>
         </div>
         <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
@@ -309,7 +313,7 @@ export default function SignUpPage() {
         </div>
       </motion.div>
     )
-  }, [password, passwordStrength])
+  }, [password, passwordStrength, t])
 
   // メモ化されたパスワード要件チェックリスト
   const PasswordRequirementsList = useMemo(() => {
@@ -328,7 +332,7 @@ export default function SignUpPage() {
             <span
               className={`text-xs ${passwordCriteria.length ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
-              8文字以上
+              {t('passwordRequirements.length')}
             </span>
           </div>
 
@@ -337,7 +341,7 @@ export default function SignUpPage() {
             <span
               className={`text-xs ${passwordCriteria.uppercase ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
-              大文字を含む
+              {t('passwordRequirements.uppercase')}
             </span>
           </div>
 
@@ -346,7 +350,7 @@ export default function SignUpPage() {
             <span
               className={`text-xs ${passwordCriteria.lowercase ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
-              小文字を含む
+              {t('passwordRequirements.lowercase')}
             </span>
           </div>
 
@@ -355,7 +359,7 @@ export default function SignUpPage() {
             <span
               className={`text-xs ${passwordCriteria.number ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
-              数字を含む
+              {t('passwordRequirements.number')}
             </span>
           </div>
 
@@ -364,13 +368,13 @@ export default function SignUpPage() {
             <span
               className={`text-xs ${passwordCriteria.special ? 'text-active font-medium' : 'text-muted-foreground'}`}
             >
-              特殊文字を含む (例: !@#$%^&*)
+              {t('passwordRequirements.special')}
             </span>
           </div>
         </div>
       </motion.div>
     )
-  }, [password, passwordCriteria])
+  }, [password, passwordCriteria, t])
 
   // 登録フォーム送信ハンドラ
   const onSignUpSubmit = async (data: { email: string; password: string }) => {
@@ -465,16 +469,16 @@ export default function SignUpPage() {
         variants={containerVariants}
         className="w-full max-w-md p-2"
       >
-        <Card className="border-0 shadow-lg shadow-blue-100/20">
+        <Card className="border-0 shadow-lg shadow-secondary backdrop-blur-sm bg-background">
           <CardHeader className="space-y-1">
             <motion.div variants={itemVariants}>
               <CardTitle className="text-2xl font-bold text-center">
-                オーナーアカウント作成
+                {t('ownerAccountTitle')}
               </CardTitle>
             </motion.div>
             <motion.div variants={itemVariants}>
               <CardDescription className="text-center text-muted-foreground">
-                アカウントを作成して始めましょう
+                {t('subtitle')}
               </CardDescription>
             </motion.div>
           </CardHeader>
@@ -494,7 +498,7 @@ export default function SignUpPage() {
                 >
                   <motion.div variants={itemVariants} className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
-                      店舗名
+                      {t('storeName')}
                     </Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -502,7 +506,7 @@ export default function SignUpPage() {
                         id="org_name"
                         type="text"
                         {...register('org_name')}
-                        placeholder="店舗名を入力"
+                        placeholder={t('storeNamePlaceholder')}
                         className="pl-10"
                         required
                         aria-invalid={errors.org_name ? 'true' : 'false'}
@@ -519,7 +523,7 @@ export default function SignUpPage() {
                   </motion.div>
                   <motion.div variants={itemVariants} className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
-                      メールアドレス
+                      {t('email')}
                     </Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -527,7 +531,7 @@ export default function SignUpPage() {
                         id="email"
                         type="email"
                         {...register('email')}
-                        placeholder="メールアドレスを入力"
+                        placeholder={t('emailPlaceholder')}
                         className="pl-10"
                         required
                         aria-invalid={errors.email ? 'true' : 'false'}
@@ -554,7 +558,7 @@ export default function SignUpPage() {
 
                   <motion.div variants={itemVariants} className="space-y-2">
                     <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                      確認用パスワード
+                      {t('confirmPassword')}
                     </Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -562,7 +566,7 @@ export default function SignUpPage() {
                         id="confirmPassword"
                         type="password"
                         {...register('confirmPassword')}
-                        placeholder="同じパスワードを再入力"
+                        placeholder={t('confirmPasswordPlaceholder')}
                         className="pl-10"
                         required
                         aria-invalid={errors.confirmPassword ? 'true' : 'false'}
@@ -589,7 +593,7 @@ export default function SignUpPage() {
                       onCheckedChange={(checked) => setShowReferralCode(!!checked)}
                     />
                     <Label htmlFor="show-referral" className="text-sm cursor-pointer">
-                      招待コードを使用する
+                      {t('useReferralCode')}
                     </Label>
                   </motion.div>
 
@@ -603,14 +607,14 @@ export default function SignUpPage() {
                         className="space-y-2 overflow-hidden"
                       >
                         <Label htmlFor="referralCode" className="text-sm font-medium">
-                          招待コード
+                          {t('referralCode')}
                         </Label>
                         <div className="relative p-1">
                           <Input
                             id="referralCode"
                             type="text"
                             {...register('referralCode')}
-                            placeholder="招待コードを入力"
+                            placeholder={t('referralCodePlaceholder')}
                             className="pl-3"
                             autoFocus
                           />
@@ -642,7 +646,7 @@ export default function SignUpPage() {
                       disabled={isSubmitting}
                       aria-busy={isSubmitting}
                     >
-                      {isSubmitting ? '処理中...' : '登録する'}
+                      {isSubmitting ? t('processing') : t('register')}
                       {isSubmitting ? (
                         <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                       ) : (
@@ -667,20 +671,20 @@ export default function SignUpPage() {
                     transition={{ delay: 0.2 }}
                     className="p-4 bg-link rounded-lg border border-link-foreground"
                   >
+                    <h4 className="text-center text-sm font-medium">{t('verification.title')}</h4>
                     <p className="text-center text-xs text-link-foreground">
-                      登録したメールアドレスに認証コードを送信しました。
-                      メールの受信ボックスを確認して、認証コード(6桁の数字)を入力してください。
+                      {t('verification.instruction')}
                     </p>
                   </motion.div>
 
                   <div className="space-y-2">
                     <Label htmlFor="verification-code" className="text-xs font-medium">
-                      認証コード
+                      {t('verification.codeLabel')}
                     </Label>
                     <Input
                       id="verification-code"
                       value={verificationCode}
-                      placeholder="000000"
+                      placeholder={t('verification.codePlaceholder')}
                       onChange={(e) => setVerificationCode(e.target.value)}
                       maxLength={6}
                       inputMode="numeric"
@@ -719,15 +723,15 @@ export default function SignUpPage() {
                             />
                           </svg>
                         </motion.div>
-                        認証中...
+                        {t('verification.processing')}
                       </>
                     ) : (
-                      '認証する'
+                      t('verification.verify')
                     )}
                   </Button>
 
                   <div className="text-center text-sm text-muted-foreground">
-                    認証コードが届きませんか？
+                    {t('verification.resendCode')}
                     <button
                       type="button"
                       className="ml-1 text-link-foreground hover:opacity-80 underline focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-link-foreground rounded"
@@ -736,7 +740,7 @@ export default function SignUpPage() {
                           await signUp?.prepareEmailAddressVerification({
                             strategy: 'email_code',
                           })
-                          toast.success('認証コードを再送信しました')
+                          toast.success(t('verification.resent'))
                         } catch (err) {
                           Sentry.captureException(err, {
                             level: 'error',
@@ -745,11 +749,11 @@ export default function SignUpPage() {
                               email: email,
                             },
                           })
-                          toast.error('認証コードの再送信に失敗しました')
+                          toast.error(t('verification.resendError'))
                         }
                       }}
                     >
-                      再送信する
+                      {t('verification.resend')}
                     </button>
                   </div>
                 </motion.form>
@@ -760,13 +764,13 @@ export default function SignUpPage() {
           <CardFooter className="flex flex-col space-y-4">
             <Separator className="bg-muted w-1/2 mx-auto my-2" />
             <motion.div variants={itemVariants} className="w-full text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                すでにアカウントをお持ちですか？{' '}
+              <p className="text-xs text-muted-foreground">
+                {t('alreadyHaveAccount')}
                 <Link
                   href="/sign-in"
                   className="inline-flex items-center text-link-foreground hover:opacity-80 font-medium transition-colors"
                 >
-                  ログインする
+                  {t('signInHere')}
                   <ArrowRight className="ml-1 h-3 w-3" />
                 </Link>
               </p>
