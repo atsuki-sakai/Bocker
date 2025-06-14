@@ -129,9 +129,7 @@ export default function SignInForm() {
               <LanguageSwitcher />
             </motion.div>
             <motion.div variants={itemVariants}>
-              <p className="text-sm text-center text-muted-foreground">
-                アカウントにサインインして続行
-              </p>
+              <p className="text-sm text-center text-muted-foreground">{t('subtitle')}</p>
             </motion.div>
           </CardHeader>
           <CardContent>
@@ -224,7 +222,10 @@ export default function SignInForm() {
                 スタッフの方はこちら
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Link>
-              <Link href={`/${locale}/sign-up`} className="inline-flex items-center text-xs text-blue-500">
+              <Link
+                href={`/${locale}/sign-up`}
+                className="inline-flex items-center text-xs text-blue-500"
+              >
                 {t('signUp')}
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Link>
