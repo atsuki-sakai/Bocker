@@ -27,16 +27,17 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useTranslations } from 'next-intl'
 
 // パスワード変更用のバリデーションスキーマ
-const createChangePasswordSchema = (t: any) => z
-  .object({
-    currentPassword: z.string().min(6, t('errors.currentPasswordRequired')),
-    newPassword: z.string().min(6, t('errors.minimumLength')),
-    confirmNewPassword: z.string().min(6, t('errors.minimumLength')),
-  })
-  .refine((data) => data.newPassword === data.confirmNewPassword, {
-    message: t('errors.passwordMismatch'),
-    path: ['confirmNewPassword'],
-  })
+const createChangePasswordSchema = (t: ReturnType<typeof useTranslations>) =>
+  z
+    .object({
+      currentPassword: z.string().min(6, t('errors.currentPasswordRequired')),
+      newPassword: z.string().min(6, t('errors.minimumLength')),
+      confirmNewPassword: z.string().min(6, t('errors.minimumLength')),
+    })
+    .refine((data) => data.newPassword === data.confirmNewPassword, {
+      message: t('errors.passwordMismatch'),
+      path: ['confirmNewPassword'],
+    })
 
 // スキーマの型定義
 type ChangePasswordSchema = z.infer<ReturnType<typeof createChangePasswordSchema>>
@@ -61,7 +62,7 @@ const calculatePasswordStrength = (password: string) => {
 }
 
 // パスワード強度のラベルを取得する関数
-const getStrengthLabel = (strength: number, t: any) => {
+const getStrengthLabel = (strength: number, t: ReturnType<typeof useTranslations>) => {
   if (strength < 30) return { label: t('passwordStrength.veryWeak'), color: 'bg-destructive' }
   if (strength < 50) return { label: t('passwordStrength.weak'), color: 'bg-orange-500' }
   if (strength < 70) return { label: t('passwordStrength.fair'), color: 'bg-yellow-500' }
@@ -131,38 +132,40 @@ const PasswordInput = memo(
 PasswordInput.displayName = 'PasswordInput'
 
 // パスワード強度インジケーター
-const PasswordStrengthIndicator = memo(({ password, t }: { password: string; t: any }) => {
-  const strength = calculatePasswordStrength(password)
-  const { label, color } = getStrengthLabel(strength, t)
+const PasswordStrengthIndicator = memo(
+  ({ password, t }: { password: string; t: ReturnType<typeof useTranslations> }) => {
+    const strength = calculatePasswordStrength(password)
+    const { label, color } = getStrengthLabel(strength, t)
 
-  return (
-    <div className="mt-3 space-y-1">
-      <div className="flex justify-between items-center text-xs">
-        <span>{t('passwordStrength.label')}:</span>
-        <span className="font-medium">{label}</span>
-      </div>
-      <Progress value={strength} className="h-2" color={color} />
+    return (
+      <div className="mt-3 space-y-1">
+        <div className="flex justify-between items-center text-xs">
+          <span>{t('passwordStrength.label')}:</span>
+          <span className="font-medium">{label}</span>
+        </div>
+        <Progress value={strength} className="h-2" color={color} />
 
-      <div className="grid grid-cols-4 gap-1 mt-2">
-        {[
-          { label: t('criteria.uppercase'), match: /[A-Z]/ },
-          { label: t('criteria.lowercase'), match: /[a-z]/ },
-          { label: t('criteria.number'), match: /[0-9]/ },
-          { label: t('criteria.symbol'), match: /[^A-Za-z0-9]/ },
-        ].map((criteria, index) => (
-          <div key={index} className="flex items-center text-xs">
-            {criteria.match.test(password) ? (
-              <CheckCircle2Icon className="h-3 w-3 mr-1 text-active" />
-            ) : (
-              <AlertCircleIcon className="h-3 w-3 mr-1 text-muted-foreground" />
-            )}
-            {criteria.label}
-          </div>
-        ))}
+        <div className="grid grid-cols-4 gap-1 mt-2">
+          {[
+            { label: t('criteria.uppercase'), match: /[A-Z]/ },
+            { label: t('criteria.lowercase'), match: /[a-z]/ },
+            { label: t('criteria.number'), match: /[0-9]/ },
+            { label: t('criteria.symbol'), match: /[^A-Za-z0-9]/ },
+          ].map((criteria, index) => (
+            <div key={index} className="flex items-center text-xs">
+              {criteria.match.test(password) ? (
+                <CheckCircle2Icon className="h-3 w-3 mr-1 text-active" />
+              ) : (
+                <AlertCircleIcon className="h-3 w-3 mr-1 text-muted-foreground" />
+              )}
+              {criteria.label}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
-  )
-})
+    )
+  }
+)
 PasswordStrengthIndicator.displayName = 'PasswordStrengthIndicator'
 
 export default function ChangePasswordPage() {
