@@ -21,7 +21,6 @@ const publicPaths = [
   '/reservation',
   '/reservation/:path*', // Keep this for clarity, though handled separately below
   '/api/line',
-  '/customer/reset-password/confirm',
   '/staff/invite-accept', // hash-basedルーティングを使用するため、:path*は不要
 ]
 

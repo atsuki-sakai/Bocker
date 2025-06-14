@@ -66,10 +66,8 @@ export async function POST(request: NextRequest) {
 
     // リセットURLを生成
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${request.headers.get('host')}`;
-    // デフォルトロケールのパスプレフィックスを付与し、リダイレクト時にクエリパラメータが失われないようにする
-    // 末尾のスラッシュは二重にならないように除去
     const sanitizedBaseUrl = baseUrl.replace(/\/+$/, '');
-    const defaultLocale = 'ja'; // TODO: 利用者のロケールを取得できる場合は動的に設定
+    const defaultLocale = 'ja';
     const resetUrl = `${sanitizedBaseUrl}/${defaultLocale}/customer/reset-password/confirm?token=${resetToken}`;
 
     // 有効期限を計算

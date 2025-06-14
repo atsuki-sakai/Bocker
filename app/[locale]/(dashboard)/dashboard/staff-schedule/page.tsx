@@ -8,7 +8,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
 import { api } from '@/convex/_generated/api'
 import Link from 'next/link'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useRef, useState, useEffect, useMemo } from 'react'
 import {
   startOfWeek as startOfWeekFns,
@@ -17,7 +17,8 @@ import {
   isSameDay,
   isToday,
 } from 'date-fns'
-import { ja } from 'date-fns/locale'
+import { formatDate } from '@/lib/formatDate'
+import type { SupportedLocale } from '@/lib/dateLocale'
 import { Id, Doc } from '@/convex/_generated/dataModel'
 import {
   Select,
@@ -40,6 +41,7 @@ export default function StaffSchedulePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const t = useTranslations('reservations')
+  const locale = useLocale() as SupportedLocale
 
   // クエリパラメータから初期値を取得
   const initialStaffId = searchParams.get('staffId') as Id<'staff'> | null
@@ -61,6 +63,9 @@ export default function StaffSchedulePage() {
 
   const [currentReservations, setCurrentReservations] = useState<Doc<'reservation'>[]>([])
   const [currentSchedules, setCurrentSchedules] = useState<Doc<'staff_exception_schedule'>[]>([])
+  const [weekStartFormatted, setWeekStartFormatted] = useState('')
+  const [weekEndFormatted, setWeekEndFormatted] = useState('')
+  const [selectedDateFormatted, setSelectedDateFormatted] = useState('')
 
   // FIXME: 100件ずつ取得しているので、100件以上の予約がある場合は、ページネーションを実装する
   const { results: reservations, isLoading: isReservationsLoading } = useStablePaginatedQuery(
@@ -111,16 +116,24 @@ export default function StaffSchedulePage() {
     }
   )
 
-  // 曜日の配列（日本語）
-  const weekDays: string[] = ['月', '火', '水', '木', '金', '土', '日']
+  // 曜日の配列（国際化対応）
+  const weekDays: string[] = [
+    t('weekdays.monday'),
+    t('weekdays.tuesday'),
+    t('weekdays.wednesday'),
+    t('weekdays.thursday'),
+    t('weekdays.friday'),
+    t('weekdays.saturday'),
+    t('weekdays.sunday'),
+  ]
   const weekDaysFull: string[] = [
-    '月曜日',
-    '火曜日',
-    '水曜日',
-    '木曜日',
-    '金曜日',
-    '土曜日',
-    '日曜日',
+    t('weekdaysFull.monday'),
+    t('weekdaysFull.tuesday'),
+    t('weekdaysFull.wednesday'),
+    t('weekdaysFull.thursday'),
+    t('weekdaysFull.friday'),
+    t('weekdaysFull.saturday'),
+    t('weekdaysFull.sunday'),
   ]
 
   // ビューモードに応じたカラム数クラス（SP/PC 共通）
@@ -208,7 +221,7 @@ export default function StaffSchedulePage() {
           >
             <div className="absolute inset-1 bg-palette-4 opacity-75 rounded-md">
               <p className="text-xs p-2 font-bold text-center text-palette-4-foreground">
-                {schedule.is_all_day ? '終日' : 'スケジュール'}
+                {schedule.is_all_day ? t('allDay') : t('schedule')}
               </p>
               <p className="text-xs p-2 text-center text-palette-4-foreground">
                 {schedule.notes ? `(${schedule.notes})` : ''}
@@ -234,7 +247,7 @@ export default function StaffSchedulePage() {
         >
           <div className="absolute inset-1 bg-palette-4 opacity-75 rounded-md flex items-start justify-center p-2 overflow-scroll">
             <p className="text-xs text-start text-palette-4-foreground">
-              {schedule.is_all_day ? '全日' : 'スケジュール'}
+              {schedule.is_all_day ? t('fullDay') : t('schedule')}
               {schedule.is_all_day
                 ? '00:00 - 24:00'
                 : `${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`}
@@ -318,14 +331,14 @@ export default function StaffSchedulePage() {
 
       // 1時間ごと（minute === 0）の時のみ時間ラベルを表示
       if (minute === 0) {
-        const ampm = hour < 12 ? '午前' : '午後'
+        const ampm = hour < 12 ? t('am') : t('pm')
         const hour12 = hour % 12 === 0 ? 12 : hour % 12
 
         slots.push(
           <div key={`hour-${i}`}>
             <div className="sticky bg-background rounded-md left-0 z-10 -mt-2.5 -ml-14 w-14 pr-2 text-right text-xs/5 text-gray-400 text-nowrap">
               {ampm}
-              {hour12}時
+              {hour12}{t('oclock')}
             </div>
           </div>
         )
@@ -427,6 +440,26 @@ export default function StaffSchedulePage() {
     }
   }, [reservations])
 
+  // 日付フォーマットの更新
+  useEffect(() => {
+    const formatDates = async () => {
+      if (viewMode === 'week') {
+        const weekStart = startOfWeekFns(currentDate, { weekStartsOn: 1 })
+        const weekEnd = endOfWeekFns(currentDate, { weekStartsOn: 1 })
+        const [start, end] = await Promise.all([
+          formatDate(weekStart, 'PPP', locale),
+          formatDate(weekEnd, 'PPP', locale),
+        ])
+        setWeekStartFormatted(start)
+        setWeekEndFormatted(end)
+      } else {
+        const formatted = await formatDate(selectedDate, 'PPP', locale)
+        setSelectedDateFormatted(formatted)
+      }
+    }
+    formatDates()
+  }, [currentDate, selectedDate, viewMode, locale])
+
   return (
     <DashboardSection backLink="/dashboard" backLinkTitle={t('backToDashboard')}>
       <div className="flex h-full flex-col">
@@ -441,20 +474,16 @@ export default function StaffSchedulePage() {
                     dateTime={`${format(startOfWeekFns(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd')}/${format(endOfWeekFns(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd')}`}
                   >
                     <span className="font-bold text-base md:text-xl">
-                      {format(startOfWeekFns(currentDate, { weekStartsOn: 1 }), 'yyyy年MM月dd日', {
-                        locale: ja,
-                      })}
+                      {weekStartFormatted}
                     </span>
                     <div className=" text-muted-foreground text-xs">{t('from')}</div>
                     <span className="font-bold text-base md:text-xl">
-                      {format(endOfWeekFns(currentDate, { weekStartsOn: 1 }), 'yyyy年MM月dd日', {
-                        locale: ja,
-                      })}
+                      {weekEndFormatted}
                     </span>
                   </time>
                 ) : (
                   <time dateTime={format(selectedDate, 'yyyy-MM-dd')}>
-                    {format(selectedDate, 'yyyy年MM月dd日', { locale: ja })}
+                    {selectedDateFormatted}
                     <div className="md:hidden ml-2 inline-block text-muted-foreground text-xs">
                       ({weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]})
                     </div>
@@ -545,7 +574,7 @@ export default function StaffSchedulePage() {
                           className="block px-4 py-2 text-sm text-muted-foreground data-focus:bg-muted data-focus:text-primary data-focus:outline-hidden"
                           onClick={moveToToday}
                         >
-                          {t('today')}へ移動
+                          {t('goToToday')}
                         </a>
                       </MenuItem>
                       <MenuItem>
@@ -554,7 +583,7 @@ export default function StaffSchedulePage() {
                           className="block px-4 py-2 text-sm text-muted-foreground data-focus:bg-muted data-focus:text-primary data-focus:outline-hidden"
                           onClick={handleViewModeToggle}
                         >
-                          {viewMode === 'day' ? '週表示に切り替え' : '日表示に切り替え'}
+                          {viewMode === 'day' ? t('switchToWeekView') : t('switchToDayView')}
                         </Link>
                       </MenuItem>
                     </div>
@@ -577,7 +606,7 @@ export default function StaffSchedulePage() {
                       zIndex: 15,
                       gridTemplateRows: '1.75rem repeat(144, minmax(0, 1fr)) auto',
                     }}
-                    aria-label="曜日ヘッダー"
+                    aria-label={t('weekdayHeader')}
                   >
                     <div className="min-w-[56px]"></div>
                     {daysOfWeek.map((date, index) => {
@@ -625,7 +654,7 @@ export default function StaffSchedulePage() {
                       </span>
                       {hasReservationsOnDate(selectedDate) && (
                         <span className="ml-2 bg-active text-active-foreground px-2 py-0.5 rounded-full text-xs font-medium">
-                          予約あり
+                          {t('hasReservations')}
                         </span>
                       )}
                     </div>
@@ -693,14 +722,14 @@ export default function StaffSchedulePage() {
         ) : reservations.length === 0 && selectedStaffId ? (
           <div className="flex-1 overflow-y-auto bg-muted rounded-md mt-4">
             <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
-              <p className="text-muted-foreground text-sm">予約がありません。</p>
+              <p className="text-muted-foreground text-sm">{t('noReservations')}</p>
             </div>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto bg-muted rounded-md mt-4">
             <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
               <p className="text-muted-foreground text-sm">
-                右上のプルダウンからスタッフを選択して予約を表示してください。
+                {t('selectStaffToShow')}
               </p>
             </div>
           </div>
