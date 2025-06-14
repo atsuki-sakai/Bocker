@@ -23,21 +23,22 @@ import { CardDescription, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useTranslations } from 'next-intl'
 
 // メールアドレス変更用のバリデーションスキーマ
-const changeEmailSchema = z
+const createChangeEmailSchema = (t: any) => z
   .object({
     newEmail: z
       .string()
-      .email('有効なメールアドレスを入力してください')
-      .min(1, 'メールアドレスを入力してください'),
+      .email(t('validationErrors.emailInvalid'))
+      .min(1, t('validationErrors.emailRequired')),
     confirmNewEmail: z
       .string()
-      .email('有効なメールアドレスを入力してください')
-      .min(1, '確認用メールアドレスを入力してください'),
+      .email(t('validationErrors.emailInvalid'))
+      .min(1, t('validationErrors.confirmEmailRequired')),
   })
   .refine((data) => data.newEmail === data.confirmNewEmail, {
-    message: '新しいメールアドレスと確認用メールアドレスが一致しません',
+    message: t('validationErrors.emailMismatch'),
     path: ['confirmNewEmail'],
   })
 
@@ -159,6 +160,9 @@ EmailInput.displayName = 'EmailInput'
 export default function ChangeEmailPage() {
   const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
+  const t = useTranslations('settings.changeEmail')
+  
+  const changeEmailSchema = createChangeEmailSchema(t)
 
   const {
     register,
@@ -168,7 +172,7 @@ export default function ChangeEmailPage() {
 
   const onSubmit = async (data: z.infer<typeof changeEmailSchema>) => {
     if (!isLoaded || !isSignedIn || !user) {
-      toast.error('ユーザー情報の読み込みに失敗しました')
+      toast.error(t('error'))
       return
     }
 
@@ -188,17 +192,16 @@ export default function ChangeEmailPage() {
           redirectUrl: window.location.origin + `/dashboard`,
         })
 
-        toast.success('確認メールを送信しました', {
-          description: 'メールを確認して認証を完了してください',
+        toast.success(t('success'), {
+          description: t('info.verificationRequired'),
           icon: <MailIcon className="h-4 w-4 text-active" />,
           duration: 6000,
         })
 
         // 成功メッセージの後に詳細情報を表示
         setTimeout(() => {
-          toast.info('メールアドレス管理について', {
-            description:
-              '新しいメールアドレスの確認後、設定画面から古いメールアドレスを削除するか、新しいアドレスをプライマリーに設定できます',
+          toast.info(t('info.changeWarning'), {
+            description: t('info.verificationRequired'),
             icon: <InfoIcon className="h-4 w-4 text-link" />,
             duration: 8000,
           })
@@ -213,21 +216,21 @@ export default function ChangeEmailPage() {
         if (error instanceof Error) {
           // すでに使用されているメールアドレスの場合のエラー処理
           if (error.message.includes('That email address is taken. Please try another.')) {
-            errorMessage = 'このメールアドレスはすでに使用されています'
+            errorMessage = t('validationErrors.emailInvalid')
           } else {
             errorMessage = error.message
           }
         }
 
-        toast.error('メールアドレスの追加に失敗しました', {
+        toast.error(t('error'), {
           description: errorMessage,
           icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
         })
       }
     } catch (error) {
       console.error('Overall error:', error)
-      toast.error('メールアドレスの更新に失敗しました', {
-        description: 'もう一度お試しください',
+      toast.error(t('error'), {
+        description: t('info.verificationRequired'),
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
       })
     }
@@ -246,14 +249,14 @@ export default function ChangeEmailPage() {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>メールアドレスを更新</p>
+                  <p>{t('tooltip.emailFormat')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">メールアドレス変更</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">{t('title')}</CardTitle>
           <CardDescription className="text-center text-muted-foreground">
-            新しいメールアドレスを入力してください
+            {t('subtitle')}
           </CardDescription>
         </div>
 
@@ -270,18 +273,18 @@ export default function ChangeEmailPage() {
         >
           <EmailInput
             id="newEmail"
-            label="新しいメールアドレス"
+            label={t('newEmail')}
             icon={<MailIcon className="h-4 w-4 mr-2 text-muted-foreground" />}
-            placeholder="新しいメールアドレスを入力"
+            placeholder={t('newEmailPlaceholder')}
             register={register}
             error={errors.newEmail}
           />
 
           <EmailInput
             id="confirmNewEmail"
-            label="新しいメールアドレス（確認）"
+            label={t('confirmEmail')}
             icon={<ShieldCheckIcon className="h-4 w-4 mr-2 text-muted-foreground" />}
-            placeholder="新しいメールアドレスを再入力"
+            placeholder={t('confirmEmailPlaceholder')}
             register={register}
             error={errors.confirmNewEmail}
           />
@@ -291,12 +294,12 @@ export default function ChangeEmailPage() {
               {isSubmitting ? (
                 <span className="flex items-center justify-center">
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  処理中...
+                  {t('submitting')}
                 </span>
               ) : (
                 <span className="flex items-center justify-center">
                   <MailIcon className="h-4 w-4 mr-2" />
-                  メールアドレスを更新する
+                  {t('submit')}
                 </span>
               )}
             </Button>
@@ -304,7 +307,7 @@ export default function ChangeEmailPage() {
         </form>
 
         <div className="flex flex-col justify-center text-xs text-center text-muted-foreground mt-4">
-          <p>確認メールが新しいアドレスに送信されます。クリックして認証を完了してください。</p>
+          <p>{t('info.verificationRequired')}</p>
         </div>
       </div>
     </div>

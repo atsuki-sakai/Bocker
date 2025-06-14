@@ -24,10 +24,12 @@ import {
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import { useTranslations } from 'next-intl'
 import type { ClerkEmailAddress } from '@/lib/types'
 
 export default function EmailPreferencesPage() {
   const { user, isLoaded } = useUser()
+  const t = useTranslations('settings.emailPreferences')
   const [isProcessing, setIsProcessing] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [resendingEmailId, setResendingEmailId] = useState<string | null>(null)
@@ -36,6 +38,7 @@ export default function EmailPreferencesPage() {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <LoaderCircleIcon className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">{t('loading')}</span>
       </div>
     )
   }
@@ -44,8 +47,8 @@ export default function EmailPreferencesPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-2">
         <AlertCircleIcon className="h-12 w-12 text-destructive" />
-        <h2 className="text-xl font-semibold">認証エラー</h2>
-        <p className="text-muted-foreground">ユーザー情報が読み込めません</p>
+        <h2 className="text-xl font-semibold">{t('authError.title')}</h2>
+        <p className="text-muted-foreground">{t('authError.description')}</p>
       </div>
     )
   }
@@ -69,15 +72,15 @@ export default function EmailPreferencesPage() {
           primaryEmailAddressId: emailId,
         })
 
-        toast.success('プライマリーメールアドレスを変更しました', {
-          description: 'ログイン情報が更新されました',
+        toast.success(t('success.primaryUpdated'), {
+          description: t('success.primaryDescription'),
           icon: <CheckCircleIcon className="h-4 w-4 text-active" />,
         })
       }
     } catch (error) {
       console.error('Error setting primary email:', error)
-      toast.error('メールアドレスの更新に失敗しました', {
-        description: 'もう一度お試しください',
+      toast.error(t('error.updateFailed'), {
+        description: t('error.tryAgain'),
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
       })
     } finally {
@@ -93,16 +96,16 @@ export default function EmailPreferencesPage() {
       if (emailToDelete) {
         // プライマリーメールアドレスは削除できない
         if (emailToDelete.id === user.primaryEmailAddressId) {
-          toast.error('プライマリーメールアドレスは削除できません', {
-            description: '別のメールアドレスをプライマリーに設定してから削除してください',
+          toast.error(t('error.cannotDeletePrimary'), {
+            description: t('error.setPrimaryFirst'),
             icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
           })
           return
         }
         // 認証済みのメールアドレスのみ削除可能
         if (emailToDelete.verification?.status !== 'verified') {
-          toast.error('認証済みのメールアドレスのみ削除できます', {
-            description: 'まずはメールを認証してから削除してください',
+          toast.error(t('error.onlyVerifiedCanDelete'), {
+            description: t('error.verifyFirst'),
             icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
           })
           return
@@ -110,14 +113,14 @@ export default function EmailPreferencesPage() {
 
         // メールアドレスを削除
         await emailToDelete.destroy()
-        toast.success('メールアドレスを削除しました', {
+        toast.success(t('success.emailDeleted'), {
           icon: <CheckCircleIcon className="h-4 w-4 text-active" />,
         })
       }
     } catch (error) {
       console.error('Error deleting email:', error)
-      toast.error('メールアドレスの削除に失敗しました', {
-        description: 'もう一度お試しください',
+      toast.error(t('error.deleteFailed'), {
+        description: t('error.tryAgain'),
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
       })
     } finally {
@@ -138,15 +141,15 @@ export default function EmailPreferencesPage() {
           redirectUrl: window.location.origin + `/dashboard/setting/email-preferences`,
         })
 
-        toast.success('認証メールを送信しました', {
-          description: 'メールを確認して認証を完了してください',
+        toast.success(t('success.verificationSent'), {
+          description: t('success.verificationDescription'),
           icon: <SendIcon className="h-4 w-4 text-active" />,
         })
       }
     } catch (error) {
       console.error('Error resending verification email:', error)
-      toast.error('認証メールの送信に失敗しました', {
-        description: 'もう一度お試しください',
+      toast.error(t('error.verificationFailed'), {
+        description: t('error.tryAgain'),
         icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
       })
     } finally {
@@ -160,11 +163,11 @@ export default function EmailPreferencesPage() {
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-xl font-bold">
             <MailIcon className="h-4 w-4 text-primary" />
-            登録済みメールアドレス
+            {t('title')}
           </div>
           <div className="text-sm text-muted-foreground">
             <p className="my-2 text-sm">
-              プライマリーに設定されたメールアドレスがログインとシステム通知に使用されます。
+              {t('subtitle')}
             </p>
           </div>
         </div>
@@ -172,7 +175,7 @@ export default function EmailPreferencesPage() {
           {emailAddresses.length === 0 ? (
             <div className="p-4 border rounded-lg text-center text-muted-foreground flex flex-col items-center gap-2">
               <MailQuestionIcon className="h-10 w-10" />
-              <p>メールアドレスが登録されていません</p>
+              <p>{t('noEmails')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -208,7 +211,7 @@ export default function EmailPreferencesPage() {
                           {email.primary && (
                             <Badge className="bg-primary text-primary-foreground">
                               <StarIcon className="h-3 w-3 mr-1" />
-                              プライマリー
+                              {t('badges.primary')}
                             </Badge>
                           )}
                           {email.verification?.status === 'verified' ? (
@@ -217,7 +220,7 @@ export default function EmailPreferencesPage() {
                               className="text-active-foreground border-active-foreground bg-active"
                             >
                               <CheckCircleIcon className="h-3 w-3 mr-1" />
-                              認証済み
+                              {t('badges.verified')}
                             </Badge>
                           ) : (
                             <Badge
@@ -225,7 +228,7 @@ export default function EmailPreferencesPage() {
                               className="text-warning-foreground border-warning-foreground bg-warning"
                             >
                               <AlertCircleIcon className="h-3 w-3 mr-1" />
-                              未認証
+                              {t('badges.unverified')}
                             </Badge>
                           )}
                         </div>
@@ -244,12 +247,12 @@ export default function EmailPreferencesPage() {
                         {resendingEmailId === email.id ? (
                           <>
                             <RefreshCwIcon className="h-4 w-4 mr-2 animate-spin" />
-                            送信中...
+                            {t('sending')}
                           </>
                         ) : (
                           <>
                             <SendIcon className="h-4 w-4 mr-2" />
-                            認証メール再送信
+                            {t('resendVerification')}
                           </>
                         )}
                       </Button>
@@ -264,7 +267,7 @@ export default function EmailPreferencesPage() {
                         disabled={isProcessing}
                       >
                         <StarIcon className="h-4 w-4 mr-2" />
-                        プライマリーに設定
+                        {t('setPrimary')}
                       </Button>
                     )}
 
@@ -275,17 +278,17 @@ export default function EmailPreferencesPage() {
                       >
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>メールアドレスを削除しますか？</DialogTitle>
+                            <DialogTitle>{t('deleteDialog.title')}</DialogTitle>
                             <DialogDescription>
-                              このメールアドレスでのログインができなくなります。
+                              {t('deleteDialog.description')}
                             </DialogDescription>
                           </DialogHeader>
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                              キャンセル
+                              {t('deleteDialog.cancel')}
                             </Button>
                             <Button variant="destructive" onClick={() => deleteEmail(email.id)}>
-                              削除
+                              {t('deleteDialog.delete')}
                             </Button>
                           </DialogFooter>
                         </DialogContent>

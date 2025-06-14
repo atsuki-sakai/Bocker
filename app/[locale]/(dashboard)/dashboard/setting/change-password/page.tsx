@@ -24,18 +24,22 @@ import { CardDescription, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useTranslations } from 'next-intl'
 
 // パスワード変更用のバリデーションスキーマ
-const changePasswordSchema = z
+const createChangePasswordSchema = (t: any) => z
   .object({
-    currentPassword: z.string().min(6, '現在のパスワードを入力してください'),
-    newPassword: z.string().min(6, '新しいパスワードは6文字以上必要です'),
-    confirmNewPassword: z.string().min(6, '確認用パスワードは6文字以上必要です'),
+    currentPassword: z.string().min(6, t('errors.currentPasswordRequired')),
+    newPassword: z.string().min(6, t('errors.minimumLength')),
+    confirmNewPassword: z.string().min(6, t('errors.minimumLength')),
   })
   .refine((data) => data.newPassword === data.confirmNewPassword, {
-    message: '新しいパスワードと確認用パスワードが一致しません',
+    message: t('errors.passwordMismatch'),
     path: ['confirmNewPassword'],
   })
+
+// スキーマの型定義
+type ChangePasswordSchema = z.infer<ReturnType<typeof createChangePasswordSchema>>
 
 // パスワード強度を評価する関数
 const calculatePasswordStrength = (password: string) => {
@@ -57,12 +61,12 @@ const calculatePasswordStrength = (password: string) => {
 }
 
 // パスワード強度のラベルを取得する関数
-const getStrengthLabel = (strength: number) => {
-  if (strength < 30) return { label: '非常に弱い', color: 'bg-destructive' }
-  if (strength < 50) return { label: '弱い', color: 'bg-orange-500' }
-  if (strength < 70) return { label: '普通', color: 'bg-yellow-500' }
-  if (strength < 90) return { label: '強い', color: 'bg-emerald-500' }
-  return { label: '非常に強い', color: 'bg-green-500' }
+const getStrengthLabel = (strength: number, t: any) => {
+  if (strength < 30) return { label: t('passwordStrength.veryWeak'), color: 'bg-destructive' }
+  if (strength < 50) return { label: t('passwordStrength.weak'), color: 'bg-orange-500' }
+  if (strength < 70) return { label: t('passwordStrength.fair'), color: 'bg-yellow-500' }
+  if (strength < 90) return { label: t('passwordStrength.strong'), color: 'bg-emerald-500' }
+  return { label: t('passwordStrength.veryStrong'), color: 'bg-green-500' }
 }
 
 // 目のアイコンボタンのコンポーネント（パフォーマンス向上のためmemo化）
@@ -95,7 +99,7 @@ const PasswordInput = memo(
     label: string
     icon: React.ReactNode
     placeholder: string
-    register: UseFormRegister<z.infer<typeof changePasswordSchema>>
+    register: UseFormRegister<ChangePasswordSchema>
     showPassword: boolean
     togglePassword: () => void
     error: FieldError | undefined
@@ -111,7 +115,7 @@ const PasswordInput = memo(
           type={showPassword ? 'text' : 'password'}
           placeholder={placeholder}
           className="pr-10 transition-all duration-200"
-          {...register(id as keyof z.infer<typeof changePasswordSchema>)}
+          {...register(id as keyof ChangePasswordSchema)}
         />
         <PasswordToggleButton show={showPassword} onToggle={togglePassword} />
       </div>
@@ -127,24 +131,24 @@ const PasswordInput = memo(
 PasswordInput.displayName = 'PasswordInput'
 
 // パスワード強度インジケーター
-const PasswordStrengthIndicator = memo(({ password }: { password: string }) => {
+const PasswordStrengthIndicator = memo(({ password, t }: { password: string; t: any }) => {
   const strength = calculatePasswordStrength(password)
-  const { label, color } = getStrengthLabel(strength)
+  const { label, color } = getStrengthLabel(strength, t)
 
   return (
     <div className="mt-3 space-y-1">
       <div className="flex justify-between items-center text-xs">
-        <span>パスワード強度:</span>
+        <span>{t('passwordStrength.label')}:</span>
         <span className="font-medium">{label}</span>
       </div>
       <Progress value={strength} className="h-2" color={color} />
 
       <div className="grid grid-cols-4 gap-1 mt-2">
         {[
-          { label: '大文字', match: /[A-Z]/ },
-          { label: '小文字', match: /[a-z]/ },
-          { label: '数字', match: /[0-9]/ },
-          { label: '記号', match: /[^A-Za-z0-9]/ },
+          { label: t('criteria.uppercase'), match: /[A-Z]/ },
+          { label: t('criteria.lowercase'), match: /[a-z]/ },
+          { label: t('criteria.number'), match: /[0-9]/ },
+          { label: t('criteria.symbol'), match: /[^A-Za-z0-9]/ },
         ].map((criteria, index) => (
           <div key={index} className="flex items-center text-xs">
             {criteria.match.test(password) ? (
@@ -164,10 +168,13 @@ PasswordStrengthIndicator.displayName = 'PasswordStrengthIndicator'
 export default function ChangePasswordPage() {
   const { user, isLoaded } = useUser()
   const router = useRouter()
+  const t = useTranslations('settings.changePassword')
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [newPasswordValue, setNewPasswordValue] = useState('')
+  
+  const changePasswordSchema = createChangePasswordSchema(t)
 
   const {
     register,
@@ -213,8 +220,8 @@ export default function ChangePasswordPage() {
         currentPassword: data.currentPassword,
       })
 
-      toast.success('パスワードが更新されました', {
-        description: 'セキュリティが強化されました',
+      toast.success(t('success.title'), {
+        description: t('success.description'),
         icon: <CheckCircle2Icon className="h-4 w-4 text-active" />,
       })
 
@@ -222,13 +229,13 @@ export default function ChangePasswordPage() {
     } catch (error) {
       const errorMessage = typeof error === 'string' ? error : (error as Error)?.message || ''
       if (errorMessage.includes('data breach')) {
-        toast.error('そのパスワードは過去に漏洩しています。別のパスワードを設定してください', {
-          description: '安全のため、他のパスワードをお使いください',
+        toast.error(t('errors.breachedPassword'), {
+          description: t('errors.breachedPasswordDescription'),
           icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
         })
       } else {
-        toast.error('パスワードの更新に失敗しました', {
-          description: 'もう一度お試しください',
+        toast.error(t('errors.updateFailed'), {
+          description: t('errors.tryAgain'),
           icon: <AlertCircleIcon className="h-4 w-4 text-destructive" />,
         })
       }
@@ -248,14 +255,14 @@ export default function ChangePasswordPage() {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>セキュリティを強化</p>
+                  <p>{t('tooltips.security')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">パスワード変更</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">{t('title')}</CardTitle>
           <CardDescription className="text-center text-muted-foreground">
-            安全なパスワードを設定して、アカウントを保護しましょう
+            {t('subtitle')}
           </CardDescription>
         </div>
 
@@ -272,9 +279,9 @@ export default function ChangePasswordPage() {
         >
           <PasswordInput
             id="currentPassword"
-            label="現在のパスワード"
+            label={t('currentPassword')}
             icon={<KeyIcon className="h-4 w-4 mr-2 text-muted-foreground" />}
-            placeholder="現在のパスワードを入力"
+            placeholder={t('currentPasswordPlaceholder')}
             register={register}
             showPassword={showCurrentPassword}
             togglePassword={toggleCurrentPassword}
@@ -283,22 +290,22 @@ export default function ChangePasswordPage() {
 
           <PasswordInput
             id="newPassword"
-            label="新しいパスワード"
+            label={t('newPassword')}
             icon={<LockIcon className="h-4 w-4 mr-2 text-muted-foreground" />}
-            placeholder="新しいパスワードを入力"
+            placeholder={t('newPasswordPlaceholder')}
             register={register}
             showPassword={showNewPassword}
             togglePassword={toggleNewPassword}
             error={errors.newPassword}
           />
 
-          {newPasswordValue && <PasswordStrengthIndicator password={newPasswordValue} />}
+          {newPasswordValue && <PasswordStrengthIndicator password={newPasswordValue} t={t} />}
 
           <PasswordInput
             id="confirmNewPassword"
-            label="新しいパスワード（確認）"
+            label={t('confirmPassword')}
             icon={<ShieldCheckIcon className="h-4 w-4 mr-2 text-muted-foreground" />}
-            placeholder="新しいパスワードを再入力"
+            placeholder={t('confirmPasswordPlaceholder')}
             register={register}
             showPassword={showConfirmPassword}
             togglePassword={toggleConfirmPassword}
@@ -310,12 +317,12 @@ export default function ChangePasswordPage() {
               {isSubmitting ? (
                 <span className="flex items-center justify-center">
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  処理中...
+                  {t('processing')}
                 </span>
               ) : (
                 <span className="flex items-center justify-center">
                   <ShieldCheckIcon className="h-4 w-4 mr-2" />
-                  パスワードを更新する
+                  {t('submitButton')}
                 </span>
               )}
             </Button>
@@ -323,7 +330,7 @@ export default function ChangePasswordPage() {
         </form>
 
         <div className="flex flex-col justify-center text-xs text-center text-muted-foreground">
-          <p>強力なパスワードは文字、数字、記号を組み合わせたものがおすすめです</p>
+          <p>{t('requirementsText')}</p>
         </div>
       </div>
     </div>
