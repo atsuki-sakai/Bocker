@@ -26,21 +26,22 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useTranslations } from 'next-intl'
 
 // メールアドレス変更用のバリデーションスキーマ
-const createChangeEmailSchema = (t: any) => z
-  .object({
-    newEmail: z
-      .string()
-      .email(t('validationErrors.emailInvalid'))
-      .min(1, t('validationErrors.emailRequired')),
-    confirmNewEmail: z
-      .string()
-      .email(t('validationErrors.emailInvalid'))
-      .min(1, t('validationErrors.confirmEmailRequired')),
-  })
-  .refine((data) => data.newEmail === data.confirmNewEmail, {
-    message: t('validationErrors.emailMismatch'),
-    path: ['confirmNewEmail'],
-  })
+const createChangeEmailSchema = (t: ReturnType<typeof useTranslations>) =>
+  z
+    .object({
+      newEmail: z
+        .string()
+        .email(t('validationErrors.emailInvalid'))
+        .min(1, t('validationErrors.emailRequired')),
+      confirmNewEmail: z
+        .string()
+        .email(t('validationErrors.emailInvalid'))
+        .min(1, t('validationErrors.confirmEmailRequired')),
+    })
+    .refine((data) => data.newEmail === data.confirmNewEmail, {
+      message: t('validationErrors.emailMismatch'),
+      path: ['confirmNewEmail'],
+    })
 
 // パスワードトグルボタンのコンポーネント（パフォーマンス向上のためmemo化）
 const PasswordToggleButton = memo(({ show, onToggle }: { show: boolean; onToggle: () => void }) => (
@@ -72,7 +73,7 @@ const PasswordInput = memo(
     label: string
     icon: React.ReactNode
     placeholder: string
-    register: UseFormRegister<z.infer<typeof changeEmailSchema>>
+    register: UseFormRegister<z.infer<ReturnType<typeof createChangeEmailSchema>>>
     showPassword: boolean
     togglePassword: () => void
     error: FieldError | undefined
@@ -93,7 +94,7 @@ const PasswordInput = memo(
           type={showPassword ? 'text' : 'password'}
           placeholder={placeholder}
           className="pr-10 transition-all duration-200"
-          {...register(id as keyof z.infer<typeof changeEmailSchema>)}
+          {...register(id as keyof z.infer<ReturnType<typeof createChangeEmailSchema>>)}
         />
         <PasswordToggleButton show={showPassword} onToggle={togglePassword} />
       </div>
@@ -129,7 +130,7 @@ const EmailInput = memo(
     label: string
     icon: React.ReactNode
     placeholder: string
-    register: UseFormRegister<z.infer<typeof changeEmailSchema>>
+    register: UseFormRegister<z.infer<ReturnType<typeof createChangeEmailSchema>>>
     error: FieldError | undefined
   }) => (
     <div className="space-y-2">
@@ -143,7 +144,7 @@ const EmailInput = memo(
           type="email"
           placeholder={placeholder}
           className="transition-all duration-200 "
-          {...register(id as keyof z.infer<typeof changeEmailSchema>)}
+          {...register(id as keyof z.infer<ReturnType<typeof createChangeEmailSchema>>)}
         />
       </div>
       {error && (
