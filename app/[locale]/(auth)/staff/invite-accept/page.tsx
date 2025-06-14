@@ -7,9 +7,11 @@ import { Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Mail } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 // サインアップコンポーネント（Suspenseでラップ）
 function InviteSignUpContent() {
+  const t = useTranslations('auth.staffInvite')
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-muted py-12 px-4 sm:px-6 lg:px-8">
       <SignUp
@@ -54,11 +56,10 @@ function InviteSignUpContent() {
                 <Mail className="h-3 w-3 text-background" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium text-link-foreground">アカウント作成について</p>
-                <p className="text-xs text-muted-foreground">
-                  アカウント作成後、自動的にサロンのスタッフとして登録され、
-                  適切な権限が付与されます。
+                <p className="text-sm font-medium text-link-foreground">
+                  {t('aboutAccountCreation')}
                 </p>
+                <p className="text-xs text-muted-foreground">{t('instructions')}</p>
               </div>
             </div>
           </CardContent>
@@ -70,13 +71,14 @@ function InviteSignUpContent() {
 
 // メインページコンポーネント
 export default function InviteAcceptPage() {
+  const t = useTranslations('auth.staffInvite')
   return (
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-muted">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-            <p className="text-sm text-muted-foreground">読み込み中...</p>
+            <p className="text-sm text-muted-foreground">{t('loading')}</p>
           </motion.div>
         </div>
       }
