@@ -12,6 +12,7 @@
     "build:t": "next build --turbo",
     "build:wp": "next build",
     "start": "next start",
+    "sync-lang-en": "ts-node scripts/i18n/syncEnJson.ts",
     "sync-env": "scripts/sync-vercel-env.sh",
     "analyze": "ANALYZE=true pnpm run build",
     "analyze:t": "ANALYZE=true pnpm run build:turbo",
