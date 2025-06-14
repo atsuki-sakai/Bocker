@@ -1,16 +1,17 @@
-"use client";
+'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { fetchQuery } from 'convex/nextjs';
-import { useSignUp, useClerk } from '@clerk/nextjs';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { fetchQuery } from 'convex/nextjs'
+import { useSignUp, useClerk } from '@clerk/nextjs'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import * as Sentry from '@sentry/nextjs'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import {
   Card,
   CardContent,
@@ -79,22 +80,23 @@ export const signUpSchema = (t: ReturnType<typeof useTranslations>) =>
   z
     .object({
       org_name: z
-        .string({ required_error: t('orgNameRequired') })
-        .min(1, { message: t('orgNameRequired') })
-        .max(40, { message: t('orgNameMaxLength') }),
+        .string({ required_error: t('validation.orgNameRequired') })
+        .min(1, { message: t('validation.orgNameRequired') })
+        .max(40, { message: t('validation.orgNameMaxLength') }),
       referralCode: z.string().optional(),
       email: z
         .string()
-        .min(1, { message: t('emailRequired') })
-        .email({ message: t('emailInvalid') }),
+        .min(1, { message: t('validation.emailRequired') })
+        .email({ message: t('validation.emailInvalid') }),
       password: z
         .string()
-        .min(8, { message: t('passwordMinLength') })
-        .max(100, { message: t('passwordMaxLength') })
-        .regex(/[a-z]/, { message: t('passwordLowercase') })
-        .regex(/[A-Z]/, { message: t('passwordUppercase') })
-        .regex(/[0-9]/, { message: t('passwordNumber') }),
-      confirmPassword: z.string().min(1, { message: t('confirmPasswordRequired') }),
+        .min(8, { message: t('passwordRequirements.length') })
+        .max(100, { message: t('passwordRequirements.maxLength') })
+        .regex(/[a-z]/, { message: t('passwordRequirements.lowercase') })
+        .regex(/[A-Z]/, { message: t('passwordRequirements.uppercase') })
+        .regex(/[0-9]/, { message: t('passwordRequirements.number') })
+        .regex(/[^A-Za-z0-9]/, { message: t('passwordRequirements.special') }),
+      confirmPassword: z.string().min(1, { message: t('validation.passwordRequired') }),
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: t('passwordConfirmationError'),
@@ -470,6 +472,9 @@ export default function SignUpPage() {
         className="w-full max-w-md p-2"
       >
         <Card className="border-0 shadow-lg shadow-secondary backdrop-blur-sm bg-background">
+          <div className="flex justify-end p-2">
+            <LanguageSwitcher />
+          </div>
           <CardHeader className="space-y-1">
             <motion.div variants={itemVariants}>
               <CardTitle className="text-2xl font-bold text-center">

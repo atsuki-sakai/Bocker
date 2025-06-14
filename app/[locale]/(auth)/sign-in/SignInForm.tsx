@@ -123,10 +123,12 @@ export default function SignInForm() {
         className="w-full max-w-md p-2"
       >
         <Card className="border-0 shadow-lg ">
+          <div className="flex justify-end p-2">
+            <LanguageSwitcher />
+          </div>
           <CardHeader className="space-y-1">
-            <motion.div variants={itemVariants} className="flex justify-between items-center">
+            <motion.div variants={itemVariants}>
               <CardTitle className="text-2xl font-bold text-center flex-1">{t('title')}</CardTitle>
-              <LanguageSwitcher />
             </motion.div>
             <motion.div variants={itemVariants}>
               <p className="text-sm text-center text-muted-foreground">{t('subtitle')}</p>
@@ -213,15 +215,8 @@ export default function SignInForm() {
             <Separator className="bg-muted w-1/2 mx-auto my-2" />
             <motion.div
               variants={itemVariants}
-              className="flex items-center justify-between w-full text-right text-xs"
+              className="flex items-center justify-end w-full text-right text-xs"
             >
-              <Link
-                href={`/${locale}/staff/sign-in`}
-                className="inline-flex items-center text-xs text-link-foreground"
-              >
-                スタッフの方はこちら
-                <ArrowRight className="ml-1 h-3 w-3" />
-              </Link>
               <Link
                 href={`/${locale}/sign-up`}
                 className="inline-flex items-center text-xs text-blue-500"
