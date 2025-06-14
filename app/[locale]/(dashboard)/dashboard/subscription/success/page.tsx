@@ -6,8 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
+import { useTranslations } from 'next-intl';
 
 export default function SuccessSubscriptionPage() {
+  const t = useTranslations('subscription')
 
   // フェードインアニメーションの設定
   const containerVariants = {
@@ -52,7 +54,7 @@ export default function SuccessSubscriptionPage() {
 
               <motion.div variants={itemVariants}>
                 <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                  サブスクリプションの購入が完了しました
+                  {t('success.title')}
                 </h2>
               </motion.div>
 
@@ -62,9 +64,9 @@ export default function SuccessSubscriptionPage() {
                 variants={itemVariants}
                 className="text-base font-medium text-pretty text-gray-600 dark:text-gray-300"
               >
-                おめでとうございます！サブスクリプションが正常に処理されました。
+                {t('success.congratulations')}
                 <br />
-                これですべての機能をご利用いただけます。
+                {t('success.allFeaturesAvailable')}
               </motion.p>
 
               <motion.div
@@ -78,7 +80,7 @@ export default function SuccessSubscriptionPage() {
                   <Link href={`/dashboard`}>
                     <span className="flex items-center">
                       <Home className="w-4 h-4 mr-2" />
-                      ダッシュボードに戻る
+                      {t('success.backToDashboard')}
                     </span>
                   </Link>
                 </Button>
@@ -89,14 +91,14 @@ export default function SuccessSubscriptionPage() {
                 className="mt-8 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg"
               >
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  契約の更新やお支払い情報の変更は
+                  {t('success.billingInfo')}
                   <Link
                     className="text-blue-500 hover:text-blue-600 underline mx-1 font-medium"
                     href={`/dashboard/subscription`}
                   >
-                    サブスクリプションページ
+                    {t('success.subscriptionPageLink')}
                   </Link>
-                  から行えます。
+                  {t('success.canBeDone')}
                 </p>
               </motion.div>
             </motion.div>

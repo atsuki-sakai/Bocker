@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils'
 import { BillingPeriod } from '@/convex/types'
 import { Separator } from '@/components/ui/separator'
 import { useMemo, useCallback, memo } from 'react'
+import { useTranslations } from 'next-intl'
 interface PlanCardProps {
   title: string
   description: string
@@ -55,6 +56,7 @@ const PlanCard = memo(function PlanCard({
   isPopular = false,
   highlightColor,
 }: PlanCardProps) {
+  const t = useTranslations('subscription')
   // 現在のプランかどうかのチェックをメモ化
   const isCurrentPlan = useMemo(() => {
     return currentPlanName === planName && currentBillingPeriod === billingPeriod
@@ -94,14 +96,12 @@ const PlanCard = memo(function PlanCard({
   }, [isPopular])
 
   return (
-    <div
-      className={cn('relative', isPopular ? 'md:-mt-4 md:mb-4' : '')}
-    >
+    <div className={cn('relative', isPopular ? 'md:-mt-4 md:mb-4' : '')}>
       {isPopular && (
         <div className="absolute -top-4 left-0 right-0 z-10 flex justify-center">
           <Badge className="bg-warning border-warning-foreground text-warning-foreground px-4 py-2 rounded-full text-sm font-semibold shadow-md">
             <Star className="w-4 h-4 mr-1" />
-            人気プラン
+            {t('mostPopular')}
           </Badge>
         </div>
       )}
@@ -118,7 +118,7 @@ const PlanCard = memo(function PlanCard({
             </CardTitle>
             {isCurrentPlan && isActive && (
               <Badge variant="default" className="bg-active text-white px-3 py-1">
-                現在のプラン
+                {t('currentPlan')}
               </Badge>
             )}
           </div>
@@ -130,17 +130,17 @@ const PlanCard = memo(function PlanCard({
             <div className="flex items-baseline">
               <span className="text-3xl font-bold">¥{price.toLocaleString()}</span>
               <span className="text-sm text-muted-foreground ml-1">
-                /{billingPeriod === 'month' ? '月' : '年'}
+                {billingPeriod === 'month' ? t('perMonth') : t('perYear')}
               </span>
             </div>
             {billingPeriod === 'year' && savingPercent && (
               <div className="text-xs text-active font-medium mt-1">
-                年間契約で{savingPercent}%お得
+                {t('yearlyBenefit', { percent: savingPercent })}
               </div>
             )}
             {billingPeriod === 'year' && (
               <div className="text-xs text-muted-foreground mt-1">
-                (月あたり {monthlyEquivalent}円)
+                {t('monthlyEquivalent', { amount: Number(monthlyEquivalent) ?? 0 })}
               </div>
             )}
           </div>
@@ -149,10 +149,7 @@ const PlanCard = memo(function PlanCard({
 
           <ul className="space-y-3 my-6">
             {features.map((feature, index) => (
-              <li
-                key={index}
-                className="flex items-start gap-2 text-sm"
-              >
+              <li key={index} className="flex items-start gap-2 text-sm">
                 <span className="mt-0.5 text-active flex-shrink-0">
                   <Check className="h-4 w-4" />
                 </span>
@@ -177,7 +174,7 @@ const PlanCard = memo(function PlanCard({
         </CardContent>
 
         <CardFooter className="pt-2 pb-4 px-6 text-xs text-muted-foreground text-center">
-          <p>※{PLAN_TRIAL_DAYS}日間の無料トライアル付き</p>
+          <p>{t('trialInfo.daysFreeTrial', { days: PLAN_TRIAL_DAYS })}</p>
         </CardFooter>
       </Card>
     </div>
@@ -213,6 +210,7 @@ function PlanActionButton({
   isSubmitting,
   highlightColor,
 }: PlanActionButtonProps) {
+  const t = useTranslations('subscription')
   // サブスクリプションアクションハンドラをメモ化
   const handleSubscribe = useCallback(() => {
     onSubscribeAction()
@@ -228,15 +226,17 @@ function PlanActionButton({
     if (isBillingPeriodChange) {
       return (
         <span className="flex items-center gap-1">
-          {billingPeriod === 'year' ? '年払いに変更' : '月払いに変更'}
+          {billingPeriod === 'year'
+            ? t('changeBillingCycle.toYearly')
+            : t('changeBillingCycle.toMonthly')}
         </span>
       )
     } else if (currentPlanName === planName) {
-      return <span className="flex items-center gap-1">現在のプラン</span>
+      return <span className="flex items-center gap-1">{t('planAction.currentPlan')}</span>
     } else {
-      return <span className="flex items-center gap-1">プランを変更</span>
+      return <span className="flex items-center gap-1">{t('planAction.changePlan')}</span>
     }
-  }, [isBillingPeriodChange, billingPeriod, currentPlanName, planName])
+  }, [isBillingPeriodChange, billingPeriod, currentPlanName, planName, t])
 
   // ボタンが無効かどうかをメモ化
   const isButtonDisabled = useMemo(() => {
@@ -247,7 +247,7 @@ function PlanActionButton({
     return (
       <Button disabled className="w-full">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        処理中...
+        {t('processing')}
       </Button>
     )
 
@@ -258,7 +258,7 @@ function PlanActionButton({
           onClick={handlePortal}
           className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
         >
-          プランを管理する
+          {t('planAction.managePlan')}
         </Button>
       )
     } else if (isBillingPeriodChange) {
@@ -288,7 +288,7 @@ function PlanActionButton({
       onClick={handleSubscribe}
       className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
     >
-      今すぐ始める
+      {t('planAction.startNow')}
       <ArrowRight className="ml-1.5 h-4 w-4" />
     </Button>
   )

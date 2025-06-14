@@ -17,6 +17,7 @@ import { Id } from '@/convex/_generated/dataModel'
 import { PLAN_TRIAL_DAYS } from '@/lib/constants'
 import { BASE_URL } from '@/lib/constants'
 import { SubscriptionPlanName } from '@/convex/types'
+import { useTranslations } from 'next-intl'
 
 interface SubscriptionFormProps {
   tenantId: Id<'tenant'>
@@ -31,6 +32,7 @@ export default function SubscriptionForm({
   tenantPreloaded,
   subscriptionPreloaded,
 }: SubscriptionFormProps) {
+  const t = useTranslations('subscription')
   const tenant = usePreloadedQuery(tenantPreloaded)
   const subscription = usePreloadedQuery(subscriptionPreloaded)
 
@@ -63,7 +65,6 @@ export default function SubscriptionForm({
     setBillingPeriod(period)
   }, [])
 
-
   // プレビュー取得関数をメモ化
   const handleGetPreview = useCallback(
     async (
@@ -78,13 +79,12 @@ export default function SubscriptionForm({
         const subscriptionId = overrideSubscriptionId || subscription?.stripe_subscription_id
         const customerId = tenant?.stripe_customer_id
 
-
         if (!subscriptionId || subscriptionId === '') {
-          throw new Error('サブスクリプションIDが見つかりません')
+          throw new Error(t('errors.subscriptionIdNotFound'))
         }
 
         if (!customerId || customerId === '') {
-          throw new Error('Stripe顧客IDが見つかりません')
+          throw new Error(t('errors.customerIdNotFound'))
         }
 
         // previewデータを取得し状態を更新
@@ -105,8 +105,8 @@ export default function SubscriptionForm({
       } catch (err) {
         const errorMessage =
           err instanceof Error
-            ? `プレビュー取得エラー: ${err.message}`
-            : 'プレビューの取得中に予期せぬエラーが発生しました'
+            ? t('errors.previewFetch', { message: err.message })
+            : t('errors.previewUnexpected')
         setError(errorMessage)
         toast.error(errorMessage)
       } finally {
@@ -119,6 +119,7 @@ export default function SubscriptionForm({
       tenant?.stripe_customer_id,
       tenant?._id,
       orgId,
+      t,
     ]
   )
 
@@ -136,9 +137,8 @@ export default function SubscriptionForm({
           proration_date: previewData?.prorationDate || 0,
         })
 
-
         if (result.success) {
-          toast.success('サブスクリプションを更新しました')
+          toast.success(t('success.planUpdated'))
 
           // ダイアログを閉じる
           setShowConfirmDialog(false)
@@ -147,28 +147,27 @@ export default function SubscriptionForm({
           setPreviewData(null)
           setUpdatePlanId(null)
         } else {
-          const errorMessage = 'サブスクリプションの更新に失敗しました'
+          const errorMessage = t('errors.updateFailed')
           setError(errorMessage)
           toast.error(errorMessage)
         }
       } catch (err) {
         const errorMessage =
           err instanceof Error
-            ? `更新エラー: ${err.message}`
-            : 'サブスクリプションの更新中に予期せぬエラーが発生しました'
+            ? t('errors.updateError', { message: err.message })
+            : t('errors.updateUnexpected')
         setError(errorMessage)
         toast.error(errorMessage)
       } finally {
         setIsSubmitting(false)
       }
     },
-    [confirmSubscriptionUpdate, previewData, tenantId, orgId]
+    [confirmSubscriptionUpdate, previewData, tenantId, orgId, t]
   )
 
   // サブスクリプション作成関数をメモ化
   const handleSubscribe = useCallback(
     async (planName: SubscriptionPlanName, billingPeriod: BillingPeriod) => {
-
       // subscriptionオブジェクトからサブスクリプションIDを取得
       const subscriptionId = subscription?.stripe_subscription_id
 
@@ -186,7 +185,6 @@ export default function SubscriptionForm({
           const priceId = getPriceNameFromPlanName(planName, billingPeriod)
           const isTrial = !subscription
 
-
           const result = await createSession({
             tenant_id: tenantId,
             org_id: orgId,
@@ -199,15 +197,15 @@ export default function SubscriptionForm({
           if (result?.checkoutUrl) {
             window.location.href = result.checkoutUrl
           } else {
-            const errorMessage = 'チェックアウトURLの取得に失敗しました'
+            const errorMessage = t('errors.checkoutUrlFailed')
             setError(errorMessage)
             toast.error(errorMessage)
           }
         } catch (err: unknown) {
           const errorMessage =
             err instanceof Error
-              ? `サブスクリプションエラー: ${err.message}`
-              : 'サブスクリプションの処理中に予期せぬエラーが発生しました'
+              ? t('errors.subscriptionError', { message: err.message })
+              : t('errors.subscriptionUnexpected')
           setError(errorMessage)
           toast.error(errorMessage)
         } finally {
@@ -215,7 +213,7 @@ export default function SubscriptionForm({
         }
       }
     },
-    [tenant, subscription, createSession, handleGetPreview, tenantId, orgId]
+    [tenant, subscription, createSession, handleGetPreview, tenantId, orgId, t]
   )
 
   // 請求ポータル表示関数をメモ化
@@ -233,21 +231,21 @@ export default function SubscriptionForm({
       if (result?.portalUrl) {
         window.location.href = result.portalUrl
       } else {
-        const errorMessage = '請求ポータルの取得に失敗しました'
+        const errorMessage = t('errors.portalUrlFailed')
         setError(errorMessage)
         toast.error(errorMessage)
       }
     } catch (err) {
       const errorMessage =
         err instanceof Error
-          ? `請求ポータルエラー: ${err.message}`
-          : '請求ポータルへのアクセス中に予期せぬエラーが発生しました'
+          ? t('errors.portalError', { message: err.message })
+          : t('errors.portalUnexpected')
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
-  }, [createBillingPortal, tenant?.stripe_customer_id, tenantId, orgId])
+  }, [createBillingPortal, tenant?.stripe_customer_id, tenantId, orgId, t])
 
   // 各プラン用のサブスクリプションハンドラをメモ化
   const handleLiteSubscribe = useCallback(() => {
@@ -263,7 +261,7 @@ export default function SubscriptionForm({
       {/* ヘッダー部分 */}
       <div className="mb-4 text-center mt-6">
         <p className="text-muted-foreground font-bold max-w-md mx-auto text-sm mb-6">
-          あなたのサロンに最適なプランをお選びください
+          {t('subtitle')}
         </p>
 
         {/* 支払い期間切り替え */}
@@ -302,8 +300,8 @@ export default function SubscriptionForm({
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Lite プラン */}
         <PlanCard
-          title="LITE"
-          description="スモールサロン向けの基本プラン"
+          title={t('litePlan')}
+          description={t('litePlanDescription')}
           price={
             billingPeriod === 'month'
               ? (SUBSCRIPTION_PLANS.LITE.monthly.price ?? 0)
@@ -328,8 +326,8 @@ export default function SubscriptionForm({
 
         {/* Pro プラン */}
         <PlanCard
-          title="PRO"
-          description="中規模サロン向けの標準プラン"
+          title={t('proPlan')}
+          description={t('proPlanDescription')}
           price={
             billingPeriod === 'month'
               ? (SUBSCRIPTION_PLANS.PRO.monthly.price ?? 0)
@@ -367,9 +365,9 @@ export default function SubscriptionForm({
       {/* フッター部分 */}
       <div className="mt-12 text-center text-sm text-muted-foreground max-w-md">
         <p>
-          すべてのプランには{PLAN_TRIAL_DAYS}日間の無料トライアル期間が含まれています。
+          {t('trialInfo.allPlansIncludeTrial', { days: PLAN_TRIAL_DAYS })}
           <br />
-          いつでもキャンセルまたはプラン変更が可能です。
+          {t('trialInfo.cancelAnytime')}
         </p>
       </div>
     </div>

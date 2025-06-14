@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { BillingPeriod } from '@/convex/types'
 import { useMemo, useCallback } from 'react'
 import { SUBSCRIPTION_PLANS } from '@/lib/constants'
+import { useTranslations } from 'next-intl'
 interface BillingPeriodToggleProps {
   billingPeriod: BillingPeriod
   setBillingPeriodAction: (period: BillingPeriod) => void
@@ -16,6 +17,7 @@ export default function BillingPeriodToggle({
   billingPeriod,
   setBillingPeriodAction,
 }: BillingPeriodToggleProps) {
+  const t = useTranslations('subscription')
   const monthlyClickHandler = useCallback(
     () => setBillingPeriodAction('month'),
     [setBillingPeriodAction]
@@ -51,12 +53,12 @@ export default function BillingPeriodToggle({
   return (
     <div className="inline-flex items-center bg-secondary p-1 rounded-full shadow-sm mb-4">
       <button onClick={monthlyClickHandler} className={monthlyButtonClasses}>
-        月払い
+        {t('monthlyPayment')}
       </button>
       <button onClick={yearlyClickHandler} className={yearlyButtonClasses}>
-        年払い{' '}
+        {t('yearlyPayment')}{' '}
         <span className="text-xs text-active font-bold">
-          {SUBSCRIPTION_PLANS.PRO.yearly.savingPercent}%お得
+          {t('yearlyDiscount', { percent: SUBSCRIPTION_PLANS.PRO.yearly.savingPercent })}
         </span>
       </button>
     </div>

@@ -11,8 +11,10 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
+import { useTranslations } from 'next-intl';
 
 export default function CancelSubscriptionPage() {
+  const t = useTranslations('subscription')
 
   // アニメーション設定
   const containerVariants = {
@@ -51,7 +53,7 @@ export default function CancelSubscriptionPage() {
 
               <motion.div variants={itemVariants}>
                 <h2 className="text-2xl font-bold tracking-tight text-primary">
-                  サブスクリプションの購入に失敗しました
+                  {t('cancel.title')}
                 </h2>
               </motion.div>
 
@@ -65,9 +67,9 @@ export default function CancelSubscriptionPage() {
                         <CreditCard className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-primary">再度サブスクリプションを購入する</p>
+                        <p className="font-medium text-primary">{t('cancel.retryPurchase')}</p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          以下のリンクから再度サブスクリプションを購入できます。
+                          {t('cancel.retryDescription')}
                         </p>
                         <Button
                           asChild
@@ -76,7 +78,7 @@ export default function CancelSubscriptionPage() {
                         >
                           <Link href={`/dashboard/subscription`}>
                             <span className="flex items-center">
-                              サブスクリプションページへ
+                              {t('cancel.goToSubscription')}
                               <ArrowRight className="w-4 h-4 ml-1" />
                             </span>
                           </Link>
@@ -91,9 +93,9 @@ export default function CancelSubscriptionPage() {
                         <HelpCircle className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-primary">サポートに問い合わせる</p>
+                        <p className="font-medium text-primary">{t('cancel.contactSupport')}</p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          何かご不明な点がありましたら、お気軽にお問い合わせください。
+                          {t('cancel.supportDescription')}
                         </p>
                         <Button
                           asChild
@@ -115,7 +117,7 @@ export default function CancelSubscriptionPage() {
 
           <CardFooter className="flex justify-center pb-8">
             <Button asChild variant="default" className="mt-4 bg-blue-600 hover:bg-blue-700">
-              <Link href={`/dashboard`}>ダッシュボードに戻る</Link>
+              <Link href={`/dashboard`}>{t('cancel.backToDashboard')}</Link>
             </Button>
           </CardFooter>
         </Card>
