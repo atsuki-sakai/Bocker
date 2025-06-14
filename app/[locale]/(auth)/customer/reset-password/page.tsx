@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { z } from 'zod'
 import { useZodForm } from '@/hooks/useZodForm'
@@ -10,15 +10,24 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Loader2, Mail } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 
 // メールアドレス入力バリデーション
-const requestResetSchema = z.object({
-  email: z.string().email({ message: '有効なメールアドレスを入力してください' }).max(255),
-})
+const createRequestResetSchema = (t: (key: string) => string) =>
+  z.object({
+    email: z
+      .string()
+      .email({ message: t('validation.emailInvalid') })
+      .max(255),
+  })
 
 function RequestResetContent() {
+  const t = useTranslations('auth.resetPassword')
   const searchParams = useSearchParams()
   const router = useRouter()
+
+  // email クエリ (省略可)
+  const emailFromQuery = searchParams.get('e') || ''
 
   // sessionStorage から ID を取得（URL からは排除）
   const [ids, setIds] = useState<{ tenantId: string | null; orgId: string | null }>({
@@ -26,8 +35,7 @@ function RequestResetContent() {
     orgId: null,
   })
 
-  // email クエリ (省略可)
-  const emailFromQuery = searchParams.get('e') || ''
+  const requestResetSchema = useMemo(() => createRequestResetSchema(t), [t])
 
   // フォームフックは常に呼び出して Hooks の順序を安定させる
   const {
@@ -53,7 +61,7 @@ function RequestResetContent() {
   if (!ids.tenantId || !ids.orgId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-sm text-red-500">無効なリセットページです。</p>
+        <p className="text-sm text-destructive">{t('messages.invalidResetPage')}</p>
       </div>
     )
   }
@@ -73,55 +81,53 @@ function RequestResetContent() {
       const result = await res.json()
 
       if (res.ok) {
-        toast.success(result.message || 'パスワードリセットメールを送信しました')
+        toast.success(result.message || t('messages.emailSent'))
         // 送信完了後は予約ログイン画面へ戻す
         router.back()
       } else {
-        toast.error(result.error || 'メール送信に失敗しました')
+        toast.error(result.error || t('messages.emailSendFailed'))
       }
     } catch (error) {
       console.error('reset-password request error', error)
-      toast.error('内部エラーが発生しました')
+      toast.error(t('messages.internalError'))
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">パスワードリセット申請</CardTitle>
+          <CardTitle className="text-center text-2xl">{t('title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">メールアドレス</Label>
+              <Label htmlFor="email">{t('email')}</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
                   {...register('email')}
                   className="pl-10"
-                  placeholder="example@example.com"
+                  placeholder={t('emailPlaceholder')}
                 />
               </div>
-              {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
+              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" /> 送信中...
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t('sending')}
                 </span>
               ) : (
-                'リセットメールを送信'
+                t('submit')
               )}
             </Button>
           </form>
         </CardContent>
         <CardFooter>
-          <p className="text-xs text-muted-foreground text-center w-full">
-            入力したメールアドレス宛にリセット用リンクを送信します。
-          </p>
+          <p className="text-xs text-muted-foreground text-center w-full">{t('description')}</p>
         </CardFooter>
       </Card>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from 'react'
 import { useSignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,18 +39,28 @@ import {
   FieldErrors,
   UseFormHandleSubmit,
 } from "react-hook-form";
+import { useTranslations } from 'next-intl'
 
 
 
-const resetPasswordSchema = z.object({
-    email: z.string().email({ message: "有効なメールアドレスを入力してください" }),
-    newPassword: z.string().min(1, { message: "新しいパスワードを入力してください" }).optional(),
-    confirmPassword: z.string().min(1, { message: "確認用パスワードを入力してください" }).optional(),
-    code: z.string().optional(),
-  }).refine((data) => data.newPassword === data.confirmPassword, {
-    message: "パスワードと確認用パスワードが一致しません",
-    path: ["confirmPassword"],
-  });
+const createResetPasswordSchema = (t: (key: string) => string) =>
+  z
+    .object({
+      email: z.string().email({ message: t('validation.emailInvalid') }),
+      newPassword: z
+        .string()
+        .min(1, { message: t('validation.newPasswordRequired') })
+        .optional(),
+      confirmPassword: z
+        .string()
+        .min(1, { message: t('validation.confirmPasswordRequired') })
+        .optional(),
+      code: z.string().optional(),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: t('validation.passwordMismatch'),
+      path: ['confirmPassword'],
+    })
 
 // アニメーションバリアント
 const containerVariants = {
@@ -90,12 +100,14 @@ function ResetCodeForm({
   handleSubmit,
   onSubmit,
   isSubmitting,
+  t,
 }: {
-  register: UseFormRegister<z.infer<typeof resetPasswordSchema>>;
-  errors: FieldErrors<z.infer<typeof resetPasswordSchema>>;
-  handleSubmit: UseFormHandleSubmit<z.infer<typeof resetPasswordSchema>>;
-  onSubmit: (data: z.infer<typeof resetPasswordSchema>) => void;
-  isSubmitting: boolean;
+  register: UseFormRegister<z.infer<ReturnType<typeof createResetPasswordSchema>>>
+  errors: FieldErrors<z.infer<ReturnType<typeof createResetPasswordSchema>>>
+  handleSubmit: UseFormHandleSubmit<z.infer<ReturnType<typeof createResetPasswordSchema>>>
+  onSubmit: (data: z.infer<ReturnType<typeof createResetPasswordSchema>>) => void
+  isSubmitting: boolean
+  t: (key: string) => string
 }) {
   return (
     <motion.form
@@ -108,15 +120,15 @@ function ResetCodeForm({
     >
       <motion.div variants={itemVariants} className="space-y-2">
         <Label htmlFor="email" className="text-xs font-medium">
-          アカウントのメールアドレス
+          {t('accountEmail')}
         </Label>
         <div className="relative">
           <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
             id="email"
             type="email"
-            {...register("email")}
-            placeholder="メールアドレスを入力"
+            {...register('email')}
+            placeholder={t('emailPlaceholder')}
             className="pl-10"
             autoFocus
           />
@@ -134,18 +146,18 @@ function ResetCodeForm({
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              送信中...
+              {t('sending')}
             </>
           ) : (
             <>
               <Send className="mr-2 h-4 w-4" />
-              確認コードを送信
+              {t('sendCode')}
             </>
           )}
         </Button>
       </motion.div>
     </motion.form>
-  );
+  )
 }
 
 // フォーム共通のエラーメッセージ表示を含むパスワードリセット用コンポーネント
@@ -155,31 +167,26 @@ function ResetPasswordForm({
   handleSubmit,
   onSubmit,
   isSubmitting,
+  t,
 }: {
-  register: UseFormRegister<z.infer<typeof resetPasswordSchema>>;
-  errors: FieldErrors<z.infer<typeof resetPasswordSchema>>;
-  handleSubmit: UseFormHandleSubmit<z.infer<typeof resetPasswordSchema>>;
-  onSubmit: (data: z.infer<typeof resetPasswordSchema>) => void;
-  isSubmitting: boolean;
+  register: UseFormRegister<z.infer<ReturnType<typeof createResetPasswordSchema>>>
+  errors: FieldErrors<z.infer<ReturnType<typeof createResetPasswordSchema>>>
+  handleSubmit: UseFormHandleSubmit<z.infer<ReturnType<typeof createResetPasswordSchema>>>
+  onSubmit: (data: z.infer<ReturnType<typeof createResetPasswordSchema>>) => void
+  isSubmitting: boolean
+  t: (key: string) => string
 }) {
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-    >
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" exit="exit">
       <motion.div
         variants={itemVariants}
         className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100 flex items-center gap-3"
       >
         <Mail className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-        <p className="text-xs text-blue-600">
-          メールアドレスに届いた確認コードを入力してください。
-        </p>
+        <p className="text-xs text-blue-600">{t('codeInstruction')}</p>
       </motion.div>
 
       <motion.form
@@ -189,13 +196,13 @@ function ResetPasswordForm({
       >
         <motion.div variants={itemVariants} className="space-y-2">
           <Label htmlFor="code" className="text-xs font-medium">
-            確認コード
+            {t('verificationCode')}
           </Label>
           <div className="relative">
             <KeyRound className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               id="code"
-              {...register("code")}
+              {...register('code')}
               className="pl-10 text-center font-mono tracking-wider"
               placeholder="000000"
               maxLength={6}
@@ -212,27 +219,23 @@ function ResetPasswordForm({
 
         <motion.div variants={itemVariants} className="space-y-2">
           <Label htmlFor="newPassword" className="text-xs font-medium">
-            新しいパスワード
+            {t('newPassword')}
           </Label>
           <div className="relative">
             <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               id="newPassword"
-              type={showNewPassword ? "text" : "password"}
-              {...register("newPassword")}
+              type={showNewPassword ? 'text' : 'password'}
+              {...register('newPassword')}
               className="pl-10 pr-10"
-              placeholder="新しいパスワードを入力"
+              placeholder={t('newPasswordPlaceholder')}
             />
             <button
               type="button"
               onClick={() => setShowNewPassword(!showNewPassword)}
               className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
             >
-              {showNewPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
+              {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           {errors.newPassword && (
@@ -245,27 +248,23 @@ function ResetPasswordForm({
 
         <motion.div variants={itemVariants} className="space-y-2">
           <Label htmlFor="confirmPassword" className="text-xs font-medium">
-            確認用パスワード
+            {t('confirmPassword')}
           </Label>
           <div className="relative">
             <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               id="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              {...register("confirmPassword")}
+              type={showConfirmPassword ? 'text' : 'password'}
+              {...register('confirmPassword')}
               className="pl-10 pr-10"
-              placeholder="同じパスワードを再入力"
+              placeholder={t('confirmPasswordPlaceholder')}
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
             >
-              {showConfirmPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           {errors.confirmPassword && (
@@ -281,28 +280,31 @@ function ResetPasswordForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                処理中...
+                {t('processing')}
               </>
             ) : (
               <>
                 <RefreshCw className="mr-2 h-4 w-4" />
-                パスワードをリセット
+                {t('resetPassword')}
               </>
             )}
           </Button>
         </motion.div>
       </motion.form>
     </motion.div>
-  );
+  )
 }
 
 // クライアントコンポーネントでuseSearchParamsを使用するコンポーネント
 function ResetPasswordContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const email = searchParams.get("email");
-  const { signIn, setActive, isLoaded: signInLoaded } = useSignIn();
-  const [emailSent, setEmailSent] = useState(false);
+  const t = useTranslations('auth.resetPassword')
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const email = searchParams.get('email')
+  const { signIn, setActive, isLoaded: signInLoaded } = useSignIn()
+  const [emailSent, setEmailSent] = useState(false)
+
+  const resetPasswordSchema = useMemo(() => createResetPasswordSchema(t), [t])
 
   const {
     register,
@@ -334,10 +336,10 @@ function ResetPasswordContent() {
         emailAddressId,
       });
       setEmailSent(true);
-      toast.success("確認コードを送信しました。メールをご確認ください。");
+      toast.success(t('messages.codeSent'))
     } catch (err) {
       console.error(err);
-      toast.error("確認コードの送信に失敗しました。");
+      toast.error(t('messages.codeSendFailed'))
     }
   };
 
@@ -357,12 +359,12 @@ function ResetPasswordContent() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        toast.success("パスワードが正常にリセットされました");
+        toast.success(t('messages.resetSuccess'))
         router.push("/sign-in");
       }
     } catch (err) {
       console.error(err);
-      toast.error("パスワードのリセットに失敗しました");
+      toast.error(t('messages.resetFailed'))
     }
   };
 
@@ -377,13 +379,9 @@ function ResetPasswordContent() {
       <div className="w-full max-w-md p-2">
         <Card className="border-0 shadow-lg shadow-blue-100/20 dark:shadow-gray-900/40 backdrop-blur-sm bg-white/90 dark:bg-gray-900/80">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">
-              パスワードリセット
-            </CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">{t('title')}</CardTitle>
             <CardDescription className="text-center text-gray-500 dark:text-gray-400">
-              {!emailSent
-                ? "メールアドレスを入力して確認コードを受け取ってください"
-                : "新しいパスワードを設定してください"}
+              {!emailSent ? t('subtitle') : t('newPasswordSubtitle')}
             </CardDescription>
           </CardHeader>
 
@@ -397,6 +395,7 @@ function ResetPasswordContent() {
                   handleSubmit={handleSubmit}
                   onSubmit={handleSendResetCode}
                   isSubmitting={isSubmitting}
+                  t={t}
                 />
               ) : (
                 <ResetPasswordForm
@@ -406,24 +405,22 @@ function ResetPasswordContent() {
                   handleSubmit={handleSubmit}
                   onSubmit={handleResetPassword}
                   isSubmitting={isSubmitting}
+                  t={t}
                 />
               )}
             </AnimatePresence>
           </CardContent>
           <Separator className="my-2 w-1/2 mx-auto" />
           <CardFooter className="flex justify-center pt-2">
-            <Link
-              href="/sign-in"
-              className="text-xs text-blue-500 flex items-center gap-1"
-            >
-              ログインページに戻る
+            <Link href="/sign-in" className="text-xs text-blue-500 flex items-center gap-1">
+              {t('backToSignIn')}
               <ArrowRight className="h-3 w-3 ml-2" />
             </Link>
           </CardFooter>
         </Card>
       </div>
     </div>
-  );
+  )
 }
 
 // メインページコンポーネント
