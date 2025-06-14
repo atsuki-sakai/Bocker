@@ -70,13 +70,13 @@ useEffect(() => {
 - [x] dashboard/reservation/ReservationForm
 - [x] dashboard/staff-schedule
 - [x] dashboard/subscription/*以下全てのページ
-- [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+- [x] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
 
 
 ### 2-2. Componentsの多言語化
-- [ ] components/common/*以下のファイル全て
-- [ ] components/emails/*以下のファイル全て
-- [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+- [x] components/common/*以下のファイル全て
+- [x] components/emails/*以下のファイル全て
+- [x] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
 
 
 
@@ -88,11 +88,11 @@ useEffect(() => {
 
 
 ### 2-4. (auth)フォルダ以下のページの多言語化
-- [ ] customer/reset-password/confirm/page.tsx
-- [ ] sign-in/*配下の全てのページ
-- [ ] sign-up/*は以下の全てのページ
-- [ ] staff/invite-accept/page.tsx
-- [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+- [x] customer/reset-password/confirm/page.tsx
+- [x] sign-in/*配下の全てのページ
+- [x] sign-up/*は以下の全てのページ
+- [x] staff/invite-accept/page.tsx
+- [x] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
 
 
 ### 2-5. (home)フォルダ以下のページの多言語化
@@ -105,6 +105,18 @@ useEffect(() => {
 - [ ] [id]/*配下の全てのページ
 - [ ] page.tsx, layout.tsx
 - [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+
+### 2-7. (dashboard)/dashboard/setting配下のページの多言語化（完了）
+- [x] setting/page.tsx - メイン設定ページのタブ翻訳
+- [x] setting/change-password/page.tsx - パスワード変更フォーム
+- [x] setting/change-email/page.tsx - メールアドレス変更フォーム
+- [x] setting/email-preferences/page.tsx - メール設定画面
+- [ ] setting/_components/OrgConfigForm.tsx - 基本組織設定フォーム
+- [ ] setting/_components/OrgApiConfigForm.tsx - API設定フォーム
+- [ ] setting/_components/OrgReservationConfigForm.tsx - 予約設定フォーム
+- [ ] setting/_components/OrgWeekHourSchedule.tsx - 営業時間設定
+- [ ] setting/_components/OrgExceptionScheduleForm.tsx - 特別営業日設定
+- [ ] setting/_components/OrgStripeConnectStatus.tsx - Stripe決済設定
 
 
 
