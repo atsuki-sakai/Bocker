@@ -18,82 +18,119 @@
       "staffSignIn": "スタッフの方はこちら"
     },
     "signUp": {
-      "title": "サインアップページ",
-      "ownerAccountTitle": "オーナーアカウント作成",
+      "title": "オーナーアカウント作成",
       "subtitle": "アカウントを作成して始めましょう",
-      "organizationName": "組織名",
-      "storeName": "店舗名",
+      "organizationName": "店舗名",
       "firstName": "名前",
       "lastName": "姓",
       "email": "メールアドレス",
       "password": "パスワード",
-      "confirmPassword": "パスワード確認",
-      "submit": "アカウント作成",
+      "confirmPassword": "確認用パスワード",
+      "submit": "登録する",
       "signIn": "ログイン",
-      "loading": "アカウント作成中...",
-      "processing": "処理中...",
-      "register": "登録する",
-      "organizationNamePlaceholder": "組織名を入力",
-      "storeNamePlaceholder": "店舗名を入力",
+      "loading": "処理中...",
+      "organizationNamePlaceholder": "店舗名を入力",
       "firstNamePlaceholder": "名前を入力",
       "lastNamePlaceholder": "姓を入力",
       "emailPlaceholder": "メールアドレスを入力",
       "passwordPlaceholder": "パスワードを入力",
-      "confirmPasswordPlaceholder": "パスワードを再入力",
-      "passwordStrength": "パスワード強度:",
-      "passwordWeak": "弱い",
-      "passwordFair": "普通",
-      "passwordGood": "強い",
-      "passwordStrong": "非常に強い",
-      "passwordRequirements": {
+      "confirmPasswordPlaceholder": "同じパスワードを再入力",
+      "hidePassword": "パスワードを隠す",
+      "showPassword": "パスワードを表示",
+      "passwordStrengthLabel": "パスワード強度",
+      "passwordStrength": {
+        "weak": "弱い",
+        "medium": "普通",
+        "strong": "強い",
+        "veryStrong": "非常に強い"
+      },
+      "criteria": {
         "length": "8文字以上",
         "uppercase": "大文字を含む",
         "lowercase": "小文字を含む",
         "number": "数字を含む",
-        "special": "特殊文字を含む"
+        "special": "特殊文字を含む (例: !@#$%^&*)"
       },
       "useReferralCode": "招待コードを使用する",
       "referralCode": "招待コード",
-      "referralCodePlaceholder": "招待コード（任意）",
-      "accountCreated": "アカウントが作成されました。メールを確認してください",
-      "signedOutFromSession": "既存のセッションからサインアウトしました",
-      "verification": {
-        "title": "メール認証",
-        "instruction": "登録したメールアドレスに送信された6桁の認証コードを入力してください。",
-        "codeLabel": "認証コード",
-        "codePlaceholder": "000000",
-        "verify": "認証する",
-        "processing": "認証中...",
-        "resendCode": "認証コードを再送信",
-        "resending": "送信中...",
-        "resent": "認証コードを再送信しました",
-        "resendError": "認証コードの送信に失敗しました",
-        "invalidCode": "認証コードが正しくありません",
-        "verificationError": "認証に失敗しました"
+      "referralCodePlaceholder": "招待コードを入力",
+      "verificationMessage": "登録したメールアドレスに認証コードを送信しました。メールの受信ボックスを確認して、認証コード(6桁の数字)を入力してください。",
+      "verificationCode": "認証コード",
+      "verify": "認証する",
+      "verifying": "認証中...",
+      "didntReceiveCode": "認証コードが届きませんか？",
+      "resendCode": "再送信する",
+      "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
+      "validation": {
+        "organizationNameRequired": "組織名を入力してください",
+        "organizationNameMaxLength": "組織名は40文字以下で入力してください",
+        "emailRequired": "メールアドレスを入力してください",
+        "emailInvalid": "有効なメールアドレスを入力してください",
+        "passwordMinLength": "パスワードは8文字以上で入力してください",
+        "passwordMaxLength": "パスワードは100文字以下で入力してください",
+        "passwordLowercase": "パスワードには小文字を含める必要があります",
+        "passwordUppercase": "パスワードには大文字を含める必要があります",
+        "passwordNumber": "パスワードには数字を含める必要があります",
+        "confirmPasswordRequired": "確認用パスワードを入力してください",
+        "passwordMismatch": "パスワードと確認用パスワードが一致しません"
       },
-      "alreadyHaveAccount": "すでにアカウントをお持ちの方は",
-      "signInHere": "こちら"
+      "messages": {
+        "referralCodeNotFound": "招待コードが見つかりません",
+        "referralCodeLimitReached": "招待コードの利用回数が上限に達しています。",
+        "accountCreated": "アカウントが作成されました。メールを確認してください",
+        "verificationSuccess": "認証に成功しました",
+        "verificationFailed": "認証に失敗しました",
+        "codeResent": "認証コードを再送信しました",
+        "codeResendFailed": "認証コードの再送信に失敗しました"
+      }
     },
     "resetPassword": {
       "title": "パスワードリセット",
-      "newPasswordTitle": "パスワード再設定",
-      "subtitle": "新しいパスワードを設定してください",
+      "subtitle": "メールアドレスを入力して確認コードを受け取ってください",
+      "newPasswordSubtitle": "新しいパスワードを設定してください",
       "email": "メールアドレス",
       "accountEmail": "アカウントのメールアドレス",
       "newPassword": "新しいパスワード",
-      "confirmPassword": "パスワード確認",
+      "confirmPassword": "確認用パスワード",
+      "verificationCode": "確認コード",
       "submit": "リセットメールを送信",
-      "resetPassword": "パスワードを再設定",
+      "sendCode": "確認コードを送信",
+      "resetPassword": "パスワードをリセット",
       "backToSignIn": "ログインページに戻る",
       "emailPlaceholder": "メールアドレスを入力",
-      "newPasswordPlaceholder": "8文字以上のパスワード",
-      "confirmPasswordPlaceholder": "パスワードを再入力",
-      "loading": "読み込み中...",
+      "newPasswordPlaceholder": "新しいパスワードを入力",
+      "confirmPasswordPlaceholder": "同じパスワードを再入力",
+      "codeInstruction": "メールアドレスに届いた確認コードを入力してください。",
+      "sending": "送信中...",
       "processing": "処理中...",
-      "resetting": "リセット中...",
-      "resetSuccess": "パスワードが正常にリセットされました",
-      "resetEmailSent": "パスワードリセットメールを送信しました",
-      "resetEmailInstruction": "パスワードのリセット手順をメールで送信しました。受信トレイをご確認ください。"
+      "confirmTitle": "パスワード再設定",
+      "confirmDescription": "新しいパスワードを設定してください",
+      "changePassword": "パスワードを変更",
+      "changing": "変更中...",
+      "loading": "読み込み中...",
+      "validation": {
+        "emailInvalid": "有効なメールアドレスを入力してください",
+        "newPasswordRequired": "新しいパスワードを入力してください",
+        "confirmPasswordRequired": "確認用パスワードを入力してください",
+        "passwordMismatch": "パスワードと確認用パスワードが一致しません",
+        "passwordMin": "パスワードは8文字以上で入力してください",
+        "passwordMax": "パスワードは100文字以内で入力してください"
+      },
+      "messages": {
+        "codeSent": "確認コードを送信しました。メールをご確認ください。",
+        "codeSendFailed": "確認コードの送信に失敗しました。",
+        "resetSuccess": "パスワードが正常にリセットされました",
+        "resetFailed": "パスワードのリセットに失敗しました",
+        "invalidResetPage": "無効なリセットページです。",
+        "emailSent": "パスワードリセットメールを送信しました",
+        "emailSendFailed": "メール送信に失敗しました",
+        "internalError": "内部エラーが発生しました",
+        "invalidResetLink": "無効なリセットリンクです",
+        "tokenNotFound": "トークンが見つかりません",
+        "passwordChanged": "パスワードが正常に変更されました",
+        "passwordChangeFailed": "パスワードの変更に失敗しました"
+      },
+      "description": "入力したメールアドレス宛にリセット用リンクを送信します。"
     },
     "validation": {
       "emailRequired": "メールアドレスは必須です",
@@ -398,7 +435,25 @@
     "pm": "午後",
     "oclock": "時",
     "from": "から",
-    "backToDashboard": "ダッシュボードに戻る"
+    "backToDashboard": "ダッシュボードに戻る",
+    "weekdays": {
+      "monday": "月",
+      "tuesday": "火",
+      "wednesday": "水",
+      "thursday": "木",
+      "friday": "金",
+      "saturday": "土",
+      "sunday": "日"
+    },
+    "weekdaysFull": {
+      "monday": "月曜日",
+      "tuesday": "火曜日",
+      "wednesday": "水曜日",
+      "thursday": "木曜日",
+      "friday": "金曜日",
+      "saturday": "土曜日",
+      "sunday": "日曜日"
+    }
   },
   "customers": {
     "title": "顧客管理",
@@ -1650,6 +1705,178 @@
       "updateSuccess": "オプションを更新しました",
       "deleteSuccess": "オプションを削除しました",
       "notFound": "オプションが見つかりません"
+    }
+  },
+  "settings": {
+    "title": "設定",
+    "basic": "基本設定",
+    "externalServices": "外部サービス連携",
+    "reservationSettings": "予約受付設定",
+    "businessHours": "営業日設定",
+    "holidays": "休業日設定",
+    "paymentSettings": "決済設定",
+    "orgConfig": {
+      "title": "基本設定",
+      "description": "こちらの情報は顧客に公開されます。",
+      "fields": {
+        "salonName": "サロン名",
+        "email": "メールアドレス",
+        "phone": "電話番号",
+        "postalCode": "郵便番号",
+        "address": "住所",
+        "storeImage": "店舗画像",
+        "description": "店舗説明",
+        "reservationRules": "予約ルール"
+      },
+      "placeholders": {
+        "salonName": "例: ブライダルサロン",
+        "email": "例: salon@example.com",
+        "phone": "例: 09012345678",
+        "postalCode": "例: 273-5521",
+        "address": "例: 東京都渋谷区渋谷1-2-3",
+        "storeImage": "店舗画像を選択してください",
+        "description": "サロンの特徴や魅力を記入してください",
+        "reservationRules": "予約時のルールやご注意点を入力してください"
+      },
+      "buttons": {
+        "save": "保存する",
+        "saving": "保存中...",
+        "saveImage": "画像を保存"
+      },
+      "messages": {
+        "settingsSaved": "サロン設定を保存しました",
+        "imageSaved": "画像を保存しました",
+        "imageUploadFailed": "画像のアップロードに失敗しました。画像形式（HEIC不可）やサイズをご確認ください。"
+      },
+      "validation": {
+        "salonNameMax": "サロン名は120文字以下で入力してください",
+        "emailInvalid": "有効なメールアドレスを入力してください",
+        "phoneFormat": "電話番号は8-11桁の数字で入力してください",
+        "postalCodeFormat": "郵便番号は000-0000または0000000の形式で入力してください",
+        "addressMax": "住所は200文字以下で入力してください",
+        "reservationRulesMax": "予約ルールは2000文字以下で入力してください",
+        "descriptionMax": "説明は2000文字以下で入力してください"
+      }
+    },
+    "apiConfig": {
+      "title": "外部サービス連携",
+      "description": "外部サービスとの連携に必要なAPI設定を行います。",
+      "lineIntegrationNote": "設定を行うと、LINE公式アカウントと連携した予約システムを使用できるようになります。",
+      "fields": {
+        "lineAccessToken": "LINE アクセストークン",
+        "lineChannelSecret": "LINE チャンネルシークレット",
+        "liffId": "LIFF ID",
+        "lineChannelId": "LINE チャンネルID",
+        "destinationId": "LINE Destination ID"
+      },
+      "messages": {
+        "settingsSaved": "API設定を保存しました"
+      }
+    },
+    "changeEmail": {
+      "title": "メールアドレス変更",
+      "subtitle": "新しいメールアドレスを入力してください",
+      "newEmail": "新しいメールアドレス",
+      "confirmEmail": "新しいメールアドレス（確認）",
+      "newEmailPlaceholder": "新しいメールアドレスを入力",
+      "confirmEmailPlaceholder": "新しいメールアドレスを再入力",
+      "updateButton": "メールアドレスを更新する",
+      "processing": "処理中...",
+      "updateTooltip": "メールアドレスを更新",
+      "confirmationMessage": "確認メールが新しいアドレスに送信されます。クリックして認証を完了してください。",
+      "validation": {
+        "emailRequired": "メールアドレスを入力してください",
+        "emailInvalid": "有効なメールアドレスを入力してください",
+        "confirmEmailRequired": "確認用メールアドレスを入力してください",
+        "emailMismatch": "新しいメールアドレスと確認用メールアドレスが一致しません"
+      },
+      "messages": {
+        "userLoadFailed": "ユーザー情報の読み込みに失敗しました",
+        "confirmationSent": "確認メールを送信しました",
+        "confirmationDescription": "メールを確認して認証を完了してください",
+        "managementInfo": "メールアドレス管理について",
+        "managementDescription": "新しいメールアドレスの確認後、設定画面から古いメールアドレスを削除するか、新しいアドレスをプライマリーに設定できます",
+        "addFailed": "メールアドレスの追加に失敗しました",
+        "updateFailed": "メールアドレスの更新に失敗しました",
+        "emailTaken": "このメールアドレスはすでに使用されています",
+        "tryAgain": "もう一度お試しください"
+      }
+    },
+    "changePassword": {
+      "title": "パスワード変更",
+      "subtitle": "安全なパスワードを設定して、アカウントを保護しましょう",
+      "currentPassword": "現在のパスワード",
+      "newPassword": "新しいパスワード",
+      "confirmPassword": "新しいパスワード（確認）",
+      "currentPasswordPlaceholder": "現在のパスワードを入力",
+      "newPasswordPlaceholder": "新しいパスワードを入力",
+      "confirmPasswordPlaceholder": "新しいパスワードを再入力",
+      "updateButton": "パスワードを更新する",
+      "processing": "処理中...",
+      "securityTooltip": "セキュリティを強化",
+      "passwordStrengthLabel": "パスワード強度",
+      "passwordTip": "強力なパスワードは文字、数字、記号を組み合わせたものがおすすめです",
+      "passwordStrength": {
+        "veryWeak": "非常に弱い",
+        "weak": "弱い",
+        "fair": "普通",
+        "strong": "強い",
+        "veryStrong": "非常に強い"
+      },
+      "criteria": {
+        "uppercase": "大文字",
+        "lowercase": "小文字",
+        "number": "数字",
+        "special": "記号"
+      },
+      "validation": {
+        "currentPasswordRequired": "現在のパスワードを入力してください",
+        "newPasswordMin": "新しいパスワードは6文字以上必要です",
+        "confirmPasswordMin": "確認用パスワードは6文字以上必要です",
+        "passwordMismatch": "新しいパスワードと確認用パスワードが一致しません"
+      },
+      "messages": {
+        "updateSuccess": "パスワードが更新されました",
+        "securityEnhanced": "セキュリティが強化されました",
+        "passwordCompromised": "そのパスワードは過去に漏洩しています。別のパスワードを設定してください",
+        "useOtherPassword": "安全のため、他のパスワードをお使いください",
+        "updateFailed": "パスワードの更新に失敗しました",
+        "tryAgain": "もう一度お試しください"
+      }
+    },
+    "emailPreferences": {
+      "title": "登録済みメールアドレス",
+      "description": "プライマリーに設定されたメールアドレスがログインとシステム通知に使用されます。",
+      "authError": "認証エラー",
+      "userInfoError": "ユーザー情報が読み込めません",
+      "noEmailsRegistered": "メールアドレスが登録されていません",
+      "primary": "プライマリー",
+      "verified": "認証済み",
+      "unverified": "未認証",
+      "sending": "送信中...",
+      "resendVerification": "認証メール再送信",
+      "setPrimary": "プライマリーに設定",
+      "deleteEmailDialog": {
+        "title": "メールアドレスを削除しますか？",
+        "description": "このメールアドレスでのログインができなくなります。",
+        "cancel": "キャンセル",
+        "delete": "削除"
+      },
+      "messages": {
+        "primaryEmailChanged": "プライマリーメールアドレスを変更しました",
+        "loginInfoUpdated": "ログイン情報が更新されました",
+        "emailUpdateFailed": "メールアドレスの更新に失敗しました",
+        "cannotDeletePrimary": "プライマリーメールアドレスは削除できません",
+        "setPrimaryFirst": "別のメールアドレスをプライマリーに設定してから削除してください",
+        "onlyVerifiedCanDelete": "認証済みのメールアドレスのみ削除できます",
+        "verifyFirst": "まずはメールを認証してから削除してください",
+        "emailDeleted": "メールアドレスを削除しました",
+        "deleteEmailFailed": "メールアドレスの削除に失敗しました",
+        "verificationEmailSent": "認証メールを送信しました",
+        "checkEmailAndVerify": "メールを確認して認証を完了してください",
+        "verificationEmailFailed": "認証メールの送信に失敗しました",
+        "tryAgain": "もう一度お試しください"
+      }
     }
   }
 }

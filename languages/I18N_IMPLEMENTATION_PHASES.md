@@ -68,8 +68,8 @@ useEffect(() => {
 - [x] dashboard/reservation/[reservation_id]/page
 - [x] dashboard/reservation/add
 - [x] dashboard/reservation/ReservationForm
-- [ ] dashboard/staff-schedule
-- [ ] dashboard/subscription/*以下全てのページ
+- [x] dashboard/staff-schedule
+- [x] dashboard/subscription/*以下全てのページ
 - [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
 
 
@@ -93,6 +93,13 @@ useEffect(() => {
 - [ ] sign-up/*は以下の全てのページ
 - [ ] staff/invite-accept/page.tsx
 - [ ] 言語ファイルに重複した項目がないかja.jsonとen.jsonをチェックして最適化
+
+### 2-6. (dashboard)/setting フォルダ以下のページの多言語化
+- [x] dashboard/setting/page.tsx (基本タブ構造)
+- [x] dashboard/setting/change-email/page.tsx
+- [ ] dashboard/setting/change-password/page.tsx
+- [ ] dashboard/setting/email-preferences/page.tsx
+- [ ] dashboard/setting/_components/*以下の全てのコンポーネント
 
 
 ### 2-5. (home)フォルダ以下のページの多言語化
