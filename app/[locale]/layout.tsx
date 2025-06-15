@@ -1,24 +1,11 @@
 import type { Metadata } from 'next'
-import '../globals.css'
-import { Noto_Sans_JP, Allerta_Stencil } from 'next/font/google'
+// global styles are imported in the root layout to avoid duplication
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import { routing } from '@/i18n/routing'
 import { notFound } from 'next/navigation'
 import ClientLayout from './ClientLayout'
 import type { Languages } from '@/lib/constants'
-
-const notoJP = Noto_Sans_JP({
-  weight: ['400', '500', '700'],
-  subsets: ['latin'],
-  variable: '--font-noto-sans-jp',
-})
-
-const allertaStencil = Allerta_Stencil({
-  weight: ['400'],
-  subsets: ['latin'],
-  variable: '--font-allerta-stencil',
-})
 
 export const metadata: Metadata = {
   title: 'Bocker - 予約管理システム',
@@ -50,16 +37,8 @@ export default async function LocaleLayout({ children, params }: Props) {
   const messages = await getMessages()
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <head>
-        <meta name="apple-mobile-web-app-title" content="Bocker" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </head>
-      <body className={`${notoJP.variable} ${allertaStencil.variable} antialiased`}>
-        <NextIntlClientProvider messages={messages}>
-          <ClientLayout>{children}</ClientLayout>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider messages={messages} locale={locale}>
+      <ClientLayout>{children}</ClientLayout>
+    </NextIntlClientProvider>
   )
 }

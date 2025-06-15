@@ -9,7 +9,6 @@ import { Progress } from '@/components/ui/progress'
 import { Loading } from '@/components/common'
 import { AlertTitle } from '@/components/ui/alert'
 import { BASE_URL } from '@/lib/constants'
-import { useLocale } from 'next-intl'
 import {
   CheckCircle2,
   Circle,
@@ -41,7 +40,6 @@ interface TutorialStep {
 export const Tutorial = () => {
   const { tenantId, orgId, ready } = useTenantAndOrganization()
   const t = useTranslations('common.tutorial')
-  const locale = useLocale()
 
   // 翻訳キーのみを保持するチュートリアル手順をメモ化して無限再レンダリングを防止
   const tutorialSteps: TutorialStep[] = useMemo(

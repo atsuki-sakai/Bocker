@@ -74,6 +74,19 @@ body {
     --palette-4-foreground: oklch(0.55 0.030 106.423); /* Warm Grey */
     --palette-5: oklch(0.95 0.020 290); /* Light Violet */
     --palette-5-foreground: oklch(0.50 0.080 290); /* Deep Violet */
+    
+    /* Hero section gradients */
+    --hero-gradient-1: oklch(0.65 0.150 174.95);
+    --hero-gradient-2: oklch(0.55 0.180 174.95);
+    --hero-gradient-3: oklch(0.50 0.200 174.95);
+    
+    /* Success colors */
+    --success: oklch(0.65 0.150 142.55);
+    --success-foreground: oklch(0.98 0.020 142.55);
+    
+    /* Info colors */
+    --info: oklch(0.65 0.150 231.99);
+    --info-foreground: oklch(0.98 0.020 231.99)
    
   }
   
@@ -141,6 +154,19 @@ body {
     --palette-4-foreground: oklch(0.25 0.080 320);
     --palette-5: oklch(0.75 0.180 280);
     --palette-5-foreground: oklch(0.20 0.070 280);
+    
+    /* Hero section gradients */
+    --hero-gradient-1: oklch(0.75 0.250 174.95);
+    --hero-gradient-2: oklch(0.65 0.220 174.95);
+    --hero-gradient-3: oklch(0.55 0.200 174.95);
+    
+    /* Success colors */
+    --success: oklch(0.45 0.180 142.55);
+    --success-foreground: oklch(0.15 0.040 142.55);
+    
+    /* Info colors */
+    --info: oklch(0.45 0.180 231.99);
+    --info-foreground: oklch(0.15 0.040 231.99);
     
   }
   
