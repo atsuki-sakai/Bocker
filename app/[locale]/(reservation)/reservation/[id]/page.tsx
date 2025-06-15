@@ -103,6 +103,7 @@ export default function ReservePage() {
 
   const onSubmit = async (data: z.infer<typeof emailLoginSchema>) => {
     setIsFirstLogin(true)
+    console.log('DATA', data)
 
     try {
       // 古いセッションは自動的に管理されるため、明示的な削除は不要
@@ -315,12 +316,15 @@ export default function ReservePage() {
                   </div>
                 ) : (
                   <div className="flex items-center justify-center space-x-4">
-                    <span>ログイン</span>
+                    <span>ログイン / アカウント作成</span>
                     <ChevronRight className="h-5 w-5" />
                   </div>
                 )}
               </Button>
             </form>
+            <p className="text-xs text-center text-muted-foreground px-4 mt-4">
+              初めての方はアカウントが作成されます。
+            </p>
             {isFirstLogin && (
               <p className="text-xs text-center text-muted-foreground mb-4 px-4 mt-4">
                 パスワードを忘れましたか？

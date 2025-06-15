@@ -51,7 +51,7 @@ const container = {
   margin: '20px auto',
   width: '100%',
   maxWidth: '600px',
-  backgroundColor: '#ffffff',
+  backgroundColor: '#FFFFFFFF',
   border: '1px solid #E0E0E0',
   borderRadius: '8px',
   overflow: 'hidden',

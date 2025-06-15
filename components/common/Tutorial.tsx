@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress'
 import { Loading } from '@/components/common'
 import { AlertTitle } from '@/components/ui/alert'
+import { BASE_URL } from '@/lib/constants'
+import { useLocale } from 'next-intl'
 import {
   CheckCircle2,
   Circle,
@@ -39,6 +41,7 @@ interface TutorialStep {
 export const Tutorial = () => {
   const { tenantId, orgId, ready } = useTenantAndOrganization()
   const t = useTranslations('common.tutorial')
+  const locale = useLocale()
 
   // 翻訳キーのみを保持するチュートリアル手順をメモ化して無限再レンダリングを防止
   const tutorialSteps: TutorialStep[] = useMemo(
@@ -268,8 +271,7 @@ export const Tutorial = () => {
 
   const getReservationUrl = () => {
     if (!org?.org._id) return ''
-    const baseUrl = window.location.origin
-    return `${baseUrl}/reservation/${org.org._id}`
+    return `${BASE_URL}/reservation/${org.org._id}`
   }
 
   const copyReservationUrl = () => {
@@ -403,7 +405,7 @@ export const Tutorial = () => {
       {isAllRequiredStepsCompleted() && (
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle className="text-active">{t('completion.title')}</CardTitle>
+            <CardTitle className="text-accent-2">{t('completion.title')}</CardTitle>
             <CardDescription className="text-muted-foreground">
               {t('completion.description')}
             </CardDescription>
@@ -431,17 +433,14 @@ export const Tutorial = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="border border-border bg-background">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">{t('nextSteps.title')}</CardTitle>
+                  <CardTitle className="text-base text-active">{t('nextSteps.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-active mt-0.5" />
                       <span>
-                        <Link
-                          href="/dashboard/setting"
-                          className="text-link-foreground hover:underline"
-                        >
+                        <Link href="/dashboard/setting" className="text-active hover:underline">
                           {t('nextSteps.items.closedDays')}
                         </Link>
                       </span>
@@ -449,10 +448,7 @@ export const Tutorial = () => {
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-active mt-0.5" />
                       <span>
-                        <Link
-                          href="/dashboard/option"
-                          className="text-link-foreground hover:underline"
-                        >
+                        <Link href="/dashboard/option" className="text-active hover:underline">
                           {t('nextSteps.items.optionMenu')}
                         </Link>
                       </span>
@@ -460,10 +456,7 @@ export const Tutorial = () => {
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-active mt-0.5" />
                       <span>
-                        <Link
-                          href="/dashboard/point"
-                          className="text-link-foreground hover:underline"
-                        >
+                        <Link href="/dashboard/point" className="text-active hover:underline">
                           {t('nextSteps.items.pointFeature')}
                         </Link>
                       </span>
@@ -471,10 +464,7 @@ export const Tutorial = () => {
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-active mt-0.5" />
                       <span>
-                        <Link
-                          href="/dashboard/coupon"
-                          className="text-link-foreground hover:underline"
-                        >
+                        <Link href="/dashboard/coupon" className="text-active hover:underline">
                           {t('nextSteps.items.couponFeature')}
                         </Link>
                       </span>
