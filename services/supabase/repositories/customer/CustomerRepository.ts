@@ -599,7 +599,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
           line_user_name: customerData.line_user_name
         },
         {
-          onConflict: 'customer_uid,tenant_id,org_id',
+          onConflict: 'uid',
           select: '*',  
         },
       );

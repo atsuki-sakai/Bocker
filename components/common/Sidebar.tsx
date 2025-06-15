@@ -136,7 +136,7 @@ const SidebarNavigation = memo(
                     <p className="w-full text-nowrap">{tNav('myPage')}</p>
                     {pathname === `/dashboard/staff/${staffId}/my-page` && (
                       <div className="w-full flex justify-end items-center pr-2">
-                        <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                        <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
                       </div>
                     )}
                   </Link>
@@ -166,7 +166,7 @@ const SidebarNavigation = memo(
                       <p className="w-full text-nowrap">{tNav(item.name)}</p>
                       {isCurrent && (
                         <div className="w-full flex justify-end items-center pr-2">
-                          <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                          <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
                         </div>
                       )}
                     </Link>
@@ -197,7 +197,7 @@ const SidebarNavigation = memo(
                     <p className="w-full text-nowrap">{tNav('subscription')}</p>
                     {pathname === '/dashboard/subscription' && (
                       <div className="w-full flex justify-end items-center pr-2">
-                        <div className="h-3 w-3 bg-active border-ring border rounded-full" />
+                        <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
                       </div>
                     )}
                   </Link>

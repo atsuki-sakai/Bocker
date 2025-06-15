@@ -223,17 +223,17 @@ export default function InviteManagement() {
                   >
                     <div className="flex flex-col md:flex-row items-center justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2 w-full">
+                        <div className="flex flex-col items-start justify-start gap-2 w-full">
+                          {invitation.metadata && (
+                            <Badge variant="default" className="text-xs text-nowrap">
+                              {convertRole(invitation.metadata.role)}
+                            </Badge>
+                          )}
                           <div className="flex items-center gap-2">
                             <UserPlus className="h-6 w-6 text-muted-foreground" />
                             <p className="text-sm text-muted-foreground w-full">
                               ({invitation.email})
                             </p>
-                            {invitation.metadata && (
-                              <Badge variant="default" className="text-xs text-nowrap">
-                                {convertRole(invitation.metadata.role)}
-                              </Badge>
-                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             {invitation.invitation_status === 'missing' && (

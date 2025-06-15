@@ -137,7 +137,7 @@ export default function ReferralCard() {
                         )
                       }}
                     >
-                      <Share2 size={14} />
+                      <Copy size={14} />
                       <span className="hidden md:block">{t('shareReferralLinkCopy')}</span>
                     </Button>
                     <Button
