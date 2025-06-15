@@ -37,6 +37,15 @@ interface ReservationConfirmationEmailProps {
   locale?: 'ja' | 'en'
 }
 
+interface ContactEmailProps {
+  name: string
+  email: string
+  company: string
+  phone: string
+  subject: string
+  message: string
+}
+
 const translations = {
   ja: {
     subject: '【{orgName}】ご予約内容の確認',
@@ -382,4 +391,34 @@ export const ReservationConfirmationEmail = ({
   )
 }
 
+
+export const ContactEmail = ({
+  name,
+  email,
+  company,
+  phone,
+  subject,
+  message,
+}: ContactEmailProps) => {
+  return (
+    <Html>
+      <Head />
+      <Preview>{subject}</Preview>
+      <Body style={main}>
+        <Container style={container}>
+          <Section style={header}>
+            <Heading style={headerTitle}>{subject}</Heading>
+          </Section>
+          <Section style={content}>
+            <Text style={text}>{name}</Text>
+            <Text style={text}>{email}</Text>
+            <Text style={text}>{company}</Text>
+            <Text style={text}>{phone}</Text>
+            <Text style={text}>{message}</Text>
+          </Section>
+        </Container>
+      </Body>
+    </Html>
+  )
+}
 export default ReservationConfirmationEmail
