@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     if (!customer) {
       console.warn(`[API /api/auth/session] Customer not found: ${validatedData.email}`);
       return NextResponse.json(
-        { error: 'メールアドレスまたはパスワードが正しくありません' },
+        { error: 'ユーザーが存在しません' },
         { status: 401 }
       );
     }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     if (!isPasswordValid) {
       console.warn(`[API /api/auth/session] Invalid password for customer: ${validatedData.email}`);
       return NextResponse.json(
-        { error: 'メールアドレスまたはパスワードが正しくありません' },
+        { error: 'パスワードが正しくありません' },
         { status: 401 }
       );
     }

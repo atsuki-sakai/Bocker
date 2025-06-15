@@ -5,8 +5,8 @@ export type Languages = typeof LANGUAGES[number]
 // 環境変数が設定されていない場合のデフォルト値を追加
 export const BASE_URL =
   process.env.NEXT_PUBLIC_NODE_ENV === 'development'
-    ? process.env.NEXT_PUBLIC_DEVELOP_URL || 'http://localhost:3000'
-    : process.env.NEXT_PUBLIC_DEPLOY_URL || 'https://bocker.jp'
+    ? process.env.NEXT_PUBLIC_DEVELOP_URL ?? 'http://localhost:3000'
+    : process.env.NEXT_PUBLIC_DEPLOY_URL ?? 'https://bocker.jp'
 
 // ✅ ここで許可リストを定義
 export const ALLOWED_DOMAINS = ['localhost', 'bocker.jp'];

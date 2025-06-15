@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || '<noreply@bocker.jp>',
         to: validatedData.email,
-        subject: '会員登録完了のお知らせ',
+        subject: '【Bocker】会員登録完了のお知らせ',
         react: CustomerRegistrationEmail({
           customerEmail: validatedData.email,
           orgName: validatedData.orgName,
