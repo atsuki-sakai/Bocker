@@ -150,10 +150,10 @@ export async function POST(req: NextRequest) {
           const result = await customerRepo.createCustomerWithDetailsAndPoints(
             customerCoreData,
             {
-              email: email,
+              email: email || '',
               gender: null, // 性別はLINEログインでは取得できない
               birthday: null, // 誕生日はLINEログインでは取得できない
-              age: null, // 年齢はLINEログインでは取得できない
+              age: 0, // 年齢は数値型なので0をデフォルト値にする
               notes: 'LINEから新規登録',
             },
             0

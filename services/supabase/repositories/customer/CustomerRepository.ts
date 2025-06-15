@@ -48,24 +48,26 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     console.log('[CustomerRepository] createCustomerWithDetailsAndPoints: Calling RPC for atomicity.')
 
     const params = {
-      p_email: customerCoreData.email,
-      p_first_name: customerCoreData.first_name,
-      p_last_name: customerCoreData.last_name,
-      p_phone: customerCoreData.phone,
-      p_tenant_id: customerCoreData.tenant_id,
-      p_org_id: customerCoreData.org_id,
-      p_line_id: customerCoreData.line_id,
-      p_line_user_name: customerCoreData.line_user_name,
+      p_email: customerCoreData.email || null,
+      p_first_name: customerCoreData.first_name || '',
+      p_last_name: customerCoreData.last_name || '',
+      p_phone: customerCoreData.phone || '',
+      p_tenant_id: customerCoreData.tenant_id || '',
+      p_org_id: customerCoreData.org_id || '',
+      p_line_id: customerCoreData.line_id || null,
+      p_line_user_name: customerCoreData.line_user_name || null,
       p_password_hash: customerCoreData.password_hash ?? null,
       // customer_detail fields
-      p_detail_email: detailData.email, // customer_detail.email は customer.email と同じと仮定
-      p_detail_gender: detailData.gender,
-      p_detail_birthday: detailData.birthday,
-      p_detail_age: detailData.age,
-      p_detail_notes: detailData.notes,
+      p_detail_email: detailData.email || null,
+      p_detail_gender: detailData.gender || null,
+      p_detail_birthday: detailData.birthday || null,
+      p_detail_age: detailData.age ?? 0,
+      p_detail_notes: detailData.notes || '',
       // customer_points fields
       p_initial_points: initialPoints,
     }
+    
+    console.log('[CustomerRepository] RPC params before sanitization:', JSON.stringify(params, null, 2))
 
     try {
       // ------------------------------------------------------------
@@ -79,6 +81,9 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       const sanitizedParams = Object.fromEntries(
         Object.entries(params).map(([key, value]) => [key, value === undefined ? null : value])
       ) as typeof params
+      
+      console.log('[CustomerRepository] RPC params after sanitization:', JSON.stringify(sanitizedParams, null, 2))
+      console.log('[CustomerRepository] Param count:', Object.keys(sanitizedParams).length)
 
       const { data: createdCustomers, error } = await this.supabaseServiceInstance.rpc<RowType<'customer'>>(
         'create_customer_with_details_and_points',
