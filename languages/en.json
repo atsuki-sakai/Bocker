@@ -2510,5 +2510,442 @@
       "updateError": "Failed to update menu",
       "categoryNotFound": "Category not found"
     }
+  },
+  "landing": {
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "testimonials": "Testimonials",
+      "faq": "FAQ",
+      "demo": "Demo",
+      "signUp": "Create Account",
+      "startFreeTrial": "Start 30-Day Free Trial"
+    },
+    "hero": {
+      "badge": "From ¥6,000/month",
+      "title": "Bookings, Customers, Sales, Marketing.",
+      "titleBreak": "Everything you need for salon management in one place.",
+      "subtitle": "Streamline your daily operations and enhance customer satisfaction with our menu reservation management system",
+      "cta": {
+        "demo": "View Demo",
+        "trial": "30-Day Free Trial",
+        "disclaimer": "No cancellation fees, cancel anytime"
+      },
+      "tagline": "Simple and convenient salon reservations"
+    },
+    "features": {
+      "badge": "Key Features",
+      "title": "All Reservation Management Features in One",
+      "subtitle": "We provide all the features necessary for salon management, from reservations, customers, sales, menu management, customer analysis to marketing.",
+      "items": {
+        "smartReservation": {
+          "title": "Smart Reservation Management",
+          "description": "Maximize customer convenience with 24/7 online booking and pre-visit menu selection. Staff can prepare in advance by knowing the number of customers and menu choices, significantly reducing preparation costs and waiting times."
+        },
+        "optimizationAlgorithm": {
+          "title": "Reservation Slot Optimization Algorithm",
+          "description": "Our unique algorithm automatically generates optimal booking slots and shifts tailored to your salon. Minimize idle time while maximizing revenue and utilization rates simultaneously."
+        },
+        "digitalCarte": {
+          "title": "Digital Client Records",
+          "description": "Centralize treatment history, skin/hair conditions, and before/after photos. Reduce documentation burden with voice input and AI image analysis for smooth information sharing."
+        },
+        "allInOne": {
+          "title": "Complete Business Efficiency",
+          "description": "All-in-one solution from reservation and customer management to staff scheduling, points, and payments. Cut management hours in half without multiple tools and significantly reduce operational costs."
+        },
+        "userFriendly": {
+          "title": "Designed for Beauty Professionals",
+          "description": "Intuitive simple UI enables instant operation even for IT beginners. Workflow-based design reduces training costs and mistakes for new staff."
+        },
+        "support": {
+          "title": "Reliable Support System",
+          "description": "Comprehensive support from paper/Excel data migration to initial setup, manuals, and video tutorials. Our companion support via chat thoroughly eliminates implementation concerns."
+        },
+        "marketing": {
+          "title": "Promotion & Repeat Business",
+          "description": "Reduce no-shows with personalized DMs using customer data and automatic reminders. Accelerate customer loyalty and continued use with points and coupons."
+        },
+        "menuManagement": {
+          "title": "Menu Management",
+          "description": "Intuitively add and edit seasonal specials and special courses with instant website updates. Support customer acquisition and repeat business by constantly sharing the latest information."
+        },
+        "dataAnalytics": {
+          "title": "Customer Data Analytics",
+          "description": "AI analyzes booking history and preferences to automatically suggest optimal services for each customer. Achieve simultaneous improvement in repeat rates and average transaction value through personalization."
+        }
+      }
+    },
+    "howItWorks": {
+      "title": "Get Started in 3 Simple Steps",
+      "subtitle": "Complete setup in just minutes and start accepting reservations immediately",
+      "steps": {
+        "register": {
+          "title": "Account Registration",
+          "description": "Create an account with simple information input and set up your store information."
+        },
+        "setup": {
+          "title": "Menu Setup",
+          "description": "Enter your salon's staff and menu, and set available booking times."
+        },
+        "start": {
+          "title": "Start Accepting Bookings",
+          "description": "Share your booking page link with customers and start accepting reservations immediately."
+        }
+      }
+    },
+    "pricing": {
+      "title": "Simple Pricing Plans",
+      "subtitle": "No hidden fees, all features unlimited",
+      "disclaimer": "Cancel anytime · 30-day free trial"
+    },
+    "testimonials": {
+      "title": "Customer Testimonials",
+      "subtitle": "Trusted by many beauty salon and spa owners"
+    },
+    "cta": {
+      "title": "Ready to transform",
+      "titleBreak": "your salon operations?",
+      "subtitle": "Free yourself from reservation management worries for just ¥6,000/month!",
+      "button": "Start 30-Day Free Trial",
+      "disclaimer": "Easy registration with credit card only · Cancel anytime"
+    },
+    "footer": {
+      "tagline": "Salon Management System for Beauty Services",
+      "sections": {
+        "product": "Product",
+        "support": "Support",
+        "company": "Company"
+      },
+      "links": {
+        "features": "Features",
+        "pricing": "Pricing",
+        "demo": "Demo",
+        "faq": "FAQ",
+        "contact": "Contact",
+        "helpCenter": "Help Center",
+        "about": "About",
+        "privacyPolicy": "Privacy Policy",
+        "termsOfUse": "Terms of Use"
+      },
+      "copyright": "© 2025 Bocker. All rights reserved."
+    }
+  },
+  "features": {
+    "title": "Bocker's Key Features",
+    "subtitle": "Comprehensive features to streamline salon operations and enhance customer experience",
+    "benefitsTitle": "Key Benefits",
+    "howItWorksTitle": "How It Works",
+    "backToHome": "Back to Home",
+    "startTrial": "Start Free Trial",
+    "details": {
+      "smartReservation": {
+        "benefits": [
+          "Reduce phone response time from 30 hours to 5 hours per month",
+          "Accept reservations 24/7, 365 days a year",
+          "Shorten preparation time with advance menu selection",
+          "Completely prevent double bookings"
+        ],
+        "howItWorks": [
+          "Customers access your dedicated booking page",
+          "Check available times and select services",
+          "Enter required information to confirm booking",
+          "Confirmation email is automatically sent",
+          "Reminder email sent automatically the day before"
+        ]
+      },
+      "optimizationAlgorithm": {
+        "benefits": [
+          "Minimize idle time and improve utilization rate",
+          "Optimal staff allocation based on demand forecasting",
+          "Automatic generation of booking slots that maximize revenue",
+          "Automatic detection of busy and quiet periods"
+        ],
+        "howItWorks": [
+          "AI analyzes past booking data",
+          "Learns demand patterns by day and time",
+          "Suggests optimal booking slots and staff shifts",
+          "Managers review and adjust suggestions",
+          "Continuously learns and improves accuracy"
+        ]
+      },
+      "digitalCarte": {
+        "benefits": [
+          "View treatment history at a glance",
+          "Visualize results with before/after photos",
+          "Smooth information sharing between staff",
+          "Reduce management costs with paperless system"
+        ],
+        "howItWorks": [
+          "Create and update client records after treatment",
+          "Easily add photos and detailed information",
+          "Save time with voice input recording",
+          "Access past records with one tap",
+          "Automatically displayed for next treatment"
+        ]
+      },
+      "allInOne": {
+        "benefits": [
+          "No need for multiple tool contracts and management",
+          "Centralized data management for efficiency",
+          "Significantly reduce monthly costs",
+          "Minimize staff learning curve"
+        ],
+        "howItWorks": [
+          "Integrated management of bookings, customers, and sales data",
+          "Seamless integration between features",
+          "Real-time data synchronization",
+          "Accessible from anywhere",
+          "Peace of mind with automatic backups"
+        ]
+      },
+      "userFriendly": {
+        "benefits": [
+          "New staff can use immediately",
+          "Intuitive operation without manuals",
+          "Greatly reduce errors and mistakes",
+          "Improve staff satisfaction"
+        ],
+        "howItWorks": [
+          "Screen design follows actual workflow",
+          "Execute frequently used functions with one tap",
+          "Visually clear icon displays",
+          "Show only necessary information",
+          "Customizable dashboard"
+        ]
+      }
+    }
+  },
+  "pricingPage": {
+    "title": "Simple and Transparent Pricing",
+    "subtitle": "Choose the best plan for your salon size",
+    "monthlyBilling": "Monthly",
+    "yearlyBilling": "Yearly",
+    "savePercent": "Save {percent}%",
+    "choosePlan": "Choose This Plan",
+    "currentPlan": "Current Plan",
+    "mostPopular": "Most Popular",
+    "faq": {
+      "title": "Frequently Asked Questions About Pricing",
+      "items": {
+        "0": {
+          "question": "Is there a free trial period?",
+          "answer": "Yes, all plans include a 30-day free trial period. During the trial, you can use all Bocker features for free."
+        },
+        "1": {
+          "question": "Can I change plans anytime?",
+          "answer": "Yes, you can change plans anytime. Upgrades take effect immediately with access to new features, while downgrades apply from the next billing cycle."
+        },
+        "2": {
+          "question": "What payment methods are accepted?",
+          "answer": "We accept credit cards (Visa, Mastercard, JCB, American Express) and debit cards. Payment processing is securely handled through Stripe."
+        },
+        "3": {
+          "question": "Are there benefits to yearly plans?",
+          "answer": "Yes, yearly plans save you approximately 20% compared to monthly billing. If you plan to use Bocker long-term, we recommend the yearly plan."
+        },
+        "4": {
+          "question": "Can I cancel anytime?",
+          "answer": "Yes, you can cancel anytime. There are no cancellation fees or penalties. After cancellation, you can continue using the service until the end of your current billing period."
+        }
+      }
+    },
+    "cta": {
+      "title": "Start Using Bocker Today",
+      "subtitle": "Try all features with our 30-day free trial",
+      "button": "Start Free Trial"
+    }
+  },
+  "aboutPage": {
+    "title": "About Bocker",
+    "subtitle": "Driving digital transformation in the beauty industry and creating the future",
+    "mission": {
+      "title": "Mission & Values",
+      "description": "We revolutionize beauty salon operations through technology, providing value to salon owners, staff, and customers alike.",
+      "values": [
+        {
+          "title": "Customer-Centric",
+          "description": "We listen to our customers and always pursue the best user experience. We deeply understand field needs and provide truly necessary features."
+        },
+        {
+          "title": "Innovation",
+          "description": "We leverage cutting-edge technology to create new value in the industry. With innovative features using AI and machine learning, we pioneer the future of salon operations."
+        },
+        {
+          "title": "Trust & Security",
+          "description": "Security is our top priority in protecting customer data. We build long-term trust relationships through transparent service delivery."
+        }
+      ]
+    },
+    "team": {
+      "title": "Our Team",
+      "description": "Beauty industry and IT experts come together, passionately solving field challenges. Members with diverse backgrounds including salon managers, beauticians, engineers, and designers work together to create the best product."
+    },
+    "achievements": {
+      "title": "Achievements",
+      "items": [
+        {
+          "value": "3,000+",
+          "label": "Salons Using Bocker"
+        },
+        {
+          "value": "99.9%",
+          "label": "System Uptime"
+        },
+        {
+          "value": "50%",
+          "label": "Efficiency Improvement"
+        },
+        {
+          "value": "95%",
+          "label": "Customer Satisfaction"
+        }
+      ]
+    },
+    "story": {
+      "title": "Our Story",
+      "content": [
+        "Bocker was born from challenges we experienced in beauty salon operations. We've seen many salons overwhelmed by phone reservations, unable to focus on their core services. There were numerous issues: double bookings with paper appointment books, scattered customer information, and inability to conduct effective marketing.",
+        "Believing these challenges could be solved with technology, we started developing Bocker. We listened to beauticians and salon owners, implementing truly necessary features one by one. We paid attention to every detail, including simple UI for those unfamiliar with IT and feature design aligned with field workflows.",
+        "Today, over 3,000 salons use our service, and we receive many positive reviews saying 'operations have become more efficient,' 'staff can now focus on core services,' and 'sales have improved.' We will continue to lead digital transformation in the beauty industry and create the future of salon operations."
+      ]
+    },
+    "cta": {
+      "title": "Let's Create the Future of the Beauty Industry Together",
+      "subtitle": "Try Bocker free for 30 days",
+      "button": "Start Free Trial"
+    }
+  },
+  "contactPage": {
+    "title": "Contact Us",
+    "subtitle": "If you have any questions or inquiries, please feel free to contact us",
+    "form": {
+      "title": "Contact Form",
+      "fields": {
+        "name": "Name",
+        "email": "Email Address",
+        "company": "Company/Salon Name",
+        "phone": "Phone Number",
+        "subject": "Subject",
+        "message": "Message"
+      },
+      "placeholders": {
+        "name": "John Doe",
+        "email": "example@email.com",
+        "company": "Sample Salon Inc.",
+        "phone": "+1-234-567-8900",
+        "subject": "Question about the service",
+        "message": "Please enter your inquiry here"
+      },
+      "submit": "Send Message",
+      "submitting": "Sending...",
+      "success": "Your inquiry has been sent. We will contact you soon.",
+      "error": "Failed to send. Please try again."
+    },
+    "info": {
+      "title": "Contact Information",
+      "items": {
+        "email": {
+          "label": "Email",
+          "value": "support@bocker.com"
+        },
+        "hours": {
+          "label": "Business Hours",
+          "value": "Monday - Friday, 10:00 AM - 6:00 PM"
+        },
+        "response": {
+          "label": "Response Time",
+          "value": "Within 1-2 business days"
+        }
+      }
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "cta": "Before contacting us, please check our FAQ. Many common questions are answered there."
+    }
+  },
+  "termsPage": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last Updated: January 1, 2025",
+    "sections": {
+      "0": {
+        "title": "Article 1 (Application)",
+        "content": "These Terms govern the rights and obligations between you and us regarding the use of Bocker (hereinafter referred to as 'the Service')."
+      },
+      "1": {
+        "title": "Article 2 (Definitions)",
+        "content": "The definitions of terms used in these Terms are as follows:\n(1) 'User' refers to individuals or corporations who use the Service.\n(2) 'Content' refers to information posted, uploaded, or saved by Users on the Service."
+      },
+      "2": {
+        "title": "Article 3 (Service Provision)",
+        "content": "We provide Users with a reservation and customer management system for beauty salons. The content of the Service may be changed at our discretion."
+      },
+      "3": {
+        "title": "Article 4 (Usage Fees)",
+        "content": "Users shall pay usage fees according to the pricing plans separately determined by us when using the Service."
+      },
+      "4": {
+        "title": "Article 5 (Prohibited Activities)",
+        "content": "Users shall not engage in the following activities when using the Service:\n(1) Activities that violate laws or public order and morals\n(2) Activities related to criminal acts\n(3) Activities that infringe upon our rights or the rights of other Users"
+      },
+      "5": {
+        "title": "Article 6 (Disclaimer)",
+        "content": "We do not warrant, either explicitly or implicitly, that the Service is free from factual or legal defects."
+      },
+      "6": {
+        "title": "Article 7 (Service Changes)",
+        "content": "We may change, add, or discontinue the Service without prior notice to Users."
+      },
+      "7": {
+        "title": "Article 8 (Handling of Personal Information)",
+        "content": "Personal information obtained through the use of the Service shall be handled appropriately in accordance with our separately established 'Privacy Policy'."
+      },
+      "8": {
+        "title": "Article 9 (Governing Law and Jurisdiction)",
+        "content": "These Terms shall be governed by Japanese law. Any disputes regarding the Service shall be subject to the exclusive jurisdiction of the court having jurisdiction over our head office."
+      },
+      "9": {
+        "title": "Article 10 (Changes to Terms)",
+        "content": "We may change these Terms at any time without notifying Users if deemed necessary."
+      }
+    }
+  },
+  "privacyPage": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last Updated: January 1, 2025",
+    "sections": {
+      "0": {
+        "title": "1. Scope of Privacy Policy",
+        "content": "This Privacy Policy applies to all customers who use Bocker's services. By using our Service, you are deemed to have agreed to this Policy."
+      },
+      "1": {
+        "title": "2. Information We Collect",
+        "content": "We collect the following information:\n• Account information (name, email address, phone number, etc.)\n• Salon information (store name, address, business hours, etc.)\n• Reservation information (reservation date/time, menu, staff, etc.)\n• Customer information (name, contact information, treatment history, etc.)"
+      },
+      "2": {
+        "title": "3. Purpose of Use",
+        "content": "We use collected information for the following purposes:\n• Service provision and operation\n• User support\n• Service improvement and new feature development\n• Billing\n• Legal compliance"
+      },
+      "3": {
+        "title": "4. Information Sharing",
+        "content": "We do not provide your personal information to third parties except in the following cases:\n• When you have given consent\n• When required by law\n• When collaborating with external services necessary for service provision (payment processing, etc.)"
+      },
+      "4": {
+        "title": "5. Security",
+        "content": "We implement appropriate security measures to protect your information:\n• Data encryption\n• Access restrictions\n• Regular security audits\n• Employee training"
+      },
+      "5": {
+        "title": "6. Your Rights",
+        "content": "You have the following rights regarding your personal information:\n• Request for disclosure\n• Request for correction or deletion\n• Request to stop use\nFor inquiries, please contact support@bocker.com."
+      },
+      "6": {
+        "title": "7. Use of Cookies",
+        "content": "Our Service uses cookies to improve user experience and service. If you wish to refuse the use of cookies, please change your browser settings."
+      },
+      "7": {
+        "title": "8. Policy Changes",
+        "content": "We may change this Privacy Policy at any time as necessary. The revised Policy shall take effect from the time it is posted on the Service."
+      }
+    }
   }
 }
