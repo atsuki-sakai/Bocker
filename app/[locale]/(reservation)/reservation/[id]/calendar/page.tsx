@@ -860,6 +860,7 @@ export default function CalendarPage() {
 
         // HTTPOnly Cookieの内容をAPIを経由して取得
         const response = await fetch('/api/auth/session', {
+          method: 'GET',
           credentials: 'include',
         })
 
@@ -1023,7 +1024,7 @@ export default function CalendarPage() {
         key: 'confirm',
         label: '確認',
         icon: CheckCircle,
-        color: 'bg-active text-background',
+        color: 'bg-accent-2 text-background',
       },
     ]
 
@@ -1043,7 +1044,7 @@ export default function CalendarPage() {
                       isActive
                         ? `${step.color}`
                         : isCompleted
-                          ? `bg-background border border-active text-active`
+                          ? `bg-background border border-accent-2 text-accent-2`
                           : 'bg-background border border-muted-foreground text-muted-foreground'
                     }
                   `}
@@ -1455,7 +1456,7 @@ export default function CalendarPage() {
                         >
                           <div className="flex  items-center justify-start gap-2 mr-3">
                             <div
-                              className={`h-3 w-3 rounded-full border border-border ring-1 ring-offset-1 ${schedule.is_open ? 'bg-active ring-active' : 'bg-destructive-foreground ring-destructive-foreground'}`}
+                              className={`h-3 w-3 rounded-full border border-border ring-1 ring-offset-1 ${schedule.is_open ? 'bg-accent-2 ring-accent-2' : 'bg-destructive-foreground ring-destructive-foreground'}`}
                             />
                             <p className="text-sm text-muted-foreground text-nowrap">
                               {convertDayOfWeekToJa(schedule.day_of_week!)}
@@ -1513,13 +1514,13 @@ export default function CalendarPage() {
 
           {sessionCustomer?.name ? (
             <p className="text-sm flex items-center gap-2 mt-1">
-              <CheckCheck className="w-5 h-5 text-active rounded-full p-1" />
+              <CheckCheck className="w-5 h-5 text-accent-2 rounded-full p-1" />
               <span className="font-light">{sessionCustomer?.name} 様</span>
             </p>
           ) : (
             sessionCustomer?.email && (
               <p className="text-sm flex items-center gap-2 mt-1">
-                <CheckCheck className="w-5 h-5 text-active" />
+                <CheckCheck className="w-5 h-5 text-accent-2" />
                 <span className="font-light">{sessionCustomer?.email}</span>
               </p>
             )

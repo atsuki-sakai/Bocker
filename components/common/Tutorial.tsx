@@ -429,40 +429,40 @@ export const Tutorial = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="border border-border bg-background">
+              <Card className="border border-border bg-accent-2-foreground">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base text-active">{t('nextSteps.title')}</CardTitle>
+                  <CardTitle className="text-base text-accent-2">{t('nextSteps.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-active mt-0.5" />
+                      <CheckCircle2 className="h-4 w-4 text-accent-2 mt-0.5" />
                       <span>
-                        <Link href="/dashboard/setting" className="text-active hover:underline">
+                        <Link href="/dashboard/setting" className="text-accent-2 hover:underline">
                           {t('nextSteps.items.closedDays')}
                         </Link>
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-active mt-0.5" />
+                      <CheckCircle2 className="h-4 w-4 text-accent-2 mt-0.5" />
                       <span>
-                        <Link href="/dashboard/option" className="text-active hover:underline">
+                        <Link href="/dashboard/option" className="text-accent-2 hover:underline">
                           {t('nextSteps.items.optionMenu')}
                         </Link>
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-active mt-0.5" />
+                      <CheckCircle2 className="h-4 w-4 text-accent-2 mt-0.5" />
                       <span>
-                        <Link href="/dashboard/point" className="text-active hover:underline">
+                        <Link href="/dashboard/point" className="text-accent-2 hover:underline">
                           {t('nextSteps.items.pointFeature')}
                         </Link>
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-active mt-0.5" />
+                      <CheckCircle2 className="h-4 w-4 text-accent-2 mt-0.5" />
                       <span>
-                        <Link href="/dashboard/coupon" className="text-active hover:underline">
+                        <Link href="/dashboard/coupon" className="text-accent-2 hover:underline">
                           {t('nextSteps.items.couponFeature')}
                         </Link>
                       </span>

@@ -81,7 +81,10 @@ export const StaffView = ({
             >
               <div className="flex items-start gap-2">
                 <div className="relative w-14 h-14 flex-shrink-0">
-                  {staff.images && staff.images.length > 0 && staff.images[0].thumbnail_url && !imageErrors.has(staff._id) ? (
+                  {staff.images &&
+                  staff.images.length > 0 &&
+                  staff.images[0].thumbnail_url &&
+                  !imageErrors.has(staff._id) ? (
                     <Image
                       src={staff.images[0].thumbnail_url}
                       alt={staff.name ? staff.name : 'Staff Image'}
@@ -89,7 +92,7 @@ export const StaffView = ({
                       sizes="56px"
                       className="rounded-sm object-cover"
                       onError={(e) => {
-                        const imgElement = e.currentTarget as HTMLImageElement;
+                        const imgElement = e.currentTarget as HTMLImageElement
                         console.error('Staff image load error:', {
                           staffName: staff.name,
                           staffId: staff._id,
@@ -99,24 +102,24 @@ export const StaffView = ({
                           imageSrc: imgElement.src,
                           imageNaturalWidth: imgElement.naturalWidth,
                           imageNaturalHeight: imgElement.naturalHeight,
-                        });
+                        })
                         // デバッグ: URLの構造を分析
                         if (staff.images?.[0]?.thumbnail_url) {
                           try {
-                            const url = new URL(staff.images[0].thumbnail_url);
+                            const url = new URL(staff.images[0].thumbnail_url)
                             console.error('URL breakdown:', {
                               fullUrl: url.href,
                               hostname: url.hostname,
                               pathname: url.pathname,
                               decodedPathname: decodeURIComponent(url.pathname),
                               protocol: url.protocol,
-                            });
+                            })
                           } catch (urlError) {
-                            console.error('Invalid URL format:', urlError);
+                            console.error('Invalid URL format:', urlError)
                           }
                         }
                         // エラーが発生した画像を記録
-                        setImageErrors(prev => new Set(prev).add(staff._id));
+                        setImageErrors((prev) => new Set(prev).add(staff._id))
                       }}
                     />
                   ) : (
@@ -143,7 +146,7 @@ export const StaffView = ({
                   </p>
                   <div className="flex items-end gap-2 text-muted-foreground">
                     <p className="text-xs">指名料</p>
-                    <span className="text-sm text-active">
+                    <span className="text-sm text-accent-2">
                       {staff.extra_charge ? `¥${staff.extra_charge.toLocaleString()}` : `無料`}
                     </span>
                   </div>
@@ -224,7 +227,7 @@ export const StaffView = ({
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">指名料</span>
                 {infoStaff?.extra_charge ? (
-                  <span className="text-sm text-active">
+                  <span className="text-sm text-accent-2">
                     {`¥${infoStaff.extra_charge.toLocaleString()}`}
                   </span>
                 ) : (

@@ -10,7 +10,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { tenantId, orgId } = body
 
+    console.log('[API /api/auth/line-state POST] Received request:', { tenantId, orgId })
+
     if (!tenantId || !orgId) {
+      console.error('[API /api/auth/line-state POST] Missing required fields')
       return NextResponse.json(
         { error: 'tenantId and orgId are required' },
         { status: 400 }
@@ -19,6 +22,7 @@ export async function POST(request: NextRequest) {
 
     // ユニークなstate値を生成
     const stateId = uuidv4()
+    console.log('[API /api/auth/line-state POST] Generated stateId:', stateId)
     
     // stateデータをJSON文字列化
     const stateData = JSON.stringify({
@@ -30,19 +34,26 @@ export async function POST(request: NextRequest) {
 
     // HTTPOnlyクッキーとして保存（XSS攻撃から保護）
     const cookieStore = await cookies()
-    cookieStore.set(LINE_STATE_SESSION_KEY, stateData, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       path: '/',
       maxAge: LINE_STATE_EXPIRY_MS / 1000 // 秒単位
-    })
+    }
+    
+    console.log('[API /api/auth/line-state POST] Setting cookie with options:', cookieOptions)
+    cookieStore.set(LINE_STATE_SESSION_KEY, stateData, cookieOptions)
+
+    // 設定後のクッキーを確認
+    const setCookie = cookieStore.get(LINE_STATE_SESSION_KEY)
+    console.log('[API /api/auth/line-state POST] Cookie after setting:', setCookie ? 'Set successfully' : 'Failed to set')
 
     // state IDをクライアントに返す（これをLINE OAuth URLに含める）
     return NextResponse.json({ stateId }, { status: 200 })
 
   } catch (error) {
-    console.error('[API /api/auth/line-state] Error:', error)
+    console.error('[API /api/auth/line-state POST] Error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -54,19 +65,25 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const stateId = searchParams.get('stateId')
+    const skipValidation = searchParams.get('skipValidation') === 'true'
 
-    if (!stateId) {
-      return NextResponse.json(
-        { error: 'stateId is required' },
-        { status: 400 }
-      )
-    }
+    console.log('[API /api/auth/line-state GET] Request params:', {
+      stateId,
+      skipValidation,
+      url: request.url
+    })
 
     // HTTPOnlyクッキーからstateデータを取得
     const cookieStore = await cookies()
     const stateCookie = cookieStore.get(LINE_STATE_SESSION_KEY)
+    
+    console.log('[API /api/auth/line-state GET] Cookie found:', stateCookie ? 'Yes' : 'No')
+    if (stateCookie) {
+      console.log('[API /api/auth/line-state GET] Cookie value length:', stateCookie.value?.length)
+    }
 
     if (!stateCookie || !stateCookie.value) {
+      console.error('[API /api/auth/line-state GET] Cookie not found or empty')
       return NextResponse.json(
         { error: 'State not found or expired' },
         { status: 404 }
@@ -75,13 +92,26 @@ export async function GET(request: NextRequest) {
 
     try {
       const stateData = JSON.parse(stateCookie.value)
+      console.log('[API /api/auth/line-state GET] Parsed state data:', {
+        tenantId: stateData.tenantId,
+        orgId: stateData.orgId,
+        stateId: stateData.stateId,
+        timestamp: stateData.timestamp
+      })
       
-      // state IDの検証
-      if (stateData.stateId !== stateId) {
-        return NextResponse.json(
-          { error: 'Invalid state' },
-          { status: 401 }
-        )
+      // skipValidationがtrueの場合、state IDの検証をスキップ
+      if (!skipValidation && stateId) {
+        // state IDの検証
+        if (stateData.stateId !== stateId) {
+          console.log('[API /api/auth/line-state GET] State ID mismatch:', {
+            expected: stateData.stateId,
+            received: stateId
+          })
+          return NextResponse.json(
+            { error: 'Invalid state' },
+            { status: 401 }
+          )
+        }
       }
 
       // タイムスタンプの検証（有効期限チェック）
@@ -95,13 +125,18 @@ export async function GET(request: NextRequest) {
       }
 
       // 使用済みのstateを削除（CSRF攻撃対策）
-      cookieStore.delete(LINE_STATE_SESSION_KEY)
+      // skipValidation が true の場合は ReserveRedirectPage 等の二重読み取り対策として
+      // クッキーを残したままにし、通常の検証フローの場合のみ削除する。
+      if (!skipValidation) {
+        cookieStore.delete(LINE_STATE_SESSION_KEY)
+      }
 
       // tenantIdとorgIdを返す
       return NextResponse.json(
         {
           tenantId: stateData.tenantId,
-          orgId: stateData.orgId
+          orgId: stateData.orgId,
+          originalStateId: stateData.stateId
         },
         { status: 200 }
       )
