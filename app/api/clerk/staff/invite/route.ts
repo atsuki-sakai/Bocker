@@ -80,10 +80,7 @@ export async function POST(req: NextRequest) {
       email,
       name,
       description,
-      images: (images || []).map(url => ({ 
-        original_url: url, 
-        thumbnail_url: '' 
-      })),
+      images: images || [],
       is_active: is_active ?? true,
       age,
       gender,

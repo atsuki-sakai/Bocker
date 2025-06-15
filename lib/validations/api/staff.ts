@@ -20,7 +20,10 @@ export const inviteStaffSchema = z.object({
   extra_charge: z.number().min(0).max(100000).optional(),
   priority: z.number().int().min(0).max(100).optional(),
   phone: phoneSchema.optional(),
-  images: z.array(z.string().url()).max(10).optional(),
+  images: z.array(z.object({
+    original_url: z.string().url(),
+    thumbnail_url: z.string().url(),
+  })).max(10).optional(),
   description: z.string().max(500).optional(),
 })
 
