@@ -38,7 +38,7 @@
 - 失敗時: `401 Unauthorized`
 
 **セキュリティ**: 
-- bcryptによるパスワードハッシュ検証
+- bcryptjsによるパスワードハッシュ検証
 - JWTトークンをHTTPOnlyクッキーに保存（30日間有効）
 
 ---
@@ -88,7 +88,7 @@
 
 **処理内容**:
 1. Supabaseに顧客データ作成（customer, customer_detail, customer_points）
-2. パスワードのハッシュ化（bcrypt）
+2. パスワードのハッシュ化（bcryptjs）
 3. 登録完了メール送信（Resend使用）
 
 ---

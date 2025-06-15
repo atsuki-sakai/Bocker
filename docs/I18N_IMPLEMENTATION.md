@@ -1,0 +1,262 @@
+# Bocker 国際化（i18n）実装ガイド
+
+**最終更新日**: 2025年6月15日
+**ドキュメントバージョン**: 1.0
+**統合ドキュメント**: I18N_IMPLEMENTATION_PHASES.md + 実装ファイル分析
+
+## 概要
+
+Bockerは`next-intl`を使用した多言語対応を実装しています。現在、日本語（ja）と英語（en）の2言語をサポートし、今後の拡張を見据えた設計となっています。
+
+## 実装状況サマリー
+
+### ✅ 完了済み機能（Phase 1-2）
+- **next-intl導入**: 基本設定とミドルウェア統合
+- **認証画面**: サインイン・サインアップの多言語化
+- **ダッシュボード基本**: ナビゲーション、サイドバー
+- **共通コンポーネント**: Loading、DashboardSection等
+- **日付フォーマット**: date-fnsロケール対応
+- **言語切り替え**: LanguageSwitcherコンポーネント
+- **設定画面**: メール設定、パスワード変更等
+
+### 🚧 進行中（Phase 3）
+- **予約管理**: ReservationList実装済み（40%完了）
+- **顧客管理**: CustomerList実装済み、詳細・編集画面は未実装
+
+### ⏳ 未実装（Phase 4以降）
+- **メニュー・オプション管理画面**
+- **スタッフ管理画面**
+- **クーポン・ポイント管理**
+- **APIエラーメッセージ**
+- **メール通知テンプレート**
+
+## アーキテクチャ
+
+### ディレクトリ構造
+
+```
+bocker/
+├── i18n/                    # i18n設定
+│   ├── routing.ts          # ロケール設定
+│   ├── navigation.ts       # ナビゲーションヘルパー
+│   └── request.ts          # リクエスト処理
+├── languages/              # 翻訳ファイル
+│   ├── ja.json            # 日本語
+│   └── en.json            # 英語
+├── app/
+│   └── [locale]/          # ロケール別ルーティング
+└── middleware.ts          # ロケール検出・リダイレクト
+```
+
+### 技術スタック
+
+- **フレームワーク**: next-intl 3.27.0
+- **日付処理**: date-fns（動的ロケールインポート）
+- **サポート言語**: 日本語（デフォルト）、英語
+- **将来対応予定**: 中国語、韓国語、フランス語
+
+## 実装詳細
+
+### 1. 基本設定
+
+**i18n/routing.ts**
+```typescript
+export const locales = ['ja', 'en'] as const;
+export const defaultLocale = 'ja' as const;
+```
+
+**i18n/request.ts**
+```typescript
+// 動的翻訳ファイル読み込み
+const messages = await import(`../languages/${locale}.json`);
+```
+
+### 2. ミドルウェア統合
+
+**middleware.ts**
+- Clerk認証との統合
+- 公開パス・保護パスの制御
+- ロケールプレフィックスの自動付与
+- APIルートの除外処理
+
+### 3. コンポーネントでの使用
+
+```tsx
+import { useTranslations } from 'next-intl';
+
+export function Component() {
+  const t = useTranslations('dashboard.reservation');
+  
+  return <h1>{t('title')}</h1>;
+}
+```
+
+### 4. 日付フォーマット
+
+```typescript
+import { formatDate } from '@/lib/formatDate';
+import { useLocale } from 'next-intl';
+
+const locale = useLocale() as SupportedLocale;
+const formatted = await formatDate(date, 'PPP', locale);
+```
+
+## 翻訳キー命名規則
+
+### 階層構造
+```json
+{
+  "feature.component.element": "翻訳テキスト",
+  "auth.signIn.title": "ログイン",
+  "dashboard.menu.addButton": "メニューを追加"
+}
+```
+
+### 命名パターン
+- **画面**: `{機能}.{画面名}.{要素}`
+- **共通**: `common.{要素}`
+- **エラー**: `errors.{エラータイプ}`
+- **バリデーション**: `validation.{フィールド}.{ルール}`
+
+## 実装進捗詳細
+
+### Phase 1: 基礎実装 ✅
+- next-intl導入
+- ミドルウェア設定
+- 言語切り替えUI
+- 認証画面の多言語化
+
+### Phase 2: ダッシュボード基本 ✅
+- **完了済み**:
+  - ナビゲーションメニュー
+  - サイドバー
+  - ダッシュボードホーム
+  - 共通コンポーネント
+  - 設定画面の一部
+
+### Phase 3: 主要機能画面 🚧
+- **予約管理** (40%):
+  - ✅ ReservationList
+  - ⏳ 予約詳細
+  - ⏳ 予約追加フォーム
+- **顧客管理** (30%):
+  - ✅ CustomerList
+  - ⏳ 顧客詳細
+  - ⏳ 顧客編集フォーム
+
+### Phase 4: 管理機能 ⏳
+- メニュー管理
+- オプション管理
+- スタッフ管理
+- クーポン管理
+- ポイント管理
+
+## 使用ガイド
+
+### 1. 新規画面の多言語化
+
+1. **翻訳キー追加** (`languages/ja.json`, `languages/en.json`)
+```json
+{
+  "newFeature": {
+    "title": "新機能",
+    "description": "説明文"
+  }
+}
+```
+
+2. **コンポーネント実装**
+```tsx
+import { useTranslations } from 'next-intl';
+
+export function NewFeature() {
+  const t = useTranslations('newFeature');
+  
+  return (
+    <div>
+      <h1>{t('title')}</h1>
+      <p>{t('description')}</p>
+    </div>
+  );
+}
+```
+
+### 2. 動的コンテンツ
+
+```tsx
+// パラメータ付き翻訳
+const t = useTranslations('dashboard');
+t('welcome', { name: userName }); // "ようこそ、{name}さん"
+
+// 複数形対応
+t('items', { count: 5 }); // "5件のアイテム"
+```
+
+### 3. リンクとナビゲーション
+
+```tsx
+import { Link } from '@/i18n/navigation';
+
+// ロケールは自動的に付与される
+<Link href="/dashboard">
+  {t('navigation.dashboard')}
+</Link>
+```
+
+## パフォーマンス最適化
+
+### 翻訳ファイルの分割
+- 機能別に翻訳キーを整理
+- 使用頻度の高いキーは上位階層に配置
+- 重複キーの削除と共通化
+
+### 動的インポート
+- date-fnsロケールは必要時のみ読み込み
+- 大きな翻訳ファイルは分割を検討
+
+## トラブルシューティング
+
+### よくある問題
+
+1. **翻訳が表示されない**
+   - 翻訳キーのタイポを確認
+   - 翻訳ファイルの構造を確認
+   - useTranslationsの引数を確認
+
+2. **日付が英語で表示される**
+   - formatDate関数にロケールを渡しているか確認
+   - サポートされているロケールか確認
+
+3. **言語切り替えが効かない**
+   - ブラウザキャッシュをクリア
+   - ミドルウェアのロケール検出を確認
+
+## 今後の実装計画
+
+### 短期（1-2週間）
+- [ ] Phase 3の完了（予約・顧客管理）
+- [ ] APIエラーメッセージの多言語化
+- [ ] フォームバリデーションメッセージ
+
+### 中期（1ヶ月）
+- [ ] Phase 4の実装（管理機能全般）
+- [ ] メール通知の多言語化
+- [ ] 中国語対応の追加
+
+### 長期（3ヶ月）
+- [ ] 韓国語、フランス語対応
+- [ ] RTL言語対応の検討
+- [ ] 翻訳管理システムの導入
+
+## 関連ドキュメント
+
+- [I18N_IMPLEMENTATION_PHASES.md](../languages/I18N_IMPLEMENTATION_PHASES.md) - 詳細な実装フェーズ
+- [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) - UIコンポーネントのi18n対応
+- [API_ENDPOINTS.md](./API_ENDPOINTS.md) - APIレスポンスの多言語化
+
+## 更新履歴
+
+- 2025-06-15: 初版作成、実装状況の統合
+- 2025-01-11: Phase 3開始（予約・顧客管理）
+- 2025-01-10: Phase 2完了（ダッシュボード基本）
+- 2025-01-05: Phase 1完了（基礎実装）
