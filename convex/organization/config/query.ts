@@ -1,6 +1,5 @@
 import { query } from '../../_generated/server';
 import { ConvexError, v } from 'convex/values';
-import { checkAuth } from '@/convex/utils/auth';
 import { validateStringLength } from '@/convex/utils/validations';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 
@@ -10,7 +9,6 @@ export const findByTenantAndOrg = query({
     org_id: v.id('organization')
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
     validateStringLength(args.org_id, 'org_id');
 
     const org = await ctx.db.get(args.org_id);
