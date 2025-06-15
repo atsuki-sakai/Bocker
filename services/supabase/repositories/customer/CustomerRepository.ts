@@ -68,9 +68,21 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     }
 
     try {
+      // ------------------------------------------------------------
+      // PostgREST は undefined のフィールドを JSON から削除してしまう。 
+      // その結果、関数シグネチャと引数リストが一致せず
+      // 「function not found in the schema cache」というエラーになる。
+      // 予約フローでは email が無いケースがあるため、
+      // undefined → null に変換して **必ず 15 個のキー** を送信する。
+      // ------------------------------------------------------------
+
+      const sanitizedParams = Object.fromEntries(
+        Object.entries(params).map(([key, value]) => [key, value === undefined ? null : value])
+      ) as typeof params
+
       const { data: createdCustomers, error } = await this.supabaseServiceInstance.rpc<RowType<'customer'>>(
         'create_customer_with_details_and_points',
-        params
+        sanitizedParams
       )
 
       if (error) {

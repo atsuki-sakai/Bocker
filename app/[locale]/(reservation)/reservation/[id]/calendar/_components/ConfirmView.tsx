@@ -376,8 +376,8 @@ export const ConfirmView = ({
             </div>
             {couponError && <p className="text-destructive text-sm mt-1">{couponError}</p>}
             {appliedCoupon && (
-              <div className="mt-2 p-2 bg-active-foreground border border-active rounded-md">
-                <p className="text-active text-sm flex items-center">
+              <div className="mt-2 p-2 bg-accent-2-foreground border border-accent-2 rounded-md">
+                <p className="text-accent-2 text-sm flex items-center">
                   <CheckCircle className="h-4 w-4 mr-1" />
                   クーポン「{appliedCoupon.name}」が適用されました（
                   {appliedCoupon.discount.toLocaleString()}円割引）
@@ -396,12 +396,12 @@ export const ConfirmView = ({
                 <p>¥{extraCharge.toLocaleString()}</p>
               </div>
             )}
-            <div className="flex justify-between text-active">
+            <div className="flex justify-between text-accent-2">
               <p>ポイント割引</p>
               <p>-¥{usePoints.toLocaleString()}</p>
             </div>
             {appliedCoupon && (
-              <div className="flex justify-between text-active">
+              <div className="flex justify-between text-accent-2">
                 <p>クーポン割引</p>
                 <p>-¥{appliedCoupon.discount.toLocaleString()}</p>
               </div>

@@ -48,8 +48,12 @@ export async function POST(req: NextRequest) {
       )
       // 予約フロー以外の場合salonIdは必須ではないかもしれないので、ここでは警告に留める
     }
-    if (!organizationApiConfig?.line_channel_id) {
-      console.error('[API /api/line/verify-token] organizationApiConfig.line_channel_id is missing.')
+    // LINEのaudienceはChannel ID。設定テーブルに line_channel_id が無い場合、
+    // 移行以前のデータでは liff_id に Channel ID を保存しているケースがあるためフォールバックする。
+    const channelId = organizationApiConfig?.line_channel_id || organizationApiConfig?.liff_id
+
+    if (!channelId) {
+      console.error('[API /api/line/verify-token] Channel ID not found in api_config.')
       return NextResponse.json(
         { error: 'Server configuration error: LINE Channel ID missing' },
         { status: 500 }
@@ -60,7 +64,7 @@ export async function POST(req: NextRequest) {
     // 1. LINEサーバーでIDトークンを検証
     const params = new URLSearchParams()
     params.append('id_token', idToken)
-    params.append('client_id', organizationApiConfig.line_channel_id)
+    params.append('client_id', channelId)
 
     const lineResponse = await fetch(LINE_VERIFY_URL, {
       method: 'POST',

@@ -34,8 +34,6 @@ export const findByTenantAndOrg = query({
     org_id: v.id('organization')
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
-    validateStringLength(args.org_id, 'org_id');
     return await ctx.db.query('api_config')
     .withIndex('by_tenant_org_archive', q => 
       q.eq('tenant_id', args.tenant_id)

@@ -56,15 +56,21 @@ export default function ReservePage() {
   )
 
   const handleLineLogin = async () => {
-    console.log('liff', liff)
-    if (!liff?.isInClient()) {
-      console.log('liff?.isInClient()', liff?.isInClient())
+    console.log('[handleLineLogin] Starting LINE login')
+    console.log('[handleLineLogin] liff object:', liff)
+    console.log('[handleLineLogin] liff.isInClient():', liff?.isInClient())
+    console.log('[handleLineLogin] Current URL:', window.location.href)
+    console.log('[handleLineLogin] tenantId:', tenantId)
+    console.log('[handleLineLogin] orgId:', orgId)
 
+    if (!liff?.isInClient()) {
       try {
         // セキュアなstateをサーバーで生成
+        console.log('[handleLineLogin] Creating LINE state with:', { tenantId, orgId })
         const response = await fetch('/api/auth/line-state', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             tenantId,
             orgId,
@@ -72,22 +78,46 @@ export default function ReservePage() {
         })
 
         if (!response.ok) {
+          const errorData = await response.text()
+          console.error('[handleLineLogin] Failed to create LINE state:', errorData)
           throw new Error('Failed to create LINE state')
         }
 
         const { stateId } = await response.json()
+        console.log('[handleLineLogin] Received stateId:', stateId)
 
-        // LINEログイン時にstateパラメータを含める
-        const currentUrl = new URL(window.location.href)
-        currentUrl.searchParams.set('state', stateId)
+        // LIFFの仕様上、redirectUri は登録済みのベースパス（例: /reservation）である必要がある。
+        // orgId や calendar などの深いパスは liffRedirectUri にエンコードされるため、
+        // ここではベースパスに留めておき、戻り先は ReserveRedirectPage で復元する。
+
+        const locale = window.location.pathname.split('/')[1] || 'ja'
+        const callbackUrl = new URL(`/${locale}/reservation`, window.location.origin)
+
+        // state と テナント / 組織ID をクエリとして埋め込み
+        // ・state      : CSRF / 一時情報用
+        // ・tid (tenantId)
+        // ・oid (orgId)
+        // ReserveRedirectPage 側で liffRedirectUri をパースして取得する
+
+        callbackUrl.searchParams.set('state', stateId)
+        if (tenantId) callbackUrl.searchParams.set('tid', tenantId)
+        callbackUrl.searchParams.set('oid', orgId)
+
+        console.log('[handleLineLogin] callbackUrl:', callbackUrl)
+        console.log(
+          '[handleLineLogin] Redirecting to LINE with callback URL:',
+          callbackUrl.toString()
+        )
 
         liff?.login({
-          redirectUri: currentUrl.toString(),
+          redirectUri: callbackUrl.toString(),
         })
       } catch (error) {
-        console.error('Failed to initiate LINE login:', error)
+        console.error('[handleLineLogin] Failed to initiate LINE login:', error)
         toast.error('LINEログインの準備に失敗しました')
       }
+    } else {
+      console.log('[handleLineLogin] Already in LINE client, skipping login')
     }
   }
 
@@ -201,12 +231,15 @@ export default function ReservePage() {
     fetch('/api/auth/session', { credentials: 'include' })
       .then((res) => {
         if (!res.ok) {
+          console.log('[useEffect] Session check failed:', res)
           // セッションが見つからない場合は正常な動作なので、エラーとして扱わない
           return null
         }
+        console.log('[useEffect] Session check successful:', res)
         return res.json()
       })
       .then((data) => {
+        console.log('[useEffect] Session check data:', data)
         if (data && data.session) {
           router.push(`/reservation/${orgId}/calendar`)
         }

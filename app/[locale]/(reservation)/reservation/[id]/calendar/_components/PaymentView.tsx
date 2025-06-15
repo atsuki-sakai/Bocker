@@ -36,7 +36,7 @@ export const PaymentView = ({
       <div className="space-y-3">
         {(displayMode === 'cash' || displayMode === 'all') && (
           <div
-            className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer ${selectedPaymentMethod === 'cash' ? 'border-active bg-active-foreground' : ''}`}
+            className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer ${selectedPaymentMethod === 'cash' ? 'border-accent-2 bg-accent-2-foreground' : ''}`}
             onClick={() => onChangePaymentMethodAction('cash')}
           >
             <div className="flex items-center gap-3">
@@ -48,7 +48,7 @@ export const PaymentView = ({
             </div>
             <div className="w-6 h-6 rounded-full border border-border flex items-center justify-center">
               {selectedPaymentMethod === 'cash' && (
-                <div className="w-4 h-4 rounded-full bg-active"></div>
+                <div className="w-4 h-4 rounded-full bg-accent-2"></div>
               )}
             </div>
           </div>
@@ -56,7 +56,7 @@ export const PaymentView = ({
 
         {(displayMode === 'credit' || displayMode === 'all') && (
           <div
-            className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer ${selectedPaymentMethod === 'credit_card' ? 'border-active bg-active-foreground' : ''}`}
+            className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer ${selectedPaymentMethod === 'credit_card' ? 'border-accent-2 bg-accent-2-foreground' : ''}`}
             onClick={() => onChangePaymentMethodAction('credit_card')}
           >
             <div className="flex items-center gap-3">
@@ -68,7 +68,7 @@ export const PaymentView = ({
             </div>
             <div className="w-6 h-6 rounded-full border border-border flex items-center justify-center">
               {selectedPaymentMethod === 'credit_card' && (
-                <div className="w-4 h-4 rounded-full bg-active"></div>
+                <div className="w-4 h-4 rounded-full bg-accent-2"></div>
               )}
             </div>
           </div>

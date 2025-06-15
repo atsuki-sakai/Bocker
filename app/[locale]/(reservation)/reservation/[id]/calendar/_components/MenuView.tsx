@@ -435,7 +435,7 @@ export const MenuView = ({
                       {category}
                     </span>
                     {selectedCategories.includes(category as MenuCategory) && (
-                      <Check className="w-4 h-4 font-bold text-active" />
+                      <Check className="w-4 h-4 font-bold text-accent-2" />
                     )}
                   </div>
                 </CommandItem>
@@ -571,7 +571,7 @@ export const MenuView = ({
                         <span className="line-through text-sm text-muted-foreground">
                           ¥{selectedMenu.unit_price?.toLocaleString()}
                         </span>
-                        <span className="font-bold text-active text-lg">
+                        <span className="font-bold text-accent-2 text-lg">
                           ¥{selectedMenu.sale_price?.toLocaleString()}
                         </span>
                       </div>
@@ -719,7 +719,7 @@ export const MenuView = ({
                             key={menu._id}
                             className={`transition-all p-2 ${
                               isCurrentlySelected
-                                ? 'border-2 border-active shadow-md cursor-pointer'
+                                ? 'border-2 border-accent-2 shadow-md cursor-pointer'
                                 : isBlocked
                                   ? 'opacity-50 border-2 border-transparent'
                                   : 'hover:shadow-md border-2 border-transparent cursor-pointer'
@@ -791,7 +791,7 @@ export const MenuView = ({
                                         <span className="line-through text-xs text-muted-foreground">
                                           ¥{menu.unit_price?.toLocaleString()}
                                         </span>
-                                        <span className="font-bold text-active">
+                                        <span className="font-bold text-accent-2">
                                           ¥{menu.sale_price?.toLocaleString()}
                                         </span>
                                       </div>
@@ -857,13 +857,13 @@ export const MenuView = ({
                   <span className="block text-sm font-bold">{menu.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-active font-bold">
+                  <span className="text-accent-2 font-bold">
                     {menu.sale_price ? (
                       <div className="flex items-center gap-1">
                         <span className="line-through text-xs text-muted-foreground">
                           ¥{menu.unit_price?.toLocaleString()}
                         </span>
-                        <span className="font-bold text-active">
+                        <span className="font-bold text-accent-2">
                           ¥{menu.sale_price?.toLocaleString()}
                         </span>
                       </div>

@@ -59,17 +59,11 @@ export default function ReferralCard() {
 
       // Web Share APIがサポートされている場合
       if (navigator.share) {
-        navigator
-          .share({
-            title: t('shareTitle'),
-            text: t('shareText'),
-            url: signupUrl,
-          })
-          .catch((error) => {
-            console.error('共有に失敗しました:', error)
-            // フォールバック: URLをクリップボードにコピー
-            copySignupLink(signupUrl)
-          })
+        navigator.share({
+          title: t('shareTitle'),
+          text: t('shareText'),
+          url: signupUrl,
+        })
       }
     }
   }
@@ -132,10 +126,31 @@ export default function ReferralCard() {
                       </TooltipProvider>
                     </div>
                   </div>
-                  <Button size="sm" onClick={shareReferralLink}>
-                    <Share2 size={14} />
-                    <span className="hidden md:block">{t('shareReferralLink')}</span>
-                  </Button>
+
+                  <div className="flex gap-4">
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        copySignupLink(
+                          `${window.location.origin}/sign-up?referral_code=${referral.referral_code}`
+                        )
+                      }}
+                    >
+                      <Share2 size={14} />
+                      <span className="hidden md:block">{t('shareReferralLinkCopy')}</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        shareReferralLink()
+                      }}
+                    >
+                      <Share2 size={14} />
+                      <span className="hidden md:block">{t('shareReferralLink')}</span>
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-2 p-3 bg-secondary rounded-lg border border-border">

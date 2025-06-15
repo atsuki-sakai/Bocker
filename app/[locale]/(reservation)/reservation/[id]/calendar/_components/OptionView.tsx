@@ -172,7 +172,7 @@ export const OptionView = ({
                         <span className="line-through text-muted-foreground text-sm">
                           ￥{option.unit_price?.toLocaleString()}
                         </span>
-                        <span className="font-semibold text-active text-sm">
+                        <span className="font-semibold text-accent-2 text-sm">
                           ￥{option.sale_price.toLocaleString()}
                         </span>
                       </>
@@ -283,7 +283,7 @@ export const OptionView = ({
                   <span className="line-through text-muted-foreground text-sm">
                     ￥{selectedOption?.unit_price?.toLocaleString()}
                   </span>
-                  <span className="font-semibold text-active text-sm">
+                  <span className="font-semibold text-accent-2 text-sm">
                     ￥{selectedOption?.sale_price.toLocaleString()}
                   </span>
                 </>

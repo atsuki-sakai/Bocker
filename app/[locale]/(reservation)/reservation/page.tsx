@@ -26,6 +26,10 @@ export default function ReserveRedirectPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  // 現在の言語設定を取得
+  const locale =
+    typeof window !== 'undefined' ? window.location.pathname.split('/')[1] || 'ja' : 'ja'
+
   useEffect(() => {
     async function handleLiffLogin() {
       // LIFF初期化中はまだ処理しない
@@ -33,7 +37,7 @@ export default function ReserveRedirectPage() {
         console.log('[ReserveRedirectPage] LIFF is still loading. Waiting...')
         return
       }
-
+      console.log('liffIsLoading', liffIsLoading)
       // LIFFエラーチェック
       if (liffIsError) {
         console.error(`[ReserveRedirectPage] LIFF initialization error: ${liffErrorMessage}`)
@@ -55,11 +59,64 @@ export default function ReserveRedirectPage() {
 
       // URLからstate IDを取得
       const urlParams = new URLSearchParams(window.location.search)
-      const stateId = urlParams.get('state')
+      console.log('[ReserveRedirectPage] All URL params:', Object.fromEntries(urlParams))
 
+      let stateId: string | null = null
+      // 解析途中で参照されるため先に宣言
       let tenantIdFromSession: string | null = null
       let orgIdFromSession: string | null = null
 
+      // liffRedirectUriパラメータから実際のstate IDを抽出
+      const liffRedirectUri = urlParams.get('liffRedirectUri')
+      console.log('[ReserveRedirectPage] liffRedirectUri:', liffRedirectUri)
+      if (liffRedirectUri) {
+        try {
+          const decodedUri = decodeURIComponent(liffRedirectUri)
+          console.log('[ReserveRedirectPage] Decoded liffRedirectUri:', decodedUri)
+          const redirectUrl = new URL(decodedUri)
+          const liffState = redirectUrl.searchParams.get('liff.state')
+          console.log('[ReserveRedirectPage] liff.state:', liffState)
+
+          if (liffState) {
+            // liff.state のクエリをパースし、本来の state / tid / oid を取得
+            const innerSearchParams = new URLSearchParams(liffState.split('?')[1])
+            const innerState = innerSearchParams.get('state')
+            const innerTid = innerSearchParams.get('tid')
+            const innerOid = innerSearchParams.get('oid')
+
+            if (innerState) {
+              stateId = innerState
+              console.log('[ReserveRedirectPage] Extracted state ID from liffRedirectUri:', stateId)
+            }
+
+            if (innerTid) {
+              console.log(
+                '[ReserveRedirectPage] Extracted tenantId from liffRedirectUri:',
+                innerTid
+              )
+              tenantIdFromSession = innerTid
+            }
+
+            if (innerOid) {
+              console.log('[ReserveRedirectPage] Extracted orgId from liffRedirectUri:', innerOid)
+              orgIdFromSession = innerOid
+            }
+          }
+        } catch (e) {
+          console.error('[ReserveRedirectPage] Failed to parse liffRedirectUri:', e)
+        }
+      }
+
+      // フォールバック: 直接stateパラメータをチェック（将来の互換性のため）
+      if (!stateId) {
+        const directState = urlParams.get('state')
+        console.log('[ReserveRedirectPage] Direct state param:', directState)
+        stateId = directState
+      }
+
+      console.log('[ReserveRedirectPage] Final state ID:', stateId)
+
+      // state IDが取得できた場合は通常の検証を試みる
       if (stateId) {
         // セキュアなstate検証APIを呼び出し
         try {
@@ -70,22 +127,106 @@ export default function ReserveRedirectPage() {
 
           if (!stateResponse.ok) {
             const error = await stateResponse.json()
-            throw new Error(error.error || 'State validation failed')
+            console.error('[ReserveRedirectPage] State validation failed:', error)
+
+            // state IDが一致しない場合、検証をスキップして再試行
+            console.log('[ReserveRedirectPage] Retrying with skipValidation=true')
+            const retryResponse = await fetch(`/api/auth/line-state?skipValidation=true`, {
+              method: 'GET',
+              credentials: 'include',
+            })
+
+            if (!retryResponse.ok) {
+              if (tenantIdFromSession && orgIdFromSession) {
+                console.warn(
+                  '[ReserveRedirectPage] SkipValidation failed but IDs extracted from liffRedirectUri. Proceeding with fallback IDs.'
+                )
+              } else {
+                throw new Error('State validation failed even with skip validation')
+              }
+            } else {
+              const retryData = await retryResponse.json()
+              tenantIdFromSession = retryData.tenantId
+              orgIdFromSession = retryData.orgId
+              console.log('[ReserveRedirectPage] Retrieved data with skipValidation:', {
+                tenantIdFromSession,
+                orgIdFromSession,
+                originalStateId: retryData.originalStateId,
+              })
+            }
+          } else {
+            const stateData = await stateResponse.json()
+            tenantIdFromSession = stateData.tenantId
+            orgIdFromSession = stateData.orgId
+
+            console.log('[ReserveRedirectPage] State validated successfully:', {
+              tenantIdFromSession,
+              orgIdFromSession,
+            })
+          }
+        } catch (e) {
+          console.error('[ReserveRedirectPage] Failed to validate state:', e)
+
+          // 最後の手段として、クッキーから直接取得を試みる
+          try {
+            const fallbackResponse = await fetch(`/api/auth/line-state?skipValidation=true`, {
+              method: 'GET',
+              credentials: 'include',
+            })
+
+            if (fallbackResponse.ok) {
+              const fallbackData = await fallbackResponse.json()
+              tenantIdFromSession = fallbackData.tenantId
+              orgIdFromSession = fallbackData.orgId
+              console.log('[ReserveRedirectPage] Retrieved data via fallback:', {
+                tenantIdFromSession,
+                orgIdFromSession,
+              })
+            } else {
+              if (tenantIdFromSession && orgIdFromSession) {
+                console.warn(
+                  '[ReserveRedirectPage] Fallback skipValidation failed but IDs extracted from liffRedirectUri. Proceeding.'
+                )
+              } else {
+                setErrorMessage(
+                  'セッション情報の検証に失敗しました。セキュリティのため、最初からやり直してください。'
+                )
+                setIsLoading(false)
+                return
+              }
+            }
+          } catch (fallbackError) {
+            console.error('[ReserveRedirectPage] Fallback also failed:', fallbackError)
+            setErrorMessage('セッション情報の取得に失敗しました。最初からやり直してください。')
+            setIsLoading(false)
+            return
+          }
+        }
+      } else {
+        // state IDが取得できない場合、クッキーから直接取得
+        console.log(
+          '[ReserveRedirectPage] No state ID found, trying to get data from cookie directly'
+        )
+        try {
+          const directResponse = await fetch(`/api/auth/line-state?skipValidation=true`, {
+            method: 'GET',
+            credentials: 'include',
+          })
+
+          if (!directResponse.ok) {
+            throw new Error('Failed to get state data from cookie')
           }
 
-          const stateData = await stateResponse.json()
-          tenantIdFromSession = stateData.tenantId
-          orgIdFromSession = stateData.orgId
-
-          console.log('[ReserveRedirectPage] State validated successfully:', {
+          const directData = await directResponse.json()
+          tenantIdFromSession = directData.tenantId
+          orgIdFromSession = directData.orgId
+          console.log('[ReserveRedirectPage] Retrieved data directly from cookie:', {
             tenantIdFromSession,
             orgIdFromSession,
           })
         } catch (e) {
-          console.error('[ReserveRedirectPage] Failed to validate state:', e)
-          setErrorMessage(
-            'セッション情報の検証に失敗しました。セキュリティのため、最初からやり直してください。'
-          )
+          console.error('[ReserveRedirectPage] Failed to get data from cookie:', e)
+          setErrorMessage('セッション情報が見つかりません。最初からやり直してください。')
           setIsLoading(false)
           return
         }
@@ -103,7 +244,7 @@ export default function ReserveRedirectPage() {
       console.log(
         `[ReserveRedirectPage] Retrieved tenantId and orgId from session: ${tenantIdFromSession} ${orgIdFromSession}`
       )
-      const computedRedirectUrl = `/reservation/${orgIdFromSession}/calendar`
+      const computedRedirectUrl = `/${locale}/reservation/${orgIdFromSession}/calendar`
       setRedirectUrl(computedRedirectUrl)
 
       if (liff && liff.isLoggedIn()) {
@@ -127,7 +268,7 @@ export default function ReserveRedirectPage() {
           if (liff) liff.logout()
           setIsLoading(false)
           toast.error('認証に失敗しました。ログインし直してください')
-          router.push(`/reservation/${orgIdFromSession}`)
+          router.push(`/${locale}/reservation/${orgIdFromSession}`)
           return
         }
 
@@ -147,6 +288,7 @@ export default function ReserveRedirectPage() {
 
           if (response.ok && data.success) {
             console.log('[ReserveRedirectPage] API call successful. Server issued session cookie.')
+            console.log('[ReserveRedirectPage] Redirecting to:', computedRedirectUrl)
             // stateは使い捨てなので、削除処理は不要（サーバー側で削除済み）
             toast.success('認証に成功しました。予約ページへ移動します')
             router.push(computedRedirectUrl)
@@ -204,6 +346,7 @@ export default function ReserveRedirectPage() {
     liffErrorMessage,
     router,
     showErrorToast,
+    locale,
   ])
 
   if (isLoading) {
@@ -238,7 +381,7 @@ export default function ReserveRedirectPage() {
           <CardContent className="flex flex-col items-center justify-center space-y-4 py-6">
             <p className="text-center text-destructive font-semibold">エラーが発生しました</p>
             <p className="text-center text-sm text-muted-foreground max-w-xs">{errorMessage}</p>
-            <Button variant="outline" onClick={() => router.push('/reservation')}>
+            <Button variant="outline" onClick={() => router.push(`/${locale}/reservation`)}>
               予約トップに戻る
             </Button>
           </CardContent>

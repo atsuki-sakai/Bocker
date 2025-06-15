@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { DynamicLiffProviderWithSuspense } from '@/components/providers/DynamicLiffProvider'
 import type { NextFontWithVariable } from 'next/dist/compiled/@next/font'
 import { getCookie } from '@/lib/utils'
@@ -13,7 +13,6 @@ import { fetchQuery } from 'convex/nextjs'
 import { motion } from 'framer-motion'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-
 interface ClientLayoutProps {
   children: React.ReactNode
   fontVariables: NextFontWithVariable[]
@@ -23,12 +22,17 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
   const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null)
   const [orgId, setOrgId] = useState<Id<'organization'> | null>(null)
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [errors, setErrors] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   useEffect(() => {
     async function initSalon() {
       setIsLoading(true)
+      console.log('pathname', pathname)
+      console.log('searchParams', searchParams)
+      const stateId = searchParams.get('state')
+      console.log('stateId', stateId)
       // パスから店舗IDを取得し、Convex で存在チェック
       if (pathname && pathname.includes('/reservation/')) {
         // クエリパラメータを除去してパス部分のみ取得
@@ -60,6 +64,28 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
             ])
           }
         }
+      } else if (pathname && pathname.endsWith('/reservation')) {
+        // LINE認証のコールバックページの場合は、組織IDなしでも許可
+        console.log('[ClientLayout] LINE OAuth callback page detected, allowing without orgId')
+
+        const sessionCookie = await fetch(
+          `/api/auth/line-state?stateId=${stateId}&skipValidation=true`,
+          {
+            method: 'GET',
+            credentials: 'include',
+          }
+        )
+        const sessionData = await sessionCookie.json()
+        console.log('sessionData', sessionData)
+        if (sessionData?.orgId) {
+          setOrgId(sessionData.orgId)
+          setTenantId(sessionData.tenantId)
+        }
+
+        setIsLoading(false)
+        setErrors([])
+
+        return
       } else {
         setErrors((prev) => [
           ...prev,
@@ -90,12 +116,19 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
       setIsLoading(false)
     }
     initSalon()
-  }, [pathname])
+  }, [pathname, searchParams])
 
-  if (isLoading && !orgId && !tenantId) {
+  // LINE認証コールバックページの場合は、組織IDなしでも子コンポーネントをレンダリング
+  const isOAuthCallback = pathname && pathname.endsWith('/reservation')
+
+  if (isLoading && !orgId && !tenantId && !isOAuthCallback) {
     return <Loading />
   }
   if (!orgId || !tenantId) {
+    // LINE認証コールバックページの場合は、子コンポーネントに処理を委譲
+    if (isOAuthCallback) {
+      return <>{children}</>
+    }
     return (
       <motion.div
         initial={{ opacity: 0 }}
