@@ -100,12 +100,21 @@ export async function POST(req: NextRequest) {
         const supabaseAdmin = getSupabaseAdminService();
         const customerRepo = new CustomerRepository(supabaseAdmin);
         
-        // 既存の顧客をEmailで検索(テナントIDと組織IDとEmailでユニークを保証する, テナントIDと組織IDが違えば同じEmailで登録可能)
-        const existingCustomer = await customerRepo.findByTenantAndOrgAndCustomerEmail(
+        // 既存の顧客をLINE IDで検索（LINE IDの方が確実にユニーク）
+        let existingCustomer = await customerRepo.findByTenantAndOrgAndCustomerLineId(
           tenantId,
           orgId,
-          email || ''
+          lineUserId
         );
+        
+        // LINE IDで見つからない場合、emailでも検索（emailがある場合のみ）
+        if (!existingCustomer && email) {
+          existingCustomer = await customerRepo.findByTenantAndOrgAndCustomerEmail(
+            tenantId,
+            orgId,
+            email
+          );
+        }
 
         if (existingCustomer) {
           console.log('[API /api/line/verify-token] Existing customer found, updating...')
