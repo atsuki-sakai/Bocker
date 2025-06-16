@@ -933,7 +933,7 @@ class GoogleStorageService {
         action: 'write' as const,
         expires: Date.now() + 30 * 60 * 1000, // 30分有効
         contentType,
-        version: 'v4' as const,
+        version: 'v4' as const
       };
       
       console.log('[GCS] 署名付きURL生成オプション:', options)

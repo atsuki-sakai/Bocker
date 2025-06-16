@@ -3,8 +3,50 @@ import { ImageDirectory, ImageQuality } from "./types";
 import { v4 as uuidv4 } from 'uuid';
 import { Id } from "@/convex/_generated/dataModel";
 import { STORAGE_URL } from "./constants";
-import { gcsService } from "./GoogleStorageService";
 
+/**
+ * GCS URLをCDN URLに変換する（クライアントサイド版）
+ * @param gcsUrl - GCSの直接URL（例: https://storage.googleapis.com/bucket/path/to/image.webp）
+ * @returns CDN経由のURL
+ */
+function getCdnUrl(gcsUrl: string | null | undefined): string {
+  // 空文字列、null、undefinedの場合はそのまま返す
+  if (!gcsUrl) return '';
+  
+  // 環境変数からCDNのベースURLを取得
+  const cdnBaseUrl = process.env.NEXT_PUBLIC_CDN_DOMAIN;
+  
+  // CDNが設定されていない場合はGCS URLをそのまま返す（フォールバック）
+  if (!cdnBaseUrl) {
+    return gcsUrl;
+  }
+  
+  try {
+    // GCS URLをパース
+    const url = new URL(gcsUrl);
+    
+    // storage.googleapis.com のURLでない場合はそのまま返す
+    if (url.hostname !== 'storage.googleapis.com') {
+      return gcsUrl;
+    }
+    
+    // パスからバケット名を除去（最初のセグメントがバケット名）
+    const pathSegments = url.pathname.split('/').filter(segment => segment);
+    if (pathSegments.length < 2) {
+      return gcsUrl; // 不正なパスの場合はそのまま返す
+    }
+    
+    // バケット名を除いたパスを構築
+    const pathWithoutBucket = pathSegments.slice(1).join('/');
+    
+    // CDN URLを構築
+    return `${cdnBaseUrl}/${pathWithoutBucket}`;
+  } catch (error) {
+    console.warn('[CDN] URL変換エラー:', error, { gcsUrl });
+    // エラーの場合は元のURLを返す
+    return gcsUrl;
+  }
+}
 
 /**
  * ブラウザが Canvas で WebP エンコード可能かを非同期に判定する。
@@ -29,9 +71,9 @@ export async function canEncodeWebp(): Promise<boolean> {
 }
 
 export const qualityTable = {
-    low: { original: { width: 700, quality: 0.4 }, thumb: { width: 150, quality: 0.3 }},
-    medium: { original: { width: 1280, quality: 0.55 }, thumb: { width: 240, quality: 0.4 }},
-    high: { original: { width: 1920, quality: 0.75 }, thumb: { width: 360, quality: 0.5 }},
+    low: { original: { width: 600, quality: 0.3 }, thumb: { width: 120, quality: 0.25 }},
+    medium: { original: { width: 1024, quality: 0.5 }, thumb: { width: 200, quality: 0.35 }},
+    high: { original: { width: 1600, quality: 0.7 }, thumb: { width: 300, quality: 0.45 }},
 };
 
 /**
@@ -66,13 +108,19 @@ function sanitizeFileName(fileName: string, preferredExt: string = '.webp'): str
 function isLowMemoryDevice(): boolean {
   // navigator.deviceMemoryがサポートされている場合は使用（GB単位）
   if ('deviceMemory' in navigator && typeof (navigator as any).deviceMemory === 'number') {
-    return (navigator as any).deviceMemory <= 2; // 2GB以下は低メモリ端末と判定
+    return (navigator as any).deviceMemory <= 4; // 4GB以下は低メモリ端末と判定（より安全な閾値）
   }
   
   // User Agentベースの推定（フォールバック）
   const ua = navigator.userAgent;
   // 古いデバイス、エントリーレベルのデバイスを検出
-  if (/iPhone OS [89]_|Android [4-7]\.|Windows Phone|BlackBerry/.test(ua)) {
+  if (/iPhone OS [89]_|Android [4-9]\.|Windows Phone|BlackBerry/.test(ua)) {
+    return true;
+  }
+  
+  // iOS デバイスは一律低メモリとして扱う（メモリ管理が厳しいため）
+  const isIOS = /iP(hone|od|ad)/.test(ua) || (ua.includes('Mac') && navigator.maxTouchPoints > 1);
+  if (isIOS) {
     return true;
   }
   
@@ -438,6 +486,49 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
         console.log('[画像アップロード] サムネイルURL:', thumbUrl.substring(0, 100) + '...')
         console.log('[画像アップロード] ファイルサイズ - オリジナル:', compressed.size, 'サムネイル:', thumbnail.size)
         
+        // タイムアウト設定付きのfetch関数
+        const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs = 60000) => {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), timeoutMs);
+            
+            try {
+                console.log('[画像アップロード] PUTリクエスト開始:', {
+                    url: url.substring(0, 100) + '...',
+                    method: options.method,
+                    headers: options.headers,
+                    bodySize: options.body instanceof Blob ? options.body.size : 'unknown'
+                });
+                
+                const response = await fetch(url, {
+                    ...options,
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+                return response;
+            } catch (error) {
+                clearTimeout(timeout);
+                console.error('[画像アップロード] fetchエラー詳細:', {
+                    error: error instanceof Error ? error.message : String(error),
+                    errorName: error instanceof Error ? error.name : 'unknown',
+                    errorStack: error instanceof Error ? error.stack : undefined,
+                    url: url.substring(0, 100) + '...',
+                    method: options.method,
+                    headers: options.headers
+                });
+                
+                // CORSエラーの可能性をチェック
+                if (error instanceof TypeError && error.message === 'Failed to fetch') {
+                    console.error('[画像アップロード] CORSエラーの可能性が高いです。ブラウザのネットワークタブで詳細を確認してください。');
+                    throw new Error('CORSエラー: 画像アップロードがブロックされました。GCSのCORS設定を確認してください。');
+                }
+                
+                if (error instanceof Error && error.name === 'AbortError') {
+                    throw new Error('アップロードがタイムアウトしました');
+                }
+                throw error;
+            }
+        };
+        
         // 並列アップロードで速度測定
         const uploadPromises = [
             // オリジナル画像アップロード
@@ -445,13 +536,14 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
                 const uploadStartTime = performance.now();
                 console.log('[画像アップロード] オリジナルPUT開始')
                 try {
-                    const originalResponse = await fetch(originalUrl, { 
+                    // CORSプリフライト回避のため、シンプルなリクエストにする
+                    const originalResponse = await fetchWithTimeout(originalUrl, { 
                         method: 'PUT', 
                         headers: { 
-                            'Content-Type': actualContentType,  // 署名時と同じContent-Typeを使用
+                            'Content-Type': actualContentType  // 署名時と同じContent-Typeを使用
                         }, 
-                        body: compressed 
-                    })
+                        body: compressed
+                    }, 60000) // 60秒タイムアウト
                     const uploadEndTime = performance.now();
                     const uploadDuration = uploadEndTime - uploadStartTime;
                     const speedMbps = (compressed.size * 8) / (uploadDuration / 1000) / (1024 * 1024);
@@ -478,13 +570,14 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
                 const uploadStartTime = performance.now();
                 console.log('[画像アップロード] サムネイルPUT開始')
                 try {
-                    const thumbnailResponse = await fetch(thumbUrl, { 
+                    // CORSプリフライト回避のため、シンプルなリクエストにする
+                    const thumbnailResponse = await fetchWithTimeout(thumbUrl, { 
                         method: 'PUT', 
                         headers: { 
-                            'Content-Type': actualContentType,  // 署名時と同じContent-Typeを使用
+                            'Content-Type': actualContentType  // 署名時と同じContent-Typeを使用
                         }, 
-                        body: thumbnail 
-                    })
+                        body: thumbnail
+                    }, 60000) // 60秒タイムアウト
                     const uploadEndTime = performance.now();
                     const uploadDuration = uploadEndTime - uploadStartTime;
                     const speedMbps = (thumbnail.size * 8) / (uploadDuration / 1000) / (1024 * 1024);
@@ -530,11 +623,11 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
         // CDN URLに変換（CDNが無効な場合はGCS URLがそのまま返される）
         const result = {
             original: { 
-                publicUrl: gcsService.getCdnUrl(originalGcsUrl), 
+                publicUrl: getCdnUrl(originalGcsUrl), 
                 filePath: originalFilePath 
             },
             thumbnail: { 
-                publicUrl: gcsService.getCdnUrl(thumbnailGcsUrl), 
+                publicUrl: getCdnUrl(thumbnailGcsUrl), 
                 filePath: thumbFilePath 
             },
         };
@@ -560,4 +653,34 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
         console.error(`[画像アップロード] エラー発生 (${totalErrorTime.toFixed(2)}ms経過):`, error)
         throw error; // 呼び出し元でハンドリングするためにエラーを再throw
     }
+}
+
+/**
+ * 画像をアップロードしてCDN URLを取得（簡易インターフェース）
+ * @param file アップロードする画像ファイル
+ * @param orgId 組織ID
+ * @param directory ディレクトリ
+ * @param aspectType アスペクト比の種類
+ * @param quality 画像品質設定
+ * @returns オリジナルとサムネイルのCDN URL
+ */
+export async function uploadImage(
+    file: File,
+    orgId: Id<'organization'>,
+    directory: ImageDirectory,
+    aspectType: AspectType,
+    quality: ImageQuality = 'medium'
+): Promise<{ originalUrl: string; thumbnailUrl: string }> {
+    const result = await uploadCompressedImageWithThumbnailSignedUrl(
+        file,
+        orgId,
+        directory,
+        aspectType,
+        quality
+    );
+    
+    return {
+        originalUrl: result.original.publicUrl,
+        thumbnailUrl: result.thumbnail.publicUrl
+    };
 }
