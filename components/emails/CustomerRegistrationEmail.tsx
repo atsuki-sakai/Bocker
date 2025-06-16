@@ -10,36 +10,15 @@ import {
   Text,
 } from '@react-email/components'
 import * as React from 'react'
+import { getEmailTemplateTranslations, type SupportedLocale } from '@/lib/email-translations'
 
 interface CustomerRegistrationEmailProps {
   customerEmail: string
   orgName: string
   loginUrl: string
-  locale?: 'ja' | 'en'
+  locale?: SupportedLocale
 }
 
-const translations = {
-  ja: {
-    subject: '【{orgName}】会員登録完了のお知らせ',
-    title: '会員登録完了',
-    greeting: '{email} 様',
-    welcomeMessage: 'この度は、【{orgName}】にご登録いただき、誠にありがとうございます。',
-    completionMessage: '会員登録が正常に完了いたしました。',
-    loginMessage: 'ご登録いただいたメールアドレスとパスワードで、いつでもログインいただけます。',
-    loginButton: 'ログインはこちら',
-    disclaimer: '※このメールに心当たりがない場合は、お手数ですが削除してください。',
-  },
-  en: {
-    subject: '[{orgName}] Registration Complete',
-    title: 'Registration Complete',
-    greeting: 'Dear {email},',
-    welcomeMessage: 'Thank you for registering with [{orgName}].',
-    completionMessage: 'Your registration has been completed successfully.',
-    loginMessage: 'You can log in anytime using your registered email address and password.',
-    loginButton: 'Login Here',
-    disclaimer: '※If you did not expect this email, please delete it.',
-  },
-}
 
 const main = {
   backgroundColor: '#F7F9FA',
@@ -109,7 +88,7 @@ export const CustomerRegistrationEmail = ({
   loginUrl,
   locale = 'ja',
 }: CustomerRegistrationEmailProps) => {
-  const t = translations[locale]
+  const t = getEmailTemplateTranslations('customerRegistration', locale)
   
   return (
   <Html>

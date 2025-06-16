@@ -10,47 +10,16 @@ import {
   Text,
 } from '@react-email/components'
 import * as React from 'react'
+import { getEmailTemplateTranslations, type SupportedLocale } from '@/lib/email-translations'
 
 interface PasswordChangedEmailProps {
   customerEmail: string
   orgName: string
   changedAt: string
   supportUrl?: string
-  locale?: 'ja' | 'en'
+  locale?: SupportedLocale
 }
 
-const translations = {
-  ja: {
-    subject: '【{orgName}】パスワード変更完了のお知らせ',
-    title: 'パスワード変更完了',
-    greeting: '{email} 様',
-    message: '【{orgName}】のアカウントのパスワードが正常に変更されました。',
-    changeInfo: '変更完了情報：',
-    changeDate: '変更日時：{date}',
-    instruction: '新しいパスワードを使用して、次回からログインしてください。',
-    securityNotice: 'セキュリティに関するお知らせ：',
-    unauthorizedWarning: 'もしこの変更にお心当たりがない場合は、第三者によるアカウントへの不正アクセスの可能性があります。',
-    contactSupport: 'すぐにサポートまでご連絡ください。',
-    contactSupportWithLink: 'すぐに {link} ください。',
-    supportLinkText: 'サポートまでご連絡',
-    securityTip: 'アカウントのセキュリティを保つため、定期的にパスワードを変更することをお勧めします。',
-  },
-  en: {
-    subject: '[{orgName}] Password Change Confirmation',
-    title: 'Password Changed Successfully',
-    greeting: 'Dear {email},',
-    message: 'Your password for [{orgName}] has been successfully changed.',
-    changeInfo: 'Change Information:',
-    changeDate: 'Changed at: {date}',
-    instruction: 'Please use your new password for future logins.',
-    securityNotice: 'Security Notice:',
-    unauthorizedWarning: 'If you did not make this change, there may be unauthorized access to your account.',
-    contactSupport: 'Please contact support immediately.',
-    contactSupportWithLink: 'Please {link} immediately.',
-    supportLinkText: 'contact support',
-    securityTip: 'We recommend changing your password regularly to keep your account secure.',
-  },
-}
 
 const main = {
   backgroundColor: '#F7F9FA',
@@ -130,7 +99,7 @@ export const PasswordChangedEmail = ({
   supportUrl,
   locale = 'ja',
 }: PasswordChangedEmailProps) => {
-  const t = translations[locale]
+  const t = getEmailTemplateTranslations('passwordChanged', locale)
   
   return (
   <Html>

@@ -10,41 +10,16 @@ import {
   Text,
 } from '@react-email/components'
 import * as React from 'react'
+import { getEmailTemplateTranslations, type SupportedLocale } from '@/lib/email-translations'
 
 interface PasswordResetEmailProps {
   customerEmail: string
   orgName: string
   resetUrl: string
   expiresAt: string
-  locale?: 'ja' | 'en'
+  locale?: SupportedLocale
 }
 
-const translations = {
-  ja: {
-    subject: '【{orgName}】パスワードリセットのご案内',
-    title: 'パスワードリセット',
-    greeting: '{email} 様',
-    requestMessage: '【{orgName}】のパスワードリセットのご依頼を承りました。',
-    instructionMessage: '以下のボタンをクリックして、新しいパスワードを設定してください。',
-    resetButton: 'パスワードを再設定する',
-    importantNotice: '重要なお知らせ：',
-    expirationNotice: '• このリンクの有効期限は {expiresAt} までです',
-    singleUseNotice: '• リンクは一度のみ使用可能です',
-    disclaimer: '※このメールに心当たりがない場合は、第三者がメールアドレスを間違って入力した可能性があります。その場合は、このメールを削除してください。',
-  },
-  en: {
-    subject: '[{orgName}] Password Reset Request',
-    title: 'Password Reset',
-    greeting: 'Dear {email},',
-    requestMessage: 'We have received a password reset request for your [{orgName}] account.',
-    instructionMessage: 'Click the button below to set a new password.',
-    resetButton: 'Reset Password',
-    importantNotice: 'Important Notice:',
-    expirationNotice: '• This link expires on {expiresAt}',
-    singleUseNotice: '• This link can only be used once',
-    disclaimer: '※If you did not request this email, someone may have entered your email address by mistake. In that case, please delete this email.',
-  },
-}
 
 const main = {
   backgroundColor: '#F7F9FA',
@@ -123,7 +98,7 @@ export const PasswordResetEmail = ({
   expiresAt,
   locale = 'ja',
 }: PasswordResetEmailProps) => {
-  const t = translations[locale]
+  const t = getEmailTemplateTranslations('passwordReset', locale)
   
   return (
   <Html>

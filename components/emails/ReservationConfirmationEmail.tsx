@@ -14,6 +14,7 @@ import {
   Column,
 } from '@react-email/components'
 import * as React from 'react'
+import { getEmailTemplateTranslations, type SupportedLocale } from '@/lib/email-translations'
 
 interface ReservationConfirmationEmailProps {
   customerName?: string | null
@@ -34,7 +35,7 @@ interface ReservationConfirmationEmailProps {
   reservationRules?: string | null
   reservationDetailUrl: string
   logoUrl?: string
-  locale?: 'ja' | 'en'
+  locale?: SupportedLocale
 }
 
 interface ContactEmailProps {
@@ -46,52 +47,6 @@ interface ContactEmailProps {
   message: string
 }
 
-const translations = {
-  ja: {
-    subject: '【{orgName}】ご予約内容の確認',
-    title: 'ご予約内容の確認',
-    greeting: '{customerName} 様',
-    thankYouMessage: 'この度は、【{orgName}】にご予約いただき、誠にありがとうございます。',
-    confirmationMessage: '以下の内容でご予約を承りました。',
-    reservationDetails: 'ご予約詳細',
-    shopName: '店舗名:',
-    reservationDateTime: 'ご予約日時:',
-    assignedStaff: '担当スタッフ:',
-    selectedMenus: '選択されたメニュー',
-    selectedOptions: '選択されたオプション',
-    subtotal: '小計',
-    pointsUsed: '使用ポイント',
-    couponDiscount: 'クーポン割引',
-    totalAmount: '合計金額',
-    thankYouVisit: 'ご来店を心よりお待ちしております。',
-    phone: '電話:',
-    address: '住所:',
-    reservationRules: '予約ルール:',
-    reservationDetailsButton: '予約詳細・キャンセルはこちら',
-  },
-  en: {
-    subject: '[{orgName}] Reservation Confirmation',
-    title: 'Reservation Confirmation',
-    greeting: 'Dear {customerName},',
-    thankYouMessage: 'Thank you for making a reservation at [{orgName}].',
-    confirmationMessage: 'We have confirmed your reservation with the following details.',
-    reservationDetails: 'Reservation Details',
-    shopName: 'Shop Name:',
-    reservationDateTime: 'Date & Time:',
-    assignedStaff: 'Staff:',
-    selectedMenus: 'Selected Menus',
-    selectedOptions: 'Selected Options',
-    subtotal: 'Subtotal',
-    pointsUsed: 'Points Used',
-    couponDiscount: 'Coupon Discount',
-    totalAmount: 'Total Amount',
-    thankYouVisit: 'We look forward to seeing you.',
-    phone: 'Phone:',
-    address: 'Address:',
-    reservationRules: 'Reservation Rules:',
-    reservationDetailsButton: 'View Details / Cancel',
-  },
-}
 
 const main = {
   backgroundColor: '#F7F9FA',
@@ -258,7 +213,7 @@ export const ReservationConfirmationEmail = ({
   logoUrl,
   locale = 'ja',
 }: ReservationConfirmationEmailProps) => {
-  const t = translations[locale]
+  const t = getEmailTemplateTranslations('reservationConfirmation', locale)
   const displayName = customerName || customerEmail
   
   return (
