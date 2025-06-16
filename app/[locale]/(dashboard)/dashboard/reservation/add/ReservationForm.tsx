@@ -115,18 +115,18 @@ const schemaReservation = z
     featured_hairimg_path: z.string().optional(), // 顧客が希望する髪型の画像ファイルパス
     notes: z.string().optional(), // 備考
     payment_method: z.preprocess(preprocessEmptyString, z.enum(PAYMENT_METHOD_VALUES)).optional(), // 支払い方法
-    is_first_customer: z.boolean().optional(),
+    is_existing_customer: z.boolean().optional(),
   })
   .refine(
     (data) => {
-      if (data.is_first_customer) {
+      if (!data.is_existing_customer) {
         return !!data.customer_first_name && !!data.customer_last_name && !!data.customer_phone
       }
       return true
     },
     {
       message: 'newCustomerValidation', // 新規顧客の場合、姓・名・電話番号は必須です
-      path: ['customerFirstName'], // エラー表示位置（必要に応じて他も追加可）
+      path: ['customer_first_name'], // エラー表示位置（必要に応じて他も追加可）
     }
   )
 
@@ -222,7 +222,7 @@ export default function ReservationForm() {
   const router = useRouter()
   const t = useTranslations('reservations')
   const tCommon = useTranslations('common')
-  const [isFirstCustomer, setIsFirstCustomer] = useState<boolean>(true)
+  const [isExistingCustomer, setIsExistingCustomer] = useState<boolean>(true)
   // 複数選択に対応するためにstateを配列に変更
   const [selectedMenus, setSelectedMenus] = useState<ReservationMenu[]>([])
   const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null)
@@ -587,7 +587,7 @@ export default function ReservationForm() {
     if (!tenantId || !orgId) return
     try {
       let customerUid
-      if (!isFirstCustomer) {
+      if (!isExistingCustomer) {
         // 新規顧客の場合、CustomerRepositoryで顧客を作成
         try {
           customerUid = crypto.randomUUID()
@@ -622,7 +622,7 @@ export default function ReservationForm() {
       await createReservation({
         tenant_id: tenantId, // テナントID
         org_id: orgId, // 組織ID
-        customer_id: isFirstCustomer ? (customerUid ?? '') : (selectedCustomer?.uid ?? ''), // Supabase 側の customer.id
+        customer_id: isExistingCustomer ? (selectedCustomer?.uid ?? '') : (customerUid ?? ''), // Supabase 側の customer.id
         staff_id: selectedStaffId as Id<'staff'>, // スタッフID
         customer_name: selectedCustomer?.last_name + ' ' + selectedCustomer?.first_name, // 顧客名
         staff_name: selectStaff?.name ?? '', // スタッフ名
@@ -695,10 +695,10 @@ export default function ReservationForm() {
               <ToggleGroup
                 type="single"
                 className="w-fit"
-                value={isFirstCustomer ? 'first' : 'new'}
-                onValueChange={(value) => setIsFirstCustomer(value === 'first')}
+                value={isExistingCustomer ? 'existing' : 'new'}
+                onValueChange={(value) => setIsExistingCustomer(value === 'existing')}
               >
-                <ToggleGroupItem className="border border-border" value="first">
+                <ToggleGroupItem className="border border-border" value="existing">
                   {t('existingCustomer')}
                 </ToggleGroupItem>
                 <ToggleGroupItem className="border border-border" value="new">
@@ -706,7 +706,7 @@ export default function ReservationForm() {
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
-            {isFirstCustomer ? (
+            {isExistingCustomer ? (
               <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
                 <div className="flex flex-col items-start gap-2">
                   <div className="flex flex-col items-start gap-2">
