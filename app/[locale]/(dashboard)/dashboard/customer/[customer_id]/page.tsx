@@ -147,9 +147,11 @@ function CustomerDetailPage() {
           </Badge>
         </div>
         {completeCustomer.customer.line_user_name && (
-          <p className="w-fit text-sm mt-1 text-active border-active border rounded-md font-bold py-1 px-3">
-            {t('lineUserName')}: {completeCustomer.customer.line_user_name}
-          </p>
+          <div className="flex flex-col md:flex-row items-center justify-start space-x-2">
+            <p className="w-fit text-sm mt-1 text-accent-2 border-accent-2 border rounded-md font-bold py-1 px-3">
+              {t('lineUserName')}: {completeCustomer.customer.line_user_name}
+            </p>
+          </div>
         )}
         <div className="space-y-6 pt-4">
           <div>
@@ -281,7 +283,7 @@ function CustomerDetailPage() {
           ) : (
             // Display a message if no tags are present
             <>
-              <div className="flex items-center space-x-2 text-muted-foreground text-sm">
+              <div className="flex items-center space-x-2 text-muted-foreground text-sm pb-2">
                 <Tag className="h-5 w-5" />
                 <span>{t('noTags')}</span>
               </div>

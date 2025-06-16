@@ -3,6 +3,7 @@
 import Image, { ImageProps } from 'next/image'
 import { useState, useEffect } from 'react'
 import { getCdnUrl, isCdnEnabled } from '@/lib/cdn-client-utils'
+import { useTranslations } from 'next-intl'
 
 interface OptimizedImageProps extends Omit<ImageProps, 'src' | 'onError'> {
   src: string | null | undefined
@@ -28,6 +29,7 @@ export function OptimizedImage({
   loading,
   ...props
 }: OptimizedImageProps) {
+  const t = useTranslations('common.optimizedImage')
   const [imgSrc, setImgSrc] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
@@ -47,12 +49,12 @@ export function OptimizedImage({
   }, [src, fallbackSrc, transformSrc])
 
   const handleError = () => {
-    console.warn('[OptimizedImage] 画像の読み込みに失敗しました:', imgSrc)
+    console.warn('[OptimizedImage] Failed to load image:', imgSrc)
     setHasError(true)
     setImgSrc(fallbackSrc)
 
     if (onError) {
-      onError(new Error(`画像の読み込みに失敗しました: ${imgSrc}`))
+      onError(new Error(`Failed to load image: ${imgSrc}`))
     }
   }
 
@@ -78,7 +80,7 @@ export function OptimizedImage({
       />
       {hasError && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground text-xs">
-          画像を読み込めません
+          {t('loadError')}
         </div>
       )}
     </div>

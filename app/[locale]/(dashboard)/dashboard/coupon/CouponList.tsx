@@ -129,7 +129,7 @@ export default function CouponList() {
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                           {coupon.discount_type === 'percentage'
                             ? `${coupon.percentage_discount_value}%`
-                            : `${coupon.fixed_discount_value}${tCommon('currencySymbol')}`}
+                            : `${tCommon('currencySymbol')}${coupon.fixed_discount_value?.toLocaleString()}`}
                         </td>
 
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
@@ -137,7 +137,7 @@ export default function CouponList() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-link-foreground bg-link hover:opacity-80"
+                              className="text-neon bg-neon-foreground hover:opacity-80"
                             >
                               {tCommon('edit')}
                               <span className="sr-only">, {coupon.name}</span>
@@ -146,8 +146,8 @@ export default function CouponList() {
                         </td>
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                           <Button
-                            variant="destructive"
-                            className="text-destructive-foreground hover:opacity-80"
+                            variant="ghost"
+                            className="text-destructive bg-destructive-foreground hover:opacity-80"
                             size="sm"
                             onClick={() => showDialog(coupon._id)}
                           >

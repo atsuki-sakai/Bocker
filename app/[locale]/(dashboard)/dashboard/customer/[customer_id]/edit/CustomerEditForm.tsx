@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { ZodTextField } from '@/components/common'
+import { ZodTextField, DatePicker } from '@/components/common'
 import { TagInput } from '@/components/common'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useEffect, useState, useMemo } from 'react'
@@ -23,7 +23,6 @@ import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH, MAX_TAG_LENGTH } from '@/convex/cons
 import { Loader2, Pencil } from 'lucide-react'
 import { Loading } from '@/components/common'
 import { toast } from 'sonner'
-import { Input } from '@/components/ui/input'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { useTranslations } from 'next-intl'
@@ -162,8 +161,6 @@ export default function CustomerEditForm() {
     watch,
   } = useZodForm(customerEditFormSchema)
 
-  // 誕生日フィールドのregisterオブジェクトを取得
-  const birthdayRegister = register('birthday')
 
   // 顧客データを取得
   useEffect(() => {
@@ -388,18 +385,16 @@ export default function CustomerEditForm() {
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 {t('birthday')}
               </label>
-              <Input
-                type="date"
-                // registerのプロパティを展開
-                {...birthdayRegister}
-                // onChangeを上書きして、registerのonChangeも呼び出す
-                onChange={(e) => {
-                  // react-hook-formのonChangeを呼び出し
-                  birthdayRegister.onChange(e)
-                  // 追加のロジック（ログ出力など）
-                  console.log('誕生日が変更されました:', e.target.value)
+              <DatePicker
+                value={watch('birthday') ? new Date(watch('birthday')!) : undefined}
+                onChange={(date) => {
+                  const dateString = date?.toISOString().split('T')[0] || '';
+                  setValue('birthday', dateString);
+                  console.log('誕生日が変更されました:', dateString);
                 }}
-                className={errors.birthday ? 'border-destructive' : ''}
+                placeholder={t('birthdayPlaceholder')}
+                error={!!errors.birthday}
+                toDate={new Date()} // 未来の日付は選択不可
               />
               {errors.birthday && (
                 <p className="text-sm font-medium text-destructive mt-1">

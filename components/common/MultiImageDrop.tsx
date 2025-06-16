@@ -260,9 +260,9 @@ export default function MultiImageDrop({
   const renderDragAreaPlaceholder = () => (
     <div className="flex flex-col items-center justify-center h-full">
       <FileImage
-        className={`h-12 w-12 mx-auto mb-2 ${isDragging ? 'text-active' : 'text-muted-foreground'}`}
+        className={`h-12 w-12 mx-auto mb-2 ${isDragging ? 'text-accent-2' : 'text-muted-foreground'}`}
       />
-      <p className={`text-sm mb-2 ${isDragging ? 'text-active' : 'text-muted-foreground'}`}>
+      <p className={`text-sm mb-2 ${isDragging ? 'text-accent-2' : 'text-muted-foreground'}`}>
         {isDragging ? t('dropHere') : placeholderText || t('placeholder')}
       </p>
       <p className="text-xs text-muted-foreground">

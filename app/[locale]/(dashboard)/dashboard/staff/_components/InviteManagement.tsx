@@ -230,10 +230,8 @@ export default function InviteManagement() {
                             </Badge>
                           )}
                           <div className="flex items-center gap-2">
-                            <UserPlus className="h-6 w-6 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground w-full">
-                              ({invitation.email})
-                            </p>
+                            <UserPlus className="h-6 w-6 text-neon" />
+                            <p className="text-sm text-neon w-full">({invitation.email})</p>
                           </div>
                           <div className="flex items-center gap-2">
                             {invitation.invitation_status === 'missing' && (
@@ -251,7 +249,7 @@ export default function InviteManagement() {
                         </div>
 
                         <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 text-nowrap">
                             <Clock className="h-3 w-3" />
                             登録日:{' '}
                             {formatDistanceToNow(new Date(invitation.created_at), {
@@ -260,7 +258,7 @@ export default function InviteManagement() {
                             })}
                           </div>
                           {invitation.invitation_created_at && (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 text-nowrap">
                               <Mail className="h-3 w-3" />
                               招待送信:{' '}
                               {formatDistanceToNow(new Date(invitation.invitation_created_at), {
@@ -277,20 +275,20 @@ export default function InviteManagement() {
                           size="sm"
                           onClick={() => resendInvitation(invitation)}
                           disabled={isProcessing}
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 bg-link text-link-foreground hover:text-link-foreground"
                         >
                           <RefreshCw className="h-3 w-3" />
                           {invitation.invitation_id ? '再送' : '送信'}
                         </Button>
                         <Button
-                          variant="destructive"
+                          variant="ghost"
                           size="sm"
                           onClick={() => {
                             setSelectedInvitation(invitation)
                             setShowCancelDialog(true)
                           }}
                           disabled={isProcessing}
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 text-destructive bg-destructive-foreground hover:text-destructive-foreground"
                         >
                           <Trash2 className="h-3 w-3" />
                           削除

@@ -222,7 +222,7 @@ export default function OptionList() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-link-foreground bg-link hover:opacity-80"
+                            className="text-neon bg-neon-foreground hover:opacity-80"
                           >
                             {t('list.table.edit')}
                             <span className="sr-only">, {option.name}</span>
@@ -234,7 +234,7 @@ export default function OptionList() {
                           variant="ghost"
                           size="sm"
                           onClick={() => showDeleteDialog(option._id)}
-                          className="text-destructive-foreground bg-destructive hover:text-destructive-foreground"
+                          className="text-destructive bg-destructive-foreground hover:text-destructive-foreground"
                         >
                           {t('list.table.delete')}
                           <span className="sr-only">, {option.name}</span>

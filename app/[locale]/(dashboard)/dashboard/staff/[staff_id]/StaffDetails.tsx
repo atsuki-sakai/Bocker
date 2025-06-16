@@ -210,7 +210,7 @@ export default function StaffDetails() {
                       </Badge>
                       <Badge
                         variant="outline"
-                        className="border-active text-active bg-active-foreground"
+                        className="border-accent-2 text-accent-2 bg-accent-2-foreground"
                       >
                         {getRoleDisplay(staffAllData.role || '')}
                       </Badge>
@@ -343,9 +343,9 @@ export default function StaffDetails() {
             </div>
             <div className="flex gap-2">
               <Button
-                variant="destructive"
+                variant="ghost"
                 size="sm"
-                className="gap-1"
+                className="gap-1 text-destructive bg-destructive-foreground hover:text-destructive-foreground"
                 onClick={handleShowDeleteDialog}
               >
                 <Trash className="h-4 w-4" />

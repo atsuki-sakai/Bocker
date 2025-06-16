@@ -1,6 +1,6 @@
 'use client'
 
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useRouter, usePathname } from '@/i18n/navigation'
 import {
   Select,
@@ -10,15 +10,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-const locales = [
-  { value: 'ja', label: '日本語', flag: '🇯🇵' },
-  { value: 'en', label: 'English', flag: '🇺🇸' },
-]
-
 export function LanguageSwitcher() {
   const locale = useLocale()
+  const t = useTranslations('language')
   const router = useRouter()
   const pathname = usePathname()
+
+  const locales = [
+    { value: 'ja', label: t('japanese'), flag: '🇯🇵' },
+    { value: 'en', label: t('english'), flag: '🇺🇸' },
+  ]
 
   const handleLocaleChange = (newLocale: string) => {
     router.push(pathname, { locale: newLocale })

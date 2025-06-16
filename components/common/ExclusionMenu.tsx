@@ -58,7 +58,7 @@ export default function ExclusionMenu({
     const newSelectedIds = isCurrentlySelected
       ? localSelectedIds.filter((id) => id !== menuId)
       : [...localSelectedIds, menuId]
-    console.log('トグル:', {
+    console.log('Toggle menu:', {
       menuId,
       isCurrentlySelected,
       beforeIds: localSelectedIds,
@@ -180,7 +180,7 @@ export default function ExclusionMenu({
                       )}
 
                       {/* 表示する価格 */}
-                      <span className="text-active">
+                      <span className="text-accent-2">
                         ¥
                         {(typeof menu.sale_price === 'number' && menu.sale_price > 0
                           ? menu.sale_price

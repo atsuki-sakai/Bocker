@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { useZodForm } from '@/hooks/useZodForm'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Loader2 } from 'lucide-react'
-import { Loading, TagInput } from '@/components/common'
+import { Loading, TagInput, DatePicker } from '@/components/common'
 import { ZodTextField } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -281,13 +281,21 @@ export default function CustomerAddForm() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <ZodTextField
-            label={t('birthday')}
-            type="date"
-            name="birthday"
-            register={register}
-            errors={errors}
-          />
+          <div className="space-y-2">
+            <Label htmlFor="birthday" className="text-sm font-medium text-primary">
+              {t('birthday')}
+            </Label>
+            <DatePicker
+              value={watch('birthday') ? new Date(watch('birthday')!) : undefined}
+              onChange={(date) => setValue('birthday', date?.toISOString().split('T')[0] || '')}
+              placeholder={t('birthdayPlaceholder')}
+              error={!!errors.birthday}
+              toDate={new Date()} // 未来の日付は選択不可
+            />
+            {errors.birthday && (
+              <p className="text-sm text-destructive">{errors.birthday.message}</p>
+            )}
+          </div>
         </div>
 
         <TagInput

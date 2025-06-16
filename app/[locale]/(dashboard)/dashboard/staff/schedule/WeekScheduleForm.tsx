@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useTranslations } from 'next-intl'
 import { Id } from '@/convex/_generated/dataModel'
 import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
@@ -122,6 +123,7 @@ export interface WeekScheduleData {
 const defaultScheduleHour = { start_hour: '09:00', end_hour: '17:00' }
 
 export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff'> }) {
+  const t = useTranslations('staff.schedule.weekScheduleForm')
   const { tenantId, orgId } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   // 横スクロール可否判定用
@@ -478,14 +480,14 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
       })
 
       // 成功メッセージ
-      toast.success('営業時間を更新しました')
+      toast.success(t('workingHoursUpdated'))
       router.refresh()
     } catch (err) {
       showErrorToast(err)
     } finally {
       setIsSaving(false)
     }
-  }, [weekScheduleData, updateWeekSchedule, staff_id, router, tenantId, orgId, showErrorToast])
+  }, [weekScheduleData, updateWeekSchedule, staff_id, router, tenantId, orgId, showErrorToast, t])
 
   // ローディング状態
   if (staffWeekSchedules === undefined) {
@@ -496,16 +498,16 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
     <div>
       <Card className="border shadow-lg overflow-hidden">
         <CardHeader>
-          <CardTitle className="text-primary text-xl font-bold">
-            スタッフの勤務日・勤務時間設定
-          </CardTitle>
+          <CardTitle className="text-primary text-xl font-bold">{t('title')}</CardTitle>
         </CardHeader>
 
         <CardContent className="px-6">
           <div className="space-y-8">
             {/* 営業日設定 */}
             <div>
-              <p className="text-sm mb-2 font-bold text-muted-foreground">サロンの営業日</p>
+              <p className="text-sm mb-2 font-bold text-muted-foreground">
+                {t('salonBusinessDays')}
+              </p>
               {/* 横スクロール可能リスト  */}
               <div className="relative mb-4">
                 <div
@@ -601,18 +603,18 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="h-5 w-5 text-link-foreground" />
-                <h3 className="text-lg font-semibold">勤務時間設定</h3>
+                <h3 className="text-lg font-semibold">{t('workingTimeSettings')}</h3>
               </div>
 
               <Tabs value={scheduleTab} onValueChange={setScheduleTab} className="w-full">
                 <TabsList className="mb-4 p-1 rounded-lg">
                   <TabsTrigger value="common">
                     <Settings2 className="h-4 w-4 mr-2" />
-                    共通設定
+                    {t('commonSettings')}
                   </TabsTrigger>
                   <TabsTrigger value="individual">
                     <Calendar className="h-4 w-4 mr-2" />
-                    曜日ごとの設定
+                    {t('daySpecificSettings')}
                   </TabsTrigger>
                 </TabsList>
 
@@ -622,9 +624,7 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
                       checked={weekScheduleData.use_common_hours}
                       onCheckedChange={handleUseCommonHoursChange}
                     />
-                    <Label className="font-medium cursor-pointer">
-                      すべての勤務日に共通の勤務時間を設定する
-                    </Label>
+                    <Label className="font-medium cursor-pointer">{t('useCommonHours')}</Label>
                   </div>
 
                   {weekScheduleData.use_common_hours && (
@@ -632,7 +632,7 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
                       <div className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center">
                           <Clock3 className="mr-2 h-5 w-5 text-muted-foreground" />
-                          <span className="font-medium">勤務時間</span>
+                          <span className="font-medium">{t('workingTime')}</span>
                         </div>
 
                         <div className="flex items-center gap-3 flex-wrap">
@@ -641,7 +641,7 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
                             onValueChange={handleCommonStartHourChange}
                           >
                             <SelectTrigger className="w-28">
-                              <SelectValue placeholder="開始時間" />
+                              <SelectValue placeholder={t('startTimePlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                               <ScrollArea className="h-60">
@@ -661,7 +661,7 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
                             onValueChange={handleCommonEndHourChange}
                           >
                             <SelectTrigger className="w-28">
-                              <SelectValue placeholder="終了時間" />
+                              <SelectValue placeholder={t('endTimePlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                               <ScrollArea className="h-60">
@@ -673,7 +673,7 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
                                   ))
                                 ) : (
                                   <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                    開始時間より後の時間を選択できます
+                                    {t('timeSelectHint')}
                                   </div>
                                 )}
                               </ScrollArea>
@@ -713,7 +713,7 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
                                     }
                                   >
                                     <SelectTrigger className="w-28">
-                                      <SelectValue placeholder="開始時間" />
+                                      <SelectValue placeholder={t('startTimePlaceholder')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                       <ScrollArea className="h-60">
@@ -735,7 +735,7 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
                                     }
                                   >
                                     <SelectTrigger className="w-28">
-                                      <SelectValue placeholder="終了時間" />
+                                      <SelectValue placeholder={t('endTimePlaceholder')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                       <ScrollArea className="h-60">
@@ -762,10 +762,8 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
                     ) : (
                       <div className="flex flex-col items-center justify-center p-8 border rounded-lg bg-muted text-center">
                         <Coffee className="h-12 w-12 text-muted-foreground mb-3" />
-                        <p className="text-muted-foreground mb-2">勤務日が設定されていません</p>
-                        <p className="text-sm text-muted-foreground">
-                          勤務日を選択すると、時間設定が表示されます;
-                        </p>
+                        <p className="text-muted-foreground mb-2">{t('noWorkingDays')}</p>
+                        <p className="text-sm text-muted-foreground">{t('noWorkingDaysDesc')}</p>
                       </div>
                     )}
                   </div>
@@ -784,12 +782,12 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
               {isSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  保存中...
+                  {t('saving')}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  勤務時間を保存
+                  {t('saveWorkingHours')}
                 </>
               )}
             </Button>

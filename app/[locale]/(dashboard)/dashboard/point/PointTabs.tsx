@@ -38,40 +38,68 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useTranslations } from 'next-intl'
 
-const createPointConfigSchema = (t: (key: string, values?: Record<string, string | number | Date>) => string) => z.object({
-  id: z.string().optional(),
-  is_active: z.boolean().default(true),
-  is_fixed_point: z.boolean().default(false),
-  point_rate: z.preprocess(
-    (val) => {
-      // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null
-      // 数値に変換できない場合もnullを返す
-      const num = Number(val)
-      return isNaN(num) ? null : num
-    },
-    z
-      .number()
-      .max(100, { message: t('validation.pointRateMax') })
-      .nullable()
-      .optional()
-  ),
-  fixed_point: z.preprocess(
-    (val) => {
-      // 空文字列の場合はnullを返す
-      if (val === '' || val === null || val === undefined) return null
-      // 数値に変換できない場合もnullを返す
-      const num = Number(val)
-      return isNaN(num) ? null : num
-    },
-    z
-      .number()
-      .max(99999, { message: t('validation.fixedPointMax') })
-      .nullable()
-      .optional()
-  ),
-  point_expiration_days: z.number().min(1).optional().default(POINT_EXPIRATION_DAYS[0].value),
-})
+const createPointConfigSchema = (
+  t: (key: string, values?: Record<string, string | number | Date>) => string
+) =>
+  z
+    .object({
+      id: z.string().optional(),
+      is_active: z.boolean().default(true),
+      is_fixed_point: z.boolean().default(false),
+      point_rate: z.preprocess(
+        (val) => {
+          // 空文字列の場合はnullを返す
+          if (val === '' || val === null || val === undefined) return null
+          // 数値に変換できない場合もnullを返す
+          const num = Number(val)
+          return isNaN(num) ? null : num
+        },
+        z
+          .number()
+          .max(100, { message: t('validation.pointRateMax') })
+          .nullable()
+          .optional()
+      ),
+      fixed_point: z.preprocess(
+        (val) => {
+          // 空文字列の場合はnullを返す
+          if (val === '' || val === null || val === undefined) return null
+          // 数値に変換できない場合もnullを返す
+          const num = Number(val)
+          return isNaN(num) ? null : num
+        },
+        z
+          .number()
+          .max(99999, { message: t('validation.fixedPointMax') })
+          .nullable()
+          .optional()
+      ),
+      point_expiration_days: z.number().min(1).optional().default(POINT_EXPIRATION_DAYS[0].value),
+    })
+    .superRefine((data, ctx) => {
+      // ポイント機能が有効な場合のみ、入力必須チェックを行う
+      if (data.is_active) {
+        // 固定ポイントタイプの場合
+        if (data.is_fixed_point) {
+          if (data.fixed_point === null || data.fixed_point === undefined) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('validation.fixedPointRequired'),
+              path: ['fixed_point'],
+            })
+          }
+        } else {
+          // 率指定タイプの場合
+          if (data.point_rate === null || data.point_rate === undefined) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('validation.pointRateRequired'),
+              path: ['point_rate'],
+            })
+          }
+        }
+      }
+    })
 
 export default function PointTabs() {
   const { tenantId, orgId } = useTenantAndOrganization()
@@ -81,7 +109,7 @@ export default function PointTabs() {
   const [isSaving, setIsSaving] = useState(false)
   const { showErrorToast } = useErrorHandler()
   const t = useTranslations('point')
-  
+
   const pointConfigSchema = createPointConfigSchema(t)
 
   const pointConfig = useQuery(
@@ -216,7 +244,7 @@ export default function PointTabs() {
                       className={`px-2 py-1 rounded-md ${
                         watchedIsActive
                           ? 'text-accent-2 bg-accent-2-foreground border border-accent-2'
-                          : 'text-destructive-foreground bg-destructive border border-destructive-foreground'
+                          : 'text-destructive bg-destructive-foreground border border-destructive'
                       }`}
                     >
                       <p className="text-sm font-bold">

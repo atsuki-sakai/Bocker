@@ -25,6 +25,8 @@ import { ja } from 'date-fns/locale'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Trash2 } from 'lucide-react'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useTranslations } from 'next-intl'
+import { useLocale } from 'next-intl'
 
 // 開始時間と終了時間を含む日付の型定義
 type DateWithTimes = {
@@ -52,6 +54,8 @@ const timeToMinutes = (time: string): number => {
 export default function MyExceptionScheduleForm() {
   const { tenantId, orgId, staffId } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
+  const t = useTranslations('staff.myPage.exceptionSchedule')
+  const locale = useLocale()
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const [isAllDay, setIsAllDay] = useState<{ [key: string]: boolean }>({})
   // 日付と時間情報を保持する状態
@@ -65,7 +69,7 @@ export default function MyExceptionScheduleForm() {
     for (const item of dateTimeSettings) {
       const allDay = isAllDay[item.date.toISOString()]
       if (!allDay && (!item.start_time || !item.end_time)) {
-        toast.error('終日の予定ではない場合は開始時間と終了時間を設定してください')
+        toast.error(t('timeRequiredError'))
         return
       }
     }
@@ -91,7 +95,7 @@ export default function MyExceptionScheduleForm() {
         })),
         type: 'holiday',
       })
-      toast.success('予定を保存しました')
+      toast.success(t('saved'))
     } catch (error) {
       showErrorToast(error)
     }
@@ -218,9 +222,7 @@ export default function MyExceptionScheduleForm() {
   return (
     <Card className="border shadow-lg overflow-hidden">
       <CardHeader>
-        <CardTitle className="text-primary text-xl font-bold">
-          予定作成
-        </CardTitle>
+        <CardTitle className="text-primary text-xl font-bold">{t('title')}</CardTitle>
       </CardHeader>
       <CardContent className="px-6">
         <div className="flex flex-col gap-4">
@@ -230,7 +232,7 @@ export default function MyExceptionScheduleForm() {
               selectedDates={selectedDates}
               onDatesChangeAction={(dates) => {
                 if (dates.length > 30) {
-                  toast.error('予定は最大30日までしか選択できません')
+                  toast.error(t('maxDaysError'))
                   return
                 }
                 const sortedDates = [...dates].sort(compareAsc)
@@ -243,7 +245,7 @@ export default function MyExceptionScheduleForm() {
           {dateTimeSettings.length > 0 && (
             <Card>
               <CardContent className="pt-6">
-                <h3 className="text-base font-semibold mb-4">作成された予定</h3>
+                <h3 className="text-base font-semibold mb-4">{t('createdSchedules')}</h3>
 
                 <div className="space-y-4">
                   {dateTimeSettings.map((setting, index) => (
@@ -253,19 +255,20 @@ export default function MyExceptionScheduleForm() {
                     >
                       <div className="flex gap-2 items-center">
                         <span className="text-base font-bold">
-                          {format(setting.date, 'M月d日(EEE)', { locale: ja })}
+                          {locale === 'ja'
+                            ? format(setting.date, 'M月d日(EEE)', { locale: ja })
+                            : format(setting.date, 'MMM d (EEE)')}
                         </span>
                       </div>
                       <div className="flex flex-col gap-2 items-start">
                         <div className="flex gap-2 items-center mb-2">
-                          <Label className="text-xs font-bold">終日</Label>
+                          <Label className="text-xs font-bold">{t('allDay')}</Label>
                           <Switch
                             checked={isAllDay[setting.date.toISOString()]}
                             onCheckedChange={() =>
                               setIsAllDay({
                                 ...isAllDay,
-                                [setting.date.toISOString()]:
-                                  !isAllDay[setting.date.toISOString()],
+                                [setting.date.toISOString()]: !isAllDay[setting.date.toISOString()],
                               })
                             }
                           />
@@ -279,11 +282,8 @@ export default function MyExceptionScheduleForm() {
                           }`}
                         >
                           <div className="w-full">
-                            <Label
-                              htmlFor={`start-time-${index}`}
-                              className="mb-1 block text-xs"
-                            >
-                              開始時間
+                            <Label htmlFor={`start-time-${index}`} className="mb-1 block text-xs">
+                              {t('startTime')}
                             </Label>
 
                             <Select
@@ -293,7 +293,7 @@ export default function MyExceptionScheduleForm() {
                               }
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="開始時間" />
+                                <SelectValue placeholder={t('startTime')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {timeOptions.map((time) => (
@@ -305,28 +305,22 @@ export default function MyExceptionScheduleForm() {
                             </Select>
                           </div>
                           <div className="w-full">
-                            <Label
-                              htmlFor={`end-time-${index}`}
-                              className="mb-1 block text-xs"
-                            >
-                              終了時間
+                            <Label htmlFor={`end-time-${index}`} className="mb-1 block text-xs">
+                              {t('endTime')}
                             </Label>
                             <Select
                               value={setting.end_time}
-                              onValueChange={(value) =>
-                                handleTimeChange(index, 'end_time', value)
-                              }
+                              onValueChange={(value) => handleTimeChange(index, 'end_time', value)}
                               disabled={!setting.start_time}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="終了時間" />
+                                <SelectValue placeholder={t('endTime')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {timeOptions
                                   .filter(
                                     (t) =>
-                                      timeToMinutes(t) >
-                                      timeToMinutes(setting.start_time ?? '')
+                                      timeToMinutes(t) > timeToMinutes(setting.start_time ?? '')
                                   )
                                   .map((time) => (
                                     <SelectItem key={time} value={time}>
@@ -340,7 +334,7 @@ export default function MyExceptionScheduleForm() {
                       </div>
                       <div className="w-full p-1">
                         <div className="flex justify-between items-center">
-                          <p className="text-sm font-medium">備考</p>
+                          <p className="text-sm font-medium">{t('notes')}</p>
                           <Button
                             variant="destructive"
                             size="icon"
@@ -366,11 +360,8 @@ export default function MyExceptionScheduleForm() {
           )}
         </div>
         <div className="flex justify-end mt-4">
-          <Button
-            onClick={handleUpsertSchedules}
-            className="w-full md:w-auto"
-          >
-            予定を保存
+          <Button onClick={handleUpsertSchedules} className="w-full md:w-auto">
+            {t('save')}
           </Button>
         </div>
       </CardContent>

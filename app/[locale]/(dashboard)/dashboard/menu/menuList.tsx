@@ -230,7 +230,7 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
             >
               <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 border-b border-border pb-4 mb-4">
                 {menu.is_active ? (
-                  <Badge variant="default" className=" bg-active text-active-foreground">
+                  <Badge variant="default" className=" bg-accent-2-foreground text-accent-2">
                     {t('list.messages.active')}
                   </Badge>
                 ) : (
@@ -319,13 +319,21 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
 
                 <div className="flex items-center gap-2 self-end sm:self-center sm:mt-0 absolute right-0 top-0 md:top-1/4">
                   <Link href={`/dashboard/menu/${menu._id}`}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 bg-link text-link-foreground"
+                    >
                       <Eye className="h-4 w-4" />
                       <span className="sr-only">{tCommon('detail')}</span>
                     </Button>
                   </Link>
                   <Link href={`/dashboard/menu/${menu._id}/edit`}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 bg-neon-foreground text-neon"
+                    >
                       <Pencil className="h-4 w-4" />
                       <span className="sr-only">{tCommon('edit')}</span>
                     </Button>
@@ -333,7 +341,7 @@ const MenuListContent = ({ menus, onDelete }: MenuListContentProps) => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                    className="h-8 w-8 text-destructive bg-destructive-foreground"
                     onClick={() =>
                       onDelete(
                         menu._id,

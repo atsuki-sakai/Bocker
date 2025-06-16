@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import MyWeekScheduleForm from './MyWeekScheduleForm'
 import MyExceptionScheduleForm from './MyExceptionScheduleForm'
+import { useTranslations } from 'next-intl'
 
 // アバターの頭文字を取得
 const getInitials = (name: string) => {
@@ -24,6 +25,7 @@ const getInitials = (name: string) => {
 
 export default function StaffMyPage() {
   const { tenantId, orgId, isLoaded, ready, staffId } = useTenantAndOrganization()
+  const t = useTranslations('staff.myPage')
 
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const staff = useQuery(api.staff.query.getRelatedTables, {
@@ -109,18 +111,18 @@ export default function StaffMyPage() {
                     <h2 className="text-2xl font-bold text-primary">{staff?.name}</h2>
                     <div className="flex items-center gap-4 mt-2">
                       <Badge variant={staff?.is_active ? 'default' : 'outline'}>
-                        {staff?.is_active ? 'アクティブ' : '非アクティブ'}
+                        {staff?.is_active ? t('active') : t('inactive')}
                       </Badge>
                       <Badge
                         variant="outline"
-                        className="border-active text-active bg-active-foreground"
+                        className="border-accent-2 text-accent-2 bg-accent-2-foreground"
                       >
                         {convertRole(staff?.role || 'staff')}
                       </Badge>
                       {staff?.connect_clerk && (
                         <Badge variant="outline">
                           <Mail className="h-3 w-3 mr-1" />
-                          認証スタッフ
+                          {t('authenticatedStaff')}
                         </Badge>
                       )}
                     </div>
@@ -136,7 +138,7 @@ export default function StaffMyPage() {
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="text-primary font-bold text-lg">
-                        {staff?.age ? `${staff?.age}歳` : '年齢未設定'}
+                        {staff?.age ? t('age', { age: staff?.age }) : t('ageNotSet')}
                       </span>
                     </div>
                     {staff?.instagram_link && (
@@ -164,9 +166,9 @@ export default function StaffMyPage() {
                   </div>
                 )}
 
-                <span className="text-xs text-muted-foreground">スタッフ紹介</span>
+                <span className="text-xs text-muted-foreground">{t('introduction')}</span>
                 <p className=" text-primary tracking-wide leading-6  mb-5  border-border">
-                  {staff?.description || '説明がありません'}
+                  {staff?.description || t('noDescription')}
                 </p>
 
                 {staff?.tags && staff?.tags.length > 0 && (
@@ -181,13 +183,13 @@ export default function StaffMyPage() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 text-palette-1-foreground">
                         <Tag className="h-4 w-4" />
-                        <p className="text-xs font-bold">指名料金</p>
+                        <p className="text-xs font-bold">{t('nominationFee')}</p>
                       </div>
                       <p className="font-bold text-lg text-palette-1-foreground">
                         ¥{staff?.extra_charge || 0}
                       </p>
                       <p className="mt-1 text-xs text-palette-1-foreground max-w-xs">
-                        指名料金は予約時のサービス料金に影響します。
+                        {t('nominationFeeDescription')}
                       </p>
                     </div>
                   </div>
@@ -197,14 +199,14 @@ export default function StaffMyPage() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 text-palette-2-foreground">
                         <Star className="h-4 w-4" />
-                        <p className="text-xs font-bold">優先度</p>
+                        <p className="text-xs font-bold">{t('priority')}</p>
                       </div>
                       <p className="font-bold text-lg text-palette-2-foreground">
                         {staff?.priority || 0}
                         <span className="text-xs text-palette-2-foreground">/{MAX_PRIORITY}</span>
                       </p>
                       <p className="mt-1 text-xs text-palette-2-foreground max-w-xs">
-                        数値が大きいほど予約画面などで上位に表示されます。
+                        {t('priorityDescription')}
                       </p>
                     </div>
                   </div>
@@ -215,7 +217,7 @@ export default function StaffMyPage() {
                   <div className="mt-4 p-3 bg-muted rounded-md border border-border">
                     <h3 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
                       <Tag className="h-4 w-4" />
-                      対応外メニュー
+                      {t('exclusionMenus')}
                     </h3>
                     <ul className="flex flex-wrap gap-2">
                       {exclusionMenus.map((menu) => (
@@ -235,14 +237,14 @@ export default function StaffMyPage() {
 
           <div className=" py-3 flex justify-between">
             <div className="text-xs text-muted-foreground tracking-wider">
-              <span>作成日: </span>
+              <span>{t('createdDate')}: </span>
               {new Date(staff?._creationTime ?? '').toLocaleDateString()}
             </div>
             <div className="flex gap-2">
               <Link href={`/dashboard/staff/${staffId}/edit`}>
                 <Button variant="default" size="sm" className="gap-1">
                   <FileEdit className="h-4 w-4" />
-                  編集
+                  {t('edit')}
                 </Button>
               </Link>
             </div>
@@ -254,10 +256,10 @@ export default function StaffMyPage() {
         <Tabs defaultValue="week" className="w-full">
           <TabsList className="mb-4 w-full max-w-[500px]">
             <TabsTrigger value="week" className="w-full">
-              週間スケジュール設定
+              {t('tabs.weekSchedule')}
             </TabsTrigger>
             <TabsTrigger value="schedule" className="w-full">
-              予定作成
+              {t('tabs.exceptionSchedule')}
             </TabsTrigger>
           </TabsList>
           <TabsContent value="week">

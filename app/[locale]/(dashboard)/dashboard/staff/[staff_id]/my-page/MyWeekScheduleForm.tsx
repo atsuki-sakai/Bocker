@@ -25,6 +25,7 @@ import { useZodForm } from '@/hooks/useZodForm'
 import { z } from 'zod'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 
 // dayOfWeekTypeの値を定義（エラー修正用）
 const DAY_OF_WEEK_VALUES = [
@@ -46,46 +47,46 @@ const staffScheduleConfigSchema = z.object({
 })
 
 // 曜日の定義（日本語と英語の対応）- 月曜から日曜の順
-const DAYS_OF_WEEK = [
+const DAYS_OF_WEEK = (t: ReturnType<typeof useTranslations>) => [
   {
     id: 'monday',
-    week: '月曜日',
+    week: t('monday'),
     short_week: '月',
-    color: 'bg-active-foreground border-active text-active',
+    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
   },
   {
     id: 'tuesday',
-    week: '火曜日',
+    week: t('tuesday'),
     short_week: '火',
-    color: 'bg-active-foreground border-active text-active',
+    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
   },
   {
     id: 'wednesday',
-    week: '水曜日',
+    week: t('wednesday'),
     short_week: '水',
-    color: 'bg-active-foreground border-active text-active',
+    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
   },
   {
     id: 'thursday',
-    week: '木曜日',
+    week: t('thursday'),
     short_week: '木',
-    color: 'bg-active-foreground border-active text-active',
+    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
   },
   {
     id: 'friday',
-    week: '金曜日',
+    week: t('friday'),
     short_week: '金',
-    color: 'bg-active-foreground border-active text-active',
+    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
   },
   {
     id: 'saturday',
-    week: '土曜日',
+    week: t('saturday'),
     short_week: '土',
     color: 'bg-link border-link-foreground text-link-foreground',
   },
   {
     id: 'sunday',
-    week: '日曜日',
+    week: t('sunday'),
     short_week: '日',
     color: 'bg-link border-link-foreground text-link-foreground',
   },
@@ -124,6 +125,7 @@ const defaultScheduleHour = { start_hour: '09:00', end_hour: '17:00' }
 export default function MyWeekScheduleForm() {
   const { tenantId, orgId, staffId } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
+  const t = useTranslations('staff.myPage.weekSchedule')
   // 横スクロール可否判定用
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isScrollable, setIsScrollable] = useState(false)
@@ -478,7 +480,7 @@ export default function MyWeekScheduleForm() {
       })
 
       // 成功メッセージ
-      toast.success('勤務時間を更新しました')
+      toast.success(t('updated'))
       router.refresh()
     } catch (err) {
       showErrorToast(err)
@@ -496,23 +498,23 @@ export default function MyWeekScheduleForm() {
     <div>
       <Card className="border shadow-lg overflow-hidden">
         <CardHeader>
-          <CardTitle className="text-primary text-xl font-bold">
-            スタッフの勤務日・勤務時間設定
-          </CardTitle>
+          <CardTitle className="text-primary text-xl font-bold">{t('title')}</CardTitle>
         </CardHeader>
 
         <CardContent className="px-6">
           <div className="space-y-8">
             {/* 営業日設定 */}
             <div>
-              <p className="text-sm mb-2 font-bold text-muted-foreground">サロンの営業日</p>
+              <p className="text-sm mb-2 font-bold text-muted-foreground">
+                {t('salonBusinessDays')}
+              </p>
               {/* 横スクロール可能リスト  */}
               <div className="relative mb-4">
                 <div
                   ref={scrollContainerRef}
-                  className="flex overflow-x-auto w-fit divide-x p-2 items-start gap-2 bg-muted rounded-lg pr-6"
+                  className="flex overflow-x-auto w-full divide-x p-2 items-start gap-2 bg-muted rounded-lg pr-6"
                 >
-                  {DAYS_OF_WEEK.map((day) => {
+                  {DAYS_OF_WEEK(t).map((day) => {
                     const schedule = orgWeekSchedules?.find(
                       (schedule) => schedule.day_of_week === day.id
                     )
@@ -524,12 +526,12 @@ export default function MyWeekScheduleForm() {
                         <p className="font-semibold text-xs flex gap-2 items-center">
                           {day.week}
                           {schedule?.is_open ? (
-                            <span className="text-active bg-active-foreground rounded-full px-2 py-1">
-                              営業日
+                            <span className="text-accent-2 bg-accent-2-foreground rounded-full px-2 py-1">
+                              {t('businessDay')}
                             </span>
                           ) : (
                             <span className="text-destructive bg-destructive-foreground rounded-full px-2 py-1">
-                              定休日
+                              {t('regularHoliday')}
                             </span>
                           )}
                         </p>
@@ -551,68 +553,70 @@ export default function MyWeekScheduleForm() {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                {DAYS_OF_WEEK.filter((day) =>
-                  orgWeekSchedules?.some(
-                    (schedule) => schedule.day_of_week === day.id && schedule.is_open === true
+                {DAYS_OF_WEEK(t)
+                  .filter((day) =>
+                    orgWeekSchedules?.some(
+                      (schedule) => schedule.day_of_week === day.id && schedule.is_open === true
+                    )
                   )
-                ).map((day) => {
-                  const dayId = day.id as DayOfWeek
-                  const isOpen = weekScheduleData.schedule_settings[dayId].is_open
+                  .map((day) => {
+                    const dayId = day.id as DayOfWeek
+                    const isOpen = weekScheduleData.schedule_settings[dayId].is_open
 
-                  return (
-                    <div
-                      key={day.id}
-                      onClick={() => handleDayToggle(dayId)}
-                      className={`
-                          cursor-pointer p-3 rounded-lg border-2 transition-all
+                    return (
+                      <div
+                        key={day.id}
+                        onClick={() => handleDayToggle(dayId)}
+                        className={`
+                          cursor-pointer p-3 rounded-lg transition-all border
                           ${
                             isOpen
                               ? `${day.color} border-current shadow-sm`
                               : 'bg-muted border-border text-muted-foreground'
                           }
                         `}
-                    >
-                      <div className="flex flex-col items-start justify-between">
-                        <span className="font-semibold mb-1">{day.week}</span>
-                        {isOpen ? (
-                          <div className="flex items-center gap-1 text-xs">
-                            <Check className="h-4 w-4" />
-                            <span>勤務日</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-xs">
-                            <X className="h-4 w-4" />
-                            <span>休日</span>
+                      >
+                        <div className="flex flex-col items-start justify-between">
+                          <span className="font-semibold mb-1">{day.week}</span>
+                          {isOpen ? (
+                            <div className="flex items-center gap-1 text-xs">
+                              <Check className="h-4 w-4" />
+                              <span>{t('workingDay')}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-xs">
+                              <X className="h-4 w-4" />
+                              <span>{t('dayOff')}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {isOpen && (
+                          <div className="mt-2 text-sm font-bold ">
+                            {weekScheduleData.schedule_settings[dayId].start_hour} ~{' '}
+                            {weekScheduleData.schedule_settings[dayId].end_hour}
                           </div>
                         )}
                       </div>
-
-                      {isOpen && (
-                        <div className="mt-2 text-sm font-bold ">
-                          {weekScheduleData.schedule_settings[dayId].start_hour} ~{' '}
-                          {weekScheduleData.schedule_settings[dayId].end_hour}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+                    )
+                  })}
               </div>
             </div>
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="h-5 w-5 text-link-foreground" />
-                <h3 className="text-lg font-semibold">勤務時間設定</h3>
+                <h3 className="text-lg font-semibold">{t('workTimeSettings')}</h3>
               </div>
 
               <Tabs value={scheduleTab} onValueChange={setScheduleTab} className="w-full">
                 <TabsList className="mb-4 p-1 rounded-lg">
                   <TabsTrigger value="common">
                     <Settings2 className="h-4 w-4 mr-2" />
-                    共通設定
+                    {t('commonSettings')}
                   </TabsTrigger>
                   <TabsTrigger value="individual">
                     <Calendar className="h-4 w-4 mr-2" />
-                    曜日ごとの設定
+                    {t('individualSettings')}
                   </TabsTrigger>
                 </TabsList>
 
@@ -622,9 +626,7 @@ export default function MyWeekScheduleForm() {
                       checked={weekScheduleData.use_common_hours}
                       onCheckedChange={handleUseCommonHoursChange}
                     />
-                    <Label className="font-medium cursor-pointer">
-                      すべての勤務日に共通の勤務時間を設定する
-                    </Label>
+                    <Label className="font-medium cursor-pointer">{t('useCommonHours')}</Label>
                   </div>
 
                   {weekScheduleData.use_common_hours && (
@@ -632,7 +634,7 @@ export default function MyWeekScheduleForm() {
                       <div className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center">
                           <Clock3 className="mr-2 h-5 w-5 text-muted-foreground" />
-                          <span className="font-medium">勤務時間</span>
+                          <span className="font-medium">{t('workingHours')}</span>
                         </div>
 
                         <div className="flex items-center gap-3 flex-wrap">
@@ -641,7 +643,7 @@ export default function MyWeekScheduleForm() {
                             onValueChange={handleCommonStartHourChange}
                           >
                             <SelectTrigger className="w-28">
-                              <SelectValue placeholder="開始時間" />
+                              <SelectValue placeholder={t('startTime')} />
                             </SelectTrigger>
                             <SelectContent>
                               <ScrollArea className="h-60">
@@ -661,7 +663,7 @@ export default function MyWeekScheduleForm() {
                             onValueChange={handleCommonEndHourChange}
                           >
                             <SelectTrigger className="w-28">
-                              <SelectValue placeholder="終了時間" />
+                              <SelectValue placeholder={t('endTime')} />
                             </SelectTrigger>
                             <SelectContent>
                               <ScrollArea className="h-60">
@@ -673,7 +675,7 @@ export default function MyWeekScheduleForm() {
                                   ))
                                 ) : (
                                   <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                    開始時間より後の時間を選択できます
+                                    {t('laterThanStartTime')}
                                   </div>
                                 )}
                               </ScrollArea>
@@ -689,83 +691,86 @@ export default function MyWeekScheduleForm() {
                   <div>
                     {activeDays.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {DAYS_OF_WEEK.filter(
-                          (day) => weekScheduleData.schedule_settings[day.id as DayOfWeek].is_open
-                        ).map((day) => {
-                          const dayId = day.id as DayOfWeek
-                          const daySetting = weekScheduleData.schedule_settings[dayId]
-                          // 各曜日ごとに、開始時間より後の終了時間オプションを取得
-                          const endHourOptions = getEndHourOptions(daySetting.start_hour)
+                        {DAYS_OF_WEEK(t)
+                          .filter(
+                            (day) => weekScheduleData.schedule_settings[day.id as DayOfWeek].is_open
+                          )
+                          .map((day) => {
+                            const dayId = day.id as DayOfWeek
+                            const daySetting = weekScheduleData.schedule_settings[dayId]
+                            // 各曜日ごとに、開始時間より後の終了時間オプションを取得
+                            const endHourOptions = getEndHourOptions(daySetting.start_hour)
 
-                          return (
-                            <div
-                              key={dayId}
-                              className={`flex flex-col sm:flex-row sm:items-center gap-3 p-4 border rounded-lg ${day.color}`}
-                            >
-                              <div className="flex flex-col justify-between w-full">
-                                <div className="font-semibold min-w-24 mb-1">{day.week}</div>
+                            return (
+                              <div
+                                key={dayId}
+                                className={`flex flex-col sm:flex-row sm:items-center gap-3 p-4 border rounded-lg ${day.color}`}
+                              >
+                                <div className="flex flex-col justify-between w-full">
+                                  <div className="font-semibold min-w-24 mb-1">{day.week}</div>
 
-                                <div className="flex items-center gap-2">
-                                  <Select
-                                    value={daySetting.start_hour}
-                                    onValueChange={(value) =>
-                                      updateDaySchedule(dayId, 'start_hour', value)
-                                    }
-                                  >
-                                    <SelectTrigger className="w-28">
-                                      <SelectValue placeholder="開始時間" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <ScrollArea className="h-60">
-                                        {timeOptions.map((time) => (
-                                          <SelectItem key={`open-${dayId}-${time}`} value={time}>
-                                            {time}
-                                          </SelectItem>
-                                        ))}
-                                      </ScrollArea>
-                                    </SelectContent>
-                                  </Select>
-
-                                  <span className="text-lg ">〜</span>
-
-                                  <Select
-                                    value={daySetting.end_hour}
-                                    onValueChange={(value) =>
-                                      updateDaySchedule(dayId, 'end_hour', value)
-                                    }
-                                  >
-                                    <SelectTrigger className="w-28">
-                                      <SelectValue placeholder="終了時間" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <ScrollArea className="h-60">
-                                        {endHourOptions.length > 0 ? (
-                                          endHourOptions.map((time) => (
-                                            <SelectItem key={`close-${dayId}-${time}`} value={time}>
+                                  <div className="flex items-center gap-2">
+                                    <Select
+                                      value={daySetting.start_hour}
+                                      onValueChange={(value) =>
+                                        updateDaySchedule(dayId, 'start_hour', value)
+                                      }
+                                    >
+                                      <SelectTrigger className="w-28">
+                                        <SelectValue placeholder={t('startTime')} />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <ScrollArea className="h-60">
+                                          {timeOptions.map((time) => (
+                                            <SelectItem key={`open-${dayId}-${time}`} value={time}>
                                               {time}
                                             </SelectItem>
-                                          ))
-                                        ) : (
-                                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                            開始時間より後の時間を選択できます
-                                          </div>
-                                        )}
-                                      </ScrollArea>
-                                    </SelectContent>
-                                  </Select>
+                                          ))}
+                                        </ScrollArea>
+                                      </SelectContent>
+                                    </Select>
+
+                                    <span className="text-lg ">〜</span>
+
+                                    <Select
+                                      value={daySetting.end_hour}
+                                      onValueChange={(value) =>
+                                        updateDaySchedule(dayId, 'end_hour', value)
+                                      }
+                                    >
+                                      <SelectTrigger className="w-28">
+                                        <SelectValue placeholder={t('endTime')} />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <ScrollArea className="h-60">
+                                          {endHourOptions.length > 0 ? (
+                                            endHourOptions.map((time) => (
+                                              <SelectItem
+                                                key={`close-${dayId}-${time}`}
+                                                value={time}
+                                              >
+                                                {time}
+                                              </SelectItem>
+                                            ))
+                                          ) : (
+                                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                              {t('laterThanStartTime')}
+                                            </div>
+                                          )}
+                                        </ScrollArea>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )
-                        })}
+                            )
+                          })}
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center p-8 border rounded-lg bg-muted text-center">
                         <Coffee className="h-12 w-12 text-muted-foreground mb-3" />
-                        <p className="text-muted-foreground mb-2">勤務日が設定されていません</p>
-                        <p className="text-sm text-muted-foreground">
-                          勤務日を選択すると、時間設定が表示されます;
-                        </p>
+                        <p className="text-muted-foreground mb-2">{t('noWorkingDays')}</p>
+                        <p className="text-sm text-muted-foreground">{t('selectWorkingDay')}</p>
                       </div>
                     )}
                   </div>
@@ -784,12 +789,12 @@ export default function MyWeekScheduleForm() {
               {isSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  保存中...
+                  {t('saving')}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  勤務時間を保存
+                  {t('save')}
                 </>
               )}
             </Button>

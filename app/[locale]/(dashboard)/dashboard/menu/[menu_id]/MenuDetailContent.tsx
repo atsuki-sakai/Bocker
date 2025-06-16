@@ -246,7 +246,12 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
           </Button>
         </Link>
 
-        <Button variant="destructive" size="sm" onClick={() => setIsDeleteDialogOpen(true)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsDeleteDialogOpen(true)}
+          className="text-destructive bg-destructive-foreground hover:text-destructive-foreground"
+        >
           <Trash className="w-4 h-4 mr-2" /> {t('delete')}
         </Button>
       </div>
@@ -331,7 +336,11 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
             {Array.isArray(menu.categories) && menu.categories.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
                 {menu.categories.map((cat, idx) => (
-                  <Badge key={idx} variant={'default'} className="text-xs w-fit px-2 py-1">
+                  <Badge
+                    key={idx}
+                    variant={'default'}
+                    className="text-xs w-fit px-2 py-1 bg-neon-foreground text-neon"
+                  >
                     <p>{cat}</p>
                   </Badge>
                 ))}

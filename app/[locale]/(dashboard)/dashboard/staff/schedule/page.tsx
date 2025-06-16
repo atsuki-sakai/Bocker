@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import DashboardSection from '@/components/common/DashboardSection'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import { useTranslations } from 'next-intl'
 import { api } from '@/convex/_generated/api'
 import { usePaginatedQuery, useMutation } from 'convex/react'
 import { Label } from '@/components/ui/label'
@@ -60,6 +61,7 @@ const timeToMinutes = (time: string): number => {
 const pageSize: number = 20
 
 export default function StaffSchedulePage() {
+  const t = useTranslations('staff.schedule')
   const { tenantId, orgId } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null)
@@ -82,7 +84,7 @@ export default function StaffSchedulePage() {
     for (const item of dateTimeSettings) {
       const allDay = isAllDay[item.date.toISOString()]
       if (!allDay && (!item.start_time || !item.end_time)) {
-        toast.error('終日の予定ではない場合は開始時間と終了時間を設定してください')
+        toast.error(t('timeRequiredError'))
         return
       }
     }
@@ -108,7 +110,7 @@ export default function StaffSchedulePage() {
         })),
         type: 'holiday',
       })
-      toast.success('スタッフの予定を保存しました')
+      toast.success(t('scheduleSaved'))
     } catch (error) {
       showErrorToast(error)
     }
@@ -235,20 +237,20 @@ export default function StaffSchedulePage() {
 
   return (
     <DashboardSection
-      title="スタッフの勤務管理"
+      title={t('title')}
       backLink="/dashboard/staff"
       backLinkTitle="スタッフ一覧"
     >
       <div className="space-y-3">
         <div className="flex flex-col justify-end items-end gap-2">
           <div className="w-fit min-w-[180px]">
-            <Label className="mb-2">予定を追加するスタッフ</Label>
+            <Label className="mb-2">{t('selectStaffLabel')}</Label>
             <Select
               value={selectedStaffId ?? ''}
               onValueChange={(value) => setSelectedStaffId(value as Id<'staff'>)}
             >
               <SelectTrigger className="bg-secondary">
-                <SelectValue placeholder="スタッフを選択" />
+                <SelectValue placeholder={t('selectStaffPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {staffs.map((staff) => (
@@ -265,10 +267,10 @@ export default function StaffSchedulePage() {
           <Tabs defaultValue="week">
             <TabsList className="mb-4 w-full max-w-[500px]">
               <TabsTrigger value="week" className="w-full">
-                週間スケジュール設定
+                {t('weekScheduleTab')}
               </TabsTrigger>
               <TabsTrigger value="holiday" className="w-full">
-                スケジュール作成
+                {t('scheduleCreationTab')}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="week">
@@ -277,7 +279,7 @@ export default function StaffSchedulePage() {
               ) : (
                 <div className="flex justify-start items-center h-32 p-4 bg-muted rounded-lg">
                   <AlertCircle className="w-4 h-4 text-muted-foreground mr-2" />
-                  <p className="text-muted-foreground text-sm">先にスタッフを選択してください。</p>
+                  <p className="text-muted-foreground text-sm">{t('alertSelectStaff')}</p>
                 </div>
               )}
             </TabsContent>
@@ -290,7 +292,7 @@ export default function StaffSchedulePage() {
                     selectedDates={selectedDates}
                     onDatesChangeAction={(dates) => {
                       if (dates.length > 30) {
-                        toast.error('休日は最大30日までしか選択できません')
+                        toast.error(t('holidayLimitMessage'))
                         return
                       }
                       const sortedDates = [...dates].sort(compareAsc)
@@ -303,7 +305,7 @@ export default function StaffSchedulePage() {
                 {dateTimeSettings.length > 0 && (
                   <Card>
                     <CardContent className="pt-6">
-                      <h3 className="text-base font-semibold mb-4">作成されたスケジュール</h3>
+                      <h3 className="text-base font-semibold mb-4">{t('createdSchedules')}</h3>
 
                       <div className="space-y-4">
                         {dateTimeSettings.map((setting, index) => (
@@ -318,7 +320,7 @@ export default function StaffSchedulePage() {
                             </div>
                             <div className="flex flex-col gap-2 items-start">
                               <div className="flex gap-2 items-center mb-2">
-                                <Label className="text-xs font-bold">終日</Label>
+                                <Label className="text-xs font-bold">{t('allDay')}</Label>
                                 <Switch
                                   checked={isAllDay[setting.date.toISOString()]}
                                   onCheckedChange={() =>
@@ -343,7 +345,7 @@ export default function StaffSchedulePage() {
                                     htmlFor={`start-time-${index}`}
                                     className="mb-1 block text-xs"
                                   >
-                                    開始時間
+                                    {t('startTime')}
                                   </Label>
 
                                   <Select
@@ -353,7 +355,7 @@ export default function StaffSchedulePage() {
                                     }
                                   >
                                     <SelectTrigger>
-                                      <SelectValue placeholder="開始時間" />
+                                      <SelectValue placeholder={t('startTime')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {timeOptions.map((time) => (
@@ -369,7 +371,7 @@ export default function StaffSchedulePage() {
                                     htmlFor={`end-time-${index}`}
                                     className="mb-1 block text-xs"
                                   >
-                                    終了時間
+                                    {t('endTime')}
                                   </Label>
                                   <Select
                                     value={setting.end_time}
@@ -379,7 +381,7 @@ export default function StaffSchedulePage() {
                                     disabled={!setting.start_time}
                                   >
                                     <SelectTrigger>
-                                      <SelectValue placeholder="終了時間" />
+                                      <SelectValue placeholder={t('endTime')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {timeOptions
@@ -400,7 +402,7 @@ export default function StaffSchedulePage() {
                             </div>
                             <div className="w-full p-1">
                               <div className="flex justify-between items-center">
-                                <p className="text-sm font-medium">備考</p>
+                                <p className="text-sm font-medium">{t('notes')}</p>
                                 <Button
                                   variant="destructive"
                                   size="icon"
@@ -431,7 +433,7 @@ export default function StaffSchedulePage() {
                   disabled={!selectedStaffId}
                   className="w-full md:w-auto"
                 >
-                  予定を保存
+                  {t('saveSchedule')}
                 </Button>
               </div>
             </TabsContent>
@@ -500,7 +502,7 @@ export default function StaffSchedulePage() {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="guide">
-              <AccordionTrigger>スケジュール設定の使い方</AccordionTrigger>
+              <AccordionTrigger>{t('scheduleGuide.title')}</AccordionTrigger>
               <AccordionContent className="space-y-4 text-sm leading-relaxed">
                 <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
                   <li className="bg-muted text-muted-foreground p-2 rounded-md">

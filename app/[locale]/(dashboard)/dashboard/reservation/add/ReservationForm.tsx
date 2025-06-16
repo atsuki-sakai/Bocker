@@ -9,7 +9,7 @@ import { z } from 'zod'
 import { useDebounce } from 'use-debounce'
 import Image from 'next/image'
 import { ja } from 'date-fns/locale'
-import { TagInput } from '@/components/common'
+import { TagInput, DatePicker } from '@/components/common'
 import { Textarea } from '@/components/ui/textarea'
 import { getDayOfWeek, formatTimestamp } from '@/lib/schedules'
 import { convertGender, ReservationMenu, ReservationOption } from '@/convex/types'
@@ -860,10 +860,11 @@ export default function ReservationForm() {
                 </div>
                 <div>
                   <Label className="text-sm ml-2">{tCommon('birthday')}</Label>
-                  <Input
-                    type="date"
-                    value={watch('customer_birthday') ?? ''}
-                    onChange={(e) => setValue('customer_birthday', e.target.value)}
+                  <DatePicker
+                    value={watch('customer_birthday') ? new Date(watch('customer_birthday')!) : undefined}
+                    onChange={(date) => setValue('customer_birthday', date?.toISOString().split('T')[0] || '')}
+                    placeholder={tCommon('birthdayPlaceholder')}
+                    toDate={new Date()} // 未来の日付は選択不可
                   />
                 </div>
                 <TagInput

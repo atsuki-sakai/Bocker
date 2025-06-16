@@ -466,20 +466,18 @@ export default function StaffSchedulePage() {
         <div className="sticky bg-background z-10 md:pt-5">
           <header className="flex flex-none items-center justify-between border-b border-border md:px-6 pb-2">
             <div className="flex flex-col">
-              <p className="text-sm md:text-lg font-semibold text-primary mb-1">{t('staffSchedule')}</p>
-              <h1 className="text-sm md:text-lg font-semibold text-active">
+              <p className="text-sm md:text-lg font-semibold text-primary mb-1">
+                {t('staffSchedule')}
+              </p>
+              <h1 className="text-sm md:text-lg font-semibold text-accent-2">
                 {viewMode === 'week' ? (
                   <time
                     className="flex flex-col md:flex-row items-center justify-center gap-1"
                     dateTime={`${format(startOfWeekFns(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd')}/${format(endOfWeekFns(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd')}`}
                   >
-                    <span className="font-bold text-base md:text-xl">
-                      {weekStartFormatted}
-                    </span>
+                    <span className="font-bold text-base md:text-xl">{weekStartFormatted}</span>
                     <div className=" text-muted-foreground text-xs">{t('from')}</div>
-                    <span className="font-bold text-base md:text-xl">
-                      {weekEndFormatted}
-                    </span>
+                    <span className="font-bold text-base md:text-xl">{weekEndFormatted}</span>
                   </time>
                 ) : (
                   <time dateTime={format(selectedDate, 'yyyy-MM-dd')}>
@@ -515,7 +513,9 @@ export default function StaffSchedulePage() {
                     className="flex h-9 w-12 items-center justify-center rounded-l-md border-y border-l border-border pr-1 text-muted-foreground hover:text-primary focus:relative md:w-9 md:pr-0 md:hover:bg-muted"
                     onClick={moveToPrevious}
                   >
-                    <span className="sr-only">{viewMode === 'week' ? t('prevWeek') : t('prevDay')}</span>
+                    <span className="sr-only">
+                      {viewMode === 'week' ? t('prevWeek') : t('prevDay')}
+                    </span>
                     <ChevronLeft className="size-5" aria-hidden="true" />
                   </button>
                   <button
@@ -531,7 +531,9 @@ export default function StaffSchedulePage() {
                     className="flex h-9 w-12 items-center justify-center rounded-r-md border-y border-r border-border pl-1 text-primary hover:text-primary focus:relative md:w-9 md:pl-0 md:hover:bg-muted"
                     onClick={moveToNext}
                   >
-                    <span className="sr-only">{viewMode === 'week' ? t('nextWeek') : t('nextDay')}</span>
+                    <span className="sr-only">
+                      {viewMode === 'week' ? t('nextWeek') : t('nextDay')}
+                    </span>
                     <ChevronRight className="size-5" aria-hidden="true" />
                   </button>
                 </div>
@@ -625,18 +627,18 @@ export default function StaffSchedulePage() {
                           <div className="flex items-center justify-center">
                             {weekDays[index]}{' '}
                             {hasReservations && (
-                              <span className="ml-1 w-1.5 h-1.5 bg-active text-active-foreground rounded-full" />
+                              <span className="ml-1 w-1.5 h-1.5 bg-accent-2 text-accent-2-foreground rounded-full" />
                             )}
                           </div>
                           <span
                             className={`mt-1 flex size-8 items-center justify-center py-3 ${
                               dateIsToday
-                                ? 'rounded-full bg-active font-semibold text-active-foreground'
+                                ? 'rounded-full bg-accent-2 font-semibold text-accent-2-foreground'
                                 : isSelected
-                                  ? 'rounded-full bg-active font-semibold text-active-foreground'
+                                  ? 'rounded-full bg-accent-2 font-semibold text-accent-2-foreground'
                                   : hasReservations
-                                    ? 'font-semibold text-active ring-1 ring-active bg-active-foreground rounded-full'
-                                    : 'font-semibold text-active'
+                                    ? 'font-semibold text-accent-2 ring-1 ring-accent-2 bg-accent-2-foreground rounded-full'
+                                    : 'font-semibold text-accent-2'
                             }`}
                           >
                             {date.getDate()}
@@ -653,7 +655,7 @@ export default function StaffSchedulePage() {
                         {weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]}
                       </span>
                       {hasReservationsOnDate(selectedDate) && (
-                        <span className="ml-2 bg-active text-active-foreground px-2 py-0.5 rounded-full text-xs font-medium">
+                        <span className="ml-2 bg-accent-2 text-accent-2-foreground px-2 py-0.5 rounded-full text-xs font-medium">
                           {t('hasReservations')}
                         </span>
                       )}
@@ -728,9 +730,7 @@ export default function StaffSchedulePage() {
         ) : (
           <div className="flex-1 overflow-y-auto bg-muted rounded-md mt-4">
             <div className="flex items-center justify-center h-full py-12 px-4 sm:px-6 lg:px-8">
-              <p className="text-muted-foreground text-sm">
-                {t('selectStaffToShow')}
-              </p>
+              <p className="text-muted-foreground text-sm">{t('selectStaffToShow')}</p>
             </div>
           </div>
         )}

@@ -348,13 +348,11 @@ export default function CustomerList() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted text-muted-foreground">
-              <TableHead className="px-4 text-nowrap w-fit font-bold">
-                {t('customerNameLineUser')}
-              </TableHead>
-              <TableHead className="px-4 text-nowrap w-fit font-bold">{t('contact')}</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit font-bold">{t('visitCount')}</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit font-bold">{t('lastVisit')}</TableHead>
-              <TableHead className="px-2 text-nowrap w-fit font-bold">{t('tags')}</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">{t('customerNameLineUser')}</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">{t('contact')}</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">{t('visitCount')}</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">{t('lastVisit')}</TableHead>
+              <TableHead className="px-2 text-nowrap w-fit">{t('tags')}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[50px]"></TableHead>
@@ -398,12 +396,14 @@ export default function CustomerList() {
                       {customerData.customer.email ? (
                         <div className="flex items-center gap-2">
                           <Mail size={14} className="text-muted-foreground" />
-                          <span className="tracking-wider">{customerData.customer.email}</span>
+                          <span className="tracking-wider text-nowrap">
+                            {customerData.customer.email}
+                          </span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
                           <Mail size={14} className="text-muted-foreground" />
-                          <p className="text-muted-foreground">{t('notRegistered')}</p>
+                          <p className="text-muted-foreground text-nowrap">{t('notRegistered')}</p>
                         </div>
                       )}
                     </div>
@@ -447,8 +447,7 @@ export default function CustomerList() {
                   <TableCell className="px-4">
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="text-xs bg-muted text-muted-foreground hover:opacity-80 transition-opacity duration-300"
+                      className="text-xs bg-neon-foreground text-neon hover:opacity-80 transition-opacity duration-300"
                     >
                       <Link href={`/dashboard/customer/${customerData.customer.uid}/edit`}>
                         {tCommon('edit')}
@@ -457,14 +456,13 @@ export default function CustomerList() {
                   </TableCell>
                   <TableCell className="px-4">
                     <Button
-                      variant="destructive"
-                      size="icon"
+                      variant="ghost"
                       onClick={(e) => {
                         handleShowDeleteModal(e, customerData.customer.uid)
                       }}
-                      className="text-xs hover:opacity-50 transition-opacity duration-300"
+                      className="text-xs hover:opacity-50 transition-opacity duration-300 bg-destructive-foreground text-destructive"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={12} />
                     </Button>
                   </TableCell>
                 </TableRow>

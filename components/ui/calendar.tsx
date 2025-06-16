@@ -51,7 +51,7 @@ function Calendar({
           'bg-neon text-neon-foreground hover:bg-neon hover:text-neon-foreground focus:bg-neon focus:text-neon-foreground',
         day_today: 'bg-warning text-warning-foreground',
         day_outside:
-          'day-outside text-muted-foreground aria-selected:bg-accent aria-selected:text-active',
+          'day-outside text-muted-foreground aria-selected:bg-accent aria-selected:text-accent-2',
         day_disabled: 'text-muted-foreground opacity-50',
         day_range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground',
         day_hidden: 'invisible',

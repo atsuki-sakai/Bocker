@@ -280,17 +280,12 @@ export default function OptionEditForm() {
           option_id: optionId, // idは必須
         }
 
-        // 画像を「なし」にする場合 (currentFile がなく、uploadedOriginalUrl もなく、かつ既存の画像パスが存在する場合)
-        // または新しい画像に置き換える場合 (uploadedOriginalUrl が存在する)
-        // に古い画像を削除
+        // 新しい画像に置き換える場合のみ古い画像を削除
+        // 画像を選択せずに更新する場合は既存画像を保持
         if (
-          (!currentFile &&
-            !newUploadedImageUrls.length &&
-            existingImageUrls.length > 0 &&
-            existingImageUrls[0]?.original_url) || // 画像なしにするケース
-          (newUploadedImageUrls.length > 0 &&
-            existingImageUrls.length > 0 &&
-            existingImageUrls[0]?.original_url) // 新しい画像に置き換えるケース
+          newUploadedImageUrls.length > 0 &&
+          existingImageUrls.length > 0 &&
+          existingImageUrls[0]?.original_url // 新しい画像に置き換えるケース
         ) {
           try {
             await fetch('/api/storage', {
@@ -304,10 +299,6 @@ export default function OptionEditForm() {
               }),
             })
             hasDeletedOldImages = true
-            // データベース更新用に images をクリア
-            if (!currentFile && !newUploadedImageUrls.length) {
-              updateData.images = []
-            }
           } catch (deleteError) {
             console.error('Failed to delete old image:', deleteError)
             showErrorToast(deleteError)
@@ -611,7 +602,7 @@ export default function OptionEditForm() {
             onCheckedChange={(checked) =>
               setValue('is_active', checked, { shouldValidate: true, shouldDirty: true })
             }
-            className="data-[state=checked]:bg-active"
+            className="data-[state=checked]:bg-accent-2"
           />
         </div>
 

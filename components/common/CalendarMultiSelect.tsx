@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { AnimatePresence, motion } from 'framer-motion';
 import { format, isSameDay, isToday } from 'date-fns';
-import { ja } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import { CalendarIcon, X, CalendarCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { getDateFnsLocale, type SupportedLocale } from '@/lib/dateLocale';
 
 /**
  * 複数日選択用カレンダーコンポーネントのProps定義
@@ -88,6 +89,17 @@ function CalendarMultiSelect({
   disabled,
 }: CalendarMultiSelectProps) {
   const t = useTranslations('common.calendarMultiSelect');
+  const currentLocale = useLocale() as SupportedLocale;
+  const [dateFnsLocale, setDateFnsLocale] = useState<Locale | null>(null);
+
+  // 現在のロケールに基づいてdate-fnsロケールを動的に読み込み
+  useEffect(() => {
+    const loadLocale = async () => {
+      const locale = await getDateFnsLocale(currentLocale);
+      setDateFnsLocale(locale);
+    };
+    loadLocale();
+  }, [currentLocale]);
   
   // 日付選択ハンドラ
   const handleDatesSelect = (dates: Date[] | undefined) => {
@@ -115,10 +127,14 @@ function CalendarMultiSelect({
 
   // 月ごとにグループ化した選択日付 (useMemoでパフォーマンス最適化)
   const groupedByMonth = useMemo(() => {
+    if (!dateFnsLocale) return [];
+    
     const groups: Record<string, Date[]> = {};
 
     for (const date of sortedDates) {
-      const monthKey = format(date, 'yyyy年MM月', { locale: ja });
+      // ロケールに応じたフォーマットを選択
+      const monthFormat = currentLocale === 'ja' ? 'yyyy年MM月' : 'MMMM yyyy';
+      const monthKey = format(date, monthFormat, { locale: dateFnsLocale });
       if (!groups[monthKey]) {
         groups[monthKey] = [];
       }
@@ -126,7 +142,25 @@ function CalendarMultiSelect({
     }
 
     return Object.entries(groups);
-  }, [sortedDates]);
+  }, [sortedDates, dateFnsLocale, currentLocale]);
+
+  // ロケールが読み込み中の場合はローディング表示
+  if (!dateFnsLocale) {
+    return (
+      <div className="flex flex-col sm:flex-row gap-5">
+        <div className="h-fit bg-background rounded-lg p-1 border border-border">
+          <div className="w-full h-64 flex items-center justify-center">
+            <div className="animate-pulse text-muted-foreground">Loading calendar...</div>
+          </div>
+        </div>
+        <div className="border rounded-md p-4 w-full bg-background border-border">
+          <div className="w-full h-64 flex items-center justify-center">
+            <div className="animate-pulse text-muted-foreground">Loading...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col sm:flex-row gap-5">
@@ -139,7 +173,7 @@ function CalendarMultiSelect({
           selected={selectedDates}
           onSelect={handleDatesSelect}
           fromDate={fromDate}
-          locale={ja}
+          locale={dateFnsLocale}
           className="rounded-md "
         />
       </div>
@@ -221,9 +255,13 @@ function CalendarMultiSelect({
                               ${isToday(date) ? 'text-amber-800 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300'}
                             `}
                             >
-                              {format(date, 'yyyy年MM月dd日(EEE)', {
-                                locale: ja,
-                              })}
+                              {(() => {
+                                // ロケールに応じた日付フォーマットを選択
+                                const dateFormat = currentLocale === 'ja' 
+                                  ? 'yyyy年MM月dd日(EEE)' 
+                                  : 'PPP';
+                                return format(date, dateFormat, { locale: dateFnsLocale });
+                              })()}
                               {isToday(date) && (
                                 <span className="ml-1 text-[10px] bg-amber-200 dark:bg-amber-700 px-1 py-0.5 rounded text-amber-800 dark:text-amber-200">
                                   {t('today')}

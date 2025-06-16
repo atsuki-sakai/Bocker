@@ -265,6 +265,7 @@ export default function MenuEditForm() {
         return
       }
       setIsSubmitting(true)
+      // 既存画像を初期値として設定（SortableImageGridで変更された可能性があるため）
       let imagesToSave: ImageType[] = [...existingImages]
 
       if (newFiles.length > 0 && newFiles[0] !== undefined) {

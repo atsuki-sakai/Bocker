@@ -14,7 +14,7 @@ function CouponPage() {
       backLink="/dashboard"
       backLinkTitle={tCommon('backToDashboard')}
       infoBtn={{
-        text: t('createButton'),
+        text: t('addCoupon'),
         link: '/dashboard/coupon/add',
       }}
     >

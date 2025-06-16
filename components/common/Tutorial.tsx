@@ -429,9 +429,9 @@ export const Tutorial = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="border border-border bg-accent-2-foreground">
+              <Card className="border border-border">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base text-accent-2">{t('nextSteps.title')}</CardTitle>
+                  <CardTitle className="text-base">{t('nextSteps.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm">
@@ -471,7 +471,7 @@ export const Tutorial = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border border-border bg-link">
+              <Card className="border border-link-foreground bg-link">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base text-link-foreground">
                     {t('customerGuidance.title')}
