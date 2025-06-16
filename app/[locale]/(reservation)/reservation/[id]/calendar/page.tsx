@@ -388,7 +388,15 @@ export default function CalendarPage() {
         reservationId = await createReservationMutation(reservationData)
       } catch (error) {
         // 重複予約エラーの場合
-        const errorData = error as { data?: { code?: string; statusCode?: number } }
+        const errorData = error as {
+          data?: {
+            code?: string
+            statusCode?: number
+            severity?: string
+            callFunc?: string
+            message?: string
+          }
+        }
         if (errorData?.data?.code === 'CONFLICT' || errorData?.data?.statusCode === 409) {
           toast.error('申し訳ございません。選択された時間帯は既に予約済みです。別の時間帯を選択してください。')
           
@@ -659,7 +667,15 @@ export default function CalendarPage() {
           setIsProcessingPayment(false)
           
           // 重複予約エラーの場合
-          const errorData = error as { data?: { code?: string; statusCode?: number } }
+          const errorData = error as {
+            data?: {
+              code?: string
+              statusCode?: number
+              severity?: string
+              callFunc?: string
+              message?: string
+            }
+          }
           if (errorData?.data?.code === 'CONFLICT' || errorData?.data?.statusCode === 409) {
             toast.error('申し訳ございません。選択された時間帯は既に予約済みです。別の時間帯を選択してください。')
             
