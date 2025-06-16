@@ -2,6 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '@/supabase.types'
 import { throwSupabaseError } from './utils/errors'
 import { CustomerRepository, CustomerDetailRepository, CustomerPointsRepository } from './repositories/customer'
+import { MigrationRepository } from './repositories/migration'
 
 /* 型エイリアス --------------------------------------------------- */
 export type Tables = Database['public']['Tables']

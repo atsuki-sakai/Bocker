@@ -25,6 +25,9 @@ import type * as menu_menu_exclusion_staff_mutation from "../menu/menu_exclusion
 import type * as menu_menu_exclusion_staff_query from "../menu/menu_exclusion_staff/query.js";
 import type * as menu_mutation from "../menu/mutation.js";
 import type * as menu_query from "../menu/query.js";
+import type * as migration_action from "../migration/action.js";
+import type * as migration_mutation from "../migration/mutation.js";
+import type * as migration_query from "../migration/query.js";
 import type * as migrations from "../migrations.js";
 import type * as option_mutation from "../option/mutation.js";
 import type * as option_query from "../option/query.js";
@@ -97,6 +100,9 @@ declare const fullApi: ApiFromModules<{
   "menu/menu_exclusion_staff/query": typeof menu_menu_exclusion_staff_query;
   "menu/mutation": typeof menu_mutation;
   "menu/query": typeof menu_query;
+  "migration/action": typeof migration_action;
+  "migration/mutation": typeof migration_mutation;
+  "migration/query": typeof migration_query;
   migrations: typeof migrations;
   "option/mutation": typeof option_mutation;
   "option/query": typeof option_query;

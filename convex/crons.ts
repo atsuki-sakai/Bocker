@@ -10,10 +10,10 @@ crons.cron(
 )
 
 // 予約データの日次移行バッチ処理
-// crons.cron(
-//   'migrateReservationData',
-//   '0 17 * * *', // 日本時間の毎日午前2時（UTC 17:00 = JST 02:00）
-//   internal.reservation.migration.action.runDailyMigration
-// )
+crons.cron(
+  'migrateReservationData',
+  '0 17 * * *', // 日本時間の毎日午前2時（UTC 17:00 = JST 02:00）
+  internal.migration.action.runDailyMigration
+)
 
 export default crons
