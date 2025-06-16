@@ -9,12 +9,11 @@ crons.cron(
   internal.tenant.referral.action.cronApplyReferralDiscount
 )
 
+// 予約データの日次移行バッチ処理
 // crons.cron(
-//   'processReservationBatch',
-//   '0 0 * * *', // 日本時間の毎日午前0時00分（UTC）
-//   internal.reservation.action.processReservationBatch,
-//   {
-//     afterId: undefined
-//   }
+//   'migrateReservationData',
+//   '0 17 * * *', // 日本時間の毎日午前2時（UTC 17:00 = JST 02:00）
+//   internal.reservation.migration.action.runDailyMigration
 // )
+
 export default crons
