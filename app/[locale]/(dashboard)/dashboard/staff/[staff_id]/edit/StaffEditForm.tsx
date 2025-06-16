@@ -59,6 +59,7 @@ import {
   Image as ImageIcon,
   Instagram,
 } from 'lucide-react'
+import Image from 'next/image'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
@@ -66,14 +67,21 @@ import { Loader2 } from 'lucide-react'
 // Create a schema factory function to get translations
 const createStaffEditSchema = (t: ReturnType<typeof useTranslations>) =>
   z.object({
-    name: z.string().min(1, { message: t('staff.validation.nameRequired') }).max(MAX_TEXT_LENGTH),
+    name: z
+      .string()
+      .min(1, { message: t('staff.validation.nameRequired') })
+      .max(MAX_TEXT_LENGTH),
     instagram_link: z.preprocess(
       (val) => {
         // 空文字列の場合はnullを返す
         if (val === '' || val === null || val === undefined) return null
         return val
       },
-      z.string().url({ message: t('staff.validation.urlInvalid') }).nullable().optional()
+      z
+        .string()
+        .url({ message: t('staff.validation.urlInvalid') })
+        .nullable()
+        .optional()
     ),
     pin_code: z
       .string()
@@ -103,9 +111,16 @@ const createStaffEditSchema = (t: ReturnType<typeof useTranslations>) =>
         const num = Number(val)
         return isNaN(num) ? null : num
       },
-      z.number().max(99, { message: t('staff.validation.ageMax') }).nullable().optional()
+      z
+        .number()
+        .max(99, { message: t('staff.validation.ageMax') })
+        .nullable()
+        .optional()
     ),
-    description: z.string().min(1, { message: t('staff.validation.descriptionRequired') }).max(MAX_NOTES_LENGTH),
+    description: z
+      .string()
+      .min(1, { message: t('staff.validation.descriptionRequired') })
+      .max(MAX_NOTES_LENGTH),
     images: z.array(
       z.object({
         original_url: z.string(),
@@ -135,7 +150,11 @@ const createStaffEditSchema = (t: ReturnType<typeof useTranslations>) =>
         const num = Number(val)
         return isNaN(num) ? null : num
       },
-      z.number().max(999, { message: t('staff.validation.priorityMax') }).nullable().optional()
+      z
+        .number()
+        .max(999, { message: t('staff.validation.priorityMax') })
+        .nullable()
+        .optional()
     ),
     tags: z.preprocess(
       (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
@@ -171,6 +190,8 @@ export default function StaffEditForm() {
   const [isDeletingImage, setIsDeletingImage] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [currentTags, setCurrentTags] = useState<string[]>([])
+  const [showExistingImage, setShowExistingImage] = useState(true)
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
 
   const { updateStaffRole } = useStaffRoleUpdate()
 
@@ -230,14 +251,14 @@ export default function StaffEditForm() {
 
       if (selectedFile) {
         try {
-          const base64Data = await fileToBase64(selectedFile!);
+          const base64Data = await fileToBase64(selectedFile!)
           const result = await uploadCompressedImage({
             base64Data,
             fileName: selectedFile!.name,
             directory: 'staff',
             orgId,
             aspectType: 'square',
-            quality: 'medium'
+            quality: 'medium',
           })
 
           newUploadedImages = [
@@ -263,7 +284,12 @@ export default function StaffEditForm() {
         clerk_user_id: staffAllData?.clerk_user_id, // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
         name: data.name, // スタッフ名
         description: data.description, // 自己紹介
-        images: newUploadedImages.length > 0 ? newUploadedImages : staffAllData?.images || [], // 画像（新しい画像がない場合は既存の画像を維持）
+        images:
+          newUploadedImages.length > 0
+            ? newUploadedImages
+            : showExistingImage && staffAllData?.images
+              ? staffAllData.images
+              : [], // 画像（新しい画像がない場合かつ既存画像を表示する場合は既存の画像を維持）
         is_active: true, // 有効/無効
       })
 
@@ -373,7 +399,6 @@ export default function StaffEditForm() {
     }
   }
 
-
   const handleDeleteImage = async () => {
     setIsDeletingImage(true)
     setShowDeleteDialog(false)
@@ -393,10 +418,14 @@ export default function StaffEditForm() {
         await removeStaffImages({
           staff_id: staff_id as Id<'staff'>,
         })
+
+        // 画像削除後、UIを更新
+        setShowExistingImage(false)
+        setExistingImageUrl(null)
+
         toast.success(t('staff.edit.imageDeleteSuccess'), {
           icon: <Check className="h-4 w-4 text-accent-2" />,
         })
-        router.push('/dashboard/staff')
       }
     } catch (error) {
       console.error('画像削除中にエラーが発生しました:', error)
@@ -436,6 +465,15 @@ export default function StaffEditForm() {
         })
         // 既存タグをローカル state に同期
         setCurrentTags(staffAllData.tags || [])
+        // 既存画像URLを設定
+        if (staffAllData.images && staffAllData.images.length > 0) {
+          setExistingImageUrl(
+            staffAllData.images[0].thumbnail_url || staffAllData.images[0].original_url
+          )
+          setShowExistingImage(true)
+        } else {
+          setShowExistingImage(false)
+        }
       } catch (error) {
         console.error('フォーム初期化中にエラーが発生しました:', error)
         toast.error(t('staff.messages.formInitializationError'), {
@@ -484,11 +522,65 @@ export default function StaffEditForm() {
                       </div>
 
                       <div className="w-full max-w-full">
-                        <SingleImageDrop
-                          onFileSelect={(file) => setSelectedFile(file ?? null)}
-                          aspectType="square"
-                          className="transition-all duration-200 hover:opacity-90"
-                        />
+                        {showExistingImage && existingImageUrl ? (
+                          <div className="relative">
+                            <Image
+                              src={existingImageUrl}
+                              alt="Staff image"
+                              width={300}
+                              height={300}
+                              className="w-full h-auto object-cover rounded-lg aspect-square"
+                            />
+                            <div className="flex gap-2 mt-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setShowExistingImage(false)
+                                  setSelectedFile(null)
+                                }}
+                                className="flex-1"
+                              >
+                                {t('common.imageDrop.changeImage')}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setShowDeleteDialog(true)}
+                                className="flex-1"
+                              >
+                                {t('common.imageDrop.deleteImage')}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <SingleImageDrop
+                              onFileSelect={(file) => {
+                                setSelectedFile(file ?? null)
+                                if (file) {
+                                  setShowExistingImage(false)
+                                }
+                              }}
+                              aspectType="square"
+                              className="transition-all duration-200 hover:opacity-90"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setShowExistingImage(true)
+                                setSelectedFile(null)
+                              }}
+                              className="flex-1 mt-2"
+                            >
+                              {t('common.back')}
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-4 w-full md:w-3/5 min-w-0">
@@ -790,7 +882,11 @@ export default function StaffEditForm() {
 
           <Button
             type="submit"
-            disabled={isSubmitting || isLoading || (!isDirty && !exclusionChanged && !selectedFile)}
+            disabled={
+              isSubmitting ||
+              isLoading ||
+              (!isDirty && !exclusionChanged && !selectedFile && showExistingImage)
+            }
           >
             {isSubmitting || isLoading ? (
               <>
