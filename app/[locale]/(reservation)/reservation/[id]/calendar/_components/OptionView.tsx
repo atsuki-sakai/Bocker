@@ -275,6 +275,17 @@ export const OptionView = ({
       </div>
       <Dialog open={showOptionDetail} onOpenChange={setShowOptionDetail}>
         <DialogContent>
+          {selectedOption?.images &&
+          selectedOption?.images.length > 0 &&
+          selectedOption?.images[0].original_url ? (
+            <Image
+              src={selectedOption.images[0].original_url}
+              alt={selectedOption.name}
+              width={1000}
+              height={1000}
+              className="rounded-lg aspect-square object-cover w-full h-full"
+            />
+          ) : null}
           <DialogHeader>
             <DialogTitle>{selectedOption?.name}</DialogTitle>
             <p className="text-sm text-muted-foreground">

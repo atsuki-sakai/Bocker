@@ -152,12 +152,12 @@ export async function archiveRecord<T extends keyof DataModel>(ctx: MutationCtx,
 
 export async function killRecord<T extends keyof DataModel>(ctx: MutationCtx, id: Id<T>) {
   const record = await ctx.db.get(id);
-  if (!record || record.is_archive) {
+  if (!record) {
     throw new ConvexError({
       statusCode: ERROR_STATUS_CODE.NOT_FOUND,
       severity: ERROR_SEVERITY.WARNING,
       callFunc: 'killRecord',
-      message: '指定されたレコードが存在しないか、アーカイブされています',
+      message: '指定されたレコードが存在しません',
       code: 'NOT_FOUND',
       status: 404,
       details: {
@@ -165,6 +165,7 @@ export async function killRecord<T extends keyof DataModel>(ctx: MutationCtx, id
       },
     });
   }
+  // アーカイブされたレコードでも削除可能にする
   await ctx.db.delete(id as Id<T>);
 }
 

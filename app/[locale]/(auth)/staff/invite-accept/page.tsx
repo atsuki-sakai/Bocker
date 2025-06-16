@@ -19,8 +19,6 @@ function InviteSignUpContent() {
         signInUrl="/sign-in"
         // サインアップ後のリダイレクト先
         fallbackRedirectUrl="/dashboard"
-        // hash-basedルーティングを使用
-        routing="hash"
         // 外観設定 - 既存のサインアップページと統一
         appearance={{
           elements: {

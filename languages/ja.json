@@ -484,6 +484,7 @@
     "close": "閉じる",
     "detail": "予約詳細",
     "dateTime": "日時",
+    "moreDetail": "詳細を確認する",
     "statuses": {
       "confirmed": "確定",
       "pending": "保留中",
@@ -2035,6 +2036,7 @@
     "perPage": "件表示",
     "first": "最初",
     "last": "最後",
+    "birthdayPlaceholder": "生年月日を選択",
     "goToPage": "ページへ移動",
     "clear": "クリア",
     "loadMore": "さらに表示",

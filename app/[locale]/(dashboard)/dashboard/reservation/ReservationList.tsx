@@ -1,5 +1,7 @@
 'use client'
 
+
+import { Link } from '@/i18n/navigation'
 import React, { useState, useMemo, useCallback, memo, useEffect } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
@@ -286,6 +288,13 @@ const ReservationDetailDialog = memo(
                   {convertTimestampToHour(reservation.end_time_unix)}
                 </p>
               </div>
+            </div>
+            <div className="flex items-center justify-end">
+              <Link href={`/dashboard/reservation/${reservation._id}`}>
+                <p className="text-sm text-link-foreground underline mt-1 font-medium">
+                  {t('moreDetail')}
+                </p>
+              </Link>
             </div>
           </div>
         </DialogContent>

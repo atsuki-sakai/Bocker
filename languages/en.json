@@ -262,6 +262,7 @@
     "from": "From",
     "to": "To",
     "between": "Between",
+    "birthdayPlaceholder": "Select birthday",
     "backToDashboard": "Back to Dashboard",
     "and": "And",
     "or": "Or",
@@ -781,6 +782,7 @@
     "totalReservations": "Total Reservations",
     "count": " items",
     "assignedStaff": "Assigned Staff",
+    "moreDetail": "View Details",
     "statuses": {
       "confirmed": "Confirmed",
       "pending": "Pending",

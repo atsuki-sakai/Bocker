@@ -487,7 +487,7 @@ export default function MyWeekScheduleForm() {
     } finally {
       setIsSaving(false)
     }
-  }, [weekScheduleData, updateWeekSchedule, staffId, router, tenantId, orgId, showErrorToast])
+  }, [weekScheduleData, updateWeekSchedule, staffId, router, tenantId, orgId, showErrorToast, t])
 
   // ローディング状態
   if (staffWeekSchedules === undefined) {

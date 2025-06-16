@@ -21,13 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
 
-    // Clerkに再送リクエストを送信
-    await clerk.invitations.revokeInvitation(invitation_id);
-
-    // 環境に応じてベースURLを設定
-    const redirectUrl = `${BASE_URL}/staff/invite-accept?invitationId=${invitation_id}`;
-  
-
+    // まず既存の招待情報を取得
     const existingInvitation = await convex.query(api.staff.invitation.query.getInvitation, {
       invitation_id: invitation_id,
     });
@@ -37,6 +31,18 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // 古い招待を取り消す（存在する場合のみ）
+    try {
+      await clerk.invitations.revokeInvitation(invitation_id);
+    } catch (error) {
+      console.warn('Failed to revoke old invitation:', error);
+      // 既に取り消されている可能性があるため、エラーは無視して続行
+    }
+
+    // 環境に応じてベースURLを設定  
+    const redirectUrl = `${BASE_URL}/staff/invite-accept`;
+
     // 新しい招待を作成
     const newInvitation = await clerk.invitations.createInvitation({
       emailAddress: existingInvitation.invitation_email!,
