@@ -480,6 +480,16 @@
       "friday": "金曜日",
       "saturday": "土曜日",
       "sunday": "日曜日"
+    },
+    "close": "閉じる",
+    "detail": "予約詳細",
+    "dateTime": "日時",
+    "statuses": {
+      "confirmed": "確定",
+      "pending": "保留中",
+      "cancelled": "キャンセル",
+      "completed": "完了",
+      "noShow": "無断キャンセル"
     }
   },
   "customers": {
