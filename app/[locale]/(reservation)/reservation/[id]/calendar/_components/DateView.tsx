@@ -10,7 +10,7 @@ import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { TimeRange } from '@/lib/types'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { Loader2 } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
 import { useQuery, usePaginatedQuery } from 'convex/react'
 import { Loading } from '@/components/common'
 
@@ -97,10 +97,11 @@ export const DateView = ({
   }
 
   const handleTimeSelect = (time: TimeRange) => {
-    // 単純に親コンポーネントに選択された TimeRange を通知
+    // 楽観的UI: 即座に選択を反映
     onChangeTimeAction(time)
   }
 
+  // スタッフまたは日付が変更された時のみ利用可能時間を取得
   useEffect(() => {
     if (!selectedStaff || !selectedDate) return
     setIsLoading(true)
@@ -186,18 +187,35 @@ export const DateView = ({
         {selectedDate && (
           <div className="md:w-1/2">
             <h3 className="text-lg font-medium mb-2">時間</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {availableTimes.map((time, index) => (
-                <Button
-                  key={index}
-                  variant={'outline'}
-                  onClick={() => handleTimeSelect(time)}
-                  className={`text-sm bg-muted ${selectedTime?.startHour === time.startHour && selectedTime?.endHour === time.endHour ? 'bg-neon text-neon-foreground hover:bg-neon hover:text-neon-foreground focus:bg-neon focus:text-neon-foreground' : ''}`}
-                >
-                  {time.startHour.toString()} ~ {time.endHour.toString()}
-                </Button>
-              ))}
-            </div>
+            {availableTimes.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+                <p>この日は予約可能な時間がありません</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {availableTimes.map((time, index) => (
+                  <Button
+                    key={index}
+                    variant={
+                      selectedTime?.startHour === time.startHour && 
+                      selectedTime?.endHour === time.endHour 
+                        ? 'default' 
+                        : 'outline'
+                    }
+                    onClick={() => handleTimeSelect(time)}
+                    className={`text-sm ${
+                      selectedTime?.startHour === time.startHour && 
+                      selectedTime?.endHour === time.endHour 
+                        ? 'bg-neon text-neon-foreground hover:bg-neon hover:text-neon-foreground focus:bg-neon focus:text-neon-foreground' 
+                        : 'bg-muted'
+                    }`}
+                  >
+                    {time.startHour.toString()} ~ {time.endHour.toString()}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
