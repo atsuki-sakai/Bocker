@@ -20,7 +20,7 @@ async function testMigration() {
 
   try {
     // Convexクライアントの初期化
-    const client = new ConvexClient(CONVEX_URL);
+    const client = new ConvexClient(CONVEX_URL!);
     
     // 移行対象のデータ統計を取得
     console.log("📊 移行対象データの統計情報を取得中...");
