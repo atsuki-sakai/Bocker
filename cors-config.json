@@ -8,7 +8,7 @@
       "https://bcker-saas.vercel.app",
       "https://bcker-saas-*.vercel.app"
     ],
-    "method": ["PUT", "GET", "POST", "HEAD", "OPTIONS"],
+    "method": ["GET", "HEAD", "PUT", "POST", "OPTIONS"],
     "responseHeader": [
       "Content-Type",
       "x-goog-resumable",
