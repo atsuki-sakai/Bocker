@@ -1,6 +1,6 @@
 # ConvexからSupabaseへのデータ移行ガイド
 
-このドキュメントでは、Convexで管理している過去のデータをSupabaseへ移行する手順を説明します。
+このドキュメントでは、Convexで管理している過去の予約(reservation,reservation_detail)データをSupabaseへ移行する手順を説明します。
 
 ## 概要
 
@@ -30,7 +30,8 @@ pnpm add -D supabase dotenv
 
 ### 3. データベーススキーマの作成
 
-Supabase GUIまたはSQLエディタから以下のテーブルを作成：
+Supabase GUIまたはSQLエディタから以下Convexスキーマのテーブルを作成：
+※以下は古い可能性があるのでSupabase MCPで実際に確認する　or supabaseのファイルを確認する。
 
 ```sql
 -- 例：ポイント履歴テーブル
@@ -81,79 +82,28 @@ CREATE TABLE payment_history (
 pnpm migrate:supabase
 ```
 
-これにより、Convexの各テーブルから一定期間（デフォルト：3ヶ月以上前）のデータがSupabaseに移行され、
-Convex側ではアーカイブフラグが設定されます。
+これにより、Convexの各テーブルから予約が完了(status: completed)のデータがSupabaseに移行され、
+Convex側でSupabaseへデータ移行が完了した際に削除してConvexのスピードを最大限に保つ。
 
 ### 2. 定期的な移行処理の設定
 
-定期的なデータ移行を実行するには、サーバー側の処理（例：Vercel Cron Jobs）で以下のコードを実行します：
-
-```typescript
-import { setupMigrationJob } from '@/lib/migration/convex-to-supabase';
-
-// ポイント履歴の定期移行（24時間ごと）
-setupMigrationJob({
-  tableName: 'point_task_queue',
-  targetTable: 'point_history',
-  cutoffDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) // 3ヶ月前
-}, 24);
-
-// 予約履歴の定期移行
-setupMigrationJob({
-  tableName: 'reservation',
-  targetTable: 'reservations_history',
-  cutoffDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-}, 24);
-
-// 決済履歴の定期移行
-setupMigrationJob({
-  tableName: 'payment',
-  targetTable: 'payment_history',
-  cutoffDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-}, 24);
-```
+定期的なデータ移行を実行するには、サーバー側の処理（例：Convex Cron Jobs）で以下のコードを実行します：
 
 ## アプリケーションの修正
 
 ### 1. データ取得ロジックの修正
 
-データを取得する際は、まずリアルタイムデータをConvexから取得し、必要に応じて履歴データをSupabaseから取得します。
-
-```typescript
-// 例：ポイント履歴を取得するカスタムフック
-export function usePointHistory(customerId: string) {
-  // Convexからのリアルタイムデータ
-  const realtimePoints = useQuery(api.point.task_queue.getByCustomer, { customerId });
-  
-  // Supabaseからの履歴データ（React Query等を使用）
-  const { data: historicalPoints } = useQuery(['pointHistory', customerId], async () => {
-    const { data, error } = await supabase
-      .from('point_history')
-      .select('*')
-      .eq('customer_id', customerId);
-      
-    if (error) throw error;
-    return data;
-  });
-  
-  // 両方のデータを結合して返す
-  return {
-    realtimePoints,
-    historicalPoints,
-    allPoints: [...(realtimePoints || []), ...(historicalPoints || [])]
-  };
-}
-```
+データを取得する際は、まずリアルタイムデータをConvexから取得しSupabaseへ保存します。保存が完了したのを確認してConvexから削除します。
 
 ### 2. 統計・分析機能の追加
 
 Supabaseの強力なPostgreSQLを活用して、複雑な分析クエリを実行できます：
 
 ```typescript
-// 例：月別のポイント集計
-async function getMonthlyPointStats(salonId: string) {
+// 例：月別の予約集計
+async function getMonthlyReservationStats(salonId: string) {
   const { data, error } = await supabase
-    .from('point_history')
+    .from('reservation')
     .select('*')
     .eq('salon_id', salonId)
     .then(({ data }) => {
@@ -168,9 +118,3 @@ async function getMonthlyPointStats(salonId: string) {
   return data;
 }
 ```
-
-## トラブルシューティング
-
-1. 移行エラーが発生した場合は、`scripts/migrate-to-supabase.ts`のログを確認
-2. バッチサイズを小さくして再試行（大量データの場合）
-3. 特定のIDのみを指定して部分的に移行 
