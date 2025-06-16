@@ -258,6 +258,7 @@ export const Tutorial = () => {
     apiConfig?.liff_id,
     apiConfig?.line_channel_secret,
     apiConfig?.line_access_token,
+    tutorialSteps,
     t,
   ])
 
