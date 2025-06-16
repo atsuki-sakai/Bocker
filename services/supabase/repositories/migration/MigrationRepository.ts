@@ -5,7 +5,14 @@ export type Tables = Database['public']['Tables'];
 export type ReservationInsert = Tables['reservation']['Insert'];
 export type ReservationDetailInsert = Tables['reservation_detail']['Insert'];
 
-export class MigrationRepository extends BaseRepository {
+export class MigrationRepository extends BaseRepository<any> {
+  private client: any;
+
+  constructor(supabaseClient: any) {
+    super('carte' as any); // ダミーのテーブル名を渡す
+    this.client = supabaseClient;
+  }
+
   /**
    * 予約データをバルクアップサート
    */
@@ -104,7 +111,7 @@ export class MigrationRepository extends BaseRepository {
       }
       
       if (data) {
-        data.forEach(row => {
+        data.forEach((row: any) => {
           if (row._convex_id) {
             migratedIds.add(row._convex_id);
           }

@@ -4,10 +4,9 @@ import { internalAction } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 
-// MigrationRepositoryのインポート（Node.js環境用）
-const getMigrationRepository = async () => {
+// Supabaseクライアントの取得（Node.js環境用）
+const getSupabaseClient = async () => {
   const { createClient } = await import("@supabase/supabase-js");
-  const { MigrationRepository } = await import("@/services/supabase/repositories/migration");
   
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -16,14 +15,12 @@ const getMigrationRepository = async () => {
     throw new Error('Missing Supabase environment variables');
   }
   
-  const supabaseClient = createClient(supabaseUrl, serviceRoleKey, {
+  return createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
     }
   });
-  
-  return new MigrationRepository(supabaseClient);
 };
 
 /**
@@ -98,7 +95,7 @@ async function migrateCompletedReservations(ctx: any, cutoffTime: number) {
   let cursor: string | undefined;
   let totalMigrated = 0;
   
-  const migrationRepo = await getMigrationRepository();
+  const supabase = await getSupabaseClient();
   
   while (true) {
     // Convexから予約データを取得
@@ -122,7 +119,7 @@ async function migrateCompletedReservations(ctx: any, cutoffTime: number) {
     
     // Supabaseへ移行
     const migrationResult = await migrateToSupabase(
-      migrationRepo,
+      supabase,
       records,
       details
     );
@@ -163,7 +160,7 @@ async function migrateCancelledReservations(ctx: any, cutoffTime: number) {
   let cursor: string | undefined;
   let totalMigrated = 0;
   
-  const migrationRepo = await getMigrationRepository();
+  const supabase = await getSupabaseClient();
   
   while (true) {
     const { records, nextCursor, hasMore } = await ctx.runQuery(
@@ -216,7 +213,7 @@ async function migrateCancelledReservations(ctx: any, cutoffTime: number) {
  * Supabaseへのデータ移行処理
  */
 async function migrateToSupabase(
-  migrationRepo: any,
+  supabase: any,
   reservations: any[],
   details: any[]
 ): Promise<{
@@ -230,7 +227,7 @@ async function migrateToSupabase(
   const migratedDetailIds: Id<'reservation_detail'>[] = [];
   
   try {
-    // 予約データの変換（_creationTimeをTIMESTAMPTZに変換）
+    // 予約データの変換（_creationTimeはBIGINTとして保存）
     const reservationPayloads = reservations.map(reservation => ({
       master_id: reservation.master_id,
       tenant_id: reservation.tenant_id,
@@ -248,7 +245,7 @@ async function migrateToSupabase(
       is_archive: reservation.is_archive || false,
       sort_key: reservation.sort_key || null,
       _convex_id: reservation._id,
-      _creation_time: new Date(reservation._creationTime).toISOString()
+      _creation_time: reservation._creationTime // BIGINTとしてそのまま保存
     }));
     
     // 予約詳細データの変換
@@ -269,32 +266,45 @@ async function migrateToSupabase(
       sort_key: detail.sort_key || null,
       _convex_id: detail._id,
       _convex_reservation_id: detail.reservation_id,
-      _creation_time: new Date(detail._creationTime).toISOString()
+      _creation_time: detail._creationTime // BIGINTとしてそのまま保存
     }));
     
-    // MigrationRepositoryを使ってバルクアップサート
-    const reservationResults = await migrationRepo.bulkUpsertReservations(reservationPayloads);
-    
-    // エラーチェック
-    const failedReservations = reservationResults.filter(r => !r.success);
-    if (failedReservations.length > 0) {
-      throw new Error(`Failed to migrate ${failedReservations.length} reservation batches`);
+    // Supabaseへバルクインサート（500件ずつ分割）
+    const chunkSize = 500;
+    for (let i = 0; i < reservationPayloads.length; i += chunkSize) {
+      const chunk = reservationPayloads.slice(i, i + chunkSize);
+      const { error: reservationError } = await supabase
+        .from('reservation')
+        .upsert(chunk, { 
+          onConflict: '_convex_id',
+          returning: 'minimal' 
+        });
+      
+      if (reservationError) {
+        throw new Error(`Reservation insert error: ${reservationError.message}`);
+      }
     }
     
-    // 予約詳細のインサート
+    // 予約詳細のインサート（500件ずつ分割）
     if (detailPayloads.length > 0) {
-      const detailResults = await migrationRepo.bulkUpsertReservationDetails(detailPayloads);
-      
-      // エラーチェック
-      const failedDetails = detailResults.filter(r => !r.success);
-      if (failedDetails.length > 0) {
-        throw new Error(`Failed to migrate ${failedDetails.length} detail batches`);
+      for (let i = 0; i < detailPayloads.length; i += chunkSize) {
+        const chunk = detailPayloads.slice(i, i + chunkSize);
+        const { error: detailError } = await supabase
+          .from('reservation_detail')
+          .upsert(chunk, { 
+            onConflict: '_convex_id',
+            returning: 'minimal' 
+          });
+        
+        if (detailError) {
+          throw new Error(`Detail insert error: ${detailError.message}`);
+        }
       }
     }
     
     // 成功したIDを記録
-    migratedReservationIds.push(...reservations.map(r => r._id));
-    migratedDetailIds.push(...details.map(d => d._id));
+    migratedReservationIds.push(...reservations.map((r: any) => r._id));
+    migratedDetailIds.push(...details.map((d: any) => d._id));
     
     return {
       success: true,
