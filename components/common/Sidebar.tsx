@@ -85,7 +85,6 @@ const SidebarNavigation = memo(
     role,
     pathname,
     isSubscriptionActive,
-    setIsLinkClicked,
     isMobile = false,
   }: {
     filteredNav: NavItem[]
@@ -93,7 +92,6 @@ const SidebarNavigation = memo(
     role: Role | null
     pathname: string
     isSubscriptionActive: boolean
-    setIsLinkClicked: (value: boolean) => void
     isMobile?: boolean
   }) => {
     const t = useTranslations('sidebar')
@@ -116,7 +114,6 @@ const SidebarNavigation = memo(
                 <li>
                   <Link
                     href={`/dashboard/staff/${staffId}/my-page`}
-                    onClick={() => setIsLinkClicked(true)}
                     className={classNames(
                       pathname === `/dashboard/staff/${staffId}/my-page`
                         ? 'text-accent-foreground bg-accent'
@@ -148,7 +145,6 @@ const SidebarNavigation = memo(
                   <li key={item.name}>
                     <Link
                       href={item.href}
-                      onClick={() => setIsLinkClicked(true)}
                       className={classNames(
                         isCurrent
                           ? 'text-accent-foreground bg-accent'
@@ -177,7 +173,6 @@ const SidebarNavigation = memo(
                 <li>
                   <Link
                     href={'/dashboard/subscription'}
-                    onClick={() => setIsLinkClicked(true)}
                     className={classNames(
                       pathname === '/dashboard/subscription'
                         ? 'text-accent-foreground bg-accent'
@@ -219,7 +214,6 @@ interface SidebarProps {
 export default function Sidebar({ children }: SidebarProps) {
   const t = useTranslations('sidebar')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [isLinkClicked, setIsLinkClicked] = useState(false)
   const [mounted, setMounted] = useState(false)
   const { role, isLoaded, ready, staffId, subscription } = useTenantAndOrganization()
   const pathname = usePathname() // 現在のパスを取得
@@ -233,11 +227,9 @@ export default function Sidebar({ children }: SidebarProps) {
     return NAV_ITEMS.filter((item) => hasAccess(role, currentPlan, item.minRole, item.minPlan))
   }, [isLoaded, role, currentPlan])
   useEffect(() => {
-    if (isLinkClicked) {
-      setSidebarOpen(false)
-      setIsLinkClicked(false)
-    }
-  }, [pathname, isLinkClicked, setSidebarOpen])
+    // パスが変更されたときにサイドバーを閉じる
+    setSidebarOpen(false)
+  }, [pathname])
   useEffect(() => setMounted(true), [])
 
   // テナント情報とサブスクリプション情報が読み込まれるまでローディングを表示
@@ -290,7 +282,6 @@ export default function Sidebar({ children }: SidebarProps) {
                 pathname={pathname}
                 filteredNav={filteredNav}
                 isSubscriptionActive={isSubscriptionActive}
-                setIsLinkClicked={setIsLinkClicked}
                 isMobile={true}
               />
               <LanguageSwitcher />
@@ -315,7 +306,6 @@ export default function Sidebar({ children }: SidebarProps) {
             pathname={pathname}
             filteredNav={filteredNav}
             isSubscriptionActive={isSubscriptionActive}
-            setIsLinkClicked={setIsLinkClicked}
             isMobile={false}
           />
         </div>

@@ -248,20 +248,13 @@ export const Tutorial = () => {
     setCompletedSteps(completed)
     setMissingItems(missing)
   }, [
-    org?.org.org_name,
-    org?.config?.address,
+    org,
     weekSchedules,
-    menus,
-    menus?.results,
-    staffList,
+    menus?.results.length,
+    staffList?.results.length,
     reservationConfig,
-    staffList?.results,
-    reservationConfig?._id,
     staffSchedules,
-    apiConfig?.liff_id,
-    apiConfig?.line_channel_secret,
-    apiConfig?.line_access_token,
-    tutorialSteps,
+    apiConfig,
     t,
   ])
 

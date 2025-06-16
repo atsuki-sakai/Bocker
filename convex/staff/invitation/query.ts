@@ -131,13 +131,14 @@ export const getStaffWithInvitation = query({
         )
         .first()
 
-    // 招待情報を取得
+    // 招待情報を取得（アーカイブされていないもののみ）
     const invitation = await ctx.db
       .query('staff_invitation')
       .withIndex('by_tenant_org_staff_archive', (q) =>
         q.eq('tenant_id', staff.tenant_id)
          .eq('org_id', staff.org_id)
          .eq('staff_id', args.staff_id)
+         .eq('is_archive', false)
       )
       .first();
 
@@ -163,9 +164,10 @@ export const getCompleteStaffData = query({
   handler: async (ctx, args) => {
 
     const staff = await ctx.db.get(args.staff_id);
-    if (!staff || staff.is_archive) {
+    if (!staff) {
       return null;
     }
+    // アーカイブされていてもデータは返す（削除処理で必要なため）
 
     // 関連データ取得
     const staffConfig = await ctx.db

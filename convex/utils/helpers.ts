@@ -165,7 +165,8 @@ export async function killRecord<T extends keyof DataModel>(ctx: MutationCtx, id
       },
     });
   }
-  // アーカイブされたレコードでも削除可能にする
+  // アーカイブ済みのレコードかどうかに関わらず削除を実行
+  // is_archiveの状態をチェックせずに削除する
   await ctx.db.delete(id as Id<T>);
 }
 
