@@ -591,7 +591,7 @@ export default function CalendarPage() {
           customerData.customer.uid,
           sessionCustomer.tenantId,
           organizationComplete.organization._id as Id<'organization'>,
-          { 
+          {
             phone: customerPhone,
             // 既存のemail, first_name, last_name等を保持
             email: customerData.customer.email,
@@ -659,13 +659,13 @@ export default function CalendarPage() {
           ...reservationBaseData,
           status: 'confirmed' as ReservationStatus,
         }
-        
+
         let reservationId: Id<'reservation'> | null = null
         try {
           reservationId = await createReservationMutation(reservationDataForCash)
         } catch (error) {
           setIsProcessingPayment(false)
-          
+
           // 重複予約エラーの場合
           const errorData = error as {
             data?: {
@@ -677,13 +677,15 @@ export default function CalendarPage() {
             }
           }
           if (errorData?.data?.code === 'CONFLICT' || errorData?.data?.statusCode === 409) {
-            toast.error('申し訳ございません。選択された時間帯は既に予約済みです。別の時間帯を選択してください。')
-            
+            toast.error(
+              '申し訳ございません。選択された時間帯は既に予約済みです。別の時間帯を選択してください。'
+            )
+
             // 日時選択ステップに戻る（空き時間は自動的に再取得される）
             setCurrentStep('date')
             return
           }
-          
+
           // その他のエラー
           showErrorToast(error)
           return
@@ -749,7 +751,7 @@ export default function CalendarPage() {
             usePoints, // 使用ポイント
             appliedDiscount.discount || 0, // クーポン割引額
             calculateTotal(), // 最終合計料金
-            reservationId,
+            reservationId!,
             organizationComplete.reservationConfig?.available_cancel_days ?? 3
           )
           // Lineにメッセージ送信
@@ -1505,12 +1507,12 @@ export default function CalendarPage() {
                   <p className="text-lg text-primary font-bold">営業日</p>
                   <div className="flex flex-col items-start gap-2 mt-2">
                     {orgWeekSchedule
-                      ?.sort((a, b) => {
+                      ?.sort((a: Doc<'week_schedule'>, b: Doc<'week_schedule'>) => {
                         const dayA = dayOrder[a.day_of_week!] ?? 8 // 未定義の曜日は最後に
                         const dayB = dayOrder[b.day_of_week!] ?? 8 // 未定義の曜日は最後に
                         return dayA - dayB
                       })
-                      .map((schedule, index) => (
+                      .map((schedule: Doc<'week_schedule'>, index: number) => (
                         <div
                           key={index}
                           className="flex  items-center justify-start gap-1 border-b border-border pb-2"

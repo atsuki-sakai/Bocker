@@ -3,11 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import type { Locale } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useTranslations, useLocale } from 'next-intl';
 import { getDateFnsLocale, type SupportedLocale } from '@/lib/dateLocale';
 
@@ -71,20 +78,58 @@ export function DatePicker({
   const t = useTranslations('common.datePicker');
   const [dateFnsLocale, setDateFnsLocale] = useState<Locale | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [displayMonth, setDisplayMonth] = useState<Date>(value || new Date())
 
   // 現在のロケールに基づいてdate-fnsロケールを動的に読み込み
   useEffect(() => {
     const loadLocale = async () => {
-      const locale = await getDateFnsLocale(currentLocale);
-      setDateFnsLocale(locale);
-    };
-    loadLocale();
-  }, [currentLocale]);
+      const locale = await getDateFnsLocale(currentLocale)
+      setDateFnsLocale(locale)
+    }
+    loadLocale()
+  }, [currentLocale])
 
   const handleDateSelect = (date: Date | undefined) => {
-    onChange?.(date);
-    setIsOpen(false);
-  };
+    onChange?.(date)
+    setIsOpen(false)
+  }
+
+  // カスタムカレンダーナビゲーション用の年月選択
+  const currentYear = displayMonth.getFullYear()
+  const currentMonth = displayMonth.getMonth()
+
+  // 年のリスト生成（現在の年から120年前まで表示、誕生日選択用に拡張）
+  const years = Array.from({ length: 121 }, (_, i) => currentYear - i)
+
+  // 月のリスト（0-11）
+  const months =
+    currentLocale === 'ja'
+      ? ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+  const handleYearChange = (year: string) => {
+    const newDate = new Date(displayMonth)
+    newDate.setFullYear(parseInt(year))
+    setDisplayMonth(newDate)
+  }
+
+  const handleMonthChange = (month: string) => {
+    const newDate = new Date(displayMonth)
+    newDate.setMonth(parseInt(month))
+    setDisplayMonth(newDate)
+  }
+
+  const handlePreviousMonth = () => {
+    const newDate = new Date(displayMonth)
+    newDate.setMonth(newDate.getMonth() - 1)
+    setDisplayMonth(newDate)
+  }
+
+  const handleNextMonth = () => {
+    const newDate = new Date(displayMonth)
+    newDate.setMonth(newDate.getMonth() + 1)
+    setDisplayMonth(newDate)
+  }
 
   // ロケールが読み込まれていない場合は標準のinput type="date"にフォールバック
   if (!dateFnsLocale) {
@@ -95,19 +140,19 @@ export function DatePicker({
         onChange={(e) => onChange?.(e.target.value ? new Date(e.target.value) : undefined)}
         disabled={disabled}
         className={cn(
-          "flex h-9 w-full rounded-md bg-input border px-3 py-1 text-base shadow-sm transition-colors",
-          "file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground",
-          "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-          "disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring",
-          error && "border-destructive",
+          'flex h-9 w-full rounded-md bg-input border px-3 py-1 text-base shadow-sm transition-colors',
+          'file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground',
+          'placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+          'disabled:cursor-not-allowed disabled:opacity-50 md:text-sm hover:border-ring',
+          error && 'border-destructive',
           className
         )}
       />
-    );
+    )
   }
 
   // ロケールに応じた表示フォーマット
-  const displayFormat = currentLocale === 'ja' ? 'yyyy年MM月dd日' : 'PPP';
+  const displayFormat = currentLocale === 'ja' ? 'yyyy年MM月dd日' : 'PPP'
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -116,9 +161,9 @@ export function DatePicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-start text-left font-normal h-9 bg-input",
-            !value && "text-muted-foreground",
-            error && "border-destructive",
+            'w-full justify-start text-left font-normal h-9 bg-input',
+            !value && 'text-muted-foreground',
+            error && 'border-destructive',
             className
           )}
         >
@@ -131,17 +176,80 @@ export function DatePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={value}
-          onSelect={handleDateSelect}
-          disabled={disabled}
-          fromDate={fromDate}
-          toDate={toDate}
-          locale={dateFnsLocale}
-          initialFocus
-        />
+        <div className="p-3">
+          {/* カスタムナビゲーションヘッダー */}
+          <div className="flex items-center justify-between space-x-2 mb-4">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handlePreviousMonth}
+              disabled={disabled}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            <div className="flex items-center space-x-2">
+              <Select value={currentMonth.toString()} onValueChange={handleMonthChange}>
+                <SelectTrigger className="h-7 w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((month, index) => (
+                    <SelectItem key={index} value={index.toString()}>
+                      {month}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={currentYear.toString()} onValueChange={handleYearChange}>
+                <SelectTrigger className="h-7 w-[90px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleNextMonth}
+              disabled={disabled}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* カレンダー本体 */}
+          <Calendar
+            mode="single"
+            selected={value}
+            onSelect={handleDateSelect}
+            disabled={disabled}
+            fromDate={fromDate}
+            toDate={toDate}
+            locale={dateFnsLocale}
+            month={displayMonth}
+            onMonthChange={setDisplayMonth}
+            initialFocus
+            components={{
+              IconLeft: () => <div />,
+              IconRight: () => <div />,
+            }}
+            classNames={{
+              caption: 'hidden',
+            }}
+          />
+        </div>
       </PopoverContent>
     </Popover>
-  );
+  )
 }

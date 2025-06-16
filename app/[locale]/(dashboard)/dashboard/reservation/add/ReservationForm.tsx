@@ -364,7 +364,7 @@ export default function ReservationForm() {
         tenantId,
         orgId,
         debouncedSearchName,
-        { page: 1, pageSize: 50 }
+        { page: 1, pageSize: 30 }
       )
       console.log(`[ReservationForm] Search result:`, {
         dataLength: result.data.length,
@@ -414,8 +414,9 @@ export default function ReservationForm() {
       featured_hairimg_path: undefined, // 顧客が希望する髪型の画像ファイルパス
       notes: undefined, // 備考
       payment_method: 'cash', // 支払い方法
+      is_existing_customer: isExistingCustomer, // 既存顧客フラグ
     })
-  }, [tenantId, orgId, reset])
+  }, [tenantId, orgId, reset, isExistingCustomer])
 
   // 価格計算の統合フック使用
   const {
@@ -668,23 +669,6 @@ export default function ReservationForm() {
       )
     : undefined
 
-  // デバッグ用：顧客データの存在確認
-  useEffect(() => {
-    const debugCustomerData = async () => {
-      if (!tenantId || !orgId) return
-
-      try {
-        console.log(`[ReservationForm] Debug: Checking if customers exist for tenant/org`)
-        const customers = await customerRepository.debugListAllCustomers(tenantId, orgId)
-        console.log(`[ReservationForm] Debug: Found ${customers.length} customers in total`)
-      } catch (error) {
-        console.error('[ReservationForm] Debug: Error checking customer data:', error)
-      }
-    }
-
-    debugCustomerData()
-  }, [tenantId, orgId, customerRepository])
-
   if (!tenantId || !orgId) return <Loading />
 
   return (
@@ -705,7 +689,21 @@ export default function ReservationForm() {
                 type="single"
                 className="w-fit"
                 value={isExistingCustomer ? 'existing' : 'new'}
-                onValueChange={(value) => setIsExistingCustomer(value === 'existing')}
+                onValueChange={(value) => {
+                  const isExisting = value === 'existing'
+                  setIsExistingCustomer(isExisting)
+                  setValue('is_existing_customer', isExisting)
+                  // 新規顧客から既存顧客に切り替えた場合、新規顧客フィールドをクリア
+                  if (isExisting) {
+                    setValue('customer_first_name', undefined)
+                    setValue('customer_last_name', undefined)
+                    setValue('customer_phone', undefined)
+                    setValue('customer_gender', undefined)
+                    setValue('customer_birthday', undefined)
+                    setValue('customer_tags', undefined)
+                    setValue('customer_notes', undefined)
+                  }
+                }}
               >
                 <ToggleGroupItem className="border border-border" value="existing">
                   {t('existingCustomer')}
@@ -870,8 +868,12 @@ export default function ReservationForm() {
                 <div>
                   <Label className="text-sm ml-2">{tCommon('birthday')}</Label>
                   <DatePicker
-                    value={watch('customer_birthday') ? new Date(watch('customer_birthday')!) : undefined}
-                    onChange={(date) => setValue('customer_birthday', date?.toISOString().split('T')[0] || '')}
+                    value={
+                      watch('customer_birthday') ? new Date(watch('customer_birthday')!) : undefined
+                    }
+                    onChange={(date) =>
+                      setValue('customer_birthday', date?.toISOString().split('T')[0] || '')
+                    }
                     placeholder={tCommon('birthdayPlaceholder')}
                     toDate={new Date()} // 未来の日付は選択不可
                   />
