@@ -9,8 +9,7 @@ import { fetchQuery } from 'convex/nextjs'
 import { useZodForm } from '@/hooks/useZodForm'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { MultiImageDrop } from '@/components/common'
-import { uploadCompressedImage } from '@/lib/upload-client'
-import { fileToBase64 } from '@/lib/file-to-base64'
+import { uploadImage } from '@/services/gcp/cloud_storage/helpers'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { toast } from 'sonner'
@@ -218,15 +217,13 @@ export default function MenuAddForm() {
         try {
           // Promise.allを使って複数の画像を並列アップロード
           const uploadPromises = currentFiles.map(async (file) => {
-            const base64Data = await fileToBase64(file);
-            return uploadCompressedImage({
-              base64Data,
-              fileName: file.name,
-              directory: 'menu',
+            return uploadImage(
+              file,
               orgId,
-              aspectType: 'mobile',
-              quality: 'medium'
-            });
+              'menu',
+              'mobile',
+              'medium'
+            );
           })
 
           const uploadResults = await Promise.all(uploadPromises)

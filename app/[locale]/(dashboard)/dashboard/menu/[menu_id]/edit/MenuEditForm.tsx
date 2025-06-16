@@ -65,8 +65,7 @@ import { Check, ChevronDown } from 'lucide-react'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { MAX_NUM, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
-import { uploadCompressedImage } from '@/lib/upload-client'
-import { fileToBase64 } from '@/lib/file-to-base64'
+import { uploadImage } from '@/services/gcp/cloud_storage/helpers'
 
 // 翻訳関数型定義
 type TranslationValues = Record<string, string | number | Date>
@@ -273,15 +272,13 @@ export default function MenuEditForm() {
         try {
           // Promise.allを使って複数の画像を並列アップロード
           const uploadPromises = newFiles.map(async (file) => {
-            const base64Data = await fileToBase64(file)
-            return uploadCompressedImage({
-              base64Data,
-              fileName: file.name,
-              directory: 'menu',
+            return uploadImage(
+              file,
               orgId,
-              aspectType: 'mobile',
-              quality: 'medium',
-            })
+              'menu',
+              'mobile',
+              'medium'
+            )
           })
           console.log('アップロード開始 - ファイル数:', newFiles.length)
 

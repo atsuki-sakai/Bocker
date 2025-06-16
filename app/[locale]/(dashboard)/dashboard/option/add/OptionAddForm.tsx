@@ -29,8 +29,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MAX_NUM, MAX_TEXT_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
-import { uploadCompressedImage } from '@/lib/upload-client'
-import { fileToBase64 } from '@/lib/file-to-base64'
+import { uploadImage } from '@/services/gcp/cloud_storage/helpers'
 
 // 施術時間：0〜360分の5分刻みをキャッシュ
 // 0分を許容する事で物販にも対応する
@@ -185,15 +184,13 @@ function OptionAddForm() {
       if (currentFile) {
         try {
           setIsUploading(true)
-          const base64Data = await fileToBase64(currentFile!)
-          const result = await uploadCompressedImage({
-            base64Data,
-            fileName: currentFile!.name,
-            directory: 'option',
+          const result = await uploadImage(
+            currentFile!,
             orgId,
-            aspectType: 'square',
-            quality: 'medium',
-          })
+            'option',
+            'square',
+            'medium'
+          )
           // 新方式のレスポンス形式に合わせて修正
           newUploadedImageUrls = [
             {

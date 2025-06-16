@@ -49,8 +49,7 @@ import {
   SelectItem,
 } from '@/components/ui/select' // Select関連を追加
 import { Card, CardContent } from '@/components/ui/card'
-import { uploadCompressedImage } from '@/lib/upload-client'
-import { fileToBase64 } from '@/lib/file-to-base64'
+import { uploadImage } from '@/services/gcp/cloud_storage/helpers'
 import { ImageType } from '@/convex/types'
 import { MAX_NUM } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
@@ -234,15 +233,13 @@ export default function OptionEditForm() {
       if (currentFile) {
         try {
           setIsUploading(true)
-          const base64Data = await fileToBase64(currentFile)
-          const result = await uploadCompressedImage({
-            base64Data,
-            fileName: currentFile.name,
-            directory: 'option',
+          const result = await uploadImage(
+            currentFile,
             orgId,
-            aspectType: 'square',
-            quality: 'medium',
-          })
+            'option',
+            'square',
+            'medium'
+          )
 
           newUploadedImageUrls = [
             {

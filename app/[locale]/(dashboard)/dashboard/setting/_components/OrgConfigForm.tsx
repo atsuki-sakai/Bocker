@@ -1,8 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { uploadCompressedImage } from '@/lib/upload-client'
-import { fileToBase64 } from '@/lib/file-to-base64'
+import { uploadImage } from '@/services/gcp/cloud_storage/helpers'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -110,16 +109,15 @@ export default function OrgConfigForm() {
       try {
         setIsUploading(true)
 
-        // ▼ ここで「フロント圧縮・署名URL・GCS直送」一括
-        const base64Data = await fileToBase64(currentFile)
-        const result = await uploadCompressedImage({
-          base64Data,
-          fileName: currentFile.name,
-          directory: 'setting',
+        // ▼ 署名付きURL方式でアップロード（高速・安定）
+        console.log('[画像アップロード] 署名付きURL方式を使用')
+        const result = await uploadImage(
+          currentFile,
           orgId,
-          aspectType: 'landscape',
-          quality: 'high',
-        })
+          'setting',
+          'landscape',
+          'high'
+        )
         // result.original.publicUrl, result.thumbnail.publicUrl を使ってConvex等に登録
         newUploadedImageUrls = [
           {

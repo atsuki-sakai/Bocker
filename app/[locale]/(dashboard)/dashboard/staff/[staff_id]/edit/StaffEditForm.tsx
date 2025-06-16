@@ -24,8 +24,7 @@ import { Gender, Role, GENDER_VALUES, ROLE_VALUES } from '@/convex/types'
 import { MAX_NOTES_LENGTH, MAX_NUM, MAX_TEXT_LENGTH, MAX_PIN_CODE_LENGTH } from '@/convex/constants'
 import { Textarea } from '@/components/ui/textarea'
 import { ZodTextField } from '@/components/common'
-import { uploadCompressedImage } from '@/lib/upload-client'
-import { fileToBase64 } from '@/lib/file-to-base64'
+import { uploadImage } from '@/services/gcp/cloud_storage/helpers'
 import {
   Select,
   SelectContent,
@@ -251,15 +250,13 @@ export default function StaffEditForm() {
 
       if (selectedFile) {
         try {
-          const base64Data = await fileToBase64(selectedFile!)
-          const result = await uploadCompressedImage({
-            base64Data,
-            fileName: selectedFile!.name,
-            directory: 'staff',
+          const result = await uploadImage(
+            selectedFile!,
             orgId,
-            aspectType: 'square',
-            quality: 'medium',
-          })
+            'staff',
+            'square',
+            'medium'
+          )
 
           newUploadedImages = [
             {

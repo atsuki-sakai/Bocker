@@ -37,8 +37,7 @@ import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ConvexError } from 'convex/values'
-import { uploadCompressedImage } from '@/lib/upload-client'
-import { fileToBase64 } from '@/lib/file-to-base64'
+import { uploadImage } from '@/services/gcp/cloud_storage/helpers'
 import { useTranslations } from 'next-intl'
 
 import {
@@ -259,16 +258,14 @@ function StaffAddPage() {
 
           if (selectedFile) {
             try {
-              const base64Data = await fileToBase64(selectedFile!)
-
-              const result = await uploadCompressedImage({
-                base64Data,
-                fileName: selectedFile!.name,
-                directory: 'staff',
+              console.log('[画像アップロード] Staff招待: 署名付きURL方式を使用')
+              const result = await uploadImage(
+                selectedFile!,
                 orgId,
-                aspectType: 'square',
-                quality: 'medium',
-              })
+                'staff',
+                'square',
+                'medium'
+              )
               // 新方式のレスポンス形式に合わせて修正
               newUploadedImageUrls = [
                 {
@@ -337,15 +334,14 @@ function StaffAddPage() {
         // 通常のスタッフ作成処理
         if (selectedFile) {
           try {
-            const base64Data = await fileToBase64(selectedFile!)
-            const result = await uploadCompressedImage({
-              base64Data,
-              fileName: selectedFile!.name,
-              directory: 'staff',
+            console.log('[画像アップロード] Staff作成: 署名付きURL方式を使用')
+            const result = await uploadImage(
+              selectedFile!,
               orgId,
-              aspectType: 'square',
-              quality: 'medium',
-            })
+              'staff',
+              'square',
+              'medium'
+            )
             // 新方式のレスポンス形式に合わせて修正
             newUploadedImageUrls = [
               {
