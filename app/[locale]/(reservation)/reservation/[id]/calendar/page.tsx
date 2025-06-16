@@ -567,9 +567,18 @@ export default function CalendarPage() {
           customerData.customer.uid,
           sessionCustomer.tenantId,
           organizationComplete.organization._id as Id<'organization'>,
-          { phone: customerPhone },
+          { 
+            phone: customerPhone,
+            // 既存のemail, first_name, last_name等を保持
+            email: customerData.customer.email,
+            first_name: customerData.customer.first_name,
+            last_name: customerData.customer.last_name,
+            line_id: customerData.customer.line_id,
+            line_user_name: customerData.customer.line_user_name,
+          },
           {
-            email: customerData.customerDetail?.email ?? '',
+            // customerDetailのemailではなく、customerのemailを使用（空文字列を避ける）
+            email: customerData.customerDetail?.email || customerData.customer.email || '',
             gender: customerData.customerDetail?.gender ?? '',
             birthday: customerData.customerDetail?.birthday ?? '',
             age: customerData.customerDetail?.age ?? 0,

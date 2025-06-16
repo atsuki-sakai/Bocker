@@ -15,7 +15,7 @@ import { getDayOfWeek, formatTimestamp } from '@/lib/schedules'
 import { convertGender, ReservationMenu, ReservationOption } from '@/convex/types'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
-import type { RowType } from '@/services/supabase/SupabaseService'
+import type { RowType, InsertType } from '@/services/supabase/SupabaseService'
 import { useMutation } from 'convex/react'
 import { useTranslations } from 'next-intl'
 import { Doc } from '@/convex/_generated/dataModel'
@@ -590,10 +590,9 @@ export default function ReservationForm() {
       if (!isExistingCustomer) {
         // 新規顧客の場合、CustomerRepositoryで顧客を作成
         try {
-          customerUid = crypto.randomUUID()
-          await customerRepository.createCustomerWithDetailsAndPoints(
+          const result = await customerRepository.createCustomerWithDetailsAndPoints(
             {
-              uid: customerUid,
+              uid: crypto.randomUUID(), // 一時的にUIDを生成（RPC側では無視される）
               email: '', // 新規顧客の場合、emailは必須ではない
               first_name: data.customer_first_name || '',
               last_name: data.customer_last_name || '',
@@ -602,7 +601,7 @@ export default function ReservationForm() {
               org_id: orgId,
               line_id: '',
               line_user_name: '',
-            },
+            } as InsertType<'customer'>,
             {
               email: '', // 詳細情報のemail
               gender: data.customer_gender || 'unselected',
@@ -612,6 +611,13 @@ export default function ReservationForm() {
             },
             0 // 初期ポイント
           )
+
+          if (!result.customer) {
+            throw new Error('顧客の作成に失敗しました')
+          }
+
+          customerUid = result.customer.uid
+          console.log('Created new customer with uid:', customerUid)
         } catch (error) {
           console.error('Error creating customer:', error)
           showErrorToast(error)
@@ -619,12 +625,15 @@ export default function ReservationForm() {
         }
       }
 
+      const customerName = isExistingCustomer
+        ? selectedCustomer?.last_name + ' ' + selectedCustomer?.first_name
+        : data.customer_last_name + ' ' + data.customer_first_name
       await createReservation({
         tenant_id: tenantId, // テナントID
         org_id: orgId, // 組織ID
         customer_id: isExistingCustomer ? (selectedCustomer?.uid ?? '') : (customerUid ?? ''), // Supabase 側の customer.id
         staff_id: selectedStaffId as Id<'staff'>, // スタッフID
-        customer_name: selectedCustomer?.last_name + ' ' + selectedCustomer?.first_name, // 顧客名
+        customer_name: customerName, // 顧客名
         staff_name: selectStaff?.name ?? '', // スタッフ名
         status: 'confirmed', // 予約ステータス
         date: format(selectdate as Date, 'yyyy-MM-dd'), // 予約日 YYYY-MM-DD
