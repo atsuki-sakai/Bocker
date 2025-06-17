@@ -44,10 +44,9 @@ import type * as organization_reservation_config_mutation from "../organization/
 import type * as organization_reservation_config_query from "../organization/reservation_config/query.js";
 import type * as organization_week_schedule_mutation from "../organization/week_schedule/mutation.js";
 import type * as organization_week_schedule_query from "../organization/week_schedule/query.js";
+import type * as point_action from "../point/action.js";
 import type * as point_mutation from "../point/mutation.js";
 import type * as point_query from "../point/query.js";
-import type * as point_queue_mutation from "../point/queue/mutation.js";
-import type * as point_queue_query from "../point/queue/query.js";
 import type * as reservation_mutation from "../reservation/mutation.js";
 import type * as reservation_query from "../reservation/query.js";
 import type * as staff_action from "../staff/action.js";
@@ -118,10 +117,9 @@ declare const fullApi: ApiFromModules<{
   "organization/reservation_config/query": typeof organization_reservation_config_query;
   "organization/week_schedule/mutation": typeof organization_week_schedule_mutation;
   "organization/week_schedule/query": typeof organization_week_schedule_query;
+  "point/action": typeof point_action;
   "point/mutation": typeof point_mutation;
   "point/query": typeof point_query;
-  "point/queue/mutation": typeof point_queue_mutation;
-  "point/queue/query": typeof point_queue_query;
   "reservation/mutation": typeof reservation_mutation;
   "reservation/query": typeof reservation_query;
   "staff/action": typeof staff_action;

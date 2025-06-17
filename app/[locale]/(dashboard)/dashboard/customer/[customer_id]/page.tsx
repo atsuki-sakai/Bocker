@@ -29,12 +29,28 @@ import { useTranslations, useLocale } from 'next-intl'
 import { formatDate } from '@/lib/formatDate'
 import type { SupportedLocale } from '@/lib/dateLocale'
 
+// Import point transaction repository
+import { PointTransactionRepository } from '@/services/supabase/repositories/point/PointTransactionRepository'
+import { Button } from '@/components/ui/button'
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Coins, TrendingUp, TrendingDown } from 'lucide-react'
+
 // 完全な顧客データの型定義
 type CompleteCustomerData = {
   customer: RowType<'customer'> | null
   customerDetail: RowType<'customer_detail'> | null
   customerPoints: RowType<'customer_points'> | null
 }
+
+// ポイント取引履歴の型定義
+type PointTransaction = RowType<'point_transaction'>
 
 // Define the CustomerDetailPage component
 function CustomerDetailPage() {
@@ -47,7 +63,11 @@ function CustomerDetailPage() {
   // 状態管理
   const [completeCustomer, setCompleteCustomer] = useState<CompleteCustomerData | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(true)
+  const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([])
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false)
+  const [showTransactions, setShowTransactions] = useState(false)
   const customerRepo = useMemo(() => new CustomerRepository(), [])
+  const pointTransactionRepo = useMemo(() => new PointTransactionRepository(), [])
   
   // Date formatting states
   const [formattedCreationTime, setFormattedCreationTime] = useState('')
@@ -79,6 +99,40 @@ function CustomerDetailPage() {
 
     fetchCustomerData()
   }, [tenantId, orgId, customerUid, isLoaded, customerRepo, t])
+
+  // ポイント取引履歴を取得
+  const fetchPointTransactions = async () => {
+    if (!tenantId || !orgId || !customerUid) {
+      return
+    }
+
+    try {
+      setIsLoadingTransactions(true)
+      const { data } = await pointTransactionRepo.findByCustomer(
+        tenantId,
+        orgId,
+        customerUid,
+        {
+          page: 1,
+          pageSize: 50
+        }
+      )
+      setPointTransactions(data)
+    } catch (error) {
+      console.error('ポイント取引履歴の取得に失敗しました:', error)
+      toast.error(t('fetchTransactionError'))
+    } finally {
+      setIsLoadingTransactions(false)
+    }
+  }
+
+  // ポイント履歴表示をトグル
+  const toggleTransactionHistory = () => {
+    if (!showTransactions && pointTransactions.length === 0) {
+      fetchPointTransactions()
+    }
+    setShowTransactions(!showTransactions)
+  }
 
   // Date formatting
   useEffect(() => {
@@ -290,6 +344,90 @@ function CustomerDetailPage() {
             </>
           )}
           {/* --- End Tags Section --- */}
+
+          {/* ポイント取引履歴セクション */}
+          <Separator />
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold flex items-center">
+                <Coins className="mr-2 h-5 w-5 text-muted-foreground" />
+                {t('pointHistory')}
+              </h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleTransactionHistory}
+                disabled={isLoadingTransactions}
+              >
+                {showTransactions ? t('hideHistory') : t('showHistory')}
+              </Button>
+            </div>
+            
+            {showTransactions && (
+              <div className="rounded-md border">
+                {isLoadingTransactions ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    {t('loadingTransactions')}
+                  </div>
+                ) : pointTransactions.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    {t('noTransactions')}
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('transactionDate')}</TableHead>
+                        <TableHead>{t('transactionType')}</TableHead>
+                        <TableHead>{t('description')}</TableHead>
+                        <TableHead className="text-right">{t('points')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pointTransactions.map((transaction) => (
+                        <TableRow key={transaction.id}>
+                          <TableCell>
+                            {transaction.transaction_date_unix
+                              ? new Date(transaction.transaction_date_unix * 1000).toLocaleString(locale)
+                              : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {transaction.points && transaction.points > 0 ? (
+                                <>
+                                  <TrendingUp className="h-4 w-4 text-green-600" />
+                                  <span className="text-green-600">{t('earned')}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <TrendingDown className="h-4 w-4 text-red-600" />
+                                  <span className="text-red-600">
+                                    {transaction.transaction_type === 'manual_subtract' 
+                                      ? t('manualSubtract') 
+                                      : t('used')}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {transaction.description || '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {transaction.points && transaction.points > 0 ? (
+                              <span className="text-green-600">+{transaction.points}</span>
+                            ) : (
+                              <span className="text-red-600">{transaction.points}</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex flex-col items-start space-y-2 text-sm text-muted-foreground pt-4 border-t">
           <div className="flex items-center space-x-2">

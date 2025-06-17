@@ -241,9 +241,9 @@ export const OptionView = ({
                       </Button>
                     </div>
                     <Button
-                      variant="destructive"
+                      variant="ghost"
                       size="sm"
-                      className="mt-1"
+                      className="mt-1 bg-destructive-foreground text-destructive"
                       onClick={() => toggleOption(option)}
                     >
                       削除
@@ -252,6 +252,7 @@ export const OptionView = ({
                 ) : (
                   <Button
                     variant="outline"
+                    className="bg-accent-2-foreground text-accent-2"
                     onClick={() => toggleOption(option)}
                     disabled={isMaxedOut || (option.in_stock !== undefined && option.in_stock <= 0)}
                   >

@@ -420,7 +420,8 @@
       "completion": {
         "title": "Initial setup completed!",
         "description": "You're ready to accept reservations. Please share the URL below with your customers.",
-        "reservationUrlLabel": "Reservation Page URL"
+        "reservationUrlLabel": "Reservation Page URL",
+        "customerUrlLabel": "Customer Page URL"
       },
       "nextSteps": {
         "title": "Next Steps",
@@ -883,6 +884,7 @@
     "email": "Email",
     "phone": "Phone",
     "birthday": "Birthday",
+    "birthdayPlaceholder": "Select birthday",
     "address": "Address",
     "notes": "Notes",
     "visitHistory": "Visit History",
@@ -985,7 +987,19 @@
     "noNotes": "No notes available.",
     "visitCountValue": "{count} times",
     "noTagsRegistered": "No tags registered.",
-    "customerId": "Customer ID"
+    "customerId": "Customer ID",
+    "pointHistory": "Point History",
+    "showHistory": "Show History",
+    "hideHistory": "Hide History",
+    "loadingTransactions": "Loading transaction history...",
+    "noTransactions": "No transaction history",
+    "transactionDate": "Transaction Date",
+    "transactionType": "Type",
+    "description": "Description",
+    "earned": "Earned",
+    "used": "Used",
+    "manualSubtract": "Manual Subtract",
+    "fetchTransactionError": "Failed to fetch point transaction history"
   },
   "menu": {
     "title": "Menu Management",

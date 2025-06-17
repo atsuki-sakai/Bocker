@@ -236,22 +236,65 @@ export default function CustomerEditForm() {
         notes: data.notes || '',
       }
 
-      // RPCを使用して更新実行
-      const result = await customerRepo.updateCustomerWithDetailsAndPoints(
-        customerUid,
-        tenantId,
-        orgId,
-        customerData,
-        detailData,
-        data.total_points || 0,
-        data.tags || []
-      )
+      // ポイントの変更を検出
+      const currentPoints = completeCustomer.customerPoints?.total_points || 0
+      const newPoints = data.total_points || 0
+      const pointsDelta = newPoints - currentPoints
 
-      if (result.customer) {
+      // ポイントが変更された場合、アトミック更新を使用
+      if (pointsDelta !== 0) {
+        // まず顧客情報を更新
+        const result = await customerRepo.updateCustomerWithDetailsAndPoints(
+          customerUid,
+          tenantId,
+          orgId,
+          customerData,
+          detailData,
+          newPoints, // 新しいポイント残高
+          data.tags || []
+        )
+
+        if (!result.customer) {
+          toast.error(t('updateError'))
+          return
+        }
+
+        // ポイント履歴を作成（アトミック操作）
+        try {
+          const pointUpdateResult = await customerRepo.updatePointsAtomic(
+            customerUid,
+            tenantId,
+            orgId,
+            pointsDelta,
+            pointsDelta > 0 ? 'manual_add' : 'manual_subtract',
+            `管理画面での手動${pointsDelta > 0 ? '追加' : '削減'}: ${Math.abs(pointsDelta)}ポイント`
+          )
+          console.log('ポイント履歴を作成しました:', pointUpdateResult)
+        } catch (pointError) {
+          console.error('ポイント履歴の作成に失敗しました:', pointError)
+          // ポイント履歴の作成に失敗しても、顧客情報の更新は成功しているので続行
+        }
+
         toast.success(t('customerUpdated'))
         router.push(`/dashboard/customer/${customerUid}`)
       } else {
-        toast.error(t('updateError'))
+        // ポイントに変更がない場合は通常の更新
+        const result = await customerRepo.updateCustomerWithDetailsAndPoints(
+          customerUid,
+          tenantId,
+          orgId,
+          customerData,
+          detailData,
+          newPoints,
+          data.tags || []
+        )
+
+        if (result.customer) {
+          toast.success(t('customerUpdated'))
+          router.push(`/dashboard/customer/${customerUid}`)
+        } else {
+          toast.error(t('updateError'))
+        }
       }
     } catch (error) {
       console.error('Update process error:', error)

@@ -624,20 +624,6 @@ export const findStaffReservations = query({
       )
       .collect()
 
-    // デバッグ: 取得した予約の詳細
-    console.log('findStaffReservations - 取得した予約:', {
-      date: args.date,
-      staffId: args.staff_id,
-      count: staffReservationSchedules.length,
-      reservations: staffReservationSchedules.map(r => ({
-        id: r._id,
-        start: new Date(r.start_time_unix!).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
-        end: new Date(r.end_time_unix!).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
-        start_unix: r.start_time_unix,
-        end_unix: r.end_time_unix,
-        status: r.status,
-      }))
-    })
 
     return staffReservationSchedules.map((reservationSchedule) => {
       return {
@@ -659,10 +645,12 @@ function subtractScheduleFromAvailable(
   // 初期スロットは受付可能時間のみ
   let slots: TimeRange[] = [available]
   
+  
   for (const sched of staffSchedules) {
     const scStart = hourToMinutes(sched.startHour)
     const scEnd = hourToMinutes(sched.endHour)
     const nextSlots: TimeRange[] = []
+    
     
     for (const slot of slots) {
       const avStart = hourToMinutes(slot.startHour)
@@ -676,22 +664,26 @@ function subtractScheduleFromAvailable(
       
       // スロットの前半部分が残る場合
       if (avStart < scStart) {
-        nextSlots.push({
+        const newSlot = {
           startHour: slot.startHour,
           endHour: toHourString(scStart),
-        })
+        }
+        nextSlots.push(newSlot)
       }
       
       // スロットの後半部分が残る場合
       if (scEnd < avEnd) {
-        nextSlots.push({
+        const newSlot = {
           startHour: toHourString(scEnd),
           endHour: slot.endHour,
-        })
+        }
+        nextSlots.push(newSlot)
       }
     }
     slots = nextSlots
   }
+  
+  
   return slots
 }
 
@@ -870,15 +862,6 @@ export const calculateReservationTime = query({
       date: args.date,
     })
     
-    // デバッグ情報（予約確認用）
-    if (staffReservations.length > 0) {
-      console.log('calculateReservationTime - 既存予約あり:', {
-        date: args.date,
-        staffId: args.staff_id,
-        予約数: staffReservations.length,
-        営業時間: availableTimeSlots,
-      })
-    }
 
     // Unixタイムスタンプから時刻文字列（HH:mm）に変換する関数
     // Convex内では既にタイムスタンプが正しく保存されているため、
@@ -897,6 +880,7 @@ export const calculateReservationTime = query({
         endHour: timestampToHHMM(reservation.end_time_unix),
       })),
     ]
+    
     
     const subtractedSchedules = subtractScheduleFromAvailable(
       availableTimeSlots,
@@ -918,14 +902,6 @@ export const calculateReservationTime = query({
 
     const finalSlots = subtractedSchedulesWithStep.flat()
     
-    // デバッグ: 最終結果サマリー
-    if (staffReservations.length > 0 || finalSlots.length === 0) {
-      console.log('calculateReservationTime - 最終結果:', {
-        予約済み時間数: allSchedules.length,
-        利用可能スロット数: finalSlots.length,
-        施術時間: args.duration_min + '分',
-      })
-    }
     
     return finalSlots
   },
@@ -998,10 +974,12 @@ export const checkDoubleBooking = query({
   const reservationConfig = await ctx.db.query('reservation_config').withIndex('by_tenant_org_archive', (q) =>
     q.eq('tenant_id', args.tenant_id)
       .eq('org_id', args.org_id)
+      .eq('is_archive', false)
   ).first();
 
   // 店舗ごとの同時受付可能席数を取得
   const availableSheet = reservationConfig?.available_sheet || 3;
+  
 
   // 組織全体で、該当日の confirmed かつ is_archive: false の予約のみ取得
   const orgReservations = await ctx.db
@@ -1015,15 +993,19 @@ export const checkDoubleBooking = query({
     )
     .collect();
 
-  const overlapCount = orgReservations.filter((reservation) => {
+  const overlappingReservations = orgReservations.filter((reservation) => {
     // 除外ID（自分自身）は外す
     if (args.excludeReservationId && reservation._id === args.excludeReservationId) return false;
     // 時間帯が一部でも重なればtrue
-    return (
-      reservation.start_time_unix < args.end_time_unix &&
-      reservation.end_time_unix > args.start_time_unix
-    );
-  }).length;
+    const isOverlapping = reservation.start_time_unix < args.end_time_unix &&
+      reservation.end_time_unix > args.start_time_unix;
+    
+    
+    return isOverlapping;
+  });
+  
+  const overlapCount = overlappingReservations.length;
+  
 
   if (overlapCount >= availableSheet) {
     throw new ConvexError({
@@ -1035,6 +1017,8 @@ export const checkDoubleBooking = query({
       status: 409,
       details: {
         ...args,
+        overlapCount,
+        availableSheet
       },
     });
   }

@@ -16,4 +16,18 @@ crons.cron(
   internal.migration.action.runDailyMigration
 )
 
+// ポイント付与バッチ処理（毎時間実行）
+crons.interval(
+  'point award batch processor',
+  { minutes: 60 }, // 1時間ごと
+  internal.point.action.cronApplyPointAward
+)
+
+// ポイント有効期限処理（毎日午前3時実行）
+crons.cron(
+  'point expiration processor', 
+  '0 18 * * *', // 日本時間の毎日午前3時（UTC 18:00 = JST 03:00）
+  internal.point.action.processPointExpirations
+)
+
 export default crons

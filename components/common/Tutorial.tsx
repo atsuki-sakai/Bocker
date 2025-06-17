@@ -264,13 +264,19 @@ export const Tutorial = () => {
 
   const progress = (completedSteps.length / tutorialSteps.length) * 100
 
-  const getReservationUrl = () => {
+  const getOrganizationUrl = (type: 'reservation' | 'customer') => {
     if (!org?.org._id) return ''
-    return `${BASE_URL}/reservation/${org.org._id}`
+    if (type === 'reservation') {
+      return `${BASE_URL}/reservation/${org.org._id}`
+    } else if (type === 'customer') {
+      return `${BASE_URL}/customer/${org.org._id}/auth/login`
+    } else {
+      return ''
+    }
   }
 
-  const copyReservationUrl = () => {
-    const url = getReservationUrl()
+  const copyOrganizationUrl = (type: 'reservation' | 'customer') => {
+    const url = getOrganizationUrl(type)
     navigator.clipboard.writeText(url)
     toast.success(t('urlCopied'))
   }
@@ -410,15 +416,49 @@ export const Tutorial = () => {
               <label className="text-sm font-medium">{t('completion.reservationUrlLabel')}</label>
               <div className="flex items-center gap-2 mt-2">
                 <input
-                  value={getReservationUrl()}
+                  value={getOrganizationUrl('reservation')}
                   readOnly
                   className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm font-mono focus:outline-none"
                 />
-                <Button size="icon" variant="outline" onClick={copyReservationUrl}>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => copyOrganizationUrl('reservation')}
+                >
                   <Copy className="h-4 w-4" />
                 </Button>
                 <Button size="icon" variant="outline" asChild>
-                  <a href={getReservationUrl()} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={getOrganizationUrl('reservation')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+            <div className="p-4 bg-background rounded-lg border border-border">
+              <label className="text-sm font-medium">{t('completion.customerUrlLabel')}</label>
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  value={getOrganizationUrl('customer')}
+                  readOnly
+                  className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm font-mono focus:outline-none"
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => copyOrganizationUrl('customer')}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button size="icon" variant="outline" asChild>
+                  <a
+                    href={getOrganizationUrl('customer')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <ExternalLink className="h-4 w-4" />
                   </a>
                 </Button>

@@ -12,12 +12,11 @@ import { MenuView, StaffView, OptionView, DateView, PaymentView, ConfirmView } f
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { reservationFlexMessageTemplate } from '@/services/line/message_template/reservation_flex'
-import { jwtDecode } from 'jwt-decode'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
-import { CustomerRepository, PointTransactionRepository } from '@/services/supabase/repositories'
-import { PointTransactionType } from '@/convex/types'
+import { CustomerRepository, PointTaskQueueRepository } from '@/services/supabase/repositories'
+import { formatDateToYYYYMMDD } from '@/lib/formatDate'
 
 import {
   Check,
@@ -171,7 +170,7 @@ export default function CalendarPage() {
   const { showErrorToast } = useErrorHandler()
   // STATES
   const customerRepository = useMemo(() => new CustomerRepository(), [])
-  const pointTransactionRepository = useMemo(() => new PointTransactionRepository(), [])
+  const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
   const [sessionCustomer, setSessionCustomer] = useState<SessionPayload | null>(null)
   const [customerPhone, setCustomerPhone] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<{
@@ -202,7 +201,7 @@ export default function CalendarPage() {
     couponId: Id<'coupon'> | null
   }>({ discount: 0, couponId: null })
   const [usePoints, setUsePoints] = useState<number>(0)
-  const [availablePoints] = useState<number>(1000) // 仮の値、実際にはAPIから取得
+  const [availablePoints, setAvailablePoints] = useState<number>(0)
   const [direction, setDirection] = useState(0) // アニメーションの方向を制御
   const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(false)
   const [questionnaireStep, setQuestionnaireStep] = useState(1)
@@ -239,7 +238,6 @@ export default function CalendarPage() {
   // Convex mutations
   const createReservationMutation = useMutation(api.reservation.mutation.create)
   const balanceStockMutation = useMutation(api.option.mutation.balanceStock)
-  const createPointQueueMutation = useMutation(api.point.queue.mutation.create)
 
   // ステップ変更時に画面トップへ自動スクロール
   useEffect(() => {
@@ -356,7 +354,7 @@ export default function CalendarPage() {
           : (sessionCustomer.name ?? '不明'),
         staff_name: selectedStaffCompleted.staff.name ?? '不明',
         status: 'pending' as ReservationStatus,
-        date: selectedDate?.toISOString().split('T')[0] || '',
+        date: selectedDate ? formatDateToYYYYMMDD(selectedDate) : '',
         start_time_unix: reservationStartDateTime.getTime(),
         end_time_unix: reservationEndDateTime.getTime(),
         total_price: calculateTotal(), // 表示・保存用の最終合計金額
@@ -423,6 +421,53 @@ export default function CalendarPage() {
             console.error(`オプション在庫の更新に失敗しました: ${error}`)
             throw error
           }
+        }
+      }
+
+      // ポイントを利用していれば、アトミックポイント更新
+      if (pointConfig?.is_active && usePoints && usePoints > 0 && customerData?.customer?.uid) {
+        try {
+          // Supabaseでアトミックポイント更新を実行
+          const result = await customerRepository.updatePointsAtomic(
+            sessionCustomer.customerUid,
+            sessionCustomer.tenantId,
+            organizationComplete.organization._id as Id<'organization'>,
+            -usePoints, // 使用は負の値
+            'used',
+            'ポイント使用による割引',
+            reservationId
+          )
+          console.log('ポイント使用処理が完了しました:', result)
+        } catch (error) {
+          console.error('ポイント処理でエラーが発生しました:', error)
+          // ポイント処理のエラーは予約を妨げないようにする
+        }
+      }
+
+      // 顧客情報を更新（電話番号、最終予約日、予約回数）
+      if (customerData?.customer) {
+        const updatedCustomerData = {
+          phone: customerPhone || customerData.customer.phone,
+          email: customerData.customer.email,
+          first_name: customerData.customer.first_name,
+          last_name: customerData.customer.last_name,
+          line_id: customerData.customer.line_id,
+          line_user_name: customerData.customer.line_user_name,
+          last_reservation_date_unix: Math.floor(reservationStartDateTime.getTime() / 1000),
+          total_reservation_count: (customerData.customer.total_reservation_count || 0) + 1,
+        }
+
+        try {
+          await customerRepository.updateCustomer(
+            customerData.customer.uid,
+            sessionCustomer.tenantId,
+            organizationComplete.organization._id as Id<'organization'>,
+            updatedCustomerData
+          )
+          console.log('顧客情報を更新しました')
+        } catch (error) {
+          console.error('顧客情報の更新に失敗しました:', error)
+          // エラーでも予約処理は継続
         }
       }
 
@@ -580,34 +625,31 @@ export default function CalendarPage() {
     setIsProcessingPayment(true)
 
     try {
-      if (
-        customerData?.customer &&
-        customerPhone &&
-        customerPhone !== customerData.customer.phone
-      ) {
-        await customerRepository.updateCustomerWithDetailsAndPoints(
-          customerData.customer.uid,
-          sessionCustomer.tenantId,
-          organizationComplete.organization._id as Id<'organization'>,
-          {
-            phone: customerPhone,
-            // 既存のemail, first_name, last_name等を保持
-            email: customerData.customer.email,
-            first_name: customerData.customer.first_name,
-            last_name: customerData.customer.last_name,
-            line_id: customerData.customer.line_id,
-            line_user_name: customerData.customer.line_user_name,
-          },
-          {
-            // customerDetailのemailではなく、customerのemailを使用（空文字列を避ける）
-            email: customerData.customerDetail?.email || customerData.customer.email || '',
-            gender: customerData.customerDetail?.gender ?? '',
-            birthday: customerData.customerDetail?.birthday ?? '',
-            age: customerData.customerDetail?.age ?? 0,
-            notes: customerData.customerDetail?.notes ?? '',
-          },
-          customerData.customerPoints?.total_points ?? 0
-        )
+      // 顧客情報を更新（電話番号、最終予約日、予約回数）
+      if (customerData?.customer) {
+        const updatedCustomerData = {
+          phone: customerPhone || customerData.customer.phone,
+          email: customerData.customer.email,
+          first_name: customerData.customer.first_name,
+          last_name: customerData.customer.last_name,
+          line_id: customerData.customer.line_id,
+          line_user_name: customerData.customer.line_user_name,
+          last_reservation_date_unix: Math.floor(reservationStartDateTime.getTime() / 1000),
+          total_reservation_count: (customerData.customer.total_reservation_count || 0) + 1,
+        }
+
+        try {
+          await customerRepository.updateCustomer(
+            customerData.customer.uid,
+            sessionCustomer.tenantId,
+            organizationComplete.organization._id as Id<'organization'>,
+            updatedCustomerData
+          )
+          console.log('顧客情報を更新しました')
+        } catch (error) {
+          console.error('顧客情報の更新に失敗しました:', error)
+          // エラーでも予約処理は継続
+        }
       }
       // 予約データを準備 (handleConfirmReservation内ではstatusをまだ設定しない)
       const reservationBaseData = {
@@ -620,7 +662,7 @@ export default function CalendarPage() {
           : (sessionCustomer.name ?? '不明'),
         staff_name: selectedStaffCompleted.staff.name ?? '不明',
         status: 'confirmed' as ReservationStatus,
-        date: selectedDate?.toISOString().split('T')[0] || '',
+        date: selectedDate ? formatDateToYYYYMMDD(selectedDate) : '',
         start_time_unix: reservationStartDateTime.getTime(),
         end_time_unix: reservationEndDateTime.getTime(),
         total_price: calculateTotal(), // 表示・保存用の最終合計金額
@@ -712,29 +754,20 @@ export default function CalendarPage() {
 
         setIsProcessingPayment(false)
 
-        // ポイントを利用していれば、ポイントのトランザクション
+        // ポイントを利用していれば、アトミックポイント更新
         if (pointConfig?.is_active && usePoints && usePoints > 0 && customerData?.customer?.uid) {
           try {
-            // Supabaseでポイントのトランザクションを作成する
-            const pointTransaction = await pointTransactionRepository.create({
-              tenant_id: sessionCustomer.tenantId,
-              org_id: organizationComplete.organization._id as Id<'organization'>,
-              reservation_id: reservationId as string, // ConvexのIDを文字列として渡す
-              customer_id: sessionCustomer.customerUid,
-              points: -usePoints, // 使用は負の値
-              transaction_type: 'used' as PointTransactionType,
-              transaction_date_unix: Math.floor(new Date().getTime() / 1000), // Unix秒に変換
-            })
-            console.log('ポイント使用履歴を記録しました:', pointTransaction)
-            
-            // ポイント残高の更新
-            await customerRepository.updateCustomerPoints(
-              customerData.customer.uid,
+            // Supabaseでアトミックポイント更新を実行
+            const result = await customerRepository.updatePointsAtomic(
+              sessionCustomer.customerUid,
               sessionCustomer.tenantId,
               organizationComplete.organization._id as Id<'organization'>,
-              new Date().getTime(),
-              customerData.customerPoints?.total_points ?? 0 - usePoints
+              -usePoints, // 使用は負の値
+              'used',
+              'ポイント使用による割引',
+              reservationId
             )
+            console.log('ポイント使用処理が完了しました:', result)
           } catch (error) {
             console.error('ポイント処理でエラーが発生しました:', error)
             // ポイント処理のエラーは予約を妨げないようにする
@@ -867,7 +900,6 @@ export default function CalendarPage() {
             }
             const emailResult = await emailResponse.json()
             console.log('メール送信成功:', emailResult)
-            toast.success('予約確認メールを送信しました。')
             router.push(
               `/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`
             )
@@ -888,10 +920,38 @@ export default function CalendarPage() {
 
         // ポイントを付与するqueueを作成
         if (sessionCustomer?.customerUid && pointConfig && pointConfig.is_active) {
-          const earnPoints = Math.floor(
-            pointConfig.is_fixed_point
-              ? (pointConfig.fixed_point ?? 0)
-              : calculateTotal() * ((pointConfig.point_rate ?? 0) / 100)
+          // ポイント計算（割引前金額で計算）
+          const calculateEarnedPoints = (
+            menus: Doc<'menu'>[],
+            options: Doc<'option'>[],
+            extraCharge: number = 0
+          ) => {
+            // 1. ベース金額計算（クーポン割引前、税込金額）
+            const baseAmount =
+              menus.reduce((sum, menu) => {
+                return sum + (menu.sale_price || menu.unit_price)
+              }, 0) + extraCharge
+
+            // 2. オプション金額追加
+            const optionAmount = options.reduce((sum, option) => {
+              return sum + (option.sale_price || option.unit_price)
+            }, 0)
+
+            // 3. 税込み総額（クーポン・ポイント使用前）
+            const totalAmount = baseAmount + optionAmount
+
+            // 4. ポイント計算（割引前金額で計算）
+            const earnedPoints = pointConfig.is_fixed_point
+              ? pointConfig.fixed_point || 0
+              : Math.floor(totalAmount * ((pointConfig.point_rate || 0) / 100))
+
+            return Math.max(0, earnedPoints)
+          }
+
+          const earnPoints = calculateEarnedPoints(
+            selectedMenus,
+            selectedOptions,
+            selectedStaffCompleted?.staff?.extra_charge || 0
           )
 
           // ポイントが0より大きい場合のみキューを作成
@@ -900,8 +960,8 @@ export default function CalendarPage() {
               Math.floor(reservationStartDateTime.getTime() / 1000) + 60 * 60 * 24 * 30 // 予約日の30日後（Unix秒単位）
 
             try {
-              // Convexでポイントキューを作成する
-              const pointQueue = await createPointQueueMutation({
+              // Supabaseでポイントキューを作成する
+              const pointQueue = await pointTaskQueueRepository.createPointTask({
                 tenant_id: sessionCustomer.tenantId,
                 org_id: organizationComplete.organization._id as Id<'organization'>,
                 reservation_id: reservationId,
@@ -917,7 +977,9 @@ export default function CalendarPage() {
           }
         }
 
-        toast.success('予約を受け付けしました。')
+        toast.success(
+          '予約を受け付けしました。予約確認メールまたはLINEメッセージを送信しましたのでご確認ください。'
+        )
         router.push(
           `/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`
         )
@@ -953,14 +1015,10 @@ export default function CalendarPage() {
         const data = await response.json()
         let sessionCustomer: SessionPayload | null = null
 
+        // APIから返されるsessionは既にデコード済みのオブジェクト
         if (data.session) {
-          try {
-            sessionCustomer = jwtDecode<SessionPayload>(data.session)
-            console.log('sessionCustomer', sessionCustomer)
-          } catch (e) {
-            console.error('JWTデコード失敗:', e)
-            sessionCustomer = null
-          }
+          sessionCustomer = data.session as SessionPayload
+          console.log('sessionCustomer', sessionCustomer)
         }
 
         setSessionCustomer(sessionCustomer)
@@ -991,6 +1049,9 @@ export default function CalendarPage() {
               customerDetail,
               customerPoints,
             })
+
+            // 実際のポイント数をセット
+            setAvailablePoints(customerPoints?.total_points || 0)
 
             setCustomerPhone(customer?.phone || null)
             setIsPhoneValid(isValidPhoneNumber(customer?.phone || null)) // 初期値のバリデーション
@@ -1501,7 +1562,7 @@ export default function CalendarPage() {
               <div className="space-y-6">
                 {organizationComplete.config?.images &&
                   organizationComplete.config.images.length > 0 && (
-                    <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden shadow-md">
+                    <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-md">
                       <Image
                         src={organizationComplete.config?.images[0].original_url ?? ''}
                         alt={organizationComplete.organization.org_name ?? ''}

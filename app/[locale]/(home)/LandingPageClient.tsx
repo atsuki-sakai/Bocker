@@ -356,23 +356,24 @@ export function LandingPageClient({
             className="flex items-center gap-2"
           >
             <Link href="/" className="flex items-center space-x-2">
-              <Image
-                src={
-                  mounted && resolvedTheme === 'dark'
-                    ? '/assets/images/logo-white.png'
-                    : '/assets/images/logo-darkgreen.png'
-                }
-                alt="Bocker"
-                width={40}
-                height={40}
-                className="h-10 w-10"
-              />
               <div className="flex flex-col">
+                <Image
+                  src={
+                    mounted && resolvedTheme === 'dark'
+                      ? '/assets/images/logo-white.png'
+                      : '/assets/images/logo-darkgreen.png'
+                  }
+                  alt="Bocker"
+                  width={40}
+                  height={40}
+                  className="h-10 w-10"
+                />
+
                 <span className="text-xl font-bold">Bocker</span>
-                <span className="text-xs text-muted-foreground -mt-1">
-                  {translations.hero.tagline}
-                </span>
               </div>
+              <span className="text-xs text-muted-foreground -mt-1">
+                {translations.hero.tagline}
+              </span>
             </Link>
           </motion.div>
 

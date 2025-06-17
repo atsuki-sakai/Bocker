@@ -198,16 +198,16 @@ export const DateView = ({
                   <Button
                     key={index}
                     variant={
-                      selectedTime?.startHour === time.startHour && 
-                      selectedTime?.endHour === time.endHour 
-                        ? 'default' 
+                      selectedTime?.startHour === time.startHour &&
+                      selectedTime?.endHour === time.endHour
+                        ? 'default'
                         : 'outline'
                     }
                     onClick={() => handleTimeSelect(time)}
                     className={`text-sm ${
-                      selectedTime?.startHour === time.startHour && 
-                      selectedTime?.endHour === time.endHour 
-                        ? 'bg-neon text-neon-foreground hover:bg-neon hover:text-neon-foreground focus:bg-neon focus:text-neon-foreground' 
+                      selectedTime?.startHour === time.startHour &&
+                      selectedTime?.endHour === time.endHour
+                        ? 'bg-neon-foreground text-neon '
                         : 'bg-muted'
                     }`}
                   >

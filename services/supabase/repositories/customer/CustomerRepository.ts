@@ -433,6 +433,89 @@ export class CustomerRepository extends BaseRepository<'customer'> {
   }
 
   /**
+   * 顧客の基本情報を更新します。
+   * @param customerUid - 更新対象の顧客UID
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param updateData - 更新する顧客データ
+   * @returns 更新された顧客情報
+   */
+  async updateCustomer(
+    customerUid: string,
+    tenantId: string,
+    orgId: string,
+    updateData: Partial<Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'phone' | 'line_id' | 'line_user_name' | 'last_reservation_date_unix' | 'total_reservation_count'>>
+  ): Promise<RowType<'customer'>> {
+    console.log(`[CustomerRepository] updateCustomer: customerUid=${customerUid}, tenantId=${tenantId}, orgId=${orgId}, updateData=${JSON.stringify(updateData)}`);
+    
+    try {
+      // JSONBパラメータ用のオブジェクトを作成
+      const params: Record<string, any> = {
+        p_customer_uid: customerUid,
+        p_tenant_id: tenantId,
+        p_org_id: orgId
+      };
+
+      // オプションパラメータは値が存在する場合のみ追加
+      if (updateData.email !== undefined) params.p_email = updateData.email;
+      if (updateData.first_name !== undefined) params.p_first_name = updateData.first_name;
+      if (updateData.last_name !== undefined) params.p_last_name = updateData.last_name;
+      if (updateData.phone !== undefined) params.p_phone = updateData.phone;
+      if (updateData.line_id !== undefined) params.p_line_id = updateData.line_id;
+      if (updateData.line_user_name !== undefined) params.p_line_user_name = updateData.line_user_name;
+      if (updateData.last_reservation_date_unix !== undefined) params.p_last_reservation_date_unix = updateData.last_reservation_date_unix;
+      if (updateData.total_reservation_count !== undefined) params.p_total_reservation_count = updateData.total_reservation_count;
+
+      console.log('[CustomerRepository] Calling update_customer_json RPC with params:', params);
+
+      // JSON版のRPCを呼び出す（パラメータ順序の問題を回避）
+      const { data, error } = await this.supabaseServiceInstance.rpc<RowType<'customer'>>(
+        'update_customer_json',
+        { params }
+      );
+      
+      if (error) {
+        console.error('[CustomerRepository] Error calling update_customer RPC:', error);
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.updateCustomer',
+          message: error.message || '顧客の更新に失敗しました。',
+          error: new Error(error.message),
+          severity: 'high',
+          details: { customerUid, tenantId, orgId, updateData }
+        });
+      }
+      
+      if (!data || data.length === 0) {
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.updateCustomer',
+          message: '顧客の更新に失敗しました。対象の顧客が見つかりません。',
+          severity: 'medium',
+          code: 'DATABASE_NO_DATA',
+          details: { customerUid, tenantId, orgId, updateData }
+        });
+      }
+      
+      console.log('[CustomerRepository] updateCustomer: Success', data[0]);
+      return data[0];
+    } catch (error) {
+      console.error('[CustomerRepository] updateCustomer: Unexpected error', error);
+      if (error instanceof Error && (error as any).name === 'SupabaseError') {
+        throw error;
+      }
+      throwSupabaseError({
+        callFunc: 'CustomerRepository.updateCustomer',
+        message: (error as Error).message || '顧客の更新に失敗しました。',
+        error: error as Error,
+        severity: 'high',
+        details: { customerUid, tenantId, orgId, updateData }
+      });
+    }
+    
+    // 到達不可能なコードだが、TypeScriptの型チェックのために追加
+    throw new Error('Unexpected error in updateCustomer');
+  }
+
+  /**
    * デバッグ用：指定したテナント・組織の全顧客を取得（最初の5件）
    */
   async debugListAllCustomers(
@@ -571,55 +654,164 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     }
   }
 
-  async updateCustomer(
-    customerUid: string, 
-    tenantId: string, 
-    orgId: string, 
-    customerData: Partial<Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'phone' | 'line_id' | 'line_user_name'>>
-  ): Promise<RowType<'customer'>> {
-    console.log('[CustomerRepository] updateCustomer: Start', {
-      customerUid,
-      tenantId,
-      orgId,
-      customerData,
-    });
 
-    try { 
-      const updatedRecords = await this.supabaseServiceInstance.upsert<'customer'>(
-        'customer',
-        {
-          uid: customerUid,
-          tenant_id: tenantId,
-          org_id: orgId,
-          email: customerData.email,
-          first_name: customerData.first_name,
-          last_name: customerData.last_name,
-          phone: customerData.phone,
-          line_id: customerData.line_id,
-          line_user_name: customerData.line_user_name
-        },
-        {
-          onConflict: 'uid',
-          select: '*',  
-        },
-      );
+  /**
+   * アトミックポイント更新操作
+   * ポイント残高の更新と取引履歴の記録を同時に行い、データ整合性を保証します
+   * 
+   * @param customerUid - 顧客UID
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param pointsDelta - ポイント変動量（正数：付与、負数：使用）
+   * @param transactionType - 取引タイプ ('earned' | 'used' | 'expired' など)
+   * @param description - 取引説明
+   * @param reservationId - 関連予約ID（オプション）
+   * @returns 新しい残高と取引ID
+   */
+  async updatePointsAtomic(
+    customerUid: string,
+    tenantId: string,
+    orgId: string,
+    pointsDelta: number,
+    transactionType: string,
+    description: string,
+    reservationId?: string
+  ): Promise<{ newTotalPoints: number; transactionId: string }> {
+    console.log(`[CustomerRepository] updatePointsAtomic: customerUid=${customerUid}, pointsDelta=${pointsDelta}, type=${transactionType}`);
+    
+    try {
+      // RPC関数を呼び出してアトミック操作を実行
+      const { data, error } = await this.supabaseServiceInstance.rpc<{
+        new_total_points: number;
+        transaction_id: string;
+      }>('update_customer_points_atomic', {
+        p_customer_uid: customerUid,
+        p_tenant_id: tenantId,
+        p_org_id: orgId,
+        p_points_delta: pointsDelta,
+        p_transaction_type: transactionType,
+        p_description: description,
+        p_reservation_id: reservationId || null
+      });
 
-      if (updatedRecords.length === 0) {
-        throw throwSupabaseError({
-          callFunc: 'CustomerRepository.updateCustomer',
-          message: '顧客の更新に失敗しました。',
-          severity: 'medium',
-          code: 'DATABASE_NO_DATA',
-          details: { customerData },
+      if (error) {
+        console.error('[CustomerRepository] updatePointsAtomic: RPC error', error);
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.updatePointsAtomic',
+          message: `アトミックポイント更新に失敗しました: ${error.message}`,
+          error: new Error(error.message),
+          severity: 'high',
+          details: { customerUid, pointsDelta, transactionType, description }
         });
       }
 
-      console.log('[CustomerRepository] updateCustomer: Success', updatedRecords[0]);
-      return updatedRecords[0];
+      if (!data || data.length === 0) {
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.updatePointsAtomic',
+          message: 'アトミックポイント更新の結果が空です',
+          severity: 'high',
+          details: { customerUid, pointsDelta, transactionType, description }
+        });
+      }
+
+      const result = data[0];
+      console.log(`[CustomerRepository] updatePointsAtomic: Success - newBalance=${result.new_total_points}, transactionId=${result.transaction_id}`);
+      
+      return {
+        newTotalPoints: result.new_total_points,
+        transactionId: result.transaction_id
+      };
     } catch (error) {
-      console.error('[CustomerRepository] updateCustomer: Unexpected error', error);
-      throw error;
+      console.error('[CustomerRepository] updatePointsAtomic: Error', error);
+      if (error instanceof Error && (error as any).name === 'SupabaseError') {
+        throw error;
+      }
+      
+      throwSupabaseError({
+        callFunc: 'CustomerRepository.updatePointsAtomic',
+        message: `アトミックポイント更新に失敗しました: ${(error as Error).message}`,
+        error: error as Error,
+        severity: 'critical',
+        details: { customerUid, pointsDelta, transactionType, description }
+      });
     }
+    
+    // 到達不可能なコードだが、TypeScriptの型チェックのために追加
+    throw new Error('Unexpected error in updatePointsAtomic');
+  }
+
+  /**
+   * ポイント残高再計算
+   * 取引履歴から正しい残高を再計算し、不整合を修正します
+   * 
+   * @param customerUid - 顧客UID
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @returns 残高の修正結果
+   */
+  async recalculatePointsBalance(
+    customerUid: string,
+    tenantId: string,
+    orgId: string
+  ): Promise<{ oldBalance: number; newBalance: number; difference: number }> {
+    console.log(`[CustomerRepository] recalculatePointsBalance: customerUid=${customerUid}`);
+    
+    try {
+      const { data, error } = await this.supabaseServiceInstance.rpc<{
+        old_balance: number;
+        new_balance: number;
+        difference: number;
+      }>('recalculate_customer_points_balance', {
+        p_customer_uid: customerUid,
+        p_tenant_id: tenantId,
+        p_org_id: orgId
+      });
+
+      if (error) {
+        console.error('[CustomerRepository] recalculatePointsBalance: RPC error', error);
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.recalculatePointsBalance',
+          message: `ポイント残高再計算に失敗しました: ${error.message}`,
+          error: new Error(error.message),
+          severity: 'medium',
+          details: { customerUid, tenantId, orgId }
+        });
+      }
+
+      if (!data || data.length === 0) {
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.recalculatePointsBalance',
+          message: 'ポイント残高再計算の結果が空です',
+          severity: 'medium',
+          details: { customerUid, tenantId, orgId }
+        });
+      }
+
+      const result = data[0];
+      console.log(`[CustomerRepository] recalculatePointsBalance: Success - oldBalance=${result.old_balance}, newBalance=${result.new_balance}, difference=${result.difference}`);
+      
+      return {
+        oldBalance: result.old_balance,
+        newBalance: result.new_balance,
+        difference: result.difference
+      };
+    } catch (error) {
+      console.error('[CustomerRepository] recalculatePointsBalance: Error', error);
+      if (error instanceof Error && (error as any).name === 'SupabaseError') {
+        throw error;
+      }
+      
+      throwSupabaseError({
+        callFunc: 'CustomerRepository.recalculatePointsBalance',
+        message: `ポイント残高再計算に失敗しました: ${(error as Error).message}`,
+        error: error as Error,
+        severity: 'medium',
+        details: { customerUid, tenantId, orgId }
+      });
+    }
+    
+    // 到達不可能なコードだが、TypeScriptの型チェックのために追加
+    throw new Error('Unexpected error in recalculatePointsBalance');
   }
 }
 

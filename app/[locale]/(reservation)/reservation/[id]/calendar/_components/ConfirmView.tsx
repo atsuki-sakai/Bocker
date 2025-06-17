@@ -70,8 +70,16 @@ export const ConfirmView = ({
     return total + (option.sale_price ? option.sale_price : option.unit_price || 0)
   }, 0)
 
+  // 指名料の計算
+  const calculateExtraCharge = () => {
+    return selectedStaff?.extra_charge || 0
+  }
+
+  // 指名料
+  const extraCharge = calculateExtraCharge()
+
   const totalAmount = menuTotalPrice + optionTotalPrice
-  const maxUsablePoints = 1000 < availablePoints ? 1000 : availablePoints
+  const maxUsablePoints = Math.min(availablePoints, totalAmount + extraCharge)
   const handlePointsChange = (points: number[]) => {
     const value = Math.min(points[0], maxUsablePoints)
     onChangePointsAction(value)
@@ -92,20 +100,12 @@ export const ConfirmView = ({
     return menuTime + optionTime
   }
 
-  // 指名料の計算
-  const calculateExtraCharge = () => {
-    return selectedStaff?.extra_charge || 0
-  }
-
   // 合計施術時間（分）
   const totalTime = calculateTotalTime()
 
   // 時間と分に変換
   const hours = Math.floor(totalTime / 60)
   const minutes = totalTime % 60
-
-  // 指名料
-  const extraCharge = calculateExtraCharge()
 
   // クーポン関連の状態
   const [couponCode, setCouponCode] = useState<string>('')

@@ -154,6 +154,7 @@ export async function POST(req: NextRequest) {
             line_id: lineUserId,
             line_user_name: lineUserName,
             password_hash: null, // パスワードはLINEログインでは使用しない
+            customer_type: 'first_time', // 新規顧客は'first_time'に設定
           };
           
           const result = await customerRepo.createCustomerWithDetailsAndPoints(
