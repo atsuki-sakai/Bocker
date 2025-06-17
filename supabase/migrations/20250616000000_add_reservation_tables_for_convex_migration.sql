@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS public.reservation (
   uid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   -- Convex互換フィールド
-  master_id TEXT NOT NULL,                    -- Convex & Supabase 共通識別子
   tenant_id TEXT NOT NULL,                    -- テナントID（Convex ID形式）
   org_id TEXT NOT NULL,                       -- 組織ID（Convex ID形式）
   customer_id TEXT,                           -- 顧客ID（Supabase customer.uid参照）
@@ -63,15 +62,15 @@ CREATE TABLE IF NOT EXISTS public.reservation_detail (
   -- Convex ID保持用（移行時の整合性確保）
   _convex_id TEXT UNIQUE NOT NULL,
   _convex_reservation_id TEXT NOT NULL,       -- 関連する予約のConvex ID
-  _creation_time BIGINT
+  _creation_time BIGINT,
+  
+  -- 外部キー制約（Supabase内での整合性確保）
+  FOREIGN KEY (_convex_reservation_id) REFERENCES public.reservation(_convex_id) ON DELETE CASCADE
 );
 
 -- 3. インデックス作成
 
 -- 予約テーブル用インデックス
-CREATE INDEX IF NOT EXISTS idx_reservation_tenant_org_master 
-  ON public.reservation(tenant_id, org_id, master_id);
-
 CREATE INDEX IF NOT EXISTS idx_reservation_tenant_org_date 
   ON public.reservation(tenant_id, org_id, date);
 
@@ -140,7 +139,6 @@ COMMENT ON TABLE public.reservation IS 'Convexから移行した予約履歴デ�
 COMMENT ON TABLE public.reservation_detail IS 'Convexから移行した予約詳細データ';
 
 -- カラムコメント（主要なもののみ）
-COMMENT ON COLUMN public.reservation.master_id IS 'ConvexとSupabase共通の識別子';
 COMMENT ON COLUMN public.reservation._convex_id IS 'Convexでの元のレコードID（整合性確保用）';
 COMMENT ON COLUMN public.reservation.tenant_id IS 'テナントID（Convex形式）';
 COMMENT ON COLUMN public.reservation.org_id IS '組織ID（Convex形式）';

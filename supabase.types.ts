@@ -52,7 +52,15 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "carte_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer"
+            referencedColumns: ["uid"]
+          },
+        ]
       }
       carte_detail: {
         Row: {
@@ -109,7 +117,22 @@ export type Database = {
           updated_at?: string
           used_products_json?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "carte_detail_carte_id_fkey"
+            columns: ["carte_id"]
+            isOneToOne: false
+            referencedRelation: "carte"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carte_detail_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservation"
+            referencedColumns: ["uid"]
+          },
+        ]
       }
       coupon_transaction: {
         Row: {
@@ -154,7 +177,15 @@ export type Database = {
           transaction_date_unix?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "coupon_transaction_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer"
+            referencedColumns: ["uid"]
+          },
+        ]
       }
       customer: {
         Row: {
@@ -401,7 +432,15 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_point_task_queue_customer"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer"
+            referencedColumns: ["uid"]
+          },
+        ]
       }
       point_transaction: {
         Row: {
@@ -449,7 +488,15 @@ export type Database = {
           transaction_type?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_point_transaction_customer"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer"
+            referencedColumns: ["uid"]
+          },
+        ]
       }
       reservation: {
         Row: {
@@ -461,7 +508,6 @@ export type Database = {
           date: string
           end_time_unix: number
           is_archive: boolean
-          master_id: string
           org_id: string
           payment_status: string
           sort_key: string | null
@@ -483,7 +529,6 @@ export type Database = {
           date: string
           end_time_unix: number
           is_archive?: boolean
-          master_id: string
           org_id: string
           payment_status: string
           sort_key?: string | null
@@ -505,7 +550,6 @@ export type Database = {
           date?: string
           end_time_unix?: number
           is_archive?: boolean
-          master_id?: string
           org_id?: string
           payment_status?: string
           sort_key?: string | null
@@ -518,7 +562,15 @@ export type Database = {
           uid?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_reservation_customer"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer"
+            referencedColumns: ["uid"]
+          },
+        ]
       }
       reservation_detail: {
         Row: {
@@ -590,7 +642,15 @@ export type Database = {
           updated_at?: string
           use_points?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reservation_detail_convex_reservation_id_fkey"
+            columns: ["_convex_reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservation"
+            referencedColumns: ["_convex_id"]
+          },
+        ]
       }
       tracking_event: {
         Row: {
@@ -752,26 +812,6 @@ export type Database = {
         Args: { p_customer_uid: string }
         Returns: undefined
       }
-      gtrgm_compress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { "": unknown }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
       search_customers_by_similarity: {
         Args: {
           p_tenant_id: string
@@ -794,18 +834,6 @@ export type Database = {
           updated_time: string
           similarity_score: number
         }[]
-      }
-      set_limit: {
-        Args: { "": number }
-        Returns: number
-      }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      show_trgm: {
-        Args: { "": string }
-        Returns: string[]
       }
       update_customer_with_details_and_points: {
         Args: {
