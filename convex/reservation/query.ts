@@ -659,17 +659,10 @@ function subtractScheduleFromAvailable(
   // 初期スロットは受付可能時間のみ
   let slots: TimeRange[] = [available]
   
-  console.log('subtractScheduleFromAvailable - 開始:', {
-    available,
-    schedulesToSubtract: staffSchedules,
-  })
-  
   for (const sched of staffSchedules) {
     const scStart = hourToMinutes(sched.startHour)
     const scEnd = hourToMinutes(sched.endHour)
     const nextSlots: TimeRange[] = []
-    
-    console.log(`処理中のスケジュール: ${sched.startHour} - ${sched.endHour}`)
     
     for (const slot of slots) {
       const avStart = hourToMinutes(slot.startHour)
@@ -678,34 +671,27 @@ function subtractScheduleFromAvailable(
       // スケジュールがスロットと重ならない場合
       if (scEnd <= avStart || scStart >= avEnd) {
         nextSlots.push(slot)
-        console.log(`  重ならない: ${slot.startHour} - ${slot.endHour}`)
         continue
       }
       
       // スロットの前半部分が残る場合
       if (avStart < scStart) {
-        const newSlot = {
+        nextSlots.push({
           startHour: slot.startHour,
           endHour: toHourString(scStart),
-        }
-        nextSlots.push(newSlot)
-        console.log(`  前半追加: ${newSlot.startHour} - ${newSlot.endHour}`)
+        })
       }
       
       // スロットの後半部分が残る場合
       if (scEnd < avEnd) {
-        const newSlot = {
+        nextSlots.push({
           startHour: toHourString(scEnd),
           endHour: slot.endHour,
-        }
-        nextSlots.push(newSlot)
-        console.log(`  後半追加: ${newSlot.startHour} - ${newSlot.endHour}`)
+        })
       }
     }
     slots = nextSlots
   }
-  
-  console.log('subtractScheduleFromAvailable - 結果:', slots)
   return slots
 }
 
@@ -912,12 +898,6 @@ export const calculateReservationTime = query({
       })),
     ]
     
-    // デバッグ: 既存の予約時間を表示
-    console.log('allSchedules (予約済み時間):', allSchedules)
-
-    // デバッグ: 利用可能時間枠
-    console.log('利用可能時間枠 (availableTimeSlots):', availableTimeSlots)
-    
     const subtractedSchedules = subtractScheduleFromAvailable(
       availableTimeSlots,
       allSchedules.map((schedule) => ({
@@ -925,9 +905,6 @@ export const calculateReservationTime = query({
         endHour: schedule.endHour,
       }))
     )
-    
-    // デバッグ: 予約済み時間を除外した後の時間枠
-    console.log('予約済み時間を除外した後の時間枠:', subtractedSchedules)
 
     const subtractedSchedulesWithStep = subtractedSchedules.map((schedule) => {
       const timeSlots = generateTimeSlotsWithAlignment(
@@ -941,8 +918,14 @@ export const calculateReservationTime = query({
 
     const finalSlots = subtractedSchedulesWithStep.flat()
     
-    // デバッグ: 最終的な利用可能スロット
-    console.log('最終的な利用可能スロット:', finalSlots)
+    // デバッグ: 最終結果サマリー
+    if (staffReservations.length > 0 || finalSlots.length === 0) {
+      console.log('calculateReservationTime - 最終結果:', {
+        予約済み時間数: allSchedules.length,
+        利用可能スロット数: finalSlots.length,
+        施術時間: args.duration_min + '分',
+      })
+    }
     
     return finalSlots
   },
