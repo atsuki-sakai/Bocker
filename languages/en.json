@@ -883,6 +883,7 @@
     "email": "Email",
     "phone": "Phone",
     "birthday": "Birthday",
+    "birthdayPlaceholder": "Select birthday",
     "address": "Address",
     "notes": "Notes",
     "visitHistory": "Visit History",

@@ -501,6 +501,7 @@
     "email": "メールアドレス",
     "phone": "電話番号",
     "birthday": "誕生日",
+    "birthdayPlaceholder": "誕生日を選択",
     "address": "住所",
     "notes": "備考",
     "visitHistory": "来店履歴",
