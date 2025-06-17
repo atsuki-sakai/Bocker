@@ -46,7 +46,7 @@ export class CustomerPointsRepository extends BaseRepository<'customer_points'> 
         org_id: orgId,
         total_points: initialPoints,
         last_transaction_date_unix: Math.floor(Date.now() / 1000),
-        // _creation_time, updated_time, is_archive は BaseRepository.create で自動設定
+        // created_at, updated_at, is_archive は BaseRepository.create で自動設定
       };
       pointsRecord = await this.create(newPointsData);
     }

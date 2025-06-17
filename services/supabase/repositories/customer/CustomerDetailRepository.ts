@@ -31,7 +31,7 @@ export class CustomerDetailRepository extends BaseRepository<'customer_detail'> 
         if (!dataToCreate.uid) {
              dataToCreate.uid = crypto.randomUUID(); // uid がなければクライアント側で生成
         }
-        // _creation_time, updated_time, is_archive は BaseRepository.create で自動設定されるため、ここでは何もしない
+        // created_at, updated_at, is_archive は BaseRepository.create で自動設定されるため、ここでは何もしない
         return this.create(dataToCreate as InsertType<'customer_detail'>, options);
     }
   }

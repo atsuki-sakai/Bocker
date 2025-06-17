@@ -62,8 +62,8 @@ function camelToSnake(key: string): string {
 
 /**
  * 新規作成レコードに共通フィールドを追加します。
- * - `_creation_time`: 現在時刻 (ISO文字列)
- * - `updated_time`: 現在時刻 (ISO文字列)
+ * - `created_at`: 現在時刻 (ISO文字列) - Supabaseの標準フィールド名
+ * - `updated_at`: 現在時刻 (ISO文字列) - Supabaseの標準フィールド名
  * - `is_archive`: false (デフォルト)
  * @template T - 入力データオブジェクトの型
  * @param data - 共通フィールドを追加する対象のデータオブジェクト
@@ -71,28 +71,28 @@ function camelToSnake(key: string): string {
  */
 export function addCreationCommonFields<T extends Record<string, any>>(
   data: T
-): T & { _creation_time: string; updated_time: string; is_archive: boolean } {
+): T & { created_at: string; updated_at: string; is_archive: boolean } {
   const now = new Date().toISOString();
   return {
     ...data,
-    _creation_time: now,
-    updated_time: now,
+    created_at: now,
+    updated_at: now,
     is_archive: false, // デフォルト値をfalseに設定
   };
 }
 
 /**
  * 更新レコードに共通フィールドを追加します。
- * - `updated_time`: 現在時刻 (ISO文字列)
+ * - `updated_at`: 現在時刻 (ISO文字列) - Supabaseの標準フィールド名
  * @template T - 入力データオブジェクトの型
  * @param data - 共通フィールドを追加する対象のデータオブジェクト
  * @returns 共通フィールドが追加されたデータオブジェクト
  */
 export function addUpdateCommonFields<T extends Record<string, any>>(
   data: T
-): T & { updated_time: string } {
+): T & { updated_at: string } {
   return {
     ...data,
-    updated_time: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 }

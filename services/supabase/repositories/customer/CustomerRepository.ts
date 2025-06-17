@@ -26,7 +26,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     console.log(`[CustomerRepository] registerNewCustomer: data=${JSON.stringify(customerData)}`);
     const newCustomerDataWithId: InsertType<'customer'> = {
       ...customerData,
-      // 共通フィールド (_creation_time, updated_time, is_archive) は BaseRepository の create メソッドで自動追加
+      // 共通フィールド (created_at, updated_at, is_archive) は BaseRepository の create メソッドで自動追加
     };
     return this.create(newCustomerDataWithId);
   }
@@ -42,7 +42,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
    */
   async createCustomerWithDetailsAndPoints(
     customerCoreData: InsertType<'customer'>,
-    detailData: Omit<InsertType<'customer_detail'>, 'uid' | 'customer_uid' | '_creation_time' | 'updated_time' | 'is_archive'>,
+    detailData: Omit<InsertType<'customer_detail'>, 'uid' | 'customer_uid' | 'created_at' | 'updated_at' | 'is_archive'>,
     initialPoints: number = 0
   ): Promise<{ customer: RowType<'customer'> | null }> {
     console.log('[CustomerRepository] createCustomerWithDetailsAndPoints: Calling RPC for atomicity.')
