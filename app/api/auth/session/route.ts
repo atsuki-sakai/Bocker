@@ -139,12 +139,21 @@ export async function GET() {
       );
     }
 
-    console.log('[API /api/auth/session] Returning session token');
-    
-    // /api/line/sessionと同じ形式でレスポンスを返す
+    console.log('[API /api/auth/session] Verifying and returning session payload');
+
+    let payload: SessionPayload
+    try {
+      // JWTを検証し、ペイロードを取得
+      payload = jwt.verify(token, APP_JWT_SECRET) as SessionPayload
+    } catch (err) {
+      console.warn('[API /api/auth/session] Invalid session token')
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
+    }
+
+    // クライアントが扱いやすい形でペイロードを返却
     return NextResponse.json(
       {
-        session: token,
+        session: payload,
       },
       { status: 200 }
     );
