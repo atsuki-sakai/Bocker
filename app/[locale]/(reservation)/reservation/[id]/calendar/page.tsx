@@ -16,8 +16,7 @@ import { jwtDecode } from 'jwt-decode'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
-import { CustomerRepository, PointTransactionRepository, PointTaskQueueRepository } from '@/services/supabase/repositories'
-import { PointTransactionType } from '@/convex/types'
+import { CustomerRepository, PointTaskQueueRepository } from '@/services/supabase/repositories'
 
 import {
   Check,
@@ -171,7 +170,6 @@ export default function CalendarPage() {
   const { showErrorToast } = useErrorHandler()
   // STATES
   const customerRepository = useMemo(() => new CustomerRepository(), [])
-  const pointTransactionRepository = useMemo(() => new PointTransactionRepository(), [])
   const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
   const [sessionCustomer, setSessionCustomer] = useState<SessionPayload | null>(null)
   const [customerPhone, setCustomerPhone] = useState<string | null>(null)
@@ -880,31 +878,36 @@ export default function CalendarPage() {
         // ポイントを付与するqueueを作成
         if (sessionCustomer?.customerUid && pointConfig && pointConfig.is_active) {
           // ポイント計算（割引前金額で計算）
-          const calculateEarnedPoints = (menus: Doc<'menu'>[], options: Doc<'option'>[], extraCharge: number = 0) => {
+          const calculateEarnedPoints = (
+            menus: Doc<'menu'>[],
+            options: Doc<'option'>[],
+            extraCharge: number = 0
+          ) => {
             // 1. ベース金額計算（クーポン割引前、税込金額）
-            const baseAmount = menus.reduce((sum, menu) => {
-              return sum + (menu.sale_price || menu.unit_price);
-            }, 0) + extraCharge;
-            
+            const baseAmount =
+              menus.reduce((sum, menu) => {
+                return sum + (menu.sale_price || menu.unit_price)
+              }, 0) + extraCharge
+
             // 2. オプション金額追加
             const optionAmount = options.reduce((sum, option) => {
-              return sum + (option.sale_price || option.unit_price);
-            }, 0);
-            
+              return sum + (option.sale_price || option.unit_price)
+            }, 0)
+
             // 3. 税込み総額（クーポン・ポイント使用前）
-            const totalAmount = baseAmount + optionAmount;
-            
+            const totalAmount = baseAmount + optionAmount
+
             // 4. ポイント計算（割引前金額で計算）
             const earnedPoints = pointConfig.is_fixed_point
-              ? (pointConfig.fixed_point || 0)
-              : Math.floor(totalAmount * ((pointConfig.point_rate || 0) / 100));
-              
-            return Math.max(0, earnedPoints);
-          };
+              ? pointConfig.fixed_point || 0
+              : Math.floor(totalAmount * ((pointConfig.point_rate || 0) / 100))
+
+            return Math.max(0, earnedPoints)
+          }
 
           const earnPoints = calculateEarnedPoints(
-            selectedMenus, 
-            selectedOptions, 
+            selectedMenus,
+            selectedOptions,
             selectedStaffCompleted?.staff?.extra_charge || 0
           )
 

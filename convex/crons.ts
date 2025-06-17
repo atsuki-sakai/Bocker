@@ -20,7 +20,7 @@ crons.cron(
 crons.interval(
   'point award batch processor',
   { minutes: 60 }, // 1時間ごと
-  internal.point.action.processPointAwards
+  internal.point.action.cronApplyPointAward
 )
 
 // ポイント有効期限処理（毎日午前3時実行）

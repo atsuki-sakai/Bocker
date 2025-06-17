@@ -648,16 +648,18 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     
     try {
       // RPC関数を呼び出してアトミック操作を実行
-      const { data, error } = await this.supabaseServiceInstance.client
-        .rpc('update_customer_points_atomic', {
-          p_customer_uid: customerUid,
-          p_tenant_id: tenantId,
-          p_org_id: orgId,
-          p_points_delta: pointsDelta,
-          p_transaction_type: transactionType,
-          p_description: description,
-          p_reservation_id: reservationId || null
-        });
+      const { data, error } = await this.supabaseServiceInstance.rpc<{
+        new_total_points: number;
+        transaction_id: string;
+      }>('update_customer_points_atomic', {
+        p_customer_uid: customerUid,
+        p_tenant_id: tenantId,
+        p_org_id: orgId,
+        p_points_delta: pointsDelta,
+        p_transaction_type: transactionType,
+        p_description: description,
+        p_reservation_id: reservationId || null
+      });
 
       if (error) {
         console.error('[CustomerRepository] updatePointsAtomic: RPC error', error);
@@ -700,6 +702,9 @@ export class CustomerRepository extends BaseRepository<'customer'> {
         details: { customerUid, pointsDelta, transactionType, description }
       });
     }
+    
+    // 到達不可能なコードだが、TypeScriptの型チェックのために追加
+    throw new Error('Unexpected error in updatePointsAtomic');
   }
 
   /**
@@ -719,12 +724,15 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     console.log(`[CustomerRepository] recalculatePointsBalance: customerUid=${customerUid}`);
     
     try {
-      const { data, error } = await this.supabaseServiceInstance.client
-        .rpc('recalculate_customer_points_balance', {
-          p_customer_uid: customerUid,
-          p_tenant_id: tenantId,
-          p_org_id: orgId
-        });
+      const { data, error } = await this.supabaseServiceInstance.rpc<{
+        old_balance: number;
+        new_balance: number;
+        difference: number;
+      }>('recalculate_customer_points_balance', {
+        p_customer_uid: customerUid,
+        p_tenant_id: tenantId,
+        p_org_id: orgId
+      });
 
       if (error) {
         console.error('[CustomerRepository] recalculatePointsBalance: RPC error', error);
@@ -768,6 +776,9 @@ export class CustomerRepository extends BaseRepository<'customer'> {
         details: { customerUid, tenantId, orgId }
       });
     }
+    
+    // 到達不可能なコードだが、TypeScriptの型チェックのために追加
+    throw new Error('Unexpected error in recalculatePointsBalance');
   }
 }
 

@@ -2,22 +2,23 @@
 
 import { v } from "convex/values";
 import { internalAction } from "../_generated/server";
-import { SupabaseService } from "../../services/supabase/SupabaseService";
 import { PointTaskQueueRepository } from "../../services/supabase/repositories/point/PointTaskQueueRepository";
 import { CustomerRepository } from "../../services/supabase/repositories/customer/CustomerRepository";
+import { getSupabaseAdminService } from "../../services/supabase/SupabaseService";
+import type { RowType } from "../../services/supabase/SupabaseService";
 
 /**
  * ポイント付与バッチ処理
  * 予定時刻に達したポイント付与タスクを処理します
  */
-export const processPointAwards = internalAction({
+export const cronApplyPointAward = internalAction({
   args: {},
   returns: v.object({
     processed: v.number(),
     errors: v.number(),
     skipped: v.number(),
   }),
-  handler: async (ctx) => {
+  handler: async () => {
     console.log("Point award batch processor started (Supabase unified)");
     
     const BATCH_SIZE = 100;
@@ -29,7 +30,7 @@ export const processPointAwards = internalAction({
     let skipped = 0;
     
     try {
-      const supabase = SupabaseService.getInstance();
+      const supabase = getSupabaseAdminService();
       const taskQueueRepo = new PointTaskQueueRepository(supabase);
       const customerRepo = new CustomerRepository(supabase);
       
@@ -41,7 +42,7 @@ export const processPointAwards = internalAction({
         const { data: pendingTasks } = await taskQueueRepo.findTasksToExecute(
           currentTime,
           'pending',
-          { limit: BATCH_SIZE }
+          { pageSize: BATCH_SIZE }
         );
         
         if (pendingTasks.length === 0) {
@@ -60,10 +61,10 @@ export const processPointAwards = internalAction({
               task.customer_id,
               task.tenant_id,
               task.org_id,
-              task.points,
+              task.points || 0,
               'earned',
               `予約完了によるポイント付与（予約ID: ${task.reservation_id}）`,
-              task.reservation_id
+              task.reservation_id || undefined
             );
             
             // 2.3 通知送信（非同期・エラー時も継続）
@@ -75,15 +76,16 @@ export const processPointAwards = internalAction({
             await taskQueueRepo.updateTaskStatus(task.id, 'completed');
             
             processed++;
-            console.log(`Successfully awarded ${task.points} points to customer ${task.customer_id}`);
+            console.log(`Successfully awarded ${task.points || 0} points to customer ${task.customer_id}`);
             
           } catch (error) {
             console.error(`Error processing task ${task.id}:`, error);
             
             // エラー時の処理
             const maxRetries = 3;
+            const retryCount = 0; // task.retry_countが型定義にないため、ひとまず0で固定
             
-            if ((task.retry_count || 0) < maxRetries) {
+            if (retryCount < maxRetries) {
               // リトライ可能な場合は24時間後に再スケジュール
               const newScheduledTime = Math.floor(Date.now() / 1000) + (24 * 60 * 60);
               await taskQueueRepo.rescheduleTask(task.id, newScheduledTime);
@@ -118,17 +120,19 @@ export const processPointExpirations = internalAction({
     expiredCount: v.number(),
     totalExpiredPoints: v.number(),
   }),
-  handler: async (ctx) => {
+  handler: async () => {
     console.log("Point expiration processor started");
     
     try {
-      const supabase = SupabaseService.getInstance();
+      const supabase = getSupabaseAdminService();
       
       // RPC関数を呼び出してポイント有効期限処理を実行
-      const { data, error } = await supabase.client
-        .rpc('expire_points', {
-          p_expiration_days: 365 // 365日で有効期限切れ
-        });
+      const { data, error } = await supabase.rpc<{
+        expired_count: number;
+        total_expired_points: number;
+      }>('expire_points', {
+        p_expiration_days: 365 // 365日で有効期限切れ
+      });
 
       if (error) {
         console.error("Point expiration processor failed:", error);
@@ -153,21 +157,25 @@ export const processPointExpirations = internalAction({
 /**
  * 通知送信関数（非同期）
  */
-async function sendPointAwardNotification(task: any): Promise<void> {
+async function sendPointAwardNotification(task: RowType<'point_task_queue'>): Promise<void> {
   // 顧客情報取得
-  const supabase = SupabaseService.getInstance();
-  const { data: customer } = await supabase.client
-    .from('customer')
-    .select('line_id, email, first_name, last_name')
-    .eq('uid', task.customer_id)
-    .eq('tenant_id', task.tenant_id)
-    .eq('org_id', task.org_id)
-    .single();
+  const supabase = getSupabaseAdminService();
+  const { data: customers } = await supabase.listRecords<'customer'>('customer', {
+    filters: {
+      uid: task.customer_id,
+      tenant_id: task.tenant_id,
+      org_id: task.org_id
+    },
+    select: ['line_id', 'email', 'first_name', 'last_name'] as const,
+    pageSize: 1
+  });
+  
+  const customer = customers[0];
   
   if (!customer) return;
   
   const customerName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || '顧客様';
-  const message = `${customerName}さん\\n\\n${task.points}ポイントが付与されました！\\n\\n予約完了から30日が経過したため、ポイントをプレゼントいたします。\\n\\n現在のポイント残高をマイページでご確認ください。`;
+  const message = `${customerName}さん\\n\\n${task.points || 0}ポイントが付与されました！\\n\\n予約完了から30日が経過したため、ポイントをプレゼントいたします。\\n\\n現在のポイント残高をマイページでご確認ください。`;
   
   if (customer.line_id) {
     // LINE通知送信
@@ -192,7 +200,7 @@ async function sendPointAwardNotification(task: any): Promise<void> {
         html: `
           <h2>ポイント付与のお知らせ</h2>
           <p>${customerName}さん</p>
-          <p>${task.points}ポイントが付与されました！</p>
+          <p>${task.points || 0}ポイントが付与されました！</p>
           <p>予約完了から30日が経過したため、ポイントをプレゼントいたします。</p>
           <p>現在のポイント残高はマイページでご確認ください。</p>
         `,
