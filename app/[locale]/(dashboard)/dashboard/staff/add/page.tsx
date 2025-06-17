@@ -39,6 +39,7 @@ import { Separator } from '@/components/ui/separator'
 import { ConvexError } from 'convex/values'
 import { uploadImage } from '@/services/gcp/cloud_storage/helpers'
 import { useTranslations } from 'next-intl'
+import Uploader from '@/components/common/Uploader'
 
 import {
   Save,
@@ -258,6 +259,7 @@ function StaffAddPage() {
 
           if (selectedFile) {
             try {
+              setIsLoading(true)
               console.log('[画像アップロード] Staff招待: 署名付きURL方式を使用')
               const result = await uploadImage(
                 selectedFile!,
@@ -273,6 +275,7 @@ function StaffAddPage() {
                   thumbnail_url: result.thumbnailUrl,
                 },
               ]
+              setIsLoading(false)
             } catch (error) {
               console.log('画像アップロードエラー: ', error)
 
@@ -334,6 +337,7 @@ function StaffAddPage() {
         // 通常のスタッフ作成処理
         if (selectedFile) {
           try {
+            setIsLoading(true)
             console.log('[画像アップロード] Staff作成: 署名付きURL方式を使用')
             const result = await uploadImage(
               selectedFile!,
@@ -349,6 +353,7 @@ function StaffAddPage() {
                 thumbnail_url: result.thumbnailUrl,
               },
             ]
+            setIsLoading(false)
           } catch (error) {
             console.log('画像アップロードエラー: ', error)
 
@@ -491,6 +496,10 @@ function StaffAddPage() {
     })
     setCurrentTags([])
   }, [reset, sendInviteEmail]) // sendInviteEmailの変更時もリセット
+
+  if (isLoading) {
+    return <Uploader />
+  }
 
   return (
     <DashboardSection

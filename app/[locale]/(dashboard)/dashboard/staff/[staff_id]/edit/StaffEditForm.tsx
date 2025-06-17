@@ -25,6 +25,7 @@ import { MAX_NOTES_LENGTH, MAX_NUM, MAX_TEXT_LENGTH, MAX_PIN_CODE_LENGTH } from 
 import { Textarea } from '@/components/ui/textarea'
 import { ZodTextField } from '@/components/common'
 import { uploadImage } from '@/services/gcp/cloud_storage/helpers'
+import Uploader from '@/components/common/Uploader'
 import {
   Select,
   SelectContent,
@@ -250,6 +251,7 @@ export default function StaffEditForm() {
 
       if (selectedFile) {
         try {
+          setIsLoading(true)
           const result = await uploadImage(
             selectedFile!,
             orgId,
@@ -264,6 +266,7 @@ export default function StaffEditForm() {
               thumbnail_url: result.thumbnailUrl,
             },
           ]
+          setIsLoading(false)
         } catch (error) {
           console.error('画像アップロードエラー:', error)
           showErrorToast(error)
@@ -491,6 +494,10 @@ export default function StaffEditForm() {
 
   if (!staffAllData) {
     return <Loading />
+  }
+
+  if (isLoading) {
+    return <Uploader />
   }
 
   console.log('staffAllData', staffAllData.connect_clerk)
