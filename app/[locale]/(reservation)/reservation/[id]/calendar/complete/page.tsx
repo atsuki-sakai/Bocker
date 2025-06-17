@@ -267,9 +267,9 @@ export default function CompletePage() {
                     damping: 20,
                     delay: 0.2,
                   }}
-                  className="bg-active-foreground p-3 rounded-full"
+                  className="bg-accent-2-foreground p-3 rounded-full"
                 >
-                  <CheckCircle2 className="h-10 w-10 text-active" />
+                  <CheckCircle2 className="h-10 w-10 text-accent-2" />
                 </motion.div>
               </div>
               <CardTitle className="text-center text-xl sm:text-2xl text-primary">
@@ -298,7 +298,7 @@ export default function CompletePage() {
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">予約日</span>
                     </div>
-                    <span className="font-medium text-active">
+                    <span className="font-medium text-accent-2">
                       {formatDateJP(reservationWithDetail?.reservation?.start_time_unix)}
                     </span>
                   </div>
@@ -308,7 +308,7 @@ export default function CompletePage() {
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">時間</span>
                     </div>
-                    <span className="font-medium text-active">
+                    <span className="font-medium text-accent-2">
                       {formatTimeJP(reservationWithDetail?.reservation?.start_time_unix)} 〜{' '}
                       {formatTimeJP(reservationWithDetail?.reservation?.end_time_unix)}
                     </span>
@@ -376,7 +376,9 @@ export default function CompletePage() {
                             {typeof (option.sale_price ?? option.unit_price) === 'number'
                               ? (option.sale_price ?? option.unit_price)?.toLocaleString()
                               : '価格未定'}
-                            {option.duration_min != null && ` / ${option.duration_min}分`}
+                            {option.duration_min != null &&
+                              option.duration_min !== 0 &&
+                              ` / ${option.duration_min}分`}
                           </span>
                         </div>
                       ))}
@@ -409,9 +411,9 @@ export default function CompletePage() {
               </Card>
 
               {/* 料金情報 */}
-              <Card className="border border-active shadow-sm">
-                <CardHeader className="bg-active-foreground py-3 px-4 rounded-t-xl">
-                  <CardTitle className="text-sm flex items-center gap-2 text-active">
+              <Card className="border border-accent-2 shadow-sm">
+                <CardHeader className="bg-accent-2-foreground py-3 px-4 rounded-t-xl">
+                  <CardTitle className="text-sm flex items-center gap-2 text-accent-2">
                     <CreditCard className="h-4 w-4" />
                     料金
                   </CardTitle>
@@ -483,8 +485,8 @@ export default function CompletePage() {
                     <>
                       <Separator className="my-2" />
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-sm text-active">ポイント使用</span>
-                        <span className="font-medium text-active">
+                        <span className="text-sm text-accent-2">ポイント使用</span>
+                        <span className="font-medium text-accent-2">
                           - ¥{reservationWithDetail?.reservationDetail?.use_points.toLocaleString()}
                         </span>
                       </div>
@@ -495,8 +497,8 @@ export default function CompletePage() {
                     <>
                       <Separator className="my-2" />
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-sm text-active">クーポン割引</span>
-                        <span className="font-medium text-active">
+                        <span className="text-sm text-accent-2">クーポン割引</span>
+                        <span className="font-medium text-accent-2">
                           - ¥
                           {reservationWithDetail?.reservationDetail?.coupon_discount.toLocaleString()}
                         </span>
@@ -517,7 +519,7 @@ export default function CompletePage() {
                     <Separator />
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-muted-foreground">合計</span>
-                      <span className="font-bold text-xl text-active">
+                      <span className="font-bold text-xl text-accent-2">
                         ¥{reservationWithDetail?.reservationDetail?.total_price?.toLocaleString()}
                       </span>
                     </div>

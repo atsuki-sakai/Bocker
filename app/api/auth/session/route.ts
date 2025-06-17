@@ -7,6 +7,7 @@ import { CustomerRepository } from '@/services/supabase/repositories/customer/Cu
 import { verifyPassword } from '@/lib/auth/password';
 import { emailSchema } from '@/lib/validations/api/common';
 import { LOGIN_SESSION_KEY } from '@/services/line/constants';
+import { SessionPayload } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
@@ -19,12 +20,7 @@ const loginRequestSchema = z.object({
 });
 
 // JWTペイロードの型
-interface SessionPayload {
-  customerUid: string;
-  email: string;
-  tenantId: string;
-  orgId: string;
-}
+
 
 // type LoginRequest = z.infer<typeof loginRequestSchema>;
 
@@ -146,7 +142,7 @@ export async function GET() {
       // JWTを検証し、ペイロードを取得
       payload = jwt.verify(token, APP_JWT_SECRET) as SessionPayload
     } catch (err) {
-      console.warn('[API /api/auth/session] Invalid session token')
+      console.warn('[API /api/auth/session] Invalid session token:', err)
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
     }
 

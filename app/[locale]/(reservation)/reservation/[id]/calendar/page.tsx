@@ -12,11 +12,11 @@ import { MenuView, StaffView, OptionView, DateView, PaymentView, ConfirmView } f
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { reservationFlexMessageTemplate } from '@/services/line/message_template/reservation_flex'
-import { jwtDecode } from 'jwt-decode'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
 import { CustomerRepository, PointTaskQueueRepository } from '@/services/supabase/repositories'
+import { formatDateToYYYYMMDD } from '@/lib/formatDate'
 
 import {
   Check,
@@ -354,7 +354,7 @@ export default function CalendarPage() {
           : (sessionCustomer.name ?? '不明'),
         staff_name: selectedStaffCompleted.staff.name ?? '不明',
         status: 'pending' as ReservationStatus,
-        date: selectedDate?.toISOString().split('T')[0] || '',
+        date: selectedDate ? formatDateToYYYYMMDD(selectedDate) : '',
         start_time_unix: reservationStartDateTime.getTime(),
         end_time_unix: reservationEndDateTime.getTime(),
         total_price: calculateTotal(), // 表示・保存用の最終合計金額
@@ -662,7 +662,7 @@ export default function CalendarPage() {
           : (sessionCustomer.name ?? '不明'),
         staff_name: selectedStaffCompleted.staff.name ?? '不明',
         status: 'confirmed' as ReservationStatus,
-        date: selectedDate?.toISOString().split('T')[0] || '',
+        date: selectedDate ? formatDateToYYYYMMDD(selectedDate) : '',
         start_time_unix: reservationStartDateTime.getTime(),
         end_time_unix: reservationEndDateTime.getTime(),
         total_price: calculateTotal(), // 表示・保存用の最終合計金額
@@ -900,7 +900,6 @@ export default function CalendarPage() {
             }
             const emailResult = await emailResponse.json()
             console.log('メール送信成功:', emailResult)
-            toast.success('予約確認メールを送信しました。')
             router.push(
               `/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`
             )
@@ -978,7 +977,9 @@ export default function CalendarPage() {
           }
         }
 
-        toast.success('予約を受け付けしました。')
+        toast.success(
+          '予約を受け付けしました。予約確認メールまたはLINEメッセージを送信しましたのでご確認ください。'
+        )
         router.push(
           `/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`
         )
@@ -1014,14 +1015,10 @@ export default function CalendarPage() {
         const data = await response.json()
         let sessionCustomer: SessionPayload | null = null
 
+        // APIから返されるsessionは既にデコード済みのオブジェクト
         if (data.session) {
-          try {
-            sessionCustomer = jwtDecode<SessionPayload>(data.session)
-            console.log('sessionCustomer', sessionCustomer)
-          } catch (e) {
-            console.error('JWTデコード失敗:', e)
-            sessionCustomer = null
-          }
+          sessionCustomer = data.session as SessionPayload
+          console.log('sessionCustomer', sessionCustomer)
         }
 
         setSessionCustomer(sessionCustomer)
@@ -1565,7 +1562,7 @@ export default function CalendarPage() {
               <div className="space-y-6">
                 {organizationComplete.config?.images &&
                   organizationComplete.config.images.length > 0 && (
-                    <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden shadow-md">
+                    <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-md">
                       <Image
                         src={organizationComplete.config?.images[0].original_url ?? ''}
                         alt={organizationComplete.organization.org_name ?? ''}

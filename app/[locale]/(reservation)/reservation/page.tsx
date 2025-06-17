@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useLiff } from '@/hooks/useLiff'
 import { useRouter } from 'next/navigation'
@@ -25,6 +25,9 @@ export default function ReserveRedirectPage() {
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // タイムアウト用のRef（setTimeoutのIDを保持）
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 現在の言語設定を取得
   const locale =
@@ -348,6 +351,46 @@ export default function ReserveRedirectPage() {
     showErrorToast,
     locale,
   ])
+
+  // 8秒以上ロードが続いた場合に強制ログアウトし予約トップへリダイレクトする処理
+  useEffect(() => {
+    // isLoading が true の時のみタイマーをセット
+    if (isLoading) {
+      timeoutRef.current = setTimeout(async () => {
+        console.warn('[ReserveRedirectPage] Loading timeout exceeded 8 seconds. Logging out...')
+
+        // 1. サーバー側のセッション Cookie を削除
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include',
+          })
+        } catch (e) {
+          console.error('[ReserveRedirectPage] Failed to call logout API:', e)
+        }
+
+        // 2. LIFF 側のセッションも削除（エラーは握り潰す）
+        try {
+          if (liff && liff.isLoggedIn()) {
+            liff.logout()
+          }
+        } catch (e) {
+          console.error('[ReserveRedirectPage] Failed to logout from LIFF:', e)
+        }
+
+        // 3. ユーザーへトースト通知
+        toast.error('タイムアウトしました。再度ログインしてください')
+      }, 10000) // 10000ms = 10秒
+    }
+
+    // クリーンアップ: isLoading が false もしくはアンマウント時にタイマーを解除
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+    }
+  }, [isLoading, liff, router, locale])
 
   if (isLoading) {
     return (
