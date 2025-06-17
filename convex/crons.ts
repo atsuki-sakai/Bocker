@@ -5,7 +5,7 @@ const crons = cronJobs()
 
 crons.cron(
   'applyAllReferralDiscount',
-  '30 17 24 * *', // 日本時間の毎月25日の午前2時30分（UTC）
+  '30 18 24 * *', // 日本時間の毎月25日の午前3時30分（UTC）
   internal.tenant.referral.action.cronApplyReferralDiscount
 )
 
