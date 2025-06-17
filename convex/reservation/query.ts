@@ -21,13 +21,37 @@ import { Doc } from '@/convex/_generated/dataModel';
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { validateDateStrFormat, validateStringLength } from '@/convex/utils/validations';
-import { convertHourToTimestamp, formatTimestamp,hourToMinutes, convertTimestampToHour, getDayOfWeek, toHourString } from '@/lib/schedules';
+import { convertHourToTimestamp, getDayOfWeek } from '@/lib/schedules';
 import { TimeRange } from '@/lib/types';
 import { validateDateStrToDate } from '@/convex/utils/validations';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { ConvexError } from 'convex/values';
 import { getReservationWithDetail } from './reservation.helpers';
 
+// ユーティリティ関数（Convex内で使用するため再定義）
+function hourToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function toHourString(min: number): string {
+  const h = Math.floor(min / 60)
+    .toString()
+    .padStart(2, '0');
+  const m = (min % 60).toString().padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+function convertTimestampToHour(
+  unixTimestampMs: number,
+  timeZone: string = 'Asia/Tokyo'
+): string {
+  return new Date(unixTimestampMs).toLocaleTimeString('ja-JP', {
+    hour:   '2-digit',
+    minute: '2-digit',
+    timeZone,
+  });
+}
 
 /**
  * 予約IDによる単一予約取得
@@ -598,9 +622,22 @@ export const findStaffReservations = query({
           .eq('status', 'confirmed')
           .eq('is_archive', false)
       )
-      .filter((q) => q.gte(q.field('start_time_unix'), startOfDaySec))
-      .filter((q) => q.lt(q.field('start_time_unix'), endOfDaySec))
       .collect()
+
+    // デバッグ: 取得した予約の詳細
+    console.log('findStaffReservations - 取得した予約:', {
+      date: args.date,
+      staffId: args.staff_id,
+      count: staffReservationSchedules.length,
+      reservations: staffReservationSchedules.map(r => ({
+        id: r._id,
+        start: new Date(r.start_time_unix!).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+        end: new Date(r.end_time_unix!).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+        start_unix: r.start_time_unix,
+        end_unix: r.end_time_unix,
+        status: r.status,
+      }))
+    })
 
     return staffReservationSchedules.map((reservationSchedule) => {
       return {
@@ -621,32 +658,54 @@ function subtractScheduleFromAvailable(
 ): TimeRange[] {
   // 初期スロットは受付可能時間のみ
   let slots: TimeRange[] = [available]
+  
+  console.log('subtractScheduleFromAvailable - 開始:', {
+    available,
+    schedulesToSubtract: staffSchedules,
+  })
+  
   for (const sched of staffSchedules) {
     const scStart = hourToMinutes(sched.startHour)
     const scEnd = hourToMinutes(sched.endHour)
     const nextSlots: TimeRange[] = []
+    
+    console.log(`処理中のスケジュール: ${sched.startHour} - ${sched.endHour}`)
+    
     for (const slot of slots) {
       const avStart = hourToMinutes(slot.startHour)
       const avEnd = hourToMinutes(slot.endHour)
+      
+      // スケジュールがスロットと重ならない場合
       if (scEnd <= avStart || scStart >= avEnd) {
         nextSlots.push(slot)
+        console.log(`  重ならない: ${slot.startHour} - ${slot.endHour}`)
         continue
       }
+      
+      // スロットの前半部分が残る場合
       if (avStart < scStart) {
-        nextSlots.push({
+        const newSlot = {
           startHour: slot.startHour,
           endHour: toHourString(scStart),
-        })
+        }
+        nextSlots.push(newSlot)
+        console.log(`  前半追加: ${newSlot.startHour} - ${newSlot.endHour}`)
       }
+      
+      // スロットの後半部分が残る場合
       if (scEnd < avEnd) {
-        nextSlots.push({
+        const newSlot = {
           startHour: toHourString(scEnd),
           endHour: slot.endHour,
-        })
+        }
+        nextSlots.push(newSlot)
+        console.log(`  後半追加: ${newSlot.startHour} - ${newSlot.endHour}`)
       }
     }
     slots = nextSlots
   }
+  
+  console.log('subtractScheduleFromAvailable - 結果:', slots)
   return slots
 }
 
@@ -824,18 +883,41 @@ export const calculateReservationTime = query({
       staff_id: args.staff_id,
       date: args.date,
     })
+    
+    // デバッグ情報（予約確認用）
+    if (staffReservations.length > 0) {
+      console.log('calculateReservationTime - 既存予約あり:', {
+        date: args.date,
+        staffId: args.staff_id,
+        予約数: staffReservations.length,
+        営業時間: availableTimeSlots,
+      })
+    }
+
+    // Unixタイムスタンプから時刻文字列（HH:mm）に変換する関数
+    // Convex内では既にタイムスタンプが正しく保存されているため、
+    // 日本時間として表示するだけで良い
+    const timestampToHHMM = (timestamp: number): string => {
+      return convertTimestampToHour(timestamp, 'Asia/Tokyo');
+    };
 
     const allSchedules = [
       ...staffSchedules.map((schedule) => ({
-        startHour: formatTimestamp(schedule.start_time_unix,{useJST: true}),
-        endHour: formatTimestamp(schedule.end_time_unix,{useJST: true}),
+        startHour: timestampToHHMM(schedule.start_time_unix),
+        endHour: timestampToHHMM(schedule.end_time_unix),
       })),
       ...staffReservations.map((reservation) => ({
-        startHour: formatTimestamp(reservation.start_time_unix,{useJST: true}),
-        endHour: formatTimestamp(reservation.end_time_unix,{useJST: true}),
+        startHour: timestampToHHMM(reservation.start_time_unix),
+        endHour: timestampToHHMM(reservation.end_time_unix),
       })),
     ]
+    
+    // デバッグ: 既存の予約時間を表示
+    console.log('allSchedules (予約済み時間):', allSchedules)
 
+    // デバッグ: 利用可能時間枠
+    console.log('利用可能時間枠 (availableTimeSlots):', availableTimeSlots)
+    
     const subtractedSchedules = subtractScheduleFromAvailable(
       availableTimeSlots,
       allSchedules.map((schedule) => ({
@@ -843,6 +925,9 @@ export const calculateReservationTime = query({
         endHour: schedule.endHour,
       }))
     )
+    
+    // デバッグ: 予約済み時間を除外した後の時間枠
+    console.log('予約済み時間を除外した後の時間枠:', subtractedSchedules)
 
     const subtractedSchedulesWithStep = subtractedSchedules.map((schedule) => {
       const timeSlots = generateTimeSlotsWithAlignment(
@@ -854,7 +939,12 @@ export const calculateReservationTime = query({
       return timeSlots
     })
 
-    return subtractedSchedulesWithStep.flat()
+    const finalSlots = subtractedSchedulesWithStep.flat()
+    
+    // デバッグ: 最終的な利用可能スロット
+    console.log('最終的な利用可能スロット:', finalSlots)
+    
+    return finalSlots
   },
 })
 
