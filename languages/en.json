@@ -715,7 +715,7 @@
     "calendar": "Calendar",
     "timeline": "Timeline",
     "timelineTitle": "Reservation Timeline",
-    "timelineDescription": "Check active reservations and update status when treatments are completed.",
+    "timelineDescription": "Check active reservations and update status when treatments are completed. Only confirmed reservations are displayed.",
     "newReservation": "New Reservation",
     "editReservation": "Edit Reservation",
     "reservationDetails": "Reservation Details",

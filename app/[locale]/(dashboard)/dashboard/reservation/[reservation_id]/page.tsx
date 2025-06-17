@@ -10,11 +10,13 @@ import { DashboardSection } from '@/components/common'
 import Image from 'next/image'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { format } from 'date-fns'
+import type { Gender } from '@/convex/types'
 import {
   convertReservationStatus,
   ReservationStatus,
   convertPaymentMethod,
   PaymentMethod,
+  convertGender,
 } from '@/convex/types'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,11 +41,11 @@ import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import { useTranslations } from 'next-intl'
 
 const statusColorMap = {
-  confirmed: 'bg-palette-2-foreground border border-palette-2 text-palette-2',
-  cancelled: 'bg-palette-4-foreground border border-palette-4 text-palette-4',
-  pending: 'bg-warning-foreground border border-warning text-warning',
-  completed: 'bg-palette-5-foreground border border-palette-5 text-palette-5',
-  refunded: 'bg-palette-3-foreground border border-palette-3 text-palette-3',
+  confirmed: 'bg-palette-2 border border-palette-2-foreground text-palette-2-foreground',
+  cancelled: 'bg-palette-4 border border-palette-4-foreground text-palette-4-foreground',
+  pending: 'bg-warning border border-warning-foreground text-warning-foreground',
+  completed: 'bg-palette-5 border border-palette-5-foreground text-palette-5-foreground',
+  refunded: 'bg-palette-3 border border-palette-3-foreground text-palette-3-foreground',
 }
 
 export default function ReservationPage() {
@@ -208,7 +210,11 @@ export default function ReservationPage() {
                 {t('changeStatus')}
               </Button>
 
-              <Button variant="destructive" onClick={(e) => handleShowDeleteModal(e)}>
+              <Button
+                variant="ghost"
+                className="text-destructive bg-destructive-foreground"
+                onClick={(e) => handleShowDeleteModal(e)}
+              >
                 {t('delete')}
               </Button>
             </div>
@@ -296,7 +302,7 @@ export default function ReservationPage() {
 
                   {customerData.customerDetail && (
                     <>
-                      {customerData.customerDetail.age && (
+                      {customerData.customerDetail.age && customerData.customerDetail.age > 0 && (
                         <div>
                           <p className="text-muted-foreground">{t('age')}:</p>
                           <p className="font-medium">
@@ -304,11 +310,12 @@ export default function ReservationPage() {
                           </p>
                         </div>
                       )}
-
                       {customerData.customerDetail.gender && (
                         <div>
                           <p className="text-muted-foreground">{t('gender')}:</p>
-                          <p className="font-medium">{customerData.customerDetail.gender}</p>
+                          <p className="font-medium">
+                            {convertGender(customerData.customerDetail.gender as Gender, true)}
+                          </p>
                         </div>
                       )}
                     </>

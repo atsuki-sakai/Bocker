@@ -331,7 +331,7 @@
     "calendar": "カレンダー",
     "timeline": "タイムライン",
     "timelineTitle": "予約タイムライン",
-    "timelineDescription": "有効な予約を確認したり、施術完了時にステータスなどを変更します。",
+    "timelineDescription": "有効な予約を確認したり、施術完了時にステータスなどを変更します。予約確定の予約のみが表示されます。",
     "newReservation": "新規予約",
     "editReservation": "予約編集",
     "reservationDetails": "予約詳細",

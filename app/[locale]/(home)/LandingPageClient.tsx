@@ -353,10 +353,10 @@ export function LandingPageClient({
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-fit"
           >
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="flex flex-col">
+            <Link href="/" className="flex flex-col items-start space-x-2">
+              <div className="flex items-center">
                 <Image
                   src={
                     mounted && resolvedTheme === 'dark'
@@ -371,7 +371,7 @@ export function LandingPageClient({
 
                 <span className="text-xl font-bold">Bocker</span>
               </div>
-              <span className="text-xs text-muted-foreground -mt-1">
+              <span className="text-xs text-muted-foreground -mt-1 scale-75 text-nowrap -translate-x-5">
                 {translations.hero.tagline}
               </span>
             </Link>
@@ -417,7 +417,6 @@ export function LandingPageClient({
 
           {/* Mobile menu button */}
           <div className="flex items-center gap-2 md:hidden">
-            <LanguageSwitcher />
             <ModeToggle />
             <Button
               variant="ghost"
@@ -440,7 +439,10 @@ export function LandingPageClient({
               transition={{ duration: 0.2 }}
               className="border-t md:hidden"
             >
-              <nav className="container py-4 space-y-3">
+              <div className="flex items-center justify-end p-2">
+                <LanguageSwitcher />
+              </div>
+              <nav className="container py-4 px-4 space-y-3">
                 <Link
                   href="#features"
                   className="block text-sm font-medium text-muted-foreground hover:text-primary"
@@ -469,7 +471,11 @@ export function LandingPageClient({
                 >
                   {translations.nav.faq}
                 </Link>
-                <Link href="/sign-up" onClick={() => setMenuOpen(false)}>
+                <Link
+                  className="inline-block w-full mt-4"
+                  href="/sign-up"
+                  onClick={() => setMenuOpen(false)}
+                >
                   <Button className="w-full" size="sm">
                     {translations.nav.startFreeTrial}
                   </Button>
@@ -491,7 +497,7 @@ export function LandingPageClient({
           >
             {/* Badge */}
             <motion.div variants={fadeIn}>
-              <Badge className="px-4 py-1.5 text-sm font-semibold bg-primary">
+              <Badge className="px-4 py-1.5 text-sm font-semibold bg-primary text-primary-foreground">
                 {translations.hero.badge}
               </Badge>
             </motion.div>
@@ -617,7 +623,7 @@ export function LandingPageClient({
                           <CardHeader>
                             <div className="flex items-center gap-3 mb-2">
                               <div className="p-2 rounded-lg bg-primary">
-                                <Icon className="h-6 w-6 text-primary" />
+                                <Icon className="h-6 w-6 text-primary-foreground" />
                               </div>
                               <CardTitle className="text-xl">{feature.title}</CardTitle>
                             </div>

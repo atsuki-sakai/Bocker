@@ -159,7 +159,7 @@ const StaffTimelineRow = memo(
     return (
       <div
         className={cn(
-          'flex  transition-colors hover:border-active border-b border-border last:border-b'
+          'flex  transition-colors hover:border-accent-2 border-b border-border last:border-b'
         )}
       >
         {/* スタッフ名（左端固定） */}
@@ -311,9 +311,9 @@ const StatsCards = memo(({ totalReservations }: { totalReservations: number }) =
 
   return (
     <div className="flex gap-4 pb-4">
-      <Card className="flex items-center justify-between gap-4 px-2 py-1 bg-active-foreground border-active">
-        <div className="text-xs text-active font-medium">{t('totalReservations')}</div>
-        <div className="text-sm font-bold text-active">
+      <Card className="flex items-center justify-between gap-4 px-2 py-1 bg-accent-2-foreground border-accent-2">
+        <div className="text-xs text-accent-2 font-medium">{t('totalReservations')}</div>
+        <div className="text-sm font-bold text-accent-2">
           {totalReservations}
           {t('count')}
         </div>
