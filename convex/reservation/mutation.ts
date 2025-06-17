@@ -318,10 +318,9 @@ export const update = mutation({
       ctx,
       reservation._id,
       {
-        master_id: reservation.master_id,         // Convex & Supabase 共通識別子
         tenant_id: args.tenant_id, // テナントID
         org_id: args.org_id, // 組織ID
-        customer_id: args.customer_id, // Supabase 側の customer.id
+        customer_id: args.customer_id, // Supabase 側の customer.uid (UUID)
         staff_id: args.staff_id, // スタッフID
         customer_name: args.customer_name, // 顧客名
         staff_name: args.staff_name, // スタッフ名

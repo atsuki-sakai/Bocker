@@ -229,7 +229,6 @@ async function migrateToSupabase(
   try {
     // 予約データの変換（_creationTimeはBIGINTとして保存）
     const reservationPayloads = reservations.map(reservation => ({
-      master_id: reservation.master_id,
       tenant_id: reservation.tenant_id,
       org_id: reservation.org_id,
       customer_id: reservation.customer_id || null,
@@ -244,7 +243,7 @@ async function migrateToSupabase(
       end_time_unix: reservation.end_time_unix,
       is_archive: reservation.is_archive || false,
       sort_key: reservation.sort_key || null,
-      _convex_id: reservation._id,
+      _convex_id: reservation._id, // ConvexレコードIDを保持
       _creation_time: reservation._creationTime // BIGINTとしてそのまま保存
     }));
     

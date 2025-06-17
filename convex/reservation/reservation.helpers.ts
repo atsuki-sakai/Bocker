@@ -9,7 +9,6 @@ import {
   ReservationStatus,
   ReservationPaymentStatus,
 } from '@/convex/types';
-import { v4 as uuidv4 } from 'uuid';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 
@@ -40,8 +39,7 @@ export const getReservationWithDetail = async (ctx: QueryCtx, reservationId: Id<
  * データの整合性を保ちつつ処理を簡潔にします。
  * 
  * 引数には予約に必要な情報をすべて含めて渡してください。
- * ConvexとSupabaseで共通に使う識別子(master_id)を生成し、
- * 両テーブルに適切にデータを挿入します。
+ * 予約の基本情報と詳細情報を関連付けて両テーブルにデータを挿入します。
  * 
  * @param ctx Mutationコンテキスト（DBアクセス用）
  * @param args 予約情報の詳細
@@ -74,12 +72,8 @@ export async function createReservationWithDetails(
     notes?: string;
   }
 ) {
-  // Convex & Supabase 共通識別子を生成し、予約と予約詳細の紐付けを保証
-  const master_id = uuidv4();
-
   // 予約テーブルに基本情報を作成 
   const reservationId = await createRecord(ctx, 'reservation', {
-    master_id,
     tenant_id: args.tenant_id,
     org_id: args.org_id,
     customer_id: args.customer_id,

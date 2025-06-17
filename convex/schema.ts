@@ -683,10 +683,9 @@ const coupon_config = defineTable({
  * 一つの組織に対して無制限に作成可能。平均は月/100件程度。
  */
 const reservation = defineTable({
-  master_id: v.string(),         // Convex & Supabase 共通識別子
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.id('organization'), // 店舗ID
-  customer_id: v.optional(v.string()), // Supabase 側の customer.id
+  customer_id: v.optional(v.string()), // Supabase 側の customer.uid (UUID)
   staff_id: v.id('staff'), // スタッフID
   customer_name: v.string(), // 顧客名
   staff_name: v.string(), // スタッフ名
@@ -698,8 +697,8 @@ const reservation = defineTable({
   end_time_unix: v.number(), // 予約終了時間
   ...CommonFields,　// デフォルトでこれらのフィールドを持つ _creationTime: number | undefined; is_archive?: boolean | undefined; updated_at?: number | undefined; deleted_at?: number | undefined;
 })
-  // ① 単一レコード取得
-  .index('by_tenant_org_master_archive', ['tenant_id', 'org_id', 'master_id','is_archive'])
+  // ① Convex ID による単一レコード取得（_idフィールド使用）
+  .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive'])
   // ② ステータス＋日付＋開始時刻（ステータス絞り込み一覧）
   .index(
     'by_tenant_org_status_date_start_archive',
