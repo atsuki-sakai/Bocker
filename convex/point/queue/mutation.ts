@@ -23,12 +23,12 @@ export const create = mutation({
 
     // 予約の存在確認
     const reservation = await ctx.db.get(args.reservation_id)
-    if(!reservation || reservation.status !== 'completed') {
+    if(!reservation || (reservation.status !== 'completed' && reservation.status !== 'confirmed')) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'point.queue.create',
-        message: '指定された予約は完了されていません。',
+        message: '指定された予約は確認または完了されていません。',
         code: 'BAD_REQUEST',
       })
     }

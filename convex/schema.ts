@@ -777,23 +777,6 @@ const point_queue = defineTable({
 .index('by_scheduled_for', ['scheduled_for_unix', 'is_archive'])
 .index('by_tenant_org_reservation_archive', ['tenant_id', 'org_id', 'reservation_id', 'is_archive']);
 
-/**
- * =========================
- * ポイント対象外メニュー
- * =========================
- * 平均で10点程度。
- */
-const point_exclusion_menu = defineTable({
-  point_config_id: v.id('point_config'),
-  tenant_id: v.id('tenant'),
-  org_id: v.id('organization'),
-  menu_id: v.id('menu'),
-  ...CommonFields,
-})
-.index(
-  'by_tenant_org_point_config_menu_archive',
-  ['tenant_id', 'org_id', 'point_config_id', 'menu_id', 'is_archive']
-);
 
 /**
  * =========================
@@ -843,6 +826,5 @@ export default defineSchema({
   reservation_detail,
   point_config,
   point_queue,
-  point_exclusion_menu,
   webhook_events,
 });

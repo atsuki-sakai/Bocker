@@ -16,11 +16,7 @@ import { jwtDecode } from 'jwt-decode'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
-import {
-  CustomerRepository,
-  PointTransactionRepository,
-  PointTaskQueueRepository,
-} from '@/services/supabase/repositories'
+import { CustomerRepository, PointTransactionRepository } from '@/services/supabase/repositories'
 import { PointTransactionType } from '@/convex/types'
 
 import {
@@ -176,7 +172,6 @@ export default function CalendarPage() {
   // STATES
   const customerRepository = useMemo(() => new CustomerRepository(), [])
   const pointTransactionRepository = useMemo(() => new PointTransactionRepository(), [])
-  const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
   const [sessionCustomer, setSessionCustomer] = useState<SessionPayload | null>(null)
   const [customerPhone, setCustomerPhone] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<{
@@ -244,6 +239,7 @@ export default function CalendarPage() {
   // Convex mutations
   const createReservationMutation = useMutation(api.reservation.mutation.create)
   const balanceStockMutation = useMutation(api.option.mutation.balanceStock)
+  const createPointQueueMutation = useMutation(api.point.queue.mutation.create)
 
   // ステップ変更時に画面トップへ自動スクロール
   useEffect(() => {
@@ -398,13 +394,15 @@ export default function CalendarPage() {
           }
         }
         if (errorData?.data?.code === 'CONFLICT' || errorData?.data?.statusCode === 409) {
-          toast.error('申し訳ございません。選択された時間帯は既に予約済みです。別の時間帯を選択してください。')
-          
+          toast.error(
+            '申し訳ございません。選択された時間帯は既に予約済みです。別の時間帯を選択してください。'
+          )
+
           // 日時選択ステップに戻る（空き時間は自動的に再取得される）
           setCurrentStep('date')
           return null
         }
-        
+
         // その他のエラー
         throw error
       }
@@ -716,24 +714,31 @@ export default function CalendarPage() {
 
         // ポイントを利用していれば、ポイントのトランザクション
         if (pointConfig?.is_active && usePoints && usePoints > 0 && customerData?.customer?.uid) {
-          // Supabaseでポイントのトランザクションを作成する
-          const pointTransaction = await pointTransactionRepository.create({
-            tenant_id: sessionCustomer.tenantId,
-            org_id: organizationComplete.organization._id as Id<'organization'>,
-            reservation_id: reservationId,
-            customer_id: sessionCustomer.customerUid,
-            points: usePoints,
-            transaction_type: 'used' as PointTransactionType, // earn:獲得、used:使用、adjust:調整、expired:期限切れ
-            transaction_date_unix: new Date().getTime(),
-          })
-          console.log(pointTransaction)
-          await customerRepository.updateCustomerPoints(
-            customerData.customer.uid,
-            sessionCustomer.tenantId,
-            organizationComplete.organization._id as Id<'organization'>,
-            new Date().getTime(),
-            customerData.customerPoints?.total_points ?? 0 - usePoints
-          )
+          try {
+            // Supabaseでポイントのトランザクションを作成する
+            const pointTransaction = await pointTransactionRepository.create({
+              tenant_id: sessionCustomer.tenantId,
+              org_id: organizationComplete.organization._id as Id<'organization'>,
+              reservation_id: reservationId as string, // ConvexのIDを文字列として渡す
+              customer_id: sessionCustomer.customerUid,
+              points: -usePoints, // 使用は負の値
+              transaction_type: 'used' as PointTransactionType,
+              transaction_date_unix: Math.floor(new Date().getTime() / 1000), // Unix秒に変換
+            })
+            console.log('ポイント使用履歴を記録しました:', pointTransaction)
+            
+            // ポイント残高の更新
+            await customerRepository.updateCustomerPoints(
+              customerData.customer.uid,
+              sessionCustomer.tenantId,
+              organizationComplete.organization._id as Id<'organization'>,
+              new Date().getTime(),
+              customerData.customerPoints?.total_points ?? 0 - usePoints
+            )
+          } catch (error) {
+            console.error('ポイント処理でエラーが発生しました:', error)
+            // ポイント処理のエラーは予約を妨げないようにする
+          }
         }
 
         if (sessionCustomer.lineUserId && organizationComplete.config) {
@@ -882,25 +887,34 @@ export default function CalendarPage() {
         }
 
         // ポイントを付与するqueueを作成
-        if (sessionCustomer?.customerUid && pointConfig) {
+        if (sessionCustomer?.customerUid && pointConfig && pointConfig.is_active) {
           const earnPoints = Math.floor(
             pointConfig.is_fixed_point
               ? (pointConfig.fixed_point ?? 0)
               : calculateTotal() * ((pointConfig.point_rate ?? 0) / 100)
           )
 
-          const scheduledForUnix = reservationStartDateTime.getTime() + 1000 * 60 * 60 * 24 * 30 // 予約日の30日後
+          // ポイントが0より大きい場合のみキューを作成
+          if (earnPoints > 0) {
+            const scheduledForUnix =
+              Math.floor(reservationStartDateTime.getTime() / 1000) + 60 * 60 * 24 * 30 // 予約日の30日後（Unix秒単位）
 
-          // Supabaseでポイントのトランザクションを作成する
-          const pointQueue = await pointTaskQueueRepository.create({
-            tenant_id: sessionCustomer.tenantId,
-            org_id: sessionCustomer.orgId,
-            reservation_id: reservationId,
-            customer_id: sessionCustomer.customerUid,
-            points: earnPoints,
-            scheduled_for_unix: scheduledForUnix,
-          })
-          console.log(pointQueue)
+            try {
+              // Convexでポイントキューを作成する
+              const pointQueue = await createPointQueueMutation({
+                tenant_id: sessionCustomer.tenantId,
+                org_id: organizationComplete.organization._id as Id<'organization'>,
+                reservation_id: reservationId,
+                customer_id: sessionCustomer.customerUid,
+                points: earnPoints,
+                scheduled_for_unix: scheduledForUnix,
+              })
+              console.log('Point queue created:', pointQueue)
+            } catch (error) {
+              console.error('Failed to create point queue:', error)
+              // ポイントキュー作成に失敗しても予約は成功としてそのまま続行
+            }
+          }
         }
 
         toast.success('予約を受け付けしました。')
