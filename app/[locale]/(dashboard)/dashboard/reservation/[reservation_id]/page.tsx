@@ -332,14 +332,14 @@ export default function ReservationPage() {
         <div className="border-b pb-4">
           <h2 className="text-xl font-semibold mb-3">{t('assignedStaff')}</h2>
           <div className="flex flex-col md:flex-row items-center gap-4">
-            {staff.images.length > 0 && (
-              <div className="relative h-auto w-full max-w-xs border border-border shadow-sm rounded-md overflow-hidden flex items-center justify-center">
+            {staff.images.length > 0 && staff.images[0].thumbnail_url && (
+              <div className="relative h-auto border border-border shadow-sm rounded-md overflow-hidden flex items-center justify-center">
                 <Image
-                  src={staff.images[0].original_url}
+                  src={staff.images[0].thumbnail_url}
                   alt={staff.name ?? ''}
-                  width={180}
-                  height={180}
-                  className="object-cover w-full h-full"
+                  width={50}
+                  height={50}
+                  className=""
                 />
               </div>
             )}
