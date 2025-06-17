@@ -3,6 +3,14 @@ import { Role, SubscriptionPlanName } from "@/convex/types";
 import { Id } from "@/convex/_generated/dataModel";
 import { Gender, ImageType } from "@/convex/types";
 
+
+export type SessionPayload = {
+  customerUid: string;
+  email: string;
+  tenantId: string;
+  orgId: string;
+}
+
 export type StaffDisplay = {
   _id: Id<'staff'>
   name: string | undefined
