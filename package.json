@@ -20,7 +20,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "migrate:supabase": "ts-node scripts/migrate-to-supabase.ts"
+    "migrate:supabase": "supabase db push"
   },
   "dependencies": {
     "@clerk/backend": "^2.0.0",
