@@ -41,22 +41,30 @@ Bockerプロジェクトにおけるポイント付与システムの完全実�
 
 ## 🚨 **CRITICAL ISSUES（即座修正必須 - データ損失リスク）**
 
-### 1. **ConvexId vs Supabase UUID 型不一致（データ破損リスク）**
+### 1. **ID型設計の統一（データ整合性確保）**
 
-**問題**: ConvexはString ID (`kh7s9d...`)、SupabaseはUUID形式を使用。最近のマイグレーション(`20250617000000_fix_reservation_id_types.sql`)で`reservation_id`は修正済みだが、`customer_id`の不一致が残存。
+**設計原則（2025年1月更新）**: 
+- **Supabase内部ID**: UUID型（customer.uid, carte.id等）
+- **Convex参照ID**: TEXT型（staff_id, coupon_id, reservation_id等）
+- **外部システムID**: TEXT型（stripe_checkout_session_id等）
 
 ```typescript
-// Convex point_queue schema:
-customer_id: v.string(), // "abc123def456..." 形式
-
+// ✅ 正しい設計（修正済み）
 // Supabase point_transaction schema:
-customer_id UUID NOT NULL REFERENCES public.customer(id) // UUID必須
+customer_id UUID NOT NULL REFERENCES public.customer(uid), // UUID - Supabase内部参照
+reservation_id TEXT, // TEXT - Convex参照ID
+coupon_id TEXT, // TEXT - Convex参照ID
+
+// ✅ 正しい設計（修正済み）  
+// Supabase point_task_queue schema:
+customer_id UUID NOT NULL REFERENCES public.customer(uid), // UUID - Supabase内部参照
+reservation_id TEXT, // TEXT - Convex参照ID
 ```
 
-**リスク**: 
-- 外部キー制約違反によるINSERT失敗
-- データ参照不整合
-- バッチ処理の全面停止
+**改善効果**: 
+- ID型不一致によるエラー解消
+- 外部キー制約の正常動作
+- データ移行処理の安定化
 
 ### 2. **ポイント残高更新の競合状態（残高破損リスク）**
 

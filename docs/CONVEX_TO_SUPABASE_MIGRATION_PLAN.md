@@ -98,43 +98,58 @@ const migrationPriority = {
 
 ## 3. スキーマ設計
 
-### 3.1 Supabaseテーブル作成（Convexスキーマと完全一致）
+### 3.1 ID設計原則（2025年1月更新）
 
-#### 3.1.1 予約関連テーブル
+**統一されたID型の設計方針**:
+
+| ID種別 | データ型 | 用途 | 外部キー制約 | 例 |
+|--------|----------|------|-------------|-----|
+| **Supabase内部ID** | UUID | Supabase内でのリレーション | あり | customer.uid, carte.id |
+| **Convex参照ID** | TEXT | Convexシステムへの参照 | なし | staff_id, coupon_id, reservation_id |
+| **外部システムID** | TEXT | 外部システムとの連携 | なし | stripe_checkout_session_id |
+
+**設計原則**:
+1. **Supabase内でのリレーション**: UUID型を使用し、外部キー制約を設定
+2. **Convexへの参照**: TEXT型を使用し、外部キー制約は設定しない
+3. **データ移行**: Convex IDは`_convex_`プレフィックスを付けて保存
+4. **整合性**: `_convex_id`フィールドで元のConvexレコードとの対応を保持
+
+### 3.2 Supabaseテーブル作成（ID設計原則適用）
+
+#### 3.2.1 予約関連テーブル
 
 ```sql
--- 予約テーブル
+-- 予約テーブル（ID設計原則適用）
 CREATE TABLE IF NOT EXISTS public.reservation (
-  uid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  master_id TEXT NOT NULL,
-  tenant_id TEXT NOT NULL,
-  org_id TEXT NOT NULL,
-  customer_id TEXT,
-  staff_id TEXT NOT NULL,
+  uid UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- Supabase内部ID（UUID）
+  tenant_id TEXT NOT NULL, -- Convex参照ID（TEXT）
+  org_id TEXT NOT NULL, -- Convex参照ID（TEXT）
+  customer_id UUID REFERENCES public.customer(uid), -- Supabase内部参照（UUID + 外部キー制約）
+  staff_id TEXT NOT NULL, -- Convex参照ID（TEXT・制約なし）
   customer_name TEXT NOT NULL,
   staff_name TEXT NOT NULL,
   status TEXT NOT NULL,
   payment_status TEXT NOT NULL,
-  stripe_checkout_session_id TEXT,
+  stripe_checkout_session_id TEXT, -- 外部システムID（TEXT）
   date TEXT NOT NULL,
   start_time_unix BIGINT NOT NULL,
   end_time_unix BIGINT NOT NULL,
-  _creation_time TIMESTAMPTZ,
+  _creation_time BIGINT, -- Unix時間として保存
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   is_archive BOOLEAN NOT NULL DEFAULT FALSE,
   sort_key TEXT,
-  -- Convex ID保持用
-  _convex_id TEXT UNIQUE
+  -- Convex ID保持用（一意制約で重複防止）
+  _convex_id TEXT UNIQUE NOT NULL
 );
 
--- 予約詳細テーブル
+-- 予約詳細テーブル（ID設計原則適用）
 CREATE TABLE IF NOT EXISTS public.reservation_detail (
-  uid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id TEXT NOT NULL,
-  org_id TEXT NOT NULL,
-  reservation_id UUID REFERENCES public.reservation(uid),
-  coupon_id TEXT,
+  uid UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- Supabase内部ID（UUID）
+  tenant_id TEXT NOT NULL, -- Convex参照ID（TEXT）
+  org_id TEXT NOT NULL, -- Convex参照ID（TEXT）
+  reservation_id TEXT NOT NULL, -- Convex参照ID（TEXT・制約なし）
+  coupon_id TEXT, -- Convex参照ID（TEXT・制約なし）
   total_price INTEGER,
   payment_method TEXT NOT NULL,
   menus JSONB,
@@ -148,13 +163,15 @@ CREATE TABLE IF NOT EXISTS public.reservation_detail (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   is_archive BOOLEAN NOT NULL DEFAULT FALSE,
   sort_key TEXT,
-  -- Convex ID保持用
-  _convex_id TEXT UNIQUE,
-  _convex_reservation_id TEXT
+  -- Convex ID保持用（一意制約で重複防止）
+  _convex_id TEXT UNIQUE NOT NULL,
+  _convex_reservation_id TEXT NOT NULL, -- 対応する予約のConvex ID
+  -- Supabase内部での外部キー制約（_convex_reservation_id → reservation._convex_id）
+  FOREIGN KEY (_convex_reservation_id) REFERENCES public.reservation(_convex_id) ON DELETE CASCADE
 );
 ```
 
-#### 3.1.2 組織・設定関連テーブル
+#### 3.2.2 組織・設定関連テーブル
 
 ```sql
 -- テナントテーブル
@@ -188,7 +205,7 @@ CREATE TABLE IF NOT EXISTS public.organization (
 );
 ```
 
-#### 3.1.3 スタッフ関連テーブル
+#### 3.2.3 スタッフ関連テーブル
 
 ```sql
 -- スタッフテーブル
@@ -231,7 +248,7 @@ CREATE TABLE IF NOT EXISTS public.staff_config (
 );
 ```
 
-### 3.2 インデックス設計
+### 3.3 インデックス設計
 
 ```sql
 -- 高頻度アクセスパターン用インデックス
