@@ -621,6 +621,154 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       throw error;
     }
   }
+
+  /**
+   * アトミックポイント更新操作
+   * ポイント残高の更新と取引履歴の記録を同時に行い、データ整合性を保証します
+   * 
+   * @param customerUid - 顧客UID
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param pointsDelta - ポイント変動量（正数：付与、負数：使用）
+   * @param transactionType - 取引タイプ ('earned' | 'used' | 'expired' など)
+   * @param description - 取引説明
+   * @param reservationId - 関連予約ID（オプション）
+   * @returns 新しい残高と取引ID
+   */
+  async updatePointsAtomic(
+    customerUid: string,
+    tenantId: string,
+    orgId: string,
+    pointsDelta: number,
+    transactionType: string,
+    description: string,
+    reservationId?: string
+  ): Promise<{ newTotalPoints: number; transactionId: string }> {
+    console.log(`[CustomerRepository] updatePointsAtomic: customerUid=${customerUid}, pointsDelta=${pointsDelta}, type=${transactionType}`);
+    
+    try {
+      // RPC関数を呼び出してアトミック操作を実行
+      const { data, error } = await this.supabaseServiceInstance.client
+        .rpc('update_customer_points_atomic', {
+          p_customer_uid: customerUid,
+          p_tenant_id: tenantId,
+          p_org_id: orgId,
+          p_points_delta: pointsDelta,
+          p_transaction_type: transactionType,
+          p_description: description,
+          p_reservation_id: reservationId || null
+        });
+
+      if (error) {
+        console.error('[CustomerRepository] updatePointsAtomic: RPC error', error);
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.updatePointsAtomic',
+          message: `アトミックポイント更新に失敗しました: ${error.message}`,
+          error: new Error(error.message),
+          severity: 'high',
+          details: { customerUid, pointsDelta, transactionType, description }
+        });
+      }
+
+      if (!data || data.length === 0) {
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.updatePointsAtomic',
+          message: 'アトミックポイント更新の結果が空です',
+          severity: 'high',
+          details: { customerUid, pointsDelta, transactionType, description }
+        });
+      }
+
+      const result = data[0];
+      console.log(`[CustomerRepository] updatePointsAtomic: Success - newBalance=${result.new_total_points}, transactionId=${result.transaction_id}`);
+      
+      return {
+        newTotalPoints: result.new_total_points,
+        transactionId: result.transaction_id
+      };
+    } catch (error) {
+      console.error('[CustomerRepository] updatePointsAtomic: Error', error);
+      if (error instanceof Error && (error as any).name === 'SupabaseError') {
+        throw error;
+      }
+      
+      throwSupabaseError({
+        callFunc: 'CustomerRepository.updatePointsAtomic',
+        message: `アトミックポイント更新に失敗しました: ${(error as Error).message}`,
+        error: error as Error,
+        severity: 'critical',
+        details: { customerUid, pointsDelta, transactionType, description }
+      });
+    }
+  }
+
+  /**
+   * ポイント残高再計算
+   * 取引履歴から正しい残高を再計算し、不整合を修正します
+   * 
+   * @param customerUid - 顧客UID
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @returns 残高の修正結果
+   */
+  async recalculatePointsBalance(
+    customerUid: string,
+    tenantId: string,
+    orgId: string
+  ): Promise<{ oldBalance: number; newBalance: number; difference: number }> {
+    console.log(`[CustomerRepository] recalculatePointsBalance: customerUid=${customerUid}`);
+    
+    try {
+      const { data, error } = await this.supabaseServiceInstance.client
+        .rpc('recalculate_customer_points_balance', {
+          p_customer_uid: customerUid,
+          p_tenant_id: tenantId,
+          p_org_id: orgId
+        });
+
+      if (error) {
+        console.error('[CustomerRepository] recalculatePointsBalance: RPC error', error);
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.recalculatePointsBalance',
+          message: `ポイント残高再計算に失敗しました: ${error.message}`,
+          error: new Error(error.message),
+          severity: 'medium',
+          details: { customerUid, tenantId, orgId }
+        });
+      }
+
+      if (!data || data.length === 0) {
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.recalculatePointsBalance',
+          message: 'ポイント残高再計算の結果が空です',
+          severity: 'medium',
+          details: { customerUid, tenantId, orgId }
+        });
+      }
+
+      const result = data[0];
+      console.log(`[CustomerRepository] recalculatePointsBalance: Success - oldBalance=${result.old_balance}, newBalance=${result.new_balance}, difference=${result.difference}`);
+      
+      return {
+        oldBalance: result.old_balance,
+        newBalance: result.new_balance,
+        difference: result.difference
+      };
+    } catch (error) {
+      console.error('[CustomerRepository] recalculatePointsBalance: Error', error);
+      if (error instanceof Error && (error as any).name === 'SupabaseError') {
+        throw error;
+      }
+      
+      throwSupabaseError({
+        callFunc: 'CustomerRepository.recalculatePointsBalance',
+        message: `ポイント残高再計算に失敗しました: ${(error as Error).message}`,
+        error: error as Error,
+        severity: 'medium',
+        details: { customerUid, tenantId, orgId }
+      });
+    }
+  }
 }
 
 

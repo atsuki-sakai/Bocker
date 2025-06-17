@@ -16,7 +16,7 @@ import { jwtDecode } from 'jwt-decode'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
-import { CustomerRepository, PointTransactionRepository } from '@/services/supabase/repositories'
+import { CustomerRepository, PointTransactionRepository, PointTaskQueueRepository } from '@/services/supabase/repositories'
 import { PointTransactionType } from '@/convex/types'
 
 import {
@@ -172,6 +172,7 @@ export default function CalendarPage() {
   // STATES
   const customerRepository = useMemo(() => new CustomerRepository(), [])
   const pointTransactionRepository = useMemo(() => new PointTransactionRepository(), [])
+  const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
   const [sessionCustomer, setSessionCustomer] = useState<SessionPayload | null>(null)
   const [customerPhone, setCustomerPhone] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<{
@@ -239,7 +240,6 @@ export default function CalendarPage() {
   // Convex mutations
   const createReservationMutation = useMutation(api.reservation.mutation.create)
   const balanceStockMutation = useMutation(api.option.mutation.balanceStock)
-  const createPointQueueMutation = useMutation(api.point.queue.mutation.create)
 
   // ステップ変更時に画面トップへ自動スクロール
   useEffect(() => {
@@ -712,29 +712,20 @@ export default function CalendarPage() {
 
         setIsProcessingPayment(false)
 
-        // ポイントを利用していれば、ポイントのトランザクション
+        // ポイントを利用していれば、アトミックポイント更新
         if (pointConfig?.is_active && usePoints && usePoints > 0 && customerData?.customer?.uid) {
           try {
-            // Supabaseでポイントのトランザクションを作成する
-            const pointTransaction = await pointTransactionRepository.create({
-              tenant_id: sessionCustomer.tenantId,
-              org_id: organizationComplete.organization._id as Id<'organization'>,
-              reservation_id: reservationId as string, // ConvexのIDを文字列として渡す
-              customer_id: sessionCustomer.customerUid,
-              points: -usePoints, // 使用は負の値
-              transaction_type: 'used' as PointTransactionType,
-              transaction_date_unix: Math.floor(new Date().getTime() / 1000), // Unix秒に変換
-            })
-            console.log('ポイント使用履歴を記録しました:', pointTransaction)
-            
-            // ポイント残高の更新
-            await customerRepository.updateCustomerPoints(
-              customerData.customer.uid,
+            // Supabaseでアトミックポイント更新を実行
+            const result = await customerRepository.updatePointsAtomic(
+              sessionCustomer.customerUid,
               sessionCustomer.tenantId,
               organizationComplete.organization._id as Id<'organization'>,
-              new Date().getTime(),
-              customerData.customerPoints?.total_points ?? 0 - usePoints
+              -usePoints, // 使用は負の値
+              'used',
+              'ポイント使用による割引',
+              reservationId
             )
+            console.log('ポイント使用処理が完了しました:', result)
           } catch (error) {
             console.error('ポイント処理でエラーが発生しました:', error)
             // ポイント処理のエラーは予約を妨げないようにする
@@ -888,10 +879,33 @@ export default function CalendarPage() {
 
         // ポイントを付与するqueueを作成
         if (sessionCustomer?.customerUid && pointConfig && pointConfig.is_active) {
-          const earnPoints = Math.floor(
-            pointConfig.is_fixed_point
-              ? (pointConfig.fixed_point ?? 0)
-              : calculateTotal() * ((pointConfig.point_rate ?? 0) / 100)
+          // ポイント計算（割引前金額で計算）
+          const calculateEarnedPoints = (menus: Doc<'menu'>[], options: Doc<'option'>[], extraCharge: number = 0) => {
+            // 1. ベース金額計算（クーポン割引前、税込金額）
+            const baseAmount = menus.reduce((sum, menu) => {
+              return sum + (menu.sale_price || menu.unit_price);
+            }, 0) + extraCharge;
+            
+            // 2. オプション金額追加
+            const optionAmount = options.reduce((sum, option) => {
+              return sum + (option.sale_price || option.unit_price);
+            }, 0);
+            
+            // 3. 税込み総額（クーポン・ポイント使用前）
+            const totalAmount = baseAmount + optionAmount;
+            
+            // 4. ポイント計算（割引前金額で計算）
+            const earnedPoints = pointConfig.is_fixed_point
+              ? (pointConfig.fixed_point || 0)
+              : Math.floor(totalAmount * ((pointConfig.point_rate || 0) / 100));
+              
+            return Math.max(0, earnedPoints);
+          };
+
+          const earnPoints = calculateEarnedPoints(
+            selectedMenus, 
+            selectedOptions, 
+            selectedStaffCompleted?.staff?.extra_charge || 0
           )
 
           // ポイントが0より大きい場合のみキューを作成
@@ -900,8 +914,8 @@ export default function CalendarPage() {
               Math.floor(reservationStartDateTime.getTime() / 1000) + 60 * 60 * 24 * 30 // 予約日の30日後（Unix秒単位）
 
             try {
-              // Convexでポイントキューを作成する
-              const pointQueue = await createPointQueueMutation({
+              // Supabaseでポイントキューを作成する
+              const pointQueue = await pointTaskQueueRepository.createPointTask({
                 tenant_id: sessionCustomer.tenantId,
                 org_id: organizationComplete.organization._id as Id<'organization'>,
                 reservation_id: reservationId,

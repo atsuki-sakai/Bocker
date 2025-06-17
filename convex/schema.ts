@@ -764,17 +764,6 @@ const point_config = defineTable({
 .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']);
 
 
-const point_queue = defineTable({
-  tenant_id: v.id('tenant'), // テナントID
-  org_id: v.id('organization'), // 店舗ID
-  reservation_id: v.id('reservation'), // 予約ID
-  customer_id: v.string(), // 顧客ID
-  points: v.optional(v.number()), // 付与予定のポイント数
-  scheduled_for_unix: v.optional(v.number()), // ポイント付与予定日時(Unix timestamp)
-  ...CommonFields,
-})
-.index('by_scheduled_for', ['scheduled_for_unix', 'is_archive'])
-.index('by_tenant_org_reservation_archive', ['tenant_id', 'org_id', 'reservation_id', 'is_archive']);
 
 
 /**
@@ -824,6 +813,5 @@ export default defineSchema({
   reservation,
   reservation_detail,
   point_config,
-  point_queue,
   webhook_events,
 });
