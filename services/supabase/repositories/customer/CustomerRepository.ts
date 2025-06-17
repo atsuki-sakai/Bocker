@@ -449,44 +449,43 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     console.log(`[CustomerRepository] updateCustomer: customerUid=${customerUid}, tenantId=${tenantId}, orgId=${orgId}, updateData=${JSON.stringify(updateData)}`);
     
     try {
-      // searchable_textの生成
-      const searchableParts: string[] = [];
-      if (updateData.email) searchableParts.push(updateData.email);
-      if (updateData.first_name) searchableParts.push(updateData.first_name);
-      if (updateData.last_name) searchableParts.push(updateData.last_name);
-      if (updateData.phone) searchableParts.push(updateData.phone);
-      if (updateData.line_user_name) searchableParts.push(updateData.line_user_name);
-      
-      // 更新データの準備
-      const updateRecord: Partial<UpdateType<'customer'>> = {
-        ...updateData,
-        searchable_text: searchableParts.length > 0 ? searchableParts.join(' ') : undefined,
-        updated_at: new Date().toISOString()
+      // JSONBパラメータ用のオブジェクトを作成
+      const params: Record<string, any> = {
+        p_customer_uid: customerUid,
+        p_tenant_id: tenantId,
+        p_org_id: orgId
       };
-      
-      // undefinedの値を除外
-      const cleanedUpdateRecord = Object.fromEntries(
-        Object.entries(updateRecord).filter(([_, value]) => value !== undefined)
-      ) as Partial<UpdateType<'customer'>>;
-      
-      // 更新実行（upsertを使用）
-      const upsertData: InsertType<'customer'> = {
-        uid: customerUid,
-        tenant_id: tenantId,
-        org_id: orgId,
-        ...cleanedUpdateRecord
-      } as InsertType<'customer'>;
-      
-      const updatedRecords = await this.supabaseServiceInstance.upsert<'customer'>(
-        'customer',
-        upsertData,
-        {
-          onConflict: 'uid',
-          select: '*'
-        }
+
+      // オプションパラメータは値が存在する場合のみ追加
+      if (updateData.email !== undefined) params.p_email = updateData.email;
+      if (updateData.first_name !== undefined) params.p_first_name = updateData.first_name;
+      if (updateData.last_name !== undefined) params.p_last_name = updateData.last_name;
+      if (updateData.phone !== undefined) params.p_phone = updateData.phone;
+      if (updateData.line_id !== undefined) params.p_line_id = updateData.line_id;
+      if (updateData.line_user_name !== undefined) params.p_line_user_name = updateData.line_user_name;
+      if (updateData.last_reservation_date_unix !== undefined) params.p_last_reservation_date_unix = updateData.last_reservation_date_unix;
+      if (updateData.total_reservation_count !== undefined) params.p_total_reservation_count = updateData.total_reservation_count;
+
+      console.log('[CustomerRepository] Calling update_customer_json RPC with params:', params);
+
+      // JSON版のRPCを呼び出す（パラメータ順序の問題を回避）
+      const { data, error } = await this.supabaseServiceInstance.rpc<RowType<'customer'>>(
+        'update_customer_json',
+        { params }
       );
       
-      if (updatedRecords.length === 0) {
+      if (error) {
+        console.error('[CustomerRepository] Error calling update_customer RPC:', error);
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.updateCustomer',
+          message: error.message || '顧客の更新に失敗しました。',
+          error: new Error(error.message),
+          severity: 'high',
+          details: { customerUid, tenantId, orgId, updateData }
+        });
+      }
+      
+      if (!data || data.length === 0) {
         throwSupabaseError({
           callFunc: 'CustomerRepository.updateCustomer',
           message: '顧客の更新に失敗しました。対象の顧客が見つかりません。',
@@ -496,8 +495,8 @@ export class CustomerRepository extends BaseRepository<'customer'> {
         });
       }
       
-      console.log('[CustomerRepository] updateCustomer: Success', updatedRecords[0]);
-      return updatedRecords[0];
+      console.log('[CustomerRepository] updateCustomer: Success', data[0]);
+      return data[0];
     } catch (error) {
       console.error('[CustomerRepository] updateCustomer: Unexpected error', error);
       if (error instanceof Error && (error as any).name === 'SupabaseError') {
@@ -511,6 +510,9 @@ export class CustomerRepository extends BaseRepository<'customer'> {
         details: { customerUid, tenantId, orgId, updateData }
       });
     }
+    
+    // 到達不可能なコードだが、TypeScriptの型チェックのために追加
+    throw new Error('Unexpected error in updateCustomer');
   }
 
   /**
