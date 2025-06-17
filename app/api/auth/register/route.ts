@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
       line_id: null,
       line_user_name: null,
       password_hash: hashedPassword,
+      customer_type: 'first_time', // 新規顧客は'first_time'に設定
     };
 
     const detailData = {

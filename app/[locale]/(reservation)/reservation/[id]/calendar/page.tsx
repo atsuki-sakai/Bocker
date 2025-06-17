@@ -201,7 +201,7 @@ export default function CalendarPage() {
     couponId: Id<'coupon'> | null
   }>({ discount: 0, couponId: null })
   const [usePoints, setUsePoints] = useState<number>(0)
-  const [availablePoints] = useState<number>(1000) // 仮の値、実際にはAPIから取得
+  const [availablePoints, setAvailablePoints] = useState<number>(0)
   const [direction, setDirection] = useState(0) // アニメーションの方向を制御
   const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(false)
   const [questionnaireStep, setQuestionnaireStep] = useState(1)
@@ -424,6 +424,53 @@ export default function CalendarPage() {
         }
       }
 
+      // ポイントを利用していれば、アトミックポイント更新
+      if (pointConfig?.is_active && usePoints && usePoints > 0 && customerData?.customer?.uid) {
+        try {
+          // Supabaseでアトミックポイント更新を実行
+          const result = await customerRepository.updatePointsAtomic(
+            sessionCustomer.customerUid,
+            sessionCustomer.tenantId,
+            organizationComplete.organization._id as Id<'organization'>,
+            -usePoints, // 使用は負の値
+            'used',
+            'ポイント使用による割引',
+            reservationId
+          )
+          console.log('ポイント使用処理が完了しました:', result)
+        } catch (error) {
+          console.error('ポイント処理でエラーが発生しました:', error)
+          // ポイント処理のエラーは予約を妨げないようにする
+        }
+      }
+
+      // 顧客情報を更新（電話番号、最終予約日、予約回数）
+      if (customerData?.customer) {
+        const updatedCustomerData = {
+          phone: customerPhone || customerData.customer.phone,
+          email: customerData.customer.email,
+          first_name: customerData.customer.first_name,
+          last_name: customerData.customer.last_name,
+          line_id: customerData.customer.line_id,
+          line_user_name: customerData.customer.line_user_name,
+          last_reservation_date_unix: Math.floor(reservationStartDateTime.getTime() / 1000),
+          total_reservation_count: (customerData.customer.total_reservation_count || 0) + 1,
+        }
+
+        try {
+          await customerRepository.updateCustomer(
+            customerData.customer.uid,
+            sessionCustomer.tenantId,
+            organizationComplete.organization._id as Id<'organization'>,
+            updatedCustomerData
+          )
+          console.log('顧客情報を更新しました')
+        } catch (error) {
+          console.error('顧客情報の更新に失敗しました:', error)
+          // エラーでも予約処理は継続
+        }
+      }
+
       // 2. Stripe Checkoutセッションを作成するためのlineItemsを準備
       // 各アイテムの unit_amount には、独自システムで計算した割引適用後の価格を設定する
 
@@ -578,34 +625,31 @@ export default function CalendarPage() {
     setIsProcessingPayment(true)
 
     try {
-      if (
-        customerData?.customer &&
-        customerPhone &&
-        customerPhone !== customerData.customer.phone
-      ) {
-        await customerRepository.updateCustomerWithDetailsAndPoints(
-          customerData.customer.uid,
-          sessionCustomer.tenantId,
-          organizationComplete.organization._id as Id<'organization'>,
-          {
-            phone: customerPhone,
-            // 既存のemail, first_name, last_name等を保持
-            email: customerData.customer.email,
-            first_name: customerData.customer.first_name,
-            last_name: customerData.customer.last_name,
-            line_id: customerData.customer.line_id,
-            line_user_name: customerData.customer.line_user_name,
-          },
-          {
-            // customerDetailのemailではなく、customerのemailを使用（空文字列を避ける）
-            email: customerData.customerDetail?.email || customerData.customer.email || '',
-            gender: customerData.customerDetail?.gender ?? '',
-            birthday: customerData.customerDetail?.birthday ?? '',
-            age: customerData.customerDetail?.age ?? 0,
-            notes: customerData.customerDetail?.notes ?? '',
-          },
-          customerData.customerPoints?.total_points ?? 0
-        )
+      // 顧客情報を更新（電話番号、最終予約日、予約回数）
+      if (customerData?.customer) {
+        const updatedCustomerData = {
+          phone: customerPhone || customerData.customer.phone,
+          email: customerData.customer.email,
+          first_name: customerData.customer.first_name,
+          last_name: customerData.customer.last_name,
+          line_id: customerData.customer.line_id,
+          line_user_name: customerData.customer.line_user_name,
+          last_reservation_date_unix: Math.floor(reservationStartDateTime.getTime() / 1000),
+          total_reservation_count: (customerData.customer.total_reservation_count || 0) + 1,
+        }
+
+        try {
+          await customerRepository.updateCustomer(
+            customerData.customer.uid,
+            sessionCustomer.tenantId,
+            organizationComplete.organization._id as Id<'organization'>,
+            updatedCustomerData
+          )
+          console.log('顧客情報を更新しました')
+        } catch (error) {
+          console.error('顧客情報の更新に失敗しました:', error)
+          // エラーでも予約処理は継続
+        }
       }
       // 予約データを準備 (handleConfirmReservation内ではstatusをまだ設定しない)
       const reservationBaseData = {
@@ -1008,6 +1052,9 @@ export default function CalendarPage() {
               customerDetail,
               customerPoints,
             })
+
+            // 実際のポイント数をセット
+            setAvailablePoints(customerPoints?.total_points || 0)
 
             setCustomerPhone(customer?.phone || null)
             setIsPhoneValid(isValidPhoneNumber(customer?.phone || null)) // 初期値のバリデーション

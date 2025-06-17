@@ -433,6 +433,87 @@ export class CustomerRepository extends BaseRepository<'customer'> {
   }
 
   /**
+   * 顧客の基本情報を更新します。
+   * @param customerUid - 更新対象の顧客UID
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param updateData - 更新する顧客データ
+   * @returns 更新された顧客情報
+   */
+  async updateCustomer(
+    customerUid: string,
+    tenantId: string,
+    orgId: string,
+    updateData: Partial<Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'phone' | 'line_id' | 'line_user_name' | 'last_reservation_date_unix' | 'total_reservation_count'>>
+  ): Promise<RowType<'customer'>> {
+    console.log(`[CustomerRepository] updateCustomer: customerUid=${customerUid}, tenantId=${tenantId}, orgId=${orgId}, updateData=${JSON.stringify(updateData)}`);
+    
+    try {
+      // searchable_textの生成
+      const searchableParts: string[] = [];
+      if (updateData.email) searchableParts.push(updateData.email);
+      if (updateData.first_name) searchableParts.push(updateData.first_name);
+      if (updateData.last_name) searchableParts.push(updateData.last_name);
+      if (updateData.phone) searchableParts.push(updateData.phone);
+      if (updateData.line_user_name) searchableParts.push(updateData.line_user_name);
+      
+      // 更新データの準備
+      const updateRecord: Partial<UpdateType<'customer'>> = {
+        ...updateData,
+        searchable_text: searchableParts.length > 0 ? searchableParts.join(' ') : undefined,
+        updated_at: new Date().toISOString()
+      };
+      
+      // undefinedの値を除外
+      const cleanedUpdateRecord = Object.fromEntries(
+        Object.entries(updateRecord).filter(([_, value]) => value !== undefined)
+      ) as Partial<UpdateType<'customer'>>;
+      
+      // 更新実行（upsertを使用）
+      const upsertData: InsertType<'customer'> = {
+        uid: customerUid,
+        tenant_id: tenantId,
+        org_id: orgId,
+        ...cleanedUpdateRecord
+      } as InsertType<'customer'>;
+      
+      const updatedRecords = await this.supabaseServiceInstance.upsert<'customer'>(
+        'customer',
+        upsertData,
+        {
+          onConflict: 'uid',
+          select: '*'
+        }
+      );
+      
+      if (updatedRecords.length === 0) {
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.updateCustomer',
+          message: '顧客の更新に失敗しました。対象の顧客が見つかりません。',
+          severity: 'medium',
+          code: 'DATABASE_NO_DATA',
+          details: { customerUid, tenantId, orgId, updateData }
+        });
+      }
+      
+      console.log('[CustomerRepository] updateCustomer: Success', updatedRecords[0]);
+      return updatedRecords[0];
+    } catch (error) {
+      console.error('[CustomerRepository] updateCustomer: Unexpected error', error);
+      if (error instanceof Error && (error as any).name === 'SupabaseError') {
+        throw error;
+      }
+      throwSupabaseError({
+        callFunc: 'CustomerRepository.updateCustomer',
+        message: (error as Error).message || '顧客の更新に失敗しました。',
+        error: error as Error,
+        severity: 'high',
+        details: { customerUid, tenantId, orgId, updateData }
+      });
+    }
+  }
+
+  /**
    * デバッグ用：指定したテナント・組織の全顧客を取得（最初の5件）
    */
   async debugListAllCustomers(
@@ -571,56 +652,6 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     }
   }
 
-  async updateCustomer(
-    customerUid: string, 
-    tenantId: string, 
-    orgId: string, 
-    customerData: Partial<Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'phone' | 'line_id' | 'line_user_name'>>
-  ): Promise<RowType<'customer'>> {
-    console.log('[CustomerRepository] updateCustomer: Start', {
-      customerUid,
-      tenantId,
-      orgId,
-      customerData,
-    });
-
-    try { 
-      const updatedRecords = await this.supabaseServiceInstance.upsert<'customer'>(
-        'customer',
-        {
-          uid: customerUid,
-          tenant_id: tenantId,
-          org_id: orgId,
-          email: customerData.email,
-          first_name: customerData.first_name,
-          last_name: customerData.last_name,
-          phone: customerData.phone,
-          line_id: customerData.line_id,
-          line_user_name: customerData.line_user_name
-        },
-        {
-          onConflict: 'uid',
-          select: '*',  
-        },
-      );
-
-      if (updatedRecords.length === 0) {
-        throw throwSupabaseError({
-          callFunc: 'CustomerRepository.updateCustomer',
-          message: '顧客の更新に失敗しました。',
-          severity: 'medium',
-          code: 'DATABASE_NO_DATA',
-          details: { customerData },
-        });
-      }
-
-      console.log('[CustomerRepository] updateCustomer: Success', updatedRecords[0]);
-      return updatedRecords[0];
-    } catch (error) {
-      console.error('[CustomerRepository] updateCustomer: Unexpected error', error);
-      throw error;
-    }
-  }
 
   /**
    * アトミックポイント更新操作
