@@ -16,6 +16,7 @@ export interface ListOptions<T extends TableName> extends BaseRepositoryOptions<
   pageSize?: number;
   filters?: Partial<RowType<T>>;
   rangeFilter?: { column: keyof RowType<T>; from?: string | number; to?: string | number };
+  orderBy?: { column: keyof RowType<T>; ascending?: boolean };
 }
 
 /**
