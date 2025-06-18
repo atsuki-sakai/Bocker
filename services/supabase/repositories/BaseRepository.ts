@@ -155,20 +155,18 @@ export class BaseRepository<K extends TableName> {
     const dataWithCommonFields = addUpdateCommonFields(updateData);
     console.log(`[BaseRepository<${String(this.tableName)}>] update: dataWithCommonFields=${JSON.stringify(dataWithCommonFields)}`);
 
-    // _id は updateData には通常含まれないため、ここで payload に含める
-    const payload = { ...dataWithCommonFields, _id: id } as InsertType<K>;
-
-    const result = await this.supabaseServiceInstance.upsert<K>(
+    const result = await this.supabaseServiceInstance.update<K>(
       this.tableName,
-      payload,
+      'id' as keyof RowType<K> & string,
+      id as RowType<K>[keyof RowType<K> & string],
+      dataWithCommonFields,
       {
-        onConflict: '_id',
         select: options?.select,
       }
     );
     if (result.length === 0) {
-      console.error(`[BaseRepository<${String(this.tableName)}>] update failed for id=${id}: No data returned after upsert. Record might not exist or onConflict prevented update.`);
-      throw new Error(`Failed to update record with id ${id} in ${String(this.tableName)}. Record may not exist or update was prevented.`);
+      console.error(`[BaseRepository<${String(this.tableName)}>] update failed for id=${id}: No data returned after update. Record might not exist.`);
+      throw new Error(`Failed to update record with id ${id} in ${String(this.tableName)}. Record may not exist.`);
     }
     console.log(`[BaseRepository<${String(this.tableName)}>] update successful: returned ${result.length} record(s)`);
     return result[0];
