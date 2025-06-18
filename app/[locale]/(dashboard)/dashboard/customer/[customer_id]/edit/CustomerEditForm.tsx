@@ -218,13 +218,14 @@ export default function CustomerEditForm() {
       const calculatedAge = calculateAge(data.birthday)
 
       // 顧客基本情報の更新データを準備
+      // line_idとline_user_nameは変更しないため、明示的にundefinedを渡す
       const customerData = {
         email: data.email || '',
         first_name: data.first_name || '',
         last_name: data.last_name || '',
         phone: data.phone || '',
-        line_id: completeCustomer.customer.line_id || '',
-        line_user_name: completeCustomer.customer.line_user_name || '',
+        line_id: undefined,  // undefinedを渡すことで、SQL関数側で既存の値を保持
+        line_user_name: undefined,  // undefinedを渡すことで、SQL関数側で既存の値を保持
       }
 
       // 顧客詳細情報の更新データを準備
@@ -241,25 +242,9 @@ export default function CustomerEditForm() {
       const newPoints = data.total_points || 0
       const pointsDelta = newPoints - currentPoints
 
-      // ポイントが変更された場合、アトミック更新を使用
+      // ポイントが変更された場合
       if (pointsDelta !== 0) {
-        // まず顧客情報を更新
-        const result = await customerRepo.updateCustomerWithDetailsAndPoints(
-          customerUid,
-          tenantId,
-          orgId,
-          customerData,
-          detailData,
-          newPoints, // 新しいポイント残高
-          data.tags || []
-        )
-
-        if (!result.customer) {
-          toast.error(t('updateError'))
-          return
-        }
-
-        // ポイント履歴を作成（アトミック操作）
+        // ポイント履歴を作成しながらポイントを更新（アトミック操作）
         try {
           const pointUpdateResult = await customerRepo.updatePointsAtomic(
             customerUid,
@@ -272,29 +257,27 @@ export default function CustomerEditForm() {
           console.log('ポイント履歴を作成しました:', pointUpdateResult)
         } catch (pointError) {
           console.error('ポイント履歴の作成に失敗しました:', pointError)
-          // ポイント履歴の作成に失敗しても、顧客情報の更新は成功しているので続行
+          toast.error(t('pointUpdateError'))
+          return
         }
+      }
 
+      // 顧客情報を更新（ポイント以外）
+      const result = await customerRepo.updateCustomerWithDetailsAndPoints(
+        customerUid,
+        tenantId,
+        orgId,
+        customerData,
+        detailData,
+        currentPoints + pointsDelta, // 更新後のポイント残高（アトミック更新の結果を反映）
+        data.tags || []
+      )
+
+      if (result.customer) {
         toast.success(t('customerUpdated'))
         router.push(`/dashboard/customer/${customerUid}`)
       } else {
-        // ポイントに変更がない場合は通常の更新
-        const result = await customerRepo.updateCustomerWithDetailsAndPoints(
-          customerUid,
-          tenantId,
-          orgId,
-          customerData,
-          detailData,
-          newPoints,
-          data.tags || []
-        )
-
-        if (result.customer) {
-          toast.success(t('customerUpdated'))
-          router.push(`/dashboard/customer/${customerUid}`)
-        } else {
-          toast.error(t('updateError'))
-        }
+        toast.error(t('updateError'))
       }
     } catch (error) {
       console.error('Update process error:', error)
