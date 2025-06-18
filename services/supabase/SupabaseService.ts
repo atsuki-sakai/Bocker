@@ -273,6 +273,7 @@ table: T,
   filters,
   orConditions,
   rangeFilter,
+  orderBy,
   page,
   pageSize = 50,
   select = '*' as SelectCols<RowType<T>>,
@@ -280,6 +281,7 @@ table: T,
   filters?: Partial<RowType<T>> | Record<string, any>
   orConditions?: Array<{ column: string; operator: string; value: any }>
   rangeFilter?: { column: keyof RowType<T>; from?: string | number; to?: string | number }
+  orderBy?: { column: keyof RowType<T>; ascending?: boolean }
   page?: number
   pageSize?: number
   select?: SelectCols<RowType<T>>
@@ -356,6 +358,12 @@ return retryOperation(async () => {
     const col = String(rangeFilter.column)
     if (rangeFilter.from !== undefined) query = query.gte(col, rangeFilter.from)
     if (rangeFilter.to   !== undefined) query = query.lte(col, rangeFilter.to)
+  }
+
+  /* ソート順 */
+  if (orderBy) {
+    const col = String(orderBy.column)
+    query = query.order(col, { ascending: orderBy.ascending ?? true })
   }
 
   /* ページネーション */
