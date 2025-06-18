@@ -226,6 +226,45 @@ class SupabaseBaseService {
     }, { ...this.defaultRetryOptions, operationName });
   }
 
+  /** UPDATE */
+  async update<K extends TableName>(
+    table: K,
+    idColumn: keyof RowType<K> & string,
+    idValue: RowType<K>[typeof idColumn],
+    updateData: Partial<UpdateType<K>>,
+    { select = '*' as SelectCols<RowType<K>> }: { select?: SelectCols<RowType<K>> } = {}
+  ): Promise<RowType<K>[]> {
+    const operationName = `update ${String(table)} with ${String(idColumn)} = ${idValue}`
+    return retryOperation(async () => {
+      console.log(`[SupabaseService] Executing ${operationName}`, { table, idColumn, idValue, updateData, select });
+      const sel = Array.isArray(select) ? select.join(',') : String(select);
+      const { data, error } = await this.client
+        .from(table)
+        .update(updateData as any)
+        .eq(idColumn as string, idValue)
+        .select(sel)
+      if (error) {
+        throw throwSupabaseError({
+          callFunc: `SupabaseService.update(${String(table)})`,
+          message: error.message,
+          title: `Supabase update error to table ${String(table)} for ${String(idColumn)} = ${idValue}`,
+          severity: 'high',
+          code: 'DATABASE_ERROR',
+          status: 500,
+          details: {
+            table,
+            idColumn,
+            idValue,
+            updateData,
+          },
+          error: error,
+        })
+      }
+      console.log(`[SupabaseService] ${operationName} success. Returned: ${data?.length ?? 0}`)
+      return (data ?? []) as unknown as RowType<K>[]
+    }, { ...this.defaultRetryOptions, operationName });
+  }
+
   /** _id 指定 DELETE */
   async delete<K extends TableName>(
     table: K, 
