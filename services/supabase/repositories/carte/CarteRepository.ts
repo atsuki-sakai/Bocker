@@ -22,7 +22,7 @@ export class CarteRepository extends BaseRepository<'carte'> {
    * @returns 作成されたカルテ情報
    */
   async createCarte(
-    carteData: Pick<InsertType<'carte'>, 'tenant_id' | 'org_id' | 'customer_id' | 'skin_type' | 'hair_type' | 'allergy_history' | 'medical_history'>
+    carteData: Pick<InsertType<'carte'>, 'tenant_id' | 'org_id' | 'customer_id' | 'skin_type' | 'hair_type' | 'allergy_history' | 'medical_history' | 'ltv_price'>
   ): Promise<RowType<'carte'>> {
     console.log(`[CarteRepository] createCarte: data=${JSON.stringify(carteData)}`);
     
@@ -84,7 +84,7 @@ export class CarteRepository extends BaseRepository<'carte'> {
     tenantId: string,
     orgId: string,
     customerId: string,
-    initialData?: Partial<Pick<InsertType<'carte'>, 'skin_type' | 'hair_type' | 'allergy_history' | 'medical_history'>>
+    initialData?: Partial<Pick<InsertType<'carte'>, 'skin_type' | 'hair_type' | 'allergy_history' | 'medical_history' | 'ltv_price'>>
   ): Promise<RowType<'carte'>> {
     console.log(`[CarteRepository] findOrCreateByCustomer: tenantId=${tenantId}, orgId=${orgId}, customerId=${customerId}`);
     
@@ -99,6 +99,7 @@ export class CarteRepository extends BaseRepository<'carte'> {
         hair_type: initialData?.hair_type || null,
         allergy_history: initialData?.allergy_history || null,
         medical_history: initialData?.medical_history || null,
+        ltv_price: initialData?.ltv_price || 0,
       });
       console.log(`[CarteRepository] Created new carte for customer ${customerId}`);
     }
@@ -190,7 +191,7 @@ export class CarteRepository extends BaseRepository<'carte'> {
    */
   async updateCarte(
     carteId: string,
-    updateData: Partial<Pick<UpdateType<'carte'>, 'skin_type' | 'hair_type' | 'allergy_history' | 'medical_history'>>,
+    updateData: Partial<Pick<UpdateType<'carte'>, 'skin_type' | 'hair_type' | 'allergy_history' | 'medical_history' | 'ltv_price'>>,
     options?: BaseRepositoryOptions<'carte'>
   ): Promise<RowType<'carte'>> {
     console.log(`[CarteRepository] updateCarte: carteId=${carteId}, data=${JSON.stringify(updateData)}`);
@@ -243,5 +244,22 @@ export class CarteRepository extends BaseRepository<'carte'> {
     console.log(`[CarteRepository] updateMedicalHistory: carteId=${carteId}`);
     
     return this.updateCarte(carteId, { medical_history: medicalHistory }, options);
+  }
+
+  /**
+   * 顧客のLTV（生涯価値）を更新します。
+   * @param carteId - カルテID
+   * @param ltvPrice - LTV価格
+   * @param options - 更新オプション
+   * @returns 更新されたカルテ情報
+   */
+  async updateLtvPrice(
+    carteId: string,
+    ltvPrice: number,
+    options?: BaseRepositoryOptions<'carte'>
+  ): Promise<RowType<'carte'>> {
+    console.log(`[CarteRepository] updateLtvPrice: carteId=${carteId}, ltvPrice=${ltvPrice}`);
+    
+    return this.updateCarte(carteId, { ltv_price: ltvPrice }, options);
   }
 }
