@@ -3,6 +3,9 @@ export * from './BaseRepository';
 // 顧客関連
 export * from './customer';
 
+// 予約関連
+export * from './reservation';
+
 // ポイント関連
 export * from './point';
 
