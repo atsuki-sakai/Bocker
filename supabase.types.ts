@@ -17,6 +17,7 @@ export type Database = {
           hair_type: string | null
           id: string
           is_archive: boolean
+          ltv_price: number | null
           medical_history: string | null
           org_id: string
           skin_type: string | null
@@ -31,6 +32,7 @@ export type Database = {
           hair_type?: string | null
           id?: string
           is_archive?: boolean
+          ltv_price?: number | null
           medical_history?: string | null
           org_id: string
           skin_type?: string | null
@@ -45,6 +47,7 @@ export type Database = {
           hair_type?: string | null
           id?: string
           is_archive?: boolean
+          ltv_price?: number | null
           medical_history?: string | null
           org_id?: string
           skin_type?: string | null
@@ -64,58 +67,58 @@ export type Database = {
       }
       carte_detail: {
         Row: {
-          after_hair_img_path: string | null
-          before_hair_img_path: string | null
+          after_images: Json | null
           carte_id: string
           created_at: string
           customer_requests: string | null
           id: string
           is_archive: boolean
-          menu_details_json: Json | null
+          menu_details: Json | null
           notes: string | null
+          option_details: Json | null
           org_id: string
           reservation_id: string
           sort_key: string | null
           staff_id: string
           tenant_id: string
+          total_price: number | null
           updated_at: string
-          used_products_json: Json | null
         }
         Insert: {
-          after_hair_img_path?: string | null
-          before_hair_img_path?: string | null
+          after_images?: Json | null
           carte_id: string
           created_at?: string
           customer_requests?: string | null
           id?: string
           is_archive?: boolean
-          menu_details_json?: Json | null
+          menu_details?: Json | null
           notes?: string | null
+          option_details?: Json | null
           org_id: string
           reservation_id: string
           sort_key?: string | null
           staff_id: string
           tenant_id: string
+          total_price?: number | null
           updated_at?: string
-          used_products_json?: Json | null
         }
         Update: {
-          after_hair_img_path?: string | null
-          before_hair_img_path?: string | null
+          after_images?: Json | null
           carte_id?: string
           created_at?: string
           customer_requests?: string | null
           id?: string
           is_archive?: boolean
-          menu_details_json?: Json | null
+          menu_details?: Json | null
           notes?: string | null
+          option_details?: Json | null
           org_id?: string
           reservation_id?: string
           sort_key?: string | null
           staff_id?: string
           tenant_id?: string
+          total_price?: number | null
           updated_at?: string
-          used_products_json?: Json | null
         }
         Relationships: [
           {
@@ -124,13 +127,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "carte"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "carte_detail_reservation_id_fkey"
-            columns: ["reservation_id"]
-            isOneToOne: false
-            referencedRelation: "reservation"
-            referencedColumns: ["uid"]
           },
         ]
       }
@@ -774,43 +770,112 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bulk_update_point_task_status: {
+        Args: { p_task_ids: string[]; p_status: string }
+        Returns: number
+      }
       create_customer_with_details_and_points: {
-        Args: {
-          p_email: string
-          p_first_name: string
-          p_last_name: string
-          p_phone: string
-          p_tenant_id: string
-          p_org_id: string
-          p_line_id: string
-          p_line_user_name: string
-          p_password_hash: string
-          p_detail_email: string
-          p_detail_gender: string
-          p_detail_birthday: string
-          p_detail_age: number
-          p_detail_notes: string
-          p_initial_points: number
-        }
+        Args:
+          | {
+              p_email: string
+              p_first_name: string
+              p_last_name: string
+              p_phone: string
+              p_tenant_id: string
+              p_org_id: string
+              p_line_id: string
+              p_line_user_name: string
+              p_password_hash: string
+              p_detail_email: string
+              p_detail_gender: string
+              p_detail_birthday: string
+              p_detail_age: number
+              p_detail_notes: string
+              p_initial_points: number
+            }
+          | {
+              p_email: string
+              p_first_name: string
+              p_last_name: string
+              p_phone: string
+              p_tenant_id: string
+              p_org_id: string
+              p_line_id: string
+              p_line_user_name: string
+              p_password_hash: string
+              p_detail_email: string
+              p_detail_gender: string
+              p_detail_birthday: string
+              p_detail_age: number
+              p_detail_notes: string
+              p_initial_points: number
+              p_customer_type?: string
+            }
         Returns: {
-          uid: string
-          email: string
-          first_name: string
-          last_name: string
-          phone: string
-          tenant_id: string
+          _creation_time: string | null
+          created_at: string
+          customer_type: string | null
+          email: string | null
+          first_name: string | null
+          initial_tracking: Json | null
+          is_archive: boolean | null
+          last_name: string | null
+          last_reservation_date_unix: number | null
+          line_id: string | null
+          line_user_name: string | null
           org_id: string
-          line_id: string
-          line_user_name: string
-          _creation_time: string
-          updated_time: string
-          searchable_text: string
-          is_archive: boolean
+          password: string | null
+          password_hash: string | null
+          phone: string | null
+          searchable_text: string | null
+          sort_key: string | null
+          tags: string[] | null
+          tenant_id: string
+          total_reservation_count: number | null
+          uid: string
+          updated_at: string
+          updated_time: string | null
+          use_count: number | null
         }[]
       }
       delete_customer_and_related_data: {
         Args: { p_customer_uid: string }
         Returns: undefined
+      }
+      expire_points: {
+        Args: { p_expiration_days?: number }
+        Returns: {
+          expired_count: number
+          total_expired_points: number
+        }[]
+      }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      recalculate_customer_points_balance: {
+        Args: { p_customer_uid: string; p_tenant_id: string; p_org_id: string }
+        Returns: {
+          old_balance: number
+          new_balance: number
+          difference: number
+        }[]
       }
       search_customers_by_similarity: {
         Args: {
@@ -833,6 +898,103 @@ export type Database = {
           _creation_time: string
           updated_time: string
           similarity_score: number
+        }[]
+      }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
+      }
+      update_customer: {
+        Args: {
+          p_customer_uid: string
+          p_tenant_id: string
+          p_org_id: string
+          p_email: string
+          p_first_name: string
+          p_last_name: string
+          p_phone: string
+          p_line_id: string
+          p_line_user_name: string
+          p_last_reservation_date_unix?: number
+          p_total_reservation_count?: number
+        }
+        Returns: {
+          _creation_time: string | null
+          created_at: string
+          customer_type: string | null
+          email: string | null
+          first_name: string | null
+          initial_tracking: Json | null
+          is_archive: boolean | null
+          last_name: string | null
+          last_reservation_date_unix: number | null
+          line_id: string | null
+          line_user_name: string | null
+          org_id: string
+          password: string | null
+          password_hash: string | null
+          phone: string | null
+          searchable_text: string | null
+          sort_key: string | null
+          tags: string[] | null
+          tenant_id: string
+          total_reservation_count: number | null
+          uid: string
+          updated_at: string
+          updated_time: string | null
+          use_count: number | null
+        }[]
+      }
+      update_customer_json: {
+        Args: { params: Json }
+        Returns: {
+          _creation_time: string | null
+          created_at: string
+          customer_type: string | null
+          email: string | null
+          first_name: string | null
+          initial_tracking: Json | null
+          is_archive: boolean | null
+          last_name: string | null
+          last_reservation_date_unix: number | null
+          line_id: string | null
+          line_user_name: string | null
+          org_id: string
+          password: string | null
+          password_hash: string | null
+          phone: string | null
+          searchable_text: string | null
+          sort_key: string | null
+          tags: string[] | null
+          tenant_id: string
+          total_reservation_count: number | null
+          uid: string
+          updated_at: string
+          updated_time: string | null
+          use_count: number | null
+        }[]
+      }
+      update_customer_points_atomic: {
+        Args: {
+          p_customer_uid: string
+          p_tenant_id: string
+          p_org_id: string
+          p_points_delta: number
+          p_transaction_type: string
+          p_description: string
+          p_reservation_id?: string
+        }
+        Returns: {
+          new_total_points: number
+          transaction_id: string
         }[]
       }
       update_customer_with_details_and_points: {
