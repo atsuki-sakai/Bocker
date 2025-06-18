@@ -116,7 +116,7 @@ export class ReservationRepository extends BaseRepository<'reservation'> {
           // _convex_idを使用して詳細を取得
           const { data: details } = await this.supabaseServiceInstance.listRecords('reservation_detail', {
             filters: {
-              convex_reservation_id: reservation._convex_id
+              _convex_reservation_id: reservation._convex_id
             } as Partial<RowType<'reservation_detail'>>,
             pageSize: 1
           });
