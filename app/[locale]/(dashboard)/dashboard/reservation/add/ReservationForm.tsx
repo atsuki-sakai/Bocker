@@ -15,6 +15,8 @@ import { getDayOfWeek, formatTimestamp } from '@/lib/schedules'
 import { convertGender, ReservationMenu, ReservationOption } from '@/convex/types'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
+import { CarteRepository } from '@/services/supabase/repositories/carte/CarteRepository'
+import { CarteDetailRepository } from '@/services/supabase/repositories/carte/CarteDetailRepository'
 import type { RowType, InsertType } from '@/services/supabase/SupabaseService'
 import { useMutation } from 'convex/react'
 import { useTranslations } from 'next-intl'
@@ -249,6 +251,8 @@ export default function ReservationForm() {
   const [isLoadingCustomers, setIsLoadingCustomers] = useState<boolean>(false)
   const [selectedCustomer, setSelectedCustomer] = useState<RowType<'customer'> | null>(null)
   const customerRepository = useMemo(() => new CustomerRepository(), [])
+  const carteRepository = useMemo(() => new CarteRepository(), [])
+  const carteDetailRepository = useMemo(() => new CarteDetailRepository(), [])
 
   // 初期データ取得（メニュー・オプション・設定など）
   const initialFormData = useQuery(
@@ -629,7 +633,9 @@ export default function ReservationForm() {
       const customerName = isExistingCustomer
         ? selectedCustomer?.last_name + ' ' + selectedCustomer?.first_name
         : data.customer_last_name + ' ' + data.customer_first_name
-      await createReservation({
+
+      // 予約作成
+      const reservationResult = await createReservation({
         tenant_id: tenantId, // テナントID
         org_id: orgId, // 組織ID
         customer_id: isExistingCustomer ? (selectedCustomer?.uid ?? '') : (customerUid ?? ''), // Supabase 側の customer.id
@@ -653,6 +659,57 @@ export default function ReservationForm() {
         featured_hair_images: [], // フィーチャー画像
         notes: data.notes ?? '', // メモ
       })
+
+      // カルテのUpsert処理
+      const finalCustomerId = isExistingCustomer
+        ? (selectedCustomer?.uid ?? 'Error SelectedCustomerUid')
+        : (customerUid ?? 'Error CustomerUid')
+
+      try {
+        // カルテを取得または作成
+        const carte = await carteRepository.findOrCreateByCustomer(
+          tenantId,
+          orgId,
+          finalCustomerId,
+          { ltv_price: 0 }
+        )
+
+        // 既存のLTV価格に今回の合計金額を加算
+        const newLtvPrice = (carte.ltv_price || 0) + totalPriceCalculated
+        await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
+
+        // カルテ詳細を作成
+        await carteDetailRepository.createCarteDetail({
+          tenant_id: tenantId,
+          org_id: orgId,
+          carte_id: carte.id,
+          reservation_id: reservationResult, // Convex で作成された予約ID
+          staff_id: selectedStaffId as string,
+          menu_details: selectedMenus.map((menu) => ({
+            id: menu.id,
+            name: menu.name,
+            quantity: menu.quantity,
+            price: menu.price,
+          })),
+          option_details: selectedOptions.map((option) => ({
+            id: option.id,
+            name: option.name,
+            quantity: option.quantity,
+            price: option.price,
+          })),
+          total_price: totalPriceCalculated,
+          customer_requests: data.notes ?? '', // 顧客のリクエスト（メモ欄）
+          notes: '', // スタッフメモは空で初期化
+          after_images: null, // 施術後画像は後で追加
+        })
+
+        console.log(
+          `[ReservationForm] Created carte and carte_detail for customer ${finalCustomerId}`
+        )
+      } catch (carteError) {
+        console.error('[ReservationForm] Error creating carte:', carteError)
+        // カルテ作成に失敗してもユーザーにはエラーを表示しない（予約は既に作成済み）
+      }
 
       toast.success(t('reservationCompleted'))
       router.push('/dashboard/reservation')
