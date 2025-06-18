@@ -49,7 +49,7 @@
 | password_hash | text | YES | - | パスワードハッシュ |
 | first_name | text | YES | - | 名 |
 | last_name | text | YES | - | 姓 |
-| searchable_text | text | YES | - | 検索用統合テキスト |
+| searchable_text | text | YES | - | 検索用統合テキスト（名前・電話・メール等を小文字で結合） |
 | use_count | integer | YES | - | 利用回数 |
 | last_reservation_date_unix | bigint | YES | - | 最終予約日時（Unix時間） |
 | initial_tracking | jsonb | YES | - | 初回トラッキング情報 |
@@ -173,7 +173,7 @@
 | id | uuid | NO | gen_random_uuid() | 主キー |
 | tenant_id | text | NO | - | テナントID |
 | org_id | text | NO | - | 組織ID |
-| coupon_id | **text** | NO | - | クーポンID（Convex形式・TEXT型） |
+| coupon_id | text | NO | - | クーポンID（Convex形式・TEXT型） |
 | customer_id | uuid | NO | - | 顧客ID（外部キー） |
 | reservation_id | text | NO | - | 予約ID（Convex形式） |
 | transaction_date_unix | bigint | NO | - | 取引日時（Unix時間） |
@@ -201,6 +201,7 @@
 | hair_type | text | YES | - | 髪タイプ |
 | allergy_history | text | YES | - | アレルギー歴 |
 | medical_history | text | YES | - | 医療歴 |
+| ltv_price | integer | YES | 0 | 顧客の累計購入総額（LTV: Life Time Value） |
 | sort_key | text | YES | - | ソートキー |
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
@@ -220,14 +221,14 @@
 | tenant_id | text | NO | - | テナントID |
 | org_id | text | NO | - | 組織ID |
 | carte_id | uuid | NO | - | カルテID（外部キー） |
-| reservation_id | **text** | NO | - | 予約ID（Convex形式・TEXT型） |
-| staff_id | **text** | NO | - | スタッフID（Convex形式・TEXT型） |
-| before_hair_img_path | text | YES | - | 施術前画像パス |
-| after_hair_img_path | text | YES | - | 施術後画像パス |
-| menu_details_json | jsonb | YES | - | メニュー詳細 |
-| used_products_json | jsonb | YES | - | 使用商品 |
+| reservation_id | text | NO | - | 予約ID（Convex形式・TEXT型） |
+| staff_id | text | NO | - | スタッフID（Convex形式・TEXT型） |
+| after_images | jsonb | YES | - | 施術後の画像パス（original_url, thumbnail_url × 4枚 = 計8枚） |
+| menu_details | jsonb | YES | - | メニュー詳細情報（Convex ID、名前、数量、価格を含む） |
+| option_details | jsonb | YES | - | オプション詳細情報（Convex ID、名前、数量、価格を含む） |
+| total_price | integer | YES | - | 合計金額 |
 | notes | text | YES | - | 備考 |
-| customer_requests | text | YES | - | 顧客要望 |
+| customer_requests | text | YES | - | お客様のリクエスト |
 | sort_key | text | YES | - | ソートキー |
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
@@ -236,6 +237,38 @@
 **制約**:
 - PRIMARY KEY (id)
 - FOREIGN KEY (carte_id) REFERENCES carte(id)
+
+**JSONBフィールドの構造例**:
+```json
+// after_images
+[
+  {
+    "original_url": "path/to/image1.jpg",
+    "thumbnail_url": "path/to/thumb1.jpg"
+  },
+  // ... 計4枚分
+]
+
+// menu_details
+[
+  {
+    "id": "convex_menu_id",
+    "name": "カット",
+    "quantity": 1,
+    "price": 3000
+  }
+]
+
+// option_details
+[
+  {
+    "id": "convex_option_id",
+    "name": "トリートメント",
+    "quantity": 1,
+    "price": 1500
+  }
+]
+```
 
 ### 9. reservation（予約）
 
@@ -473,3 +506,27 @@ CREATE INDEX idx_carte_detail_reservation_id ON carte_detail(reservation_id);
    - carte_detail.reservation_id: UUID → TEXT
    - coupon_transaction.coupon_id: UUID → TEXT
 4. 外部キー制約の命名規則を統一（fk_プレフィックス）
+5. **carteテーブルにltv_priceフィールドを追加**（顧客の累計購入総額を管理）
+6. **carte_detailテーブルの大幅な整理と機能追加**：
+   - 新規追加フィールド：
+     - after_images: 施術後の画像パス（8枚分）
+     - menu_details: Convex IDを含むメニュー詳細情報
+     - option_details: Convex IDを含むオプション詳細情報
+     - total_price: 合計金額
+     - customer_requests: お客様のリクエスト
+   - フィールド名の修正：
+     - customre_requests → customer_requests（タイポ修正）
+
+### carte_detailテーブルで削除されたレガシーフィールド
+
+2025年1月の改修で、以下の不要なフィールドをcarte_detailテーブルから削除しました：
+
+| 削除されたフィールド | データ型 | 削除理由 |
+|---------------------|----------|----------|
+| before_hair_img_path | text | after_imagesフィールドに統合 |
+| after_hair_img_path | text | after_imagesフィールドに統合 |
+| menu_details_json | jsonb | menu_detailsフィールドにリネーム・構造変更 |
+| used_products_json | jsonb | 使用されていないレガシーフィールド |
+| customer_requests | text | customer_requestsフィールドと重複（タイポ版が残存） |
+
+これらの変更により、carte_detailテーブルはより整理され、明確な構造を持つようになりました。
