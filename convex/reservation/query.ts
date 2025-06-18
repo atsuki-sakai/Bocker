@@ -148,6 +148,58 @@ export const listByCustomerId = query({
 });
 
 /**
+ * 顧客IDからの予約一覧を詳細情報付きで取得
+ * - カルテ画面での予約履歴表示用途
+ * - is_archive: false のみ対象
+ * - 予約詳細も同時に取得
+ * データ取得専用でバリデーションはmutationで担保
+ */
+export const listByCustomerIdWithDetails = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    customer_id: v.string(),
+    paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc')))
+  },
+  handler: async (ctx, args) => {
+    validateStringLength(args.customer_id, 'customer_id');
+    validateStringLength(args.org_id, 'org_id');
+
+    const reservationQuery = ctx.db
+      .query('reservation')
+      .withIndex('by_tenant_org_customer_date_archive', (q) =>
+        q
+          .eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('customer_id', args.customer_id)
+      )
+      .filter((q) => q.eq(q.field('is_archive'), false))
+      .order(args.sort || 'desc');
+
+    const paginatedReservations = await reservationQuery.paginate(args.paginationOpts);
+    
+    // 詳細情報を一括取得
+    const reservationsWithDetails = await Promise.all(
+      paginatedReservations.page.map(async (reservation) => {
+        const detail = await ctx.db
+          .query('reservation_detail')
+          .withIndex('by_reservation_archive', (q) =>
+            q.eq('reservation_id', reservation._id).eq('is_archive', false)
+          )
+          .first();
+        return { reservation, detail };
+      })
+    );
+    
+    return {
+      ...paginatedReservations,
+      page: reservationsWithDetails
+    };
+  },
+});
+
+/**
  * スタッフIDによる予約一覧取得
  * - スタッフ毎の予約確認・シフト管理等の用途
  * - is_archive: false のみ対象
@@ -165,7 +217,7 @@ export const listByStaffId = query({
   handler: async (ctx, args) => {
     validateStringLength(args.org_id, 'org_id');
 
-    const reservationQuery = await ctx.db
+    const reservationQuery = ctx.db
       .query('reservation')
       .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
         q
@@ -175,7 +227,7 @@ export const listByStaffId = query({
       )
       .filter((q) => q.eq(q.field('is_archive'), false))
 
-    return reservationQuery.order(args.sort || 'desc').paginate(args.paginationOpts)
+    return await reservationQuery.order(args.sort || 'desc').paginate(args.paginationOpts)
   },
 })
 
