@@ -23,7 +23,7 @@ export class CarteDetailRepository extends BaseRepository<'carte_detail'> {
    * @returns 作成された施術記録情報
    */
   async createCarteDetail(
-    detailData: Pick<InsertType<'carte_detail'>, 'tenant_id' | 'org_id' | 'carte_id' | 'reservation_id' | 'staff_id' | 'before_hair_img_path' | 'after_hair_img_path' | 'menu_details_json' | 'used_products_json' | 'notes' | 'customer_requests'>
+    detailData: Pick<InsertType<'carte_detail'>, 'tenant_id' | 'org_id' | 'carte_id' | 'reservation_id' | 'staff_id' | 'after_images' | 'menu_details' | 'option_details' | 'total_price' | 'notes' | 'customer_requests'>
   ): Promise<RowType<'carte_detail'>> {
     console.log(`[CarteDetailRepository] createCarteDetail: data=${JSON.stringify(detailData)}`);
     
@@ -147,21 +147,21 @@ export class CarteDetailRepository extends BaseRepository<'carte_detail'> {
   }
 
   /**
-   * 施術前の写真を更新します。
+   * 施術後の画像（最大4枚）を更新します。
    * @param detailId - 施術記録ID
-   * @param beforeImagePath - 施術前の写真パス
+   * @param afterImages - 施術後の画像情報配列 (original_url, thumbnail_url × 4枚)
    * @param options - 更新オプション
    * @returns 更新された施術記録情報
    */
-  async updateBeforeImage(
+  async updateAfterImages(
     detailId: string,
-    beforeImagePath: string,
+    afterImages: Array<{ original_url: string; thumbnail_url: string }>,
     options?: BaseRepositoryOptions<'carte_detail'>
   ): Promise<RowType<'carte_detail'>> {
-    console.log(`[CarteDetailRepository] updateBeforeImage: detailId=${detailId}, imagePath=${beforeImagePath}`);
+    console.log(`[CarteDetailRepository] updateAfterImages: detailId=${detailId}, imageCount=${afterImages.length}`);
     
     const updateData: UpdateType<'carte_detail'> = {
-      before_hair_img_path: beforeImagePath,
+      after_images: afterImages,
     };
 
     try {
@@ -169,45 +169,11 @@ export class CarteDetailRepository extends BaseRepository<'carte_detail'> {
     } catch (error) {
       if (error instanceof Error) {
         throwSupabaseError({
-          callFunc: 'CarteDetailRepository.updateBeforeImage',
+          callFunc: 'CarteDetailRepository.updateAfterImages',
           message: error.message,
           error: error,
           severity: 'medium',
-          details: { detailId, beforeImagePath }
-        });
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * 施術後の写真を更新します。
-   * @param detailId - 施術記録ID
-   * @param afterImagePath - 施術後の写真パス
-   * @param options - 更新オプション
-   * @returns 更新された施術記録情報
-   */
-  async updateAfterImage(
-    detailId: string,
-    afterImagePath: string,
-    options?: BaseRepositoryOptions<'carte_detail'>
-  ): Promise<RowType<'carte_detail'>> {
-    console.log(`[CarteDetailRepository] updateAfterImage: detailId=${detailId}, imagePath=${afterImagePath}`);
-    
-    const updateData: UpdateType<'carte_detail'> = {
-      after_hair_img_path: afterImagePath,
-    };
-
-    try {
-      return await this.update(detailId, updateData, options);
-    } catch (error) {
-      if (error instanceof Error) {
-        throwSupabaseError({
-          callFunc: 'CarteDetailRepository.updateAfterImage',
-          message: error.message,
-          error: error,
-          severity: 'medium',
-          details: { detailId, afterImagePath }
+          details: { detailId, afterImages }
         });
       }
       throw error;
@@ -217,19 +183,19 @@ export class CarteDetailRepository extends BaseRepository<'carte_detail'> {
   /**
    * メニュー詳細情報を更新します。
    * @param detailId - 施術記録ID
-   * @param menuDetails - メニュー詳細情報 (JSON)
+   * @param menuDetails - メニュー詳細情報配列 (Convex ID、名前、数量、価格を含む)
    * @param options - 更新オプション
    * @returns 更新された施術記録情報
    */
   async updateMenuDetails(
     detailId: string,
-    menuDetails: any,
+    menuDetails: Array<{ id: string; name: string; quantity: number; price: number }>,
     options?: BaseRepositoryOptions<'carte_detail'>
   ): Promise<RowType<'carte_detail'>> {
     console.log(`[CarteDetailRepository] updateMenuDetails: detailId=${detailId}`);
     
     const updateData: UpdateType<'carte_detail'> = {
-      menu_details_json: menuDetails,
+      menu_details: menuDetails,
     };
 
     try {
@@ -249,21 +215,21 @@ export class CarteDetailRepository extends BaseRepository<'carte_detail'> {
   }
 
   /**
-   * 使用商品情報を更新します。
+   * オプション詳細情報を更新します。
    * @param detailId - 施術記録ID
-   * @param usedProducts - 使用商品情報 (JSON)
+   * @param optionDetails - オプション詳細情報配列 (Convex ID、名前、数量、価格を含む)
    * @param options - 更新オプション
    * @returns 更新された施術記録情報
    */
-  async updateUsedProducts(
+  async updateOptionDetails(
     detailId: string,
-    usedProducts: any,
+    optionDetails: Array<{ id: string; name: string; quantity: number; price: number }>,
     options?: BaseRepositoryOptions<'carte_detail'>
   ): Promise<RowType<'carte_detail'>> {
-    console.log(`[CarteDetailRepository] updateUsedProducts: detailId=${detailId}`);
+    console.log(`[CarteDetailRepository] updateOptionDetails: detailId=${detailId}`);
     
     const updateData: UpdateType<'carte_detail'> = {
-      used_products_json: usedProducts,
+      option_details: optionDetails,
     };
 
     try {
@@ -271,11 +237,11 @@ export class CarteDetailRepository extends BaseRepository<'carte_detail'> {
     } catch (error) {
       if (error instanceof Error) {
         throwSupabaseError({
-          callFunc: 'CarteDetailRepository.updateUsedProducts',
+          callFunc: 'CarteDetailRepository.updateOptionDetails',
           message: error.message,
           error: error,
           severity: 'medium',
-          details: { detailId, usedProducts }
+          details: { detailId, optionDetails }
         });
       }
       throw error;
@@ -351,6 +317,40 @@ export class CarteDetailRepository extends BaseRepository<'carte_detail'> {
   }
 
   /**
+   * 合計金額を更新します。
+   * @param detailId - 施術記録ID
+   * @param totalPrice - 合計金額
+   * @param options - 更新オプション
+   * @returns 更新された施術記録情報
+   */
+  async updateTotalPrice(
+    detailId: string,
+    totalPrice: number,
+    options?: BaseRepositoryOptions<'carte_detail'>
+  ): Promise<RowType<'carte_detail'>> {
+    console.log(`[CarteDetailRepository] updateTotalPrice: detailId=${detailId}, totalPrice=${totalPrice}`);
+    
+    const updateData: UpdateType<'carte_detail'> = {
+      total_price: totalPrice,
+    };
+
+    try {
+      return await this.update(detailId, updateData, options);
+    } catch (error) {
+      if (error instanceof Error) {
+        throwSupabaseError({
+          callFunc: 'CarteDetailRepository.updateTotalPrice',
+          message: error.message,
+          error: error,
+          severity: 'medium',
+          details: { detailId, totalPrice }
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
    * 施術記録を一括更新します。
    * @param detailId - 施術記録ID
    * @param updateData - 更新データ
@@ -359,7 +359,7 @@ export class CarteDetailRepository extends BaseRepository<'carte_detail'> {
    */
   async updateCarteDetail(
     detailId: string,
-    updateData: Partial<Pick<UpdateType<'carte_detail'>, 'before_hair_img_path' | 'after_hair_img_path' | 'menu_details_json' | 'used_products_json' | 'notes' | 'customer_requests'>>,
+    updateData: Partial<Pick<UpdateType<'carte_detail'>, 'after_images' | 'menu_details' | 'option_details' | 'total_price' | 'notes' | 'customer_requests'>>,
     options?: BaseRepositoryOptions<'carte_detail'>
   ): Promise<RowType<'carte_detail'>> {
     console.log(`[CarteDetailRepository] updateCarteDetail: detailId=${detailId}, data=${JSON.stringify(updateData)}`);
