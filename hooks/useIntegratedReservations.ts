@@ -7,6 +7,65 @@ import type { RowType } from '@/services/supabase/SupabaseService';
 import { toast } from 'sonner';
 import type { ReservationMenu, ReservationOption } from '@/convex/types';
 
+// Helper functions to parse JSONB data from Supabase
+function parseReservationMenus(menus: unknown): ReservationMenu[] | undefined {
+  if (!menus || !Array.isArray(menus)) return undefined;
+  
+  return menus.map((menu) => {
+    if (typeof menu !== 'object' || menu === null) {
+      throw new Error('Invalid menu format');
+    }
+    
+    const menuObj = menu as Record<string, unknown>;
+    
+    // Validate required fields
+    if (
+      typeof menuObj.id !== 'string' ||
+      typeof menuObj.name !== 'string' ||
+      typeof menuObj.price !== 'number' ||
+      typeof menuObj.quantity !== 'number'
+    ) {
+      throw new Error('Invalid menu structure');
+    }
+    
+    return {
+      id: menuObj.id as Id<'menu'>,
+      name: menuObj.name,
+      price: menuObj.price,
+      quantity: menuObj.quantity,
+    } satisfies ReservationMenu;
+  });
+}
+
+function parseReservationOptions(options: unknown): ReservationOption[] | undefined {
+  if (!options || !Array.isArray(options)) return undefined;
+  
+  return options.map((option) => {
+    if (typeof option !== 'object' || option === null) {
+      throw new Error('Invalid option format');
+    }
+    
+    const optionObj = option as Record<string, unknown>;
+    
+    // Validate required fields
+    if (
+      typeof optionObj.id !== 'string' ||
+      typeof optionObj.name !== 'string' ||
+      typeof optionObj.price !== 'number' ||
+      typeof optionObj.quantity !== 'number'
+    ) {
+      throw new Error('Invalid option structure');
+    }
+    
+    return {
+      id: optionObj.id as Id<'option'>,
+      name: optionObj.name,
+      price: optionObj.price,
+      quantity: optionObj.quantity,
+    } satisfies ReservationOption;
+  });
+}
+
 // 予約データの統合型
 export type IntegratedReservation = {
   // 共通フィールド
@@ -58,7 +117,6 @@ type UseIntegratedReservationsReturn = {
   isLoading: boolean;
   loadMore: () => void;
   hasMore: boolean;
-  refresh: () => void;
   totalCount: number;
   stats: {
     totalCount: number;
@@ -101,7 +159,7 @@ export function useIntegratedReservations({
     status: convexStatus,
     loadMore: convexLoadMore,
   } = usePaginatedQuery(
-    api.reservation.query.listByCustomerId,
+    api.reservation.query.listByCustomerIdWithDetails,
     canFetchConvex
       ? {
           tenant_id: tenantId as Id<'tenant'>,
@@ -118,34 +176,48 @@ export function useIntegratedReservations({
     if (!convexResults) return [];
     
     return convexResults
-      .filter((res) => {
+      .filter((item) => {
+        const res = item.reservation;
         // ステータスフィルター
         if (!status || status === 'all') return true;
         return res.status === status;
       })
-      .filter((res) => {
+      .filter((item) => {
+        const res = item.reservation;
         // 未来の予約のみ（completedとcancelledは除外）
         return res.status === 'confirmed' || res.status === 'pending';
       })
-      .map((res) => ({
-        id: res._id,
-        source: 'convex' as const,
-        tenantId: res.tenant_id,
-        orgId: res.org_id,
-        customerId: res.customer_id || '',
-        staffId: res.staff_id,
-        customerName: res.customer_name,
-        staffName: res.staff_name,
-        status: res.status,
-        paymentStatus: res.payment_status,
-        date: res.date,
-        startTimeUnix: res.start_time_unix,
-        endTimeUnix: res.end_time_unix,
-        createdAt: new Date(res._creationTime),
-        // Convexの予約データには詳細情報が含まれていないため、undefinedにする
-        detail: undefined,
-        convexData: res,
-      }));
+      .map((item) => {
+        const res = item.reservation;
+        const detail = item.detail;
+        return {
+          id: res._id,
+          source: 'convex' as const,
+          tenantId: res.tenant_id,
+          orgId: res.org_id,
+          customerId: res.customer_id || '',
+          staffId: res.staff_id,
+          customerName: res.customer_name,
+          staffName: res.staff_name,
+          status: res.status,
+          paymentStatus: res.payment_status,
+          date: res.date,
+          startTimeUnix: res.start_time_unix,
+          endTimeUnix: res.end_time_unix,
+          createdAt: new Date(res._creationTime),
+          detail: detail ? {
+            menus: detail.menus || undefined,
+            options: detail.options || undefined,
+            totalPrice: detail.total_price || undefined,
+            paymentMethod: detail.payment_method,
+            couponId: detail.coupon_id || undefined,
+            couponDiscount: detail.coupon_discount || undefined,
+            usePoints: detail.use_points || undefined,
+            notes: detail.notes || undefined,
+          } : undefined,
+          convexData: res,
+        };
+      });
   }, [convexResults, status]);
   
   // Supabaseから履歴データを取得（completed, cancelledのみ）
@@ -212,8 +284,8 @@ export function useIntegratedReservations({
           endTimeUnix: Number(item.reservation.end_time_unix),
           createdAt: new Date(item.reservation.created_at),
           detail: item.detail ? {
-            menus: item.detail.menus ? (item.detail.menus as ReservationMenu[]) : undefined,
-            options: item.detail.options ? (item.detail.options as ReservationOption[]) : undefined,
+            menus: item.detail.menus ? parseReservationMenus(item.detail.menus) : undefined,
+            options: item.detail.options ? parseReservationOptions(item.detail.options) : undefined,
             totalPrice: item.detail.total_price || undefined,
             paymentMethod: item.detail.payment_method,
             couponId: item.detail.coupon_id || undefined,
@@ -301,13 +373,6 @@ export function useIntegratedReservations({
     }
   }, [convexStatus, convexLoadMore, pageSize, supabaseHasMore, supabaseLoading, supabasePage, fetchSupabaseReservations]);
   
-  // リフレッシュ
-  const refresh = useCallback(() => {
-    // Supabaseデータをリセット
-    setSupabasePage(1);
-    fetchSupabaseReservations(1, true);
-    // Convexは自動的にリアルタイム更新される
-  }, [fetchSupabaseReservations]);
   
   // 全体のローディング状態
   const isLoading = useMemo(() => {
@@ -345,7 +410,6 @@ export function useIntegratedReservations({
     isLoading,
     loadMore,
     hasMore,
-    refresh,
     totalCount,
     stats,
   };
