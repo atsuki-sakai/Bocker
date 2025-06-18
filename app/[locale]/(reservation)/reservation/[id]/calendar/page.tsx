@@ -16,6 +16,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
 import { CustomerRepository, PointTaskQueueRepository } from '@/services/supabase/repositories'
+import { CarteRepository } from '@/services/supabase/repositories/carte/CarteRepository'
+import { CarteDetailRepository } from '@/services/supabase/repositories/carte/CarteDetailRepository'
 import { formatDateToYYYYMMDD } from '@/lib/formatDate'
 
 import {
@@ -171,6 +173,8 @@ export default function CalendarPage() {
   // STATES
   const customerRepository = useMemo(() => new CustomerRepository(), [])
   const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
+  const carteRepository = useMemo(() => new CarteRepository(), [])
+  const carteDetailRepository = useMemo(() => new CarteDetailRepository(), [])
   const [sessionCustomer, setSessionCustomer] = useState<SessionPayload | null>(null)
   const [customerPhone, setCustomerPhone] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<{
@@ -380,6 +384,41 @@ export default function CalendarPage() {
       let reservationId: Id<'reservation'> | null = null
       try {
         reservationId = await createReservationMutation(reservationData)
+        
+        // カルテのUpsert処理（クレジットカード決済時）
+        try {
+          // カルテを取得または作成
+          const carte = await carteRepository.findOrCreateByCustomer(
+            sessionCustomer.tenantId,
+            organizationComplete.organization._id as Id<'organization'>,
+            sessionCustomer.customerUid,
+            { ltv_price: 0 }
+          )
+
+          // 既存のLTV価格に今回の合計金額を加算
+          const newLtvPrice = (carte.ltv_price || 0) + reservationData.total_price
+          await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
+
+          // カルテ詳細を作成
+          await carteDetailRepository.createCarteDetail({
+            tenant_id: sessionCustomer.tenantId,
+            org_id: organizationComplete.organization._id as Id<'organization'>,
+            carte_id: carte.id,
+            reservation_id: reservationId, // Convex で作成された予約ID
+            staff_id: reservationData.staff_id,
+            menu_details: reservationData.menus,
+            option_details: reservationData.options,
+            total_price: reservationData.total_price,
+            customer_requests: notes, // 顧客のリクエスト（メモ欄）
+            notes: '', // スタッフメモは空で初期化
+            after_images: null, // 施術後画像は後で追加
+          })
+
+          console.log(`[CalendarPage] Created carte and carte_detail for customer ${sessionCustomer.customerUid}`)
+        } catch (carteError) {
+          console.error('[CalendarPage] Error creating carte:', carteError)
+          // カルテ作成に失敗してもユーザーにはエラーを表示しない（予約は既に作成済み）
+        }
       } catch (error) {
         // 重複予約エラーの場合
         const errorData = error as {
@@ -703,6 +742,41 @@ export default function CalendarPage() {
         let reservationId: Id<'reservation'> | null = null
         try {
           reservationId = await createReservationMutation(reservationDataForCash)
+          
+          // カルテのUpsert処理（現金決済時）
+          try {
+            // カルテを取得または作成
+            const carte = await carteRepository.findOrCreateByCustomer(
+              sessionCustomer.tenantId,
+              organizationComplete.organization._id as Id<'organization'>,
+              sessionCustomer.customerUid,
+              { ltv_price: 0 }
+            )
+
+            // 既存のLTV価格に今回の合計金額を加算
+            const newLtvPrice = (carte.ltv_price || 0) + reservationDataForCash.total_price
+            await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
+
+            // カルテ詳細を作成
+            await carteDetailRepository.createCarteDetail({
+              tenant_id: sessionCustomer.tenantId,
+              org_id: organizationComplete.organization._id as Id<'organization'>,
+              carte_id: carte.id,
+              reservation_id: reservationId, // Convex で作成された予約ID
+              staff_id: reservationDataForCash.staff_id,
+              menu_details: reservationDataForCash.menus,
+              option_details: reservationDataForCash.options,
+              total_price: reservationDataForCash.total_price,
+              customer_requests: notes, // 顧客のリクエスト（メモ欄）
+              notes: '', // スタッフメモは空で初期化
+              after_images: null, // 施術後画像は後で追加
+            })
+
+            console.log(`[CalendarPage] Created carte and carte_detail for customer ${sessionCustomer.customerUid}`)
+          } catch (carteError) {
+            console.error('[CalendarPage] Error creating carte:', carteError)
+            // カルテ作成に失敗してもユーザーにはエラーを表示しない（予約は既に作成済み）
+          }
         } catch (error) {
           setIsProcessingPayment(false)
 
