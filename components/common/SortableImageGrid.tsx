@@ -19,6 +19,7 @@ import { useTranslations } from 'next-intl'
 export interface SortableImageGridProps {
   images: ImageType[]
   onChange: (images: ImageType[]) => void
+  isThumbnail?: boolean
 }
 
 // 子コンポーネント化（useSortableをここで呼ぶ）
@@ -26,13 +27,15 @@ function SortableImageItem({
   image,
   index,
   onRemove,
+  isThumbnail = false,
 }: {
   image: ImageType
   index: number
   onRemove: (index: number) => void
+  isThumbnail?: boolean
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: image.original_url,
+    id: isThumbnail ? image.thumbnail_url : image.original_url,
   })
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -47,37 +50,53 @@ function SortableImageItem({
       style={style}
       {...attributes}
       {...listeners}
-      className={`relative aspect-[2/3] w-full h-full border bg-muted rounded-lg overflow-hidden shadow group transition-all ${
+      className={`relative aspect-[2/3] w-full h-full border bg-muted  group transition-all ${
         isDragging
           ? 'border-primary ring-2 ring-primary/60'
           : 'hover:shadow-lg hover:border-primary/50'
       }`}
     >
-      <Image src={image.original_url} alt="menu image" fill sizes="96px" className="object-cover" />
+      <Image
+        src={isThumbnail ? image.thumbnail_url : image.original_url}
+        alt="menu image"
+        fill
+        sizes="96px"
+        className="object-cover overflow-hidden rounded-lg shadow-sm"
+      />
       <Button
         size="icon"
         variant="destructive"
-        className="absolute top-1.5 right-1.5 z-10  p-1 rounded-full shadow"
+        className={`absolute z-10  p-1 rounded-full shadow ${
+          isThumbnail ? '-top-1 -right-1 w-6 h-6' : 'top-1.5 right-1.5 w-8 h-8'
+        }`}
         onClick={(e) => {
           e.stopPropagation()
           onRemove(index)
         }}
       >
-        <X size={15} />
+        <X size={isThumbnail ? 12 : 15} />
       </Button>
     </div>
   )
 }
 
-export default function SortableImageGrid({ images, onChange }: SortableImageGridProps) {
+export default function SortableImageGrid({
+  images,
+  onChange,
+  isThumbnail = false,
+}: SortableImageGridProps) {
   const t = useTranslations('common.imageDrop')
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
-    const oldIndex = images.findIndex((img) => img.original_url === active.id)
-    const newIndex = images.findIndex((img) => img.original_url === over.id)
+    const oldIndex = images.findIndex(
+      (img) => (isThumbnail ? img.thumbnail_url : img.original_url) === active.id
+    )
+    const newIndex = images.findIndex(
+      (img) => (isThumbnail ? img.thumbnail_url : img.original_url) === over.id
+    )
     onChange(arrayMove(images, oldIndex, newIndex))
   }
 
@@ -87,17 +106,22 @@ export default function SortableImageGrid({ images, onChange }: SortableImageGri
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={images.map((img) => img.original_url)}>
-        <div className="grid grid-cols-2 gap-4 md:gap-6 items-center justify-start w-full mb-4">
+      <SortableContext
+        items={images.map((img) => (isThumbnail ? img.thumbnail_url : img.original_url))}
+      >
+        <div
+          className={`grid grid-cols-${isThumbnail ? '4' : '2'} gap-4 md:gap-6 items-center justify-start w-full mb-4`}
+        >
           {images.length === 0 ? (
             <div className="text-sm text-muted-foreground mx-auto">{t('noImages')}</div>
           ) : (
             images.map((image, idx) => (
               <SortableImageItem
-                key={image.original_url}
+                key={isThumbnail ? image.thumbnail_url : image.original_url}
                 image={image}
                 index={idx}
                 onRemove={handleRemove}
+                isThumbnail={isThumbnail}
               />
             ))
           )}
