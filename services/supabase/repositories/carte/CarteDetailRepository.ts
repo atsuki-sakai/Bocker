@@ -23,7 +23,7 @@ export class CarteDetailRepository extends BaseRepository<'carte_detail'> {
    * @returns 作成された施術記録情報
    */
   async createCarteDetail(
-    detailData: Pick<InsertType<'carte_detail'>, 'tenant_id' | 'org_id' | 'carte_id' | 'reservation_id' | 'staff_id' | 'after_images' | 'menu_details' | 'option_details' | 'total_price' | 'notes' | 'customer_requests'>
+    detailData: Pick<InsertType<'carte_detail'>, 'tenant_id' | 'org_id' | 'carte_id' | 'reservation_id' | 'staff_id' | 'staff_name' | 'service_start_time' | 'after_images' | 'menu_details' | 'option_details' | 'total_price' | 'notes' | 'customer_requests'>
   ): Promise<RowType<'carte_detail'>> {
     console.log(`[CarteDetailRepository] createCarteDetail: data=${JSON.stringify(detailData)}`);
     

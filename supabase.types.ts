@@ -78,8 +78,10 @@ export type Database = {
           option_details: Json | null
           org_id: string
           reservation_id: string
+          service_start_time: string | null
           sort_key: string | null
           staff_id: string
+          staff_name: string | null
           tenant_id: string
           total_price: number | null
           updated_at: string
@@ -96,8 +98,10 @@ export type Database = {
           option_details?: Json | null
           org_id: string
           reservation_id: string
+          service_start_time?: string | null
           sort_key?: string | null
           staff_id: string
+          staff_name?: string | null
           tenant_id: string
           total_price?: number | null
           updated_at?: string
@@ -114,8 +118,10 @@ export type Database = {
           option_details?: Json | null
           org_id?: string
           reservation_id?: string
+          service_start_time?: string | null
           sort_key?: string | null
           staff_id?: string
+          staff_name?: string | null
           tenant_id?: string
           total_price?: number | null
           updated_at?: string
@@ -775,42 +781,24 @@ export type Database = {
         Returns: number
       }
       create_customer_with_details_and_points: {
-        Args:
-          | {
-              p_email: string
-              p_first_name: string
-              p_last_name: string
-              p_phone: string
-              p_tenant_id: string
-              p_org_id: string
-              p_line_id: string
-              p_line_user_name: string
-              p_password_hash: string
-              p_detail_email: string
-              p_detail_gender: string
-              p_detail_birthday: string
-              p_detail_age: number
-              p_detail_notes: string
-              p_initial_points: number
-            }
-          | {
-              p_email: string
-              p_first_name: string
-              p_last_name: string
-              p_phone: string
-              p_tenant_id: string
-              p_org_id: string
-              p_line_id: string
-              p_line_user_name: string
-              p_password_hash: string
-              p_detail_email: string
-              p_detail_gender: string
-              p_detail_birthday: string
-              p_detail_age: number
-              p_detail_notes: string
-              p_initial_points: number
-              p_customer_type?: string
-            }
+        Args: {
+          p_email: string
+          p_first_name: string
+          p_last_name: string
+          p_phone: string
+          p_tenant_id: string
+          p_org_id: string
+          p_line_id: string
+          p_line_user_name: string
+          p_password_hash: string
+          p_detail_email: string
+          p_detail_gender: string
+          p_detail_birthday: string
+          p_detail_age: number
+          p_detail_notes: string
+          p_initial_points: number
+          p_customer_type?: string
+        }
         Returns: {
           _creation_time: string | null
           created_at: string
