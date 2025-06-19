@@ -313,7 +313,7 @@ export default function MultiImageDrop({
               </div>
             </SortableContext>
           </DndContext>
-          <div className="flex items-center justify-end gap-2 mt-auto  text-center">
+          <div className="flex flex-col md:flex-row items-center justify-end gap-2 mt-auto  text-center">
             <Button size="sm" onClick={() => fileInputRef.current?.click()}>
               {t('addFile')}
             </Button>

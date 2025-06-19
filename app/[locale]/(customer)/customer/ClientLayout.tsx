@@ -33,10 +33,17 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
       if (pathname && pathname.includes('/customer/')) {
         const cleanPath = pathname.split('?')[0]
         const pathParts = cleanPath.split('/').filter(Boolean)
-        
-        // パスフォーマット: [locale]/customer/:orgId/...
-        const pathOrgId = pathParts[2]
-        
+
+        // パスフォーマット:
+        //   1. /<locale>/customer/:orgId/...
+        //   2. /customer/:orgId/...
+        //   3. その他 customer が含まれる場合に対応
+        const customerIndex = pathParts.indexOf('customer')
+        const pathOrgId =
+          customerIndex !== -1 && pathParts.length > customerIndex + 1
+            ? pathParts[customerIndex + 1]
+            : undefined
+
         if (pathOrgId) {
           try {
             console.log('[CustomerClientLayout] pathOrgId:', pathOrgId)
@@ -44,16 +51,20 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
               org_id: pathOrgId as Id<'organization'>,
             })
             console.log('[CustomerClientLayout] existOrg:', existOrg)
-            
+
             if (existOrg) {
               setOrgId(pathOrgId as Id<'organization'>)
               setTenantId(existOrg.tenant_id)
             } else {
-              setErrors(['指定された組織が存在しません。URLが間違っているか、組織が削除されている可能性があります。'])
+              setErrors([
+                '指定された組織が存在しません。URLが間違っているか、組織が削除されている可能性があります。',
+              ])
             }
           } catch (error) {
             console.error('[CustomerClientLayout] 組織の取得に失敗しました', error)
-            setErrors(['組織の取得に失敗しました。URLが間違っているか、組織が削除されている可能性があります。'])
+            setErrors([
+              '組織の取得に失敗しました。URLが間違っているか、組織が削除されている可能性があります。',
+            ])
           }
         } else {
           setErrors(['URLが正しくありません。'])

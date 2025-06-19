@@ -1,251 +1,46 @@
-'use client'
-
-import { use, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Calendar, User, CreditCard, Loader2 } from 'lucide-react'
-import { format } from 'date-fns'
-import { ja } from 'date-fns/locale'
-import Link from 'next/link'
-import { useIntegratedReservations } from '@/hooks/useIntegratedReservations'
-import { useCustomerAuth } from '@/hooks/useCustomerAuth'
-import { ReservationPaymentStatus, ReservationStatus } from '@/convex/types'
+import { getCustomerWithDetails, getCustomerSession } from '@/lib/auth/customer'
+import { redirect } from 'next/navigation'
+import { ReservationPageClient } from './ReservationPageClient'
 
 interface ReservationPageProps {
-  params: Promise<{ org_id: string; uid: string }>
+  params: Promise<{
+    org_id: string
+    uid: string
+  }>
 }
 
-export default function ReservationPage({ params }: ReservationPageProps) {
-  const { org_id, uid } = use(params)
-  const [selectedStatus, setSelectedStatus] = useState<ReservationStatus | 'all'>('all')
-  const { session, isLoading: isAuthLoading } = useCustomerAuth(org_id, uid)
+export default async function ReservationPage({ params }: ReservationPageProps) {
+  const { org_id, uid } = await params
 
-  // 統合フックを使用して予約データを取得
-  const { reservations, isLoading, loadMore, hasMore, stats } = useIntegratedReservations({
-    tenantId: session?.tenantId || '',
-    orgId: session?.orgId || org_id,
-    customerId: uid,
-    status: selectedStatus,
-    pageSize: 10,
-  })
-
-  // ステータスの表示
-  const getStatusDisplay = (
-    status: string
-  ): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
-    switch (status) {
-      case 'confirmed':
-        return { label: '確定', variant: 'default' }
-      case 'pending':
-        return { label: '保留', variant: 'secondary' }
-      case 'completed':
-        return { label: '完了', variant: 'outline' }
-      case 'cancelled':
-        return { label: 'キャンセル', variant: 'destructive' }
-      default:
-        return { label: '不明', variant: 'outline' }
-    }
+  // セッション認証チェック（サーバーサイド）
+  const session = await getCustomerSession()
+  if (!session) {
+    redirect(`/customer/${org_id}/auth/login`)
   }
 
-  // 支払いステータスの表示
-  const getPaymentStatusDisplay = (
-    status: ReservationPaymentStatus
-  ): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
-    switch (status) {
-      case 'paid':
-        return { label: '支払済', variant: 'default' }
-      case 'pending':
-        return { label: '未払', variant: 'secondary' }
-      case 'cancelled':
-        return { label: '返金済', variant: 'outline' }
-      case 'failed':
-        return { label: '失敗', variant: 'destructive' }
-      default:
-        return { label: '未設定', variant: 'outline' }
-    }
+  // 顧客情報の検証とアクセス権限チェック
+  let customerData
+  try {
+    customerData = await getCustomerWithDetails(uid, session.orgId, session.tenantId)
+  } catch (error) {
+    console.error('[ReservationPage] Failed to get customer details:', error)
+    redirect(`/customer/${org_id}/auth/login`)
   }
 
-  if (isAuthLoading) {
-    return <div>読み込み中...</div>
+  const { customer } = customerData
+
+  // 顧客情報が取得できない場合はログイン画面へ
+  if (!customer) {
+    redirect(`/customer/${org_id}/auth/login`)
   }
 
+  // 認証が完了したら、クライアントコンポーネントに必要な情報を渡す
   return (
-    <div className="space-y-6">
-      {/* ヘッダー */}
-      <div>
-        <h2 className="text-2xl font-bold text-primary">予約履歴</h2>
-        <p className="text-muted-foreground mt-1">過去と未来の予約を確認できます</p>
-      </div>
-
-      {/* 統計情報 */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">総予約数</p>
-                <p className="text-2xl font-bold text-primary">{stats.totalCount}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">完了</p>
-                <p className="text-2xl font-bold text-accent-2">{stats.completedCount}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">予約中</p>
-                <p className="text-2xl font-bold text-neon">{stats.upcomingCount}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">キャンセル</p>
-                <p className="text-2xl font-bold text-destructive">{stats.cancelledCount}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* ステータスフィルター */}
-      <Tabs
-        value={selectedStatus}
-        onValueChange={(value) => setSelectedStatus(value as ReservationStatus | 'all')}
-      >
-        <TabsList className="grid grid-cols-5 w-full">
-          <TabsTrigger value="all">すべて</TabsTrigger>
-          <TabsTrigger value="confirmed">確定</TabsTrigger>
-          <TabsTrigger value="pending">保留</TabsTrigger>
-          <TabsTrigger value="completed">完了</TabsTrigger>
-          <TabsTrigger value="cancelled">キャンセル</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={selectedStatus} className="mt-6">
-          {isLoading && reservations.length === 0 ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : reservations.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">予約履歴がありません</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {reservations.map((reservation) => {
-                const statusDisplay = getStatusDisplay(reservation.status)
-                const paymentStatusDisplay = getPaymentStatusDisplay(
-                  reservation.paymentStatus as ReservationPaymentStatus
-                )
-                const totalPrice = reservation.detail?.totalPrice || 0
-
-                return (
-                  <Card key={reservation.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-3 flex-1">
-                          {/* 日時・ステータス */}
-                          <div className="flex items-center space-x-3">
-                            <Badge variant={statusDisplay.variant}>{statusDisplay.label}</Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {format(new Date(reservation.startTimeUnix), 'yyyy年M月d日 (E)', {
-                                locale: ja,
-                              })}
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                              {format(new Date(reservation.startTimeUnix), 'HH:mm')} -
-                              {format(new Date(reservation.endTimeUnix), 'HH:mm')}
-                            </span>
-                          </div>
-
-                          {/* メニュー情報 */}
-                          {reservation.detail?.menus && reservation.detail.menus.length > 0 && (
-                            <div>
-                              <p className="font-medium text-primary">
-                                {reservation.detail.menus.map((menu) => menu.name).join('、')}
-                              </p>
-                              {reservation.detail.options &&
-                                reservation.detail.options.length > 0 && (
-                                  <p className="text-sm text-muted-foreground">
-                                    オプション:{' '}
-                                    {reservation.detail.options
-                                      .map((option) => option.name)
-                                      .join('、')}
-                                  </p>
-                                )}
-                            </div>
-                          )}
-
-                          {/* スタッフ・支払い情報 */}
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <div className="flex items-center space-x-1">
-                              <User className="h-4 w-4" />
-                              <span>{reservation.staffName}</span>
-                            </div>
-                            {totalPrice > 0 && (
-                              <div className="flex items-center space-x-1">
-                                <CreditCard className="h-4 w-4" />
-                                <span>¥{totalPrice.toLocaleString()}</span>
-                              </div>
-                            )}
-                            <Badge variant={paymentStatusDisplay.variant} className="text-xs">
-                              {paymentStatusDisplay.label}
-                            </Badge>
-                          </div>
-
-                          {/* 備考 */}
-                          {reservation.detail?.notes && (
-                            <p className="text-sm text-muted-foreground italic">
-                              {reservation.detail.notes}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* 詳細リンク */}
-                        <div className="ml-4">
-                          <Link href={`/customer/${org_id}/${uid}/reservation/${reservation.id}`}>
-                            <Button variant="outline" size="sm">
-                              詳細
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-
-              {/* もっと読み込む */}
-              {hasMore && (
-                <div className="text-center py-4">
-                  <Button variant="outline" onClick={loadMore} disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        読み込み中...
-                      </>
-                    ) : (
-                      'もっと見る'
-                    )}
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+    <ReservationPageClient 
+      orgId={org_id}
+      customerUid={uid}
+      tenantId={session.tenantId}
+      sessionOrgId={session.orgId}
+    />
   )
 }
