@@ -39,7 +39,12 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
         const cleanPath = pathname.split('?')[0]
         // パスをスラッシュで分割
         const pathParts = cleanPath.split('/').filter(Boolean)
-        const pathOrgId = pathParts[2] // [locale]/reservation/:orgId
+        // パスフォーマット: 1. /<locale>/reservation/:orgId/... 2. /reservation/:orgId/...
+        const reservationIndex = pathParts.indexOf('reservation')
+        const pathOrgId =
+          reservationIndex !== -1 && pathParts.length > reservationIndex + 1
+            ? pathParts[reservationIndex + 1]
+            : undefined
         if (pathOrgId) {
           try {
             console.log('pathOrgId', pathOrgId)
