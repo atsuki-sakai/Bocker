@@ -23,7 +23,6 @@ import { ArrowLeft, Save } from 'lucide-react'
 import Link from 'next/link'
 import { use, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { getSupabaseAdminService } from '@/services/supabase/SupabaseService'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 
 // フォームのバリデーションスキーマ
@@ -72,8 +71,7 @@ export default function ProfileEditPage({ params }: ProfileEditPageProps) {
       if (!session) return
 
       try {
-        const supabaseAdmin = getSupabaseAdminService()
-        const customerRepo = new CustomerRepository(supabaseAdmin)
+        const customerRepo = new CustomerRepository()
         const customerData = await customerRepo.getCompleteCustomerData(
           session.tenantId,
           session.orgId,
@@ -102,8 +100,7 @@ export default function ProfileEditPage({ params }: ProfileEditPageProps) {
     setIsSubmitting(true)
 
     try {
-      const supabaseAdmin = getSupabaseAdminService()
-      const customerRepo = new CustomerRepository(supabaseAdmin)
+      const customerRepo = new CustomerRepository()
 
       // 顧客情報の更新
       if (!session) {
@@ -212,17 +209,16 @@ export default function ProfileEditPage({ params }: ProfileEditPageProps) {
               <div className="space-y-2">
                 <Label htmlFor="gender">性別</Label>
                 <Select
-                  value={watch('gender') || ''}
+                  value={watch('gender') || 'unselected'}
                   onValueChange={(value) => setValue('gender', value as Gender)}
                 >
                   <SelectTrigger id="gender">
                     <SelectValue placeholder="選択してください" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">未設定</SelectItem>
+                    <SelectItem value="unselected">未設定</SelectItem>
                     <SelectItem value="male">男性</SelectItem>
                     <SelectItem value="female">女性</SelectItem>
-                    <SelectItem value="unselected">その他</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.gender && (

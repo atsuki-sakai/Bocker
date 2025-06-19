@@ -5,6 +5,8 @@ import { User, Receipt, Wallet, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Card } from '@/components/ui/card'
+import { cookies } from 'next/headers'
+import { LOGIN_SESSION_KEY } from '@/services/line/constants'
 
 interface CustomerLayoutProps {
   children: React.ReactNode
@@ -44,7 +46,8 @@ export async function CustomerLayout({ children, customerUid, orgId }: CustomerL
               </span>
             </div>
 
-            <form action="/api/auth/logout" method="POST">
+            <form action={logoutAction}>
+              <input type="hidden" name="orgId" value={orgId} />
               <Button variant="ghost" size="sm" type="submit">
                 <LogOut className="h-4 w-4 mr-2" />
                 ログアウト
@@ -106,4 +109,24 @@ export async function CustomerLayout({ children, customerUid, orgId }: CustomerL
       </div>
     </div>
   )
+}
+
+export async function logoutAction(formData: FormData) {
+  'use server'
+
+  const orgId = formData.get('orgId') as string | null
+
+  if (!orgId) {
+    console.error('[logoutAction] orgId is missing')
+    redirect('/auth/login')
+  }
+
+  try {
+    const cookieStore = await cookies()
+    cookieStore.delete(LOGIN_SESSION_KEY)
+  } catch (error) {
+    console.error('[logoutAction] Failed to delete cookie:', error)
+  }
+
+  redirect(`/customer/${orgId}/auth/login`)
 }
