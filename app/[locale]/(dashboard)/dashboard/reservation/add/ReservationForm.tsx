@@ -1504,7 +1504,14 @@ export default function ReservationForm() {
           <Button
             className="w-fit mb-8"
             type="submit"
-            disabled={isSubmitting || selectedMenus.length === 0 || !selectedStaffId}
+            disabled={
+              isSubmitting || 
+              selectedMenus.length === 0 || 
+              !selectedStaffId || 
+              !selectdate ||
+              !watch('start_time_unix') ||
+              !watch('end_time_unix')
+            }
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
