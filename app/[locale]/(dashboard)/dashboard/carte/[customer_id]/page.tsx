@@ -47,6 +47,7 @@ export type CustomerCarteData = {
   hair_type: string | null
   allergy_history: string | null
   medical_history: string | null
+  ltv_price: number | null
 }
 
 // 肌質の選択肢マップ
@@ -107,6 +108,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
             hair_type: carte.hair_type,
             allergy_history: carte.allergy_history,
             medical_history: carte.medical_history,
+            ltv_price: carte.ltv_price,
           })
         }
       } else {
@@ -175,14 +177,14 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
     switch (status) {
       case 'confirmed':
         return (
-          <Badge className="bg-blue-500">
+          <Badge className="bg-link text-link-foreground">
             <CheckCircle className="w-3 h-3 mr-1" />
             確定
           </Badge>
         )
       case 'completed':
         return (
-          <Badge className="bg-green-500">
+          <Badge className="bg-accent-2 text-accent-2-foreground">
             <CheckCircle className="w-3 h-3 mr-1" />
             完了
           </Badge>
@@ -345,9 +347,9 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                   <Card className="h-fit">
                     <CardContent className="pt-6">
                       <div className="text-2xl font-bold">
-                        {formatPrice(reservationStats.totalAmount)}
+                        {formatPrice(customerCarteData?.ltv_price || 0)}
                       </div>
-                      {/* FIXME: 総売上の表示機能を実装するためにカルテに総額を保存する */}
+
                       <p className="text-xs text-muted-foreground">総売上</p>
                     </CardContent>
                   </Card>
@@ -395,8 +397,8 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                               <span className="font-medium">{formatDate(item.startTimeUnix)}</span>
                               {/* リアルタイムインジケーター */}
                               {item.source === 'convex' && (
-                                <Badge variant="outline" className="gap-1 text-xs">
-                                  <Zap className="w-3 h-3" />
+                                <Badge variant="outline" className="gap-1 text-xs bg-warning">
+                                  <Zap className="w-3 h-3 text-warning-foreground" />
                                 </Badge>
                               )}
                             </div>

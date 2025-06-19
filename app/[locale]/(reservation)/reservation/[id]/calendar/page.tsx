@@ -384,37 +384,48 @@ export default function CalendarPage() {
       let reservationId: Id<'reservation'> | null = null
       try {
         reservationId = await createReservationMutation(reservationData)
-        
+
         // カルテのUpsert処理（クレジットカード決済時）
         try {
-          // カルテを取得または作成
-          const carte = await carteRepository.findOrCreateByCustomer(
-            sessionCustomer.tenantId,
-            organizationComplete.organization._id as Id<'organization'>,
-            sessionCustomer.customerUid,
-            { ltv_price: 0 }
-          )
+          // 顧客データが存在することを確認
+          if (!customerData?.customer?.uid) {
+            console.warn('[CalendarPage] Customer data not found, skipping carte creation')
+          } else {
+            // カルテを取得または作成
+            const carte = await carteRepository.findOrCreateByCustomer(
+              sessionCustomer.tenantId,
+              organizationComplete.organization._id as Id<'organization'>,
+              customerData.customer.uid,
+              { ltv_price: 0 }
+            )
 
-          // 既存のLTV価格に今回の合計金額を加算
-          const newLtvPrice = (carte.ltv_price || 0) + reservationData.total_price
-          await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
+            // 既存のLTV価格に今回の合計金額を加算
+            const newLtvPrice = (carte.ltv_price || 0) + reservationData.total_price
+            await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
 
-          // カルテ詳細を作成
-          await carteDetailRepository.createCarteDetail({
-            tenant_id: sessionCustomer.tenantId,
-            org_id: organizationComplete.organization._id as Id<'organization'>,
-            carte_id: carte.id,
-            reservation_id: reservationId, // Convex で作成された予約ID
-            staff_id: reservationData.staff_id,
-            menu_details: reservationData.menus,
-            option_details: reservationData.options,
-            total_price: reservationData.total_price,
-            customer_requests: notes, // 顧客のリクエスト（メモ欄）
-            notes: '', // スタッフメモは空で初期化
-            after_images: null, // 施術後画像は後で追加
-          })
+            // カルテ詳細を作成
+            await carteDetailRepository.createCarteDetail({
+              tenant_id: sessionCustomer.tenantId,
+              org_id: organizationComplete.organization._id as Id<'organization'>,
+              carte_id: carte.id,
+              reservation_id: reservationId, // Convex で作成された予約ID
+              staff_id: reservationData.staff_id,
+              staff_name: reservationData.staff_name, // スタッフ名を追加
+              service_start_time: reservationData.start_time_unix
+                ? new Date(reservationData.start_time_unix * 1000).toISOString()
+                : undefined, // 施術開始時間を追加
+              menu_details: reservationData.menus,
+              option_details: reservationData.options,
+              total_price: reservationData.total_price,
+              customer_requests: notes, // 顧客のリクエスト（メモ欄）
+              notes: '', // スタッフメモは空で初期化
+              after_images: null, // 施術後画像は後で追加
+            })
 
-          console.log(`[CalendarPage] Created carte and carte_detail for customer ${sessionCustomer.customerUid}`)
+            console.log(
+              `[CalendarPage] Created carte and carte_detail for customer ${sessionCustomer.customerUid}`
+            )
+          }
         } catch (carteError) {
           console.error('[CalendarPage] Error creating carte:', carteError)
           // カルテ作成に失敗してもユーザーにはエラーを表示しない（予約は既に作成済み）
@@ -742,37 +753,48 @@ export default function CalendarPage() {
         let reservationId: Id<'reservation'> | null = null
         try {
           reservationId = await createReservationMutation(reservationDataForCash)
-          
+
           // カルテのUpsert処理（現金決済時）
           try {
-            // カルテを取得または作成
-            const carte = await carteRepository.findOrCreateByCustomer(
-              sessionCustomer.tenantId,
-              organizationComplete.organization._id as Id<'organization'>,
-              sessionCustomer.customerUid,
-              { ltv_price: 0 }
-            )
+            // 顧客データが存在することを確認
+            if (!customerData?.customer?.uid) {
+              console.warn('[CalendarPage] Customer data not found, skipping carte creation')
+            } else {
+              // カルテを取得または作成
+              const carte = await carteRepository.findOrCreateByCustomer(
+                sessionCustomer.tenantId,
+                organizationComplete.organization._id as Id<'organization'>,
+                customerData.customer.uid,
+                { ltv_price: 0 }
+              )
 
-            // 既存のLTV価格に今回の合計金額を加算
-            const newLtvPrice = (carte.ltv_price || 0) + reservationDataForCash.total_price
-            await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
+              // 既存のLTV価格に今回の合計金額を加算
+              const newLtvPrice = (carte.ltv_price || 0) + reservationDataForCash.total_price
+              await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
 
-            // カルテ詳細を作成
-            await carteDetailRepository.createCarteDetail({
-              tenant_id: sessionCustomer.tenantId,
-              org_id: organizationComplete.organization._id as Id<'organization'>,
-              carte_id: carte.id,
-              reservation_id: reservationId, // Convex で作成された予約ID
-              staff_id: reservationDataForCash.staff_id,
-              menu_details: reservationDataForCash.menus,
-              option_details: reservationDataForCash.options,
-              total_price: reservationDataForCash.total_price,
-              customer_requests: notes, // 顧客のリクエスト（メモ欄）
-              notes: '', // スタッフメモは空で初期化
-              after_images: null, // 施術後画像は後で追加
-            })
+              // カルテ詳細を作成
+              await carteDetailRepository.createCarteDetail({
+                tenant_id: sessionCustomer.tenantId,
+                org_id: organizationComplete.organization._id as Id<'organization'>,
+                carte_id: carte.id,
+                reservation_id: reservationId, // Convex で作成された予約ID
+                staff_id: reservationDataForCash.staff_id,
+                staff_name: reservationDataForCash.staff_name, // スタッフ名を追加
+                service_start_time: reservationDataForCash.start_time_unix
+                  ? new Date(reservationDataForCash.start_time_unix * 1000).toISOString()
+                  : undefined, // 施術開始時間を追加
+                menu_details: reservationDataForCash.menus,
+                option_details: reservationDataForCash.options,
+                total_price: reservationDataForCash.total_price,
+                customer_requests: notes, // 顧客のリクエスト（メモ欄）
+                notes: '', // スタッフメモは空で初期化
+                after_images: null, // 施術後画像は後で追加
+              })
 
-            console.log(`[CalendarPage] Created carte and carte_detail for customer ${sessionCustomer.customerUid}`)
+              console.log(
+                `[CalendarPage] Created carte and carte_detail for customer ${sessionCustomer.customerUid}`
+              )
+            }
           } catch (carteError) {
             console.error('[CalendarPage] Error creating carte:', carteError)
             // カルテ作成に失敗してもユーザーにはエラーを表示しない（予約は既に作成済み）
@@ -1034,16 +1056,21 @@ export default function CalendarPage() {
               Math.floor(reservationStartDateTime.getTime() / 1000) + 60 * 60 * 24 * 30 // 予約日の30日後（Unix秒単位）
 
             try {
-              // Supabaseでポイントキューを作成する
-              const pointQueue = await pointTaskQueueRepository.createPointTask({
-                tenant_id: sessionCustomer.tenantId,
-                org_id: organizationComplete.organization._id as Id<'organization'>,
-                reservation_id: reservationId,
-                customer_id: sessionCustomer.customerUid,
-                points: earnPoints,
-                scheduled_for_unix: scheduledForUnix,
-              })
-              console.log('Point queue created:', pointQueue)
+              // 顧客UIDが確実に存在することを確認
+              if (!customerData?.customer?.uid) {
+                console.warn('[CalendarPage] Customer UID not found, skipping point queue creation')
+              } else {
+                // Supabaseでポイントキューを作成する
+                const pointQueue = await pointTaskQueueRepository.createPointTask({
+                  tenant_id: sessionCustomer.tenantId,
+                  org_id: organizationComplete.organization._id as Id<'organization'>,
+                  reservation_id: reservationId,
+                  customer_id: customerData.customer.uid,
+                  points: earnPoints,
+                  scheduled_for_unix: scheduledForUnix,
+                })
+                console.log('Point queue created:', pointQueue)
+              }
             } catch (error) {
               console.error('Failed to create point queue:', error)
               // ポイントキュー作成に失敗しても予約は成功としてそのまま続行
