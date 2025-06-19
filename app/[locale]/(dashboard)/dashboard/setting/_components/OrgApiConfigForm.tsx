@@ -29,7 +29,12 @@ const organizationApiConfigFormSchema = z.object({
   line_access_token: z.string().optional(),
   line_channel_secret: z.string().optional(),
   liff_id: z.string().optional(),
-  line_channel_id: z.string().optional(),
+  line_channel_id: z.string()
+    .optional()
+    .refine(
+      (val) => !val || /^\d+$/.test(val),
+      'LINE Channel IDは数字のみで入力してください'
+    ),
   destination_id: z.string().optional(),
 })
 
@@ -194,6 +199,7 @@ const ApiSettingsCard = () => {
                   name="liff_id"
                   type={showFields.liff_id ? 'text' : 'password'}
                   className="w-full pr-10"
+                  placeholder="例: 1234567890-AbcdEfgh"
                 />
                 <Button
                   className="absolute right-0 bottom-0"
@@ -218,6 +224,7 @@ const ApiSettingsCard = () => {
                   name="line_channel_id"
                   type={showFields.line_channel_id ? 'text' : 'password'}
                   className="w-full pr-10"
+                  placeholder="例: 1234567890 (数字のみ)"
                 />
                 <Button
                   className="absolute right-0 bottom-0"
@@ -284,6 +291,63 @@ const ApiSettingsCard = () => {
       </form>
 
       <Accordion type="multiple" className="mt-8 space-y-2">
+        {/* 重要な注意事項 */}
+        <AccordionItem value="important-notice">
+          <AccordionTrigger className="text-destructive">⚠️ 重要：LIFF IDとLINE Channel IDの違い</AccordionTrigger>
+          <AccordionContent className="space-y-2">
+            <div className="bg-destructive/10 p-4 rounded-md space-y-2">
+              <p className="font-semibold text-destructive">これらは異なるIDです！正しいIDを設定しないとLINEログインが機能しません。</p>
+              
+              <div className="space-y-3">
+                <div>
+                  <p className="font-semibold">🔑 LINE Channel ID（LINEログインに必須）</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    • <strong>LINEログインチャンネル</strong>のChannel ID
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    • 形式：数字のみ（例：1234567890）
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    • 用途：LINE IDトークンの検証に使用
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="font-semibold">📱 LIFF ID</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    • LIFFアプリのID
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    • 形式：数字とハイフン、英字（例：1234567890-AbcdEfgh）
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    • 用途：LIFFアプリの初期化に使用
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="font-semibold">⚡ Messaging API Channel ID</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    • これはLINEログインには使用しません
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    • メッセージ送信のみに使用
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-background rounded">
+                <p className="text-sm font-semibold">✅ 正しい設定手順：</p>
+                <ol className="list-decimal list-inside text-sm mt-2 space-y-1">
+                  <li>LINE Developersで<strong>LINEログインチャンネル</strong>を作成</li>
+                  <li>基本設定タブで<strong>Channel ID（数字のみ）</strong>を確認</li>
+                  <li>そのIDを「LINE チャンネルID」フィールドに入力</li>
+                  <li>LIFF IDは別途LIFFアプリ作成後に取得</li>
+                </ol>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
         {/* LINE Access Token */}
         <AccordionItem value="line-access-token">
           <AccordionTrigger>LINE アクセストークンの取得方法</AccordionTrigger>
