@@ -30,6 +30,20 @@
 2. **Convexへの参照**: TEXT型を使用し、外部キー制約は設定しない
 3. **データ移行**: Convex IDは`_convex_`プレフィックスを付けて保存
 
+## データライフサイクル管理
+
+すべてのテーブルに以下のフィールドが設定されています：
+
+- **is_archive** (boolean): アーカイブフラグ、デフォルト値 `false`
+- **deleted_at** (timestamptz): 自動削除予定日時
+
+### deleted_atのデフォルト値設定
+
+| テーブルグループ | deleted_atデフォルト値 | 対象テーブル |
+|-----------------|---------------------|------------|
+| 長期保存データ | 作成日時 + 3年 | customer, customer_detail, customer_points, reservation, reservation_detail |
+| 短期保存データ | 作成日時 + 2年 | point_task_queue, point_transaction, coupon_transaction, carte, carte_detail, tracking_event, tracking_summaries |
+
 ## テーブル一覧
 
 ### 1. customer（顧客マスター）
@@ -62,6 +76,7 @@
 | updated_time | timestamptz | YES | now() | 更新日時（Convex由来） |
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '3 years' | 自動削除予定日時 |
 
 **インデックス**: 
 - PRIMARY KEY (uid)
@@ -88,6 +103,7 @@
 | updated_time | timestamptz | YES | now() | 更新日時（Convex由来） |
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '3 years' | 自動削除予定日時 |
 
 **制約**:
 - PRIMARY KEY (uid)
@@ -112,6 +128,7 @@
 | updated_time | timestamptz | YES | now() | 更新日時（Convex由来） |
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '3 years' | 自動削除予定日時 |
 
 **制約**:
 - PRIMARY KEY (uid)
@@ -136,6 +153,7 @@
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
 | is_archive | boolean | NO | false | アーカイブフラグ |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '2 years' | 自動削除予定日時 |
 
 **制約**:
 - PRIMARY KEY (id)
@@ -159,6 +177,7 @@
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
 | is_archive | boolean | NO | false | アーカイブフラグ |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '2 years' | 自動削除予定日時 |
 
 **制約**:
 - PRIMARY KEY (id)
@@ -182,6 +201,7 @@
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
 | is_archive | boolean | NO | false | アーカイブフラグ |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '2 years' | 自動削除予定日時 |
 
 **制約**:
 - PRIMARY KEY (id)
@@ -206,6 +226,7 @@
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
 | is_archive | boolean | NO | false | アーカイブフラグ |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '2 years' | 自動削除予定日時 |
 
 **制約**:
 - PRIMARY KEY (id)
@@ -233,6 +254,7 @@
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
 | is_archive | boolean | NO | false | アーカイブフラグ |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '2 years' | 自動削除予定日時 |
 
 **制約**:
 - PRIMARY KEY (id)
@@ -295,6 +317,7 @@
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
 | is_archive | boolean | NO | false | アーカイブフラグ |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '3 years' | 自動削除予定日時 |
 
 **制約**:
 - PRIMARY KEY (uid)
@@ -332,6 +355,7 @@
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
 | is_archive | boolean | NO | false | アーカイブフラグ |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '3 years' | 自動削除予定日時 |
 
 **制約**:
 - PRIMARY KEY (uid)
@@ -368,6 +392,7 @@
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
 | is_archive | boolean | NO | false | アーカイブフラグ |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '2 years' | 自動削除予定日時 |
 
 **制約**:
 - PRIMARY KEY (id)
@@ -391,6 +416,7 @@
 | created_at | timestamptz | NO | now() | 作成日時 |
 | updated_at | timestamptz | NO | now() | 更新日時 |
 | is_archive | boolean | NO | false | アーカイブフラグ |
+| deleted_at | timestamptz | YES | NOW() + INTERVAL '2 years' | 自動削除予定日時 |
 
 **制約**:
 - PRIMARY KEY (id)
@@ -420,6 +446,16 @@
 
 ### 1. create_customer_with_details_and_points
 顧客、顧客詳細、ポイント情報を一括で作成する関数。
+
+**パラメータ（16個）**:
+- p_email, p_first_name, p_last_name, p_phone
+- p_tenant_id, p_org_id
+- p_line_id, p_line_user_name
+- p_password_hash
+- p_detail_email, p_detail_gender, p_detail_birthday (date型)
+- p_detail_age, p_detail_notes
+- p_initial_points
+- p_customer_type (デフォルト値: 'first_time')
 
 ### 2. update_customer_with_details_and_points
 顧客、顧客詳細、ポイント情報を一括で更新する関数。
@@ -484,6 +520,10 @@ CREATE INDEX idx_reservation_status ON reservation(status) WHERE is_archive = fa
 -- Convex ID検索用（TEXT型）
 CREATE INDEX idx_carte_detail_staff_id ON carte_detail(staff_id);
 CREATE INDEX idx_carte_detail_reservation_id ON carte_detail(reservation_id);
+
+-- deleted_at検索用（アーカイブ処理の効率化）
+CREATE INDEX idx_customer_deleted_at ON customer(deleted_at) WHERE is_archive = false;
+CREATE INDEX idx_point_transaction_deleted_at ON point_transaction(deleted_at) WHERE is_archive = false;
 ```
 
 ## 今後の改善提案
@@ -495,6 +535,7 @@ CREATE INDEX idx_carte_detail_reservation_id ON carte_detail(reservation_id);
 3. **監査ログ機能の追加**
 4. **パーティショニングの検討**（tracking_eventなど大量データテーブル）
 5. **Convex依存の段階的解消**
+6. **自動アーカイブ処理の実装**（deleted_atを利用した定期バッチ）
 
 ## 変更履歴
 
@@ -516,6 +557,12 @@ CREATE INDEX idx_carte_detail_reservation_id ON carte_detail(reservation_id);
      - customer_requests: お客様のリクエスト
    - フィールド名の修正：
      - customre_requests → customer_requests（タイポ修正）
+7. **create_customer_with_details_and_points関数の重複を解消**
+   - 古い15パラメータ版を削除
+   - 16パラメータ版（p_customer_type付き）を保持
+8. **全テーブルにdeleted_atフィールドを追加**
+   - 長期保存データ（customer等）: 3年後に自動削除
+   - 短期保存データ（point_transaction等）: 2年後に自動削除
 
 ### carte_detailテーブルで削除されたレガシーフィールド
 
@@ -530,41 +577,3 @@ CREATE INDEX idx_carte_detail_reservation_id ON carte_detail(reservation_id);
 | customer_requests | text | customer_requestsフィールドと重複（タイポ版が残存） |
 
 これらの変更により、carte_detailテーブルはより整理され、明確な構造を持つようになりました。
-
-Supabaseプロジェクト「Bocker」のテーブルに`deleted_at`と`is_archive`フィールドを追加し、自動でデフォルト値を設定する機能を実装します。
-
-まず、現在のテーブル構造を確認させてください。テーブル構造を確認しました。すべてのテーブルには既に`is_archive`フィールドが存在していて、デフォルト値が`false`に設定されていることが分かりました。
-
-それでは、`deleted_at`フィールドを追加するマイグレーションを作成します。このフィールドは、データ作成時に自動的に現在から3年後の日付を設定します。素晴らしいです！マイグレーションが成功しました。
-
-すべてのテーブルに`deleted_at`フィールドが追加され、以下の設定が完了しました：
-
-1. **`deleted_at`フィールド**：
-   - 型: `timestamp with time zone`
-   - デフォルト値: `NOW() + INTERVAL '3 years'` (現在から3年後)
-   - 新しいレコード作成時に自動的に3年後の日付が設定されます
-
-2. **`is_archive`フィールド**：
-   - すでに全テーブルに存在
-   - デフォルト値: `false`
-   - 新しいレコード作成時に自動的に`false`が設定されます
-
-対象となったテーブル：
-- customer
-- customer_detail  
-- customer_points
-- point_task_queue
-- point_transaction
-- coupon_transaction
-- carte
-- carte_detail
-- tracking_event
-- tracking_summaries
-- reservation
-- reservation_detail
-
-既存のレコードについても、`created_at`の日付から3年後の日付が`deleted_at`に設定されました。
-
-これで、データの自動アーカイブ機能の準備が整いました。必要に応じて、定期的なジョブを設定して`deleted_at`が過ぎたレコードを処理することができます。
-
-何か追加の設定や確認が必要でしょうか？
