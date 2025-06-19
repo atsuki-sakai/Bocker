@@ -31,32 +31,47 @@ export const qualitySchema = z.enum(IMAGE_QUALITY_VALUES)
 // Aspect type validation
 export const aspectTypeSchema = z.enum(ASPECT_TYPE_VALUES)
 
-// URL validation with GCS bucket check
+// URL validation with GCS bucket check or CDN URL
 export const gcsUrlSchema = z.string().url().refine(
   (url) => {
     try {
       const urlObj = new URL(url)
-      // Check if it's a valid GCS URL
+      // Check if it's a valid GCS URL or CDN URL
       return urlObj.hostname === STORAGE_URL.split('//')[1] ||  
-             urlObj.hostname.endsWith(STORAGE_URL.split('//')[1])
+             urlObj.hostname.endsWith(STORAGE_URL.split('//')[1]) ||
+             urlObj.hostname === 'cdn.bocker.jp'
     } catch {
       return false
     }
   },
-  'Invalid Google Cloud Storage URL'
+  'Invalid Google Cloud Storage or CDN URL'
 )
 
-// Organization ID extraction from GCS URL
+// Organization ID extraction from GCS URL or CDN URL
 export function extractOrgIdFromGcsUrl(url: string): string | null {
   try {
     const urlObj = new URL(url)
     const pathParts = urlObj.pathname.split('/')
     
-    // Expected format: /bucket-name/<convex_id>/<directory>/...
+    // CDN URL format: https://cdn.bocker.jp/menu/original/<convex_id>/filename.webp
+    // GCS URL format: /bucket-name/<convex_id>/<directory>/...
     // Convex IDs are typically 20-50 characters
-    for (const part of pathParts) {
-      if (part.length >= 20 && part.length <= 50) {
-        return part
+    
+    // For CDN URLs, the org ID is typically the 3rd or 4th part
+    if (urlObj.hostname === 'cdn.bocker.jp') {
+      // pathParts will be ['', 'menu', 'original', '<convex_id>', 'filename']
+      for (let i = 2; i < pathParts.length; i++) {
+        const part = pathParts[i]
+        if (part.length >= 20 && part.length <= 50 && /^[a-z0-9]+$/.test(part)) {
+          return part
+        }
+      }
+    } else {
+      // Original logic for GCS URLs
+      for (const part of pathParts) {
+        if (part.length >= 20 && part.length <= 50) {
+          return part
+        }
       }
     }
     

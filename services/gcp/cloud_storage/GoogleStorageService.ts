@@ -744,6 +744,26 @@ class GoogleStorageService {
     }
     try {
       const url = new URL(imgUrl);
+      
+      // CDN URL の場合の処理
+      // 例: https://cdn.bocker.jp/menu/original/v5789f07n426yg0karj64nctg57hv58j/20250615T163017_20250615T163017_IMG_2119.webp
+      if (url.hostname === 'cdn.bocker.jp') {
+        const segments = url.pathname.split('/').filter(s => s.length > 0);
+        if (segments.length < 3) {
+          throw new Error('CDN URLのパス形式が不正です');
+        }
+        // CDN パスから GCS パスを再構築
+        // segments = ['menu', 'original', 'v5789f07n426yg0karj64nctg57hv58j', 'filename.webp']
+        // GCS パス = 'menu/original/v5789f07n426yg0karj64nctg57hv58j/filename.webp'
+        console.log('CDN URLからGCSパスを抽出:', { 
+          cdnUrl: imgUrl, 
+          segments, 
+          extractedPath: segments.join('/') 
+        });
+        return segments.join('/');
+      }
+      
+      // 通常のGCS URLの場合
       const segments = url.pathname.split('/');
       if (segments.length < 3 || segments[1] !== this.bucketName) {
           throw new Error('URLが期待されるGCSの形式ではありません。');
