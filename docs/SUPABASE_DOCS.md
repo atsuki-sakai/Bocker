@@ -530,3 +530,41 @@ CREATE INDEX idx_carte_detail_reservation_id ON carte_detail(reservation_id);
 | customer_requests | text | customer_requestsフィールドと重複（タイポ版が残存） |
 
 これらの変更により、carte_detailテーブルはより整理され、明確な構造を持つようになりました。
+
+Supabaseプロジェクト「Bocker」のテーブルに`deleted_at`と`is_archive`フィールドを追加し、自動でデフォルト値を設定する機能を実装します。
+
+まず、現在のテーブル構造を確認させてください。テーブル構造を確認しました。すべてのテーブルには既に`is_archive`フィールドが存在していて、デフォルト値が`false`に設定されていることが分かりました。
+
+それでは、`deleted_at`フィールドを追加するマイグレーションを作成します。このフィールドは、データ作成時に自動的に現在から3年後の日付を設定します。素晴らしいです！マイグレーションが成功しました。
+
+すべてのテーブルに`deleted_at`フィールドが追加され、以下の設定が完了しました：
+
+1. **`deleted_at`フィールド**：
+   - 型: `timestamp with time zone`
+   - デフォルト値: `NOW() + INTERVAL '3 years'` (現在から3年後)
+   - 新しいレコード作成時に自動的に3年後の日付が設定されます
+
+2. **`is_archive`フィールド**：
+   - すでに全テーブルに存在
+   - デフォルト値: `false`
+   - 新しいレコード作成時に自動的に`false`が設定されます
+
+対象となったテーブル：
+- customer
+- customer_detail  
+- customer_points
+- point_task_queue
+- point_transaction
+- coupon_transaction
+- carte
+- carte_detail
+- tracking_event
+- tracking_summaries
+- reservation
+- reservation_detail
+
+既存のレコードについても、`created_at`の日付から3年後の日付が`deleted_at`に設定されました。
+
+これで、データの自動アーカイブ機能の準備が整いました。必要に応じて、定期的なジョブを設定して`deleted_at`が過ぎたレコードを処理することができます。
+
+何か追加の設定や確認が必要でしょうか？
