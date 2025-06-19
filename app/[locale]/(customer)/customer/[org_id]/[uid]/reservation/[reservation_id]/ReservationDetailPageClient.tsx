@@ -34,12 +34,10 @@ interface ReservationDetailPageClientProps {
   sessionOrgId: string
 }
 
-export function ReservationDetailPageClient({ 
-  orgId, 
-  customerUid, 
-  reservationId, 
-  tenantId, 
-  sessionOrgId 
+export function ReservationDetailPageClient({
+  orgId,
+  customerUid,
+  reservationId,
 }: ReservationDetailPageClientProps) {
   const router = useRouter()
   const [reservationData, setReservationData] = useState<IntegratedReservation | null>(null)
