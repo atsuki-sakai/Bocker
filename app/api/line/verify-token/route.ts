@@ -44,19 +44,40 @@ export async function POST(req: NextRequest) {
     }
     if (!tenantId || !orgId) {
       console.warn(
-        '[API /api/line/verify-token] tenantId or orgId is missing. Proceeding without it for general login, but required for reservation flow.'
+        '[API /api/line/verify-token] tenantId or orgId is missing. These are required for reservation flow.'
       )
-      // 予約フロー以外の場合salonIdは必須ではないかもしれないので、ここでは警告に留める
+      return NextResponse.json({ 
+        error: 'tenantId and orgId are required for reservation flow' 
+      }, { status: 400 })
     }
-    // LINEのaudienceはChannel ID。設定テーブルに line_channel_id が無い場合、
-    // 移行以前のデータでは liff_id に Channel ID を保存しているケースがあるためフォールバックする。
-    const channelId = organizationApiConfig?.line_channel_id || organizationApiConfig?.liff_id
+
+    // LINE Channel IDの取得と検証を改善
+    const channelId = organizationApiConfig?.line_channel_id
 
     if (!channelId) {
-      console.error('[API /api/line/verify-token] Channel ID not found in api_config.')
+      // より詳細なエラーメッセージ
+      const errorDetails = {
+        message: 'LINE Channel ID が設定されていません',
+        hint: '管理画面の「設定」→「API設定」で「LINE チャンネルID」を設定してください',
+        debug: {
+          hasLiffId: !!organizationApiConfig?.liff_id,
+          hasLineChannelId: !!organizationApiConfig?.line_channel_id,
+        }
+      }
+      console.error('[API /api/line/verify-token] Channel ID not found:', errorDetails)
       return NextResponse.json(
-        { error: 'Server configuration error: LINE Channel ID missing' },
+        { 
+          error: 'LINE Channel ID not configured',
+          details: errorDetails
+        },
         { status: 500 }
+      )
+    }
+
+    // LIFF IDではなくChannel IDであることを明示
+    if (organizationApiConfig?.liff_id && !organizationApiConfig?.line_channel_id) {
+      console.warn(
+        '[API /api/line/verify-token] Using LIFF ID as fallback is deprecated. Please set line_channel_id in api_config.'
       )
     }
 
@@ -74,8 +95,25 @@ export async function POST(req: NextRequest) {
 
     if (!lineResponse.ok) {
       const errorData = await lineResponse.json()
-      console.error('[API /api/line/verify-token] LINE token verification failed:', errorData)
-      return NextResponse.json({ error: 'Invalid LINE token', details: errorData }, { status: 401 })
+      console.error('[API /api/line/verify-token] LINE token verification failed:', {
+        status: lineResponse.status,
+        error: errorData,
+        channelId: channelId,
+      })
+      
+      // より具体的なエラーメッセージ
+      let userMessage = 'LINE認証に失敗しました'
+      if (errorData.error_description?.includes('client_id')) {
+        userMessage = 'LINE Channel IDが正しくありません。管理画面でLINEログインチャンネルのChannel IDを確認してください'
+      }
+      
+      return NextResponse.json({ 
+        error: userMessage,
+        details: {
+          ...errorData,
+          hint: 'LINEログインチャンネルのChannel ID（数字のみ）を設定する必要があります'
+        }
+      }, { status: 401 })
     }
 
     const verifiedToken: LineVerifyResponse = await lineResponse.json()

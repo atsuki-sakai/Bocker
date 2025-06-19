@@ -12,18 +12,37 @@ export async function validateRequest<T extends z.ZodTypeAny>(
   schema: T
 ): Promise<
   | { success: true; data: z.infer<T>; error: null }
-  | { success: false; data: null; error: ZodError }
+  | { success: false; data: null; error: ZodError | Error }
 > {
   try {
-    const body = await req.json()
+    // Content-Typeチェック
+    const contentType = req.headers.get('content-type')
+    if (!contentType?.includes('application/json')) {
+      throw new Error(`Invalid Content-Type: ${contentType}. Expected application/json`)
+    }
+
+    // リクエストボディのサイズチェック
+    const contentLength = req.headers.get('content-length')
+    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) { // 10MB制限
+      throw new Error(`Request body too large: ${contentLength} bytes`)
+    }
+
+    let body
+    try {
+      body = await req.json()
+    } catch (jsonError) {
+      // JSONパースエラーの詳細情報を含める
+      throw new Error(`Invalid JSON: ${jsonError instanceof Error ? jsonError.message : 'Unknown error'}`)
+    }
+
     const data = schema.parse(body)
     return { success: true, data, error: null }
   } catch (error) {
     if (error instanceof ZodError) {
       return { success: false, data: null, error }
     }
-    // Re-throw non-validation errors
-    throw error
+    // その他のエラー（JSONパースエラーなど）も返す
+    return { success: false, data: null, error: error as Error }
   }
 }
 
@@ -32,17 +51,28 @@ export async function validateRequest<T extends z.ZodTypeAny>(
  * @param error - Zod validation error
  * @returns NextResponse with 400 status and error details
  */
-export function createValidationErrorResponse(error: ZodError): NextResponse {
-  const errorMessages = error.errors.map((err) => ({
-    field: err.path.join('.'),
-    message: err.message,
-    code: err.code,
-  }))
+export function createValidationErrorResponse(error: ZodError | Error): NextResponse {
+  if (error instanceof ZodError) {
+    const errorMessages = error.errors.map((err) => ({
+      field: err.path.join('.'),
+      message: err.message,
+      code: err.code,
+    }))
 
+    return NextResponse.json(
+      {
+        error: 'Validation failed',
+        details: errorMessages,
+      },
+      { status: 400 }
+    )
+  }
+
+  // その他のエラー（JSONパースエラーなど）
   return NextResponse.json(
     {
-      error: 'Validation failed',
-      details: errorMessages,
+      error: error.message || 'Request processing failed',
+      type: 'request_error',
     },
     { status: 400 }
   )

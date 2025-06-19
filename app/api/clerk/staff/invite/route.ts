@@ -26,6 +26,10 @@ const inviteStaffRequestSchema = inviteStaffSchema.extend({
   })).optional(),
 })
 
+// Next.js App Router設定
+export const runtime = 'nodejs' // Edge Runtimeではなく、Node.js Runtimeを使用
+export const maxDuration = 30 // タイムアウトを30秒に設定
+
 export async function POST(req: NextRequest) {
   console.log('▶️ 招待APIが呼び出されました')
   
