@@ -356,8 +356,12 @@ export function useIntegratedReservations({
       return acc;
     }, [] as IntegratedReservation[]);
     
-    // 日時でソート（新しい順）
-    return uniqueReservations.sort((a, b) => b.startTimeUnix - a.startTimeUnix);
+    // 日時でソート（新しい順）- startTimeUnixの値を確実に数値として比較
+    return uniqueReservations.sort((a, b) => {
+      const aTime = Number(a.startTimeUnix) || 0;
+      const bTime = Number(b.startTimeUnix) || 0;
+      return bTime - aTime;
+    });
   }, [convexReservations, supabaseReservations, status]);
   
   // さらに読み込む

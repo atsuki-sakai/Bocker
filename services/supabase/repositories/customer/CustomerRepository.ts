@@ -65,6 +65,8 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       p_detail_notes: detailData.notes || '',
       // customer_points fields
       p_initial_points: initialPoints,
+      // customer_type field (new parameter)
+      p_customer_type: customerCoreData.customer_type || 'first_time',
     }
     
     console.log('[CustomerRepository] RPC params before sanitization:', JSON.stringify(params, null, 2))
@@ -75,7 +77,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       // その結果、関数シグネチャと引数リストが一致せず
       // 「function not found in the schema cache」というエラーになる。
       // 予約フローでは email が無いケースがあるため、
-      // undefined → null に変換して **必ず 15 個のキー** を送信する。
+      // undefined → null に変換して **必ず 16 個のキー** を送信する。
       // ------------------------------------------------------------
 
       const sanitizedParams = Object.fromEntries(

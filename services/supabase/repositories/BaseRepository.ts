@@ -155,9 +155,17 @@ export class BaseRepository<K extends TableName> {
     const dataWithCommonFields = addUpdateCommonFields(updateData);
     console.log(`[BaseRepository<${String(this.tableName)}>] update: dataWithCommonFields=${JSON.stringify(dataWithCommonFields)}`);
 
+    // テーブルによって主キーカラム名が異なるため、適切に判定
+    let primaryKeyColumn: keyof RowType<K> & string;
+    if (this.tableName === 'customer' || this.tableName === 'customer_points') {
+      primaryKeyColumn = 'uid' as keyof RowType<K> & string;
+    } else {
+      primaryKeyColumn = 'id' as keyof RowType<K> & string;
+    }
+
     const result = await this.supabaseServiceInstance.update<K>(
       this.tableName,
-      'id' as keyof RowType<K> & string,
+      primaryKeyColumn,
       id as RowType<K>[keyof RowType<K> & string],
       dataWithCommonFields,
       {

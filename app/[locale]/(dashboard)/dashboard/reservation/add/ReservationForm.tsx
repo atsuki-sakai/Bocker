@@ -678,6 +678,10 @@ export default function ReservationForm() {
         const newLtvPrice = (carte.ltv_price || 0) + totalPriceCalculated
         await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
 
+        // 選択されたスタッフの情報を取得
+        const selectedStaffData = availableStaff.find((staff) => staff._id === selectedStaffId)
+        const staffName = selectedStaffData?.name || '不明'
+
         // カルテ詳細を作成
         await carteDetailRepository.createCarteDetail({
           tenant_id: tenantId,
@@ -685,6 +689,8 @@ export default function ReservationForm() {
           carte_id: carte.id,
           reservation_id: reservationResult, // Convex で作成された予約ID
           staff_id: selectedStaffId as string,
+          staff_name: staffName, // スタッフ名を追加
+          service_start_time: data.start_time_unix ? new Date(data.start_time_unix * 1000).toISOString() : undefined, // 施術開始時間を追加
           menu_details: selectedMenus.map((menu) => ({
             id: menu.id,
             name: menu.name,
