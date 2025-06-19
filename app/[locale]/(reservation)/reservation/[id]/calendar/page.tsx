@@ -781,8 +781,8 @@ export default function CalendarPage() {
                 staff_id: reservationDataForCash.staff_id,
                 staff_name: reservationDataForCash.staff_name, // スタッフ名を追加
                 service_start_time: reservationDataForCash.start_time_unix
-                  ? new Date(reservationDataForCash.start_time_unix * 1000).toISOString()
-                  : undefined, // 施術開始時間を追加
+                  ? new Date(reservationDataForCash.start_time_unix).toISOString()
+                  : undefined, // 施術開始時間を追加（Unix時間はミリ秒単位）
                 menu_details: reservationDataForCash.menus,
                 option_details: reservationDataForCash.options,
                 total_price: reservationDataForCash.total_price,
