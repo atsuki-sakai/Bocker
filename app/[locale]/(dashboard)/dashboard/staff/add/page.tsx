@@ -296,8 +296,8 @@ function StaffAddPage() {
               org_id: orgId,
               name: data.name ?? '', // スタッフ名
               description: data.description ?? undefined, // 自己紹介
-              images: newUploadedImageUrls ? newUploadedImageUrls : data.images, // 画像
-              is_active: data.is_active, // 有効/無効
+              images: newUploadedImageUrls.length > 0 ? newUploadedImageUrls : data.images || [], // 画像
+              is_active: data.is_active ?? true, // 有効/無効
               age: data.age ?? undefined, // 年齢
               gender: data.gender ?? ('unselected' as Gender), // 性別
               instagram_link: data.instagram_link ?? undefined, // インスタグラムリンク
@@ -312,8 +312,17 @@ function StaffAddPage() {
           const inviteData = await inviteResponse.json()
 
           if (!inviteResponse.ok) {
-            // 招待失敗時のエラーハンドリング
-            if (inviteResponse.status === 400 && inviteData.error?.includes('Clerk')) {
+            console.error('招待APIエラー:', inviteData)
+
+            // より詳細なエラーメッセージを表示
+            if (inviteData.type === 'request_error') {
+              toast.error(`リクエストエラー: ${inviteData.error}`)
+            } else if (inviteData.details) {
+              const fieldErrors = inviteData.details
+                .map((d: { field: string; message: string }) => `${d.field}: ${d.message}`)
+                .join(', ')
+              toast.error(`検証エラー: ${fieldErrors}`)
+            } else if (inviteResponse.status === 400 && inviteData.error?.includes('Clerk')) {
               toast.error(t('staff.messages.emailAlreadyInClerk'))
             } else {
               toast.error(
