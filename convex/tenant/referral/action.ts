@@ -11,6 +11,7 @@ import {
 import { Stripe } from 'stripe'
 import { Id } from '@/convex/_generated/dataModel'
 import { STRIPE_API_VERSION } from '@/services/stripe/constants'
+import { getEnv } from '@/lib/env-config'
 /**
  * テナント紹介割引適用アクション
  * 
@@ -47,7 +48,7 @@ export const applyReferralDiscount = internalAction({
     // 結果保存用の配列
     const results: { email: string; success: boolean; error?: string }[] = []
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    const stripe = new Stripe(getEnv('STRIPE_SECRET_KEY'), {
       apiVersion: STRIPE_API_VERSION,
     });
     // 処理するメールアドレスのバッチを小さなグループに分ける
@@ -275,7 +276,7 @@ export const cronApplyReferralDiscount = internalAction({
     // 結果保存用の配列
     const results: { email: string; success: boolean; error?: string }[] = []
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    const stripe = new Stripe(getEnv('STRIPE_SECRET_KEY'), {
       apiVersion: STRIPE_API_VERSION,
     });
 
