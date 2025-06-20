@@ -2,6 +2,7 @@
  * クライアントサイド用CDNユーティリティ
  * GoogleStorageServiceのCDN機能をクライアントで使用可能にする
  */
+import { getEnv } from '@/lib/env-config'
 
 /**
  * GCS URLをCDN URLに変換する（クライアントサイド用）
@@ -13,7 +14,7 @@ export function getCdnUrl(gcsUrl: string | null | undefined): string {
   if (!gcsUrl) return '';
   
   // 環境変数からCDNのベースURLを取得
-  const cdnBaseUrl = process.env.NEXT_PUBLIC_CDN_DOMAIN;
+  const cdnBaseUrl = getEnv('NEXT_PUBLIC_CDN_DOMAIN');
   
   // CDNが設定されていない場合はGCS URLをそのまま返す（フォールバック）
   if (!cdnBaseUrl) {
@@ -52,5 +53,5 @@ export function getCdnUrl(gcsUrl: string | null | undefined): string {
  * @returns CDNが有効な場合true
  */
 export function isCdnEnabled(): boolean {
-  return !!process.env.NEXT_PUBLIC_CDN_DOMAIN;
+  return !!getEnv('NEXT_PUBLIC_CDN_DOMAIN');
 }
