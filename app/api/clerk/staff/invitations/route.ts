@@ -6,8 +6,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
+import { BASE_URL } from '@/lib/constants'
+import { getEnv } from '@/lib/env-config'
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+const convex = new ConvexHttpClient(getEnv('NEXT_PUBLIC_CONVEX_URL'))
 
 // 招待一覧取得（保留中のもののみ）
 export async function GET(req: NextRequest) {
@@ -181,7 +183,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. リダイレクトURLの確認
-    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/staff/invite-accept`
+    const redirectUrl = `${BASE_URL}/staff/invite-accept`
     console.log('🔗 リダイレクトURL:', redirectUrl)
 
     // 7. 新しい招待を作成（再送）
