@@ -77,8 +77,6 @@ NEXT_PUBLIC_CDN_DOMAIN=https://cdn.bocker.jp
 # 開発環境（GCSダイレクトアクセス）
 NEXT_PUBLIC_CDN_DOMAIN=
 
-# フィーチャーフラグ
-NEXT_PUBLIC_CDN_BETA=true
 ```
 
 ### 4. GCP設定状況
