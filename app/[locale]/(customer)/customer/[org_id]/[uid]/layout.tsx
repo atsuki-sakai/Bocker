@@ -2,17 +2,19 @@ import { CustomerLayout } from '@/components/common/CustomerLayout';
 
 interface LayoutProps {
   children: React.ReactNode;
-  params: {
+  params: Promise<{
     org_id: string;
     uid: string;
-  };
+  }>;
 }
 
 export default async function Layout({ children, params }: LayoutProps) {
+  const { org_id, uid } = await params;
+  
   return (
     <CustomerLayout 
-      customerUid={params.uid} 
-      orgId={params.org_id}
+      customerUid={uid} 
+      orgId={org_id}
     >
       {children}
     </CustomerLayout>
