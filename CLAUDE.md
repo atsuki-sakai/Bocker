@@ -6,6 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Bocker（ブッカー）は美容サロン向けの予約・顧客管理SaaSプラットフォームです。マルチテナント設計で、サロンオーナー・スタッフが効率的に予約管理や顧客管理を行えるよう設計されています。
 
+## 本番環境と開発環境について
+
+本番環境URL: https://bocker.jp
+開発環境URL: https://bocker-project.vercel.app
+
+
+## 利用可能なMCPツール
+gcp:　Google Cloud Platform(CloudStorage, Networking, CDN...)
+supabase: Bocker(本番)、DEV_Bocker(開発環境)
+convex: Production(本番環境), Development(開発環境)
+clerk:dev: 開発環境のClerk
+clerk:prod: 本番環境のClerk
+stripe:dev:　開発環境のStripe　
+stripe:prod:　本番環境のStripe
+
+上記のMCPを利用することで各プラットフォームの詳細な設定を確認できるので積極的に利用してください。
 
 ## アーキテクチャ
 
