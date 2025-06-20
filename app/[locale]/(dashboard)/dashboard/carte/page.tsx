@@ -1,12 +1,17 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import { DashboardSection } from '@/components/common'
 import CustomerSearchForm from './CustomerSearchForm'
 
 export default function CartePage() {
+  const tCarte = useTranslations('dashboard.carte')
+  
   return (
     <DashboardSection
-      title="顧客カルテ管理"
+      title={tCarte('title')}
       backLink="/dashboard"
-      backLinkTitle="ダッシュボードへ戻る"
+      backLinkTitle={tCarte('backToDashboard')}
     >
       <CustomerSearchForm />
     </DashboardSection>
