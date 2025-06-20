@@ -15,6 +15,13 @@
 - **PostgreSQLバージョン**: 15.8.1.094
 - **Convexとの連携**: 一部のテーブルでConvex IDを保持
 
+# 開発環境
+- **プロジェクト名**: DEV_Bocker
+- **プロジェクトID**: kafcgxiddgxbuimeitrm
+- **リージョン**: ap-northeast-1
+- **PostgreSQLバージョン**: 15.8.1.094
+- **Convexとの連携**: 一部のテーブルでConvex IDを保持
+
 ## ID設計ルール
 
 ### 統一されたID型の設計方針
