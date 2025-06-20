@@ -19,6 +19,7 @@ import { CustomerRepository, PointTaskQueueRepository } from '@/services/supabas
 import { CarteRepository } from '@/services/supabase/repositories/carte/CarteRepository'
 import { CarteDetailRepository } from '@/services/supabase/repositories/carte/CarteDetailRepository'
 import { formatDateToYYYYMMDD } from '@/lib/formatDate'
+import { BASE_URL } from '@/lib/constants'
 
 import {
   Check,
@@ -947,7 +948,7 @@ export default function CalendarPage() {
               couponDiscount: appliedDiscount.discount > 0 ? appliedDiscount.discount : undefined,
               totalAmount: calculateTotal(),
               reservationRules: organizationComplete.config?.reservation_rules,
-              reservationDetailUrl: `${process.env.NEXT_PUBLIC_APP_URL}/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`,
+              reservationDetailUrl: `${BASE_URL}/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`,
               logoUrl: organizationComplete.config?.images?.[0]?.thumbnail_url ?? null,
             }
 
