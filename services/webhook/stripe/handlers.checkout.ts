@@ -11,6 +11,7 @@ import { createClient } from '@supabase/supabase-js';
 import { LineService } from '@/services/line/LineService';
 import { SupabaseService } from '@/services/supabase/SupabaseService';
 import { sendReservationConfirmationEmail } from '@/lib/email_templates/reservation_email';
+import { getEnv } from '@/lib/env-config';
 
 /**
  * Stripe Checkout Session完了時のWebhookイベントを処理
@@ -96,8 +97,8 @@ export async function handleCheckoutSessionCompleted(
     
     // 3. 顧客情報を取得
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+      getEnv('SUPABASE_SERVICE_ROLE_KEY')
     );
     
     const supabaseService = new SupabaseService(supabase);
