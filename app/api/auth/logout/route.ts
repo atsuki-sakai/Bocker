@@ -4,6 +4,7 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { LOGIN_SESSION_KEY } from '@/services/line/constants'
+import { getEnv } from '@/lib/env-config'
 
 export const runtime = 'nodejs'
 
@@ -24,7 +25,7 @@ const performLogout = async (): Promise<NextResponse> => {
   // 失効済みクッキーを設定 (Max-Age=0)
   response.cookies.set(LOGIN_SESSION_KEY, '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: getEnv('NODE_ENV') === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 0, // 即時失効
