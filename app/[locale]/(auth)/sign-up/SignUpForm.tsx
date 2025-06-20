@@ -686,7 +686,9 @@ export default function SignUpPage() {
                     transition={{ delay: 0.2 }}
                     className="p-4 bg-link rounded-lg border border-link-foreground"
                   >
-                    <h4 className="text-center text-sm font-medium">{t('verification.title')}</h4>
+                    <h4 className="text-center text-sm font-medium text-link-foreground">
+                      {t('verification.title')}
+                    </h4>
                     <p className="text-center text-xs text-link-foreground">
                       {t('verification.instruction')}
                     </p>
