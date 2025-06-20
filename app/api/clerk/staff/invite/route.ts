@@ -11,8 +11,9 @@ import { Role } from '@/convex/types'
 import { z } from 'zod'
 import { validateRequest, createValidationErrorResponse } from '@/lib/api/validation'
 import { inviteStaffSchema } from '@/lib/validations/api/staff'
+import { getEnv } from '@/lib/env-config'
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+const convex = new ConvexHttpClient(getEnv('NEXT_PUBLIC_CONVEX_URL'))
 
 // Extend the inviteStaffSchema for full request
 const inviteStaffRequestSchema = inviteStaffSchema.extend({
