@@ -3,6 +3,7 @@
 
 import Script from 'next/script'
 import { useEffect } from 'react'
+import { getEnv } from '@/lib/env-config'
 
 // グローバルな型定義が global.d.ts にあることを想定
 // もし global.d.ts がまだない場合は作成してください。
@@ -16,7 +17,7 @@ declare global {
 
 export function ChannelTalkLoader() {
   const bootChannelTalk = () => {
-    const pluginKey = process.env.NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY
+    const pluginKey = getEnv('NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY')
     console.log('Attempting to boot Channel Talk with pluginKey:', pluginKey) // デバッグログ追加
     if (window.ChannelIO && pluginKey) {
       // pluginKeyの存在も確認
