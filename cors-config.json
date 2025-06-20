@@ -5,8 +5,7 @@
       "http://localhost:3001",
       "https://*.vercel.app",
       "https://bocker.jp",
-      "https://bcker-saas.vercel.app",
-      "https://bcker-saas-*.vercel.app"
+      "https://bocker-project.vercel.app"
     ],
     "method": ["GET", "HEAD", "PUT", "POST", "OPTIONS"],
     "responseHeader": [
