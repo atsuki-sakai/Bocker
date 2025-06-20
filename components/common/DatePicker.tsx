@@ -90,7 +90,13 @@ export function DatePicker({
   }, [currentLocale])
 
   const handleDateSelect = (date: Date | undefined) => {
-    onChange?.(date)
+    if (date) {
+      // UTCの日付をローカルタイムゾーンの日付に変換
+      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      onChange?.(localDate)
+    } else {
+      onChange?.(undefined)
+    }
     setIsOpen(false)
   }
 
@@ -111,12 +117,26 @@ export function DatePicker({
     const newDate = new Date(displayMonth)
     newDate.setFullYear(parseInt(year))
     setDisplayMonth(newDate)
+    
+    // 年を変更した場合、現在選択されている日付の年も更新
+    if (value) {
+      const updatedDate = new Date(value)
+      updatedDate.setFullYear(parseInt(year))
+      onChange?.(updatedDate)
+    }
   }
 
   const handleMonthChange = (month: string) => {
     const newDate = new Date(displayMonth)
     newDate.setMonth(parseInt(month))
     setDisplayMonth(newDate)
+    
+    // 月を変更した場合、現在選択されている日付の月も更新
+    if (value) {
+      const updatedDate = new Date(value)
+      updatedDate.setMonth(parseInt(month))
+      onChange?.(updatedDate)
+    }
   }
 
   const handlePreviousMonth = () => {

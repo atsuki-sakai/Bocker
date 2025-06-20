@@ -21,6 +21,7 @@ interface StaffTimelineData {
 interface ReservationWithDetails {
   _id: Id<'reservation'>
   staff_id: Id<'staff'>
+  customer_id?: string  // Supabase側のcustomer.uid (UUID) - オプショナルフィールド
   staff_name: string
   customer_name: string
   start_time_unix: number

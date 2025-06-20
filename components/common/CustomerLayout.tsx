@@ -41,8 +41,7 @@ export async function CustomerLayout({ children, customerUid, orgId }: CustomerL
             <div className="flex items-center space-x-2">
               <h1 className="text-xl font-semibold text-gray-900">マイページ</h1>
               <span className="text-sm text-gray-500">
-                {customer.customer?.first_name ?? '未設定'}{' '}
-                {customer.customer?.last_name ?? '未設定'} 様
+                {customer.customer?.last_name ?? '未設定'} {customer.customer?.first_name ?? ''} 様
               </span>
             </div>
 
