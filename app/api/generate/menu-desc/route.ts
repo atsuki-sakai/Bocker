@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { withAuth, withRateLimit, validateRequest, AuthContext } from '@/lib/api/middleware';
 import { menuDescriptionRequestSchema, AI_SYSTEM_PROMPT, validateAIOutput } from '@/lib/validations/api';
-
+import { getEnv } from '@/lib/env-config'
 
 // Handler function for menu description generation
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -23,7 +23,7 @@ async function menuDescriptionHandler(request: NextRequest, _auth: AuthContext) 
     const body = validation.data;
 
     // Gemini API キーの確認
-    const apiKey = process.env.GCP_AI_STUDIO_API_KEY;
+    const apiKey = getEnv('GCP_AI_STUDIO_API_KEY');
     if (!apiKey) {
       console.error('GCP_AI_STUDIO_API_KEY environment variable is not set');
       return NextResponse.json(
