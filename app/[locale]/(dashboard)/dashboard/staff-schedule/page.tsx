@@ -30,6 +30,7 @@ import {
 import { usePaginatedQuery } from 'convex/react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { convertReservationStatus } from '@/convex/types'
 
 // 10分刻みのグリッド単位を定数として定義
 const GRID_UNIT_MIN = 10 // 1行 = 10分
@@ -307,12 +308,14 @@ export default function StaffSchedulePage() {
             <p className="order-1 font-semibold text-palette-5-foreground">
               {reservation.staff_name}
             </p>
-            <p className="text-palette-5-foreground group-hover:text-palette-5-foreground">
+            <p className="text-palette-5-foreground group-hover:text-palette-5-foreground font-bold">
               <time dateTime={startTime.toISOString()}>
                 {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}
               </time>
             </p>
-            <p className="mt-1 text-palette-5-foreground">{reservation.payment_status}</p>
+            <p className="mt-1 text-palette-5-foreground my-4">
+              {convertReservationStatus(reservation.status)}
+            </p>
           </Link>
         </li>
       )
@@ -338,7 +341,8 @@ export default function StaffSchedulePage() {
           <div key={`hour-${i}`}>
             <div className="sticky bg-background rounded-md left-0 z-10 -mt-2.5 -ml-14 w-14 pr-2 text-right text-xs/5 text-gray-400 text-nowrap">
               {ampm}
-              {hour12}{t('oclock')}
+              {hour12}
+              {t('oclock')}
             </div>
           </div>
         )

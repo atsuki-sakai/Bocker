@@ -338,7 +338,7 @@ export default function ReservationPage() {
         </div>
         <div className="border-b pb-4">
           <h2 className="text-xl font-semibold mb-3">{t('assignedStaff')}</h2>
-          <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="flex  items-center gap-4">
             {staff.images.length > 0 && staff.images[0].thumbnail_url && (
               <div className="relative h-auto border border-border shadow-sm rounded-md overflow-hidden flex items-center justify-center">
                 <Image

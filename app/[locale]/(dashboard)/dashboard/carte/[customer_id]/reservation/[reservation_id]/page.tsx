@@ -21,13 +21,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import {
   CalendarDays,
   User,
   FileText,
   Camera,
-  CreditCard,
   Save,
   ChevronLeft,
   ImageIcon,
@@ -452,7 +450,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
     >
       <div className="space-y-3 md:space-y-6">
         {/* ヘッダー情報 */}
-        <Card className="bg-foreground text-background">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="w-5 h-5" />
@@ -463,8 +461,8 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <CalendarDays className="w-4 h-4 text-background" />
-                  <span className="text-sm text-background">施術日時</span>
+                  <CalendarDays className="w-4 h-4" />
+                  <span className="text-sm">施術日時</span>
                 </div>
                 <p className="font-medium">
                   {formatDate(
@@ -477,7 +475,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <User className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-background">担当スタッフ</span>
+                  <span className="text-sm">担当スタッフ</span>
                 </div>
                 <p className="font-medium">{carteData.carteDetail?.staff_name || '-'}</p>
               </div>
@@ -500,18 +498,18 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-4">
                 <div className="w-full">
                   {existingImages.length > 0 ? (
-                    <>
-                      <div className="grid grid-cols-4 gap-2 my-3">
+                    <div className="w-full max-w-[400px] mx-auto">
+                      <div className="grid grid-cols-4 gap-4 my-3">
                         {existingImages.map((image, index) => (
                           <div
                             key={index}
-                            className="relative aspect-[2/3] max-h-[500px] bg-muted group rounded-lg overflow-hidden"
+                            className="relative aspect-[2/3] bg-muted group rounded-lg overflow-hidden"
                           >
                             <Image
                               src={image.thumbnail_url}
                               alt="施術後写真"
-                              width={120}
-                              height={120}
+                              width={150}
+                              height={150}
                               className="w-full h-full object-contain"
                             />
                             <Button
@@ -528,12 +526,12 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                           </div>
                         ))}
                       </div>
-                      <div className="flex items-center justify-center gap-2 mt-3">
+                      <div className="flex items-center justify-center gap-2 mt-6">
                         <Button size="sm" onClick={() => setIsDialogOpen(true)}>
                           写真を拡大表示する
                         </Button>
                       </div>
-                    </>
+                    </div>
                   ) : (
                     <div className="flex items-center justify-center h-full">
                       <div className="flex items-center gap-2">
@@ -578,26 +576,51 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
               </div>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="space-y-4">
-                {/* メニュー詳細 */}
-                {carteData.carteDetail?.menu_details && (
+              {/* メニュー詳細 */}
+              {carteData.carteDetail?.menu_details && (
+                <div>
+                  <div className="mt-2 space-y-2">
+                    {(carteData.carteDetail.menu_details as ReservationMenu[]).map(
+                      (menu, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 bg-background rounded-lg"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Badge>{menu.name}</Badge>
+                            <span className="text-sm text-muted-foreground">x{menu.quantity}</span>
+                          </div>
+                          <span className="font-medium text-accent-2">
+                            {formatPrice(menu.price * menu.quantity)}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* オプション詳細 */}
+              {carteData.carteDetail?.option_details &&
+                Array.isArray(carteData.carteDetail.option_details) &&
+                (carteData.carteDetail.option_details as ReservationOption[]).length > 0 && (
                   <div>
-                    <Label className="text-sm font-medium">メニュー</Label>
+                    <Label className="text-sm font-medium">オプション</Label>
                     <div className="mt-2 space-y-2">
-                      {(carteData.carteDetail.menu_details as ReservationMenu[]).map(
-                        (menu, index) => (
+                      {(carteData.carteDetail.option_details as ReservationOption[]).map(
+                        (option, index) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between p-3 bg-background rounded-lg"
+                            className="flex items-center justify-between p-3 bg-muted rounded-lg"
                           >
                             <div className="flex items-center gap-2">
-                              <Badge>{menu.name}</Badge>
+                              <Badge>{option.name}</Badge>
                               <span className="text-sm text-muted-foreground">
-                                x{menu.quantity}
+                                x{option.quantity}
                               </span>
                             </div>
                             <span className="font-medium text-accent-2">
-                              {formatPrice(menu.price * menu.quantity)}
+                              {formatPrice(option.price * option.quantity)}
                             </span>
                           </div>
                         )
@@ -605,48 +628,6 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                     </div>
                   </div>
                 )}
-
-                {/* オプション詳細 */}
-                {carteData.carteDetail?.option_details &&
-                  Array.isArray(carteData.carteDetail.option_details) &&
-                  (carteData.carteDetail.option_details as ReservationOption[]).length > 0 && (
-                    <div>
-                      <Label className="text-sm font-medium">オプション</Label>
-                      <div className="mt-2 space-y-2">
-                        {(carteData.carteDetail.option_details as ReservationOption[]).map(
-                          (option, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                            >
-                              <div className="flex items-center gap-2">
-                                <Badge>{option.name}</Badge>
-                                <span className="text-sm text-muted-foreground">
-                                  x{option.quantity}
-                                </span>
-                              </div>
-                              <span className="font-medium text-accent-2">
-                                {formatPrice(option.price * option.quantity)}
-                              </span>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                {/* 合計金額 */}
-                <Separator />
-                <div className="flex items-center justify-between p-4 bg-primary rounded-lg">
-                  <div className="flex items-center gap-2 text-background">
-                    <CreditCard className="w-5 h-5" />
-                    <span className="font-medium text-background">合計金額</span>
-                  </div>
-                  <span className="text-xl font-bold text-background">
-                    {formatPrice(carteData.carteDetail?.total_price || 0)}
-                  </span>
-                </div>
-              </div>
             </AccordionContent>
           </AccordionItem>
 
@@ -666,7 +647,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                   value={customerRequests}
                   onChange={(e) => setCustomerRequests(e.target.value)}
                   placeholder="お客様からのご要望を記録してください"
-                  className="mt-2"
+                  className="mt-2 text-primary"
                   rows={3}
                 />
               </div>
@@ -677,7 +658,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="施術に関するメモを記録してください"
-                  className="mt-2"
+                  className="mt-2 text-primary"
                   rows={4}
                 />
               </div>

@@ -112,10 +112,9 @@ const ReservationBarComponent = memo(
     return (
       <div
         className={cn(
-          'absolute top-0 h-full rounded cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg',
+          'absolute top-0 h-full rounded cursor-pointer',
           'text-xs flex items-center px-2 gap-1 border',
-          enhancedColor,
-          'shadow-sm hover:shadow-md'
+          enhancedColor
         )}
         style={{
           left: `${startColumn * SLOT_WIDTH + 1}px`, // 少し右にずらして視覚的な間隔を作る
@@ -125,14 +124,24 @@ const ReservationBarComponent = memo(
         onClick={() => onReservationClick(reservation)}
         title={`${reservation.customer_name} (${convertTimestampToHour(reservation.start_time_unix)} - ${convertTimestampToHour(reservation.end_time_unix)})`}
       >
-        {getStatusIcon(reservation.status)}
-        <span className="truncate font-medium">{reservation.customer_name ?? t('nameNotSet')}</span>
-        {/* 時間表示（幅が十分な場合のみ） */}
-        {spanColumns > 6 && (
-          <span className="ml-auto text-xs opacity-75">
-            {convertTimestampToHour(reservation.start_time_unix)}
-          </span>
-        )}
+        <div className="flex flex-col items-start gap-1">
+          <div className="flex items-center gap-1">
+            {getStatusIcon(reservation.status)}
+            <span className="truncate font-medium">
+              {reservation.customer_name ?? t('nameNotSet')} 様
+            </span>
+          </div>
+          {/* 時間表示（幅が十分な場合のみ） */}
+          <div className="flex items-center justify-between w-full gap-1">
+            {spanColumns > 6 && (
+              <span className="text-xs opacity-75">
+                {convertTimestampToHour(reservation.start_time_unix)}~
+                {convertTimestampToHour(reservation.end_time_unix)}
+              </span>
+            )}
+            <span className="text-xs opacity-75">{reservation.staff_name}</span>
+          </div>
+        </div>
       </div>
     )
   }
@@ -289,12 +298,20 @@ const ReservationDetailDialog = memo(
                 </p>
               </div>
             </div>
-            <div className="flex items-center justify-end">
-              <Link href={`/dashboard/reservation/${reservation._id}`}>
-                <p className="text-sm text-link-foreground underline mt-1 font-medium">
-                  {t('moreDetail')}
-                </p>
-              </Link>
+            <div className="flex items-center justify-end gap-4">
+              <Button asChild>
+                <Link href={`/dashboard/reservation/${reservation._id}`}>{t('moreDetail')}</Link>
+              </Button>
+              {/* 顧客IDが存在する場合のみカルテリンクを表示 */}
+              {reservation.customer_id && (
+                <Button asChild>
+                  <Link
+                    href={`/dashboard/carte/${reservation.customer_id}/reservation/${reservation._id}`}
+                  >
+                    カルテを確認する
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
@@ -344,7 +361,7 @@ const ReservationList = memo(
           return (
             <Card
               key={reservation._id}
-              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] border-l-4"
+              className="cursor-pointer  border-l-4"
               style={{
                 borderLeftColor: enhancedColor.includes('emerald')
                   ? '#008724FF'
@@ -392,10 +409,11 @@ export default function ReservationForm() {
   const locale = useLocale() as SupportedLocale
   // ■ ステート管理
   const { tenantId, orgId, ready } = useTenantAndOrganization()
-  const [selectedDate, setSelectedDate] = useState(() => new Date()) 
+  const [selectedDate, setSelectedDate] = useState(() => new Date())
   const [selectedReservation, setSelectedReservation] = useState<ReservationWithDetails | null>(
     null
   )
+
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'timeline' | 'list'>('timeline')
   const [dateLabel, setDateLabel] = useState('')

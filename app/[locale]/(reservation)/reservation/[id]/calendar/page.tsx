@@ -374,10 +374,12 @@ export default function CalendarPage() {
         })),
         options: countOptionOccurrences(selectedOptions),
         extra_charge: selectedStaffCompleted.staff.extra_charge || 0,
-        use_points: usePoints,
+        use_points: 0, // 決済成功後に使用
+        intended_point_use: usePoints, // 使用予定ポイントを記録
         coupon_discount: appliedDiscount.discount || undefined,
         featured_hair_images: [],
         notes: notes,
+        pending_duration_minutes: 30, // 30分の有効期限
       }
 
       // 1. Convexに予約データを'pending'ステータスで作成
@@ -455,43 +457,11 @@ export default function CalendarPage() {
         throw error
       }
 
-      // オプション在庫数の調整
-      const optionCounts = countOptionOccurrences(selectedOptions)
-      for (const { id, quantity } of optionCounts) {
-        const option = selectedOptions.find((opt) => opt._id === id)
-        if (option && option.in_stock !== undefined && option.in_stock !== null) {
-          const newStock = Math.max(0, option.in_stock - quantity)
-          try {
-            await balanceStockMutation({
-              option_id: id,
-              new_quantity: newStock,
-            })
-            console.log(`オプション「${option.name}」の在庫を${newStock}に更新しました`)
-          } catch (error) {
-            console.error(`オプション在庫の更新に失敗しました: ${error}`)
-            throw error
-          }
-        }
-      }
+      // 楽観的アプローチ: 在庫は予約作成時に即座に減算されるため、ここでの処理は不要
 
-      // ポイントを利用していれば、アトミックポイント更新
-      if (pointConfig?.is_active && usePoints && usePoints > 0 && customerData?.customer?.uid) {
-        try {
-          // Supabaseでアトミックポイント更新を実行
-          const result = await customerRepository.updatePointsAtomic(
-            sessionCustomer.customerUid,
-            sessionCustomer.tenantId,
-            organizationComplete.organization._id as Id<'organization'>,
-            -usePoints, // 使用は負の値
-            'used',
-            'ポイント使用による割引',
-            reservationId
-          )
-          console.log('ポイント使用処理が完了しました:', result)
-        } catch (error) {
-          console.error('ポイント処理でエラーが発生しました:', error)
-          // ポイント処理のエラーは予約を妨げないようにする
-        }
+      // ポイントは決済成功後に使用されるため、ここでは処理しない
+      if (usePoints > 0) {
+        console.log(`決済成功後に${usePoints}ポイントが使用されます`)
       }
 
       // 顧客情報を更新（電話番号、最終予約日、予約回数）
@@ -624,16 +594,19 @@ export default function CalendarPage() {
       const requestBody = {
         stripeConnectId: organizationComplete.organization.stripe_account_id,
         reservationId,
+        tenantId: sessionCustomer.tenantId,
         orgId,
         customerEmail: sessionCustomer.email,
         lineItems: stripeLineItems,
+        couponId: appliedDiscount.couponId,
+        pointsUsedAmount: usePoints,
       }
       console.log(
         'Request body for /api/stripe/connect/checkout:',
         JSON.stringify(requestBody, null, 2)
       )
 
-      const response = await fetch('/api/stripe/connect/checkout', {
+      const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
@@ -744,10 +717,11 @@ export default function CalendarPage() {
           setIsProcessingPayment(false)
         }
       } else if (selectedPaymentMethod === 'cash') {
-        // 1. Convexに予約データを'confirmed'ステータスで作成
+        // 1. Convexに予約データを'confirmed'ステータスで作成（現金決済はすぐに確定）
         const reservationDataForCash = {
           ...reservationBaseData,
           status: 'confirmed' as ReservationStatus,
+          intended_point_use: 0, // 現金決済は即座にポイント使用
         }
 
         let reservationId: Id<'reservation'> | null = null
@@ -827,21 +801,19 @@ export default function CalendarPage() {
           return
         }
 
-        // オプション在庫数の調整
-        // 選択されたオプションの数を集計して在庫を調整
+        // オプション在庫数の調整（現金決済は即座に在庫を減らす）
         const optionCounts = countOptionOccurrences(selectedOptions)
         for (const { id, quantity } of optionCounts) {
           // 選択されたオプションから対象のオプション情報を取得
           const option = selectedOptions.find((opt) => opt._id === id)
-          if (option && option.in_stock !== undefined && option.in_stock !== null) {
+          if (option && option.in_stock !== undefined && option.in_stock !== null && quantity > 0) {
             // 現在の在庫数から使用数を減算
-            const newStock = Math.max(0, option.in_stock - quantity)
             try {
               await balanceStockMutation({
                 option_id: id,
-                new_quantity: newStock,
+                quantity: -quantity, // 負の値で減算
               })
-              console.log(`オプション「${option.name}」の在庫を${newStock}に更新しました`)
+              console.log(`オプション「${option.name}」の在庫を${quantity}個減らしました`)
             } catch (error) {
               console.error(`オプション在庫の更新に失敗しました: ${error}`)
             }
