@@ -348,13 +348,7 @@ await Promise.allSettled(nonCriticalOperations);
 
 ### Phase 2: 最適化
 - [ ] レガシーWebhookエンドポイントの廃止
-- [ ] パフォーマンスモニタリングの追加
-- [ ] エラー率のダッシュボード作成
-
-### Phase 3: 拡張
 - [ ] キャンセル料金の実装
-- [ ] 部分返金の対応
-- [ ] AIによるキャンセル予測
 
 ## 10. まとめ
 

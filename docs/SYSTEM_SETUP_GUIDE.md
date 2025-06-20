@@ -22,13 +22,6 @@
   - payment_intent.payment_failed  # 決済失敗時の即座キャンセル
   - checkout.session.expired       # セッション期限切れ
 
-Stripe Connect関連（サロン向け）:
-  - account.updated               # アカウント情報更新
-  - capability.updated            # 機能の有効化状態
-
-サブスクリプション関連（プラン管理）:
-  - customer.subscription.updated  # プラン変更
-  - customer.subscription.deleted  # 解約
 ```
 
 ### 2.3 開発環境セットアップ

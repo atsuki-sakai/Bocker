@@ -18,6 +18,201 @@ interface EmailContent {
   html: string
 }
 
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+interface SendReservationConfirmationEmailProps {
+  to: string;
+  customerName: string;
+  reservationDate: string;
+  reservationTime: string;
+  staffName: string;
+  salonName: string;
+  menus: Array<{ name: string; price: number; quantity: number }>;
+  options: Array<{ name: string; price: number; quantity: number }>;
+  totalPrice: number;
+  paymentMethod: 'cash' | 'credit_card';
+}
+
+interface SendReservationCancellationEmailProps {
+  to: string;
+  customerName: string;
+  reservationDate: string;
+  reservationTime: string;
+  staffName: string;
+  salonName: string;
+  refundAmount?: number;
+  refundMethod?: 'points' | 'credit_card';
+}
+
+export async function sendReservationCancellationEmail(props: SendReservationCancellationEmailProps) {
+  const { 
+    to, 
+    customerName, 
+    reservationDate, 
+    reservationTime, 
+    staffName, 
+    salonName,
+    refundAmount,
+    refundMethod 
+  } = props;
+
+  const subject = `【${salonName}】予約キャンセルのお知らせ`;
+  
+  const textContent = `
+${customerName} 様
+
+以下のご予約がキャンセルされました。
+
+--------------------------------
+キャンセル内容
+--------------------------------
+サロン名: ${salonName}
+予約日時: ${reservationDate} ${reservationTime}
+担当スタッフ: ${staffName}
+
+${refundAmount && refundMethod === 'points' 
+  ? `${refundAmount}ポイントがお客様のアカウントに返還されました。` 
+  : refundAmount && refundMethod === 'credit_card'
+  ? `¥${refundAmount.toLocaleString()}が、ご利用のクレジットカードに返金処理されます。
+※ 返金の反映にはカード会社により3-5営業日かかる場合があります。`
+  : ''}
+
+ご不明な点がございましたら、サロンまでお問い合わせください。
+
+${salonName}
+`;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+    .container { max-width: 600px; margin: 20px auto; padding: 20px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .header { background-color: #ff6b6b; color: #ffffff; padding: 20px; text-align: center; border-top-left-radius: 8px; border-top-right-radius: 8px; }
+    .header h1 { margin: 0; font-size: 24px; }
+    .content { padding: 20px; }
+    .section { margin-bottom: 20px; }
+    .section-title { font-weight: bold; color: #8C8C8C; width: 120px; display: inline-block; vertical-align: top; }
+    .section-content { display: inline-block; width: calc(100% - 130px); }
+    .refund-box { background-color: #fff3cd; border-left: 4px solid #ffeeba; padding: 10px; margin-top: 15px; font-size: 14px; }
+    .footer { text-align: center; padding: 15px; font-size: 12px; color: #8C8C8C; border-top: 1px solid #eeeeee; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>予約キャンセルのお知らせ</h1>
+    </div>
+    <div class="content">
+      <p>${customerName} 様</p>
+      <p>以下のご予約がキャンセルされました。</p>
+
+      <div class="section">
+        <h2 style="color: #ff6b6b; font-size: 18px;">キャンセル内容</h2>
+        <p><span class="section-title">サロン名:</span><span class="section-content">${salonName}</span></p>
+        <p><span class="section-title">予約日時:</span><span class="section-content">${reservationDate} ${reservationTime}</span></p>
+        <p><span class="section-title">担当スタッフ:</span><span class="section-content">${staffName}</span></p>
+      </div>
+
+      ${refundAmount ? `
+      <div class="refund-box">
+        <strong>返金について</strong><br>
+        ${refundMethod === 'points' 
+          ? `${refundAmount}ポイントがお客様のアカウントに返還されました。`
+          : `¥${refundAmount.toLocaleString()}が、ご利用のクレジットカードに返金処理されます。<br>
+            <small>※ 返金の反映にはカード会社により3-5営業日かかる場合があります。</small>`
+        }
+      </div>
+      ` : ''}
+
+      <p style="margin-top: 20px;">ご不明な点がございましたら、サロンまでお問い合わせください。</p>
+    </div>
+    <div class="footer">
+      <p>${salonName}</p>
+      <p>このメールは自動送信されています。返信はできません。</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'Bocker <noreply@bocker.jp>',
+      to: [to],
+      subject,
+      text: textContent,
+      html: htmlContent,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to send reservation cancellation email:', error);
+    throw error;
+  }
+}
+
+export async function sendReservationConfirmationEmail(props: SendReservationConfirmationEmailProps) {
+  const { 
+    to, 
+    customerName, 
+    reservationDate, 
+    reservationTime, 
+    staffName, 
+    salonName,
+    menus,
+    options,
+    totalPrice
+  } = props;
+
+  const menuItems = [
+    ...menus.map(m => `${m.name} x${m.quantity}`),
+    ...options.map(o => `${o.name} x${o.quantity}`)
+  ];
+
+  const emailContent = generateReservationEmail({
+    customerName,
+    salonName,
+    staffName,
+    reservationDate,
+    reservationTime,
+    menus: menuItems,
+    totalPrice,
+    reservationId: new Date().getTime().toString(),
+    salonAddress: '', // TODO: 組織情報から取得
+    salonPhone: '', // TODO: 組織情報から取得
+  });
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'Bocker <noreply@bocker.jp>',
+      to: [to],
+      subject: emailContent.subject,
+      text: emailContent.text,
+      html: emailContent.html,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to send reservation confirmation email:', error);
+    throw error;
+  }
+}
+
 export const generateReservationEmail = (props: ReservationEmailProps): EmailContent => {
   const {
     customerName,

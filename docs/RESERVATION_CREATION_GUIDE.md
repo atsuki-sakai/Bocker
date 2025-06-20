@@ -11,7 +11,7 @@
 1. **顧客向け予約ページ** (`/reservation/[id]/calendar/`)
    - LINE/メール認証済み顧客が利用
    - ステップバイステップのウィザード形式
-   - 決済方法選択（現金/クレジットカード）
+   - 決済方法選択（現金/クレジットカード/両方対応）
 
 2. **管理画面予約作成** (`/dashboard/reservation/add/`)
    - スタッフが顧客の代わりに予約作成
@@ -75,7 +75,7 @@
   reservation_id: Id<"reservation">,
   coupon_id?: Id<"coupon">,
   total_price: number,
-  payment_method: "cash" | "credit_card",
+  payment_method: "cash" | "credit_card" | "all",
   menus: Array<{
     id: Id<"menu">,
     name: string,
