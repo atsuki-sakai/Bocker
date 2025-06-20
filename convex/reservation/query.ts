@@ -1325,3 +1325,53 @@ export const getScheduleData = query({
     }
   },
 })
+// pending状態の予約を取得（有効期限切れ含む）
+export const getPendingReservations = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    includeExpired: v.optional(v.boolean()),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx)
+    
+    const now = Date.now()
+    
+    // pending状態の予約を取得
+    let query = ctx.db
+      .query('reservation')
+      .withIndex('by_tenant_org_status_date_start_archive', (q) =>
+        q
+          .eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('status', 'pending')
+      )
+      .filter((q) => q.eq(q.field('is_archive'), false));
+
+    // 期限切れフィルタリング
+    if (!args.includeExpired) {
+      query = query.filter((q) => 
+        q.or(
+          q.eq(q.field('pending_expiry'), undefined),
+          q.gt(q.field('pending_expiry'), now)
+        )
+      );
+    }
+
+    const result = await query.paginate(args.paginationOpts);
+
+    // 各予約に期限切れフラグを追加
+    const enrichedData = result.page.map(reservation => ({
+      ...reservation,
+      isExpired: reservation.pending_expiry ? reservation.pending_expiry < now : false,
+      expiresIn: reservation.pending_expiry ? reservation.pending_expiry - now : null,
+      expiresInMinutes: reservation.pending_expiry ? Math.floor((reservation.pending_expiry - now) / (1000 * 60)) : null,
+    }))
+
+    return {
+      ...result,
+      page: enrichedData,
+    }
+  },
+})

@@ -30,4 +30,11 @@ crons.cron(
   internal.point.action.processPointExpirations
 )
 
+// 期限切れpending予約のクリーンアップ（1時間間隔で実行）
+crons.interval(
+  'cleanup expired pending reservations',
+  { minutes: 60 }, // 1時間ごと
+  internal.reservation.payment.cleanupExpiredPendingReservations
+)
+
 export default crons

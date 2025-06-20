@@ -73,6 +73,7 @@ export type ReservationMenu = Infer<typeof reservationMenuType>
 export const reservationPaymentStatusType = v.union( // 支払い状況
   v.literal('pending'), // 未払い
   v.literal('paid'), // 支払い済み
+  v.literal('completed'), // 支払い完了
   v.literal('failed'), // 支払い失敗
   v.literal('cancelled') // キャンセル済み
 )

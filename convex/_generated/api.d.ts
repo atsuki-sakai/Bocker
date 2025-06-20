@@ -32,6 +32,7 @@ import type * as migration_query from "../migration/query.js";
 import type * as migrations from "../migrations.js";
 import type * as option_mutation from "../option/mutation.js";
 import type * as option_query from "../option/query.js";
+import type * as option_stock from "../option/stock.js";
 import type * as organization_api_config_mutation from "../organization/api_config/mutation.js";
 import type * as organization_api_config_query from "../organization/api_config/query.js";
 import type * as organization_config_mutation from "../organization/config/mutation.js";
@@ -47,7 +48,9 @@ import type * as organization_week_schedule_query from "../organization/week_sch
 import type * as point_action from "../point/action.js";
 import type * as point_mutation from "../point/mutation.js";
 import type * as point_query from "../point/query.js";
+import type * as reservation_action from "../reservation/action.js";
 import type * as reservation_mutation from "../reservation/mutation.js";
+import type * as reservation_payment from "../reservation/payment.js";
 import type * as reservation_query from "../reservation/query.js";
 import type * as staff_action from "../staff/action.js";
 import type * as staff_config_mutation from "../staff/config/mutation.js";
@@ -105,6 +108,7 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   "option/mutation": typeof option_mutation;
   "option/query": typeof option_query;
+  "option/stock": typeof option_stock;
   "organization/api_config/mutation": typeof organization_api_config_mutation;
   "organization/api_config/query": typeof organization_api_config_query;
   "organization/config/mutation": typeof organization_config_mutation;
@@ -120,7 +124,9 @@ declare const fullApi: ApiFromModules<{
   "point/action": typeof point_action;
   "point/mutation": typeof point_mutation;
   "point/query": typeof point_query;
+  "reservation/action": typeof reservation_action;
   "reservation/mutation": typeof reservation_mutation;
+  "reservation/payment": typeof reservation_payment;
   "reservation/query": typeof reservation_query;
   "staff/action": typeof staff_action;
   "staff/config/mutation": typeof staff_config_mutation;

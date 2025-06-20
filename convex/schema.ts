@@ -1,4 +1,4 @@
-import { InvitationStatus, invitationStatusType } from './types'
+import { invitationStatusType } from './types'
 /* =============================================================
  * Convex スキーマ定義（美容サロン向けマルチテナント SaaS "Bocker"）
  * =============================================================
@@ -402,6 +402,8 @@ const option = defineTable({
   sale_price: v.optional(v.number()), // セール価格
   order_limit: v.number(),        // 同一予約内での最大個数
   in_stock: v.optional(v.number()), // 在庫数
+  max_stock: v.optional(v.number()), // 最大在庫数
+  low_stock_threshold: v.optional(v.number()), // 低在庫閾値
   duration_min: v.optional(v.number()),       // 併用施術時間
   tags: v.array(v.string()), // タグ
   description: v.optional(v.string()), // 商品説明
@@ -692,9 +694,17 @@ const reservation = defineTable({
   status: reservationStatusType, // 予約ステータス
   payment_status: reservationPaymentStatusType, // 支払ステータス
   stripe_checkout_session_id: v.optional(v.string()), // Stripe Checkout Session ID
+  stripe_payment_intent_id: v.optional(v.string()), // Stripe Payment Intent ID
   date: v.string(), // 予約日 YYYY-MM-DD
   start_time_unix: v.number(), // 予約開始時間
   end_time_unix: v.number(), // 予約終了時間
+  // 決済失敗対策用フィールド
+  intended_point_use: v.optional(v.number()), // 使用予定ポイント（決済成功後に実際に使用）
+  pending_expiry: v.optional(v.number()), // pending状態の有効期限（Unix timestamp）
+  // キャンセル情報
+  cancelled_at: v.optional(v.number()), // キャンセル日時（Unix timestamp）
+  cancelled_by: v.optional(v.union(v.literal('customer'), v.literal('staff'), v.literal('system'))), // キャンセル者
+  cancel_reason: v.optional(v.string()), // キャンセル理由
   ...CommonFields,　// デフォルトでこれらのフィールドを持つ _creationTime: number | undefined; is_archive?: boolean | undefined; updated_at?: number | undefined; deleted_at?: number | undefined;
 })
   // ① Convex ID による単一レコード取得（_idフィールド使用）
@@ -720,7 +730,9 @@ const reservation = defineTable({
     ['tenant_id', 'org_id','staff_id','date','status','is_archive']
   )
   // ⑥ ステータス＋開始時刻 バッチ処理用
-  .index('status_start_time_archive', ['status','start_time_unix']);
+  .index('status_start_time_archive', ['status','start_time_unix'])
+  // ⑦ 期限切れpending予約の効率的な検索用
+  .index('by_status_pending_expiry_archive', ['status', 'pending_expiry', 'is_archive']);
 /**
  * =========================
  * 予約詳細 (決済・メニュー構成)
@@ -741,6 +753,12 @@ const reservation_detail = defineTable({
   coupon_discount: v.optional(v.number()), // クーポン割引額
   featured_hair_images: v.array(imageType), // フィーチャー画像
   notes: v.optional(v.string()), // メモ
+  // キャンセル情報
+  cancellation_info: v.optional(v.object({
+    cancelled_at: v.number(),
+    cancelled_by: v.union(v.literal('customer'), v.literal('staff'), v.literal('system')),
+    reason: v.optional(v.string()),
+  })),
   ...CommonFields,
 })
 .index('by_reservation_archive', ['reservation_id', 'is_archive'])

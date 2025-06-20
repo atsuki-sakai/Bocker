@@ -70,6 +70,8 @@ export async function createReservationWithDetails(
     coupon_discount?: number;
     featured_hair_images: ImageType[];
     notes?: string;
+    intended_point_use?: number;
+    pending_expiry?: number;
   }
 ) {
   // 予約テーブルに基本情報を作成 
@@ -86,6 +88,8 @@ export async function createReservationWithDetails(
     date: args.date,
     start_time_unix: args.start_time_unix,
     end_time_unix: args.end_time_unix,
+    intended_point_use: args.intended_point_use,
+    pending_expiry: args.pending_expiry,
   });
 
   // 予約詳細テーブルにメニューやオプション等の詳細情報を作成

@@ -1,4 +1,4 @@
-import { mutation } from '@/convex/_generated/server'
+import { mutation, internalMutation } from '@/convex/_generated/server'
 import { v } from 'convex/values'
 import { checkAuth } from '@/convex/utils/auth'
 import { imageType } from '../types'
@@ -91,7 +91,7 @@ export const kill = mutation({
 export const balanceStock = mutation({
   args: {
     option_id: v.id('option'),
-    new_quantity: v.number(),
+    quantity: v.number(), // 負の値で減算、正の値で加算
   },
   handler: async (ctx, args) => {
     const option = await ctx.db.get(args.option_id)
@@ -108,7 +108,44 @@ export const balanceStock = mutation({
         },
       })
     }
-    if (option.in_stock && option.in_stock > MAX_OPTION_STOCK) {
+    
+    // 在庫管理されていないオプションの場合はエラー
+    if (option.in_stock === null || option.in_stock === undefined) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'option.balanceStock',
+        message: '在庫管理されていないオプションです',
+        code: 'BAD_REQUEST',
+        title: '在庫管理されていないオプションです',
+        details: {
+          ...args,
+        },
+      })
+    }
+    
+    // 新しい在庫数を計算
+    const newStock = option.in_stock + args.quantity
+    
+    // 在庫数が負になる場合はエラー
+    if (newStock < 0) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'option.balanceStock',
+        message: '在庫が不足しています',
+        code: 'INSUFFICIENT_STOCK',
+        title: '在庫が不足しています',
+        details: {
+          ...args,
+          currentStock: option.in_stock,
+          requestedChange: args.quantity,
+        },
+      })
+    }
+    
+    // 在庫数が最大値を超える場合はエラー
+    if (newStock > MAX_OPTION_STOCK) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
         severity: ERROR_SEVERITY.ERROR,
@@ -118,9 +155,58 @@ export const balanceStock = mutation({
         title: `在庫数は${MAX_OPTION_STOCK}が最大です。`,
         details: {
           ...args,
+          currentStock: option.in_stock,
+          requestedChange: args.quantity,
+          resultStock: newStock,
         },
       })
     }
-    return await updateRecord(ctx, args.option_id, { in_stock: args.new_quantity })
+    
+    return await updateRecord(ctx, args.option_id, { in_stock: newStock })
   },
 })
+
+// 予約キャンセル時の在庫復元処理
+// 予約詳細から使用したオプションの在庫を復元する
+export const restoreStockForCancelledReservation = mutation({
+  args: {
+    reservationDetailId: v.id("reservation_detail"),
+  },
+  handler: async (ctx, args) => {
+    const detail = await ctx.db.get(args.reservationDetailId);
+    if (!detail) {
+      return { 
+        success: false, 
+        message: 'Reservation detail not found',
+        restoredCount: 0 
+      };
+    }
+    
+    const restoreOperations = [];
+    
+    // オプションの在庫を復元
+    if (detail.options && Array.isArray(detail.options)) {
+      for (const opt of detail.options) {
+        if (opt.id && opt.quantity > 0) {
+          const option = await ctx.db.get(opt.id);
+          if (option && typeof option.in_stock === 'number') {
+            restoreOperations.push(
+              ctx.db.patch(opt.id, {
+                in_stock: option.in_stock + opt.quantity,
+                updated_at: Date.now(),
+              })
+            );
+          }
+        }
+      }
+    }
+    
+    await Promise.all(restoreOperations);
+    
+    return { 
+      success: true, 
+      message: 'Stock restored successfully',
+      restoredCount: restoreOperations.length 
+    };
+  },
+});

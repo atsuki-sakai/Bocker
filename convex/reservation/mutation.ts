@@ -1,7 +1,7 @@
-import { api } from '@/convex/_generated/api'
+import { api, internal } from '@/convex/_generated/api'
 import { mutation, internalMutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import { excludeFields, updateRecord } from '@/convex/utils/helpers';
+import { updateRecord } from '@/convex/utils/helpers';
 import { reservationStatusType,  paymentMethodType,reservationPaymentStatusType, reservationMenuType, reservationOptionType, imageType } from '@/convex/types';
 import { validateRequired, validateRequiredNumber, validateDateStrToDate } from '@/convex/utils/validations';
 import { checkAuth } from '@/convex/utils/auth';
@@ -98,6 +98,9 @@ export const create = mutation({
     coupon_discount: v.optional(v.number()), // クーポン割引額
     featured_hair_images: v.array(imageType), // フィーチャー画像
     notes: v.optional(v.string()), // メモ
+    // 決済失敗対策用フィールド
+    intended_point_use: v.optional(v.number()), // 使用予定ポイント（決済成功後に実際に使用）
+    pending_duration_minutes: v.optional(v.number()), // pending状態の有効期限（分）
   },
   handler: async (ctx, args) => {
     // 入力値の妥当性を検証し、不正なデータの登録を防止するためのバリデーション処理
@@ -218,8 +221,42 @@ export const create = mutation({
       });
     }
 
+    // pending状態の有効期限を設定（デフォルト30分）
+    const pending_expiry = args.pending_duration_minutes 
+      ? Date.now() + args.pending_duration_minutes * 60 * 1000
+      : Date.now() + 30 * 60 * 1000;
+
+    // 楽観的在庫管理: 予約作成時に即座に在庫を減算
+    if (args.options && args.options.length > 0) {
+      const stockResult = await ctx.runMutation(internal.option.stock.decrementStockForReservation, {
+        options: args.options.map(opt => ({
+          id: opt.id,
+          quantity: opt.quantity,
+        })),
+      });
+      
+      if (!stockResult.success && stockResult.errors.length > 0) {
+        throw new ConvexError({
+          statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'reservation.create',
+          message: stockResult.errors[0].error,
+          code: 'INSUFFICIENT_STOCK',
+          status: 400,
+          details: {
+            ...args,
+            stockErrors: stockResult.errors,
+          },
+        });
+      }
+    }
+
     // 予約本体と詳細情報を一括で作成する共通ヘルパーを呼び出すことで、データの整合性を確保しつつ効率的に処理
-    const { reservationId } = await createReservationWithDetails(ctx, args);
+    const { reservationId } = await createReservationWithDetails(ctx, {
+      ...args,
+      intended_point_use: args.intended_point_use || args.use_points,
+      pending_expiry,
+    });
     return reservationId;
   },
 })
@@ -311,7 +348,7 @@ export const update = mutation({
     }
 
     // 更新対象から予約IDを除外し、更新データを準備
-    const updateData = excludeFields(args, ['reservation_id'])
+    // const updateData = excludeFields(args, ['reservation_id']) // unused variable
 
     // 予約の基本情報を先に更新し、その後詳細情報を更新することで整合性を保つ
     await updateRecord(
@@ -480,6 +517,132 @@ export const updateReservationStripeCheckoutSessionId = mutation({
         payment_status: 'pending', // Checkout Session作成時はpendingに設定
       }
     )
+  },
+});
+
+// 予約キャンセル処理
+// キャンセル可能条件をチェックし、予約ステータスを更新する。
+// 顧客の場合はキャンセル期限をチェックし、スタッフの場合はスキップ可能。
+export const cancelReservation = mutation({
+  args: {
+    reservationId: v.id("reservation"),
+    cancelledBy: v.union(v.literal('customer'), v.literal('staff'), v.literal('system')),
+    cancelReason: v.optional(v.string()),
+    skipValidation: v.optional(v.boolean()), // スタッフ用：期限チェックスキップ
+  },
+  handler: async (ctx, args) => {
+    const reservation = await ctx.db.get(args.reservationId);
+    
+    if (!reservation || reservation.is_archive) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'reservation.cancelReservation',
+        message: 'Reservation not found',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: { reservationId: args.reservationId },
+      });
+    }
+    
+    // ステータスチェック
+    if (!['confirmed', 'pending'].includes(reservation.status)) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'reservation.cancelReservation',
+        message: `Cannot cancel reservation with status: ${reservation.status}`,
+        code: 'INVALID_STATUS',
+        status: 400,
+        details: { 
+          reservationId: args.reservationId,
+          currentStatus: reservation.status 
+        },
+      });
+    }
+    
+    // キャンセル期限チェック（顧客の場合のみ）
+    if (args.cancelledBy === 'customer' && !args.skipValidation) {
+      const orgConfig = await ctx.db
+        .query("reservation_config")
+        .withIndex("by_tenant_org_archive", q => 
+          q.eq("tenant_id", reservation.tenant_id)
+           .eq("org_id", reservation.org_id)
+           .eq("is_archive", false)
+        )
+        .first();
+      
+      const cancelDeadline = reservation.start_time_unix - 
+        (orgConfig?.available_cancel_days || 1) * 24 * 60 * 60 * 1000;
+      
+      if (Date.now() > cancelDeadline) {
+        throw new ConvexError({
+          statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'reservation.cancelReservation',
+          message: 'Cancellation deadline has passed',
+          code: 'DEADLINE_PASSED',
+          status: 400,
+          details: { 
+            reservationId: args.reservationId,
+            cancelDeadline: new Date(cancelDeadline).toISOString()
+          },
+        });
+      }
+    }
+    
+    // 予約詳細を取得（在庫復元のため）
+    const details = await ctx.db
+      .query("reservation_detail")
+      .withIndex("by_reservation_archive", q =>
+        q.eq("reservation_id", args.reservationId)
+         .eq("is_archive", false)
+      )
+      .first();
+    
+    // 楽観的在庫管理: キャンセル時に在庫を復元
+    if (details?.options && details.options.length > 0) {
+      await ctx.runMutation(internal.option.stock.restoreStockForCancellation, {
+        options: details.options.map(opt => ({
+          id: opt.id,
+          quantity: opt.quantity,
+        })),
+      });
+    }
+
+    // Supabaseのポイントタスクを削除してポイントの付与しないようにする
+    // 予約に紐づくポイントタスクの削除をスケジュール
+    if (reservation.status === 'pending' || reservation.status === 'confirmed') {
+      // アクションを即座に実行するようスケジュール
+      await ctx.scheduler.runAfter(0, internal.reservation.action.deletePointTaskForReservation, {
+        tenant_id: reservation.tenant_id,
+        org_id: reservation.org_id,
+        reservation_id: args.reservationId,
+      });
+    }
+    
+    // ステータス更新（キャンセル情報はreservation_detailのみに保存）
+    await ctx.db.patch(args.reservationId, {
+      status: 'cancelled',
+      updated_at: Date.now(),
+    });
+    
+    // 予約詳細も更新
+    if (details) {
+      await ctx.db.patch(details._id, {
+        cancellation_info: {
+          cancelled_at: Date.now(),
+          cancelled_by: args.cancelledBy,
+          reason: args.cancelReason,
+        },
+        updated_at: Date.now(),
+      });
+    }
+    
+    return { 
+      success: true, 
+      reservation: await ctx.db.get(args.reservationId)
+    };
   },
 });
 
