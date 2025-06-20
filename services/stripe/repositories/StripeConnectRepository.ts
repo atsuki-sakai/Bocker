@@ -137,7 +137,7 @@ export class StripeConnectRepository {
         business_type: 'individual',
         business_profile: {
           mcc: '7230', // Beauty salon & barber shops
-          url: getEnv('NEXT_PUBLIC_DEPLOY_URL'),
+          url: BASE_URL,
         },
         settings: {
           payouts: {
@@ -163,8 +163,8 @@ export class StripeConnectRepository {
 
       const accountLink = await this.stripe.accountLinks.create({
         account: account.id,
-        refresh_url: `${getEnv('NEXT_PUBLIC_DEPLOY_URL')}/dashboard/setting?refresh=true`,
-        return_url: `${getEnv('NEXT_PUBLIC_DEPLOY_URL')}/dashboard/setting?success=true`,
+        refresh_url: `${BASE_URL}/dashboard/setting?refresh=true`,
+        return_url: `${BASE_URL}/dashboard/setting?success=true`,
         type: 'account_onboarding',
       });
 
