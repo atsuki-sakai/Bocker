@@ -2,7 +2,7 @@
  * 機能フラグ管理ユーティリティ
  * 新機能の段階的なロールアウトを制御
  */
-
+import { getEnv } from '@/lib/env-config'
 /**
  * 利用可能な機能フラグ
  */
@@ -23,11 +23,11 @@ export function isFeatureEnabled(flag: FeatureFlag): boolean {
   switch (flag) {
     case FEATURE_FLAGS.CDN_ENABLED:
       // CDNが設定されていれば有効
-      return !!process.env.NEXT_PUBLIC_CDN_DOMAIN;
+      return !!getEnv('NEXT_PUBLIC_CDN_DOMAIN');
       
     case FEATURE_FLAGS.CDN_BETA_TEST:
       // ベータテスト環境変数で制御
-      return process.env.NEXT_PUBLIC_CDN_BETA === 'true';
+      return getEnv('NEXT_PUBLIC_CDN_BETA') === 'true';
       
     default:
       return false;
@@ -55,7 +55,7 @@ export function checkFeatureFlags(flags: FeatureFlag[]): Record<FeatureFlag, boo
  * @returns 開発環境かつ機能が有効な場合true
  */
 export function isFeatureEnabledInDev(flag: FeatureFlag): boolean {
-  return process.env.NODE_ENV === 'development' && isFeatureEnabled(flag);
+  return getEnv('NODE_ENV') === 'development' && isFeatureEnabled(flag);
 }
 
 /**
@@ -64,7 +64,7 @@ export function isFeatureEnabledInDev(flag: FeatureFlag): boolean {
  * @returns 本番環境かつ機能が有効な場合true
  */
 export function isFeatureEnabledInProd(flag: FeatureFlag): boolean {
-  return process.env.NODE_ENV === 'production' && isFeatureEnabled(flag);
+  return getEnv('NODE_ENV') === 'production' && isFeatureEnabled(flag);
 }
 
 /**
@@ -96,15 +96,15 @@ export function useFeatureFlag(flag: FeatureFlag): boolean {
  * 機能フラグのデバッグ情報を出力
  */
 export function debugFeatureFlags(): void {
-  if (process.env.NODE_ENV !== 'development') {
+  if (getEnv('NODE_ENV') !== 'development') {
     console.warn('debugFeatureFlags は開発環境でのみ使用してください');
     return;
   }
   
   console.log('=== Feature Flags Debug Info ===');
-  console.log('Environment:', process.env.NODE_ENV);
-  console.log('CDN Base URL:', process.env.NEXT_PUBLIC_CDN_DOMAIN || 'Not set');
-  console.log('CDN Beta:', process.env.NEXT_PUBLIC_CDN_BETA || 'Not set');
+  console.log('Environment:', getEnv('NODE_ENV'));
+  console.log('CDN Base URL:', getEnv('NEXT_PUBLIC_CDN_DOMAIN') || 'Not set');
+  console.log('CDN Beta:', getEnv('NEXT_PUBLIC_CDN_BETA') || 'Not set');
   
   const allFlags = Object.values(FEATURE_FLAGS);
   const flagStates = checkFeatureFlags(allFlags);
