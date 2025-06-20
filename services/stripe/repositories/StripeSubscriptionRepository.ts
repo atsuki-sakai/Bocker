@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/nextjs';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { SystemError } from '@/lib/errors/custom_errors';
 import { randomUUID } from 'crypto';
+import { getEnv } from '@/lib/env-config';
 
 /**
  * Stripe Subscription APIを扱うリポジトリクラス
@@ -22,7 +23,7 @@ export class StripeSubscriptionRepository {
 
   constructor(private readonly stripe: Stripe) {
     // 開発環境の判定
-    this.isDevelopment = process.env.NODE_ENV === 'development';
+    this.isDevelopment = getEnv('NODE_ENV') === 'development';
     
     // Stripeインスタンスの検証
     if (!stripe) {

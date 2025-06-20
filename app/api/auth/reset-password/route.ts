@@ -7,6 +7,8 @@ import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
 import { emailSchema } from '@/lib/validations/api/common';
 import { PasswordResetEmail } from '@/components/emails/PasswordResetEmail';
+import { BASE_URL } from '@/lib/constants';
+import { getEnv } from '@/lib/env-config';
 
 export const runtime = 'nodejs';
 
@@ -17,8 +19,8 @@ const resetPasswordRequestSchema = z.object({
   orgId: z.string().min(1),
 });
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const APP_JWT_SECRET = process.env.APP_JWT_SECRET || 'bocker-auth-session-secret-key';
+const resend = new Resend(getEnv('RESEND_API_KEY'));
+const APP_JWT_SECRET = getEnv('APP_JWT_SECRET');
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,7 +67,7 @@ export async function POST(request: NextRequest) {
     );
 
     // リセットURLを生成
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${request.headers.get('host')}`;
+    const baseUrl = BASE_URL || `https://${request.headers.get('host')}`;
     const sanitizedBaseUrl = baseUrl.replace(/\/+$/, '');
     const defaultLocale = 'ja';
     const resetUrl = `${sanitizedBaseUrl}/${defaultLocale}/customer/reset-password/confirm?token=${resetToken}`;
@@ -76,12 +78,12 @@ export async function POST(request: NextRequest) {
     // Resendでメール送信
     try {
       await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'noreply@bcker.jp',
+        from: getEnv('RESEND_FROM_EMAIL'),
         to: customer.email || validatedData.email,
         subject: 'パスワードリセットのご案内',
         react: PasswordResetEmail({
           customerEmail: customer.email || validatedData.email,
-          orgName: 'Bocker', // TODO: 組織名を動的に取得
+          orgName: 'Bocker',
           resetUrl,
           expiresAt,
         }),

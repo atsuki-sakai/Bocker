@@ -6,6 +6,7 @@ import { WebhookMetricsCollector } from '@/services/webhook/metrics';
 import { api } from '@/convex/_generated/api'; // Convex依存用
 import { retryOperation } from '@/lib/utils'; // リトライ依存用
 import { STRIPE_API_VERSION } from '@/services/stripe/constants';
+import { getEnv } from '@/lib/env-config';
 
 import { handleAccountUpdated, handleAccountExternalAccountDeleted, handleCapabilityUpdated } from './handlers.connect';
 import { handleSubscriptionUpdated, handleSubscriptionDeleted, handleInvoicePaymentSucceeded, handleInvoicePaymentFailed } from './handlers.subscription';
@@ -21,7 +22,7 @@ export class StripeWebhookProcessor extends WebhookProcessor {
 
   constructor() {
     super(); // WebhookProcessorには明示的なコンストラクターはありません。
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const stripeSecretKey = getEnv('STRIPE_SECRET_KEY');
     if (!stripeSecretKey) {
       // このエラーはキーが設定されていない場合にアプリケーションの起動を防ぎます。
       // これはフェイルファーストのアプローチです。

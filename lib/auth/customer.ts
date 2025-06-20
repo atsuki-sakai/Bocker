@@ -4,8 +4,9 @@ import { SessionPayload } from '@/lib/types';
 import { LOGIN_SESSION_KEY } from '@/services/line/constants';
 import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
+import { getEnv } from '@/lib/env-config'
 
-const APP_JWT_SECRET = process.env.APP_JWT_SECRET || 'bocker-auth-session-secret-key';
+const APP_JWT_SECRET = getEnv('APP_JWT_SECRET') || 'bocker-auth-session-secret-key';
 
 /**
  * 顧客セッションを取得・検証する

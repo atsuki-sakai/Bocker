@@ -10,6 +10,7 @@ import { Id } from '@/convex/_generated/dataModel';
 import { StripeResult } from '@/services/stripe/types';
 import { SystemError } from '@/lib/errors/custom_errors';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
+import { getEnv } from '@/lib/env-config'
 
 /**
  * Stripeサービスクラス
@@ -25,7 +26,7 @@ class StripeService {
   private subscriptionRepo: StripeSubscriptionRepository;
 
   private constructor() {
-    if (!process.env.STRIPE_SECRET_KEY) {
+    if (!getEnv('STRIPE_SECRET_KEY')) {
       throw new SystemError(
         'Stripeの秘密鍵が設定されていません',
         {
@@ -34,7 +35,7 @@ class StripeService {
           title: 'Stripeの秘密鍵が設定されていません',
           callFunc: 'StripeService.getInstance',
           details: {
-            stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+            stripeSecretKey: getEnv('STRIPE_SECRET_KEY'),
           },
         },
         'STRIPE_ERROR - NOT_FOUND'
@@ -42,7 +43,7 @@ class StripeService {
     }
 
     // Stripeインスタンスの初期化
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+    this.stripe = new Stripe(getEnv('STRIPE_SECRET_KEY'), {
       apiVersion: STRIPE_API_VERSION,
     });
 

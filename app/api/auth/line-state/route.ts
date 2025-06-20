@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { v4 as uuidv4 } from 'uuid'
 import { LINE_STATE_SESSION_KEY, LINE_STATE_EXPIRY_MS } from '@/services/line/constants'
+import { getEnv } from '@/lib/env-config'
 
 // HTTPOnlyクッキーで安全にstateを管理するAPI
 
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies()
     const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: getEnv('NODE_ENV') === 'production',
       sameSite: 'lax' as const,
       path: '/',
       maxAge: LINE_STATE_EXPIRY_MS / 1000 // 秒単位

@@ -3,13 +3,14 @@
 import { internalAction } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
+import { getEnv } from '@/lib/env-config'
 
 // Supabaseクライアントの取得（Node.js環境用）
 const getSupabaseClient = async () => {
   const { createClient } = await import("@supabase/supabase-js");
   
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL');
+  const serviceRoleKey = getEnv('SUPABASE_SERVICE_ROLE_KEY');
   
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('Missing Supabase environment variables');

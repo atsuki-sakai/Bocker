@@ -6,6 +6,8 @@ import { PointTaskQueueRepository } from "../../services/supabase/repositories/p
 import { CustomerRepository } from "../../services/supabase/repositories/customer/CustomerRepository";
 import { getSupabaseAdminService } from "../../services/supabase/SupabaseService";
 import type { RowType } from "../../services/supabase/SupabaseService";
+import { getEnv } from '@/lib/env-config'
+import { BASE_URL } from "@/lib/constants";
 
 /**
  * ポイント付与バッチ処理
@@ -179,7 +181,7 @@ async function sendPointAwardNotification(task: RowType<'point_task_queue'>): Pr
   
   if (customer.line_id) {
     // LINE通知送信
-    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/line/message`, {
+    await fetch(`${BASE_URL}/api/line/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -191,7 +193,7 @@ async function sendPointAwardNotification(task: RowType<'point_task_queue'>): Pr
     });
   } else if (customer.email) {
     // メール通知送信
-    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/resend`, {
+    await fetch(`${BASE_URL}/api/resend`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

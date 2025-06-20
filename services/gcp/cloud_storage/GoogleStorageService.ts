@@ -7,6 +7,7 @@ import sharp from 'sharp';
 import { Id } from '@/convex/_generated/dataModel';
 import { AspectType } from '@/convex/types';
 import { ImageDirectory, ImageQuality, ProcessedImageResult, UploadedFileResult } from './types';
+import { getEnv } from '@/lib/env-config'
 
 /**
  * 画像サイズとメモリ使用量の制限設定
@@ -33,10 +34,10 @@ class GoogleStorageService {
    * 必要な環境変数を取得し、存在しない場合はエラーを投げる
    */
   private getEnvConfig() {
-    const projectId = process.env.GCP_PROJECT
-    const clientEmail = process.env.GCP_CLIENT_EMAIL
-    const privateKey = process.env.GCP_PRIVATE_KEY
-    const bucketName = process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME
+    const projectId = getEnv('GCP_PROJECT')
+    const clientEmail = getEnv('GCP_CLIENT_EMAIL')
+    const privateKey = getEnv('GCP_PRIVATE_KEY')
+    const bucketName = getEnv('NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME')
     if (!projectId || !clientEmail || !privateKey || !bucketName) {
       throw new SystemError(
         'GCS接続に必要な環境変数が不足しています。',
@@ -1008,7 +1009,7 @@ class GoogleStorageService {
     if (!gcsUrl) return '';
     
     // 環境変数からCDNのベースURLを取得
-    const cdnBaseUrl = process.env.NEXT_PUBLIC_CDN_DOMAIN;
+    const cdnBaseUrl = getEnv('NEXT_PUBLIC_CDN_DOMAIN');
     
     // CDNが設定されていない場合はGCS URLをそのまま返す（フォールバック）
     if (!cdnBaseUrl) {
@@ -1078,7 +1079,7 @@ class GoogleStorageService {
    * @returns CDNが有効な場合true
    */
   isCdnEnabled(): boolean {
-    return !!process.env.NEXT_PUBLIC_CDN_DOMAIN;
+    return !!getEnv('NEXT_PUBLIC_CDN_DOMAIN');
   }
 
   /**
@@ -1087,7 +1088,7 @@ class GoogleStorageService {
    * @returns CDN経由の場合true
    */
   isCdnUrl(url: string): boolean {
-    const cdnBaseUrl = process.env.NEXT_PUBLIC_CDN_DOMAIN;
+    const cdnBaseUrl = getEnv('NEXT_PUBLIC_CDN_DOMAIN');
     if (!cdnBaseUrl || !url) return false;
     
     try {
@@ -1105,7 +1106,7 @@ class GoogleStorageService {
    * @returns GCSの直接URL
    */
   getGcsUrlFromCdn(cdnUrl: string): string {
-    const cdnBaseUrl = process.env.NEXT_PUBLIC_CDN_DOMAIN;
+    const cdnBaseUrl = getEnv('NEXT_PUBLIC_CDN_DOMAIN');
     const bucketName = this.bucketName;
     
     if (!cdnBaseUrl || !bucketName || !cdnUrl) {

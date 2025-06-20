@@ -10,7 +10,8 @@ import { PointTransactionRepository } from '@/services/supabase/repositories/poi
 import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
 import { LineService } from '@/services/line/LineService';
 import * as Sentry from '@sentry/nextjs';
-import jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken'; 
+import { getEnv } from '@/lib/env-config'
 
 // キャンセルリクエストのバリデーションスキーマ
 const cancelReservationSchema = z.object({
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     // JWTトークンをデコード
     let session: { customerUid: string; email?: string; lineUserId?: string };
     try {
-      session = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as typeof session;
+      session = jwt.verify(token, getEnv('APP_JWT_SECRET') || 'your-secret-key') as typeof session;
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }

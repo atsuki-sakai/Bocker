@@ -3,7 +3,7 @@ import { ImageDirectory, ImageQuality } from "./types";
 import { v4 as uuidv4 } from 'uuid';
 import { Id } from "@/convex/_generated/dataModel";
 import { STORAGE_URL } from "./constants";
-
+import { getEnv } from '@/lib/env-config'
 /**
  * GCS URLをCDN URLに変換する（クライアントサイド版）
  * @param gcsUrl - GCSの直接URL（例: https://storage.googleapis.com/bucket/path/to/image.webp）
@@ -14,7 +14,7 @@ function getCdnUrl(gcsUrl: string | null | undefined): string {
   if (!gcsUrl) return '';
   
   // 環境変数からCDNのベースURLを取得
-  const cdnBaseUrl = process.env.NEXT_PUBLIC_CDN_DOMAIN;
+  const cdnBaseUrl = getEnv('NEXT_PUBLIC_CDN_DOMAIN');
   
   // CDNが設定されていない場合はGCS URLをそのまま返す（フォールバック）
   if (!cdnBaseUrl) {
@@ -609,7 +609,7 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
         
         console.log('[画像アップロード] GCSへの直送アップロード完了')
 
-        const bucket = process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME!;
+        const bucket = getEnv('NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME');
         
         if (!bucket) {
             console.error('[画像アップロード] バケット名が設定されていません')

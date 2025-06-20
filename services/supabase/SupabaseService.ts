@@ -1,8 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '@/supabase.types'
 import { throwSupabaseError } from './utils/errors'
-import { CustomerRepository, CustomerDetailRepository, CustomerPointsRepository } from './repositories/customer'
-import { MigrationRepository } from './repositories/migration'
+import { getEnv } from '@/lib/env-config'
+
 
 /* 型エイリアス --------------------------------------------------- */
 export type Tables = Database['public']['Tables']
@@ -13,9 +13,8 @@ export type UpdateType<K extends TableName> = Tables[K]['Update'];
 export type SelectCols<R> = '*' | keyof R | (keyof R)[];
 
 /* クライアント --------------------------------------------------- */
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-// const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY! // クライアントサイドでは参照しない
+const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL')
+const supabaseAnonKey = getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
 
 if (!supabaseUrl) {
   throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL. Please check your .env file.')
@@ -29,7 +28,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // サーバーサイド用 Supabase Admin クライアントを作成するファクトリ関数
 export function createSupabaseAdminClient(): SupabaseClient {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = getEnv('SUPABASE_SERVICE_ROLE_KEY');
   if (!serviceRoleKey) {
     throw new Error('Missing env.SUPABASE_SERVICE_ROLE_KEY. This client is intended for server-side use only.');
   }

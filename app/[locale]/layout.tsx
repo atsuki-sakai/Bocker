@@ -5,6 +5,8 @@ import { getMessages } from 'next-intl/server'
 import { routing } from '@/i18n/routing'
 import { notFound } from 'next/navigation'
 import ClientLayout from './ClientLayout'
+// FIXME: 測定を有効化する
+// import { Analytics } from '@vercel/analytics/next'
 import type { Languages } from '@/lib/constants'
 
 export const metadata: Metadata = {
@@ -39,6 +41,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <NextIntlClientProvider messages={messages} locale={locale}>
       <ClientLayout>{children}</ClientLayout>
+      {/* <Analytics /> */}
     </NextIntlClientProvider>
   )
 }

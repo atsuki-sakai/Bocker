@@ -4,8 +4,9 @@ import { clerkClient } from '@clerk/nextjs/server';
 import { BASE_URL } from '@/lib/constants';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
+import { getEnv } from '@/lib/env-config'
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+const convex = new ConvexHttpClient(getEnv('NEXT_PUBLIC_CONVEX_URL'))
 
 export async function POST(request: NextRequest) {
   try {

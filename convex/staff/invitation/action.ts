@@ -4,6 +4,7 @@ import { action } from '../../_generated/server';
 import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
+import { getEnv } from '@/lib/env-config'
 
 /**
  * Staffのメールアドレス重複チェック(Clerkでのメールアドレス重複チェック)
@@ -19,7 +20,7 @@ export const checkEmailAvailability = action({
         // Clerkのクライアントを作成 サーバーサイドでのみ使用
         const { createClerkClient } = await import('@clerk/backend');
         const clerk = createClerkClient({
-          secretKey: process.env.CLERK_SECRET_KEY
+          secretKey: getEnv('CLERK_SECRET_KEY')
         });
         const userList = await clerk.users.getUserList({
           emailAddress: [args.email]

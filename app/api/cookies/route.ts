@@ -3,6 +3,7 @@
 
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { getEnv } from '@/lib/env-config'
 
 export const runtime = 'nodejs'
 
@@ -27,7 +28,7 @@ const performLogout = async (key: string): Promise<NextResponse> => {
   // 失効済みクッキーを設定 (Max-Age=0)
   response.cookies.set(key, '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: getEnv('NODE_ENV') === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 0, // 即時失効

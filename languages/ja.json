@@ -323,7 +323,117 @@
     "lastMonth": "先月",
     "thisWeek": "今週",
     "today": "今日",
-    "yesterday": "昨日"
+    "yesterday": "昨日",
+    "carte": {
+      "title": "顧客カルテ管理",
+      "backToDashboard": "ダッシュボードへ戻る",
+      "customerSearch": "顧客検索",
+      "searchPlaceholder": "顧客名で検索",
+      "searchResults": "検索結果: {term}",
+      "noResults": "検索結果がありません",
+      "noCustomers": "顧客が見つかりません",
+      "fetchError": "顧客データの取得に失敗しました",
+      "searchError": "顧客の検索に失敗しました",
+      "table": {
+        "customerName": "顧客名",
+        "contact": "連絡先",
+        "visitCount": "来店回数",
+        "lastVisit": "最終来店日",
+        "tags": "タグ"
+      },
+      "unregistered": "未登録",
+      "noReservation": "予約がありません",
+      "visitCountBadge": "{count} 回",
+      "viewDetails": "顧客カルテ詳細へ",
+      "detail": {
+        "title": "顧客カルテ",
+        "backToSearch": "顧客検索に戻る",
+        "customerNotFound": "顧客情報が見つかりません",
+        "edit": "編集する",
+        "customerInfo": "顧客情報",
+        "name": "氏名",
+        "age": "{age}歳",
+        "totalPoints": "保有ポイント",
+        "pointsUnit": "{points} pt",
+        "skinType": "肌質",
+        "hairType": "髪質",
+        "allergy": "アレルギー",
+        "medicalHistory": "病歴",
+        "none": "なし",
+        "totalReservations": "総予約数",
+        "totalSales": "総売上",
+        "reservationHistory": "予約履歴",
+        "noReservationHistory": "予約履歴がありません",
+        "assignedStaff": "担当: {staffName}",
+        "menu": "メニュー:",
+        "option": "オプション:",
+        "paymentMethod": {
+          "cash": "現金",
+          "card": "クレジットカード"
+        },
+        "notes": "備考: {notes}",
+        "status": {
+          "confirmed": "確定",
+          "completed": "完了",
+          "cancelled": "キャンセル",
+          "pending": "保留"
+        }
+      },
+      "edit": {
+        "title": "顧客カルテ編集",
+        "createTitle": "顧客カルテ作成",
+        "customerNotFound": "顧客情報が見つかりません",
+        "fetchError": "データの取得に失敗しました",
+        "updateSuccess": "カルテ情報を更新しました",
+        "createSuccess": "カルテを作成しました",
+        "saveError": "カルテの保存に失敗しました",
+        "tabs": {
+          "basic": "基本情報",
+          "medical": "医療情報"
+        },
+        "basicInfo": {
+          "title": "顧客基本情報",
+          "customerName": "顧客名",
+          "skinType": "肌質",
+          "hairType": "髪質",
+          "skinTypePlaceholder": "肌質を選択",
+          "hairTypePlaceholder": "髪質を選択",
+          "notSet": "未設定"
+        },
+        "medicalInfo": {
+          "title": "医療情報",
+          "allergyHistory": "アレルギー履歴",
+          "allergyPlaceholder": "例: 金属アレルギー、化粧品アレルギーなど",
+          "medicalHistory": "病歴・既往症",
+          "medicalPlaceholder": "例: アトピー性皮膚炎、高血圧など"
+        },
+        "buttons": {
+          "back": "戻る",
+          "updating": "更新中...",
+          "creating": "作成中...",
+          "update": "更新する",
+          "create": "作成する"
+        },
+        "validation": {
+          "maxLength": "1000文字以内で入力してください"
+        },
+        "skinTypes": {
+          "normal": "普通肌",
+          "dry": "乾燥肌",
+          "oily": "脂性肌",
+          "combination": "混合肌",
+          "sensitive": "敏感肌"
+        },
+        "hairTypes": {
+          "straight": "ストレート",
+          "wavy": "ウェーブ",
+          "curly": "カーリー",
+          "coily": "コイリー",
+          "fine": "細い",
+          "thick": "太い"
+        }
+      }
+    }
   },
   "reservations": {
     "title": "予約管理",

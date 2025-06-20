@@ -369,8 +369,8 @@ const session = await stripe.checkout.sessions.create({
     },
   ],
   mode: 'payment',
-  success_url: `${process.env.NEXT_PUBLIC_APP_URL}/reservation/${orgId}/calendar/complete`,
-  cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/reservation/${orgId}/calendar`,
+  success_url: `${BASE_URL}/reservation/${orgId}/calendar/complete`,
+  cancel_url: `${BASE_URL}/reservation/${orgId}/calendar`,
   metadata: {
     reservation_id: reservationId,
     customer_id: customerId,
@@ -412,7 +412,7 @@ export const reservationFlexMessageTemplate = (data: ReservationData) => ({
           action: {
             type: 'uri',
             label: '予約詳細を見る',
-            uri: `${process.env.NEXT_PUBLIC_APP_URL}/customer/${orgId}/${customerId}/reservation/${reservationId}`
+            uri: `${BASE_URL}/reservation/${orgId}/calendar/${_URL}/customer/${orgId}/${customerId}/reservation/${reservationId}`
           }
         }
       ]

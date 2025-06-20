@@ -1,6 +1,7 @@
 import {withSentryConfig} from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
+import { getEnv } from './lib/env-config';
 
 
 // 1. bundle-analyzerをrequireで読み込む
@@ -35,15 +36,16 @@ const nextConfig: NextConfig = {
       },
       // CDNドメインのサポート（環境変数から動的に設定）
       ...((() => {
-        if (!process.env.NEXT_PUBLIC_CDN_DOMAIN) return [];
+        const cdnDomain = getEnv('NEXT_PUBLIC_CDN_DOMAIN');
+        if (!cdnDomain) return [];
         try {
-          const cdnUrl = new URL(process.env.NEXT_PUBLIC_CDN_DOMAIN);
+          const cdnUrl = new URL(cdnDomain);
           return [{
             protocol: 'https' as const,
             hostname: cdnUrl.hostname,
           }];
         } catch (e) {
-          console.warn('Invalid CDN domain:', process.env.NEXT_PUBLIC_CDN_DOMAIN);
+          console.warn('Invalid CDN domain:', cdnDomain);
           return [];
         }
       })()),

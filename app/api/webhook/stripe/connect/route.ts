@@ -1,6 +1,7 @@
 // app/api/webhook/stripe/connect/route.ts
 import { StripeWebhookProcessor } from '@/services/webhook/stripe/StripeWebhookProcessor';
 import { NextRequest, NextResponse } from 'next/server';
+import { getEnv } from '@/lib/env-config'
 
 // StripeWebhookProcessor のインスタンスを作成 (同じプロセッサを再利用)
 const processor = new StripeWebhookProcessor();
@@ -14,10 +15,10 @@ export const runtime = 'nodejs'; // 指示書通り nodejs を指定
  */
 export async function POST(req: NextRequest) {
   // 環境変数から Connect 用の Webhook シークレットを取得
-  const webhookSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+  const webhookSecret = getEnv('STRIPE_CONNECT_WEBHOOK_SECRET');
   if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET_CONNECT is not set in environment variables.');
-    return new Response('STRIPE_WEBHOOK_SECRET_CONNECT is not configured.', { status: 500 });
+    console.error('STRIPE_SUBSCRIPTION_WEBHOOK_SECRET_CONNECT is not set in environment variables.');
+    return new Response('STRIPE_SUBSCRIPTION_WEBHOOK_SECRET_CONNECT is not configured.', { status: 500 });
   }
   // processor.process の第二引数は processor 側で 'connect' か 'subscription' を区別するものではなく、
   // 単純に Webhook Secret を渡すためのものです。
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     message: 'Stripe Subscription webhook endpoint is active. Use POST for events.',
-    required_secret_env: 'STRIPE_WEBHOOK_SECRET_SUBS',
+    required_secret_env: 'STRIPE_SUBSCRIPTION_WEBHOOK_SECRET_SUBS',
     timestamp: new Date().toISOString(),
   }, { status: 200 });
 }

@@ -34,7 +34,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 
 const createPointConfigSchema = (
   t: (key: string, values?: Record<string, string | number | Date>) => string
@@ -105,6 +105,7 @@ export default function PointForm() {
   const [isSaving, setIsSaving] = useState(false)
   const { showErrorToast } = useErrorHandler()
   const t = useTranslations('point')
+  const locale = useLocale()
 
   const pointConfigSchema = createPointConfigSchema(t)
 
@@ -269,7 +270,7 @@ export default function PointForm() {
                   label={t('basicSettings.fixedPoint')}
                   type="number"
                   icon={<DollarSign size={16} />}
-                  placeholder="例: 100"
+                  placeholder={t('basicSettings.fixedPointPlaceholder')}
                 />
               ) : (
                 <div className="space-y-2">
@@ -280,7 +281,7 @@ export default function PointForm() {
                   <Input
                     id="point_rate"
                     type="number"
-                    placeholder="例: 5 (5%)"
+                    placeholder={t('basicSettings.pointRatePlaceholder')}
                     step="1"
                     min="0"
                     max="100"
@@ -384,12 +385,12 @@ export default function PointForm() {
                         {watchedExpirationDays
                           ? new Date(
                               Date.now() + watchedExpirationDays * 24 * 60 * 60 * 1000
-                            ).toLocaleDateString('ja-JP', {
+                            ).toLocaleDateString(locale === 'ja' ? 'ja-JP' : 'en-US', {
                               year: 'numeric',
                               month: '2-digit',
                               day: '2-digit',
                             })
-                          : new Date().toLocaleDateString('ja-JP', {
+                          : new Date().toLocaleDateString(locale === 'ja' ? 'ja-JP' : 'en-US', {
                               year: 'numeric',
                               month: '2-digit',
                               day: '2-digit',

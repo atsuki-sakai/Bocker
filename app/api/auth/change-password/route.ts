@@ -8,6 +8,7 @@ import { CustomerRepository } from '@/services/supabase/repositories/customer/Cu
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { LOGIN_SESSION_KEY } from '@/services/line/constants';
 import { PasswordChangedEmail } from '@/components/emails/PasswordChangedEmail';
+import { getEnv } from '@/lib/env-config';
 
 export const runtime = 'nodejs';
 
@@ -26,8 +27,8 @@ interface SessionPayload {
   orgId: string;
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const APP_JWT_SECRET = process.env.APP_JWT_SECRET || 'bocker-auth-session-secret-key';
+const resend = new Resend(getEnv('RESEND_API_KEY'));
+const APP_JWT_SECRET = getEnv('APP_JWT_SECRET');
 
 export async function POST(request: NextRequest) {
   try {
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
       const changedAt = new Date().toLocaleString('ja-JP');
       
       await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'noreply@bcker.jp',
+        from: getEnv('RESEND_FROM_EMAIL'),
         to: customer.email || sessionPayload.email,
         subject: 'パスワード変更完了のお知らせ',
         react: PasswordChangedEmail({
