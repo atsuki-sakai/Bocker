@@ -505,7 +505,7 @@ throw new ValidationError('Invalid input', { field: 'email' });
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: Clerk公開キー
 - `CLERK_SECRET_KEY`: Clerkシークレットキー
 - `STRIPE_SECRET_KEY`: Stripeシークレットキー
-- `STRIPE_WEBHOOK_SECRET`: Stripe Webhookシークレット
+- `STRIPE_SUBSCRIPTION_WEBHOOK_SECRET`: Stripe Webhookシークレット
 - `NEXT_PUBLIC_SUPABASE_URL`: Supabase URL
 - `SUPABASE_SERVICE_ROLE_KEY`: Supabaseサービスロールキー
 
