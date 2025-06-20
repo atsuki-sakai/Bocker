@@ -1,0 +1,261 @@
+import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
+import { PointTaskQueueRepository } from '@/services/supabase/repositories/point';
+import { CustomerRepository } from '@/services/supabase/repositories/customer';
+import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
+import { LineService } from '@/services/line/LineService';
+import { sendReservationConfirmationEmail } from '@/lib/email_templates/reservation_email';
+import * as Sentry from '@sentry/nextjs';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-02-24.acacia',
+});
+
+export const runtime = 'nodejs';
+
+/**
+ * Stripe Checkout Webhook を処理する POST リクエストハンドラ
+ * checkout.session.completed イベントを処理し、予約を確定させる
+ */
+export async function POST(req: NextRequest) {
+  const webhookSecret = process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error('STRIPE_CHECKOUT_WEBHOOK_SECRET is not set in environment variables.');
+    return new Response('STRIPE_CHECKOUT_WEBHOOK_SECRET is not configured.', { status: 500 });
+  }
+
+  // 署名検証
+  const signature = req.headers.get('stripe-signature');
+  if (!signature) {
+    return new Response('Missing stripe-signature header.', { status: 400 });
+  }
+
+  const rawBody = await req.text();
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Stripe webhook signature verification failed:', errorMessage);
+    return new Response(`Webhook Error: ${errorMessage}`, { status: 400 });
+  }
+
+  console.log(`📦 Received Stripe event: ${event.type} (ID: ${event.id})`);
+
+  // checkout.session.completed イベントのみ処理
+  if (event.type !== 'checkout.session.completed') {
+    return NextResponse.json({ received: true });
+  }
+
+  try {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const metadata = session.metadata;
+
+    if (!metadata?.reservation_id || !metadata?.customer_id || !metadata?.tenant_id || !metadata?.org_id) {
+      console.warn(`⚠️ Missing metadata in checkout session: ${session.id}`, metadata);
+      return NextResponse.json({ received: true });
+    }
+
+    const { reservation_id, customer_id, tenant_id, org_id } = metadata;
+    
+    console.log(`💳 Processing payment confirmation for reservation: ${reservation_id}`);
+
+    // 1. 予約ステータスと支払いステータスを更新
+    await Promise.all([
+      fetchMutation(api.reservation.mutation.updateStatus, {
+        reservation_id: reservation_id as Id<"reservation">,
+        status: 'confirmed',
+      }),
+      fetchMutation(api.reservation.mutation.updateReservationPaymentStatus, {
+        reservation_id: reservation_id as Id<"reservation">,
+        payment_status: 'paid',
+        stripe_checkout_session_id: session.id,
+      }),
+    ]);
+
+    // 2. 予約詳細情報を取得
+    const reservationWithDetail = await fetchQuery(api.reservation.query.getWithDetailById, {
+      id: reservation_id as Id<"reservation">
+    });
+
+    if (!reservationWithDetail?.reservation || !reservationWithDetail?.reservationDetail) {
+      throw new Error(`Reservation not found: ${reservation_id}`);
+    }
+
+    const reservation = reservationWithDetail.reservation;
+    const reservationDetail = reservationWithDetail.reservationDetail;
+
+    // 3. 顧客情報を取得
+    const supabaseService = getSupabaseAdminService();
+    const customerRepo = new CustomerRepository(supabaseService);
+    const customerData = await customerRepo.getCompleteCustomerData(
+      tenant_id as Id<"tenant">,
+      org_id as Id<"organization">,
+      customer_id
+    );
+
+    if (!customerData.customer) {
+      throw new Error(`Customer not found: ${customer_id}`);
+    }
+
+    const customer = customerData.customer;
+
+    // 4. 組織情報を取得（通知送信用）
+    const organization = await fetchQuery(api.organization.query.findByOrgId, {
+      org_id: org_id as Id<"organization">
+    });
+
+    const organizationName = organization?.org_name || 'サロン';
+
+    // 5. API設定を取得（LINE token用）
+    const apiConfig = await fetchQuery(api.organization.api_config.query.findByTenantAndOrg, {
+      tenant_id: tenant_id as Id<"tenant">,
+      org_id: org_id as Id<"organization">
+    });
+
+    // 6. 通知送信（並列処理）
+    const notificationResults = await Promise.allSettled([
+      // メール送信
+      customer.email ? sendReservationConfirmationEmail({
+        to: customer.email,
+        customerName: reservation.customer_name,
+        reservationDate: reservation.date,
+        reservationTime: new Date(reservation.start_time_unix).toLocaleTimeString('ja-JP', {
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        staffName: reservation.staff_name,
+        salonName: organizationName,
+        menus: reservationDetail.menus.map(m => ({
+          name: m.name,
+          price: m.price,
+          quantity: m.quantity
+        })),
+        options: reservationDetail.options?.map(o => ({
+          name: o.name,
+          price: o.price,
+          quantity: o.quantity
+        })) || [],
+        totalPrice: reservationDetail.total_price || 0,
+        paymentMethod: 'credit_card',
+      }) : Promise.resolve(),
+      
+      // LINE送信
+      customer.line_id && apiConfig?.line_access_token ? (async () => {
+        const lineService = new LineService();
+        const flexMessage = {
+          type: 'flex' as const,
+          altText: '予約確認',
+          contents: {
+            type: 'bubble' as const,
+            body: {
+              type: 'box' as const,
+              layout: 'vertical' as const,
+              contents: [
+                {
+                  type: 'text' as const,
+                  text: '予約が確定しました',
+                  weight: 'bold' as const,
+                  size: 'xl' as const,
+                },
+                {
+                  type: 'text' as const,
+                  text: `予約日時: ${reservation.date} ${new Date(reservation.start_time_unix).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`,
+                  margin: 'md' as const,
+                },
+                {
+                  type: 'text' as const,
+                  text: `担当: ${reservation.staff_name}`,
+                },
+                {
+                  type: 'text' as const,
+                  text: `合計金額: ¥${(reservationDetail.total_price || 0).toLocaleString()}`,
+                },
+              ]
+            }
+          }
+        };
+        
+        await lineService.sendFlexMessage(
+          customer.line_id!,
+          [flexMessage],
+          apiConfig.line_access_token!
+        );
+      })() : Promise.resolve(),
+    ]);
+
+    // 通知エラーはログのみ
+    notificationResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Notification failed [${index}]:`, result.reason);
+        Sentry.captureException(result.reason, {
+          tags: { 
+            event_id: event.id,
+            notification_type: index === 0 ? 'email' : 'line' 
+          }
+        });
+      }
+    });
+
+    // 7. ポイント付与予約（30日後）
+    const pointConfig = await fetchQuery(api.point.query.findByTenantAndOrg, {
+      tenant_id: tenant_id as Id<"tenant">,
+      org_id: org_id as Id<"organization">,
+    });
+
+    if (pointConfig?.is_active) {
+      const earnPoints = pointConfig.is_fixed_point 
+        ? pointConfig.fixed_point || 0
+        : Math.floor((reservationDetail.total_price || 0) * (pointConfig.point_rate || 0) / 100);
+
+      if (earnPoints > 0) {
+        const pointTaskQueueRepo = new PointTaskQueueRepository(supabaseService);
+        await pointTaskQueueRepo.create({
+          tenant_id,
+          org_id,
+          customer_id,
+          reservation_id,
+          points: earnPoints,
+          scheduled_for_unix: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30日後
+          status: 'pending'
+        });
+      }
+    }
+
+    console.log(`✅ Successfully processed checkout.session.completed for reservation: ${reservation_id}`);
+
+    return NextResponse.json({ 
+      received: true,
+      processed: true,
+      reservation_id 
+    });
+
+  } catch (error) {
+    console.error('Error processing checkout.session.completed:', error);
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: { 
+        event_type: 'checkout.session.completed',
+        event_id: event.id 
+      },
+    });
+    
+    // エラーでも200を返す（Stripeの再試行を防ぐため）
+    return NextResponse.json({ 
+      received: true,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
+export async function GET() {
+  return NextResponse.json({
+    message: 'Stripe Checkout webhook endpoint is active. Use POST for events.',
+    required_secret_env: 'STRIPE_CHECKOUT_WEBHOOK_SECRET',
+    timestamp: new Date().toISOString(),
+  }, { status: 200 });
+}
