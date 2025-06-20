@@ -10,8 +10,9 @@ import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService'
 import { z } from 'zod'
 import { validateRequest, createValidationErrorResponse } from '@/lib/api/validation'
 import { convexIdSchema } from '@/lib/validations/api/common'
+import { getEnv } from '@/lib/env-config'
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+const convex = new ConvexHttpClient(getEnv('NEXT_PUBLIC_CONVEX_URL'))
 
 // Delete staff schema
 const deleteStaffRequestSchema = z.object({
