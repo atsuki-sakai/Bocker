@@ -9,7 +9,7 @@ import { SystemError } from '@/lib/errors/custom_errors';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { BASE_URL } from '@/lib/constants';
 import { determineAccountStatus } from '../../webhook/stripe/handlers.connect';
-
+import { getEnv } from '@/lib/env-config';
 /**
  * Stripe Connect APIを扱うリポジトリクラス
  */
@@ -20,10 +20,10 @@ export class StripeConnectRepository {
 
   private constructor(private stripe: Stripe) {
     // Convexクライアントの初期化
-    this.convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL as string);
+    this.convex = new ConvexHttpClient(getEnv('NEXT_PUBLIC_CONVEX_URL'));
 
     // 開発環境かどうか
-    this.isDevelopment = process.env.NODE_ENV === 'development';
+    this.isDevelopment = getEnv('NODE_ENV') === 'development';
   }
 
   public static getInstance(stripe: Stripe): StripeConnectRepository {
@@ -137,7 +137,7 @@ export class StripeConnectRepository {
         business_type: 'individual',
         business_profile: {
           mcc: '7230', // Beauty salon & barber shops
-          url: process.env.NEXT_PUBLIC_DEPLOY_URL,
+          url: getEnv('NEXT_PUBLIC_DEPLOY_URL'),
         },
         settings: {
           payouts: {
@@ -163,8 +163,8 @@ export class StripeConnectRepository {
 
       const accountLink = await this.stripe.accountLinks.create({
         account: account.id,
-        refresh_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL}/dashboard/setting?refresh=true`,
-        return_url: `${process.env.NEXT_PUBLIC_DEPLOY_URL}/dashboard/setting?success=true`,
+        refresh_url: `${getEnv('NEXT_PUBLIC_DEPLOY_URL')}/dashboard/setting?refresh=true`,
+        return_url: `${getEnv('NEXT_PUBLIC_DEPLOY_URL')}/dashboard/setting?success=true`,
         type: 'account_onboarding',
       });
 
