@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useZodForm } from '@/hooks/useZodForm'
 import { Loading } from '@/components/common'
@@ -34,15 +35,21 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-// バリデーションスキーマ
-const carteEditSchema = z.object({
-  skin_type: z.string().nullable().optional(),
-  hair_type: z.string().nullable().optional(),
-  allergy_history: z.string().max(1000, '1000文字以内で入力してください').nullable().optional(),
-  medical_history: z.string().max(1000, '1000文字以内で入力してください').nullable().optional(),
-})
+// バリデーションスキーマを作成する関数
+const createCarteEditSchema = (t: ReturnType<typeof useTranslations>) =>
+  z.object({
+    skin_type: z.string().nullable().optional(),
+    hair_type: z.string().nullable().optional(),
+    allergy_history: z.string().max(1000, t('edit.validation.maxLength')).nullable().optional(),
+    medical_history: z.string().max(1000, t('edit.validation.maxLength')).nullable().optional(),
+  })
 
-type CarteEditFormData = z.infer<typeof carteEditSchema>
+type CarteEditFormData = {
+  skin_type?: string | null
+  hair_type?: string | null
+  allergy_history?: string | null
+  medical_history?: string | null
+}
 
 type CustomerWithDetails = {
   customer: RowType<'customer'> | null
@@ -50,29 +57,34 @@ type CustomerWithDetails = {
   customerPoints: RowType<'customer_points'> | null
 }
 
-// 肌質の選択肢
-const SKIN_TYPE_OPTIONS = [
-  { value: 'normal', label: '普通肌' },
-  { value: 'dry', label: '乾燥肌' },
-  { value: 'oily', label: '脂性肌' },
-  { value: 'combination', label: '混合肌' },
-  { value: 'sensitive', label: '敏感肌' },
+// 選択肢を作成する関数
+const getSkinTypeOptions = (t: ReturnType<typeof useTranslations>) => [
+  { value: 'normal', label: t('edit.skinTypes.normal') },
+  { value: 'dry', label: t('edit.skinTypes.dry') },
+  { value: 'oily', label: t('edit.skinTypes.oily') },
+  { value: 'combination', label: t('edit.skinTypes.combination') },
+  { value: 'sensitive', label: t('edit.skinTypes.sensitive') },
 ]
 
-// 髪質の選択肢
-const HAIR_TYPE_OPTIONS = [
-  { value: 'straight', label: 'ストレート' },
-  { value: 'wavy', label: 'ウェーブ' },
-  { value: 'curly', label: 'カーリー' },
-  { value: 'coily', label: 'コイリー' },
-  { value: 'fine', label: '細い' },
-  { value: 'thick', label: '太い' },
+const getHairTypeOptions = (t: ReturnType<typeof useTranslations>) => [
+  { value: 'straight', label: t('edit.hairTypes.straight') },
+  { value: 'wavy', label: t('edit.hairTypes.wavy') },
+  { value: 'curly', label: t('edit.hairTypes.curly') },
+  { value: 'coily', label: t('edit.hairTypes.coily') },
+  { value: 'fine', label: t('edit.hairTypes.fine') },
+  { value: 'thick', label: t('edit.hairTypes.thick') },
 ]
 
 export default function CustomerCarteEditForm() {
   const router = useRouter()
   const { customer_id } = useParams()
+  const tCarte = useTranslations('dashboard.carte')
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
+
+  // 翻訳を使ったスキーマと選択肢を作成
+  const carteEditSchema = useMemo(() => createCarteEditSchema(tCarte), [tCarte])
+  const SKIN_TYPE_OPTIONS = useMemo(() => getSkinTypeOptions(tCarte), [tCarte])
+  const HAIR_TYPE_OPTIONS = useMemo(() => getHairTypeOptions(tCarte), [tCarte])
 
   const [customerData, setCustomerData] = useState<CustomerWithDetails | null>(null)
   const [carteData, setCarteData] = useState<RowType<'carte'> | null>(null)
@@ -109,7 +121,7 @@ export default function CustomerCarteEditForm() {
       )
 
       if (!completeData.customer) {
-        toast.error('顧客情報が見つかりません')
+        toast.error(tCarte('edit.customerNotFound'))
         router.push('/dashboard/carte')
         return
       }
@@ -140,11 +152,11 @@ export default function CustomerCarteEditForm() {
       }
     } catch (error) {
       console.error('Failed to fetch data:', error)
-      toast.error('データの取得に失敗しました')
+      toast.error(tCarte('edit.fetchError'))
     } finally {
       setIsLoadingData(false)
     }
-  }, [tenantId, orgId, customer_id, customerRepo, carteRepo, reset, router])
+  }, [tenantId, orgId, customer_id, customerRepo, carteRepo, reset, router, tCarte])
 
   // 初回データ取得
   useEffect(() => {
@@ -169,7 +181,7 @@ export default function CustomerCarteEditForm() {
           allergy_history: data.allergy_history || null,
           medical_history: data.medical_history || null,
         })
-        toast.success('カルテ情報を更新しました')
+        toast.success(tCarte('edit.updateSuccess'))
       } else {
         // 新規カルテを作成
         await carteRepo.createCarte({
@@ -181,13 +193,13 @@ export default function CustomerCarteEditForm() {
           allergy_history: data.allergy_history || null,
           medical_history: data.medical_history || null,
         })
-        toast.success('カルテを作成しました')
+        toast.success(tCarte('edit.createSuccess'))
       }
 
       router.push(`/dashboard/carte/${customer_id}`)
     } catch (error) {
       console.error('Failed to save carte:', error)
-      toast.error('カルテの保存に失敗しました')
+      toast.error(tCarte('edit.saveError'))
     } finally {
       setIsSubmitting(false)
     }
@@ -200,15 +212,19 @@ export default function CustomerCarteEditForm() {
   }
 
   if (!customerData) {
-    return <div className="text-center py-8 text-muted-foreground">顧客データが見つかりません</div>
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        {tCarte('edit.customerNotFound')}
+      </div>
+    )
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Tabs defaultValue="basic" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="basic">基本情報</TabsTrigger>
-          <TabsTrigger value="medical">医療情報</TabsTrigger>
+          <TabsTrigger value="basic">{tCarte('edit.tabs.basic')}</TabsTrigger>
+          <TabsTrigger value="medical">{tCarte('edit.tabs.medical')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic">
@@ -216,13 +232,15 @@ export default function CustomerCarteEditForm() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="w-5 h-5" />
-                顧客基本情報
+                {tCarte('edit.basicInfo.title')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* 顧客名表示（編集不可） */}
               <div className="bg-muted p-4 rounded-lg">
-                <Label className="text-sm text-muted-foreground mb-1">顧客名</Label>
+                <Label className="text-sm text-muted-foreground mb-1">
+                  {tCarte('edit.basicInfo.customerName')}
+                </Label>
                 <p className="font-medium text-lg">
                   {customerData.customer?.last_name} {customerData.customer?.first_name}
                 </p>
@@ -240,7 +258,7 @@ export default function CustomerCarteEditForm() {
                 <div>
                   <Label className="flex items-center gap-2 mb-2">
                     <Heart className="w-4 h-4 text-muted-foreground" />
-                    肌質
+                    {tCarte('edit.basicInfo.skinType')}
                   </Label>
                   <Select
                     value={watch('skin_type') || 'none'}
@@ -249,10 +267,10 @@ export default function CustomerCarteEditForm() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="肌質を選択" />
+                      <SelectValue placeholder={tCarte('edit.basicInfo.skinTypePlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">未設定</SelectItem>
+                      <SelectItem value="none">{tCarte('edit.basicInfo.notSet')}</SelectItem>
                       {SKIN_TYPE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -265,7 +283,7 @@ export default function CustomerCarteEditForm() {
                 <div>
                   <Label className="flex items-center gap-2 mb-2">
                     <Sparkles className="w-4 h-4 text-muted-foreground" />
-                    髪質
+                    {tCarte('edit.basicInfo.hairType')}
                   </Label>
                   <Select
                     value={watch('hair_type') || 'none'}
@@ -274,10 +292,10 @@ export default function CustomerCarteEditForm() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="髪質を選択" />
+                      <SelectValue placeholder={tCarte('edit.basicInfo.hairTypePlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">未設定</SelectItem>
+                      <SelectItem value="none">{tCarte('edit.basicInfo.notSet')}</SelectItem>
                       {HAIR_TYPE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -296,7 +314,7 @@ export default function CustomerCarteEditForm() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                医療情報
+                {tCarte('edit.medicalInfo.title')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -304,11 +322,11 @@ export default function CustomerCarteEditForm() {
               <div>
                 <Label className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="w-4 h-4 text-muted-foreground" />
-                  アレルギー履歴
+                  {tCarte('edit.medicalInfo.allergyHistory')}
                 </Label>
                 <Textarea
                   {...register('allergy_history')}
-                  placeholder="例: 金属アレルギー、化粧品アレルギーなど"
+                  placeholder={tCarte('edit.medicalInfo.allergyPlaceholder')}
                   rows={4}
                   className="transition-all duration-200"
                 />
@@ -327,11 +345,11 @@ export default function CustomerCarteEditForm() {
               <div>
                 <Label className="flex items-center gap-2 mb-2">
                   <FileText className="w-4 h-4 text-muted-foreground" />
-                  病歴・既往症
+                  {tCarte('edit.medicalInfo.medicalHistory')}
                 </Label>
                 <Textarea
                   {...register('medical_history')}
-                  placeholder="例: アトピー性皮膚炎、高血圧など"
+                  placeholder={tCarte('edit.medicalInfo.medicalPlaceholder')}
                   rows={4}
                   className="transition-all duration-200"
                 />
@@ -359,7 +377,7 @@ export default function CustomerCarteEditForm() {
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          戻る
+          {tCarte('edit.buttons.back')}
         </Button>
 
         <Button
@@ -370,12 +388,12 @@ export default function CustomerCarteEditForm() {
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              {carteData ? '更新中...' : '作成中...'}
+              {carteData ? tCarte('edit.buttons.updating') : tCarte('edit.buttons.creating')}
             </>
           ) : (
             <>
               <Save className="h-4 w-4" />
-              {carteData ? '更新する' : '作成する'}
+              {carteData ? tCarte('edit.buttons.update') : tCarte('edit.buttons.create')}
             </>
           )}
         </Button>
