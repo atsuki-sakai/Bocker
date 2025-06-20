@@ -19,8 +19,9 @@ interface EmailContent {
 }
 
 import { Resend } from 'resend';
+import { getEnv } from '@/lib/env-config'
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(getEnv('RESEND_API_KEY'));
 
 interface SendReservationConfirmationEmailProps {
   to: string;
