@@ -668,3 +668,137 @@ const reservationSchema = z.object({
 
 このドキュメントは実装の進行に応じて更新されます。
 質問や提案がある場合は、開発チームまでご連絡ください。
+## 7. 決済失敗対策の実装（2025年1月更新）
+
+### 7.1 改善された決済フロー
+
+以前の実装では、決済失敗時にポイントが戻らない、在庫が確保されたままになるなどの問題がありました。これらの問題を解決するため、以下の改善を実装しました。
+
+#### 1. ポイント使用タイミングの変更
+```typescript
+// 予約作成時
+const reservationData = {
+  use_points: 0, // 即座には使用しない
+  intended_point_use: usePoints, // 使用予定を記録
+  pending_duration_minutes: 30, // 有効期限設定
+};
+
+// Stripe Webhook（決済成功時）
+if (reservation.intended_point_use > 0) {
+  // 実際にポイントを使用
+  await pointTransactionRepo.create({
+    points: -reservation.intended_point_use,
+    transaction_type: 'used',
+  });
+}
+```
+
+#### 2. 在庫の仮押さえシステム
+```typescript
+// 新しいテーブル: option_stock_hold
+{
+  option_id: Id<"option">,
+  reservation_id: Id<"reservation">,
+  quantity: number,
+  expires_at: number,
+  status: "held" | "confirmed" | "released"
+}
+
+// 在庫仮押さえ
+await holdStockMutation({
+  option_id,
+  reservation_id,
+  quantity,
+  hold_duration_minutes: 30,
+});
+
+// 決済成功時に確定
+await confirmStockHold({ reservation_id });
+
+// キャンセル時に解放
+await releaseStockHold({ reservation_id });
+```
+
+#### 3. 自動クリーンアップ
+```typescript
+// Convex cronジョブ設定
+crons.interval(
+  'cleanup expired pending reservations',
+  { minutes: 60 },
+  internal.reservation.payment.cleanupExpiredPendingReservations
+)
+
+// 期限切れpending予約を自動キャンセル
+- status を 'cancelled' に更新
+- cancelled_by を 'system' に設定
+- 仮押さえ在庫を解放
+```
+
+### 7.2 管理画面でのpending予約管理
+
+```typescript
+// pending予約一覧の取得
+const pendingReservations = await convexQuery(
+  api.reservation.query.getPendingReservations,
+  {
+    tenant_id,
+    org_id,
+    includeExpired: true, // 期限切れも含む
+  }
+);
+
+// 各予約に以下の情報が付加される
+{
+  ...reservation,
+  isExpired: boolean, // 期限切れフラグ
+  expiresIn: number | null, // 残り時間（ミリ秒）
+  expiresInMinutes: number | null, // 残り時間（分）
+}
+```
+
+### 7.3 決済再試行機能
+
+```typescript
+// 決済再試行（有効期限を延長）
+await retryPaymentMutation({
+  reservation_id,
+});
+
+// フロントエンド実装例
+{reservation.status === 'pending' && (
+  <Button onClick={() => retryPayment(reservation._id)}>
+    決済を再試行する
+  </Button>
+)}
+```
+
+### 7.4 実装チェックリスト
+
+- [x] Convexスキーマに `intended_point_use` と `pending_expiry` フィールドを追加
+- [x] `option_stock_hold` テーブルを作成
+- [x] 在庫管理を仮押さえ方式に変更
+- [x] Stripe Webhook handlerでポイント使用処理を実装
+- [x] Cronジョブで自動クリーンアップを設定
+- [x] 管理画面用のpending予約クエリを作成
+- [x] 決済再試行機能を実装
+- [ ] 失敗通知メールテンプレートの作成（オプション）
+
+### 7.5 トラブルシューティング
+
+1. **pending予約が自動キャンセルされない**
+   - Convex cronジョブが正常に動作しているか確認
+   - `pending_expiry` フィールドが正しく設定されているか確認
+
+2. **在庫数が正しくない**
+   - `option_stock_hold` テーブルで仮押さえ状態を確認
+   - 期限切れの仮押さえが解放されているか確認
+
+3. **ポイントが二重に使用される**
+   - `intended_point_use` と `use_points` の値を確認
+   - Webhook処理が重複実行されていないか確認
+
+---
+
+更新者: Claude
+更新日: 2025年1月
+EOF < /dev/null
