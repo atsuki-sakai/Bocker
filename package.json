@@ -20,7 +20,15 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "migrate:supabase": "supabase db push"
+    "migrate:supabase": "supabase db push",
+    "env:dev": "scripts/setup-env.sh development && pnpm dev",
+    "env:staging": "scripts/setup-env.sh staging",
+    "env:prod": "scripts/setup-env.sh production",
+    "env:validate": "tsx scripts/validate-env.ts",
+    "env:switch": "scripts/setup-env.sh",
+    "dev:with-env": "pnpm env:validate && pnpm dev",
+    "build:staging": "pnpm env:staging && pnpm build",
+    "build:prod": "pnpm env:prod && pnpm build"
   },
   "dependencies": {
     "@clerk/backend": "^2.0.0",
@@ -64,6 +72,7 @@
     "@sentry/nextjs": "^9.6.1",
     "@supabase/supabase-js": "^2.49.4",
     "@types/busboy": "^1.5.4",
+    "@vercel/analytics": "^1.5.0",
     "async-retry": "^1.3.3",
     "bcryptjs": "^3.0.2",
     "browser-image-compression": "^2.0.2",
@@ -129,6 +138,7 @@
     "prettier": "3.5.3",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }
