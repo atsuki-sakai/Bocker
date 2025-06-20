@@ -42,6 +42,7 @@ export default function StaffSchedulePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const t = useTranslations('reservations')
+  const tNav = useTranslations('navigation')
   const locale = useLocale() as SupportedLocale
 
   // クエリパラメータから初期値を取得
@@ -465,14 +466,11 @@ export default function StaffSchedulePage() {
   }, [currentDate, selectedDate, viewMode, locale])
 
   return (
-    <DashboardSection backLink="/dashboard" backLinkTitle={t('backToDashboard')}>
+    <DashboardSection title={tNav('staffSchedule')} backLink="/dashboard" backLinkTitle={t('backToDashboard')}>
       <div className="flex h-full flex-col">
         <div className="sticky bg-background z-10 md:pt-5">
           <header className="flex flex-none items-center justify-between border-b border-border md:px-6 pb-2">
             <div className="flex flex-col">
-              <p className="text-sm md:text-lg font-semibold text-primary mb-1">
-                {t('staffSchedule')}
-              </p>
               <h1 className="text-sm md:text-lg font-semibold text-accent-2">
                 {viewMode === 'week' ? (
                   <time
