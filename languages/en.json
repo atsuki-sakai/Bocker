@@ -707,7 +707,117 @@
     "lastMonth": "Last Month",
     "thisWeek": "This Week",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "carte": {
+      "title": "Customer Records Management",
+      "backToDashboard": "Back to Dashboard",
+      "customerSearch": "Customer Search",
+      "searchPlaceholder": "Search by customer name",
+      "searchResults": "Search results: {term}",
+      "noResults": "No search results",
+      "noCustomers": "No customers found",
+      "fetchError": "Failed to fetch customer data",
+      "searchError": "Failed to search customers",
+      "table": {
+        "customerName": "Customer Name",
+        "contact": "Contact",
+        "visitCount": "Visit Count",
+        "lastVisit": "Last Visit",
+        "tags": "Tags"
+      },
+      "unregistered": "Not registered",
+      "noReservation": "No reservation",
+      "visitCountBadge": "{count} times",
+      "viewDetails": "View Customer Record",
+      "detail": {
+        "title": "Customer Record",
+        "backToSearch": "Back to Customer Search",
+        "customerNotFound": "Customer information not found",
+        "edit": "Edit",
+        "customerInfo": "Customer Information",
+        "name": "Name",
+        "age": "{age} years old",
+        "totalPoints": "Total Points",
+        "pointsUnit": "{points} pt",
+        "skinType": "Skin Type",
+        "hairType": "Hair Type",
+        "allergy": "Allergies",
+        "medicalHistory": "Medical History",
+        "none": "None",
+        "totalReservations": "Total Reservations",
+        "totalSales": "Total Sales",
+        "reservationHistory": "Reservation History",
+        "noReservationHistory": "No reservation history",
+        "assignedStaff": "Staff: {staffName}",
+        "menu": "Menu:",
+        "option": "Option:",
+        "paymentMethod": {
+          "cash": "Cash",
+          "card": "Credit Card"
+        },
+        "notes": "Notes: {notes}",
+        "status": {
+          "confirmed": "Confirmed",
+          "completed": "Completed",
+          "cancelled": "Cancelled",
+          "pending": "Pending"
+        }
+      },
+      "edit": {
+        "title": "Edit Customer Record",
+        "createTitle": "Create Customer Record",
+        "customerNotFound": "Customer information not found",
+        "fetchError": "Failed to fetch data",
+        "updateSuccess": "Customer record updated successfully",
+        "createSuccess": "Customer record created successfully",
+        "saveError": "Failed to save customer record",
+        "tabs": {
+          "basic": "Basic Information",
+          "medical": "Medical Information"
+        },
+        "basicInfo": {
+          "title": "Basic Customer Information",
+          "customerName": "Customer Name",
+          "skinType": "Skin Type",
+          "hairType": "Hair Type",
+          "skinTypePlaceholder": "Select skin type",
+          "hairTypePlaceholder": "Select hair type",
+          "notSet": "Not set"
+        },
+        "medicalInfo": {
+          "title": "Medical Information",
+          "allergyHistory": "Allergy History",
+          "allergyPlaceholder": "e.g., Metal allergy, cosmetic allergy, etc.",
+          "medicalHistory": "Medical History & Conditions",
+          "medicalPlaceholder": "e.g., Atopic dermatitis, hypertension, etc."
+        },
+        "buttons": {
+          "back": "Back",
+          "updating": "Updating...",
+          "creating": "Creating...",
+          "update": "Update",
+          "create": "Create"
+        },
+        "validation": {
+          "maxLength": "Please enter within 1000 characters"
+        },
+        "skinTypes": {
+          "normal": "Normal",
+          "dry": "Dry",
+          "oily": "Oily",
+          "combination": "Combination",
+          "sensitive": "Sensitive"
+        },
+        "hairTypes": {
+          "straight": "Straight",
+          "wavy": "Wavy",
+          "curly": "Curly",
+          "coily": "Coily",
+          "fine": "Fine",
+          "thick": "Thick"
+        }
+      }
+    }
   },
   "reservations": {
     "title": "Reservation Management",
