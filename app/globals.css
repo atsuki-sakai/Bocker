@@ -44,7 +44,7 @@ body {
     --accent-foreground: oklch(1 0 none);
     --accent-2: oklch(0.52 0.1743 142.55);
     --accent-2-foreground: oklch(0.99 0.0206 152.2);
-    --neon: oklch(0.55 0.070 174.95);
+    --neon: oklch(0.55 0.0696 174.78);
     --neon-foreground: oklch(0.97 0.0158 196.9);
     --destructive: oklch(0.65 0.180 20.0);
     --destructive-foreground: oklch(0.98 0.020 20.0);
