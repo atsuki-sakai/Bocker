@@ -8,6 +8,7 @@ import { verifyPassword } from '@/lib/auth/password';
 import { emailSchema } from '@/lib/validations/api/common';
 import { LOGIN_SESSION_KEY } from '@/services/line/constants';
 import { SessionPayload } from '@/lib/types';
+import { getEnv } from '@/lib/env-config';
 
 export const runtime = 'nodejs';
 
@@ -24,7 +25,7 @@ const loginRequestSchema = z.object({
 
 // type LoginRequest = z.infer<typeof loginRequestSchema>;
 
-const APP_JWT_SECRET = process.env.APP_JWT_SECRET || 'bocker-auth-session-secret-key';
+const APP_JWT_SECRET = getEnv('APP_JWT_SECRET');
 const JWT_EXPIRES_IN = '30d';
 
 export async function POST(request: NextRequest) {
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     cookieStore.set(LOGIN_SESSION_KEY, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: getEnv('NODE_ENV') === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 30, // 30日
