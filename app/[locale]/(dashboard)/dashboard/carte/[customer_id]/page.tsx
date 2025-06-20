@@ -50,29 +50,33 @@ export type CustomerCarteData = {
   ltv_price: number | null
 }
 
-// 肌質の選択肢マップ
-const SKIN_TYPE_MAP: Record<string, string> = {
-  normal: '普通肌',
-  dry: '乾燥肌',
-  oily: '脂性肌',
-  combination: '混合肌',
-  sensitive: '敏感肌',
-}
+// 選択肢マップを作成する関数
+const getSkinTypeMap = (t: ReturnType<typeof useTranslations>): Record<string, string> => ({
+  normal: t('edit.skinTypes.normal'),
+  dry: t('edit.skinTypes.dry'),
+  oily: t('edit.skinTypes.oily'),
+  combination: t('edit.skinTypes.combination'),
+  sensitive: t('edit.skinTypes.sensitive'),
+})
 
-// 髪質の選択肢マップ
-const HAIR_TYPE_MAP: Record<string, string> = {
-  straight: 'ストレート',
-  wavy: 'ウェーブ',
-  curly: 'カーリー',
-  coily: 'コイリー',
-  fine: '細い',
-  thick: '太い',
-}
+const getHairTypeMap = (t: ReturnType<typeof useTranslations>): Record<string, string> => ({
+  straight: t('edit.hairTypes.straight'),
+  wavy: t('edit.hairTypes.wavy'),
+  curly: t('edit.hairTypes.curly'),
+  coily: t('edit.hairTypes.coily'),
+  fine: t('edit.hairTypes.fine'),
+  thick: t('edit.hairTypes.thick'),
+})
 
 export default function CartePage({ params: paramsPromise }: CartePageProps) {
   const tCommon = useTranslations('common')
+  const tCarte = useTranslations('dashboard.carte')
   const locale = useLocale() as SupportedLocale
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
+
+  // 翻訳を使ったマップを作成
+  const SKIN_TYPE_MAP = useMemo(() => getSkinTypeMap(tCarte), [tCarte])
+  const HAIR_TYPE_MAP = useMemo(() => getHairTypeMap(tCarte), [tCarte])
 
   const [customerId, setCustomerId] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<CustomerWithDetails | null>(null)
@@ -112,15 +116,15 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
           })
         }
       } else {
-        toast.error('顧客情報が見つかりません')
+        toast.error(tCarte('detail.customerNotFound'))
       }
     } catch (error) {
       console.error('Failed to fetch customer data:', error)
-      toast.error('顧客情報の取得に失敗しました')
+      toast.error(tCarte('fetchError'))
     } finally {
       setIsLoadingCustomer(false)
     }
-  }, [tenantId, orgId, customerId, isLoaded, customerRepo, carteRepo])
+  }, [tenantId, orgId, customerId, isLoaded, customerRepo, carteRepo, tCarte])
 
   // 統合予約データの取得
   const {
@@ -179,28 +183,28 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
         return (
           <Badge className="bg-link text-link-foreground">
             <CheckCircle className="w-3 h-3 mr-1" />
-            確定
+            {tCarte('detail.status.confirmed')}
           </Badge>
         )
       case 'completed':
         return (
           <Badge className="bg-accent-2 text-accent-2-foreground">
             <CheckCircle className="w-3 h-3 mr-1" />
-            完了
+            {tCarte('detail.status.completed')}
           </Badge>
         )
       case 'cancelled':
         return (
           <Badge variant="destructive">
             <XCircle className="w-3 h-3 mr-1" />
-            キャンセル
+            {tCarte('detail.status.cancelled')}
           </Badge>
         )
       case 'pending':
         return (
           <Badge variant="secondary">
             <AlertCircle className="w-3 h-3 mr-1" />
-            保留
+            {tCarte('detail.status.pending')}
           </Badge>
         )
       default:
@@ -215,28 +219,34 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
   if (!customerData) {
     return (
       <DashboardSection
-        title="顧客カルテ"
+        title={tCarte('detail.title')}
         backLink="/dashboard/carte"
-        backLinkTitle="顧客検索に戻る"
+        backLinkTitle={tCarte('detail.backToSearch')}
       >
-        <div className="text-center py-8 text-muted-foreground">顧客情報が見つかりません</div>
+        <div className="text-center py-8 text-muted-foreground">
+          {tCarte('detail.customerNotFound')}
+        </div>
       </DashboardSection>
     )
   }
 
   return (
-    <DashboardSection title="顧客カルテ" backLink="/dashboard/carte" backLinkTitle="顧客検索に戻る">
+    <DashboardSection
+      title={tCarte('detail.title')}
+      backLink="/dashboard/carte"
+      backLinkTitle={tCarte('detail.backToSearch')}
+    >
       <div className="space-y-6">
         {/* 顧客基本情報 */}
         <Card>
           <CardHeader className="flex flex-row justify-between items-center">
             <CardTitle className="flex items-center gap-2">
               <User className="w-5 h-5" />
-              顧客情報
+              {tCarte('detail.customerInfo')}
             </CardTitle>
             <Button variant="default" size="sm" asChild>
               <Link href={`/dashboard/carte/${customerId}/edit`}>
-                編集する
+                {tCarte('detail.edit')}
                 <Pencil className="w-4 h-4 ml-2" />
               </Link>
             </Button>
@@ -245,7 +255,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div>
-                  <span className="text-sm text-muted-foreground">氏名</span>
+                  <span className="text-sm text-muted-foreground">{tCarte('detail.name')}</span>
                   <p className="font-medium">
                     {customerData.customer?.last_name} {customerData.customer?.first_name}
                     {customerData.customer?.line_user_name && (
@@ -277,7 +287,9 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                     <p className="font-medium">
                       {format(new Date(customerData.customerDetail.birthday), 'yyyy年MM月dd日')}
                       <span className="text-sm text-muted-foreground ml-2">
-                        ({calculateAge(customerData.customerDetail.birthday)}歳)
+                        {tCarte('detail.age', {
+                          age: calculateAge(customerData.customerDetail.birthday),
+                        })}
                       </span>
                     </p>
                   </div>
@@ -285,16 +297,20 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
 
                 {customerData.customerPoints && (
                   <div>
-                    <span className="text-sm text-muted-foreground">保有ポイント</span>
+                    <span className="text-sm text-muted-foreground">
+                      {tCarte('detail.totalPoints')}
+                    </span>
                     <p className="font-medium text-lg">
-                      {customerData.customerPoints.total_points || 0} pt
+                      {tCarte('detail.pointsUnit', {
+                        points: customerData.customerPoints.total_points || 0,
+                      })}
                     </p>
                   </div>
                 )}
 
                 {customerData.customer?.tags && customerData.customer.tags.length > 0 && (
                   <div>
-                    <span className="text-sm text-muted-foreground">タグ</span>
+                    <span className="text-sm text-muted-foreground">{tCarte('table.tags')}</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {customerData.customer.tags.map((tag, index) => (
                         <Badge key={index} variant="secondary" className="text-xs">
@@ -307,31 +323,33 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
               </div>
               <div className="flex flex-wrap gap-4 mt-4 w-full">
                 <div className="w-fit">
-                  <span className="text-sm text-muted-foreground">肌質</span>
+                  <span className="text-sm text-muted-foreground">{tCarte('detail.skinType')}</span>
                   <p className="font-medium bg-muted p-2 rounded-md text-sm text-muted-foreground">
                     {customerCarteData?.skin_type
                       ? SKIN_TYPE_MAP[customerCarteData.skin_type] || customerCarteData.skin_type
-                      : '未登録'}
+                      : tCarte('unregistered')}
                   </p>
                 </div>
                 <div className="w-fit">
-                  <span className="text-sm text-muted-foreground">髪質</span>
+                  <span className="text-sm text-muted-foreground">{tCarte('detail.hairType')}</span>
                   <p className="font-medium bg-muted p-2 rounded-md text-sm text-muted-foreground">
                     {customerCarteData?.hair_type
                       ? HAIR_TYPE_MAP[customerCarteData.hair_type] || customerCarteData.hair_type
-                      : '未登録'}
+                      : tCarte('unregistered')}
                   </p>
                 </div>
                 <div className="w-full max-w-[320px] md:max-w-full h-auto">
-                  <span className="text-sm text-muted-foreground">アレルギー</span>
+                  <span className="text-sm text-muted-foreground">{tCarte('detail.allergy')}</span>
                   <p className="font-medium bg-muted p-2 rounded-md text-sm text-muted-foreground break-words whitespace-pre-wrap">
-                    {customerCarteData?.allergy_history || 'なし'}
+                    {customerCarteData?.allergy_history || tCarte('detail.none')}
                   </p>
                 </div>
                 <div className="w-full max-w-[320px] md:max-w-full h-auto">
-                  <p className="text-sm text-muted-foreground mb-1">病歴</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    {tCarte('detail.medicalHistory')}
+                  </p>
                   <p className="font-medium bg-muted p-2 rounded-md text-sm text-muted-foreground break-words whitespace-pre-wrap">
-                    {customerCarteData?.medical_history || 'なし'}
+                    {customerCarteData?.medical_history || tCarte('detail.none')}
                   </p>
                 </div>
               </div>
@@ -341,7 +359,9 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                   <Card className="h-fit">
                     <CardContent className="pt-6">
                       <div className="text-2xl font-bold">{totalCount}</div>
-                      <p className="text-xs text-muted-foreground">総予約数</p>
+                      <p className="text-xs text-muted-foreground">
+                        {tCarte('detail.totalReservations')}
+                      </p>
                     </CardContent>
                   </Card>
                   <Card className="h-fit">
@@ -350,7 +370,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                         {formatPrice(customerCarteData?.ltv_price || 0)}
                       </div>
 
-                      <p className="text-xs text-muted-foreground">総売上</p>
+                      <p className="text-xs text-muted-foreground">{tCarte('detail.totalSales')}</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -364,7 +384,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarDays className="w-5 h-5" />
-              予約履歴
+              {tCarte('detail.reservationHistory')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -404,7 +424,9 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                               <User className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-sm">担当: {item.staffName}</span>
+                              <span className="text-sm">
+                                {tCarte('detail.assignedStaff', { staffName: item.staffName })}
+                              </span>
                             </div>
                           </div>
                           {getStatusBadge(item.status)}
@@ -416,7 +438,9 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                               Array.isArray(item.detail.menus) &&
                               item.detail.menus.length > 0 && (
                                 <div>
-                                  <span className="text-sm text-muted-foreground">メニュー:</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {tCarte('detail.menu')}
+                                  </span>
                                   <div className="mt-1">
                                     {(item.detail.menus as ReservationMenu[]).map(
                                       (menu: ReservationMenu, index: number) => (
@@ -434,7 +458,9 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                               Array.isArray(item.detail.options) &&
                               item.detail.options.length > 0 && (
                                 <div>
-                                  <span className="text-sm text-muted-foreground">オプション:</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {tCarte('detail.option')}
+                                  </span>
                                   <div className="mt-1">
                                     {(item.detail.options as ReservationOption[]).map(
                                       (option: ReservationOption, index: number) => (
@@ -457,8 +483,8 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                                 <CreditCard className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm">
                                   {item.detail.paymentMethod === 'cash'
-                                    ? '現金'
-                                    : 'クレジットカード'}
+                                    ? tCarte('detail.paymentMethod.cash')
+                                    : tCarte('detail.paymentMethod.card')}
                                 </span>
                               </div>
                               <span className="font-semibold">
@@ -469,7 +495,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                             {/* 備考 */}
                             {item.detail.notes && (
                               <div className="text-sm text-muted-foreground">
-                                備考: {item.detail.notes}
+                                {tCarte('detail.notes', { notes: item.detail.notes })}
                               </div>
                             )}
                           </div>
@@ -479,7 +505,9 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                   </Link>
                 ))
               ) : (
-                <div className="text-center py-8 text-muted-foreground">予約履歴がありません</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  {tCarte('detail.noReservationHistory')}
+                </div>
               )}
 
               {hasMore && (
