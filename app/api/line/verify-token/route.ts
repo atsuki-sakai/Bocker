@@ -8,13 +8,14 @@ import { getSupabaseAdminService, InsertType } from '@/services/supabase/Supabas
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { SystemError } from '@/lib/errors/custom_errors'
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
+import { getEnv } from '@/lib/env-config'
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL as string)
+const convex = new ConvexHttpClient(getEnv('NEXT_PUBLIC_CONVEX_URL'))
 
 // LINEのIDトークン検証エンドポイント
 const LINE_VERIFY_URL = 'https://api.line.me/oauth2/v2.1/verify'
 // JWT署名用のシークレットキー (環境変数から取得)
-const APP_JWT_SECRET = process.env.APP_JWT_SECRET || 'bocker-auth-session-secret-key'
+const APP_JWT_SECRET = getEnv('APP_JWT_SECRET')
 
 interface LineVerifyResponse {
   iss: string // https://access.line.me
@@ -268,7 +269,7 @@ export async function POST(req: NextRequest) {
 
     response.cookies.set(LOGIN_SESSION_KEY, sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: getEnv('NODE_ENV') === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 30, // 30日間
