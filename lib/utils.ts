@@ -11,7 +11,7 @@ import { MAX_PIN_CODE_LENGTH } from '@/convex/constants'
 import { SubscriptionPlanName } from '@/convex/types'
 import { ROLE_LEVEL, PLAN_LEVEL } from '@/lib/types'
 import { ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
-
+import { getEnv } from '@/lib/env-config'
 import type { Role } from '@/convex/types';
 
 
@@ -224,25 +224,25 @@ export function priceIdToPlanInfo(priceId: string): {
   billing_period: BillingPeriod;
 } {
   switch (priceId) {
-    case process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID:
+    case getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID'):
       return {
         name: 'LITE',
         price: PLAN_MONTHLY_PRICES.LITE,
         billing_period: 'month' as BillingPeriod,
       }
-    case process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID:
+    case getEnv('NEXT_PUBLIC_LITE_YEARLY_PRC_ID'):
       return {
         name: 'LITE',
         price: PLAN_YEARLY_PRICES.LITE.price,
         billing_period: 'year' as BillingPeriod,
       }
-    case process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID:
+    case getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID'):
       return {
         name: 'PRO',
         price: PLAN_MONTHLY_PRICES.PRO,
         billing_period: 'month' as BillingPeriod,
       }
-    case process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID:
+    case getEnv('NEXT_PUBLIC_PRO_YEARLY_PRC_ID'):
       return {
         name: 'PRO',
         price: PLAN_YEARLY_PRICES.PRO.price,
@@ -276,10 +276,10 @@ export function getPriceNameFromPlanName(planName: SubscriptionPlanName, period:
   if (period === 'month') {
     switch (planName) {
       case 'LITE':
-        priceId = process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID
+        priceId = getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID')
         break
       case 'PRO':
-        priceId = process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID
+        priceId = getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID')
         break
       default:
         throw new Error(`Invalid plan name: ${planName}`)
@@ -288,10 +288,10 @@ export function getPriceNameFromPlanName(planName: SubscriptionPlanName, period:
     // period === 'year'
     switch (planName) {
       case 'LITE':
-        priceId = process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID
+        priceId = getEnv('NEXT_PUBLIC_LITE_YEARLY_PRC_ID')
         break
       case 'PRO':
-        priceId = process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID
+        priceId = getEnv('NEXT_PUBLIC_PRO_YEARLY_PRC_ID')
         break
       default:
         throw new Error(`Invalid plan name: ${planName}`)
@@ -450,7 +450,7 @@ export function generateRandomHex(byteLength = 32): string {
 
 // 文字列を暗号化する関数 (CryptoJS版)
 export function encryptStringCryptoJS(text: string): string {
-  if (!process.env.NEXT_PUBLIC_APP_COOKIE_SECRET) {
+  if (!getEnv('NEXT_PUBLIC_APP_COOKIE_SECRET')) {
     throw new SystemError("Cookie暗号化キーが設定されていません。",{
       statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
       severity: ERROR_SEVERITY.ERROR,
@@ -458,7 +458,7 @@ export function encryptStringCryptoJS(text: string): string {
       message: 'Cookie暗号化キーが設定されていません。'
     })
   }
-  const secret = process.env.NEXT_PUBLIC_APP_COOKIE_SECRET!
+  const secret = getEnv('NEXT_PUBLIC_APP_COOKIE_SECRET')
   try {
     const ciphertext = CryptoJS.AES.encrypt(text, secret).toString()
     return ciphertext
@@ -473,12 +473,12 @@ export function encryptStringCryptoJS(text: string): string {
 
 // 暗号化された文字列を復号する関数 (CryptoJS版)
 export function decryptStringCryptoJS(encryptedText: string): string | null {
-  if (!process.env.NEXT_PUBLIC_APP_COOKIE_SECRET) {
+  if (!getEnv('NEXT_PUBLIC_APP_COOKIE_SECRET')) {
     console.warn('Cookie暗号化キーが設定されていません。復号化せずに返します。')
     return encryptedText // シークレットがない場合はそのまま返す
   }
   try {
-    const secret = process.env.NEXT_PUBLIC_APP_COOKIE_SECRET!
+    const secret = getEnv('NEXT_PUBLIC_APP_COOKIE_SECRET')
     const bytes = CryptoJS.AES.decrypt(encryptedText, secret)
     const decryptedData = bytes.toString(CryptoJS.enc.Utf8)
     // 復号結果が空文字になる場合がある（パスワード違いなど）
@@ -519,7 +519,7 @@ export const setCookie = (name: string, value: string, days: number) => {
     let cookieValue = value
 
     // シークレットキーが設定されていれば暗号化
-    if (process.env.NEXT_PUBLIC_APP_COOKIE_SECRET) {
+    if (getEnv('NEXT_PUBLIC_APP_COOKIE_SECRET')) {
       try {
         // CryptoJSで暗号化
         cookieValue = encryptStringCryptoJS(value)
@@ -541,7 +541,7 @@ export const setCookie = (name: string, value: string, days: number) => {
     const expires = expiresDate.toUTCString()
 
     // secure フラグを本番環境でのみつけるように修正
-    const secureFlag = process.env.NODE_ENV === 'production' ? 'secure;' : ''
+    const secureFlag = getEnv('NODE_ENV') === 'production' ? 'secure;' : ''
     // httpOnly は JavaScript では設定できません。サーバーサイドで設定する必要があります。
 
     document.cookie = `${name}=${encodedValue}; expires=${expires}; path=/; ${secureFlag}SameSite=Lax` // SameSite属性を追加することを推奨
@@ -554,7 +554,7 @@ export const setCookie = (name: string, value: string, days: number) => {
     try {
       const expiresDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
       const expires = expiresDate.toUTCString()
-      const secureFlag = process.env.NODE_ENV === 'production' ? 'secure;' : ''
+      const secureFlag = getEnv('NODE_ENV') === 'production' ? 'secure;' : ''
       document.cookie = `${name}=${value}; expires=${expires}; path=/; ${secureFlag}SameSite=Lax`
       console.warn(`クッキー "${name}" をエンコードせずに保存しました (フォールバック)。`)
     } catch (e) {
@@ -622,7 +622,7 @@ export const deleteCookie = (name: string) => {
   }
 
   // 期限を過去の日付に設定することで削除
-  const secureFlag = process.env.NODE_ENV === 'production' ? 'secure;' : ''
+  const secureFlag = getEnv('NODE_ENV') === 'production' ? 'secure;' : ''
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; ${secureFlag}SameSite=Lax` // SameSite属性も合わせて設定
   console.log(`クッキー "${name}" を削除しました。`)
 }
