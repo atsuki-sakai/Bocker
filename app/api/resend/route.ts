@@ -3,8 +3,9 @@ import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import ReservationConfirmationEmail from '@/components/emails/ReservationConfirmationEmail'
 import React from 'react'
+import { getEnv } from '@/lib/env-config'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = new Resend(getEnv('RESEND_API_KEY'))
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,7 +19,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (!process.env.RESEND_API_KEY) {
+    
+    if (!getEnv('RESEND_API_KEY')) {
       console.error('Resend APIキーが設定されていません。')
       return NextResponse.json(
         { error: 'Internal Server Error: Resend API key is missing' },
@@ -26,7 +28,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const fromEmail = process.env.RESEND_FROM_EMAIL
+    const fromEmail = getEnv('RESEND_FROM_EMAIL')
     if (!fromEmail) {
       console.error('Resend送信元メールアドレスが設定されていません。')
       return NextResponse.json(
