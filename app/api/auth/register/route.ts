@@ -9,6 +9,7 @@ import { emailSchema, genderSchema } from '@/lib/validations/api/common';
 import { CustomerRegistrationEmail } from '@/components/emails/CustomerRegistrationEmail';
 import { MAX_NOTES_LENGTH } from '@/convex/constants';
 import { BASE_URL } from '@/lib/constants';
+import { getEnv } from '@/lib/env-config'; 
 
 export const runtime = 'nodejs';
 
@@ -29,7 +30,7 @@ const registerRequestSchema = z.object({
   initialPoints: z.number().int().min(0).optional().default(0),
 });
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(getEnv('RESEND_API_KEY'));
 
 export async function POST(request: NextRequest) {
   try {
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
       const loginUrl = `${BASE_URL}/reservation/${validatedData.orgId}`;
 
       await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || '<noreply@bocker.jp>',
+        from: getEnv('RESEND_FROM_EMAIL'),
         to: validatedData.email,
         subject: '【Bocker】会員登録完了のお知らせ',
         react: CustomerRegistrationEmail({
