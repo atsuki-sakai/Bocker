@@ -35,6 +35,7 @@ type CustomerWithDetails = {
 
 export default function CustomerSearchForm() {
   const tCommon = useTranslations('common')
+  const tCarte = useTranslations('dashboard.carte')
   const locale = useLocale() as SupportedLocale
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const [searchTerm, setSearchTerm] = useState<string>('')
@@ -145,13 +146,13 @@ export default function CustomerSearchForm() {
         setHasMoreAll(customersWithDetails.length === PAGE_SIZE && page * PAGE_SIZE < (count || 0))
       } catch (error) {
         console.error('Failed to fetch customer data:', error)
-        toast.error('顧客データの取得に失敗しました')
+        toast.error(tCarte('fetchError'))
       } finally {
         setIsLoadingAll(false)
         setIsLoadingMoreAll(false)
       }
     },
-    [tenantId, orgId, isLoaded, isSearchMode, customerRepo, getCustomersWithDetails]
+    [tenantId, orgId, isLoaded, isSearchMode, customerRepo, getCustomersWithDetails, tCarte]
   )
 
   // 検索専用関数（Supabaseサーバーサイド検索を使用 + キャッシュ対応）
@@ -206,14 +207,14 @@ export default function CustomerSearchForm() {
         setHasMoreSearch(result.hasMore)
       } catch (error) {
         console.error('Failed to search customers:', error)
-        toast.error('顧客の検索に失敗しました')
+        toast.error(tCarte('searchError'))
         setSearchResults([])
       } finally {
         setIsLoadingSearch(false)
         setIsLoadingMoreSearch(false)
       }
     },
-    [tenantId, orgId, customerRepo, getCachedResults, getCustomersWithDetails]
+    [tenantId, orgId, customerRepo, getCachedResults, getCustomersWithDetails, tCarte]
   )
 
   // 初回データ取得（通常リスト）
@@ -257,10 +258,10 @@ export default function CustomerSearchForm() {
   // 予約日の書式変換
   const formatReservationDate = useCallback(
     (timestamp: number | null | undefined): string => {
-      if (!timestamp) return '予約がありません'
+      if (!timestamp) return tCarte('noReservation')
       return new Date(timestamp * 1000).toLocaleDateString(locale === 'ja' ? 'ja-JP' : 'en-US')
     },
-    [locale]
+    [locale, tCarte]
   )
 
   if (!isLoaded || isLoading) {
@@ -275,7 +276,7 @@ export default function CustomerSearchForm() {
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="顧客名で検索"
+                placeholder={tCarte('searchPlaceholder')}
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -288,7 +289,7 @@ export default function CustomerSearchForm() {
         {isSearchMode && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-2 rounded-md">
             <Search size={16} />
-            <span>検索結果: {debouncedSearchTerm}</span>
+            <span>{tCarte('searchResults', { term: debouncedSearchTerm })}</span>
             <Button
               variant="ghost"
               size="sm"
@@ -309,11 +310,13 @@ export default function CustomerSearchForm() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted text-muted-foreground">
-              <TableHead className="px-4 text-nowrap w-fit">顧客名</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit">連絡先</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit">来店回数</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit">最終来店日</TableHead>
-              <TableHead className="px-2 text-nowrap w-fit">タグ</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">
+                {tCarte('table.customerName')}
+              </TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">{tCarte('table.contact')}</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">{tCarte('table.visitCount')}</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit">{tCarte('table.lastVisit')}</TableHead>
+              <TableHead className="px-2 text-nowrap w-fit">{tCarte('table.tags')}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -321,7 +324,7 @@ export default function CustomerSearchForm() {
             {displayCustomers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                  {searchTerm ? '検索結果がありません' : '顧客が見つかりません'}
+                  {searchTerm ? tCarte('noResults') : tCarte('noCustomers')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -332,7 +335,7 @@ export default function CustomerSearchForm() {
                       <span>
                         {customerData.customer.last_name && customerData.customer.first_name
                           ? `${customerData.customer.last_name} ${customerData.customer.first_name}`
-                          : '未登録'}
+                          : tCarte('unregistered')}
                       </span>
                       {customerData.customer.line_user_name && (
                         <span className="text-sm text-muted-foreground">
@@ -350,7 +353,7 @@ export default function CustomerSearchForm() {
                           <span className="tracking-wider">{customerData.customer.phone}</span>
                         </div>
                       ) : (
-                        <p className="text-muted-foreground">未登録</p>
+                        <p className="text-muted-foreground">{tCarte('unregistered')}</p>
                       )}
                       {customerData.customer.email ? (
                         <div className="flex items-center gap-2">
@@ -362,13 +365,19 @@ export default function CustomerSearchForm() {
                       ) : (
                         <div className="flex items-center gap-2">
                           <Mail size={14} className="text-muted-foreground" />
-                          <p className="text-muted-foreground text-nowrap">未登録</p>
+                          <p className="text-muted-foreground text-nowrap">
+                            {tCarte('unregistered')}
+                          </p>
                         </div>
                       )}
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge>{customerData.customer.total_reservation_count ?? 0} 回</Badge>
+                    <Badge>
+                      {tCarte('visitCountBadge', {
+                        count: customerData.customer.total_reservation_count ?? 0,
+                      })}
+                    </Badge>
                   </TableCell>
                   <TableCell className="px-4">
                     <div className="flex items-center gap-4">
@@ -388,7 +397,9 @@ export default function CustomerSearchForm() {
                         ))}
                       </div>
                     ) : (
-                      <span className="text-muted-foreground text-sm">未登録</span>
+                      <span className="text-muted-foreground text-sm">
+                        {tCarte('unregistered')}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className="px-4">
@@ -397,7 +408,7 @@ export default function CustomerSearchForm() {
                       variant="ghost"
                     >
                       <Link href={`/dashboard/carte/${customerData.customer.uid}`}>
-                        顧客カルテ詳細へ
+                        {tCarte('viewDetails')}
                       </Link>
                     </Button>
                   </TableCell>
