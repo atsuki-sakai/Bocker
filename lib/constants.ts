@@ -2,14 +2,13 @@ export const LANGUAGES = ['ja', 'en'] as const
 export type Languages = typeof LANGUAGES[number]
 
 
+import { getAppUrl, getEnv } from './env-config';
+
 // 環境変数が設定されていない場合のデフォルト値を追加
-export const BASE_URL =
-  process.env.NEXT_PUBLIC_NODE_ENV === 'development'
-    ? process.env.NEXT_PUBLIC_DEVELOP_URL ?? 'http://localhost:3000'
-    : process.env.NEXT_PUBLIC_DEPLOY_URL ?? 'https://bocker.jp'
+export const BASE_URL = getAppUrl()
 
 // ✅ ここで許可リストを定義
-export const ALLOWED_DOMAINS = ['localhost', 'bocker.jp'];
+export const ALLOWED_DOMAINS = ['localhost', 'bocker.jp', 'bocker-project.vercel.app'];
 
 /**
  * サロンの営業時間（24時間表記）を格納する配列。
@@ -79,18 +78,11 @@ export const RESERVATION_CANCEL_LIMIT_DAYS = [
  * 予約可能期限（日数）選択肢。
  */
 export const RESERVATION_LIMIT_DAYS = [
+  '7',
+  '14',
   '30',
   '60',
-  '90',
-  '120',
-  '150',
-  '180',
-  '210',
-  '240',
-  '270',
-  '300',
-  '330',
-  '360',
+  '90'
 ];
 
 // トライアル期間
@@ -107,8 +99,8 @@ export const PLAN_DURATION_MONTHS = {
 }
 
 export const PLAN_MONTHLY_PRICES = {
-  LITE: 6000,
-  PRO: 10000,
+  LITE: 8000,
+  PRO: 12000,
 }
 
 // --- 年額プラン定義 ---
@@ -152,11 +144,11 @@ export const SUBSCRIPTION_PLANS = {
       'features.lite.11',
     ],
     monthly: {
-      priceId: process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID || '',
+      priceId: '',  // Set dynamically in runtime
       price: PLAN_MONTHLY_PRICES.LITE,
     },
     yearly: {
-      priceId: process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID || '',
+      priceId: '',  // Set dynamically in runtime
       price: PLAN_YEARLY_PRICES.LITE.price,
       savingPercent: PLAN_YEARLY_PRICES.LITE.savingPercent,
     },
@@ -166,11 +158,11 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Pro',
     features: ['features.pro.1', 'features.pro.2', 'features.pro.3', 'features.pro.4'],
     monthly: {
-      priceId: process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID || '',
+      priceId: getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID'),  // Set dynamically in runtime
       price: PLAN_MONTHLY_PRICES.PRO,
     },
     yearly: {
-      priceId: process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID || '',
+      priceId: getEnv('NEXT_PUBLIC_PRO_YEARLY_PRC_ID'),  // Set dynamically in runtime
       price: PLAN_YEARLY_PRICES.PRO.price,
       savingPercent: PLAN_YEARLY_PRICES.PRO.savingPercent,
     },
@@ -188,8 +180,8 @@ export const POINT_EXPIRATION_DAYS = [
 ];
 
 // Referral Discount
-export const BASE_REFERRAL_DISCOUNT_AMOUNT = 2000
-export const MAX_REFERRAL_COUNT = 10
+export const BASE_REFERRAL_DISCOUNT_AMOUNT = 4000
+export const MAX_REFERRAL_COUNT = 6
 
 import {
   Home as HomeIcon,
