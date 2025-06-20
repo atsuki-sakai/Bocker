@@ -20,6 +20,7 @@ import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { BASE_URL, PLAN_TRIAL_DAYS } from '@/lib/constants';
 import { BillingPeriod } from '@/convex/types';
 import { checkAllowedUrl, getPlanNameFromPriceId } from '@/lib/utils';
+import { getEnv } from '@/lib/env-config'
 
 /**
  * 1. サブスクリプション用Checkout Sessionを作成
@@ -60,7 +61,7 @@ export const createSubscriptionSession = action({
     const cancelUrl = `${BASE_URL}/dashboard/subscription/cancel`;
 
     try {
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      const stripe = new Stripe(getEnv('STRIPE_SECRET_KEY'), {
         apiVersion: STRIPE_API_VERSION,
       });
       // Stripe Checkout Sessionを作成
@@ -112,7 +113,7 @@ export const getRealStripeCustomer = action({
   handler: async (ctx, args) => {
     validateStringLength(args.stripe_customer_id, 'stripe_customer_id');
     try {
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      const stripe = new Stripe(getEnv('STRIPE_SECRET_KEY'), {
         apiVersion: STRIPE_API_VERSION,
       });
       // Stripe API経由で顧客を取得
@@ -381,7 +382,7 @@ export const getSubscriptionUpdatePreview = action({
 
       // プロレーション（按分）日時をUnix秒で取得
       const prorationDate = Math.floor(Date.now() / 1000);
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      const stripe = new Stripe(getEnv('STRIPE_SECRET_KEY'), {
         apiVersion: STRIPE_API_VERSION,
       });
       // 現行サブスクリプション取得
@@ -526,7 +527,7 @@ export const createBillingPortalSession = action({
       // 許可ドメインチェック
       checkAllowedUrl(args.return_url);
 
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      const stripe = new Stripe(getEnv('STRIPE_SECRET_KEY'), {
         apiVersion: STRIPE_API_VERSION,
       });
       // Billing Portal Session作成
@@ -571,7 +572,7 @@ export const confirmSubscriptionUpdate = action({
       validateStringLength(args.subscription_id, 'subscription_id');
       validateStringLength(args.new_price_id, 'new_price_id');
 
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      const stripe = new Stripe(getEnv('STRIPE_SECRET_KEY'), {
         apiVersion: STRIPE_API_VERSION,
       });
       // Stripeサブスクリプションを更新
