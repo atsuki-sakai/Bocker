@@ -98,6 +98,63 @@ class StripeService {
   }
 
   /**
+   * Stripe決済の返金を作成
+   * @param params - 返金パラメータ
+   * @returns 返金結果
+   * @throws SystemError Stripe APIエラーの場合
+   */
+  async createRefund(params: {
+    checkoutSessionId?: string; // Checkout Session IDから返金する場合
+    payment_intent_id?: string; // Payment Intent IDから直接返金する場合
+    amount?: number; // 部分返金の場合は金額を指定
+    reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer';
+    metadata?: Record<string, string>;
+  }): Promise<StripeResult<Stripe.Refund>> {
+    try {
+      let paymentIntentId = params.payment_intent_id;
+
+      // Checkout Session IDが提供された場合、Payment Intent IDを取得
+      if (params.checkoutSessionId && !paymentIntentId) {
+        const session = await this.stripe.checkout.sessions.retrieve(params.checkoutSessionId);
+        if (!session.payment_intent || typeof session.payment_intent !== 'string') {
+          return {
+            success: false,
+            error: 'Payment Intent not found in Checkout Session',
+          };
+        }
+        paymentIntentId = session.payment_intent;
+      }
+
+      if (!paymentIntentId) {
+        return {
+          success: false,
+          error: 'Either checkoutSessionId or payment_intent_id must be provided',
+        };
+      }
+
+      const refund = await this.stripe.refunds.create({
+        payment_intent: paymentIntentId,
+        amount: params.amount,
+        reason: params.reason || 'requested_by_customer',
+        metadata: params.metadata,
+      });
+
+      return {
+        success: true,
+        data: refund,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Stripe refund creation failed:', error);
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
    * Stripe Expressダッシュボードへのログインリンクを生成
    * @param stripe_account_id - Stripe Connect アカウントID
    * @returns ダッシュボードURL（オンボーディング中の場合はisOnboarding: true）

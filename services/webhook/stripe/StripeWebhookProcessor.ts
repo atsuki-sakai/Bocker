@@ -9,6 +9,7 @@ import { STRIPE_API_VERSION } from '@/services/stripe/constants';
 
 import { handleAccountUpdated, handleAccountExternalAccountDeleted, handleCapabilityUpdated } from './handlers.connect';
 import { handleSubscriptionUpdated, handleSubscriptionDeleted, handleInvoicePaymentSucceeded, handleInvoicePaymentFailed } from './handlers.subscription';
+import { handleCheckoutSessionCompleted, handlePaymentIntentFailed, handleCheckoutSessionExpired } from './handlers.checkout';
 
 /**
  * Stripeウェブフックを処理するプロセッサー。
@@ -130,6 +131,17 @@ export class StripeWebhookProcessor extends WebhookProcessor {
       stripeAccountId = evt.data.object.id;
     }
     
+    // Checkout & Payment Intent
+    if(evt.type === 'checkout.session.completed' || evt.type === 'checkout.session.expired'){
+      const session = evt.data.object as any;
+      stripeCustomerId = session.customer as string;
+      // metadataも記録（サロン予約の識別用）
+    }
+    if(evt.type === 'payment_intent.payment_failed'){
+      const paymentIntent = evt.data.object as any;
+      stripeCustomerId = paymentIntent.customer as string;
+    }
+    
     return {
       stripeAccountId: stripeAccountId ?? undefined,
       stripeCustomerId: stripeCustomerId ?? undefined,
@@ -179,6 +191,15 @@ export class StripeWebhookProcessor extends WebhookProcessor {
         // Stripe Connectの口座が支払い／振込機能が変更された際に送信される
         case 'capability.updated':
           return (await handleCapabilityUpdated(evt, eventId, this.dependencies, metrics)).result;
+        // Checkout Session が完了した場合（決済成功）
+        case 'checkout.session.completed':
+          return (await handleCheckoutSessionCompleted(evt, eventId, this.dependencies, metrics)).result;
+        // Payment Intent が失敗した場合（決済失敗）
+        case 'payment_intent.payment_failed':
+          return (await handlePaymentIntentFailed(evt, eventId, this.dependencies, metrics)).result;
+        // Checkout Session が期限切れになった場合
+        case 'checkout.session.expired':
+          return (await handleCheckoutSessionExpired(evt, eventId, this.dependencies, metrics)).result;
         default:
           console.log(`Unsupported Stripe event type: ${evt.type}`);
           return 'skipped';

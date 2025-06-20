@@ -3,13 +3,10 @@ import { STORAGE_URL } from './constants'
 import { SystemError } from '@/lib/errors/custom_errors';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { sanitizeFileName } from '@/lib/utils'
-import { v4 as uuidv4 } from 'uuid';
-import crypto from 'crypto';
 import sharp from 'sharp';
 import { Id } from '@/convex/_generated/dataModel';
 import { AspectType } from '@/convex/types';
 import { ImageDirectory, ImageQuality, ProcessedImageResult, UploadedFileResult } from './types';
-import { compressAndCropImage } from './helpers';
 
 /**
  * 画像サイズとメモリ使用量の制限設定
@@ -314,10 +311,7 @@ class GoogleStorageService {
       const { width, height } = await this.validateImageSafety(inputBuffer, 'compression-target');
       console.log('[画像圧縮] 安全性検証完了:', { width, height });
 
-      // 1. sharpインスタンス生成とメタデータ取得
-      const sharpInstance = sharp(inputBuffer).withMetadata();
-
-      // 2. アスペクト比2:3で中央トリミング
+      // アスペクト比2:3で中央トリミング
       let targetAspect: number;
       switch (aspectType) {
         case 'square':

@@ -305,4 +305,92 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
       lastTransactionDate,
     };
   }
+
+  /**
+   * 予約キャンセルに伴うポイント返還を記録します。
+   * @param params - 返還パラメータ
+   * @returns 成功/失敗の結果
+   */
+  async refundPointsForCancellation(params: {
+    customerId: string;
+    reservationId: string;
+    refundPoints: number;
+    tenantId: string;
+    orgId: string;
+  }): Promise<void> {
+    console.log(`[PointTransactionRepository] refundPointsForCancellation: params=${JSON.stringify(params)}`);
+    
+    const { customerId, reservationId, refundPoints, tenantId, orgId } = params;
+    
+    if (refundPoints <= 0) {
+      console.log(`[PointTransactionRepository] No points to refund: ${refundPoints}`);
+      return;
+    }
+
+    try {
+      // ポイント返還トランザクション作成
+      await this.createTransaction({
+        tenant_id: tenantId,
+        org_id: orgId,
+        customer_id: customerId,
+        reservation_id: reservationId,
+        points: refundPoints, // 返還は正の値
+        transaction_type: 'refund',
+        transaction_date_unix: Math.floor(Date.now() / 1000),
+        description: `予約キャンセルによるポイント返還 (予約ID: ${reservationId})`,
+      });
+
+      // ポイント残高を原子的に更新
+      const { error: updateError } = await this.supabaseServiceInstance
+        .rpc('update_customer_points_atomic', {
+          p_customer_uid: customerId,
+          p_points_delta: refundPoints,
+        });
+      
+      if (updateError) {
+        throw updateError;
+      }
+      
+      console.log(`[PointTransactionRepository] Successfully refunded ${refundPoints} points to customer ${customerId}`);
+    } catch (error) {
+      throwSupabaseError({
+        callFunc: 'PointTransactionRepository.refundPointsForCancellation',
+        message: 'Failed to refund points',
+        error: error as Error,
+        severity: 'high',
+        details: params
+      });
+    }
+  }
+
+  /**
+   * 予定されているポイント付与をキャンセルします。
+   * @param reservationId - 予約ID
+   * @returns 成功/失敗の結果
+   */
+  async cancelPendingPointAward(reservationId: string): Promise<void> {
+    console.log(`[PointTransactionRepository] cancelPendingPointAward: reservationId=${reservationId}`);
+    
+    try {
+      // Point task queue is a separate table, so we need to use direct supabase client
+      const supabase = (this.supabaseServiceInstance as any).client;
+      const { error } = await supabase
+        .from('point_task_queue')
+        .update({ 
+          status: 'cancelled',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('reservation_id', reservationId)
+        .eq('status', 'pending');
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log(`[PointTransactionRepository] Successfully cancelled pending point award for reservation ${reservationId}`);
+    } catch (error) {
+      // ポイント付与タスクがない場合もエラーにしない
+      console.warn(`[PointTransactionRepository] Failed to cancel pending point award: ${error}`);
+    }
+  }
 }
