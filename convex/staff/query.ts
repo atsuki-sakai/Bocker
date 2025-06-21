@@ -267,37 +267,49 @@ export const listDisplayData = query({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)
-    const staffs = await ctx.db
+    
+    // 並列でスタッフとスタッフ設定を取得
+    const [staffs, staffConfigs] = await Promise.all([
+      ctx.db
         .query('staff')
         .withIndex('by_tenant_org_active_archive', (q) =>
           q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', true).eq('is_archive', false)
         )
+        .collect(),
+      ctx.db
+        .query('staff_config')
+        .withIndex('by_tenant_org_staff_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id))
+        .filter((q) => q.eq(q.field('is_archive'), false))
         .collect()
-    console.log('staffs', staffs)
-    const staffConfigs = await ctx.db
-      .query('staff_config')
-      .withIndex('by_tenant_org_staff_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id))
-      .filter((q) => q.eq(q.field('is_archive'), false))
-      .collect()
-    return staffs.map((staff) => ({
-      _id: staff._id,
-      name: staff.name,
-      age: staffConfigs.find((config) => config.staff_id === staff._id)?.age,
-      instagram_link: staffConfigs.find((config) => config.staff_id === staff._id)?.instagram_link,
-      gender: staffConfigs.find((config) => config.staff_id === staff._id)?.gender,
-      description: staff.description,
-      images: staff.images ? [
-        ...staff.images.map((image) => ({
-          original_url: image.original_url,
-          thumbnail_url: image.thumbnail_url,
-        })),
-      ] : [],
-      is_active: staff.is_active,
-      _creationTime: staff._creationTime,
-      extra_charge: staffConfigs.find((config) => config.staff_id === staff._id)?.extra_charge,
-      priority: staffConfigs.find((config) => config.staff_id === staff._id)?.priority,
-      featured_hair_images: staffConfigs.find((config) => config.staff_id === staff._id)?.featured_hair_images,
-    }))
+    ])
+    
+    // スタッフ設定をMapに変換（O(n)検索を最適化）
+    const staffConfigMap = new Map(
+      staffConfigs.map(config => [config.staff_id, config])
+    )
+    
+    return staffs.map((staff) => {
+      const config = staffConfigMap.get(staff._id)
+      return {
+        _id: staff._id,
+        name: staff.name,
+        age: config?.age,
+        instagram_link: config?.instagram_link,
+        gender: config?.gender,
+        description: staff.description,
+        images: staff.images ? [
+          ...staff.images.map((image) => ({
+            original_url: image.original_url,
+            thumbnail_url: image.thumbnail_url,
+          })),
+        ] : [],
+        is_active: staff.is_active,
+        _creationTime: staff._creationTime,
+        extra_charge: config?.extra_charge,
+        priority: config?.priority,
+        featured_hair_images: config?.featured_hair_images,
+      }
+    })
   },
 })
 

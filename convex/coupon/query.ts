@@ -56,6 +56,7 @@ export const getCouponRelatedTablesAndExclusionMenus = query({
   handler: async (ctx, args) => {
     checkAuth(ctx);
 
+    // クーポン情報を最初に取得（存在確認のため）
     const coupon = await ctx.db.get(args.coupon_id);
     if (!coupon) {
       throw new ConvexError({
@@ -71,9 +72,20 @@ export const getCouponRelatedTablesAndExclusionMenus = query({
       });
     }
 
-    const couponConfig = await ctx.db.query('coupon_config').withIndex('by_tenant_org_coupon_archive', (q) =>
-      q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('coupon_id', args.coupon_id)
-    ).first();
+    // 関連データを並列で取得
+    const [couponConfig, exclusionMenus] = await Promise.all([
+      ctx.db.query('coupon_config')
+        .withIndex('by_tenant_org_coupon_archive', (q) =>
+          q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('coupon_id', args.coupon_id)
+        )
+        .first(),
+      
+      ctx.db.query('coupon_exclusion_menu')
+        .withIndex('by_tenant_org_coupon_menu_archive', (q) =>
+          q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('coupon_id', args.coupon_id)
+        )
+        .collect()
+    ]);
 
     if (!couponConfig) {
       throw new ConvexError({
@@ -88,10 +100,6 @@ export const getCouponRelatedTablesAndExclusionMenus = query({
         },
       });
     }
-
-    const exclusionMenus = await ctx.db.query('coupon_exclusion_menu').withIndex('by_tenant_org_coupon_menu_archive', (q) =>
-      q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('coupon_id', args.coupon_id)
-    ).collect();
 
     return {
       coupon,
