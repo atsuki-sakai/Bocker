@@ -14,7 +14,9 @@ const intlMiddleware = createMiddleware(routing)
 const publicPaths = [
   '/',
   '/api/webhook/clerk',
-  '/api/webhook/stripe',
+  '/api/webhook/stripe/subscription',
+  '/api/webhook/stripe/connect',
+  '/api/webhook/stripe/checkout',
   '/api/line/verify-token',
   '/api/auth/session',
   '/api/auth/line-state',
@@ -92,13 +94,11 @@ export default clerkMiddleware(async (auth, req) => {
 
   // ★ manifest.jsonリクエストをルートにリダイレクト ★
   if (pathname.endsWith('/manifest.json') && pathname !== '/manifest.json') {
-    console.log('[Middleware] Redirecting manifest.json request to root')
     return NextResponse.redirect(new URL('/manifest.json', req.url))
   }
 
   // ★ API ルートは next-intl のロケール付与から除外 ★
   if (pathnameWithoutLocale.startsWith('/api/')) {
-    console.log('[Middleware] API path detected, processing without intl.')
     // APIルートはClerk認証のみ処理、next-intlは適用しない
     return NextResponse.next()
   }
@@ -113,33 +113,20 @@ export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth()
   const { searchParams, origin } = req.nextUrl
 
-  console.log(`[Middleware] -----------------------------------------------------`)
-  console.log(
-    `[Middleware] Request: ${req.method} ${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
-  )
-  console.log(`[Middleware] Origin: ${origin}`)
-  console.log(`[Middleware] Clerk userId: ${userId}`)
 
   // LINEセッションCookieの確認 (Assuming LOGIN_SESSION_KEY is used for both LINE and potentially other auth sessions)
   const lineSessionCookie = req.cookies.get(LOGIN_SESSION_KEY)
   // const authSessionCookie = req.cookies.get(LOGIN_SESSION_KEY); // authSessionCookieも同じ変数を見ているようです
 
-  // 有効なセッションかをログに記録
-  console.log(
-    `[Middleware] Auth session cookie (${LOGIN_SESSION_KEY}): ${lineSessionCookie ? 'present' : 'absent'}, value: ${lineSessionCookie?.value ? 'has content' : 'empty'}`
-  )
 
   // 公開パスの判定（ロケール除去後のパスで判定）
   const isPublic = isPublicPath(pathnameWithoutLocale)
-  console.log(`[Middleware] Pathname: ${pathname}, Without locale: ${pathnameWithoutLocale}, Is public path? ${isPublic}`)
 
   // 認証ページの判定（ロケール除去後のパスで判定）
   const isAuthPg = isAuthPath(pathnameWithoutLocale)
-  console.log(`[Middleware] Is auth page? ${isAuthPg}`)
 
   // 保護されたAPIエンドポイントの判定（ロケール除去後のパスで判定）
   const isProtectedApi = isProtectedApiPath(pathnameWithoutLocale)
-  console.log(`[Middleware] Is protected API path? ${isProtectedApi}`)
 
   let response: NextResponse // 生成するレスポンスを格納する変数
 
@@ -153,14 +140,8 @@ export default clerkMiddleware(async (auth, req) => {
       const isValidLocale = routing.locales.includes(locale as any)
       const redirectLocale = isValidLocale ? locale : routing.defaultLocale
       const dashboardUrl = new URL(`/${redirectLocale}/dashboard`, req.url)
-      console.log(
-        `[Middleware] User is authenticated with Clerk on auth page, redirecting to dashboard: ${dashboardUrl.toString()}`
-      )
       response = NextResponse.redirect(dashboardUrl) // レスポンスを設定
     } else {
-      console.log(
-        `[Middleware] User is not authenticated with Clerk, proceeding to auth page: ${pathname}`
-      )
       // next-intlミドルウェアを適用
       response = intlMiddleware(req)
     }
@@ -171,7 +152,6 @@ export default clerkMiddleware(async (auth, req) => {
   // ClerkユーザーIDがなく、認証セッションもない場合は認証エラー
   else if (isProtectedApi && !userId && !lineSessionCookie) {
     // 認証セッションはlineSessionCookieのみチェックすれば良さそうであれば修正
-    console.log('[Middleware] Protected API access without any authentication, returning 401')
     response = new NextResponse(JSON.stringify({ error: '認証が必要です' }), {
       // レスポンスを設定
       status: 401,
@@ -181,16 +161,12 @@ export default clerkMiddleware(async (auth, req) => {
   // 保護されたAPIエンドポイントだが認証あり (Clerk or other session)
   else if (isProtectedApi && (userId || lineSessionCookie)) {
     // 認証セッションはlineSessionCookieのみチェックすれば良さそうであれば修正
-    console.log('[Middleware] Protected API access with authentication, proceeding.')
     response = NextResponse.next() // レスポンスを設定
   }
   // 公開パスでなく、かつ ClerkユーザーIDもなく、認証セッションもない場合
   // → サインインページへリダイレクト
   else if (!isPublic && !userId && !lineSessionCookie) {
     // 認証セッションはlineSessionCookieのみチェックすれば良さそうであれば修正
-    console.log(
-      '[Middleware] User not authenticated (neither Clerk nor any session), redirecting to sign-in'
-    )
     // 現在の言語を保持してサインインページへリダイレクト
     const locale = pathname.split('/')[1]
     const isValidLocale = routing.locales.includes(locale as any)
@@ -202,12 +178,10 @@ export default clerkMiddleware(async (auth, req) => {
   }
   // 上記のどれにも当てはまらない場合 (公開パス or 認証済み)
   else {
-    console.log('[Middleware] Request will proceed. Is public or user authenticated (Clerk/LINE).')
     // next-intlミドルウェアを適用
     response = intlMiddleware(req)
   }
 
-  console.log(`[Middleware] Final response determined.`)
   // 決定し、必要に応じてクッキー設定関数で修正された response を返す
   return response
 })
