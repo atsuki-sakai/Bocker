@@ -15,43 +15,24 @@
 import { paginationOptsValidator } from 'convex/server';
 import { reservationStatusType } from '@/convex/types';
 import { checkAuth } from '@/convex/utils/auth';
-import { api } from '@/convex/_generated/api';
 import { AvailableStaff } from '@/hooks/usePriceCalculation';
 import { Doc } from '@/convex/_generated/dataModel';
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { validateDateStrFormat, validateStringLength } from '@/convex/utils/validations';
-import { convertHourToTimestamp, getDayOfWeek } from '@/lib/schedules';
+import { 
+  convertHourToTimestamp, 
+  getDayOfWeek, 
+  hourToMinutes, 
+  toHourString,
+  convertTimestampToHour
+} from '@/lib/schedules';
 import { TimeRange } from '@/lib/types';
 import { validateDateStrToDate } from '@/convex/utils/validations';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { ConvexError } from 'convex/values';
-import { getReservationWithDetail } from './reservation.helpers';
+import { getReservationWithDetail, checkReservationDoubleBooking } from './reservation.helpers';
 
-// ユーティリティ関数（Convex内で使用するため再定義）
-function hourToMinutes(hhmm: string): number {
-  const [h, m] = hhmm.split(':').map(Number);
-  return h * 60 + m;
-}
-
-function toHourString(min: number): string {
-  const h = Math.floor(min / 60)
-    .toString()
-    .padStart(2, '0');
-  const m = (min % 60).toString().padStart(2, '0');
-  return `${h}:${m}`;
-}
-
-function convertTimestampToHour(
-  unixTimestampMs: number,
-  timeZone: string = 'Asia/Tokyo'
-): string {
-  return new Date(unixTimestampMs).toLocaleTimeString('ja-JP', {
-    hour:   '2-digit',
-    minute: '2-digit',
-    timeZone,
-  });
-}
 
 /**
  * 予約IDによる単一予約取得
@@ -858,24 +839,143 @@ export const calculateReservationTime = query({
   },
   handler: async (ctx, args): Promise<TimeRange[]> => {
     // 共通日付バリデーション
-    validateDateStrToDate(args.date, 'calculateReservationTime')
+    const targetDate = validateDateStrToDate(args.date, 'calculateReservationTime')
     validateStringLength(args.org_id, 'org_id')
+    const dayOfWeek = getDayOfWeek(targetDate)
+    const dayOfWeekJa = getDayOfWeek(targetDate, true)
 
-    // findAvailableTimeSlots, findStaffSchedules, findStaffReservations を直接呼び出し
-    const availableTimeSlots = await ctx.runQuery(api.reservation.query.findAvailableTimeSlots, {
-      tenant_id: args.tenant_id,
-      org_id: args.org_id,
-      staff_id: args.staff_id,
-      date: args.date,
-    })
+    // 並列でデータを取得（パフォーマンス向上）
+    const [tenantReservationConfig, tenantWeekSchedule, tenantException, staffWeekSchedule] = await Promise.all([
+      // 1. 予約設定
+      ctx.db
+        .query('reservation_config')
+        .withIndex('by_tenant_org_archive', (q) => 
+          q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)
+        )
+        .first(),
+      
+      // 2. サロンの週間スケジュール
+      ctx.db
+        .query('week_schedule')
+        .withIndex('by_tenant_org_week_archive', (q) =>
+          q
+            .eq('tenant_id', args.tenant_id)
+            .eq('org_id', args.org_id)
+            .eq('day_of_week', dayOfWeek as any)
+            .eq('is_archive', false)
+        )
+        .filter((q) => q.eq(q.field('is_open'), true))
+        .first(),
+      
+      // 3. サロンの例外スケジュール
+      ctx.db
+        .query('exception_schedule')
+        .withIndex('by_tenant_org_date_type_archive', (q) =>
+          q
+            .eq('tenant_id', args.tenant_id)
+            .eq('org_id', args.org_id)
+            .eq('date', args.date)
+            .eq('type', 'holiday')
+            .eq('is_archive', false)
+        )
+        .first(),
+      
+      // 4. スタッフの週間スケジュール
+      ctx.db
+        .query('staff_week_schedule')
+        .withIndex('by_tenant_org_staff_week_open_archive', (q) =>
+          q
+            .eq('tenant_id', args.tenant_id)
+            .eq('org_id', args.org_id)
+            .eq('staff_id', args.staff_id)
+            .eq('day_of_week', dayOfWeek as any)
+            .eq('is_open', true)
+            .eq('is_archive', false)
+        )
+        .first()
+    ])
 
-    const staffAllDaySchedules = await ctx.runQuery(api.reservation.query.findStaffSchedules, {
-      tenant_id: args.tenant_id,
-      org_id: args.org_id,
-      staff_id: args.staff_id,
-      date: args.date,
-      is_all_day: true,
-    })
+    // バリデーションチェック
+    if (!tenantWeekSchedule) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'calculateReservationTime',
+        message: `サロンは${dayOfWeekJa}曜日は営業していません`,
+        code: 'BAD_REQUEST',
+        status: 400,
+        details: args,
+      })
+    }
+
+    if (tenantException) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'calculateReservationTime',
+        message: `サロンの臨時休業日です: ${args.date}`,
+        code: 'BAD_REQUEST',
+        status: 400,
+        details: args,
+      })
+    }
+
+    if (!staffWeekSchedule || !staffWeekSchedule.is_open) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'calculateReservationTime',
+        message: `スタッフは${dayOfWeekJa}出勤していません`,
+        code: 'BAD_REQUEST',
+        status: 400,
+        details: args,
+      })
+    }
+
+    // 並列でスケジュールと予約を取得
+    const [staffAllDaySchedules, staffSchedules, staffReservations] = await Promise.all([
+      // 終日スケジュール
+      ctx.db
+        .query('staff_exception_schedule')
+        .withIndex('by_tenant_org_staff_date_archive', (q) =>
+          q
+            .eq('tenant_id', args.tenant_id)
+            .eq('org_id', args.org_id)
+            .eq('staff_id', args.staff_id)
+            .eq('date', args.date)
+            .eq('is_archive', false)
+        )
+        .filter((q) => q.eq(q.field('is_all_day'), true))
+        .collect(),
+      
+      // 部分スケジュール
+      ctx.db
+        .query('staff_exception_schedule')
+        .withIndex('by_tenant_org_staff_date_archive', (q) =>
+          q
+            .eq('tenant_id', args.tenant_id)
+            .eq('org_id', args.org_id)
+            .eq('staff_id', args.staff_id)
+            .eq('date', args.date)
+            .eq('is_archive', false)
+        )
+        .filter((q) => q.eq(q.field('is_all_day'), false))
+        .collect(),
+      
+      // 確定済み予約
+      ctx.db
+        .query('reservation')
+        .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
+          q
+            .eq('tenant_id', args.tenant_id)
+            .eq('org_id', args.org_id)
+            .eq('staff_id', args.staff_id)
+            .eq('date', args.date)
+            .eq('status', 'confirmed')
+            .eq('is_archive', false)
+        )
+        .collect()
+    ])
 
     if (staffAllDaySchedules.length > 0) {
       throw new ConvexError({
@@ -885,51 +985,52 @@ export const calculateReservationTime = query({
         status: 400,
         message: 'スタッフには終日のスケジュールがあります。予約受け付けできません。',
         code: 'BAD_REQUEST',
-        details: {
-          tenant_id: args.tenant_id,
-          org_id: args.org_id,
-          staff_id: args.staff_id,
-          date: args.date,
-        },
+        details: args,
       })
     }
 
-    const reservationConfig = await ctx.runQuery(api.organization.reservation_config.query.findByTenantAndOrg, {
-      tenant_id: args.tenant_id,
-      org_id: args.org_id,
-    })
+    // 時間計算
+    const todayFirstLaterMinutes = tenantReservationConfig?.today_first_later_minutes
+      ? tenantReservationConfig.today_first_later_minutes * 60 * 1000
+      : 30 * 60 * 1000
 
-    const staffSchedules = await ctx.runQuery(api.reservation.query.findStaffSchedules, {
-      tenant_id: args.tenant_id,
-      org_id: args.org_id,
-      staff_id: args.staff_id,
-      date: args.date,
-      is_all_day: false,
-    })
+    const salonStart = convertHourToTimestamp(tenantWeekSchedule.start_hour!, args.date)
+    const salonEnd = convertHourToTimestamp(tenantWeekSchedule.end_hour!, args.date)
+    const staffStart = staffWeekSchedule?.start_hour
+      ? convertHourToTimestamp(staffWeekSchedule.start_hour, args.date)
+      : Number.MIN_SAFE_INTEGER
+    const staffEnd = staffWeekSchedule?.end_hour
+      ? convertHourToTimestamp(staffWeekSchedule.end_hour, args.date)
+      : Number.MAX_SAFE_INTEGER
 
-    const staffReservations = await ctx.runQuery(api.reservation.query.findStaffReservations, {
-      tenant_id: args.tenant_id,
-      org_id: args.org_id,
-      staff_id: args.staff_id,
-      date: args.date,
-    })
+    let resultStart = Math.max(salonStart!, staffStart!)
+    const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000)
+    if (
+      jstNow.getUTCFullYear() === targetDate.getFullYear() &&
+      jstNow.getUTCMonth() === targetDate.getMonth() &&
+      jstNow.getUTCDate() === targetDate.getDate()
+    ) {
+      const rawNextLater = Date.now() + todayFirstLaterMinutes
+      const stepMs = 10 * 60 * 1000
+      const alignedNextLater = Math.ceil(rawNextLater / stepMs) * stepMs
+      resultStart = Math.max(resultStart, alignedNextLater)
+    }
+    const resultEnd = Math.min(salonEnd!, staffEnd!)
+
+    const availableTimeSlots = {
+      startHour: convertTimestampToHour(resultStart),
+      endHour: convertTimestampToHour(resultEnd),
+    }
     
-
-    // Unixタイムスタンプから時刻文字列（HH:mm）に変換する関数
-    // Convex内では既にタイムスタンプが正しく保存されているため、
-    // 日本時間として表示するだけで良い
-    const timestampToHHMM = (timestamp: number): string => {
-      return convertTimestampToHour(timestamp, 'Asia/Tokyo');
-    };
-
+    // スケジュールを時刻文字列に変換
     const allSchedules = [
       ...staffSchedules.map((schedule) => ({
-        startHour: timestampToHHMM(schedule.start_time_unix),
-        endHour: timestampToHHMM(schedule.end_time_unix),
+        startHour: convertTimestampToHour(schedule.start_time_unix!, 'Asia/Tokyo'),
+        endHour: convertTimestampToHour(schedule.end_time_unix!, 'Asia/Tokyo'),
       })),
       ...staffReservations.map((reservation) => ({
-        startHour: timestampToHHMM(reservation.start_time_unix),
-        endHour: timestampToHHMM(reservation.end_time_unix),
+        startHour: convertTimestampToHour(reservation.start_time_unix!, 'Asia/Tokyo'),
+        endHour: convertTimestampToHour(reservation.end_time_unix!, 'Asia/Tokyo'),
       })),
     ]
     
@@ -947,7 +1048,7 @@ export const calculateReservationTime = query({
         schedule,
         args.duration_min,
         true,
-        reservationConfig?.reservation_interval_minutes
+        tenantReservationConfig?.reservation_interval_minutes
       )
       return timeSlots
     })
@@ -1022,86 +1123,7 @@ export const checkDoubleBooking = query({
     excludeReservationId: v.optional(v.id('reservation')) // 更新時に自分自身を除外するため
   },
   handler: async (ctx, args): Promise<boolean> => {
-
-  const reservationConfig = await ctx.db.query('reservation_config').withIndex('by_tenant_org_archive', (q) =>
-    q.eq('tenant_id', args.tenant_id)
-      .eq('org_id', args.org_id)
-      .eq('is_archive', false)
-  ).first();
-
-  // 店舗ごとの同時受付可能席数を取得
-  const availableSheet = reservationConfig?.available_sheet || 3;
-  
-
-  // 組織全体で、該当日の confirmed かつ is_archive: false の予約のみ取得
-  const orgReservations = await ctx.db
-    .query('reservation')
-    .withIndex('by_tenant_org_date_status_archive', (q) =>
-      q.eq('tenant_id', args.tenant_id)
-        .eq('org_id', args.org_id)
-        .eq('date', args.date)
-        .eq('status', 'confirmed')
-        .eq('is_archive', false)
-    )
-    .collect();
-
-  const overlappingReservations = orgReservations.filter((reservation) => {
-    // 除外ID（自分自身）は外す
-    if (args.excludeReservationId && reservation._id === args.excludeReservationId) return false;
-    // 時間帯が一部でも重なればtrue
-    const isOverlapping = reservation.start_time_unix < args.end_time_unix &&
-      reservation.end_time_unix > args.start_time_unix;
-    
-    
-    return isOverlapping;
-  });
-  
-  const overlapCount = overlappingReservations.length;
-  
-
-  if (overlapCount >= availableSheet) {
-    throw new ConvexError({
-      statusCode: ERROR_STATUS_CODE.CONFLICT,
-      severity: ERROR_SEVERITY.ERROR,
-      callFunc: 'reservation.checkReservationOverlap',
-      message: 'この時間帯の最大同時予約数は上限です。別の時間を選択してください。',
-      code: 'CONFLICT',
-      status: 409,
-      details: {
-        ...args,
-        overlapCount,
-        availableSheet
-      },
-    });
-  }
-
-  // 指定された条件に合致する予約を検索し、
-  // 時間帯が重複している予約が存在するかを判定
-  const query = ctx.db
-    .query('reservation')
-    .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
-      q
-        .eq('tenant_id', args.tenant_id)
-        .eq('org_id', args.org_id)
-        .eq('staff_id', args.staff_id)
-        .eq('date', args.date)
-        .eq('status', 'confirmed')
-        .eq('is_archive', false)
-    )
-    .filter((q) =>
-      q.and(
-        // 時間の重複をチェック（開始時間が相手の終了時間前、終了時間が相手の開始時間後）
-        q.lt(q.field('start_time_unix'), args.end_time_unix),
-        q.gt(q.field('end_time_unix'), args.start_time_unix),
-        // 除外IDがあればそれを除外、なければ常にtrueの条件
-        args.excludeReservationId
-          ? q.neq(q.field('_id'), args.excludeReservationId)
-          : q.eq(q.field('_id'), q.field('_id')) // 常にtrueになる条件
-      )
-    );
-
-  const overlapping = await query.first();
-  return !!overlapping;
+    return await checkReservationDoubleBooking(ctx, args);
   },
 })
 
@@ -1229,49 +1251,100 @@ export const getReservationFormData = query({
     availableStaff: AvailableStaff[]
   }> => {
     try {
-      // 並列でデータを取得
-      const [reservationConfig, weekSchedules, menus, options, availableStaff] = await Promise.all([
+      // 並列でデータを取得（直接クエリを実行することでパフォーマンス向上）
+      const [reservationConfig, weekSchedules, menusPaginated, optionsPaginated, availableStaffData] = await Promise.all([
         // 予約設定取得
-        ctx.runQuery(api.organization.reservation_config.query.findByTenantAndOrg, {
-          tenant_id: args.tenant_id,
-          org_id: args.org_id,
-        }),
+        ctx.db
+          .query('reservation_config')
+          .withIndex('by_tenant_org_archive', (q) =>
+            q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)
+          )
+          .first(),
         
         // 営業時間取得
-        ctx.runQuery(api.organization.week_schedule.query.getAllByTenantAndOrg, {
-          tenant_id: args.tenant_id,
-          org_id: args.org_id,
-        }),
+        ctx.db
+          .query('week_schedule')
+          .withIndex('by_tenant_org_week_archive', (q) =>
+            q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+          )
+          .filter((q) => q.eq(q.field('is_archive'), false))
+          .order('asc')
+          .collect(),
         
         // メニュー一覧取得
-        ctx.runQuery(api.menu.query.listByTenantAndOrg, {
-          tenant_id: args.tenant_id,
-          org_id: args.org_id,
-          paginationOpts: { numItems: 100, cursor: null },
-        }),
+        ctx.db
+          .query('menu')
+          .withIndex('by_tenant_org_is_show_archive', (q) =>
+            q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_show', true).eq('is_archive', false)
+          )
+          .order('asc')
+          .paginate({ numItems: 100, cursor: null }),
         
         // オプション一覧取得
-        ctx.runQuery(api.option.query.list, {
-          tenant_id: args.tenant_id,
-          org_id: args.org_id,
-          paginationOpts: { numItems: 100, cursor: null },
-        }),
+        ctx.db
+          .query('option')
+          .withIndex('by_tenant_org_archive', (q) =>
+            q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)
+          )
+          .order('asc')
+          .paginate({ numItems: 100, cursor: null }),
         
         // 選択メニューがある場合のみ利用可能スタッフ取得
         args.menu_ids && args.menu_ids.length > 0
-          ? ctx.runQuery(api.staff.query.findByAvailableStaffs, {
-              tenant_id: args.tenant_id,
-              org_id: args.org_id,
-              menu_ids: args.menu_ids,
-            })
-          : Promise.resolve([])
+          ? (async () => {
+              // メニュー除外スタッフを取得
+              const exclusionStaffIds = new Set<string>()
+              await Promise.all(
+                args.menu_ids!.map(async (menu_id) => {
+                  const exclusions = await ctx.db
+                    .query('menu_exclusion_staff')
+                    .withIndex('by_tenant_org_menu_archive', (q) =>
+                      q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('menu_id', menu_id).eq('is_archive', false)
+                    )
+                    .collect()
+                  exclusions.forEach(e => exclusionStaffIds.add(e.staff_id))
+                })
+              )
+              
+              // アクティブなスタッフを取得
+              const allStaff = await ctx.db
+                .query('staff')
+                .withIndex('by_tenant_org_active_archive', (q) =>
+                  q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', true).eq('is_archive', false)
+                )
+                .collect()
+              
+              // 除外スタッフをフィルタリング
+              const availableStaffList = allStaff.filter(staff => !exclusionStaffIds.has(staff._id))
+              
+              // スタッフ設定を取得
+              const staffConfigs = await Promise.all(
+                availableStaffList.map(staff =>
+                  ctx.db
+                    .query('staff_config')
+                    .withIndex('by_tenant_org_staff_archive', (q) =>
+                      q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('staff_id', staff._id).eq('is_archive', false)
+                    )
+                    .first()
+                )
+              )
+              
+              return availableStaffList.map((staff, index) => ({
+                _id: staff._id,
+                name: staff.name,
+                images: staff.images,
+                extra_charge: staffConfigs[index]?.extra_charge || 0,
+              }))
+            })()
+          : []
       ])
+      
       return {
         reservationConfig,
         weekSchedules,
-        menus: menus.page,
-        options: options.page,
-        availableStaff,
+        menus: menusPaginated.page,
+        options: optionsPaginated.page,
+        availableStaff: availableStaffData as AvailableStaff[],
       }
     } catch (error) {
       console.error('予約フォームデータ取得エラー:', error)
@@ -1297,10 +1370,10 @@ export const getScheduleData = query({
   }> => {
 
     try {
-      // 並列でデータを取得
+      // 並列でデータを取得（直接クエリを実行することでパフォーマンス向上）
       const [availableSlots, organizationSchedule] = await Promise.all([
-        // 利用可能時間スロット取得
-        ctx.runQuery(api.reservation.query.calculateReservationTime, {
+        // 利用可能時間スロット計算（calculateReservationTimeのロジックを内部で再現）
+        calculateReservationTime.handler(ctx, {
           tenant_id: args.tenant_id,
           org_id: args.org_id,
           staff_id: args.staff_id,
@@ -1309,10 +1382,14 @@ export const getScheduleData = query({
         }),
         
         // 組織営業時間取得
-        ctx.runQuery(api.organization.week_schedule.query.getAllByTenantAndOrg, {
-          tenant_id: args.tenant_id,
-          org_id: args.org_id,
-        }),
+        ctx.db
+          .query('week_schedule')
+          .withIndex('by_tenant_org_week_archive', (q) =>
+            q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+          )
+          .filter((q) => q.eq(q.field('is_archive'), false))
+          .order('asc')
+          .collect(),
       ])
 
       return {

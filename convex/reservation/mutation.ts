@@ -1,4 +1,4 @@
-import { api, internal } from '@/convex/_generated/api'
+import { internal } from '@/convex/_generated/api'
 import { mutation, internalMutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { updateRecord } from '@/convex/utils/helpers';
@@ -10,7 +10,8 @@ import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import {
   createReservationWithDetails,
   archiveReservationWithDetails,
-  deleteReservationWithDetails
+  deleteReservationWithDetails,
+  checkReservationDoubleBooking
 } from '@/convex/reservation/reservation.helpers';
 
 /**
@@ -142,70 +143,14 @@ export const create = mutation({
     }
 
     // 予約時間の重複を防ぐため、同じスタッフ・日時での予約が既に存在しないかをチェックする（Race condition防止）
-    const reservationConfig = await ctx.db.query('reservation_config').withIndex('by_tenant_org_archive', (q) =>
-      q.eq('tenant_id', args.tenant_id)
-        .eq('org_id', args.org_id)
-    ).first();
-  
-    // 店舗ごとの同時受付可能席数を取得
-    const availableSheet = reservationConfig?.available_sheet || 3;
-  
-    // 組織全体で、該当日の confirmed かつ is_archive: false の予約のみ取得
-    const orgReservations = await ctx.db
-      .query('reservation')
-      .withIndex('by_tenant_org_date_status_archive', (q) =>
-        q.eq('tenant_id', args.tenant_id)
-          .eq('org_id', args.org_id)
-          .eq('date', args.date)
-          .eq('status', 'confirmed')
-          .eq('is_archive', false)
-      )
-      .collect();
-  
-    const overlapCount = orgReservations.filter((reservation) => {
-      // 時間帯が一部でも重なればtrue
-      return (
-        reservation.start_time_unix < args.end_time_unix &&
-        reservation.end_time_unix > args.start_time_unix
-      );
-    }).length;
-  
-    if (overlapCount >= availableSheet) {
-      throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.CONFLICT,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'reservation.checkReservationOverlap',
-        message: 'この時間帯の最大同時予約数は上限です。別の時間を選択してください。',
-        code: 'CONFLICT',
-        status: 409,
-        details: {
-          ...args,
-        },
-      });
-    }
-  
-    // 指定された条件に合致する予約を検索し、
-    // 時間帯が重複している予約が存在するかを判定
-    const query = ctx.db
-      .query('reservation')
-      .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
-        q
-          .eq('tenant_id', args.tenant_id)
-          .eq('org_id', args.org_id)
-          .eq('staff_id', args.staff_id)
-          .eq('date', args.date)
-          .eq('status', 'confirmed')
-          .eq('is_archive', false)
-      )
-      .filter((q) =>
-        q.and(
-          // 時間の重複をチェック（開始時間が相手の終了時間前、終了時間が相手の開始時間後）
-          q.lt(q.field('start_time_unix'), args.end_time_unix),
-          q.gt(q.field('end_time_unix'), args.start_time_unix),
-        )
-      );
-  
-    const isOverlapping = await query.first();
+    const isOverlapping = await checkReservationDoubleBooking(ctx, {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      staff_id: args.staff_id,
+      date: args.date,
+      start_time_unix: args.start_time_unix,
+      end_time_unix: args.end_time_unix,
+    });
 
     if (isOverlapping) {
       throw new ConvexError({
@@ -322,7 +267,7 @@ export const update = mutation({
       (args.start_time_unix !== reservation.start_time_unix ||
         args.end_time_unix !== reservation.end_time_unix)
     ) {
-      const isOverlapping = await ctx.runQuery(api.reservation.query.checkDoubleBooking, {
+      const isOverlapping = await checkReservationDoubleBooking(ctx, {
         tenant_id: args.tenant_id,
         org_id: args.org_id,
         staff_id: args.staff_id,
