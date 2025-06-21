@@ -50,9 +50,20 @@ export class ClerkWebhookProcessor extends WebhookProcessor {
       'svix-id': req.headers.get('svix-id'),
       'svix-timestamp': req.headers.get('svix-timestamp'),
       'svix-signature': req.headers.get('svix-signature')?.substring(0, 20) + '...',
+      'content-type': req.headers.get('content-type'),
     });
     console.log('Secret provided:', secret ? 'Yes' : 'No');
     console.log('Secret prefix:', secret?.substring(0, 10) + '...');
+    
+    // リクエストボディのサイズを確認
+    const clonedReq = req.clone();
+    try {
+      const bodyText = await clonedReq.text();
+      console.log('Request body length:', bodyText.length);
+      console.log('Body preview:', bodyText.substring(0, 100) + '...');
+    } catch (bodyErr) {
+      console.error('Failed to read request body:', bodyErr);
+    }
     
     if (!secret) {
       // This error will be caught by the main error handler in baseProcessor.process
