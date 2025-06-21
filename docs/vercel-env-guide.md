@@ -114,3 +114,18 @@ vercel env add VARIABLE_NAME
 1. Webhook URLが正しいか確認
 2. 署名シークレットが正しい環境のものか確認
 3. 各サービスのダッシュボードでWebhook設定を確認
+
+問題： VercelのプレビューURLに外部からPOSTリクエストを送ると401エラーが発生
+
+  原因： Vercelの「Deployment Protection」機能でVercel Authenticationがデフォルト有効
+
+  解決策：
+  1. Project Setting → Deployment Protection → Vercel Authentication を無効化
+  2. これにより外部からのPOSTリクエストが200レスポンスを返すようになる
+
+  重要なポイント：
+  - LINE BotのWebhookなど外部サービスからのリクエストを受ける場合は要注意
+  - プレビュー環境でのWebhook テストが困難になる可能性
+  - セキュリティと機能のトレードオフを考慮する必要
+
+  この設定はBocker プロジェクトのClerk webhook問題とは直接関係ありませんが、Vercelのプレビュー環境でWebhookテストを行う際に参考になる情報です
