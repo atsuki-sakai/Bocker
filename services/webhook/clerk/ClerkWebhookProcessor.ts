@@ -45,19 +45,34 @@ export class ClerkWebhookProcessor extends WebhookProcessor {
 
   // 🔐 Webhook署名の検証 (Adapted from verifyWebhookSignature)
   protected async verifySignature(req: NextRequest, secret: string): Promise<WebhookEvent> {
+    console.log('🔐 Clerk webhook signature verification started');
+    console.log('Headers:', {
+      'svix-id': req.headers.get('svix-id'),
+      'svix-timestamp': req.headers.get('svix-timestamp'),
+      'svix-signature': req.headers.get('svix-signature')?.substring(0, 20) + '...',
+    });
+    console.log('Secret provided:', secret ? 'Yes' : 'No');
+    console.log('Secret prefix:', secret?.substring(0, 10) + '...');
+    
     if (!secret) {
       // This error will be caught by the main error handler in baseProcessor.process
       // and result in a 400 or 500 response.
       throw new Error('Clerk signing secret is not provided to verifySignature method.');
     }
     try {
-      return await verifyWebhook(req, {
+      const result = await verifyWebhook(req, {
         signingSecret: secret,
       });
+      console.log('✅ Webhook signature verified successfully');
+      return result;
     } catch (err: any) {
       // Log specifics for debugging, but throw a generic message for the client
       // The base processor will handle Sentry capture for this re-thrown error.
-      console.error('Clerk webhook signature verification failed:', err);
+      console.error('❌ Clerk webhook signature verification failed:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+      });
       Sentry.captureMessage('Clerk webhook signature verification failed', { level: 'error' });
       throw new Error('Clerk webhook signature verification failed: ' + (err.message || 'Unknown error'));
     }

@@ -111,7 +111,7 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   const { userId } = await auth()
-  const { searchParams, origin } = req.nextUrl
+  // const { searchParams, origin } = req.nextUrl // 現在は使用していない
 
 
   // LINEセッションCookieの確認 (Assuming LOGIN_SESSION_KEY is used for both LINE and potentially other auth sessions)
