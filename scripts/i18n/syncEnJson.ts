@@ -40,7 +40,7 @@ function mergeMissingKeys(jaNode: JsonMap, enNode: JsonMap): void {
     } else {
       // プリミティブ値の場合
       if (enValue === undefined) {
-        enNode[key] = `TODO: ${String(jaValue)}`
+        enNode[key] = `${String(jaValue)}`
       }
     }
   }
