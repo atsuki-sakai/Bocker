@@ -18,8 +18,27 @@ import { processClerkWebhook } from '@/services/webhook/clerk/ClerkWebhookProces
  * @returns NextResponse - Next.jsのレスポンスオブジェクト
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // Webhook処理サービスを呼び出し
-  return processClerkWebhook(req);
+  // デバッグ用ログ追加
+  console.log('🚨 Clerk Webhook received:', {
+    url: req.url,
+    method: req.method,
+    headers: Object.fromEntries(req.headers.entries()),
+    env: {
+      hasSecret: !!process.env.CLERK_WEBHOOK_SIGNING_SECRET,
+      secretLength: process.env.CLERK_WEBHOOK_SIGNING_SECRET?.length,
+      secretPrefix: process.env.CLERK_WEBHOOK_SIGNING_SECRET?.substring(0, 10),
+    }
+  });
+
+  try {
+    // Webhook処理サービスを呼び出し
+    const response = await processClerkWebhook(req);
+    console.log('✅ Webhook processed successfully');
+    return response;
+  } catch (error) {
+    console.error('❌ Webhook processing failed:', error);
+    throw error;
+  }
 }
 
 /**
