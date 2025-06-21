@@ -14,7 +14,7 @@ const intlMiddleware = createMiddleware(routing)
 const publicPaths = [
   '/',
   '/api/webhook/clerk',
-  '/api/webhook/stripe/subscription',
+  '/api/stripe/checkout/webhook',
   '/api/webhook/stripe/connect',
   '/api/webhook/stripe/checkout',
   '/api/line/verify-token',
@@ -98,6 +98,11 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // ★ API ルートは next-intl のロケール付与から除外 ★
+  // Webhookルートは認証処理をスキップ
+  if (pathnameWithoutLocale.startsWith('/api/webhook/')) {
+    return NextResponse.next()
+  }
+  
   if (pathnameWithoutLocale.startsWith('/api/')) {
     // APIルートはClerk認証のみ処理、next-intlは適用しない
     return NextResponse.next()
