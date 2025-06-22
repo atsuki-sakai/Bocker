@@ -405,7 +405,7 @@ function ResetPasswordContent() {
           </CardContent>
           <Separator className="my-2 w-1/2 mx-auto" />
           <CardFooter className="flex justify-center pt-2">
-            <Link href="/sign-in" className="text-xs text-active flex items-center gap-1">
+            <Link href="/sign-in" className="text-xs text-accent-2 flex items-center gap-1">
               {t('backToLogin')}
               <ArrowRight className="h-3 w-3 ml-2" />
             </Link>

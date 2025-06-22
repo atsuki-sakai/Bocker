@@ -52,31 +52,31 @@ const DAYS_OF_WEEK = [
     id: 'monday',
     week: '月曜日',
     short_week: '月',
-    color: 'bg-active-foreground border-active text-active',
+    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
   },
   {
     id: 'tuesday',
     week: '火曜日',
     short_week: '火',
-    color: 'bg-active-foreground border-active text-active',
+    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
   },
   {
     id: 'wednesday',
     week: '水曜日',
     short_week: '水',
-    color: 'bg-active-foreground border-active text-active',
+    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
   },
   {
     id: 'thursday',
     week: '木曜日',
     short_week: '木',
-    color: 'bg-active-foreground border-active text-active',
+    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
   },
   {
     id: 'friday',
     week: '金曜日',
     short_week: '金',
-    color: 'bg-active-foreground border-active text-active',
+    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
   },
   {
     id: 'saturday',
@@ -512,7 +512,7 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
               <div className="relative mb-4">
                 <div
                   ref={scrollContainerRef}
-                  className="flex overflow-x-auto w-fit divide-x p-2 items-start gap-2 bg-muted rounded-lg pr-6"
+                  className="flex overflow-x-auto w-full divide-x p-2 items-start gap-2 bg-muted rounded-lg pr-6"
                 >
                   {DAYS_OF_WEEK.map((day) => {
                     const schedule = orgWeekSchedules?.find(
@@ -523,10 +523,10 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
                         key={day.id}
                         className="flex flex-col min-w-24 justify-center items-center gap-2 text-xs p-1"
                       >
-                        <p className="font-semibold text-xs flex gap-2 items-center">
+                        <p className="font-semibold text-xs flex gap-2 items-center text-nowrap">
                           {day.week}
                           {schedule?.is_open ? (
-                            <span className="text-active bg-active-foreground rounded-full px-2 py-1">
+                            <span className="text-accent-2 bg-accent-2-foreground rounded-full px-2 py-1">
                               営業日
                             </span>
                           ) : (

@@ -34,7 +34,7 @@ function InviteSignUpContent() {
             formFieldLabel: 'text-sm font-medium text-primary',
             identityPreviewText: 'text-sm text-muted-foreground',
             identityPreviewEditButton: 'text-primary hover:text-primary',
-            formFieldSuccessText: 'text-active',
+            formFieldSuccessText: 'text-accent-2',
             formFieldErrorText: 'text-destructive',
             footerActionText: 'text-muted-foreground',
             footerActionLink: 'text-primary hover:text-primary',

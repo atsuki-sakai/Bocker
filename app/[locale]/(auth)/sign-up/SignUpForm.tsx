@@ -80,7 +80,7 @@ const getStrengthText = (t: ReturnType<typeof useTranslations>, strength: Passwo
 const CheckIcon = ({ fulfilled }: { fulfilled: boolean }) => (
   <div
     className={`flex items-center justify-center w-4 h-4 rounded-full transition-colors duration-300 
-      ${fulfilled ? 'bg-active-foreground text-active-background border border-active' : 'bg-muted border border-border'}`}
+      ${fulfilled ? 'bg-accent-2-foreground text-accent-2-background border border-accent-2' : 'bg-muted border border-border'}`}
   >
     {fulfilled && <CheckCircle className="w-3 h-3" />}
   </div>
@@ -342,7 +342,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.length} />
             <span
-              className={`text-xs ${passwordCriteria.length ? 'text-active font-medium' : 'text-muted-foreground'}`}
+              className={`text-xs ${passwordCriteria.length ? 'text-accent-2 font-medium' : 'text-muted-foreground'}`}
             >
               {t('passwordRequirements.length')}
             </span>
@@ -351,7 +351,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.uppercase} />
             <span
-              className={`text-xs ${passwordCriteria.uppercase ? 'text-active font-medium' : 'text-muted-foreground'}`}
+              className={`text-xs ${passwordCriteria.uppercase ? 'text-accent-2 font-medium' : 'text-muted-foreground'}`}
             >
               {t('passwordRequirements.uppercase')}
             </span>
@@ -360,7 +360,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.lowercase} />
             <span
-              className={`text-xs ${passwordCriteria.lowercase ? 'text-active font-medium' : 'text-muted-foreground'}`}
+              className={`text-xs ${passwordCriteria.lowercase ? 'text-accent-2 font-medium' : 'text-muted-foreground'}`}
             >
               {t('passwordRequirements.lowercase')}
             </span>
@@ -369,7 +369,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.number} />
             <span
-              className={`text-xs ${passwordCriteria.number ? 'text-active font-medium' : 'text-muted-foreground'}`}
+              className={`text-xs ${passwordCriteria.number ? 'text-accent-2 font-medium' : 'text-muted-foreground'}`}
             >
               {t('passwordRequirements.number')}
             </span>
@@ -378,7 +378,7 @@ export default function SignUpPage() {
           <div className="flex items-center gap-2">
             <CheckIcon fulfilled={passwordCriteria.special} />
             <span
-              className={`text-xs ${passwordCriteria.special ? 'text-active font-medium' : 'text-muted-foreground'}`}
+              className={`text-xs ${passwordCriteria.special ? 'text-accent-2 font-medium' : 'text-muted-foreground'}`}
             >
               {t('passwordRequirements.special')}
             </span>
