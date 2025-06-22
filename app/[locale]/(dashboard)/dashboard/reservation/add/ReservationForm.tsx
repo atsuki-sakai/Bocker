@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { getDayOfWeek, formatTimestamp } from '@/lib/schedules'
 import { convertGender, ReservationMenu, ReservationOption } from '@/convex/types'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
+import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { CarteRepository } from '@/services/supabase/repositories/carte/CarteRepository'
 import { CarteDetailRepository } from '@/services/supabase/repositories/carte/CarteDetailRepository'
 import type { RowType, InsertType } from '@/services/supabase/SupabaseService'
@@ -250,7 +250,7 @@ export default function ReservationForm() {
   const [customers, setCustomers] = useState<RowType<'customer'>[]>([])
   const [isLoadingCustomers, setIsLoadingCustomers] = useState<boolean>(false)
   const [selectedCustomer, setSelectedCustomer] = useState<RowType<'customer'> | null>(null)
-  const customerRepository = useMemo(() => new OptimizedCustomerRepository(), [])
+  const customerRepository = useMemo(() => new CustomerRepository(), [])
   const carteRepository = useMemo(() => new CarteRepository(), [])
   const carteDetailRepository = useMemo(() => new CarteDetailRepository(), [])
 
@@ -690,7 +690,9 @@ export default function ReservationForm() {
           reservation_id: reservationResult, // Convex で作成された予約ID
           staff_id: selectedStaffId as string,
           staff_name: staffName, // スタッフ名を追加
-          service_start_time: data.start_time_unix ? new Date(data.start_time_unix).toISOString() : undefined, // 施術開始時間を追加（Unix時間はミリ秒単位）
+          service_start_time: data.start_time_unix
+            ? new Date(data.start_time_unix).toISOString()
+            : undefined, // 施術開始時間を追加（Unix時間はミリ秒単位）
           menu_details: selectedMenus.map((menu) => ({
             id: menu.id,
             name: menu.name,
@@ -1505,9 +1507,9 @@ export default function ReservationForm() {
             className="w-fit mb-8"
             type="submit"
             disabled={
-              isSubmitting || 
-              selectedMenus.length === 0 || 
-              !selectedStaffId || 
+              isSubmitting ||
+              selectedMenus.length === 0 ||
+              !selectedStaffId ||
               !selectdate ||
               !watch('start_time_unix') ||
               !watch('end_time_unix')
