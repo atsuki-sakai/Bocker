@@ -11,7 +11,7 @@
  *   → これらは必ずmutation/helpers（checkDoubleBooking）側で担保すること
  * ---------------------------------------------------------------
  */
-
+import { DayOfWeek } from '@/convex/types';
 import { paginationOptsValidator } from 'convex/server';
 import { reservationStatusType } from '@/convex/types';
 import { checkAuth } from '@/convex/utils/auth';
@@ -468,13 +468,7 @@ export const findAvailableTimeSlots = query({
           .eq(
             'day_of_week',
             dayOfWeek as
-              | 'monday'
-              | 'tuesday'
-              | 'wednesday'
-              | 'thursday'
-              | 'friday'
-              | 'saturday'
-              | 'sunday'
+              DayOfWeek
           )
           .eq('is_open', true)
           .eq('is_archive', false)

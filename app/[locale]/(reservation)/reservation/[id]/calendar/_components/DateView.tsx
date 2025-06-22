@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { ja } from 'date-fns/locale'
-import { startOfToday } from 'date-fns'
+import { startOfToday, format } from 'date-fns'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { TimeRange } from '@/lib/types'
@@ -13,6 +13,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Loader2, AlertCircle } from 'lucide-react'
 import { useQuery, usePaginatedQuery } from 'convex/react'
 import { Loading } from '@/components/common'
+import { parseISO } from 'date-fns'
 
 type DateViewProps = {
   tenantId: Id<'tenant'>
@@ -94,21 +95,8 @@ export const DateView = ({
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return
 
-    // --------------------------
-    // タイムゾーン起因の「1日ズレ」対策
-    // --------------------------
-    // ブラウザやサーバーのタイムゾーンがJST 以外の場合、
-    // "YYYY-MM-DD" 形式の文字列→Date 変換や日付⇆文字列変換の過程で
-    // 0:00 時（UTC）として扱われる事があり、結果として
-    // 表示上 1 日前にズレる現象が起こる。
-    // 選択された日付の時刻を「必ず正午(12:00)」に固定することで
-    // UTC 変換時に日付が前日になるのを防ぐ。
-    // （0:00 ではなく 12:00 にするのがポイント）
-    const fixedDate = new Date(date)
-    fixedDate.setHours(12, 0, 0, 0) // 12:00:00.000 に固定
-
-    // 親コンポーネントへは補正済みの日付を渡す
-    onChangeDateAction(fixedDate)
+    // 選択した日付をそのまま親へ渡す (00:00 ローカルタイム)
+    onChangeDateAction(date)
   }
 
   const handleTimeSelect = (time: TimeRange) => {
@@ -124,13 +112,7 @@ export const DateView = ({
       tenant_id: tenantId,
       org_id: orgId,
       staff_id: selectedStaff._id,
-      date: selectedDate
-        .toLocaleDateString('ja-JP', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-        })
-        .replace(/\//g, '-'),
+      date: format(selectedDate, 'yyyy-MM-dd'),
       duration_min: totalMinutes,
     })
       .then(setAvailableTimes)
@@ -165,8 +147,8 @@ export const DateView = ({
   const disabledDates = [
     // 当日以前を選択不可
     { before: startOfToday() },
-    ...organizationExceptionDates.map((e) => new Date(e.date!)),
-    ...staffExceptionDates.map((e) => new Date(e.date!)),
+    ...organizationExceptionDates.map((e) => parseISO(e.date!)),
+    ...staffExceptionDates.map((e) => parseISO(e.date!)),
     { dayOfWeek: uniqueClosedDayIndices },
   ]
 

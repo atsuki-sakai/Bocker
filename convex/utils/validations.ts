@@ -8,6 +8,7 @@ import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { Id } from '../_generated/dataModel';
 import { QueryCtx, MutationCtx } from '../_generated/server';
+import { parseISO } from 'date-fns';
 
 //================================================
 // COMMON
@@ -306,8 +307,8 @@ export function validateDateStrFormat(
     }
 
     // 日付としての妥当性チェック
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) {
+    const d = parseISO(dateStr);
+    if (isNaN(d.getTime())) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
         severity: ERROR_SEVERITY.ERROR,
@@ -324,7 +325,19 @@ export function validateDateStrFormat(
 
 // 日付形式チェックとエラー投げ、日付オブジェクトを返す
 export function validateDateStrToDate(date: string, funcName: string): Date {
-  if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+  if (!date) {
+    throw new ConvexError({
+      statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+      severity: ERROR_SEVERITY.ERROR,
+      callFunc: funcName,
+      message: '日付が指定されていません',
+      code: 'BAD_REQUEST',
+      status: 400,
+    });
+  }
+
+  const validatedDate = parseISO(date);
+  if (isNaN(validatedDate.getTime())) {
     throw new ConvexError({
       statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
       severity: ERROR_SEVERITY.ERROR,
@@ -335,19 +348,7 @@ export function validateDateStrToDate(date: string, funcName: string): Date {
       details: { date },
     });
   }
-  const d = new Date(date);
-  if (isNaN(d.getTime())) {
-    throw new ConvexError({
-      statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
-      severity: ERROR_SEVERITY.ERROR,
-      callFunc: funcName,
-      message: '日付形式が不正です',
-      code: 'BAD_REQUEST',
-      status: 400,
-      details: { date },
-    });
-  }
-  return d;
+  return validatedDate;
 }
 
 /**
