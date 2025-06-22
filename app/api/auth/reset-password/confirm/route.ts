@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
-import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized';
 import { hashPassword } from '@/lib/auth/password';
 import { PasswordChangedEmail } from '@/components/emails/PasswordChangedEmail';
 import { getEnv } from '@/lib/env-config';
@@ -56,9 +55,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Supabase admin サービスとリポジトリを初期化
-    const supabaseAdmin = getSupabaseAdminService();
-    const customerRepo = new CustomerRepository(supabaseAdmin);
+    // リポジトリを初期化
+    const customerRepo = new OptimizedCustomerRepository();
 
     // 顧客を検索して存在確認
     const customer = await customerRepo.findByTenantAndOrgAndCustomerEmail(

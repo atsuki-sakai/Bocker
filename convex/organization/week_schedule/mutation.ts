@@ -161,20 +161,19 @@ export const updateWeekSchedule = mutation({
     const successResults: { day: string; action: string; id?: string }[] = [];
     let savedCount: number = 0;
 
-    // 既存のスケジュールを取得
+    // 既存のスケジュールを取得し、直接Mapを作成
     const existingSchedules = await ctx.db
       .query('week_schedule')
       .withIndex('by_tenant_org_archive', (q) => q.eq('tenant_id', tenant_id).eq('org_id', org_id).eq('is_archive', false))
       .collect();
 
-    // 曜日ごとのマップを作成 - 型を明示的に指定
-    const scheduleByDay: Record<DayOfWeek, any> = {} as Record<DayOfWeek, any>;
-
-    existingSchedules.forEach((schedule) => {
+    // 曜日ごとのMapを作成（より効率的）
+    const scheduleByDay = new Map<DayOfWeek, typeof existingSchedules[0]>();
+    for (const schedule of existingSchedules) {
       if (schedule.day_of_week && valid_days.includes(schedule.day_of_week as DayOfWeek)) {
-        scheduleByDay[schedule.day_of_week as DayOfWeek] = schedule;
+        scheduleByDay.set(schedule.day_of_week as DayOfWeek, schedule);
       }
-    });
+    }
 
     // 各曜日のスケジュールを処理
     for (const day of day_keys) {
@@ -187,7 +186,7 @@ export const updateWeekSchedule = mutation({
       const { is_open, start_hour, end_hour } = schedule_settings[day];
 
       try {
-        const existingSchedule = scheduleByDay[day_of_week];
+        const existingSchedule = scheduleByDay.get(day_of_week);
 
         if (existingSchedule) {
           // 既存のレコードを更新

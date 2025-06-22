@@ -3,8 +3,7 @@ import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
-import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized';
 import { emailSchema } from '@/lib/validations/api/common';
 import { PasswordResetEmail } from '@/components/emails/PasswordResetEmail';
 import { BASE_URL } from '@/lib/constants';
@@ -32,9 +31,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API /api/auth/reset-password] Validated request for email: ${validatedData.email}`);
 
-    // Supabase admin サービスとリポジトリを初期化
-    const supabaseAdmin = getSupabaseAdminService();
-    const customerRepo = new CustomerRepository(supabaseAdmin);
+    // リポジトリを初期化
+    const customerRepo = new OptimizedCustomerRepository();
 
     // 顧客を検索
     const customer = await customerRepo.findByTenantAndOrgAndCustomerEmail(

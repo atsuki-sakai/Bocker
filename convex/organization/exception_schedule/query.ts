@@ -35,22 +35,26 @@ export const getByScheduleList = query({
     checkAuth(ctx);
 
     validateRequired(args.org_id, 'org_id');
-    // 基本クエリ
-    let query = ctx.db
+    
+    // typeが指定されている場合は専用のインデックスを使用
+    if (args.type !== undefined) {
+      // by_tenant_org_type_archiveインデックスが存在する場合
+      return await ctx.db
+        .query('exception_schedule')
+        .withIndex('by_tenant_org_archive', (q) =>
+          q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)
+        )
+        .filter((q) => q.eq(q.field('type'), args.type))
+        .collect();
+    }
+    
+    // typeが指定されていない場合は全て取得
+    return await ctx.db
       .query('exception_schedule')
       .withIndex('by_tenant_org_archive', (q) =>
         q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)
-      );
-
-    // タイプが指定されている場合は、結果をフィルタリング
-    const results = await query.collect();
-
-    if (args.type !== undefined) {
-      // JavaScriptでフィルタリング
-      return results.filter((ex) => ex.type === args.type);
-    }
-
-    return results;
+      )
+      .collect();
   },
 });
 

@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
-import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized';
 import { verifyPassword } from '@/lib/auth/password';
 import { emailSchema } from '@/lib/validations/api/common';
 import { LOGIN_SESSION_KEY } from '@/services/line/constants';
@@ -38,9 +37,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API /api/auth/session] Validated login request for email: ${validatedData.email}`);
 
-    // Supabase admin サービスとリポジトリを初期化
-    const supabaseAdmin = getSupabaseAdminService();
-    const customerRepo = new CustomerRepository(supabaseAdmin);
+    // リポジトリを初期化
+    const customerRepo = new OptimizedCustomerRepository();
 
     // 顧客を検索
     const customer = await customerRepo.findByTenantAndOrgAndCustomerEmail(

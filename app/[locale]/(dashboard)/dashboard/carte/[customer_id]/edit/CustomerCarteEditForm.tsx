@@ -6,7 +6,8 @@ import { useTranslations } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useZodForm } from '@/hooks/useZodForm'
 import { Loading } from '@/components/common'
-import { CustomerRepository, CarteRepository } from '@/services/supabase/repositories'
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
+import { CarteRepository } from '@/services/supabase/repositories'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -91,7 +92,7 @@ export default function CustomerCarteEditForm() {
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const customerRepo = useMemo(() => new CustomerRepository(), [])
+  const customerRepo = useMemo(() => new OptimizedCustomerRepository(), [])
   const carteRepo = useMemo(() => new CarteRepository(), [])
 
   const {

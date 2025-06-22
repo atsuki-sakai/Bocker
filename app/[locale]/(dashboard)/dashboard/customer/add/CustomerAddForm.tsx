@@ -13,7 +13,7 @@ import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { GENDER_VALUES, Gender } from '@/convex/types'
 import { calcAgeFromBirthday } from '@/lib/helpers'
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
 import {
   Select,
   SelectItem,
@@ -143,7 +143,7 @@ export default function CustomerAddForm() {
   const router = useRouter()
   const [currentTags, setCurrentTags] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const customerRepo = new CustomerRepository()
+  const customerRepo = new OptimizedCustomerRepository()
   const t = useTranslations('customers')
 
   const schemaCustomer = createSchemaCustomer(t)

@@ -11,7 +11,18 @@ export const findByTenantAndOrg = query({
   handler: async (ctx, args) => {
     validateStringLength(args.org_id, 'org_id');
 
-    const org = await ctx.db.get(args.org_id);
+    // 組織とconfigを並列で取得
+    const [org, config] = await Promise.all([
+      ctx.db.get(args.org_id),
+      ctx.db.query('config')
+        .withIndex('by_tenant_org_archive', q => 
+          q.eq('tenant_id', args.tenant_id)
+           .eq('org_id', args.org_id)
+           .eq('is_archive', false)
+        )
+        .first()
+    ]);
+    
     if (!org) {
       throw new ConvexError({
         message: '指定された組織が存在しません',
@@ -23,14 +34,6 @@ export const findByTenantAndOrg = query({
         details: { ...args },
       })
     }
-
-    const config = await ctx.db.query('config')
-    .withIndex('by_tenant_org_archive', q => 
-      q.eq('tenant_id', args.tenant_id)
-       .eq('org_id', args.org_id)
-       .eq('is_archive', false)
-    )
-    .first();
 
     return {
       org,

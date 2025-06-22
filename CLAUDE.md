@@ -538,6 +538,11 @@ throw new ValidationError('Invalid input', { field: 'email' });
 - プラン毎のメニュー、スタッフ、オプションの作成上限を追加
 - ConvexからSupabaseへのデータマイグレーション機能追加
 - Clerkスタッフ招待・メタデータ管理・削除機能の実装
+- Convexクエリの最適化実施（2025年1月）
+  - `ctx.runQuery`呼び出しを削減し、直接データベースアクセスに変更
+  - 並列データフェッチング（Promise.all）の活用
+  - Map構造を使用したO(n²)からO(n)への計算量削減
+  - 共通ヘルパー関数による重複ロジックの統合
 
 ## Convexガイドライン
 

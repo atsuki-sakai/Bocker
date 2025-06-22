@@ -90,10 +90,25 @@ export const DateView = ({
       : 'skip'
   )
 
+  // カレンダーで選択された日付を処理
   const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      onChangeDateAction(date)
-    }
+    if (!date) return
+
+    // --------------------------
+    // タイムゾーン起因の「1日ズレ」対策
+    // --------------------------
+    // ブラウザやサーバーのタイムゾーンがJST 以外の場合、
+    // "YYYY-MM-DD" 形式の文字列→Date 変換や日付⇆文字列変換の過程で
+    // 0:00 時（UTC）として扱われる事があり、結果として
+    // 表示上 1 日前にズレる現象が起こる。
+    // 選択された日付の時刻を「必ず正午(12:00)」に固定することで
+    // UTC 変換時に日付が前日になるのを防ぐ。
+    // （0:00 ではなく 12:00 にするのがポイント）
+    const fixedDate = new Date(date)
+    fixedDate.setHours(12, 0, 0, 0) // 12:00:00.000 に固定
+
+    // 親コンポーネントへは補正済みの日付を渡す
+    onChangeDateAction(fixedDate)
   }
 
   const handleTimeSelect = (time: TimeRange) => {

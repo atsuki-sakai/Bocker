@@ -37,7 +37,7 @@ import {
 import { RESERVATION_STATUS_VALUES } from '@/convex/types'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { CustomerRepository } from '@/services/supabase/repositories/customer'
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
 import { useTranslations } from 'next-intl'
 
 const statusColorMap = {
@@ -114,7 +114,7 @@ export default function ReservationPage() {
       setCustomerError(null)
 
       try {
-        const customerRepository = new CustomerRepository()
+        const customerRepository = new OptimizedCustomerRepository()
         const data = await customerRepository.getCompleteCustomerData(
           reservationData.reservation.customer_id,
           reservationData.reservation.tenant_id,
