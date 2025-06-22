@@ -30,6 +30,7 @@ import {
   MAX_NOTES_LENGTH,
 } from '@/convex/constants'
 import { useTranslations } from 'next-intl'
+import { format } from 'date-fns'
 
 const createSchemaCustomer = (
   t: (key: string, values?: Record<string, string | number | Date>) => string
@@ -297,7 +298,7 @@ export default function CustomerAddForm() {
             </Label>
             <DatePicker
               value={watch('birthday') ? new Date(watch('birthday')!) : undefined}
-              onChange={(date) => setValue('birthday', date?.toISOString().split('T')[0] || '')}
+              onChange={(date) => setValue('birthday', date ? format(date, 'yyyy-MM-dd') : '')}
               placeholder={t('birthdayPlaceholder')}
               error={!!errors.birthday}
               toDate={new Date()} // 未来の日付は選択不可
