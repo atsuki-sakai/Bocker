@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
-import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized';
+import { CustomerRepository } from '@/services/supabase/repositories/customer';
 import { verifyPassword } from '@/lib/auth/password';
 import { emailSchema } from '@/lib/validations/api/common';
 import { LOGIN_SESSION_KEY } from '@/services/line/constants';
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     console.log(`[API /api/auth/session] Validated login request for email: ${validatedData.email}`);
 
     // リポジトリを初期化
-    const customerRepo = new OptimizedCustomerRepository();
+    const customerRepo = new CustomerRepository();
 
     // 顧客を検索
     const customer = await customerRepo.findByTenantAndOrgAndCustomerEmail(
