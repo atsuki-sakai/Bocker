@@ -4,11 +4,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useLocale } from 'next-intl'
 import { DashboardSection, Loading, MultiImageDrop } from '@/components/common'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
-import {
-  CarteRepository,
-  CarteDetailRepository,
-} from '@/services/supabase/repositories'
+import { CustomerRepository } from '@/services/supabase/repositories/customer'
+import { CarteRepository, CarteDetailRepository } from '@/services/supabase/repositories'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -116,7 +113,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
   const [initialCustomerRequests, setInitialCustomerRequests] = useState('')
   const [initialImages, setInitialImages] = useState<ImageType[]>([])
 
-  const customerRepo = useMemo(() => new OptimizedCustomerRepository(), [])
+  const customerRepo = useMemo(() => new CustomerRepository(), [])
   const carteRepo = useMemo(() => new CarteRepository(), [])
   const carteDetailRepo = useMemo(() => new CarteDetailRepository(), [])
 
