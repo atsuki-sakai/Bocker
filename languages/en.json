@@ -2122,7 +2122,7 @@
             "transferFee": "Transfer Fee: 0 yen (Bocker covers)",
             "monthlyFee": "Monthly Fee: 0 yen (Bocker covers)"
           },
-          "example": "Example: For a 10,000 yen bill, 10,000 × 4% + 40 = <strong>440 yen</strong> is the fee, and <strong>9,560 yen</strong> is the payout amount.",
+          "example": "Example: For a 12,000 yen bill, 12,000 × 4% + 40 = <strong>480 yen</strong> is the fee, and <strong>11,520 yen</strong> is the payout amount.",
           "note": "Note: Some international brand cards may incur an additional 1.5% fee."
         },
         "faq": {
@@ -2824,7 +2824,7 @@
       "startFreeTrial": "Start 30-Day Free Trial"
     },
     "hero": {
-      "badge": "From ¥6,000/month",
+      "badge": "From ¥8,000/month",
       "title": "Bookings, Customers, Sales, Marketing.",
       "titleBreak": "Everything you need for salon management in one place.",
       "subtitle": "Streamline your daily operations and enhance customer satisfaction with our menu reservation management system",
@@ -2908,7 +2908,7 @@
     "cta": {
       "title": "Ready to transform",
       "titleBreak": "your salon operations?",
-      "subtitle": "Free yourself from reservation management worries for just ¥6,000/month!",
+      "subtitle": "Free yourself from reservation management worries for just ¥8,000/month!",
       "button": "Start 30-Day Free Trial",
       "disclaimer": "Easy registration with credit card only · Cancel anytime"
     },
