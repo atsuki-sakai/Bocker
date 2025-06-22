@@ -13,7 +13,7 @@ import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { GENDER_VALUES, Gender } from '@/convex/types'
 import { calcAgeFromBirthday } from '@/lib/helpers'
-import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
+import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import {
   Select,
   SelectItem,
@@ -31,123 +31,133 @@ import {
 } from '@/convex/constants'
 import { useTranslations } from 'next-intl'
 
-const createSchemaCustomer = (t: (key: string, values?: Record<string, string | number | Date>) => string) => z.object({
-  line_id: z
-    .string()
-    .max(MAX_TEXT_LENGTH, {
-      message: t('validation.lineIdMaxLength', { max: MAX_TEXT_LENGTH }),
-    })
-    .optional(), // LINE ID
-  line_user_name: z
-    .string()
-    .max(MAX_TEXT_LENGTH, {
-      message: t('validation.lineUserNameMaxLength', { max: MAX_TEXT_LENGTH }),
-    })
-    .optional(), // LINEユーザー名
-  phone: z
-    .string()
-    .min(6, {
-      message: t('validation.phoneMinLength'),
-    })
-    .max(MAX_PHONE_LENGTH, {
-      message: t('validation.phoneMaxLength', { max: MAX_PHONE_LENGTH }),
-    })
-    .refine((value) => value === undefined || /^[0-9]+$/.test(value), {
-      message: t('validation.phoneFormat'),
-    }), // 電話番号
-  email: z.preprocess(
-    (val) => {
-      if (typeof val === 'string' && val.trim() === '') {
-        return undefined
-      }
-      return val
-    },
-    z
+const createSchemaCustomer = (
+  t: (key: string, values?: Record<string, string | number | Date>) => string
+) =>
+  z.object({
+    line_id: z
       .string()
-      .max(100, { message: t('validation.emailMaxLength') })
-      .optional()
-      .refine(
-        (value) =>
-          value === undefined || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value),
-        { message: t('validation.emailInvalid') }
-      ) // メールアドレス
-  ),
-  first_name: z
-    .string()
-    .min(1, { message: t('validation.firstNameRequired') })
-    .max(MAX_TEXT_LENGTH, { message: t('validation.firstNameMaxLength', { max: MAX_TEXT_LENGTH }) }), // 名前
-  last_name: z
-    .string()
-    .min(1, { message: t('validation.lastNameRequired') })
-    .max(MAX_TEXT_LENGTH, { message: t('validation.lastNameMaxLength', { max: MAX_TEXT_LENGTH }) }), // 苗字
-  total_reservation_count: z
-    .number()
-    .max(MAX_NUM, { message: t('validation.visitCountMax', { max: MAX_NUM }) })
-    .optional(), // 利用回数
-  last_reservation_date_unix: z
-    .number()
-    .max(MAX_NUM, { message: t('validation.lastVisitMax', { max: MAX_NUM }) })
-    .optional(), // 最終予約日
-  tags: z
-    .array(z.string())
-    .max(MAX_TAG_LENGTH, { message: t('validation.tagsMaxCount', { max: MAX_TAG_LENGTH }) })
-    .optional(), // タグ
-  age: z.preprocess(
-    (val) => {
-      // 空文字列、null、または NaN の場合に undefined に変換する
-      if (
-        (typeof val === 'string' && val.trim() === '') ||
-        val === null ||
-        (typeof val === 'number' && isNaN(val))
-      ) {
-        return undefined
-      }
-      // それ以外の値（数値、空でない文字列など）はそのまま通過
-      return val
-    },
-    z
+      .max(MAX_TEXT_LENGTH, {
+        message: t('validation.lineIdMaxLength', { max: MAX_TEXT_LENGTH }),
+      })
+      .optional(), // LINE ID
+    line_user_name: z
+      .string()
+      .max(MAX_TEXT_LENGTH, {
+        message: t('validation.lineUserNameMaxLength', { max: MAX_TEXT_LENGTH }),
+      })
+      .optional(), // LINEユーザー名
+    phone: z
+      .string()
+      .min(6, {
+        message: t('validation.phoneMinLength'),
+      })
+      .max(MAX_PHONE_LENGTH, {
+        message: t('validation.phoneMaxLength', { max: MAX_PHONE_LENGTH }),
+      })
+      .refine((value) => value === undefined || /^[0-9]+$/.test(value), {
+        message: t('validation.phoneFormat'),
+      }), // 電話番号
+    email: z.preprocess(
+      (val) => {
+        if (typeof val === 'string' && val.trim() === '') {
+          return undefined
+        }
+        return val
+      },
+      z
+        .string()
+        .max(100, { message: t('validation.emailMaxLength') })
+        .optional()
+        .refine(
+          (value) =>
+            value === undefined || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value),
+          { message: t('validation.emailInvalid') }
+        ) // メールアドレス
+    ),
+    first_name: z
+      .string()
+      .min(1, { message: t('validation.firstNameRequired') })
+      .max(MAX_TEXT_LENGTH, {
+        message: t('validation.firstNameMaxLength', { max: MAX_TEXT_LENGTH }),
+      }), // 名前
+    last_name: z
+      .string()
+      .min(1, { message: t('validation.lastNameRequired') })
+      .max(MAX_TEXT_LENGTH, {
+        message: t('validation.lastNameMaxLength', { max: MAX_TEXT_LENGTH }),
+      }), // 苗字
+    total_reservation_count: z
       .number()
-      .min(0)
-      .max(MAX_NUM, { message: t('validation.ageMax', { max: MAX_NUM }) })
-      .nullable() // null を許容する (preprocessでundefinedに変換しているので必須ではないが残しておく)
-      .optional() // undefined を許容する
-  ), // 年齢
-  birthday: z.string().max(100, { message: t('validation.birthdayMaxLength') }).optional(), // 誕生日
-  gender: z.enum(GENDER_VALUES).optional(), // 性別
-  notes: z
-    .string()
-    .max(MAX_NOTES_LENGTH, { message: t('validation.notesMaxLength', { max: MAX_NOTES_LENGTH }) })
-    .optional(), // メモ
-  total_points: z.preprocess(
-    (val) => {
-      // 空文字列、null、または NaN の場合に undefined に変換する
-      if (
-        (typeof val === 'string' && val.trim() === '') ||
-        val === null ||
-        (typeof val === 'number' && isNaN(val))
-      ) {
-        return undefined
-      }
-      // それ以外の値（数値、空でない文字列など）はそのまま通過
-      return val
-    },
-    z
+      .max(MAX_NUM, { message: t('validation.visitCountMax', { max: MAX_NUM }) })
+      .optional(), // 利用回数
+    last_reservation_date_unix: z
       .number()
-      .max(MAX_NUM, { message: t('validation.pointsMax', { max: MAX_NUM }) })
-      .optional() // ポイント
-  ),
-})
+      .max(MAX_NUM, { message: t('validation.lastVisitMax', { max: MAX_NUM }) })
+      .optional(), // 最終予約日
+    tags: z
+      .array(z.string())
+      .max(MAX_TAG_LENGTH, { message: t('validation.tagsMaxCount', { max: MAX_TAG_LENGTH }) })
+      .optional(), // タグ
+    age: z.preprocess(
+      (val) => {
+        // 空文字列、null、または NaN の場合に undefined に変換する
+        if (
+          (typeof val === 'string' && val.trim() === '') ||
+          val === null ||
+          (typeof val === 'number' && isNaN(val))
+        ) {
+          return undefined
+        }
+        // それ以外の値（数値、空でない文字列など）はそのまま通過
+        return val
+      },
+      z
+        .number()
+        .min(0)
+        .max(MAX_NUM, { message: t('validation.ageMax', { max: MAX_NUM }) })
+        .nullable() // null を許容する (preprocessでundefinedに変換しているので必須ではないが残しておく)
+        .optional() // undefined を許容する
+    ), // 年齢
+    birthday: z
+      .string()
+      .max(100, { message: t('validation.birthdayMaxLength') })
+      .optional(), // 誕生日
+    gender: z.enum(GENDER_VALUES).optional(), // 性別
+    notes: z
+      .string()
+      .max(MAX_NOTES_LENGTH, { message: t('validation.notesMaxLength', { max: MAX_NOTES_LENGTH }) })
+      .optional(), // メモ
+    total_points: z.preprocess(
+      (val) => {
+        // 空文字列、null、または NaN の場合に undefined に変換する
+        if (
+          (typeof val === 'string' && val.trim() === '') ||
+          val === null ||
+          (typeof val === 'number' && isNaN(val))
+        ) {
+          return undefined
+        }
+        // それ以外の値（数値、空でない文字列など）はそのまま通過
+        return val
+      },
+      z
+        .number()
+        .max(MAX_NUM, { message: t('validation.pointsMax', { max: MAX_NUM }) })
+        .optional() // ポイント
+    ),
+  })
 
 export default function CustomerAddForm() {
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const router = useRouter()
   const [currentTags, setCurrentTags] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const customerRepo = new OptimizedCustomerRepository()
+  const customerRepo = new CustomerRepository()
   const t = useTranslations('customers')
 
   const schemaCustomer = createSchemaCustomer(t)
-  
+
   const {
     register,
     handleSubmit,
