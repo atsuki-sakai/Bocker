@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState, useMemo } from 'react'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
+import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { toast } from 'sonner'
 import { useTranslations, useLocale } from 'next-intl'
@@ -32,7 +32,7 @@ import type { SupportedLocale } from '@/lib/dateLocale'
 // Import point transaction repository
 import { PointTransactionRepository } from '@/services/supabase/repositories/point/PointTransactionRepository'
 import { Button } from '@/components/ui/button'
-import { 
+import {
   Table,
   TableBody,
   TableCell,
@@ -66,9 +66,9 @@ function CustomerDetailPage() {
   const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([])
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false)
   const [showTransactions, setShowTransactions] = useState(false)
-  const customerRepo = useMemo(() => new OptimizedCustomerRepository(), [])
+  const customerRepo = useMemo(() => new CustomerRepository(), [])
   const pointTransactionRepo = useMemo(() => new PointTransactionRepository(), [])
-  
+
   // Date formatting states
   const [formattedCreationTime, setFormattedCreationTime] = useState('')
   const [formattedBirthday, setFormattedBirthday] = useState('')
@@ -108,15 +108,10 @@ function CustomerDetailPage() {
 
     try {
       setIsLoadingTransactions(true)
-      const { data } = await pointTransactionRepo.findByCustomer(
-        tenantId,
-        orgId,
-        customerUid,
-        {
-          page: 1,
-          pageSize: 50
-        }
-      )
+      const { data } = await pointTransactionRepo.findByCustomer(tenantId, orgId, customerUid, {
+        page: 1,
+        pageSize: 50,
+      })
       setPointTransactions(data)
     } catch (error) {
       console.error('ポイント取引履歴の取得に失敗しました:', error)
@@ -138,14 +133,22 @@ function CustomerDetailPage() {
   useEffect(() => {
     const formatDates = async () => {
       if (completeCustomer?.customer?.created_at) {
-        const formatted = await formatDate(new Date(completeCustomer.customer.created_at), 'PPP p', locale)
+        const formatted = await formatDate(
+          new Date(completeCustomer.customer.created_at),
+          'PPP p',
+          locale
+        )
         setFormattedCreationTime(formatted)
       } else {
         setFormattedCreationTime(t('unknown'))
       }
 
       if (completeCustomer?.customerDetail?.birthday) {
-        const formatted = await formatDate(new Date(completeCustomer.customerDetail.birthday), 'PPP', locale)
+        const formatted = await formatDate(
+          new Date(completeCustomer.customerDetail.birthday),
+          'PPP',
+          locale
+        )
         setFormattedBirthday(formatted)
       } else {
         setFormattedBirthday(t('notRegistered'))
@@ -362,7 +365,7 @@ function CustomerDetailPage() {
                 {showTransactions ? t('hideHistory') : t('showHistory')}
               </Button>
             </div>
-            
+
             {showTransactions && (
               <div className="rounded-md border">
                 {isLoadingTransactions ? (
@@ -388,7 +391,9 @@ function CustomerDetailPage() {
                         <TableRow key={transaction.id}>
                           <TableCell>
                             {transaction.transaction_date_unix
-                              ? new Date(transaction.transaction_date_unix * 1000).toLocaleString(locale)
+                              ? new Date(transaction.transaction_date_unix * 1000).toLocaleString(
+                                  locale
+                                )
                               : '-'}
                           </TableCell>
                           <TableCell>
@@ -402,8 +407,8 @@ function CustomerDetailPage() {
                                 <>
                                   <TrendingDown className="h-4 w-4 text-red-600" />
                                   <span className="text-red-600">
-                                    {transaction.transaction_type === 'manual_subtract' 
-                                      ? t('manualSubtract') 
+                                    {transaction.transaction_type === 'manual_subtract'
+                                      ? t('manualSubtract')
                                       : t('used')}
                                   </span>
                                 </>
