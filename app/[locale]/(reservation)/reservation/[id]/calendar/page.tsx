@@ -15,7 +15,8 @@ import { reservationFlexMessageTemplate } from '@/services/line/message_template
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
-import { CustomerRepository, PointTaskQueueRepository } from '@/services/supabase/repositories'
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
+import { PointTaskQueueRepository } from '@/services/supabase/repositories'
 import { CarteRepository } from '@/services/supabase/repositories/carte/CarteRepository'
 import { CarteDetailRepository } from '@/services/supabase/repositories/carte/CarteDetailRepository'
 import { formatDateToYYYYMMDD } from '@/lib/formatDate'
@@ -172,7 +173,7 @@ export default function CalendarPage() {
   const { liff } = useLiff()
   const { showErrorToast } = useErrorHandler()
   // STATES
-  const customerRepository = useMemo(() => new CustomerRepository(), [])
+  const customerRepository = useMemo(() => new OptimizedCustomerRepository(), [])
   const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
   const carteRepository = useMemo(() => new CarteRepository(), [])
   const carteDetailRepository = useMemo(() => new CarteDetailRepository(), [])

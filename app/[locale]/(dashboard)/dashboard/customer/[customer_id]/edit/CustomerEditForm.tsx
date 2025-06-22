@@ -23,7 +23,7 @@ import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH, MAX_TAG_LENGTH } from '@/convex/cons
 import { Loader2, Pencil } from 'lucide-react'
 import { Loading } from '@/components/common'
 import { toast } from 'sonner'
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { useTranslations } from 'next-intl'
 
@@ -148,7 +148,7 @@ export default function CustomerEditForm() {
   const [completeCustomer, setCompleteCustomer] = useState<CompleteCustomerData | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(true)
   // customerRepo の初期化を useMemo でラップ
-  const customerRepo = useMemo(() => new CustomerRepository(), [])
+  const customerRepo = useMemo(() => new OptimizedCustomerRepository(), [])
 
   const customerEditFormSchema = createCustomerEditFormSchema(t)
 

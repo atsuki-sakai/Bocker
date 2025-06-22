@@ -3,8 +3,7 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
-import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { LOGIN_SESSION_KEY } from '@/services/line/constants';
 import { PasswordChangedEmail } from '@/components/emails/PasswordChangedEmail';
@@ -64,9 +63,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API /api/auth/change-password] Processing request for customer: ${sessionPayload.customerUid}`);
 
-    // Supabase admin サービスとリポジトリを初期化
-    const supabaseAdmin = getSupabaseAdminService();
-    const customerRepo = new CustomerRepository(supabaseAdmin);
+    // リポジトリを初期化
+    const customerRepo = new OptimizedCustomerRepository();
 
     // 顧客を検索
     const customer = await customerRepo.findByTenantAndOrgAndCustomerEmail(

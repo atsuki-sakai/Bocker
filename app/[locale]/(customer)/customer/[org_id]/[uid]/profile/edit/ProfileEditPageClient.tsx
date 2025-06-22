@@ -23,7 +23,7 @@ import { ArrowLeft, Save } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
 import type { RowType } from '@/services/supabase/SupabaseService'
 
 // フォームのバリデーションスキーマ
@@ -92,7 +92,7 @@ export function ProfileEditPageClient({
     setIsSubmitting(true)
 
     try {
-      const customerRepo = new CustomerRepository()
+      const customerRepo = new OptimizedCustomerRepository()
 
       // 顧客情報の更新
       await customerRepo.updateCustomerWithDetailsAndPoints(

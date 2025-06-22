@@ -20,7 +20,7 @@ import { Loading } from '@/components/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
-import { CustomerRepository } from '@/services/supabase/repositories'
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
 import { ZodTextField } from '@/components/common'
 
 const emailLoginSchema = z.object({
@@ -41,7 +41,7 @@ export default function ReservePage() {
   const router = useRouter()
   const { showErrorToast } = useErrorHandler()
   const orgId = params.id as Id<'organization'>
-  const customerRepository = useMemo(() => new CustomerRepository(), [])
+  const customerRepository = useMemo(() => new OptimizedCustomerRepository(), [])
   const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [isFirstLogin, setIsFirstLogin] = useState(false)

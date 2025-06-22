@@ -20,7 +20,7 @@ import { toast } from 'sonner'
 import { Loading } from '@/components/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import Image from 'next/image'
-import { CustomerRepository } from '@/services/supabase/repositories'
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
 import { ZodTextField } from '@/components/common'
 
 const emailLoginSchema = z.object({
@@ -52,7 +52,7 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
   const [isFirstLogin, setIsFirstLogin] = useState(false)
   const [isProcessingLineCallback, setIsProcessingLineCallback] = useState(false)
   const [lineCallbackError, setLineCallbackError] = useState<string | null>(null)
-  const customerRepository = useMemo(() => new CustomerRepository(), [])
+  const customerRepository = useMemo(() => new OptimizedCustomerRepository(), [])
 
   // Handle async params
   useEffect(() => {

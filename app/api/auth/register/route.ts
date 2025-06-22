@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { Resend } from 'resend';
-import { getSupabaseAdminService, InsertType } from '@/services/supabase/SupabaseService';
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
+import { InsertType } from '@/services/supabase/SupabaseService';
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized';
 import { hashPassword } from '@/lib/auth/password';
 import { emailSchema, genderSchema } from '@/lib/validations/api/common';
 import { CustomerRegistrationEmail } from '@/components/emails/CustomerRegistrationEmail';
@@ -42,9 +42,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API /api/auth/register] Validated data for email: ${validatedData.email}`);
 
-    // Supabase admin サービスとリポジトリを初期化
-    const supabaseAdmin = getSupabaseAdminService();
-    const customerRepo = new CustomerRepository(supabaseAdmin);
+    // リポジトリを初期化
+    const customerRepo = new OptimizedCustomerRepository();
 
     // 重複確認（同じテナント・組織内で同じメールが存在するかチェック）
     const existingCustomer = await customerRepo.findByTenantAndOrgAndCustomerEmail(

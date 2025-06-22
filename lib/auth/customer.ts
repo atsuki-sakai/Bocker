@@ -2,8 +2,7 @@ import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { SessionPayload } from '@/lib/types';
 import { LOGIN_SESSION_KEY } from '@/services/line/constants';
-import { getSupabaseAdminService } from '@/services/supabase/SupabaseService';
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized';
 import { getEnv } from '@/lib/env-config'
 
 const APP_JWT_SECRET = getEnv('APP_JWT_SECRET') || 'bocker-auth-session-secret-key';
@@ -66,8 +65,7 @@ export async function validateCustomerAccess(
  */
 export async function getCustomerWithDetails(customerUid: string, orgId: string, tenantId: string) {
   try {
-    const supabaseAdmin = getSupabaseAdminService();
-    const customerRepo = new CustomerRepository(supabaseAdmin);
+    const customerRepo = new OptimizedCustomerRepository();
     
     const customer = await customerRepo.getCompleteCustomerData(customerUid, tenantId, orgId);
     
