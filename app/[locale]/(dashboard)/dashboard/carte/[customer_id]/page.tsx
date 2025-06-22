@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { DashboardSection, Loading } from '@/components/common'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useIntegratedReservations } from '@/hooks/useIntegratedReservations'
-import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
+import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import { CarteRepository } from '@/services/supabase/repositories'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -84,7 +84,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
   const [customerCarteData, setCustomerCarteData] = useState<CustomerCarteData | null>(null)
   const [isLoadingCustomer, setIsLoadingCustomer] = useState(true)
 
-  const customerRepo = useMemo(() => new OptimizedCustomerRepository(), [])
+  const customerRepo = useMemo(() => new CustomerRepository(), [])
   const carteRepo = useMemo(() => new CarteRepository(), [])
 
   // paramsの解決
