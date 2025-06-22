@@ -25,6 +25,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
+import { format } from 'date-fns'
 
 // フォームのバリデーションスキーマ
 const profileFormSchema = z.object({
@@ -185,7 +186,7 @@ export function ProfileEditPageClient({
                 <Label htmlFor="birthday">生年月日</Label>
                 <DatePicker
                   value={watch('birthday') ? new Date(watch('birthday')!) : undefined}
-                  onChange={(date) => setValue('birthday', date?.toISOString().split('T')[0] || '')}
+                  onChange={(date) => setValue('birthday', date ? format(date, 'yyyy-MM-dd') : '')}
                   placeholder="生年月日を選択してください"
                   toDate={new Date()} // 未来の日付は選択不可
                 />
