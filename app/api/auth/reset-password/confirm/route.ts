@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
-import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized';
+import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
 import { hashPassword } from '@/lib/auth/password';
 import { PasswordChangedEmail } from '@/components/emails/PasswordChangedEmail';
 import { getEnv } from '@/lib/env-config';
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // リポジトリを初期化
-    const customerRepo = new OptimizedCustomerRepository();
+    const customerRepo = new CustomerRepository();
 
     // 顧客を検索して存在確認
     const customer = await customerRepo.findByTenantAndOrgAndCustomerEmail(
