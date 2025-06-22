@@ -32,6 +32,7 @@ import { validateDateStrToDate } from '@/convex/utils/validations';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { ConvexError } from 'convex/values';
 import { getReservationWithDetail, checkReservationDoubleBooking } from './reservation.helpers';
+import { api } from '@/convex/_generated/api';
 
 
 /**
@@ -1274,8 +1275,8 @@ export const getReservationFormData = query({
         // メニュー一覧取得
         ctx.db
           .query('menu')
-          .withIndex('by_tenant_org_is_show_archive', (q) =>
-            q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_show', true).eq('is_archive', false)
+          .withIndex('by_tenant_org_active_archive', (q) =>
+            q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', true).eq('is_archive', false)
           )
           .order('asc')
           .paginate({ numItems: 100, cursor: null }),
@@ -1283,8 +1284,8 @@ export const getReservationFormData = query({
         // オプション一覧取得
         ctx.db
           .query('option')
-          .withIndex('by_tenant_org_archive', (q) =>
-            q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)
+          .withIndex('by_tenant_org_active_archive', (q) =>
+            q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', true).eq('is_archive', false)
           )
           .order('asc')
           .paginate({ numItems: 100, cursor: null }),
@@ -1372,8 +1373,8 @@ export const getScheduleData = query({
     try {
       // 並列でデータを取得（直接クエリを実行することでパフォーマンス向上）
       const [availableSlots, organizationSchedule] = await Promise.all([
-        // 利用可能時間スロット計算（calculateReservationTimeのロジックを内部で再現）
-        calculateReservationTime.handler(ctx, {
+        // 利用可能時間スロット計算
+        ctx.runQuery(api.reservation.query.calculateReservationTime, {
           tenant_id: args.tenant_id,
           org_id: args.org_id,
           staff_id: args.staff_id,
