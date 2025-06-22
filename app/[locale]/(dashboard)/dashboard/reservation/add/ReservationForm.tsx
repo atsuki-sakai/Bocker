@@ -289,7 +289,8 @@ export default function ReservationForm() {
   )
 
   // スタッフの週間スケジュール（個別取得が必要）
-  const staffWeekSchedules = useQuery(
+  // useQuery が 'skip' を返すケースに備えて配列でラップし、予期せぬ型エラーを防ぐ
+  const staffWeekSchedulesRaw = useQuery(
     api.staff.week_schedule.query.getByTenantOrgStaff,
     tenantId && orgId && selectedStaffId
       ? {
@@ -299,6 +300,11 @@ export default function ReservationForm() {
         }
       : 'skip'
   )
+
+  // 配列でない場合（undefined や 'skip' 文字列など）は空配列に変換
+  const staffWeekSchedules: Doc<'staff_week_schedule'>[] = Array.isArray(staffWeekSchedulesRaw)
+    ? (staffWeekSchedulesRaw as Doc<'staff_week_schedule'>[])
+    : []
 
   // 休業日情報（TODO: 統合データ取得に含める）
   const orgExceptionSchedules = usePaginatedQuery(
