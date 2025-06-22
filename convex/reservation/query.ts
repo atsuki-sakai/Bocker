@@ -1253,7 +1253,7 @@ export const getReservationFormData = query({
   }> => {
     try {
       // 並列でデータを取得（直接クエリを実行することでパフォーマンス向上）
-      const [reservationConfig, weekSchedules, menusPaginated, optionsPaginated, availableStaffData] = await Promise.all([
+      const [reservationConfig, weekSchedules, menus, options, availableStaffData] = await Promise.all([
         // 予約設定取得
         ctx.db
           .query('reservation_config')
@@ -1279,7 +1279,7 @@ export const getReservationFormData = query({
             q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', true).eq('is_archive', false)
           )
           .order('asc')
-          .paginate({ numItems: 100, cursor: null }),
+          .collect(),
         
         // オプション一覧取得
         ctx.db
@@ -1288,7 +1288,7 @@ export const getReservationFormData = query({
             q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', true).eq('is_archive', false)
           )
           .order('asc')
-          .paginate({ numItems: 100, cursor: null }),
+          .collect(),
         
         // 選択メニューがある場合のみ利用可能スタッフ取得
         args.menu_ids && args.menu_ids.length > 0
@@ -1343,8 +1343,8 @@ export const getReservationFormData = query({
       return {
         reservationConfig,
         weekSchedules,
-        menus: menusPaginated.page,
-        options: optionsPaginated.page,
+        menus: menus,
+        options: options,
         availableStaff: availableStaffData as AvailableStaff[],
       }
     } catch (error) {
