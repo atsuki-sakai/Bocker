@@ -23,7 +23,7 @@ import { ArrowLeft, Save } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
+import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
 
 // フォームのバリデーションスキーマ
@@ -53,12 +53,12 @@ interface ProfileEditPageClientProps {
   }
 }
 
-export function ProfileEditPageClient({ 
-  orgId, 
-  customerUid, 
-  tenantId, 
-  sessionOrgId, 
-  initialData 
+export function ProfileEditPageClient({
+  orgId,
+  customerUid,
+  tenantId,
+  sessionOrgId,
+  initialData,
 }: ProfileEditPageClientProps) {
   const router = useRouter()
   const { showErrorToast } = useErrorHandler()
@@ -92,7 +92,7 @@ export function ProfileEditPageClient({
     setIsSubmitting(true)
 
     try {
-      const customerRepo = new OptimizedCustomerRepository()
+      const customerRepo = new CustomerRepository()
 
       // 顧客情報の更新
       await customerRepo.updateCustomerWithDetailsAndPoints(
