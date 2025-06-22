@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { Resend } from 'resend';
 import { InsertType } from '@/services/supabase/SupabaseService';
-import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized';
+import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository';
 import { hashPassword } from '@/lib/auth/password';
 import { emailSchema, genderSchema } from '@/lib/validations/api/common';
 import { CustomerRegistrationEmail } from '@/components/emails/CustomerRegistrationEmail';
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     console.log(`[API /api/auth/register] Validated data for email: ${validatedData.email}`);
 
     // リポジトリを初期化
-    const customerRepo = new OptimizedCustomerRepository();
+    const customerRepo = new CustomerRepository();
 
     // 重複確認（同じテナント・組織内で同じメールが存在するかチェック）
     const existingCustomer = await customerRepo.findByTenantAndOrgAndCustomerEmail(
