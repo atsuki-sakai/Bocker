@@ -26,6 +26,7 @@ import { toast } from 'sonner'
 import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { useTranslations } from 'next-intl'
+import { format } from 'date-fns'
 
 // 'YYYY-MM-DD'形式の誕生日文字列から年齢を計算するヘルパー関数
 const calculateAge = (birthdayString: string | undefined | null): number | undefined => {
@@ -413,7 +414,7 @@ export default function CustomerEditForm() {
               <DatePicker
                 value={watch('birthday') ? new Date(watch('birthday')!) : undefined}
                 onChange={(date) => {
-                  const dateString = date?.toISOString().split('T')[0] || ''
+                  const dateString = date ? format(date, 'yyyy-MM-dd') : ''
                   setValue('birthday', dateString)
                   console.log('誕生日が変更されました:', dateString)
                 }}
