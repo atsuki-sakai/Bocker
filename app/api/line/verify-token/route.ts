@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken' // JWTを扱うためにjsonwebtokenをインス�
 import { v4 as uuidv4 } from 'uuid'
 import { LOGIN_SESSION_KEY } from '@/services/line/constants'
 import { InsertType } from '@/services/supabase/SupabaseService'
-import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
+import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { SystemError } from '@/lib/errors/custom_errors'
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
 import { getEnv } from '@/lib/env-config'
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
       console.log(`[API /api/line/verify-token] Upserting customer info for tenantId: ${tenantId} and orgId: ${orgId}`)
       try {
         // Supabaseで顧客を検索・作成
-        const customerRepo = new OptimizedCustomerRepository();
+        const customerRepo = new CustomerRepository();
         
         // 既存の顧客をLINE IDで検索（LINE IDの方が確実にユニーク）
         let existingCustomer = await customerRepo.findByTenantAndOrgAndCustomerLineId(
