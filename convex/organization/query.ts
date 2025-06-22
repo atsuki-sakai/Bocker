@@ -88,7 +88,18 @@ export const getOrgAndConfig = query({
     org_id: v.id('organization')
   },
   handler: async (ctx, args) => {
-    const organization = await ctx.db.get(args.org_id);
+    // 組織情報と設定を並列で取得
+    const [organization, config] = await Promise.all([
+      ctx.db.get(args.org_id),
+      ctx.db.query('config')
+        .withIndex('by_tenant_org_archive', q => 
+          q.eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('is_archive', false)
+        )
+        .first()
+    ]);
+    
     if(!organization){
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.NOT_FOUND,
@@ -102,13 +113,6 @@ export const getOrgAndConfig = query({
         },
       });
     }
-    const config = await ctx.db.query('config')
-      .withIndex('by_tenant_org_archive', q => 
-        q.eq('tenant_id', args.tenant_id)
-        .eq('org_id', args.org_id)
-        .eq('is_archive', false)
-      )
-      .first();
 
     return {
       organization,
@@ -124,6 +128,7 @@ export const getRelations = query({
     org_id: v.id('organization')
   },
   handler: async (ctx, args) => {
+    // 組織情報を最初に取得（後続処理で必要なため）
     const organization = await ctx.db.get(args.org_id);
     if(!organization){
       throw new ConvexError({
@@ -138,29 +143,34 @@ export const getRelations = query({
         },
       });
     }
-    const config = await ctx.db.query('config')
-      .withIndex('by_tenant_org_archive', q => 
-        q.eq('tenant_id', args.tenant_id)
-        .eq('org_id', args.org_id)
-        .eq('is_archive', false)
-      )
-      .first();
-
-    const apiConfig = await ctx.db.query('api_config')
-      .withIndex('by_tenant_org_archive', q => 
-        q.eq('tenant_id', args.tenant_id)
-        .eq('org_id', args.org_id)
-        .eq('is_archive', false)
-      )
-      .first(); 
-
-    const reservationConfig = await ctx.db.query('reservation_config')
-      .withIndex('by_tenant_org_archive', q => 
-        q.eq('tenant_id', args.tenant_id)
-        .eq('org_id', args.org_id)
-        .eq('is_archive', false)
-      )
-      .first();
+    
+    // 残りの関連データを並列で取得
+    const [config, apiConfig, reservationConfig] = await Promise.all([
+      ctx.db.query('config')
+        .withIndex('by_tenant_org_archive', q => 
+          q.eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('is_archive', false)
+        )
+        .first(),
+      
+      ctx.db.query('api_config')
+        .withIndex('by_tenant_org_archive', q => 
+          q.eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('is_archive', false)
+        )
+        .first(),
+      
+      ctx.db.query('reservation_config')
+        .withIndex('by_tenant_org_archive', q => 
+          q.eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('is_archive', false)
+        )
+        .first()
+    ]);
+    
     return {
       organization,
       config,

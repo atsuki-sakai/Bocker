@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState, useMemo } from 'react'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { toast } from 'sonner'
 import { useTranslations, useLocale } from 'next-intl'
@@ -66,7 +66,7 @@ function CustomerDetailPage() {
   const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([])
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false)
   const [showTransactions, setShowTransactions] = useState(false)
-  const customerRepo = useMemo(() => new CustomerRepository(), [])
+  const customerRepo = useMemo(() => new OptimizedCustomerRepository(), [])
   const pointTransactionRepo = useMemo(() => new PointTransactionRepository(), [])
   
   // Date formatting states

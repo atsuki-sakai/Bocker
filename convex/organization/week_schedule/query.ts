@@ -37,6 +37,40 @@ export const getAllByTenantAndOrg = query({
   },
 });
 
+// 曜日スケジュールをマップ形式で取得（最適化版）
+export const getWeekScheduleMap = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization')
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx, true)
+    validateRequired(args.org_id, 'org_id');
+    
+    const schedules = await ctx.db
+      .query('week_schedule')
+      .withIndex('by_tenant_org_archive', (q) => 
+        q.eq('tenant_id', args.tenant_id)
+         .eq('org_id', args.org_id)
+         .eq('is_archive', false)
+      )
+      .collect();
+    
+    // 曜日をキーとしたマップに変換
+    const scheduleMap: Record<string, typeof schedules[0]> = {};
+    schedules.forEach(schedule => {
+      if (schedule.day_of_week) {
+        scheduleMap[schedule.day_of_week] = schedule;
+      }
+    });
+    
+    return {
+      schedules,
+      scheduleMap
+    };
+  },
+});
+
 // サロンIDと曜日と営業フラグからサロンスケジュールを取得
 export const getByTenantAndOrgToWeekSchedule = query({
   args: {

@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { getDayOfWeek, formatTimestamp } from '@/lib/schedules'
 import { convertGender, ReservationMenu, ReservationOption } from '@/convex/types'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
 import { CarteRepository } from '@/services/supabase/repositories/carte/CarteRepository'
 import { CarteDetailRepository } from '@/services/supabase/repositories/carte/CarteDetailRepository'
 import type { RowType, InsertType } from '@/services/supabase/SupabaseService'
@@ -250,7 +250,7 @@ export default function ReservationForm() {
   const [customers, setCustomers] = useState<RowType<'customer'>[]>([])
   const [isLoadingCustomers, setIsLoadingCustomers] = useState<boolean>(false)
   const [selectedCustomer, setSelectedCustomer] = useState<RowType<'customer'> | null>(null)
-  const customerRepository = useMemo(() => new CustomerRepository(), [])
+  const customerRepository = useMemo(() => new OptimizedCustomerRepository(), [])
   const carteRepository = useMemo(() => new CarteRepository(), [])
   const carteDetailRepository = useMemo(() => new CarteDetailRepository(), [])
 

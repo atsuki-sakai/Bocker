@@ -19,7 +19,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
-import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
+import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import type { SupportedLocale } from '@/lib/dateLocale'
 
@@ -57,8 +57,8 @@ export default function CustomerSearchForm() {
   const [hasMoreAll, setHasMoreAll] = useState(true) // 通常リスト用
   const [hasMoreSearch, setHasMoreSearch] = useState(true) // 検索結果用
 
-  // CustomerRepositoryのインスタンスをメモ化
-  const customerRepo = useMemo(() => new CustomerRepository(), [])
+  // OptimizedCustomerRepositoryのインスタンスをメモ化
+  const customerRepo = useMemo(() => new OptimizedCustomerRepository(), [])
 
   // 検索結果のキャッシュ
   const [searchCache, setSearchCache] = useState<Map<string, CustomerWithDetails[]>>(new Map())
