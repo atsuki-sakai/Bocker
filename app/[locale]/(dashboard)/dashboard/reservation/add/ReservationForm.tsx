@@ -314,7 +314,7 @@ export default function ReservationForm() {
           tenant_id: tenantId,
           org_id: orgId,
           type: 'holiday',
-          date: new Date().toISOString().split('T')[0],
+          date: format(new Date(), 'yyyy-MM-dd'),
         }
       : 'skip',
     {
@@ -616,7 +616,9 @@ export default function ReservationForm() {
             {
               email: '', // 詳細情報のemail
               gender: data.customer_gender || 'unselected',
-              birthday: data.customer_birthday || '',
+              birthday: data.customer_birthday
+                ? format(new Date(data.customer_birthday), 'yyyy-MM-dd')
+                : '',
               age: 0, // 年齢は後で計算
               notes: data.customer_notes || '',
             },
@@ -943,7 +945,7 @@ export default function ReservationForm() {
                       watch('customer_birthday') ? new Date(watch('customer_birthday')!) : undefined
                     }
                     onChange={(date) =>
-                      setValue('customer_birthday', date?.toISOString().split('T')[0] || '')
+                      setValue('customer_birthday', date ? format(date, 'yyyy-MM-dd') : '')
                     }
                     placeholder={tCommon('birthdayPlaceholder')}
                     toDate={new Date()} // 未来の日付は選択不可
