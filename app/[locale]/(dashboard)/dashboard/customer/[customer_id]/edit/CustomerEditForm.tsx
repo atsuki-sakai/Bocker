@@ -23,7 +23,7 @@ import { MAX_NOTES_LENGTH, MAX_TEXT_LENGTH, MAX_TAG_LENGTH } from '@/convex/cons
 import { Loader2, Pencil } from 'lucide-react'
 import { Loading } from '@/components/common'
 import { toast } from 'sonner'
-import { OptimizedCustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository.optimized'
+import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { useTranslations } from 'next-intl'
 
@@ -148,7 +148,7 @@ export default function CustomerEditForm() {
   const [completeCustomer, setCompleteCustomer] = useState<CompleteCustomerData | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(true)
   // customerRepo の初期化を useMemo でラップ
-  const customerRepo = useMemo(() => new OptimizedCustomerRepository(), [])
+  const customerRepo = useMemo(() => new CustomerRepository(), [])
 
   const customerEditFormSchema = createCustomerEditFormSchema(t)
 
@@ -160,7 +160,6 @@ export default function CustomerEditForm() {
     setValue,
     watch,
   } = useZodForm(customerEditFormSchema)
-
 
   // 顧客データを取得
   useEffect(() => {
@@ -224,8 +223,8 @@ export default function CustomerEditForm() {
         first_name: data.first_name || '',
         last_name: data.last_name || '',
         phone: data.phone || '',
-        line_id: undefined,  // undefinedを渡すことで、SQL関数側で既存の値を保持
-        line_user_name: undefined,  // undefinedを渡すことで、SQL関数側で既存の値を保持
+        line_id: undefined, // undefinedを渡すことで、SQL関数側で既存の値を保持
+        line_user_name: undefined, // undefinedを渡すことで、SQL関数側で既存の値を保持
       }
 
       // 顧客詳細情報の更新データを準備
@@ -414,9 +413,9 @@ export default function CustomerEditForm() {
               <DatePicker
                 value={watch('birthday') ? new Date(watch('birthday')!) : undefined}
                 onChange={(date) => {
-                  const dateString = date?.toISOString().split('T')[0] || '';
-                  setValue('birthday', dateString);
-                  console.log('誕生日が変更されました:', dateString);
+                  const dateString = date?.toISOString().split('T')[0] || ''
+                  setValue('birthday', dateString)
+                  console.log('誕生日が変更されました:', dateString)
                 }}
                 placeholder={t('birthdayPlaceholder')}
                 error={!!errors.birthday}
