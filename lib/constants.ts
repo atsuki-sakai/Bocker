@@ -139,9 +139,6 @@ export const SUBSCRIPTION_PLANS = {
       'features.lite.6',
       'features.lite.7',
       'features.lite.8',
-      'features.lite.9',
-      'features.lite.10',
-      'features.lite.11',
     ],
     monthly: {
       priceId: '',  // Set dynamically in runtime
@@ -156,7 +153,7 @@ export const SUBSCRIPTION_PLANS = {
   PRO: {
     id: 'pro',
     name: 'Pro',
-    features: ['features.pro.1', 'features.pro.2', 'features.pro.3', 'features.pro.4'],
+    features: ['features.pro.1', 'features.pro.2', 'features.pro.3'],
     monthly: {
       priceId: getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID'),  // Set dynamically in runtime
       price: PLAN_MONTHLY_PRICES.PRO,
@@ -265,7 +262,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: `/dashboard/carte`,
     icon: CloudIcon,
     minRole: 'staff',
-    minPlan: 'PRO',
+    minPlan: 'LITE',
   },
   {
     name: 'options',
@@ -279,14 +276,14 @@ export const NAV_ITEMS: NavItem[] = [
     href: `/dashboard/coupon`,
     icon: GiftIcon,
     minRole: 'manager',
-    minPlan: 'PRO',
+    minPlan: 'LITE',
   },
   {
     name: 'pointSettings',
     href: `/dashboard/point`,
     icon: TicketIcon,
     minRole: 'owner',
-    minPlan: 'PRO',
+    minPlan: 'LITE',
   },
   {
     name: 'settings',
