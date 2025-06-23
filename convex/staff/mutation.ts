@@ -26,19 +26,38 @@ export const create = mutation({
     validateStringLength(args.name, 'name');
     validateStringLength(args.description, 'description', MAX_NOTES_LENGTH);
     // スタッフの存在確認
-    const existingStaff = await ctx.db
-      .query('staff')
-      .withIndex('by_tenant_org_active_archive', (q) =>
-        q
-          .eq('tenant_id', args.tenant_id)
-          .eq('org_id', args.org_id)
-      ).filter((q) => q.eq(q.field('clerk_user_id'), args.clerk_user_id))
-      .filter((q) => q.eq(q.field('is_archive'), false))
-      .first()
+    let existingStaff
+    if (args.connect_clerk && args.clerk_user_id) {
+      // Clerk連携の場合はclerk_user_idで重複チェック
+      existingStaff = await ctx.db
+        .query('staff')
+        .withIndex('by_tenant_org_active_archive', (q) =>
+          q
+            .eq('tenant_id', args.tenant_id)
+            .eq('org_id', args.org_id)
+        ).filter((q) => q.eq(q.field('clerk_user_id'), args.clerk_user_id))
+        .filter((q) => q.eq(q.field('is_archive'), false))
+        .first()
+    } else {
+      // Clerk未連携の場合は名前で重複チェック
+      existingStaff = await ctx.db
+        .query('staff')
+        .withIndex('by_tenant_org_active_archive', (q) =>
+          q
+            .eq('tenant_id', args.tenant_id)
+            .eq('org_id', args.org_id)
+        ).filter((q) => q.eq(q.field('name'), args.name))
+        .filter((q) => q.eq(q.field('connect_clerk'), false))
+        .filter((q) => q.eq(q.field('is_archive'), false))
+        .first()
+    }
     if (existingStaff) {
+      const errorMessage = args.connect_clerk 
+        ? '指定されたメールアドレスのスタッフがすでに存在します'
+        : '指定されたスタッフ名がすでに存在します'
       throw new ConvexError({
-        message: '指定されたメールアドレスのスタッフがすでに存在します',
-        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        message: errorMessage,
+        statusCode: ERROR_STATUS_CODE.CONFLICT,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'staff.create',
         details: { ...existingStaff },
