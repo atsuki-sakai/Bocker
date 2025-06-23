@@ -380,7 +380,13 @@ export default function ReserveRedirectPage() {
 
         // 3. ユーザーへトースト通知
         toast.error('タイムアウトしました。再度ログインしてください')
-      }, 10000) // 10000ms = 10秒
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include',
+        })
+        router.push(`/${locale}/reservation`)
+      }, 8000) // 8000ms = 8秒
     }
 
     // クリーンアップ: isLoading が false もしくはアンマウント時にタイマーを解除
