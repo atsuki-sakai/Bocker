@@ -4,11 +4,12 @@ import { api } from '@/convex/_generated/api'
 import jwt from 'jsonwebtoken' // JWTを扱うためにjsonwebtokenをインストールする必要があります
 import { v4 as uuidv4 } from 'uuid'
 import { LOGIN_SESSION_KEY } from '@/services/line/constants'
-import { InsertType } from '@/services/supabase/SupabaseService'
+import { InsertType, SupabaseService } from '@/services/supabase/SupabaseService'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { SystemError } from '@/lib/errors/custom_errors'
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
 import { getEnv } from '@/lib/env-config'
+import { createClient } from '@supabase/supabase-js'
 
 const convex = new ConvexHttpClient(getEnv('NEXT_PUBLIC_CONVEX_URL'))
 
@@ -33,10 +34,24 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { idToken, tenantId, orgId } = body
+    
+    console.log('[API /api/line/verify-token] Request body:', { 
+      hasIdToken: !!idToken, 
+      tenantId, 
+      orgId,
+      idTokenLength: idToken?.length 
+    })
 
     const organizationApiConfig = await convex.query(api.organization.api_config.query.findByTenantAndOrg, {
       tenant_id: tenantId,
       org_id: orgId,
+    })
+
+    console.log('[API /api/line/verify-token] Organization API config:', {
+      found: !!organizationApiConfig,
+      hasLiffId: !!organizationApiConfig?.liff_id,
+      hasChannelId: !!organizationApiConfig?.line_channel_id,
+      channelId: organizationApiConfig?.line_channel_id
     })
 
     if (!idToken) {
@@ -94,12 +109,15 @@ export async function POST(req: NextRequest) {
       body: params,
     })
 
+    console.log('[API /api/line/verify-token] LINE API response status:', lineResponse.status)
+
     if (!lineResponse.ok) {
       const errorData = await lineResponse.json()
       console.error('[API /api/line/verify-token] LINE token verification failed:', {
         status: lineResponse.status,
         error: errorData,
         channelId: channelId,
+        params: params.toString()
       })
       
       // より具体的なエラーメッセージ
@@ -135,8 +153,14 @@ export async function POST(req: NextRequest) {
     if (tenantId && orgId) {
       console.log(`[API /api/line/verify-token] Upserting customer info for tenantId: ${tenantId} and orgId: ${orgId}`)
       try {
-        // Supabaseで顧客を検索・作成
-        const customerRepo = new CustomerRepository();
+        // Supabase管理者クライアントを作成
+        const supabase = createClient(
+          getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+          getEnv('SUPABASE_SERVICE_ROLE_KEY')
+        );
+        
+        const supabaseService = new SupabaseService(supabase);
+        const customerRepo = new CustomerRepository(supabaseService);
         
         // 既存の顧客をLINE IDで検索（LINE IDの方が確実にユニーク）
         let existingCustomer = await customerRepo.findByTenantAndOrgAndCustomerLineId(
@@ -277,6 +301,12 @@ export async function POST(req: NextRequest) {
     return response
   } catch (error: unknown) {
     console.error('[API /api/line/verify-token] General error:', error)
+    
+    // スタックトレースも出力
+    if (error instanceof Error) {
+      console.error('[API /api/line/verify-token] Error stack:', error.stack)
+    }
+    
     return NextResponse.json(
       {
         error: 'Internal server error',
