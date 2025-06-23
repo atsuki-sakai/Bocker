@@ -2373,10 +2373,8 @@
     "storageLimit": "Storage Limit",
     "features": {
       "lite": {
-        "1": "Basic reservation calendar functionality",
-        "2": "Basic customer information management",
-        "3": "Reservation management (calendar, staff schedule settings, reservation confirmation/changes/cancellations, 24/365 online booking)",
-        "4": "Customer management (basic info, reservation and purchase history)",
+        "1": "Reservation management (reservation timeline, staff schedule settings, reservation confirmation/cancellations, 24/365 online booking)",
+        "2": "Customer management (basic info, reservation and purchase history, points)",
         "5": "Staff management (account creation, basic reservation & shift management) — up to 3 staff",
         "6": "Menu settings (service registration, price and duration settings) — up to 10 items",
         "7": "Customer record cards (detailed treatment records, chemical usage history, record templates, staff handover) — image attachment not available",
@@ -2387,9 +2385,13 @@
       },
       "pro": {
         "1": "All features of the LITE plan",
-        "2": "Attach one desired hairstyle image at reservation",
-        "3": "Record cards (attach up to 4 images)",
-        "4": "Limits: Staff (10), Menus (20), Options (10), Reservations (500 per month)"
+        "2": "Customer record cards (detailed treatment records, image attachment, chemical usage history, record templates, staff handover) — image attachment not available",
+        "3": "Limits: Staff (10), Menus (20), Options (10), Reservations (1000 per month)"
+      },
+      "enterprise": {
+        "1": "All features of the PRO plan",
+        "2": "Customer record cards (detailed treatment records, image attachment, chemical usage history, record templates, staff handover)",
+        "3": "Limits: Staff (20), Menus (30), Options (15), Reservations (2000 per month)"
       }
     },
     "basicPlan": "Basic Plan",
