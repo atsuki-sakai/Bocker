@@ -117,7 +117,10 @@ const PlanCard = memo(function PlanCard({
               {title}
             </CardTitle>
             {isCurrentPlan && isActive && (
-              <Badge variant="default" className="bg-active text-white px-3 py-1">
+              <Badge
+                variant="default"
+                className="bg-neon-foreground border border-neon text-neon px-3 py-1 animate-pulse"
+              >
                 {t('currentPlan')}
               </Badge>
             )}
