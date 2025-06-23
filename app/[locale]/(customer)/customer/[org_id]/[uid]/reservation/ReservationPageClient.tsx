@@ -28,7 +28,7 @@ export function ReservationPageClient({
   const [selectedStatus, setSelectedStatus] = useState<ReservationStatus | 'all'>('all')
 
   // 統合フックを使用して予約データを取得
-  const { reservations, isLoading, loadMore, hasMore, stats } = useIntegratedReservations({
+  const { reservations, isLoading, loadMore, hasMore } = useIntegratedReservations({
     tenantId,
     orgId: sessionOrgId,
     customerId: customerUid,
