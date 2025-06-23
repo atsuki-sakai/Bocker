@@ -18,7 +18,7 @@ export const inviteStaffSchema = z.object({
   age: z.number().int().min(18).max(100).optional(),
   gender: genderSchema.optional(),
   extra_charge: z.number().min(0).max(100000).optional(),
-  priority: z.number().int().min(0).max(100).optional(),
+  priority: z.number().int().min(0).max(999).optional(),
   phone: phoneSchema.optional(),
   images: z.array(z.object({
     original_url: z.string().url(),

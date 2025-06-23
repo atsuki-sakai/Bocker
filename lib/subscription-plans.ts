@@ -35,7 +35,7 @@ export const getSubscriptionPlans = () => ({
   PRO: {
     id: 'pro',
     name: 'Pro',
-    features: ['features.pro.1', 'features.pro.2', 'features.pro.3', 'features.pro.4'],
+    features: ['features.pro.1', 'features.pro.2', 'features.pro.3'],
     monthly: {
       priceId: getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID'),
       price: PLAN_MONTHLY_PRICES.PRO,
