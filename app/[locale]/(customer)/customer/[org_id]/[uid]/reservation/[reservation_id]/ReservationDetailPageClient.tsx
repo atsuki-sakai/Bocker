@@ -48,8 +48,6 @@ export function ReservationDetailPageClient({
   orgId,
   customerUid,
   reservationId,
-  tenantId,
-  sessionOrgId,
 }: ReservationDetailPageClientProps) {
   const router = useRouter()
   const [reservationData, setReservationData] = useState<IntegratedReservation | null>(null)
