@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
-import { Id } from '@/convex/_generated/dataModel'
 import { useLiff } from '@/hooks/useLiff'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
