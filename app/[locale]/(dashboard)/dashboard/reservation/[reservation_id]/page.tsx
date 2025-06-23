@@ -171,7 +171,11 @@ export default function ReservationPage() {
 
   const handleDeleteReservation = async () => {
     try {
-      await deleteReservation({ reservation_id: reservationData.reservation._id })
+      await deleteReservation({
+        reservation_id: reservationData.reservation._id,
+        tenant_id: reservationData.reservation.tenant_id,
+        org_id: reservationData.reservation.org_id,
+      })
       toast.success(t('reservationDeleted'))
       router.push('/dashboard/reservation')
     } catch (error) {
