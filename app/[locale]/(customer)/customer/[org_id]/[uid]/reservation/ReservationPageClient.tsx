@@ -80,43 +80,6 @@ export function ReservationPageClient({
         <p className="text-muted-foreground mt-1">過去と未来の予約を確認できます</p>
       </div>
 
-      {/* 統計情報 */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">総予約数</p>
-                <p className="text-2xl font-bold text-primary">{stats.totalCount}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">完了</p>
-                <p className="text-2xl font-bold text-accent-2">{stats.completedCount}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">予約中</p>
-                <p className="text-2xl font-bold text-neon">{stats.upcomingCount}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">キャンセル</p>
-                <p className="text-2xl font-bold text-destructive">{stats.cancelledCount}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* ステータスフィルター */}
       <Tabs

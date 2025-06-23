@@ -91,14 +91,10 @@ export default function ReservePage() {
         // ここではベースパスに留めておき、戻り先は ReserveRedirectPage で復元する。
 
         const locale = window.location.pathname.split('/')[1] || 'ja'
-        const callbackUrl = new URL(`/${locale}/reservation`, window.location.origin)
+        const callbackUrl = new URL(`/${locale}/reservation/auth/callback`, window.location.origin)
 
-        // state と テナント / 組織ID をクエリとして埋め込み
-        // ・state      : CSRF / 一時情報用
-        // ・tid (tenantId)
-        // ・oid (orgId)
-        // ReserveRedirectPage 側で liffRedirectUri をパースして取得する
-
+        // 認証後のリダイレクトタイプを指定
+        callbackUrl.searchParams.set('redirect_type', 'reservation')
         callbackUrl.searchParams.set('state', stateId)
         if (tenantId) callbackUrl.searchParams.set('tid', tenantId)
         callbackUrl.searchParams.set('oid', orgId)

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { ArrowLeft, Calendar, Clock, User, Receipt, Loader2 } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, User, Receipt, Loader2, Phone, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import Link from 'next/link'
@@ -18,6 +18,16 @@ import { ReservationRepository } from '@/services/supabase/repositories/reservat
 import type { RowType } from '@/services/supabase/SupabaseService'
 import type { IntegratedReservation } from '@/hooks/useIntegratedReservations'
 import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import type {
   ReservationMenu,
   ReservationOption,
@@ -38,10 +48,14 @@ export function ReservationDetailPageClient({
   orgId,
   customerUid,
   reservationId,
+  tenantId,
+  sessionOrgId,
 }: ReservationDetailPageClientProps) {
   const router = useRouter()
   const [reservationData, setReservationData] = useState<IntegratedReservation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
 
   // Convexから予約データを取得（IDがk...の形式の場合）
   const isConvexId = reservationId.startsWith('k')
@@ -50,6 +64,28 @@ export function ReservationDetailPageClient({
     isConvexId
       ? {
           id: reservationId as Id<'reservation'>,
+        }
+      : 'skip'
+  )
+
+  // 予約設定を取得（キャンセル可能日数の確認用）
+  const reservationConfig = useQuery(
+    api.organization.reservation_config.query.findByTenantAndOrg,
+    reservationData
+      ? {
+          tenant_id: reservationData.tenantId as Id<'tenant'>,
+          org_id: reservationData.orgId as Id<'organization'>,
+        }
+      : 'skip'
+  )
+
+  // 組織設定を取得（電話番号の確認用）
+  const orgConfig = useQuery(
+    api.organization.config.query.findByTenantAndOrg,
+    reservationData
+      ? {
+          tenant_id: reservationData.tenantId as Id<'tenant'>,
+          org_id: reservationData.orgId as Id<'organization'>,
         }
       : 'skip'
   )
@@ -270,6 +306,66 @@ export function ReservationDetailPageClient({
   const usePoints = reservationData.detail?.usePoints || 0
   const finalPrice = totalPrice - couponDiscount - usePoints
 
+  // キャンセル可能かどうかを判定
+  const checkCancellable = () => {
+    if (!reservationData || reservationData.status !== 'confirmed') {
+      return { cancellable: false, reason: '確定済みの予約のみキャンセル可能です' }
+    }
+
+    const now = Date.now()
+    const availableCancelDays = reservationConfig?.available_cancel_days || 1
+    const cancelDeadline = reservationData.startTimeUnix - availableCancelDays * 24 * 60 * 60 * 1000
+
+    if (now > cancelDeadline) {
+      return {
+        cancellable: false,
+        reason: `キャンセルは予約日の${availableCancelDays}日前までとなります`,
+        showPhone: true,
+      }
+    }
+
+    return { cancellable: true }
+  }
+
+  const cancellability = checkCancellable()
+
+  // キャンセル処理
+  const handleCancel = async () => {
+    setIsCancelling(true)
+    try {
+      const response = await fetch('/api/reservation/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reservationId:
+            reservationData.source === 'convex'
+              ? reservationData.id
+              : reservationData.supabaseData?.reservation._convex_id,
+          reason: 'お客様都合によるキャンセル',
+          isStaffAction: false,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'キャンセルに失敗しました')
+      }
+
+      toast.success('予約をキャンセルしました')
+      setShowCancelDialog(false)
+
+      // 予約一覧へ戻る
+      router.push(`/customer/${orgId}/${customerUid}/reservation`)
+    } catch (error) {
+      console.error('Cancel error:', error)
+      toast.error(error instanceof Error ? error.message : 'キャンセルに失敗しました')
+    } finally {
+      setIsCancelling(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* ヘッダー */}
@@ -432,6 +528,106 @@ export function ReservationDetailPageClient({
           </CardContent>
         </Card>
       )}
+
+      {/* キャンセルボタンまたは電話番号表示 */}
+      {reservationData.status === 'confirmed' && (
+        <Card>
+          <CardContent className="pt-6">
+            {cancellability.cancellable ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  予約日の{reservationConfig?.available_cancel_days || 1}日前までキャンセル可能です
+                </p>
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => setShowCancelDialog(true)}
+                >
+                  予約をキャンセル
+                  <X className="h-4 w-4 mr-2" />
+                </Button>
+              </div>
+            ) : cancellability.showPhone ? (
+              <div className="space-y-4">
+                <div className="bg-destructive/10 rounded-lg p-4">
+                  <p className="text-sm text-destructive font-medium mb-2">
+                    {cancellability.reason}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    キャンセルをご希望の場合は、お電話にてご連絡ください。
+                  </p>
+                </div>
+                {orgConfig?.config?.phone && (
+                  <div className="flex items-center space-x-3 bg-muted rounded-lg p-4">
+                    <Phone className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">お問い合わせ先</p>
+                      <a
+                        href={`tel:${orgConfig.config.phone}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {orgConfig.config.phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* キャンセル確認ダイアログ */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>予約をキャンセルしますか？</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>以下の予約をキャンセルします。この操作は取り消せません。</p>
+              <div className="bg-muted rounded-lg p-3 mt-3 space-y-1">
+                <p className="font-medium">
+                  {format(new Date(reservationData.startTimeUnix), 'yyyy年M月d日 (E)', {
+                    locale: ja,
+                  })}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(reservationData.startTimeUnix), 'HH:mm')} -
+                  {format(new Date(reservationData.endTimeUnix), 'HH:mm')}
+                </p>
+                <p className="text-sm text-muted-foreground">担当: {reservationData.staffName}</p>
+              </div>
+              {(reservationData.detail?.paymentMethod === 'credit_card' || usePoints > 0) && (
+                <div className="text-sm text-muted-foreground mt-3">
+                  {reservationData.detail?.paymentMethod === 'credit_card' && (
+                    <p>• クレジットカード決済の返金は3-5営業日かかります</p>
+                  )}
+                  {usePoints > 0 && <p>• 使用したポイント（{usePoints}pt）は返還されます</p>}
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>いいえ</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault()
+                handleCancel()
+              }}
+              disabled={isCancelling}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isCancelling ? (
+                <>
+                  キャンセル中...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                </>
+              ) : (
+                'キャンセル'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

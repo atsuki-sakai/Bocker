@@ -305,11 +305,7 @@ const ReservationDetailDialog = memo(
               {/* 顧客IDが存在する場合のみカルテリンクを表示 */}
               {reservation.customer_id && (
                 <Button asChild>
-                  <Link
-                    href={`/dashboard/carte/${reservation.customer_id}/reservation/${reservation._id}`}
-                  >
-                    カルテを確認する
-                  </Link>
+                  <Link href={`/dashboard/carte/${reservation.customer_id}`}>カルテを確認する</Link>
                 </Button>
               )}
             </div>

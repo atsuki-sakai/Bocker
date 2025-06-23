@@ -239,10 +239,30 @@ export default function ReservationPage() {
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">{t('totalAmount')}:</p>
-              <p className="font-medium text-lg">
-                ¥{reservationData.reservationDetail?.total_price}
-              </p>
+              <div className="flex flex-col gap-2">
+                <p className="text-muted-foreground text-sm">
+                  <span className="font-medium mr-2">メニュー</span> ¥
+                  {reservationData.reservationDetail?.menus
+                    ?.reduce((acc, menu) => acc + menu.quantity * (menu.price ?? 0), 0)
+                    .toLocaleString()}{' '}
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  <span className="font-medium mr-2">オプション</span> ¥
+                  {reservationData.reservationDetail?.options
+                    .reduce((acc, option) => acc + option.quantity * (option.price ?? 0), 0)
+                    .toLocaleString()}
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  <span className="font-medium mr-2">指名料</span> ¥
+                  {reservationData.reservationDetail?.extra_charge?.toLocaleString() ?? 0}
+                </p>
+                <div className="flex items-center mt-3">
+                  <p className="text-primary text-base font-bold">
+                    <span className="font-medium mr-2">{t('totalAmount')}</span> ¥
+                    {reservationData.reservationDetail?.total_price?.toLocaleString() ?? 0}
+                  </p>
+                </div>
+              </div>
             </div>
             <div>
               <p className="text-muted-foreground">{t('paymentMethod')}:</p>
@@ -289,31 +309,20 @@ export default function ReservationPage() {
                           : t('notSet')}
                     </p>
                   </div>
-
                   {customerData.customer?.phone && (
                     <div>
                       <p className="text-muted-foreground">{t('phoneNumber')}:</p>
                       <p className="font-medium">{customerData.customer?.phone}</p>
                     </div>
                   )}
-
                   {customerData.customer?.email && (
                     <div>
                       <p className="text-muted-foreground">{t('email')}:</p>
                       <p className="font-medium">{customerData.customer?.email}</p>
                     </div>
                   )}
-
                   {customerData.customerDetail && (
                     <>
-                      {customerData.customerDetail.age && customerData.customerDetail.age > 0 && (
-                        <div>
-                          <p className="text-muted-foreground">{t('age')}:</p>
-                          <p className="font-medium">
-                            {t('yearsOld', { age: customerData.customerDetail.age })}
-                          </p>
-                        </div>
-                      )}
                       {customerData.customerDetail.gender && (
                         <div>
                           <p className="text-muted-foreground">{t('gender')}:</p>

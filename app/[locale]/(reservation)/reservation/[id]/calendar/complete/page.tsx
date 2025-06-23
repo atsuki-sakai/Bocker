@@ -78,6 +78,7 @@ export default function CompletePage() {
           tenant_id: reservationWithDetail?.reservation?.tenant_id,
           org_id: reservationWithDetail?.reservation?.org_id,
           staff_id: reservationWithDetail?.reservation?.staff_id as Id<'staff'>,
+          skip_check: true,
         }
       : 'skip'
   )

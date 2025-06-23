@@ -35,6 +35,33 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
       console.log('stateId', stateId)
       // パスから店舗IDを取得し、Convex で存在チェック
       if (pathname && pathname.includes('/reservation/')) {
+        // 認証コールバックページの場合は特別処理
+        if (pathname.includes('/reservation/auth/callback')) {
+          console.log('[ClientLayout] Auth callback page detected, extracting orgId from searchParams')
+          const oid = searchParams.get('oid')
+          if (oid) {
+            try {
+              const existOrg = await fetchQuery(api.organization.query.findByOrgId, {
+                org_id: oid as Id<'organization'>,
+              })
+              if (existOrg) {
+                setOrgId(oid as Id<'organization'>)
+                setTenantId(existOrg.tenant_id)
+                setIsLoading(false)
+                return
+              }
+            } catch (error) {
+              console.error('店舗の取得に失敗しました', error)
+              setErrors((prev) => [
+                ...prev,
+                `店舗の取得に失敗しました。URLが間違っているか、店舗が削除されている可能性があります。`,
+              ])
+            }
+          }
+          setIsLoading(false)
+          return
+        }
+        
         // クエリパラメータを除去してパス部分のみ取得
         const cleanPath = pathname.split('?')[0]
         // パスをスラッシュで分割
@@ -124,7 +151,7 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
   }, [pathname, searchParams])
 
   // LINE認証コールバックページの場合は、組織IDなしでも子コンポーネントをレンダリング
-  const isOAuthCallback = pathname && pathname.endsWith('/reservation')
+  const isOAuthCallback = pathname && (pathname.endsWith('/reservation') || pathname.includes('/reservation/auth/callback'))
 
   if (isLoading && !orgId && !tenantId && !isOAuthCallback) {
     return <Loading />
