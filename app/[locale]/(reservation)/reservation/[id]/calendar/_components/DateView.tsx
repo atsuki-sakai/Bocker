@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { ja } from 'date-fns/locale'
-import { startOfToday, format } from 'date-fns'
+import { startOfToday, format, addDays } from 'date-fns'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { TimeRange } from '@/lib/types'
@@ -40,6 +40,15 @@ export const DateView = ({
   const [availableTimes, setAvailableTimes] = useState<TimeRange[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate || startOfToday())
+
+  // 予約設定を取得
+  const reservationConfig = useQuery(
+    api.organization.reservation_config.query.findByTenantAndOrg,
+    {
+      tenant_id: tenantId,
+      org_id: orgId,
+    }
+  )
 
   const organizationExceptionDates = useQuery(
     api.organization.exception_schedule.query.displayExceptionSchedule,
@@ -120,7 +129,7 @@ export const DateView = ({
       .finally(() => setIsLoading(false))
   }, [tenantId, orgId, selectedStaff, selectedDate, totalMinutes, showErrorToast])
 
-  if (staffExceptionDatesLoading || organizationExceptionDates === undefined) {
+  if (staffExceptionDatesLoading || organizationExceptionDates === undefined || reservationConfig === undefined || reservationConfig === null) {
     return <Loading />
   }
 
@@ -143,10 +152,15 @@ export const DateView = ({
   ]
   const uniqueClosedDayIndices = Array.from(new Set(closedDayIndices))
 
+  // 予約可能な最大日付を計算
+  const maxReservationDate = addDays(startOfToday(), reservationConfig?.reservation_limit_days || 30)
+
   // 過去の日付とサロン・スタッフの例外日および曜日の休みを無効化する日付/曜日配列を作成
   const disabledDates = [
     // 当日以前を選択不可
     { before: startOfToday() },
+    // 予約制限日以降を選択不可
+    { after: maxReservationDate },
     ...organizationExceptionDates.map((e) => parseISO(e.date!)),
     ...staffExceptionDates.map((e) => parseISO(e.date!)),
     { dayOfWeek: uniqueClosedDayIndices },
@@ -164,7 +178,14 @@ export const DateView = ({
   return (
     <div>
       <h2 className="text-base">日時を選択</h2>
-      <p className="text-muted-foreground mb-4 text-sm">ご希望の日付と時間を選択してください。</p>
+      <p className="text-muted-foreground mb-4 text-sm">
+        ご希望の日付と時間を選択してください。
+        {reservationConfig?.reservation_limit_days && (
+          <span className="block mt-1">
+            ※ {reservationConfig.reservation_limit_days}日先まで予約可能です
+          </span>
+        )}
+      </p>
       <div></div>
       <div className="flex flex-col md:flex-row gap-6">
         <div className="md:w-1/2 flex flex-col justify-center items-center">
