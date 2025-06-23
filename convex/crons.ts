@@ -37,4 +37,11 @@ crons.interval(
   internal.reservation.payment.cleanupExpiredPendingReservations
 )
 
+// 予約リマインダー送信（1時間間隔で実行）
+crons.interval(
+  'send hourly reservation reminders',
+  { minutes: 60 }, // 1時間ごと
+  internal.reservation.action.sendHourlyReminders
+)
+
 export default crons

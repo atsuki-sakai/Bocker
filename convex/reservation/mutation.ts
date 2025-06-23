@@ -1,3 +1,4 @@
+
 import { internal } from '@/convex/_generated/api'
 import { mutation, internalMutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
@@ -49,7 +50,7 @@ Convex ミューテーションはサーバーサイドで一度にバッチ的�
 
   「重複チェック→挿入」を同じミューテーション内にまとめた形です  ￼ ￼。
 	•	予約件数上限 (availableSheet) のチェックと挿入を同じ関数内で直列実行
-たとえば orgReservations を取得し、overlapCount を算出した後、すぐにエラー投げまたは次ステップへ進み、外部の別クエリ呼び出しを挟んでいません。これにより、チェック結果と挿入の間に別リクエストが介入する“間”がかなり小さくなっています  ￼ ￼。
+たとえば orgReservations を取得し、overlapCount を算出した後、すぐにエラー投げまたは次ステップへ進み、外部の別クエリ呼び出しを挟んでいません。これにより、チェック結果と挿入の間に別リクエストが介入する"間"がかなり小さくなっています  ￼ ￼。
 	•	スタッフ単位の時間帯重複チェックも同様に同関数内で行い、そのままエラー投げまたは挿入へ。したがって、チェック→挿入の連続性が保たれています  ￼ ￼。
 
 よって、多少の同時リクエストがあったとしても、Convex の OCC による自動再試行メカニズムが働き、最終的に正しいデータ整合性が担保されるため、実運用上「重複予約を許さない」要件を十分満たすといえます  ￼ ￼。
@@ -292,105 +293,207 @@ export const update = mutation({
       }
     }
 
-    // 更新対象から予約IDを除外し、更新データを準備
-    // const updateData = excludeFields(args, ['reservation_id']) // unused variable
+    // reservation_idを除外した更新データを作成（予約IDは更新対象外のため除外）
+    // @ts-ignore
+    const { reservation_id, ...updateData } = args
 
-    // 予約の基本情報を先に更新し、その後詳細情報を更新することで整合性を保つ
-    await updateRecord(
-      ctx,
-      reservation._id,
-      {
-        tenant_id: args.tenant_id, // テナントID
-        org_id: args.org_id, // 組織ID
-        customer_id: args.customer_id, // Supabase 側の customer.uid (UUID)
-        staff_id: args.staff_id, // スタッフID
-        customer_name: args.customer_name, // 顧客名
-        staff_name: args.staff_name, // スタッフ名
-        status: args.status, // 予約ステータス
-        date: args.date, // 予約日 YYYY-MM-DD
-        start_time_unix: args.start_time_unix, // 予約開始時間
-        end_time_unix: args.end_time_unix, // 予約終了時間
-      }
-    )
-
-    const reservationDetail = await ctx.db.query('reservation_detail').withIndex('by_reservation_archive', q => q.eq('reservation_id', reservation._id).eq('is_archive', false)).first()
-    if (!reservationDetail) {
-      throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'reservation.update',
-      })
-    }
-
-    // 予約詳細情報を更新し、最新の状態をDBに反映
-    return await ctx.db.patch(reservationDetail._id, {
-      tenant_id: args.tenant_id, // テナントID
-      org_id: args.org_id, // 店舗ID
-      reservation_id: args.reservation_id, // 予約ID
-      coupon_id: args.coupon_id, // クーポンID
-      total_price: args.total_price, // 合計金額
-      payment_method: args.payment_method, // 支払方法
-      menus: args.menus, // メニュー
-      options: args.options, // オプション
-      extra_charge: args.extra_charge, // 追加料金
-      use_points: args.use_points, // 使用ポイント数
-      coupon_discount: args.coupon_discount, // クーポン割引額
-      featured_hair_images: args.featured_hair_images, // フィーチャー画像
-      notes: args.notes, // メモ
-    })
+    // 予約本体の更新処理を実行し、データの整合性を保ちながら情報を更新
+    return await updateRecord(ctx, args.reservation_id, updateData)
   },
 })
 
-// 予約の論理削除（アーカイブ）処理
-// 予約を物理的に削除せず、アーカイブフラグを立てることで履歴を保持しつつ非表示にする。
-// 関連する予約詳細も同時にアーカイブする共通ヘルパーを利用し、一貫した状態管理を実現。
-export const archive = mutation({
+// 予約のキャンセル処理
+// 顧客またはスタッフによるキャンセル要求を処理し、各種制約をチェックする。
+// キャンセル可能期限の検証、在庫の復元、ポイントタスクの削除などを一括で行う。
+// キャンセル情報は予約詳細テーブルに記録し、本体のステータスも更新する。
+export const cancelReservation = mutation({
   args: {
-    reservation_id: v.id('reservation'),
+    reservationId: v.id('reservation'),
+    cancelledBy: v.union(v.literal('customer'), v.literal('staff'), v.literal('system')),
+    cancelReason: v.optional(v.string()),
+    skipValidation: v.optional(v.boolean()), // 検証をスキップするか（システムキャンセル用）
   },
   handler: async (ctx, args) => {
-    // 認証チェック: ログイン済みユーザーのみ実行可能
-    checkAuth(ctx)
-    // 予約と関連詳細をアーカイブ状態に更新
-    await archiveReservationWithDetails(ctx, args.reservation_id)
-    return true;
-  },
-})
-
-// 予約の物理削除処理
-// 予約とその関連詳細を完全に削除する。削除後は復元不可のため注意が必要。
-// 共通ヘルパーを利用して関連情報も漏れなく削除する。
-export const kill = mutation({
-  args: {
-    reservation_id: v.id('reservation'),
-  },
-  handler: async (ctx, args) => {
-    // 認証チェック: ログイン済みユーザーのみ実行可能
-    checkAuth(ctx)
-    // 予約と関連詳細を完全に削除
-    await deleteReservationWithDetails(ctx, args.reservation_id)
-    return true;
-  },
-})
-
-// 予約ステータスの更新処理
-// 予約の状態変更を行う。キャンセル済みの予約に対しては変更不可とし、整合性を保つ。
-export const updateStatus = mutation({
-  args: {
-    reservation_id: v.id('reservation'),
-    status: reservationStatusType,
-  },
-  handler: async (ctx, args) => {
-    // 入力値の必須チェック
-    validateRequired(args.reservation_id, 'reservation_id')
-    validateRequired(args.status, 'status')
-    // 予約の存在確認とアーカイブ状態のチェック
-    const reservation = await ctx.db.get(args.reservation_id)
+    // 予約と詳細情報を取得
+    const reservation = await ctx.db.get(args.reservationId);
     if (!reservation || reservation.is_archive) {
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.NOT_FOUND,
         severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'reservation.updateStatus',
+        callFunc: 'reservation.cancelReservation',
+        message: '指定された予約が存在しません',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: { reservationId: args.reservationId },
+      });
+    }
+
+    // すでにキャンセルされている場合はエラー
+    if (reservation.status === 'cancelled') {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'reservation.cancelReservation',
+        message: 'この予約はすでにキャンセルされています',
+        code: 'ALREADY_CANCELLED',
+        status: 400,
+        details: { reservationId: args.reservationId },
+      });
+    }
+
+    // 予約詳細情報を取得
+    const details = await ctx.db
+      .query('reservation_detail')
+      .withIndex('by_reservation_archive', (q) =>
+        q.eq('reservation_id', args.reservationId).eq('is_archive', false)
+      )
+      .first();
+
+    if (!details) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'reservation.cancelReservation',
+        message: '予約詳細が見つかりません',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: { reservationId: args.reservationId },
+      });
+    }
+
+    // 顧客によるキャンセルの場合はキャンセル期限をチェック
+    if (args.cancelledBy === 'customer' && !args.skipValidation) {
+      // 組織の設定を取得
+      const orgConfig = await ctx.db
+        .query('reservation_config')
+        .withIndex('by_tenant_org_archive', (q) =>
+          q.eq('tenant_id', reservation.tenant_id)
+            .eq('org_id', reservation.org_id)
+            .eq('is_archive', false)
+        )
+        .first();
+
+      // キャンセル可能期限を計算（デフォルト1日前）
+      const cancelDeadline = reservation.start_time_unix - (orgConfig?.available_cancel_days || 1) * 24 * 60 * 60 * 1000;
+      
+      if (Date.now() > cancelDeadline) {
+        throw new ConvexError({
+          statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'reservation.cancelReservation',
+          message: 'キャンセル期限を過ぎているため、キャンセルできません',
+          code: 'CANCELLATION_DEADLINE_PASSED',
+          status: 400,
+          details: {
+            reservationId: args.reservationId,
+            cancelDeadline: new Date(cancelDeadline).toISOString(),
+            currentTime: new Date().toISOString(),
+          },
+        });
+      }
+    }
+
+    // 楽観的在庫管理: キャンセル時に在庫を復元
+    if (details.options && details.options.length > 0) {
+      await ctx.runMutation(internal.option.stock.restoreStockForCancellation, {
+        options: details.options.map(opt => ({
+          id: opt.id,
+          quantity: opt.quantity,
+        })),
+      });
+    }
+
+    // ポイントタスクを削除（予約に紐づくポイント付与をキャンセル）
+    await ctx.scheduler.runAfter(0, internal.reservation.action.deletePointTaskForReservation, {
+      tenant_id: reservation.tenant_id,
+      org_id: reservation.org_id,
+      reservation_id: args.reservationId,
+    });
+
+    // 予約のステータスを更新
+    await ctx.db.patch(args.reservationId, {
+      status: 'cancelled',
+      cancelled_at: Date.now(),
+      cancelled_by: args.cancelledBy,
+      cancel_reason: args.cancelReason,
+      updated_at: Date.now(),
+    });
+
+    // 予約詳細にもキャンセル情報を記録
+    await ctx.db.patch(details._id, {
+      cancellation_info: {
+        cancelled_at: Date.now(),
+        cancelled_by: args.cancelledBy,
+        reason: args.cancelReason,
+      },
+      updated_at: Date.now(),
+    });
+
+    return { success: true, reservationId: args.reservationId };
+  },
+});
+
+// 支払い確定処理
+// Stripe決済成功後に呼び出され、予約ステータスと支払いステータスを更新する。
+// pending状態の予約を確定済みに変更し、決済情報を記録する。
+export const confirmPayment = mutation({
+  args: {
+    reservation_id: v.id('reservation'),
+    stripe_payment_intent_id: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // 予約の存在確認
+    const reservation = await ctx.db.get(args.reservation_id);
+    if (!reservation || reservation.is_archive) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'reservation.confirmPayment',
+        message: '指定された予約が存在しません',
+        code: 'NOT_FOUND',
+        status: 404,
+        details: { reservationId: args.reservation_id },
+      });
+    }
+
+    // すでに確定済みの場合は何もしない（冪等性）
+    if (reservation.status === 'confirmed' && reservation.payment_status === 'paid') {
+      return { success: true, alreadyConfirmed: true };
+    }
+
+    // ステータスと支払いステータスを更新
+    await ctx.db.patch(args.reservation_id, {
+      status: 'confirmed',
+      payment_status: 'paid',
+      stripe_payment_intent_id: args.stripe_payment_intent_id,
+      updated_at: Date.now(),
+    });
+
+    return { success: true, alreadyConfirmed: false };
+  },
+});
+
+// 予約の論理削除（アーカイブ）処理
+// 物理的な削除ではなく、アーカイブフラグを立てることで履歴を保持する。
+// 予約本体と詳細情報を一括でアーカイブし、関連データの整合性を保つ。
+export const archive = mutation({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    reservation_id: v.id('reservation'),
+  },
+  handler: async (ctx, args) => {
+    // 認証チェック: ログイン済みユーザーのみアーカイブ可能
+    checkAuth(ctx)
+    validateRequired(args.org_id, 'org_id')
+
+    // 対象予約が存在することを確認
+    const reservation = await ctx.db.get(args.reservation_id)
+    if (!reservation) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'reservation.archive',
         message: '指定された予約が存在しません',
         code: 'NOT_FOUND',
         status: 404,
@@ -400,213 +503,77 @@ export const updateStatus = mutation({
       })
     }
 
-    // キャンセル済み予約のステータス変更を禁止し、不整合を防止
-    if (reservation.status == 'cancelled') {
+    // 共通ヘルパーで予約と関連データを一括アーカイブすることでデータの整合性を保持
+    return await archiveReservationWithDetails(ctx, args.reservation_id)
+  },
+})
+
+// 予約の物理削除処理
+// 開発環境またはデータ完全削除が必要な場合に使用。本番環境では通常使用しない。
+// 予約本体と詳細情報を完全に削除し、データベースから物理的に除去する。
+export const kill = mutation({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    reservation_id: v.id('reservation'),
+  },
+  handler: async (ctx, args) => {
+    // 認証チェック: ログイン済みユーザーのみ削除可能
+    checkAuth(ctx)
+    validateRequired(args.org_id, 'org_id')
+
+    // 対象予約が存在することを確認
+    const reservation = await ctx.db.get(args.reservation_id)
+    if (!reservation) {
       throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
         severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'reservation.updateStatus',
-        message: 'この予約はすでにキャンセルされています',
-        code: 'BAD_REQUEST',
-        status: 400,
+        callFunc: 'reservation.kill',
+        message: '指定された予約が存在しません',
+        code: 'NOT_FOUND',
+        status: 404,
         details: {
           ...args,
         },
       })
     }
-    // ステータス更新を実行
-    return await updateRecord(
-      ctx,
-      reservation._id,
-      {
-        status: args.status,
-      }
-    )
+
+    // 共通ヘルパーで予約と関連データを完全削除することで一貫性を保つ
+    return await deleteReservationWithDetails(ctx, args.reservation_id)
   },
 })
 
-// 予約の支払ステータスおよびStripe Checkout Session IDの更新処理
-// 支払状況を管理し、必要に応じてStripeのセッション情報も更新する。
-// 予約と関連情報の整合性を保つため共通の更新処理を利用。
-export const updateReservationPaymentStatus = mutation({
+/**
+ * リマインダー送信ステータスを更新する内部ミューテーション
+ * Cron jobから呼び出される
+ */
+export const updateReminderStatus = internalMutation({
   args: {
-    reservation_id: v.id('reservation'),
-    payment_status: reservationPaymentStatusType,
-    stripe_checkout_session_id: v.optional(v.string()),
+    reservationId: v.id('reservation'),
+    sent: v.boolean(),
+    sentAt: v.number(),
   },
   handler: async (ctx, args) => {
-    await updateRecord(
-      ctx,
-      args.reservation_id,
-      {
-        payment_status: args.payment_status,
-        stripe_checkout_session_id: args.stripe_checkout_session_id,
-      }
-    )
-  },
-});
-
-// Stripe Checkout Session IDの更新処理
-// Checkout Session作成時に呼び出し、支払ステータスをpendingに設定することで決済待ち状態を管理。
-export const updateReservationStripeCheckoutSessionId = mutation({
-  args: {
-    reservation_id: v.id('reservation'),
-    stripe_checkout_session_id: v.string(),
-  },
-  handler: async (ctx, args) => {
-    await updateRecord(
-      ctx,
-      args.reservation_id,
-      {
-        stripe_checkout_session_id: args.stripe_checkout_session_id,
-        payment_status: 'pending', // Checkout Session作成時はpendingに設定
-      }
-    )
-  },
-});
-
-// 予約キャンセル処理
-// キャンセル可能条件をチェックし、予約ステータスを更新する。
-// 顧客の場合はキャンセル期限をチェックし、スタッフの場合はスキップ可能。
-export const cancelReservation = mutation({
-  args: {
-    reservationId: v.id("reservation"),
-    cancelledBy: v.union(v.literal('customer'), v.literal('staff'), v.literal('system')),
-    cancelReason: v.optional(v.string()),
-    skipValidation: v.optional(v.boolean()), // スタッフ用：期限チェックスキップ
-  },
-  handler: async (ctx, args) => {
-    const reservation = await ctx.db.get(args.reservationId);
-    
-    if (!reservation || reservation.is_archive) {
-      throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'reservation.cancelReservation',
-        message: 'Reservation not found',
-        code: 'NOT_FOUND',
-        status: 404,
-        details: { reservationId: args.reservationId },
-      });
-    }
-    
-    // ステータスチェック
-    if (!['confirmed', 'pending'].includes(reservation.status)) {
-      throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'reservation.cancelReservation',
-        message: `Cannot cancel reservation with status: ${reservation.status}`,
-        code: 'INVALID_STATUS',
-        status: 400,
-        details: { 
-          reservationId: args.reservationId,
-          currentStatus: reservation.status 
-        },
-      });
-    }
-    
-    // キャンセル期限チェック（顧客の場合のみ）
-    if (args.cancelledBy === 'customer' && !args.skipValidation) {
-      const orgConfig = await ctx.db
-        .query("reservation_config")
-        .withIndex("by_tenant_org_archive", q => 
-          q.eq("tenant_id", reservation.tenant_id)
-           .eq("org_id", reservation.org_id)
-           .eq("is_archive", false)
-        )
-        .first();
-      
-      const cancelDeadline = reservation.start_time_unix - 
-        (orgConfig?.available_cancel_days || 1) * 24 * 60 * 60 * 1000;
-      
-      if (Date.now() > cancelDeadline) {
-        throw new ConvexError({
-          statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
-          severity: ERROR_SEVERITY.ERROR,
-          callFunc: 'reservation.cancelReservation',
-          message: 'Cancellation deadline has passed',
-          code: 'DEADLINE_PASSED',
-          status: 400,
-          details: { 
-            reservationId: args.reservationId,
-            cancelDeadline: new Date(cancelDeadline).toISOString()
-          },
-        });
-      }
-    }
-    
-    // 予約詳細を取得（在庫復元のため）
-    const details = await ctx.db
-      .query("reservation_detail")
-      .withIndex("by_reservation_archive", q =>
-        q.eq("reservation_id", args.reservationId)
-         .eq("is_archive", false)
-      )
-      .first();
-    
-    // 楽観的在庫管理: キャンセル時に在庫を復元
-    if (details?.options && details.options.length > 0) {
-      await ctx.runMutation(internal.option.stock.restoreStockForCancellation, {
-        options: details.options.map(opt => ({
-          id: opt.id,
-          quantity: opt.quantity,
-        })),
-      });
-    }
-
-    // Supabaseのポイントタスクを削除してポイントの付与しないようにする
-    // 予約に紐づくポイントタスクの削除をスケジュール
-    if (reservation.status === 'pending' || reservation.status === 'confirmed') {
-      // アクションを即座に実行するようスケジュール
-      await ctx.scheduler.runAfter(0, internal.reservation.action.deletePointTaskForReservation, {
-        tenant_id: reservation.tenant_id,
-        org_id: reservation.org_id,
-        reservation_id: args.reservationId,
-      });
-    }
-    
-    // ステータス更新（キャンセル情報はreservation_detailのみに保存）
     await ctx.db.patch(args.reservationId, {
-      status: 'cancelled',
+      reminder_sent: args.sent,
+      reminder_sent_at: args.sentAt,
       updated_at: Date.now(),
     });
-    
-    // 予約詳細も更新
-    if (details) {
-      await ctx.db.patch(details._id, {
-        cancellation_info: {
-          cancelled_at: Date.now(),
-          cancelled_by: args.cancelledBy,
-          reason: args.cancelReason,
-        },
-        updated_at: Date.now(),
-      });
-    }
-    
-    return { 
-      success: true, 
-      reservation: await ctx.db.get(args.reservationId)
-    };
   },
 });
 
-// 複数予約の一括削除処理（内部用）
-// 指定された複数の予約IDに対して、関連詳細を含めて物理削除を行う。
-// 削除時に存在しないドキュメントがあってもエラーを無視し、処理を継続することで堅牢性を向上。
-export const deleteReservationBatch = internalMutation({
+
+export const updateStatus = mutation({
   args: {
-    ids: v.array(v.id("reservation")),
+    reservation_id: v.id('reservation'),
+    status: reservationStatusType,
   },
-  handler: async (ctx, { ids }) => {
-    // 複数の予約IDに対して並列で削除処理を実行
-    await Promise.all(ids.map(async (id) => {
-      try{
-        await deleteReservationWithDetails(ctx, id);
-      } catch (e) {
-        // 削除時にエラーが発生してもログに記録し処理は継続
-        console.error("予約の削除時にエラーが発生しました" + id, e)
-      }
-    }));
+  handler: async (ctx, args) => {
+    checkAuth(ctx)
+    await updateRecord(ctx, args.reservation_id, {
+      status: args.status,
+    })
+
+    return args.reservation_id
   },
-});
+})

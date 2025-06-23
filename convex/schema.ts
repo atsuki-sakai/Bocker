@@ -705,6 +705,9 @@ const reservation = defineTable({
   cancelled_at: v.optional(v.number()), // キャンセル日時（Unix timestamp）
   cancelled_by: v.optional(v.union(v.literal('customer'), v.literal('staff'), v.literal('system'))), // キャンセル者
   cancel_reason: v.optional(v.string()), // キャンセル理由
+  // リマインダー情報
+  reminder_sent: v.optional(v.boolean()), // リマインダー送信済みフラグ
+  reminder_sent_at: v.optional(v.number()), // リマインダー送信日時（Unix timestamp）
   ...CommonFields,　// デフォルトでこれらのフィールドを持つ _creationTime: number | undefined; is_archive?: boolean | undefined; updated_at?: number | undefined; deleted_at?: number | undefined;
 })
   // ① Convex ID による単一レコード取得（_idフィールド使用）

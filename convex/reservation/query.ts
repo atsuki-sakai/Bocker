@@ -33,6 +33,7 @@ import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { ConvexError } from 'convex/values';
 import { getReservationWithDetail, checkReservationDoubleBooking } from './reservation.helpers';
 import { api } from '@/convex/_generated/api';
+import { internalQuery } from '@/convex/_generated/server';
 
 
 /**
@@ -48,6 +49,59 @@ export const getById = query({
   },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
+  },
+});
+
+/**
+ * リマインダー送信対象の予約を取得（内部使用専用）
+ * - 指定時間範囲内に開始される確定済み予約を取得
+ * - リマインダー未送信のものだけを対象
+ * - is_archive: false のみ対象
+ */
+export const getReservationsForReminder = internalQuery({
+  args: {
+    startTimeFrom: v.number(), // 開始時刻の下限（Unix timestamp）
+    startTimeTo: v.number(),   // 開始時刻の上限（Unix timestamp）
+  },
+  handler: async (ctx, args) => {
+    // 確定済みで、指定時間範囲内に開始される予約を取得
+    const reservations = await ctx.db
+      .query('reservation')
+      .withIndex('status_start_time_archive', (q) =>
+        q.eq('status', 'confirmed')
+      )
+      .filter((q) =>
+        q.and(
+          q.eq(q.field('is_archive'), false),
+          q.gte(q.field('start_time_unix'), args.startTimeFrom),
+          q.lte(q.field('start_time_unix'), args.startTimeTo),
+          // リマインダー未送信のものだけを対象
+          q.or(
+            q.eq(q.field('reminder_sent'), false),
+            q.eq(q.field('reminder_sent'), undefined)
+          )
+        )
+      )
+      .collect();
+    
+    // 詳細情報を付加して返却
+    const reservationsWithDetails = await Promise.all(
+      reservations.map(async (reservation) => {
+        const detail = await ctx.db
+          .query('reservation_detail')
+          .withIndex('by_reservation_archive', (q) =>
+            q.eq('reservation_id', reservation._id).eq('is_archive', false)
+          )
+          .first();
+        return {
+          ...reservation,
+          menus: detail?.menus || [],
+          total_price: detail?.total_price || 0,
+        };
+      })
+    );
+    
+    return reservationsWithDetails;
   },
 });
 
