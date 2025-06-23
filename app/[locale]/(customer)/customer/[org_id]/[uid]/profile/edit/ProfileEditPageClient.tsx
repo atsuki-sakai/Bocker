@@ -95,7 +95,7 @@ export function ProfileEditPageClient({
     try {
       const customerRepo = new CustomerRepository()
 
-      // 顧客情報の更新
+      // 顧客情報の更新（既存のLINE情報を保持）
       await customerRepo.updateCustomerWithDetailsAndPoints(
         customerUid,
         tenantId,
@@ -105,6 +105,8 @@ export function ProfileEditPageClient({
           last_name: data.lastName || null,
           email: data.email || null,
           phone: data.phone || null,
+          line_id: initialData.customer.line_id, // 既存のLINE IDを保持
+          line_user_name: initialData.customer.line_user_name, // 既存のLINEユーザー名を保持
         },
         {
           email: data.email || null,

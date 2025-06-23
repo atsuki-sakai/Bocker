@@ -198,11 +198,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <div className="bg-background rounded-lg p-4">
               <p className="text-sm text-muted-foreground">最終来店日</p>
               <p className="text-lg font-bold text-primary">
+                {/* 秒単位のUnixタイムスタンプを1000倍してミリ秒に変換してDate関数に渡す */}
                 {customer.last_reservation_date_unix
-                  ? format(new Date(customer.last_reservation_date_unix), 'yyyy/MM/dd', {
+                  ? format(new Date(customer.last_reservation_date_unix * 1000), 'yyyy/MM/dd', {
                       locale: ja,
                     })
-                  : '未来店'}
+                  : '未設定'}
               </p>
             </div>
           </div>

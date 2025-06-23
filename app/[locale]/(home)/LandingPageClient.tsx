@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation'
 import Image from 'next/image'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
+import { PLAN_MONTHLY_PRICES } from '@/lib/constants'
 import {
   Card,
   CardContent,
@@ -722,7 +723,9 @@ export function LandingPageClient({
                     {subscriptionTranslations.litePlanDescription}
                   </CardDescription>
                   <div className="mt-4">
-                    <span className="text-4xl font-bold">¥6,000</span>
+                    <span className="text-4xl font-bold">
+                      ¥{PLAN_MONTHLY_PRICES.LITE.toLocaleString()}
+                    </span>
                     <span className="text-muted-foreground">
                       {subscriptionTranslations.perMonth}
                     </span>
@@ -760,7 +763,9 @@ export function LandingPageClient({
                     {subscriptionTranslations.proPlanDescription}
                   </CardDescription>
                   <div className="mt-4">
-                    <span className="text-4xl font-bold">¥9,980</span>
+                    <span className="text-4xl font-bold">
+                      ¥{PLAN_MONTHLY_PRICES.PRO.toLocaleString()}
+                    </span>
                     <span className="text-muted-foreground">
                       {subscriptionTranslations.perMonth}
                     </span>

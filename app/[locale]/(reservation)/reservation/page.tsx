@@ -14,8 +14,6 @@ import { Loader2, ExternalLink } from 'lucide-react'
 export default function ReserveRedirectPage() {
   const {
     liff,
-    isLoggedIn: liffIsLoggedIn,
-    profile: liffProfile,
     isLoading: liffIsLoading,
     isError: liffIsError,
     errorMessage: liffErrorMessage,
@@ -25,9 +23,13 @@ export default function ReserveRedirectPage() {
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [hasProcessed, setHasProcessed] = useState(false)
 
   // タイムアウト用のRef（setTimeoutのIDを保持）
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // リトライ回数管理用のRef
+  const retryCountRef = useRef(0)
+  const MAX_RETRY_COUNT = 3
 
   // 現在の言語設定を取得
   const locale =
@@ -35,6 +37,12 @@ export default function ReserveRedirectPage() {
 
   useEffect(() => {
     async function handleLiffLogin() {
+      // 既に処理済みの場合は早期リターン
+      if (hasProcessed) {
+        console.log('[ReserveRedirectPage] Already processed, skipping...')
+        return
+      }
+
       // LIFF初期化中はまだ処理しない
       if (liffIsLoading) {
         console.log('[ReserveRedirectPage] LIFF is still loading. Waiting...')
@@ -46,6 +54,7 @@ export default function ReserveRedirectPage() {
         console.error(`[ReserveRedirectPage] LIFF initialization error: ${liffErrorMessage}`)
         setErrorMessage(`LINE連携でエラーが発生しました: ${liffErrorMessage || '不明なエラー'}`)
         setIsLoading(false)
+        setHasProcessed(true)
         return
       }
 
@@ -123,6 +132,15 @@ export default function ReserveRedirectPage() {
       if (stateId) {
         // セキュアなstate検証APIを呼び出し
         try {
+          // リトライ回数チェック
+          if (retryCountRef.current >= MAX_RETRY_COUNT) {
+            console.error('[ReserveRedirectPage] Max retry count exceeded')
+            setErrorMessage('認証の再試行回数が上限に達しました。最初からやり直してください。')
+            setIsLoading(false)
+            setHasProcessed(true)
+            return
+          }
+
           const stateResponse = await fetch(`/api/auth/line-state?stateId=${stateId}`, {
             method: 'GET',
             credentials: 'include',
@@ -131,6 +149,7 @@ export default function ReserveRedirectPage() {
           if (!stateResponse.ok) {
             const error = await stateResponse.json()
             console.error('[ReserveRedirectPage] State validation failed:', error)
+            retryCountRef.current++
 
             // state IDが一致しない場合、検証をスキップして再試行
             console.log('[ReserveRedirectPage] Retrying with skipValidation=true')
@@ -195,6 +214,7 @@ export default function ReserveRedirectPage() {
                   'セッション情報の検証に失敗しました。セキュリティのため、最初からやり直してください。'
                 )
                 setIsLoading(false)
+                setHasProcessed(true)
                 return
               }
             }
@@ -202,6 +222,7 @@ export default function ReserveRedirectPage() {
             console.error('[ReserveRedirectPage] Fallback also failed:', fallbackError)
             setErrorMessage('セッション情報の取得に失敗しました。最初からやり直してください。')
             setIsLoading(false)
+            setHasProcessed(true)
             return
           }
         }
@@ -231,6 +252,7 @@ export default function ReserveRedirectPage() {
           console.error('[ReserveRedirectPage] Failed to get data from cookie:', e)
           setErrorMessage('セッション情報が見つかりません。最初からやり直してください。')
           setIsLoading(false)
+          setHasProcessed(true)
           return
         }
       }
@@ -241,6 +263,7 @@ export default function ReserveRedirectPage() {
         )
         setErrorMessage('サロン情報が見つかりません。予約フローを最初からやり直してください')
         setIsLoading(false)
+        setHasProcessed(true)
         return
       }
 
@@ -260,6 +283,7 @@ export default function ReserveRedirectPage() {
           console.error('[ReserveRedirectPage] Error getting ID token:', e)
           setErrorMessage('LINE認証情報の取得に失敗しました')
           setIsLoading(false)
+          setHasProcessed(true)
           return
         }
 
@@ -270,6 +294,7 @@ export default function ReserveRedirectPage() {
           setErrorMessage('LINE情報の取得に失敗しました。ログインし直してください')
           if (liff) liff.logout()
           setIsLoading(false)
+          setHasProcessed(true)
           toast.error('認証に失敗しました。ログインし直してください')
           router.push(`/${locale}/reservation/${orgIdFromSession}`)
           return
@@ -294,18 +319,34 @@ export default function ReserveRedirectPage() {
             console.log('[ReserveRedirectPage] Redirecting to:', computedRedirectUrl)
             // stateは使い捨てなので、削除処理は不要（サーバー側で削除済み）
             toast.success('認証に成功しました。予約ページへ移動します')
+            setHasProcessed(true)
             router.push(computedRedirectUrl)
           } else {
             console.error('[ReserveRedirectPage] API call failed:', data)
-            setErrorMessage(
-              `認証サーバーとの通信に失敗しました: ${data.message || data.error || '詳細不明'}`
-            )
+            // トークン期限切れの場合は特別な処理
+            if (data.details?.error_description?.includes('IdToken expired')) {
+              console.log('[ReserveRedirectPage] IdToken expired, forcing re-login')
+              setErrorMessage('認証の有効期限が切れました。再度ログインしてください。')
+              // LIFFログアウトして再ログイン
+              if (liff && liff.isLoggedIn()) {
+                liff.logout()
+              }
+              setHasProcessed(true)
+              setTimeout(() => {
+                router.push(`/${locale}/reservation/${orgIdFromSession}`)
+              }, 2000)
+            } else {
+              setErrorMessage(
+                `認証サーバーとの通信に失敗しました: ${data.message || data.error || '詳細不明'}`
+              )
+            }
             setIsLoading(false)
           }
         } catch (error) {
           console.error('[ReserveRedirectPage] Error calling /api/line/verify-token:', error)
           showErrorToast(error)
           setIsLoading(false)
+          setHasProcessed(true)
         }
       } else if (liff && !liffIsLoading) {
         console.log('[ReserveRedirectPage] LIFF is not logged in. Initiating LIFF login.')
@@ -315,6 +356,7 @@ export default function ReserveRedirectPage() {
           )
           setErrorMessage('予約セッション情報が不足しています。最初からやり直してください')
           setIsLoading(false)
+          setHasProcessed(true)
           return
         }
         console.log(
@@ -331,6 +373,7 @@ export default function ReserveRedirectPage() {
             `LINE連携ログインに失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`
           )
           setIsLoading(false)
+          setHasProcessed(true)
         }
       } else {
         console.log(
@@ -342,14 +385,13 @@ export default function ReserveRedirectPage() {
     handleLiffLogin()
   }, [
     liff,
-    liffIsLoggedIn,
-    liffProfile,
     liffIsLoading,
     liffIsError,
     liffErrorMessage,
+    hasProcessed,
+    locale,
     router,
     showErrorToast,
-    locale,
   ])
 
   // 8秒以上ロードが続いた場合に強制ログアウトし予約トップへリダイレクトする処理

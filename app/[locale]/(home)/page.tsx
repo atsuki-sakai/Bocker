@@ -172,8 +172,8 @@ export default async function Home({
     perMonth: subscriptionT('perMonth'),
     startNow: subscriptionT('planAction.startNow'),
     features: {
-      lite: Array.from({ length: 11 }, (_, i) => subscriptionT(`features.lite.${i + 1}`)),
-      pro: Array.from({ length: 4 }, (_, i) => subscriptionT(`features.pro.${i + 1}`)),
+      lite: Array.from({ length: 8 }, (_, i) => subscriptionT(`features.lite.${i + 1}`)),
+      pro: Array.from({ length: 3 }, (_, i) => subscriptionT(`features.pro.${i + 1}`)),
     },
   }
 
