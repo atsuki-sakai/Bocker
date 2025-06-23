@@ -9,6 +9,8 @@
 
 ## システム構成
 
+- 本番URL: https://bocker.jp
+- **MCPツール名: supabase:dev
 - **プロジェクト名**: Bocker
 - **プロジェクトID**: fxpdfqrnaifxokumgrht
 - **リージョン**: ap-northeast-1
@@ -16,11 +18,15 @@
 - **Convexとの連携**: 一部のテーブルでConvex IDを保持
 
 # 開発環境
+- **開発URL: https://bocker-project.vercel.app
+- **MCPツール名: supabase:prod
 - **プロジェクト名**: DEV_Bocker
 - **プロジェクトID**: kafcgxiddgxbuimeitrm
 - **リージョン**: ap-northeast-1
 - **PostgreSQLバージョン**: 15.8.1.094
 - **Convexとの連携**: 一部のテーブルでConvex IDを保持
+
+*重要* Supabaseの本番環境と開発環境は完全に同じ設定する必要があります。もし変更がある場合は必ず本番と開発それぞれのMCPツールを利用して設定を確認して同期する必要があります。RPC関数などDBのスキーマ以外にも完全に全て同じにします。
 
 ## ID設計ルール
 

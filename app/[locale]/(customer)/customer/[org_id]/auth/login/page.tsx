@@ -238,14 +238,6 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
   const watchedEmail = watch('email')
 
   const handleLineLogin = async () => {
-    console.log('[handleLineLogin] Starting LINE login')
-    console.log('[handleLineLogin] liff object:', liff)
-    console.log('[handleLineLogin] liff.isInClient():', liff?.isInClient())
-    console.log('[handleLineLogin] liffIsLoading:', liffIsLoading)
-    console.log('[handleLineLogin] Current URL:', window.location.href)
-    console.log('[handleLineLogin] tenantId:', tenantId)
-    console.log('[handleLineLogin] orgId:', orgId)
-
     // LIFFが読み込み中の場合は待機
     if (liffIsLoading) {
       console.log('[handleLineLogin] LIFF is still loading, please wait...')
@@ -284,12 +276,14 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
         const { stateId } = await response.json()
         console.log('[handleLineLogin] Received stateId:', stateId)
 
-        // 顧客ログイン用のコールバックURLを設定
+        // LIFFエンドポイントが /reservation なので、共通認証コールバックページを使用
         const callbackUrl = new URL(
-          `/${locale}/customer/${orgId}/auth/login`,
+          `/${locale}/reservation/auth/callback`,
           window.location.origin
         )
-
+        
+        // 認証後のリダイレクトタイプを指定
+        callbackUrl.searchParams.set('redirect_type', 'customer')
         callbackUrl.searchParams.set('state', stateId)
         if (tenantId) callbackUrl.searchParams.set('tid', tenantId)
         if (orgId) callbackUrl.searchParams.set('oid', orgId)

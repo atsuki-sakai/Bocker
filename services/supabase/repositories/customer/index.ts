@@ -1,3 +1,4 @@
 export * from "./CustomerRepository";
 export * from "./CustomerDetailRepository";
 export * from "./CustomerPointsRepository";
+export * from "./CachedCustomerRepository";

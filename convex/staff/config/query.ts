@@ -10,9 +10,10 @@ export const findByStaffId = query({
     org_id: v.id('organization'),
     staff_id: v.id('staff'),
     include_archive: v.optional(v.boolean()),
+    skip_check: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
+    await checkAuth(ctx, args.skip_check);
     validateRequired(args.staff_id, 'staff_id');
     return await ctx.db
       .query('staff_config')

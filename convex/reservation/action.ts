@@ -41,7 +41,7 @@ export const deletePointTaskForReservation = internalAction({
       
       if (pointTask && pointTask.status === 'pending') {
         // タスクがpending状態の場合のみ削除
-        await pointTaskQueueRepo.delete('id', pointTask.id);
+        await pointTaskQueueRepo.deleteRecord('id', pointTask.id);
         console.log(`ポイントタスクを削除しました: ${pointTask.id} (予約ID: ${args.reservation_id})`);
         return { deleted: true, taskId: pointTask.id };
       }

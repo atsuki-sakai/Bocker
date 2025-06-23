@@ -250,7 +250,7 @@ export function useTimelineData({
     // スケジュールは後で個別に取得するため、ここでは空配列
     return activeStaffs.map(staff => ({
       staff,
-      reservations: reservationsByStaff[staff._id] || [],
+      reservations: reservationsByStaff[staff._id]|| [],
       schedules: [], // 個別取得するため空配列
     }))
   }, [staffList?.results, reservations?.results])

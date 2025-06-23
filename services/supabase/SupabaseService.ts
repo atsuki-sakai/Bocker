@@ -35,7 +35,22 @@ export function createSupabaseAdminClient(): SupabaseClient {
   if (!supabaseUrl) { // supabaseUrlもここでチェック（通常は上でチェックされるが念のため）
     throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL for admin client.');
   }
-  return createClient(supabaseUrl, serviceRoleKey);
+  // 接続プーリングとパフォーマンス最適化の設定
+  return createClient(supabaseUrl, serviceRoleKey, {
+    db: {
+      schema: 'public'
+    },
+    auth: {
+      persistSession: false,       // サーバーサイドではセッション永続化不要
+      autoRefreshToken: false,     // トークン自動更新無効化（サーバーサイドでは不要）
+      detectSessionInUrl: false    // URL からのセッション検出無効化
+    },
+    global: {
+      headers: {
+        'x-connection-pool': 'true'  // 接続プーリング有効化のヒント
+      }
+    }
+  });
 }
 
 /* リトライヘルパー ------------------------------------------------ */
@@ -95,9 +110,10 @@ interface UpsertOptions<K extends TableName> {
 /* サービスクラス ------------------------------------------------- */
 class SupabaseBaseService {
   private client: SupabaseClient
-  private defaultRetryOptions = { retries: 3, delay: 1000 }
+  private readOnlyRetryOptions = { retries: 3, delay: 1000 }
+  private writeRetryOptions = { retries: 3, delay: 1000 }
 
-  constructor(private supabaseInstance: SupabaseClient) {
+  constructor(supabaseInstance: SupabaseClient) {
     this.client = supabaseInstance;
   }
 
@@ -147,7 +163,7 @@ class SupabaseBaseService {
       }
       console.log(`[SupabaseService] ${operationName} success. Count: ${total}, Returned: ${data?.length ?? 0}`)
       return { data: (data ?? []) as unknown as RowType<K>[], count: total }
-    }, { ...this.defaultRetryOptions, operationName });
+    }, { ...this.readOnlyRetryOptions, operationName });
   }
 
   /**
@@ -186,7 +202,7 @@ class SupabaseBaseService {
       }
       console.log(`[SupabaseService] ${operationName} success. Returned: ${data?.length ?? 0}, Count: ${count}`);
       return { data: (data ?? []) as T[], error, count };
-    }, { ...this.defaultRetryOptions, operationName });
+    }, { ...this.readOnlyRetryOptions, operationName });
   }
 
   /** バルク UPSERT */
@@ -222,7 +238,7 @@ class SupabaseBaseService {
       }
       console.log(`[SupabaseService] ${operationName} success. Returned: ${data?.length ?? 0}`)
       return (data ?? []) as unknown as RowType<K>[]
-    }, { ...this.defaultRetryOptions, operationName });
+    }, { ...this.writeRetryOptions, operationName });
   }
 
   /** UPDATE */
@@ -261,7 +277,7 @@ class SupabaseBaseService {
       }
       console.log(`[SupabaseService] ${operationName} success. Returned: ${data?.length ?? 0}`)
       return (data ?? []) as unknown as RowType<K>[]
-    }, { ...this.defaultRetryOptions, operationName });
+    }, { ...this.writeRetryOptions, operationName });
   }
 
   /** _id 指定 DELETE */
@@ -291,7 +307,7 @@ class SupabaseBaseService {
         })
       }
       console.log(`[SupabaseService] ${operationName} success.`)
-    }, { ...this.defaultRetryOptions, operationName});
+    }, { ...this.writeRetryOptions, operationName});
   }
   
   /**
@@ -434,7 +450,7 @@ return retryOperation(async () => {
 
   console.log(`[SupabaseService] ${operationName} success. Count: ${count}, Returned: ${data?.length ?? 0}`)
   return { data: (data ?? []) as unknown as RowType<T>[], count }
-}, { ...this.defaultRetryOptions, operationName })
+}, { ...this.readOnlyRetryOptions, operationName })
 }
   
 }

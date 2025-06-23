@@ -1,5 +1,6 @@
 import { supabaseClientService, RowType, InsertType, UpdateType, TableName, SelectCols } from '@/services/supabase/SupabaseService';
 import { addCreationCommonFields, addUpdateCommonFields } from '@/services/supabase/utils/helper';
+import { measurePerformance } from '@/services/supabase/utils/performance';
 
 /**
  * リポジトリの基本操作オプション
@@ -187,7 +188,7 @@ export class BaseRepository<K extends TableName> {
    * @returns Promise<void>
    * @throws Supabaseエラーが発生した場合
    */
-  async delete(key: keyof RowType<K> & string, value: RowType<K>[typeof key]): Promise<void> {
+  async deleteRecord(key: keyof RowType<K> & string, value: RowType<K>[typeof key]): Promise<void> {
     await this.supabaseServiceInstance.delete(this.tableName, key, value);
   }
 

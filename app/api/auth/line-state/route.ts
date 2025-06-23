@@ -9,9 +9,9 @@ import { getEnv } from '@/lib/env-config'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { tenantId, orgId } = body
+    const { tenantId, orgId, isCustomerLogin } = body
 
-    console.log('[API /api/auth/line-state POST] Received request:', { tenantId, orgId })
+    console.log('[API /api/auth/line-state POST] Received request:', { tenantId, orgId, isCustomerLogin })
 
     if (!tenantId || !orgId) {
       console.error('[API /api/auth/line-state POST] Missing required fields')
@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     const stateData = JSON.stringify({
       tenantId,
       orgId,
+      isCustomerLogin: Boolean(isCustomerLogin), // フラグを保存
       timestamp: Date.now(),
       stateId
     })
@@ -97,6 +98,7 @@ export async function GET(request: NextRequest) {
         tenantId: stateData.tenantId,
         orgId: stateData.orgId,
         stateId: stateData.stateId,
+        isCustomerLogin: stateData.isCustomerLogin,
         timestamp: stateData.timestamp
       })
       
@@ -132,11 +134,12 @@ export async function GET(request: NextRequest) {
         cookieStore.delete(LINE_STATE_SESSION_KEY)
       }
 
-      // tenantIdとorgIdを返す
+      // tenantId、orgId、isCustomerLoginフラグを返す
       return NextResponse.json(
         {
           tenantId: stateData.tenantId,
           orgId: stateData.orgId,
+          isCustomerLogin: stateData.isCustomerLogin,
           originalStateId: stateData.stateId
         },
         { status: 200 }

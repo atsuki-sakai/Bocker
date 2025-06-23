@@ -148,8 +148,8 @@ export function useIntegratedReservations({
   
   const reservationRepo = useMemo(() => new ReservationRepository(), []);
   
-  // Convexからリアルタイムデータを取得（confirmedとpendingのみ）
-  const shouldFetchFromConvex = !status || status === 'confirmed' || status === 'pending' || status === 'all';
+  // Convexからリアルタイムデータを取得（confirmed, pending, cancelledを含む）
+  const shouldFetchFromConvex = !status || status === 'confirmed' || status === 'pending' || status === 'cancelled' || status === 'all';
   
   // tenantId、orgId、customerIdが揃っていることを確認
   const canFetchConvex = shouldFetchFromConvex && tenantId && orgId && customerId;
@@ -184,8 +184,8 @@ export function useIntegratedReservations({
       })
       .filter((item) => {
         const res = item.reservation;
-        // 未来の予約のみ（completedとcancelledは除外）
-        return res.status === 'confirmed' || res.status === 'pending';
+        // キャンセル済み予約も含める（Supabaseに移行される前のキャンセル予約表示のため）
+        return res.status === 'confirmed' || res.status === 'pending' || res.status === 'cancelled';
       })
       .map((item) => {
         const res = item.reservation;
@@ -230,7 +230,7 @@ export function useIntegratedReservations({
     }
     
     // Convexが扱うステータスの場合はSupabaseから取得しない
-    if (status === 'confirmed' || status === 'pending') {
+    if (status === 'confirmed' || status === 'pending' || status === 'cancelled') {
       console.log('[useIntegratedReservations] Status is handled by Convex, skipping Supabase');
       setSupabaseLoading(false);
       return;
@@ -326,11 +326,11 @@ export function useIntegratedReservations({
     // CompletedとCancelledの場合はSupabaseのみ、それ以外は両方から取得
     let allReservations: IntegratedReservation[] = [];
     
-    if (status === 'completed' || status === 'cancelled') {
-      // Supabaseのみ
+    if (status === 'completed') {
+      // Supabaseのみ（完了済みは履歴データ）
       allReservations = [...supabaseReservations];
-    } else if (status === 'confirmed' || status === 'pending') {
-      // Convexのみ
+    } else if (status === 'confirmed' || status === 'pending' || status === 'cancelled') {
+      // Convexのみ（現在アクティブなデータ）
       allReservations = [...convexReservations];
     } else {
       // 両方から取得（allまたは未指定）
@@ -380,12 +380,12 @@ export function useIntegratedReservations({
   
   // 全体のローディング状態
   const isLoading = useMemo(() => {
-    // completedまたはcancelledの場合はSupabaseのみチェック
-    if (status === 'completed' || status === 'cancelled') {
+    // completedの場合はSupabaseのみチェック
+    if (status === 'completed') {
       return supabaseLoading;
     }
-    // confirmedまたはpendingの場合はConvexのみチェック
-    if (status === 'confirmed' || status === 'pending') {
+    // confirmed, pending, cancelledの場合はConvexのみチェック
+    if (status === 'confirmed' || status === 'pending' || status === 'cancelled') {
       return convexStatus === 'LoadingFirstPage';
     }
     // allまたは未指定の場合は両方チェック
@@ -394,12 +394,12 @@ export function useIntegratedReservations({
   
   // さらに読み込めるか
   const hasMore = useMemo(() => {
-    // completedまたはcancelledの場合はSupabaseのみチェック
-    if (status === 'completed' || status === 'cancelled') {
+    // completedの場合はSupabaseのみチェック
+    if (status === 'completed') {
       return supabaseHasMore;
     }
-    // confirmedまたはpendingの場合はConvexのみチェック
-    if (status === 'confirmed' || status === 'pending') {
+    // confirmed, pending, cancelledの場合はConvexのみチェック
+    if (status === 'confirmed' || status === 'pending' || status === 'cancelled') {
       return convexStatus === 'CanLoadMore';
     }
     // allまたは未指定の場合は両方チェック

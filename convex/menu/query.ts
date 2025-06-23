@@ -22,7 +22,6 @@ export const getDisplayByIds = query({
     option_ids: v.array(v.id('option')),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
     // Promise.allを使用して並列に取得
     const menus = await Promise.all(
       args.menu_ids.map(async (menu_id) => {

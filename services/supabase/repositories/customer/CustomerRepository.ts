@@ -743,6 +743,108 @@ export class CustomerRepository extends BaseRepository<'customer'> {
   }
 
   /**
+   * 高速顧客検索（RPC版）
+   * PostgreSQL側で最適化された検索処理を実行し、JSONBで結果を返す
+   * 
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param searchText - 検索テキスト
+   * @param page - ページ番号（1始まり）
+   * @param pageSize - ページサイズ
+   * @returns 検索結果と総件数
+   */
+  async searchCustomersOptimized(
+    tenantId: string,
+    orgId: string,
+    searchText: string,
+    page: number = 1,
+    pageSize: number = 50
+  ): Promise<{
+    customers: Array<{
+      uid: string;
+      email: string | null;
+      first_name: string | null;
+      last_name: string | null;
+      phone: string | null;
+      line_user_name: string | null;
+      total_reservation_count: number | null;
+      last_reservation_date_unix: number | null;
+    }>;
+    totalCount: number;
+    hasMore: boolean;
+  }> {
+    console.log(`[CustomerRepository] searchCustomersOptimized: START`, {
+      tenantId,
+      orgId,
+      searchText,
+      page,
+      pageSize
+    });
+
+    try {
+      const { data, error } = await this.supabaseServiceInstance.rpc<{
+        customers: any; // JSONB型
+        total_count: number;
+        has_more: boolean;
+      }>('search_customers_optimized', {
+        p_tenant_id: tenantId,
+        p_org_id: orgId,
+        p_search_text: searchText,
+        p_page: page,
+        p_page_size: pageSize
+      });
+
+      if (error) {
+        console.error('[CustomerRepository] searchCustomersOptimized: RPC error', error);
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.searchCustomersOptimized',
+          message: `高速顧客検索に失敗しました: ${error.message}`,
+          error: new Error(error.message),
+          severity: 'high',
+          details: { tenantId, orgId, searchText, page, pageSize }
+        });
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          customers: [],
+          totalCount: 0,
+          hasMore: false
+        };
+      }
+
+      const result = data[0];
+      console.log(`[CustomerRepository] searchCustomersOptimized: Success`, {
+        customersCount: result.customers?.length || 0,
+        totalCount: result.total_count,
+        hasMore: result.has_more
+      });
+
+      return {
+        customers: result.customers || [],
+        totalCount: result.total_count || 0,
+        hasMore: result.has_more || false
+      };
+    } catch (error) {
+      console.error('[CustomerRepository] searchCustomersOptimized: Error', error);
+      if (error instanceof Error && (error as any).name === 'SupabaseError') {
+        throw error;
+      }
+      
+      throwSupabaseError({
+        callFunc: 'CustomerRepository.searchCustomersOptimized',
+        message: `高速顧客検索に失敗しました: ${(error as Error).message}`,
+        error: error as Error,
+        severity: 'high',
+        details: { tenantId, orgId, searchText, page, pageSize }
+      });
+    }
+    
+    // 到達不可能なコードだが、TypeScriptの型チェックのために追加
+    throw new Error('Unexpected error in searchCustomersOptimized');
+  }
+
+  /**
    * ポイント残高再計算
    * 取引履歴から正しい残高を再計算し、不整合を修正します
    * 
