@@ -4,10 +4,12 @@ import { internalAction } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { PointTaskQueueRepository } from '@/services/supabase/repositories/point';
 import { CustomerRepository } from '@/services/supabase/repositories/customer';
-import { SupabaseService } from '@/services/supabase/SupabaseService';
+import { RowType, SupabaseService } from '@/services/supabase/SupabaseService';
 import { createClient } from '@supabase/supabase-js';
 import { getEnv } from '@/lib/env-config'
 import { api, internal } from '@/convex/_generated/api';
+import { Doc } from '@/convex/_generated/dataModel';
+import { ReservationMenu, ReservationOption } from '@/convex/types';
 
 /**
  * 予約IDに紐づくポイントタスクを削除する
@@ -69,14 +71,14 @@ export const sendHourlyReminders = internalAction({
       console.log(`対象時間帯: ${new Date(threeHoursLater).toISOString()} - ${new Date(fourHoursLater).toISOString()}`);
       
       // 3-4時間後に開始される、確定済みでリマインダー未送信の予約を取得
-      const reservations = await ctx.runQuery(internal.reservation.query.getReservationsForReminder, {
+      const reminderData = await ctx.runQuery(internal.reservation.query.getReservationsForReminder, {
         startTimeFrom: threeHoursLater,
         startTimeTo: fourHoursLater,
       });
       
-      console.log(`対象予約数: ${reservations.length}`);
+      console.log(`対象予約数: ${reminderData.length}`);
       
-      if (reservations.length === 0) {
+      if (reminderData.length === 0) {
         return { processed: 0, sent: 0, errors: [] };
       }
       
@@ -94,15 +96,15 @@ export const sendHourlyReminders = internalAction({
       
       // 並列処理で通知送信（最大10件ずつ）
       const batchSize = 10;
-      for (let i = 0; i < reservations.length; i += batchSize) {
-        const batch = reservations.slice(i, i + batchSize);
-        const promises = batch.map(async (reservation) => {
+      for (let i = 0; i < reminderData.length; i += batchSize) {
+        const batch = reminderData.slice(i, i + batchSize);
+        const promises = batch.map(async (reminder) => {
           try {
             // 顧客情報を取得
             const { customer } = await customerRepo.getCompleteCustomerData(
-              reservation.tenant_id,
-              reservation.org_id,
-              reservation.customer_id!
+              reminder.reservation.tenant_id,
+              reminder.reservation.org_id,
+              reminder.reservation.customer_id!
             );
             
             if (!customer) {
@@ -112,30 +114,30 @@ export const sendHourlyReminders = internalAction({
             // 通知送信処理（既存のAPIを使用）
             if (customer.line_id) {
               // LINE通知
-              await sendLineReminder(reservation, customer);
+              await sendLineReminder(reminder.org_name, reminder.reservation, reminder.menus, reminder.options, reminder.extra_charge, reminder.coupon_discount, reminder.use_points, reminder.total_price, customer);
             } else if (customer.email) {
               // メール通知
-              await sendEmailReminder(reservation, customer);
+              await sendEmailReminder(reminder.org_name, reminder.reservation, reminder.menus, reminder.options, reminder.extra_charge, reminder.coupon_discount, reminder.use_points, reminder.total_price, customer);
             } else {
               throw new Error('通知先（LINE IDまたはメール）が設定されていません');
             }
             
             // リマインダー送信フラグを更新
             await ctx.runMutation(internal.reservation.mutation.updateReminderStatus, {
-              reservationId: reservation._id,
+              reservationId: reminder.reservation._id,
               sent: true,
               sentAt: now,
             });
             
             sent++;
-            console.log(`リマインダー送信成功: 予約ID ${reservation._id}`);
+            console.log(`リマインダー送信成功: 予約ID ${reminder.reservation._id}`);
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             errors.push({
-              reservationId: reservation._id,
+              reservationId: reminder.reservation._id,
               error: errorMessage,
             });
-            console.error(`リマインダー送信失敗: 予約ID ${reservation._id}`, error);
+            console.error(`リマインダー送信失敗: 予約ID ${reminder.reservation._id}`, error);
           }
         });
         
@@ -145,7 +147,7 @@ export const sendHourlyReminders = internalAction({
       console.log(`リマインダー送信処理完了: 送信成功 ${sent}件, エラー ${errors.length}件`);
       
       return {
-        processed: reservations.length,
+        processed: reminderData.length,
         sent,
         errors,
       };
@@ -157,8 +159,9 @@ export const sendHourlyReminders = internalAction({
 });
 
 // LINE通知送信（リマインダー専用APIを使用）
-async function sendLineReminder(reservation: any, customer: any) {
-  const baseUrl = getEnv('NODE_ENV') === 'production' ? getEnv('NEXT_PUBLIC_DEPLOY_URL') : getEnv('NEXT_PUBLIC_DEVELOP_URL')
+async function sendLineReminder(orgName: string, reservation: Doc<"reservation">, menus: ReservationMenu[], options: ReservationOption[], extra_charge: number, coupon_discount: number, use_points: number, total_price: number, customer: RowType<'customer'>) {
+  // Convex環境では process.env.CONVEX_SITE_URL が利用可能
+  const baseUrl = process.env.CONVEX_SITE_URL || 'http://localhost:3000'
   const response = await fetch(`${baseUrl}/api/line/reminder`, {
     method: 'POST',
     headers: {
@@ -175,8 +178,13 @@ async function sendLineReminder(reservation: any, customer: any) {
         staff_name: reservation.staff_name,
         start_time_unix: reservation.start_time_unix,
         end_time_unix: reservation.end_time_unix,
-        menus: reservation.menus || [],
-        total_price: reservation.total_price || 0,
+        menus: menus,
+        options: options,
+        extra_charge: extra_charge,
+        coupon_discount: coupon_discount,
+        use_points: use_points,
+        total_price: total_price,
+        org_name: orgName
       },
     }),
   });
@@ -188,8 +196,9 @@ async function sendLineReminder(reservation: any, customer: any) {
 }
 
 // メール通知送信（リマインダー専用APIを使用）
-async function sendEmailReminder(reservation: any, customer: any) {
-  const baseUrl = getEnv('NODE_ENV') === 'production' ? getEnv('NEXT_PUBLIC_DEPLOY_URL') : getEnv('NEXT_PUBLIC_DEVELOP_URL')
+async function sendEmailReminder(orgName: string, reservation: Doc<"reservation">, menus: ReservationMenu[], options: ReservationOption[], extra_charge: number, coupon_discount: number, use_points: number, total_price: number, customer: RowType<'customer'>) {
+  // Convex環境では process.env.CONVEX_SITE_URL が利用可能
+  const baseUrl = process.env.CONVEX_SITE_URL || 'http://localhost:3000'
   const response = await fetch(`${baseUrl}/api/resend/reminder`, {
     method: 'POST',
     headers: {
@@ -209,9 +218,17 @@ async function sendEmailReminder(reservation: any, customer: any) {
         staff_name: reservation.staff_name,
         start_time_unix: reservation.start_time_unix,
         end_time_unix: reservation.end_time_unix,
-        menus: reservation.menus || [],
-        total_price: reservation.total_price || 0,
+        menus: menus,
+        options: options,
+        extra_charge: extra_charge,
+        coupon_discount: coupon_discount,
+        use_points: use_points,
+        total_price: total_price,
+        org_name: orgName
       },
+      organizationData: {
+        name: orgName,
+      }
     }),
   });
   

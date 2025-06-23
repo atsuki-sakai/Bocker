@@ -20,7 +20,11 @@ interface ReservationReminderEmailProps {
   startTime: string
   endTime: string
   menus: Array<{ name: string; duration_min?: number }>
+  options?: Array<{ name: string; quantity: number }>
   staffName: string
+  extraCharge?: number
+  couponDiscount?: number
+  usePoints?: number
   totalPrice: number
   reservationId: string
   orgAddress?: string
@@ -34,7 +38,11 @@ const ReservationReminderEmail: React.FC<ReservationReminderEmailProps> = ({
   startTime,
   endTime,
   menus,
+  options,
   staffName,
+  extraCharge,
+  couponDiscount,
+  usePoints,
   totalPrice,
   reservationId,
   orgAddress,
@@ -57,9 +65,10 @@ const ReservationReminderEmail: React.FC<ReservationReminderEmailProps> = ({
           {/* 本文 */}
           <Section style={content}>
             <Text style={greeting}>{customerName}様</Text>
-            
+
             <Text style={message}>
-              本日のご予約時間が近づいています。<br />
+              本日のご予約時間が近づいています。
+              <br />
               ご来店を心よりお待ちしております。
             </Text>
 
@@ -68,12 +77,15 @@ const ReservationReminderEmail: React.FC<ReservationReminderEmailProps> = ({
               <Heading as="h2" style={sectionTitle}>
                 予約内容
               </Heading>
-              
+
               <Row style={detailRow}>
                 <Column style={detailLabel}>日時</Column>
                 <Column style={detailValue}>
-                  {reservationDate}<br />
-                  <strong>{startTime} 〜 {endTime}</strong>
+                  {reservationDate}
+                  <br />
+                  <strong>
+                    {startTime} 〜 {endTime}
+                  </strong>
                 </Column>
               </Row>
 
@@ -94,8 +106,46 @@ const ReservationReminderEmail: React.FC<ReservationReminderEmailProps> = ({
                 <Column style={detailValue}>{staffName}</Column>
               </Row>
 
+              {options && options.length > 0 && (
+                <Row style={detailRow}>
+                  <Column style={detailLabel}>オプション</Column>
+                  <Column style={detailValue}>
+                    {options.map((opt, index) => (
+                      <span key={index}>
+                        {opt.name}({opt.quantity}){index < options.length - 1 && <br />}
+                      </span>
+                    ))}
+                  </Column>
+                </Row>
+              )}
+
+              {extraCharge && extraCharge > 0 && (
+                <Row style={detailRow}>
+                  <Column style={detailLabel}>指名料</Column>
+                  <Column style={detailValue}>¥{extraCharge.toLocaleString()}</Column>
+                </Row>
+              )}
+
+              {couponDiscount && couponDiscount > 0 && (
+                <Row style={detailRow}>
+                  <Column style={detailLabel}>クーポン割引</Column>
+                  <Column style={detailValue} color="#FF6B6B">
+                    -¥{couponDiscount.toLocaleString()}
+                  </Column>
+                </Row>
+              )}
+
+              {usePoints && usePoints > 0 && (
+                <Row style={detailRow}>
+                  <Column style={detailLabel}>ポイント使用</Column>
+                  <Column style={detailValue} color="#FF6B6B">
+                    -{usePoints}pt
+                  </Column>
+                </Row>
+              )}
+
               <Row style={detailRow}>
-                <Column style={detailLabel}>料金</Column>
+                <Column style={detailLabel}>合計</Column>
                 <Column style={detailValue}>
                   <strong>¥{totalPrice.toLocaleString()}</strong>
                 </Column>
@@ -113,16 +163,8 @@ const ReservationReminderEmail: React.FC<ReservationReminderEmailProps> = ({
                 <Heading as="h3" style={storeSectionTitle}>
                   📍 ご来店先
                 </Heading>
-                {orgAddress && (
-                  <Text style={storeInfo}>
-                    住所: {orgAddress}
-                  </Text>
-                )}
-                {orgPhone && (
-                  <Text style={storeInfo}>
-                    TEL: {orgPhone}
-                  </Text>
-                )}
+                {orgAddress && <Text style={storeInfo}>住所: {orgAddress}</Text>}
+                {orgPhone && <Text style={storeInfo}>TEL: {orgPhone}</Text>}
               </Section>
             )}
 
@@ -132,7 +174,8 @@ const ReservationReminderEmail: React.FC<ReservationReminderEmailProps> = ({
                 ⚠️ ご来店時のお願い
               </Heading>
               <Text style={noticeText}>
-                ・予約時間の5〜10分前にはご来店ください<br />
+                ・予約時間の5〜10分前にはご来店ください
+                <br />
                 ・体調がすぐれない場合は、事前にご連絡ください
               </Text>
             </Section>
@@ -141,7 +184,8 @@ const ReservationReminderEmail: React.FC<ReservationReminderEmailProps> = ({
 
             {/* フッター */}
             <Text style={footer}>
-              ご不明な点がございましたら、お電話にてお問い合わせください。<br />
+              ご不明な点がございましたら、お電話にてお問い合わせください。
+              <br />
               本メールは送信専用です。返信はできませんのでご了承ください。
             </Text>
           </Section>

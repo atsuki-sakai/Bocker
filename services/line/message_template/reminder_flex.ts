@@ -1,7 +1,8 @@
 import type { Message } from '@line/bot-sdk'
 import { Doc } from '@/convex/_generated/dataModel'
-import { format } from 'date-fns'
+import { format, differenceInMinutes } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { ReservationMenu, ReservationOption } from '@/convex/types'
 
 interface ReminderData {
   id: string
@@ -9,8 +10,13 @@ interface ReminderData {
   staffName: string
   startTimeUnix: number
   endTimeUnix: number
-  menus: Array<{ name: string; duration_min?: number }>
+  menus: ReservationMenu[]
+  options: ReservationOption[]
+  extraCharge: number
+  couponDiscount: number
+  usePoints: number
   totalPrice: number
+  orgName: string
 }
 
 interface ReminderFlexMessageParams {
@@ -33,12 +39,10 @@ export const createReminderFlexMessage = ({
   const endTimeStr = format(endDate, 'HH:mm')
   
   // 施術時間の計算
-  const totalDuration = reservationData.menus.reduce((total, menu) => 
-    total + (menu.duration_min || 0), 0
-  )
+  const totalMinutes = differenceInMinutes(endDate, startDate)
   
-  const hours = Math.floor(totalDuration / 60)
-  const minutes = totalDuration % 60
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
   const durationStr = hours > 0 
     ? `${hours}時間${minutes > 0 ? `${minutes}分` : ''}` 
     : `${minutes}分`
@@ -199,14 +203,103 @@ export const createReminderFlexMessage = ({
                     },
                   ],
                 },
-                // 料金
+                // オプション（ある場合のみ表示）
+                ...(reservationData.options && reservationData.options.length > 0 ? [{
+                  type: 'box' as const,
+                  layout: 'horizontal' as const,
+                  contents: [
+                    {
+                      type: 'text' as const,
+                      text: 'オプション',
+                      size: 'sm' as const,
+                      color: '#8C8C8C',
+                      weight: 'bold' as const,
+                      flex: 2,
+                    },
+                    {
+                      type: 'text' as const,
+                      text: reservationData.options.map(opt => `${opt.name}(${opt.quantity})`).join(', '),
+                      size: 'sm' as const,
+                      color: '#000000',
+                      flex: 5,
+                      wrap: true,
+                    },
+                  ],
+                }] : []),
+                // 指名料（ある場合のみ表示）
+                ...(reservationData.extraCharge > 0 ? [{
+                  type: 'box' as const,
+                  layout: 'horizontal' as const,
+                  contents: [
+                    {
+                      type: 'text' as const,
+                      text: '指名料',
+                      size: 'sm' as const,
+                      color: '#8C8C8C',
+                      weight: 'bold' as const,
+                      flex: 2,
+                    },
+                    {
+                      type: 'text' as const,
+                      text: `¥${reservationData.extraCharge.toLocaleString()}`,
+                      size: 'sm' as const,
+                      color: '#000000',
+                      flex: 5,
+                    },
+                  ],
+                }] : []),
+                // クーポン割引（ある場合のみ表示）
+                ...(reservationData.couponDiscount > 0 ? [{
+                  type: 'box' as const,
+                  layout: 'horizontal' as const,
+                  contents: [
+                    {
+                      type: 'text' as const,
+                      text: 'クーポン',
+                      size: 'sm' as const,
+                      color: '#8C8C8C',
+                      weight: 'bold' as const,
+                      flex: 2,
+                    },
+                    {
+                      type: 'text' as const,
+                      text: `-¥${reservationData.couponDiscount.toLocaleString()}`,
+                      size: 'sm' as const,
+                      color: '#FF6B6B',
+                      flex: 5,
+                    },
+                  ],
+                }] : []),
+                // ポイント使用（ある場合のみ表示）
+                ...(reservationData.usePoints > 0 ? [{
+                  type: 'box' as const,
+                  layout: 'horizontal' as const,
+                  contents: [
+                    {
+                      type: 'text' as const,
+                      text: 'ポイント',
+                      size: 'sm' as const,
+                      color: '#8C8C8C',
+                      weight: 'bold' as const,
+                      flex: 2,
+                    },
+                    {
+                      type: 'text' as const,
+                      text: `-${reservationData.usePoints}pt`,
+                      size: 'sm' as const,
+                      color: '#FF6B6B',
+                      flex: 5,
+                    },
+                  ],
+                }] : []),
+                // 合計料金
                 {
                   type: 'box',
                   layout: 'horizontal',
                   contents: [
                     {
                       type: 'text',
-                      text: '料金',
+                      text: '合計',
                       size: 'sm',
                       color: '#8C8C8C',
                       weight: 'bold',

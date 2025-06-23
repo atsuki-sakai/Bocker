@@ -1,3 +1,4 @@
+import { ReservationMenu, ReservationOption } from '@/convex/types'
 import { NextResponse } from 'next/server'
 import { LineService } from '@/services/line/LineService'
 import { api } from '@/convex/_generated/api'
@@ -6,21 +7,26 @@ import { Id } from '@/convex/_generated/dataModel'
 import { createReminderFlexMessage } from '@/services/line/message_template/reminder_flex'
 
 // リクエストボディの型定義
-interface ReminderRequestBody {
-  tenant_id: string
-  org_id: string
-  line_user_id: string
-  message_type: 'reminder'
-  reservation_data: {
-    id: string
-    customer_name: string
-    staff_name: string
-    start_time_unix: number
-    end_time_unix: number
-    menus: Array<{ name: string; duration_min?: number }>
-    total_price: number
+export type ReminderRequestBody = {
+    tenant_id: string
+    org_id: string
+    line_user_id: string
+    message_type: 'reminder'
+    reservation_data: {
+      id: string
+      customer_name: string
+      staff_name: string
+      start_time_unix: number
+      end_time_unix: number
+      menus: ReservationMenu[]
+      options: ReservationOption[]
+      extra_charge: number
+      coupon_discount: number
+      use_points: number
+      total_price: number
+      org_name: string
+    }
   }
-}
 
 // バリデーション結果の型定義
 interface ValidationResult {
@@ -57,8 +63,26 @@ function validateRequestParams(body: unknown): ValidationResult {
 
   // reservation_dataの検証
   const reservationData = typedBody.reservation_data as Record<string, unknown>
-  if (!reservationData.id || !reservationData.customer_name || !reservationData.staff_name) {
+  if (!reservationData.id || !reservationData.customer_name || !reservationData.staff_name || !reservationData.org_name) {
     return { isValid: false, error: 'reservation_data is missing required fields' }
+  }
+  
+  // 時刻データの検証
+  if (typeof reservationData.start_time_unix !== 'number' || reservationData.start_time_unix <= 0) {
+    return { isValid: false, error: 'Invalid start_time_unix' }
+  }
+  if (typeof reservationData.end_time_unix !== 'number' || reservationData.end_time_unix <= 0) {
+    return { isValid: false, error: 'Invalid end_time_unix' }
+  }
+  
+  // 価格の検証
+  if (typeof reservationData.total_price !== 'number' || reservationData.total_price < 0) {
+    return { isValid: false, error: 'Invalid total_price' }
+  }
+  
+  // メニューの検証
+  if (!Array.isArray(reservationData.menus)) {
+    return { isValid: false, error: 'menus must be an array' }
   }
 
   return { isValid: true }
@@ -116,7 +140,12 @@ export async function POST(request: Request) {
         startTimeUnix: reservation_data.start_time_unix,
         endTimeUnix: reservation_data.end_time_unix,
         menus: reservation_data.menus,
-        totalPrice: reservation_data.total_price
+        options: reservation_data.options,
+        extraCharge: reservation_data.extra_charge,
+        couponDiscount: reservation_data.coupon_discount,
+        usePoints: reservation_data.use_points,
+        totalPrice: reservation_data.total_price,
+        orgName: reservation_data.org_name
       }
     })
 

@@ -19,6 +19,7 @@ import { AvailableStaff } from '@/hooks/usePriceCalculation';
 import { Doc } from '@/convex/_generated/dataModel';
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
+
 import { validateDateStrFormat, validateStringLength } from '@/convex/utils/validations';
 import { 
   convertHourToTimestamp, 
@@ -29,11 +30,11 @@ import {
 } from '@/lib/schedules';
 import { TimeRange } from '@/lib/types';
 import { validateDateStrToDate } from '@/convex/utils/validations';
-import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { ConvexError } from 'convex/values';
 import { getReservationWithDetail, checkReservationDoubleBooking } from './reservation.helpers';
 import { api } from '@/convex/_generated/api';
 import { internalQuery } from '@/convex/_generated/server';
+import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 
 
 /**
@@ -93,14 +94,32 @@ export const getReservationsForReminder = internalQuery({
             q.eq('reservation_id', reservation._id).eq('is_archive', false)
           )
           .first();
+
+        const org = await ctx.db.get(reservation.org_id)
+        if (!org) {
+          throw new ConvexError({
+            message: "Organization not found",
+            statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+            severity: ERROR_SEVERITY.ERROR,
+            code: "ORG_NOT_FOUND",
+            details: {
+              org_id: reservation.org_id,
+            },
+          })
+        }
+
         return {
-          ...reservation,
+          org_name: org?.org_name,
+          reservation: reservation,
           menus: detail?.menus || [],
+          options: detail?.options || [],
+          extra_charge: detail?.extra_charge || 0,
+          coupon_discount: detail?.coupon_discount || 0,
+          use_points: detail?.use_points || 0,
           total_price: detail?.total_price || 0,
         };
       })
     );
-    
     return reservationsWithDetails;
   },
 });

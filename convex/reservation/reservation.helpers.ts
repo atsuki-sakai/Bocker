@@ -192,6 +192,7 @@ export async function createReservationWithDetails(
     end_time_unix: args.end_time_unix,
     intended_point_use: args.intended_point_use,
     pending_expiry: args.pending_expiry,
+    reminder_sent: false, // リマインダー送信フラグの初期値
   });
 
   // 予約詳細テーブルにメニューやオプション等の詳細情報を作成

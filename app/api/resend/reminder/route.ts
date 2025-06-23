@@ -24,7 +24,12 @@ interface ReminderRequestBody {
     start_time_unix: number
     end_time_unix: number
     menus: Array<{ name: string; duration_min?: number }>
+    options?: Array<{ name: string; quantity: number }>
+    extra_charge?: number
+    coupon_discount?: number
+    use_points?: number
     total_price: number
+    org_name?: string
   }
   organizationData?: {
     name: string
@@ -41,6 +46,29 @@ export async function POST(req: NextRequest) {
     if (!to || !subject || !customerData || !reservationData) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+    
+    // メールアドレスの検証
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(to)) {
+      return NextResponse.json(
+        { error: 'Invalid email address' },
+        { status: 400 }
+      )
+    }
+    
+    // 時刻データの検証
+    if (typeof reservationData.start_time_unix !== 'number' || reservationData.start_time_unix <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid start_time_unix' },
+        { status: 400 }
+      )
+    }
+    if (typeof reservationData.end_time_unix !== 'number' || reservationData.end_time_unix <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid end_time_unix' },
         { status: 400 }
       )
     }
@@ -77,7 +105,11 @@ export async function POST(req: NextRequest) {
       startTime,
       endTime,
       menus: reservationData.menus,
+      options: reservationData.options,
       staffName: reservationData.staff_name,
+      extraCharge: reservationData.extra_charge,
+      couponDiscount: reservationData.coupon_discount,
+      usePoints: reservationData.use_points,
       totalPrice: reservationData.total_price,
       reservationId: reservationData.id,
       orgAddress: organizationData?.address,
