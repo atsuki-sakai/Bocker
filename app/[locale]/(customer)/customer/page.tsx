@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
-import { Id } from '@/convex/_generated/dataModel'
 import { useLiff } from '@/hooks/useLiff'
 import { toast } from 'sonner'
 import { Loading } from '@/components/common'
@@ -13,7 +12,7 @@ export default function CustomerRedirectPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const locale = useLocale()
-  const { liff, isLoggedIn: liffIsLoggedIn, isLoading: liffIsLoading } = useLiff()
+  const { liff, isLoading: liffIsLoading } = useLiff()
   const [isProcessingCallback, setIsProcessingCallback] = useState(false)
 
   useEffect(() => {
