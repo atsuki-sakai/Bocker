@@ -1,4 +1,4 @@
-import { BaseRepository, BaseRepositoryOptions, ListOptions } from '../BaseRepository';
+import { BaseRepository, BaseRepositoryOptions } from '../BaseRepository';
 import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 
@@ -21,7 +21,7 @@ export class CustomerDetailRepository extends BaseRepository<'customer_detail'> 
       throw new Error('[CustomerDetailRepository] customer_uid is required for upsertByCustomerUid.');
     }
     
-    let existingDetail = await this.findByCustomerUid(detailData.customer_uid, {select: ['uid']});
+    const existingDetail = await this.findByCustomerUid(detailData.customer_uid, {select: ['uid']});
     if (existingDetail && existingDetail.uid) {
         // 既存レコードがあれば更新 (共通フィールドは BaseRepository.update で自動設定)
         return this.update(existingDetail.uid, detailData as UpdateType<'customer_detail'>, options);
