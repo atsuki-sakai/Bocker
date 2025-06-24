@@ -16,7 +16,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
-import { PointTaskQueueRepository } from '@/services/supabase/repositories'
+import { PointTaskQueueRepository, CouponTransactionRepository } from '@/services/supabase/repositories'
 import { CarteRepository } from '@/services/supabase/repositories/carte/CarteRepository'
 import { CarteDetailRepository } from '@/services/supabase/repositories/carte/CarteDetailRepository'
 import { formatDateToYYYYMMDD } from '@/lib/formatDate'
@@ -55,7 +55,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useQuery } from 'convex/react'
-import { RowType } from '@/services/supabase/SupabaseService'
+import { RowType, SupabaseService } from '@/services/supabase/SupabaseService'
+import { createClient } from '@supabase/supabase-js'
+import { getEnv } from '@/lib/env-config'
 
 // 曜日をソートするための順序を定義
 const dayOrder: Record<string, number> = {
@@ -841,6 +843,32 @@ export default function CalendarPage() {
           } catch (error) {
             console.error('ポイント処理でエラーが発生しました:', error)
             // ポイント処理のエラーは予約を妨げないようにする
+          }
+        }
+
+        // クーポンを利用していれば、クーポントランザクションを作成
+        if (appliedDiscount.couponId && appliedDiscount.discount > 0 && customerData?.customer?.uid) {
+          try {
+            const supabase = createClient(
+              getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+              getEnv('SUPABASE_SERVICE_ROLE_KEY')
+            )
+            const supabaseService = new SupabaseService(supabase)
+            const couponTransactionRepo = new CouponTransactionRepository(supabaseService)
+            
+            await couponTransactionRepo.create({
+              tenant_id: sessionCustomer.tenantId,
+              org_id: organizationComplete.organization._id as Id<'organization'>,
+              coupon_id: appliedDiscount.couponId,
+              customer_id: customerData.customer.uid,
+              reservation_id: reservationId!,
+              transaction_date_unix: Date.now(),
+              discount_amount: appliedDiscount.discount,
+            })
+            console.log('クーポン利用履歴を作成しました')
+          } catch (error) {
+            console.error('クーポン利用履歴の作成でエラーが発生しました:', error)
+            // クーポン履歴のエラーは予約を妨げないようにする
           }
         }
 
