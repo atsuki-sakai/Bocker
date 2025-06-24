@@ -86,10 +86,7 @@ export default function ReservePage() {
         const { stateId } = await response.json()
         console.log('[handleLineLogin] Received stateId:', stateId)
 
-        // LIFFの仕様上、redirectUri は登録済みのベースパス（例: /reservation）である必要がある。
-        // orgId や calendar などの深いパスは liffRedirectUri にエンコードされるため、
-        // ここではベースパスに留めておき、戻り先は ReserveRedirectPage で復元する。
-
+        // 現在の実装に従ったコールバックURL設定
         const locale = window.location.pathname.split('/')[1] || 'ja'
         const callbackUrl = new URL(`/${locale}/reservation/auth/callback`, window.location.origin)
 
