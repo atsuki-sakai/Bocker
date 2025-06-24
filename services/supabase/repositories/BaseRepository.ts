@@ -1,6 +1,5 @@
 import { supabaseClientService, RowType, InsertType, UpdateType, TableName, SelectCols } from '@/services/supabase/SupabaseService';
 import { addCreationCommonFields, addUpdateCommonFields } from '@/services/supabase/utils/helper';
-import { measurePerformance } from '@/services/supabase/utils/performance';
 
 /**
  * リポジトリの基本操作オプション
