@@ -665,6 +665,7 @@
     "female": "女性",
     "gender": "性別",
     "age": "年齢",
+    "age_suffix": "歳",
     "validation": {
       "lineIdMaxLength": "LINE IDは{max}文字以内で入力してください",
       "lineUserNameMaxLength": "LINEユーザー名は{max}文字以内で入力してください",
