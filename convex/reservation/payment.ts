@@ -3,7 +3,7 @@ import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { updateRecord } from '@/convex/utils/helpers';
-import { api } from '@/convex/_generated/api';
+import { api, internal } from '@/convex/_generated/api';
 
 /**
  * 決済成功時の予約確定処理
@@ -57,6 +57,25 @@ export const confirmPayment = mutation({
         await updateRecord(ctx, detail._id, {
           use_points: reservation.intended_point_use,
         });
+      }
+    }
+
+    // クーポン使用回数のインクリメント
+    const detail = await ctx.db
+      .query('reservation_detail')
+      .withIndex('by_reservation_archive', (q) =>
+        q.eq('reservation_id', reservation_id).eq('is_archive', false)
+      )
+      .first();
+    
+    if (detail && detail.coupon_id) {
+      try {
+        await ctx.runMutation(internal.coupon.mutation.incrementUsageCount, {
+          couponId: detail.coupon_id,
+        });
+      } catch (error) {
+        // クーポン使用回数の更新に失敗しても、予約確定は成功とする
+        console.error('Failed to increment coupon usage count:', error);
       }
     }
 
