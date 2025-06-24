@@ -121,6 +121,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@next/bundle-analyzer": "^15.3.3",
+    "@next/eslint-plugin-next": "^15.3.4",
     "@types/bcryptjs": "^2.4.6",
     "@types/crypto-js": "^4.2.2",
     "@types/js-cookie": "^3.0.6",
