@@ -415,7 +415,7 @@ export default function CustomerEditForm() {
                 value={watch('birthday') ? new Date(watch('birthday')!) : undefined}
                 onChange={(date) => {
                   const dateString = date ? format(date, 'yyyy-MM-dd') : ''
-                  setValue('birthday', dateString)
+                  setValue('birthday', dateString, { shouldDirty: true })
                   console.log('誕生日が変更されました:', dateString)
                 }}
                 placeholder={t('birthdayPlaceholder')}
