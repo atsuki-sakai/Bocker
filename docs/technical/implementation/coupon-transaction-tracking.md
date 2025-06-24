@@ -31,6 +31,31 @@ graph TD
     F --> H[coupon_transaction レコード]
 ```
 
+## 実装時の注意事項
+
+### 重要なバグ修正（2025年1月）
+
+実装中に発見された致命的なバグと修正内容：
+
+1. **CouponTransactionRepositoryの無限再帰バグ**
+   ```typescript
+   // ❌ 間違った実装（無限再帰）
+   async create(data: CouponTransactionData): Promise<RowType<'coupon_transaction'>> {
+     // ...
+     return await this.create(insertData); // 自分自身を呼び出している！
+   }
+   
+   // ✅ 正しい実装
+   async create(data: CouponTransactionData): Promise<RowType<'coupon_transaction'>> {
+     // ...
+     return await super.create(insertData); // 親クラスのメソッドを呼び出す
+   }
+   ```
+
+2. **型定義の不整合**
+   - BaseRepositoryのコンストラクタが期待する型と実際に渡される型が不一致
+   - SupabaseServiceのインスタンスを正しく受け取るよう修正
+
 ## 実装詳細
 
 ### 1. データモデル
