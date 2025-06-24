@@ -100,24 +100,29 @@ export async function POST(req: NextRequest) {
     }
 
     // IDトークンをデコードして期限を確認（署名は検証しない）
-    let isExpiredOnServer = false
     try {
       const decoded = jwt.decode(idToken, { complete: true })
       const currentTime = Math.floor(Date.now() / 1000)
-      const isExpired = decoded?.payload && typeof decoded.payload === 'object' && 'exp' in decoded.payload 
-        ? decoded.payload.exp < currentTime
-        : false
       
-      isExpiredOnServer = isExpired
+      // より安全で読みやすい期限チェック
+      let isExpired = false
+      let expirationTime: number | null = null
       
+      if (decoded?.payload && typeof decoded.payload === 'object' && 'exp' in decoded.payload) {
+        const exp = decoded.payload.exp
+        if (typeof exp === 'number' && exp > 0) {
+          expirationTime = exp
+          isExpired = exp < currentTime
+        }
+      }
+  
       console.log('[API /api/line/verify-token] ID Token decoded:', {
         header: decoded?.header,
         payload: decoded?.payload,
         currentTime,
+        expirationTime,
         isExpired,
-        expiredBy: isExpired && decoded?.payload && typeof decoded.payload === 'object' && 'exp' in decoded.payload 
-          ? currentTime - decoded.payload.exp 
-          : 0
+        expiredBy: isExpired && expirationTime ? currentTime - expirationTime : 0
       })
       
       // サーバー側でも期限切れを検出した場合の特別処理
