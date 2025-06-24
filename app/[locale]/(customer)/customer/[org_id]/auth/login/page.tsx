@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Link } from '@/i18n/navigation'
-import { useLiff } from '@/hooks/useLiff'
 import { ChevronRight, Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { z } from 'zod'
@@ -22,6 +21,9 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import Image from 'next/image'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { ZodTextField } from '@/components/common'
+import { OptimizedLineLoginButton } from '@/components/auth/OptimizedLineLoginButton'
+import { useLineAuthHandler } from '@/hooks/useLineAuthHandler'
+import { prefetchCustomerData } from '@/lib/auth/sessionCache'
 
 const emailLoginSchema = z.object({
   email: z
@@ -44,15 +46,40 @@ interface CustomerLoginPageProps {
 export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
   const router = useRouter()
   const locale = useLocale()
-  const { liff, isLoggedIn: liffIsLoggedIn, isLoading: liffIsLoading } = useLiff()
   const { showErrorToast } = useErrorHandler()
   const [orgId, setOrgId] = useState<Id<'organization'> | null>(null)
   const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [isFirstLogin, setIsFirstLogin] = useState(false)
-  const [isProcessingLineCallback, setIsProcessingLineCallback] = useState(false)
-  const [lineCallbackError, setLineCallbackError] = useState<string | null>(null)
   const customerRepository = useMemo(() => new CustomerRepository(), [])
+
+  const {
+    handleLineAuth,
+    isProcessing: isProcessingLineCallback,
+    error: lineCallbackError,
+  } = useLineAuthHandler({
+    onSuccess: async () => {
+      // セッションからcustomerUidを取得
+      const sessionResponse = await fetch('/api/auth/session', {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (sessionResponse.ok) {
+        const sessionData = await sessionResponse.json()
+        if (sessionData.session && sessionData.session.customerUid) {
+          // 顧客データをプリフェッチ
+          if (tenantId && orgId) {
+            prefetchCustomerData(sessionData.session.customerUid, tenantId, orgId).catch(
+              console.warn
+            )
+          }
+
+          router.push(`/${locale}/customer/${orgId}/${sessionData.session.customerUid}/profile`)
+        }
+      }
+    },
+  })
 
   // Handle async params
   useEffect(() => {
@@ -61,161 +88,15 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
     })
   }, [params])
 
-  // Handle LINE callback
+  // Handle LINE callback（最適化版）
   useEffect(() => {
-    async function handleLineCallback() {
-      if (liffIsLoading || !liff || !orgId || !tenantId) {
-        return
-      }
+    const urlParams = new URLSearchParams(window.location.search)
+    const hasLineCallback = urlParams.get('liffRedirectUri') || urlParams.get('state')
 
-      const urlParams = new URLSearchParams(window.location.search)
-      const liffRedirectUri = urlParams.get('liffRedirectUri')
-      const hasLineCallback = liffRedirectUri || urlParams.get('state')
-
-      if (!hasLineCallback || isProcessingLineCallback) {
-        return
-      }
-
-      setIsProcessingLineCallback(true)
-      setLineCallbackError(null)
-
-      // Extract state ID from URL parameters
-      let stateId: string | null = null
-      let extractedTenantId: string | null = null
-      let extractedOrgId: string | null = null
-
-      if (liffRedirectUri) {
-        try {
-          const decodedUri = decodeURIComponent(liffRedirectUri)
-          const redirectUrl = new URL(decodedUri)
-          const liffState = redirectUrl.searchParams.get('liff.state')
-
-          if (liffState) {
-            const innerSearchParams = new URLSearchParams(liffState.split('?')[1])
-            stateId = innerSearchParams.get('state')
-            extractedTenantId = innerSearchParams.get('tid')
-            extractedOrgId = innerSearchParams.get('oid')
-          }
-        } catch (e) {
-          console.error('[CustomerLogin] Failed to parse liffRedirectUri:', e)
-        }
-      }
-
-      // Fallback to direct state parameter
-      if (!stateId) {
-        stateId = urlParams.get('state')
-      }
-
-      // Validate state
-      if (stateId) {
-        try {
-          const stateResponse = await fetch(`/api/auth/line-state?stateId=${stateId}`, {
-            method: 'GET',
-            credentials: 'include',
-          })
-
-          if (!stateResponse.ok) {
-            throw new Error('State validation failed')
-          }
-
-          const stateData = await stateResponse.json()
-          if (!stateData.isCustomerLogin) {
-            setLineCallbackError('不正なログインフローです')
-            setIsProcessingLineCallback(false)
-            return
-          }
-        } catch (e) {
-          console.error('[CustomerLogin] State validation failed:', e)
-          setLineCallbackError('認証情報の検証に失敗しました')
-          setIsProcessingLineCallback(false)
-          return
-        }
-      }
-
-      // Get LINE ID token
-      if (liff.isLoggedIn()) {
-        let idToken: string | null = null
-        try {
-          idToken = liff.getIDToken()
-        } catch (e) {
-          console.error('[CustomerLogin] Error getting ID token:', e)
-          setLineCallbackError('LINE認証情報の取得に失敗しました')
-          setIsProcessingLineCallback(false)
-          return
-        }
-
-        if (!idToken) {
-          setLineCallbackError('LINE認証情報の取得に失敗しました')
-          setIsProcessingLineCallback(false)
-          return
-        }
-
-        // Verify token and create session
-        try {
-          const response = await fetch('/api/line/verify-token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              idToken,
-              tenantId: tenantId || extractedTenantId,
-              orgId: orgId || extractedOrgId,
-              isCustomerLogin: true,
-            }),
-          })
-
-          const data = await response.json()
-
-          if (response.ok && data.success) {
-            toast.success('LINEログインに成功しました')
-
-            // Get customer UID from session
-            const sessionResponse = await fetch('/api/auth/session', {
-              method: 'GET',
-              credentials: 'include',
-            })
-
-            if (sessionResponse.ok) {
-              const sessionData = await sessionResponse.json()
-              if (sessionData.session && sessionData.session.customerUid) {
-                router.push(
-                  `/${locale}/customer/${orgId}/${sessionData.session.customerUid}/profile`
-                )
-              }
-            }
-          } else {
-            setLineCallbackError(data.message || 'LINE認証に失敗しました')
-            setIsProcessingLineCallback(false)
-          }
-        } catch (error) {
-          console.error('[CustomerLogin] Error verifying token:', error)
-          setLineCallbackError('認証処理中にエラーが発生しました')
-          setIsProcessingLineCallback(false)
-        }
-      } else if (!liffIsLoading) {
-        // Not logged in to LINE, initiate login
-        try {
-          liff.login({
-            redirectUri: window.location.href,
-          })
-        } catch (e) {
-          console.error('[CustomerLogin] LIFF login failed:', e)
-          setLineCallbackError('LINEログインに失敗しました')
-          setIsProcessingLineCallback(false)
-        }
-      }
+    if (hasLineCallback && orgId && tenantId && !isProcessingLineCallback) {
+      handleLineAuth(tenantId, orgId, true)
     }
-
-    handleLineCallback()
-  }, [
-    liff,
-    liffIsLoggedIn,
-    liffIsLoading,
-    router,
-    locale,
-    orgId,
-    tenantId,
-    isProcessingLineCallback,
-  ])
+  }, [orgId, tenantId, handleLineAuth, isProcessingLineCallback])
 
   const organization = useQuery(
     api.organization.config.query.findByTenantAndOrg,
@@ -236,75 +117,6 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
 
   // 現在のメール入力値を監視
   const watchedEmail = watch('email')
-
-  const handleLineLogin = async () => {
-    // LIFFが読み込み中の場合は待機
-    if (liffIsLoading) {
-      console.log('[handleLineLogin] LIFF is still loading, please wait...')
-      toast.info('LINEログイン機能を読み込み中です。もう一度お試しください。')
-      return
-    }
-
-    // LIFFオブジェクトが利用できない場合のチェック
-    if (!liff) {
-      console.error('[handleLineLogin] LIFF is not available')
-      toast.error('LINEログイン機能が利用できません。ページを再読み込みしてください。')
-      return
-    }
-
-    if (!liff.isInClient()) {
-      try {
-        // セキュアなstateをサーバーで生成
-        console.log('[handleLineLogin] Creating LINE state with:', { tenantId, orgId })
-        const response = await fetch('/api/auth/line-state', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            tenantId,
-            orgId,
-            isCustomerLogin: true, // 顧客ログインフラグを追加
-          }),
-        })
-
-        if (!response.ok) {
-          const errorData = await response.text()
-          console.error('[handleLineLogin] Failed to create LINE state:', errorData)
-          throw new Error('Failed to create LINE state')
-        }
-
-        const { stateId } = await response.json()
-        console.log('[handleLineLogin] Received stateId:', stateId)
-
-        // LIFFエンドポイントが /reservation なので、共通認証コールバックページを使用
-        const callbackUrl = new URL(
-          `/${locale}/reservation/auth/callback`,
-          window.location.origin
-        )
-        
-        // 認証後のリダイレクトタイプを指定
-        callbackUrl.searchParams.set('redirect_type', 'customer')
-        callbackUrl.searchParams.set('state', stateId)
-        if (tenantId) callbackUrl.searchParams.set('tid', tenantId)
-        if (orgId) callbackUrl.searchParams.set('oid', orgId)
-
-        console.log('[handleLineLogin] callbackUrl:', callbackUrl)
-        console.log(
-          '[handleLineLogin] Redirecting to LINE with callback URL:',
-          callbackUrl.toString()
-        )
-
-        liff?.login({
-          redirectUri: callbackUrl.toString(),
-        })
-      } catch (error) {
-        console.error('[handleLineLogin] Failed to initiate LINE login:', error)
-        toast.error('LINEログインの準備に失敗しました')
-      }
-    } else {
-      console.log('[handleLineLogin] Already in LINE client, skipping login')
-    }
-  }
 
   const onSubmit = async (data: z.infer<typeof emailLoginSchema>) => {
     setIsFirstLogin(true)
@@ -412,13 +224,11 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
           <CardContent className="flex flex-col items-center justify-center space-y-4 py-6">
             <p className="text-center text-destructive font-semibold">エラーが発生しました</p>
             <p className="text-center text-sm text-muted-foreground max-w-xs">
-              {lineCallbackError}
+              {lineCallbackError.message}
             </p>
             <Button
               variant="outline"
               onClick={() => {
-                setLineCallbackError(null)
-                setIsProcessingLineCallback(false)
                 // Clear URL parameters
                 const newUrl = window.location.pathname
                 window.history.replaceState({}, '', newUrl)
@@ -433,7 +243,7 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
   }
 
   return (
-    <div className="w-full mx-auto bg-background min-h-screen flex items-center justify-center">
+    <div className="w-full mx-auto min-h-screen flex items-center justify-center">
       <motion.div
         className="flex items-center justify-center px-4 pb-8"
         initial={{ opacity: 0, y: 20 }}
@@ -453,7 +263,7 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
                     className="object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-palette-1 to-palette-2 opacity-30"></div>
-                  <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-background">
+                  <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-background text-center">
                     <h1 className="text-xl font-bold text-foreground">
                       {organization.org.org_name}
                     </h1>
@@ -474,7 +284,6 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
           </CardHeader>
 
           <CardContent className="mt-4">
-            <h2 className="text-lg font-semibold text-center mb-4">顧客ログイン</h2>
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <ZodTextField
                 icon={<Mail className="w-5 h-5" />}
@@ -530,7 +339,7 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
             <p className="text-xs text-center text-muted-foreground px-4 mt-4">
               初めての方は
               <Link
-                href={`/${locale}/reservation/${orgId}`}
+                href={`/reservation/${orgId}`}
                 className="underline text-link-foreground cursor-pointer mx-1"
               >
                 こちら
@@ -560,25 +369,32 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
           <Separator className="mb-5 w-1/3 mx-auto" />
           <CardFooter className="flex justify-center pb-6">
             <div className="w-full">
-              <Button
-                className="px-8 py-5 w-full"
-                onClick={handleLineLogin}
-                disabled={liffIsLoading || !orgId || !tenantId}
-              >
-                <div className="flex items-center justify-center space-x-2">
-                  {liffIsLoading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      <span className="font-bold text-base">読み込み中...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-bold text-base">LINEでログイン</span>
-                      <ChevronRight className="h-5 w-5" />
-                    </>
-                  )}
-                </div>
-              </Button>
+              <OptimizedLineLoginButton
+                tenantId={tenantId}
+                orgId={orgId}
+                isCustomerLogin={true}
+                onSuccess={async () => {
+                  // セッションからcustomerUidを取得
+                  const sessionResponse = await fetch('/api/auth/session', {
+                    method: 'GET',
+                    credentials: 'include',
+                  })
+
+                  if (sessionResponse.ok) {
+                    const sessionData = await sessionResponse.json()
+                    if (sessionData.session && sessionData.session.customerUid) {
+                      // 顧客データをプリフェッチ
+                      prefetchCustomerData(sessionData.session.customerUid, tenantId, orgId).catch(
+                        console.warn
+                      )
+
+                      router.push(
+                        `/${locale}/customer/${orgId}/${sessionData.session.customerUid}/profile`
+                      )
+                    }
+                  }
+                }}
+              />
             </div>
           </CardFooter>
         </Card>

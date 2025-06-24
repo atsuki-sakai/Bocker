@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Id } from '@/convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { useParams, useRouter } from 'next/navigation'
-import { useLiff } from '@/hooks/useLiff'
 import { ChevronRight, Loader2, Eye, EyeOff } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { z } from 'zod'
@@ -22,6 +21,8 @@ import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { ZodTextField } from '@/components/common'
+import { OptimizedLineLoginButton } from '@/components/auth/OptimizedLineLoginButton'
+import { batchAuthProcessing } from '@/lib/auth/batchProcessor'
 
 const emailLoginSchema = z.object({
   email: z
@@ -37,7 +38,6 @@ const emailLoginSchema = z.object({
 
 export default function ReservePage() {
   const params = useParams()
-  const { liff } = useLiff()
   const router = useRouter()
   const { showErrorToast } = useErrorHandler()
   const orgId = params.id as Id<'organization'>
@@ -55,65 +55,6 @@ export default function ReservePage() {
       : 'skip'
   )
 
-  const handleLineLogin = async () => {
-    console.log('[handleLineLogin] Starting LINE login')
-    console.log('[handleLineLogin] liff object:', liff)
-    console.log('[handleLineLogin] liff.isInClient():', liff?.isInClient())
-    console.log('[handleLineLogin] Current URL:', window.location.href)
-    console.log('[handleLineLogin] tenantId:', tenantId)
-    console.log('[handleLineLogin] orgId:', orgId)
-
-    if (!liff?.isInClient()) {
-      try {
-        // セキュアなstateをサーバーで生成
-        console.log('[handleLineLogin] Creating LINE state with:', { tenantId, orgId })
-        const response = await fetch('/api/auth/line-state', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            tenantId,
-            orgId,
-          }),
-        })
-
-        if (!response.ok) {
-          const errorData = await response.text()
-          console.error('[handleLineLogin] Failed to create LINE state:', errorData)
-          throw new Error('Failed to create LINE state')
-        }
-
-        const { stateId } = await response.json()
-        console.log('[handleLineLogin] Received stateId:', stateId)
-
-        // 現在の実装に従ったコールバックURL設定
-        const locale = window.location.pathname.split('/')[1] || 'ja'
-        const callbackUrl = new URL(`/${locale}/reservation/auth/callback`, window.location.origin)
-
-        // 認証後のリダイレクトタイプを指定
-        callbackUrl.searchParams.set('redirect_type', 'reservation')
-        callbackUrl.searchParams.set('state', stateId)
-        if (tenantId) callbackUrl.searchParams.set('tid', tenantId)
-        callbackUrl.searchParams.set('oid', orgId)
-
-        console.log('[handleLineLogin] callbackUrl:', callbackUrl)
-        console.log(
-          '[handleLineLogin] Redirecting to LINE with callback URL:',
-          callbackUrl.toString()
-        )
-
-        liff?.login({
-          redirectUri: callbackUrl.toString(),
-        })
-      } catch (error) {
-        console.error('[handleLineLogin] Failed to initiate LINE login:', error)
-        toast.error('LINEログインの準備に失敗しました')
-      }
-    } else {
-      console.log('[handleLineLogin] Already in LINE client, skipping login')
-    }
-  }
-
   const {
     register,
     handleSubmit,
@@ -124,100 +65,107 @@ export default function ReservePage() {
   // 現在のメール入力値を監視
   const watchedEmail = watch('email')
 
-  const onSubmit = async (data: z.infer<typeof emailLoginSchema>) => {
-    setIsFirstLogin(true)
-    console.log('DATA', data)
+  const onSubmit = useCallback(
+    async (data: z.infer<typeof emailLoginSchema>) => {
+      setIsFirstLogin(true)
 
-    try {
-      // 古いセッションは自動的に管理されるため、明示的な削除は不要
+      try {
+        if (!tenantId) {
+          throw new Error('テナントIDが見つかりません')
+        }
 
-      if (!tenantId) {
-        throw new Error('テナントIDが見つかりません')
+        // バッチ処理で既存ユーザー確認とセッション作成を最適化
+        const authTasks = [
+          {
+            name: 'checkCustomer',
+            task: () =>
+              customerRepository.findByTenantAndOrgAndCustomerEmail(tenantId, orgId, data.email),
+            priority: 3,
+          },
+        ]
+
+        const results = await batchAuthProcessing(authTasks)
+        const existingCustomer = results.get('checkCustomer')
+
+        if (existingCustomer) {
+          // 既存ユーザーの場合
+          const response = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: existingCustomer.email,
+              password: data.password,
+              tenantId: tenantId,
+              orgId: orgId,
+            }),
+          })
+
+          const result = await response.json()
+
+          if (!response.ok) {
+            toast.error(result.error || 'ログインに失敗しました')
+            return
+          }
+
+          toast.success('ログインに成功しました')
+          router.push(`/reservation/${orgId}/calendar`)
+        } else {
+          // 新規登録の処理（既存のまま）
+          const registrationResponse = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orgName: organization?.org.org_name || '',
+              email: data.email,
+              password: data.password,
+              tenantId: tenantId,
+              orgId: orgId,
+              detailData: {
+                email: data.email || '',
+                gender: 'unselected',
+                birthday: null,
+                age: null,
+                notes: '',
+              },
+              initialPoints: 0,
+            }),
+          })
+
+          const registrationResult = await registrationResponse.json()
+
+          if (!registrationResponse.ok) {
+            toast.error(registrationResult.error || 'アカウント作成に失敗しました')
+            return
+          }
+
+          // セッション作成
+          const sessionResponse = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: data.email,
+              password: data.password,
+              tenantId: tenantId,
+              orgId: orgId,
+            }),
+          })
+
+          const sessionResult = await sessionResponse.json()
+
+          if (!sessionResponse.ok) {
+            toast.error(sessionResult.error || 'アカウント作成後のログインに失敗しました')
+            return
+          }
+
+          toast.success('アカウントを作成し、ログインしました')
+          router.push(`/reservation/${orgId}/calendar`)
+        }
+      } catch (error) {
+        showErrorToast(error)
       }
-      // 既存ユーザーの確認
-      const existingCustomer = await customerRepository.findByTenantAndOrgAndCustomerEmail(
-        tenantId,
-        orgId,
-        data.email
-      )
-
-      if (existingCustomer) {
-        // 既存ユーザーの場合は認証APIを使用
-        const response = await fetch('/api/auth/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: existingCustomer.email,
-            password: data.password,
-            tenantId: tenantId,
-            orgId: orgId,
-          }),
-        })
-
-        const result = await response.json()
-
-        if (!response.ok) {
-          toast.error(result.error || 'ログインに失敗しました')
-          return
-        }
-
-        toast.success('ログインに成功しました')
-        router.push(`/reservation/${orgId}/calendar`)
-      } else {
-        // 新規登録の場合、新しいAPIルートを呼び出す
-        const registrationResponse = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orgName: organization?.org.org_name || '',
-            email: data.email,
-            password: data.password, // 生パスワードを送信
-            tenantId: tenantId,
-            orgId: orgId,
-            detailData: {
-              // APIの期待する形式に合わせる
-              email: data.email || '',
-              gender: 'unselected', // 必要に応じてフォームから取得またはデフォルト値を設定
-              birthday: null,
-              age: null,
-              notes: '',
-            },
-            initialPoints: 0,
-          }),
-        })
-
-        const registrationResult = await registrationResponse.json()
-
-        if (!registrationResponse.ok) {
-          toast.error(registrationResult.error || 'アカウント作成に失敗しました')
-          return
-        }
-        // アカウント作成成功後、そのままログイン処理（セッション作成）
-        const sessionResponse = await fetch('/api/auth/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: data.email,
-            password: data.password, // ログインAPIには生パスワード
-            tenantId: tenantId,
-            orgId: orgId,
-          }),
-        })
-
-        const sessionResult = await sessionResponse.json()
-
-        if (!sessionResponse.ok) {
-          toast.error(sessionResult.error || 'アカウント作成後のログインに失敗しました')
-          return
-        }
-
-        toast.success('アカウントを作成し、ログインしました')
-        router.push(`/reservation/${orgId}/calendar`)
-      }
-    } catch (error) {
-      showErrorToast(error)
-    }
-  }
+    },
+    [tenantId, orgId, organization, customerRepository, router, showErrorToast]
+  )
 
   useEffect(() => {
     // サーバーAPI経由でセッション有無を判定
@@ -257,14 +205,14 @@ export default function ReservePage() {
   }
 
   return (
-    <div className="w-full  mx-auto bg-background min-h-screen flex items-center justify-center">
+    <div className="w-full  mx-auto min-h-screen flex items-center justify-center">
       <motion.div
-        className="flex items-center justify-center px-4 pb-8"
+        className="flex items-center justify-center px-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-full max-w-md shadow-lg border-none mt-4 bg-background overflow-hidden">
+        <Card className="w-full max-w-md shadow-lg border-none mt-4 bg-muted overflow-hidden">
           <CardHeader className="relative w-full h-[220px] mb-2 overflow-hidden">
             <div className="absolute inset-0">
               {organization.config?.images && organization.config.images.length > 0 ? (
@@ -374,12 +322,14 @@ export default function ReservePage() {
           <Separator className="mb-5 w-1/3 mx-auto" />
           <CardFooter className="flex justify-center pb-6">
             <div className="w-full">
-              <Button className="px-8 py-5 w-full" onClick={handleLineLogin}>
-                <div className="flex items-center justify-center space-x-2">
-                  <span className="font-bold text-base">LINEでログイン</span>
-                  <ChevronRight className="h-5 w-5" />
-                </div>
-              </Button>
+              <OptimizedLineLoginButton
+                tenantId={tenantId}
+                orgId={orgId}
+                isCustomerLogin={false}
+                onSuccess={() => {
+                  router.push(`/reservation/${orgId}/calendar`)
+                }}
+              />
             </div>
           </CardFooter>
           <p className="text-xs text-center text-muted-foreground mb-4 px-8">
