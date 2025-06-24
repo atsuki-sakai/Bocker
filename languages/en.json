@@ -1048,6 +1048,7 @@
     "female": "Female",
     "gender": "Gender",
     "age": "Age",
+    "age_suffix": "years old",
     "validation": {
       "lineIdMaxLength": "LINE ID must be within {max} characters",
       "lineUserNameMaxLength": "LINE username must be within {max} characters",
