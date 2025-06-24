@@ -85,6 +85,7 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
     isCustomerLogin: boolean
   ) => {
     if (isProcessing || liffIsLoading || !liff) {
+      console.log('[useLineAuthHandler] Skipping auth - not ready:', { isProcessing, liffIsLoading, hasLiff: !!liff })
       return
     }
 
@@ -92,8 +93,15 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
     setError(null)
 
     try {
+      // LIFF初期化の最終確認
+      if (!liff.isReady()) {
+        throw new Error('LIFF SDKの初期化が完了していません。ページを再読み込みしてください。')
+      }
+
       // LINEログイン状態を確認
       if (!liff.isLoggedIn()) {
+        console.log('[useLineAuthHandler] User not logged in, initiating login flow')
+        
         // セキュアなstateを生成してログイン
         const stateResponse = await fetch('/api/auth/line-state', {
           method: 'POST',
@@ -107,16 +115,22 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
         })
 
         if (!stateResponse.ok) {
-          throw new Error('認証の準備に失敗しました')
+          const errorData = await stateResponse.json().catch(() => ({}))
+          throw new Error(errorData.message || '認証の準備に失敗しました')
         }
 
         const { stateId } = await stateResponse.json()
+        console.log('[useLineAuthHandler] State created:', stateId)
         
-        // コールバックURLを構築
+        // より堅牢なコールバックURL構築
         const locale = window.location.pathname.split('/')[1] || 'ja'
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? 'https://bocker.jp' 
+          : window.location.origin
+        
         const callbackUrl = new URL(
           `/${locale}/reservation/auth/callback`,
-          window.location.origin
+          baseUrl
         )
         
         callbackUrl.searchParams.set('redirect_type', isCustomerLogin ? 'customer' : 'reservation')
@@ -124,15 +138,34 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
         callbackUrl.searchParams.set('tid', tenantId)
         callbackUrl.searchParams.set('oid', orgId)
 
-        liff.login({ redirectUri: callbackUrl.toString() })
+        console.log('[useLineAuthHandler] Redirecting to LINE login with callback:', callbackUrl.toString())
+        
+        // スマホ環境での確実なリダイレクト
+        try {
+          liff.login({ redirectUri: callbackUrl.toString() })
+        } catch (loginError) {
+          console.error('[useLineAuthHandler] LIFF login failed, trying window.location:', loginError)
+          // フォールバック：直接リダイレクト
+          const lineAuthUrl = `https://access.line.me/oauth2/v2.1/authorize?` +
+            `response_type=code&client_id=${liff.getClientId()}&` +
+            `redirect_uri=${encodeURIComponent(callbackUrl.toString())}&` +
+            `state=${stateId}&scope=profile%20openid`
+          window.location.href = lineAuthUrl
+        }
         return
       }
 
       // IDトークンを取得
+      console.log('[useLineAuthHandler] User already logged in, getting ID token')
       const idToken = liff.getIDToken()
       if (!idToken) {
-        throw new Error('LINE認証情報の取得に失敗しました')
+        console.warn('[useLineAuthHandler] ID token not available, forcing re-login')
+        // IDトークンが取得できない場合は再ログインを促す
+        liff.logout()
+        throw new Error('LINE認証情報の取得に失敗しました。再度ログインしてください。')
       }
+      
+      console.log('[useLineAuthHandler] ID token acquired, length:', idToken.length)
 
       // トークン検証（リトライ付き）
       const response = await verifyTokenWithRetry(idToken, tenantId, orgId, isCustomerLogin)
@@ -155,7 +188,17 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
       }
 
     } catch (error) {
-      console.error('[useLineAuthHandler] Error:', error)
+      console.error('[useLineAuthHandler] Error details:', {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        liffIsReady: liff?.isReady(),
+        liffIsLoggedIn: liff?.isLoggedIn(),
+        tenantId,
+        orgId,
+        isCustomerLogin
+      })
+      
       const err = error instanceof Error ? error : new Error('認証処理中にエラーが発生しました')
       setError(err)
       

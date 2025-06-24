@@ -26,9 +26,12 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
   children,
 }: OptimizedLineLoginButtonProps) {
   const [isClicked, setIsClicked] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
   const { handleLineAuth, isProcessing, isLiffLoading } = useLineAuthHandler({
     onSuccess: (data) => {
+      console.log('[OptimizedLineLoginButton] Login successful:', data)
       setIsClicked(false)
+      setRetryCount(0) // 成功時にリトライカウントをリセット
       if (onSuccess) {
         onSuccess(data)
       }
@@ -41,29 +44,69 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
   })
 
   const handleClick = useCallback(async () => {
+    console.log('[OptimizedLineLoginButton] Click initiated', {
+      isClicked,
+      isProcessing,
+      isLiffLoading,
+      tenantId,
+      orgId,
+      retryCount
+    })
+
     // 二重クリック防止
     if (isClicked || isProcessing) {
+      console.log('[OptimizedLineLoginButton] Click blocked - already processing')
       return
     }
 
     // LIFFが読み込み中の場合
     if (isLiffLoading) {
-      toast.info('LINEログイン機能を読み込み中です。もう一度お試しください。')
+      const remainingTime = Math.max(10 - retryCount * 2, 3) // 最低3秒待機
+      toast.info(`LINEログイン機能を読み込み中です。${remainingTime}秒後にもう一度お試しください。`)
+      
+      // 自動リトライ機能
+      if (retryCount < 3) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1)
+          handleClick()
+        }, remainingTime * 1000)
+      }
+      return
+    }
+
+    // テナントIDと組織IDのバリデーション
+    if (!tenantId || !orgId) {
+      toast.error('システムエラー：組織情報が不正です')
       return
     }
 
     setIsClicked(true)
 
     try {
+      console.log('[OptimizedLineLoginButton] Starting LINE auth...')
       await handleLineAuth(tenantId, orgId, isCustomerLogin)
     } catch (error) {
-      // エラーはuseLineAuthHandler内で処理される
-      console.error('[OptimizedLineLoginButton] Error:', error)
+      console.error('[OptimizedLineLoginButton] Unexpected error:', error)
+      // エラーはuseLineAuthHandler内で処理されるが、念のためフォールバック
+      toast.error('ログイン処理で予期しないエラーが発生しました')
       setIsClicked(false)
     }
-  }, [tenantId, orgId, isCustomerLogin, handleLineAuth, isClicked, isProcessing, isLiffLoading])
+  }, [tenantId, orgId, isCustomerLogin, handleLineAuth, isClicked, isProcessing, isLiffLoading, retryCount])
 
   const isDisabled = isProcessing || isLiffLoading || isClicked || !tenantId || !orgId
+  
+  // デバッグ情報を表示（開発環境のみ）
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[OptimizedLineLoginButton] Render state:', {
+      isProcessing,
+      isLiffLoading,
+      isClicked,
+      isDisabled,
+      hasOrgId: !!orgId,
+      hasTenantId: !!tenantId,
+      retryCount
+    })
+  }
 
   return (
     <Button
@@ -88,6 +131,9 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
           <>
             <span className="font-bold text-base">{children || 'LINEでログイン'}</span>
             <ChevronRight className="h-5 w-5" aria-hidden="true" />
+            {retryCount > 0 && process.env.NODE_ENV === 'development' && (
+              <span className="text-xs">({retryCount})</span>
+            )}
           </>
         )}
       </div>

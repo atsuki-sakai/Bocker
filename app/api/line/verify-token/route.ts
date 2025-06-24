@@ -30,16 +30,20 @@ interface LineVerifyResponse {
 }
 
 export async function POST(req: NextRequest) {
-  console.log('[API /api/line/verify-token] Received POST request')
+  const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  console.log(`[API /api/line/verify-token] [${requestId}] Received POST request`)
+  
   try {
     const body = await req.json()
     const { idToken, tenantId, orgId } = body
     
-    console.log('[API /api/line/verify-token] Request body:', { 
+    console.log(`[API /api/line/verify-token] [${requestId}] Request body:`, { 
       hasIdToken: !!idToken, 
       tenantId, 
       orgId,
-      idTokenLength: idToken?.length 
+      idTokenLength: idToken?.length,
+      userAgent: req.headers.get('user-agent'),
+      origin: req.headers.get('origin')
     })
 
     const organizationApiConfig = await convex.query(api.organization.api_config.query.findByTenantAndOrg, {
@@ -146,46 +150,71 @@ export async function POST(req: NextRequest) {
       console.error('[API /api/line/verify-token] Failed to decode ID token:', e)
     }
 
-    console.log('[API /api/line/verify-token] Verifying idToken with LINE server...')
-    // 1. LINEサーバーでIDトークンを検証
+    console.log(`[API /api/line/verify-token] [${requestId}] Verifying idToken with LINE server...`)
+    // 1. LINEサーバーでIDトークンを検証（タイムアウト付き）
     const params = new URLSearchParams()
     params.append('id_token', idToken)
     params.append('client_id', channelId)
 
-    const lineResponse = await fetch(LINE_VERIFY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params,
-    })
+    const lineResponse = await Promise.race([
+      fetch(LINE_VERIFY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params,
+      }),
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('LINE API timeout after 15 seconds')), 15000)
+      })
+    ]) as Response
 
-    console.log('[API /api/line/verify-token] LINE API response status:', lineResponse.status)
+    console.log(`[API /api/line/verify-token] [${requestId}] LINE API response status:`, lineResponse.status)
 
     if (!lineResponse.ok) {
-      const errorData = await lineResponse.json()
-      console.error('[API /api/line/verify-token] LINE token verification failed:', {
+      const errorData = await lineResponse.json().catch(() => ({ error: 'Failed to parse error response' }))
+      console.error(`[API /api/line/verify-token] [${requestId}] LINE token verification failed:`, {
         status: lineResponse.status,
+        statusText: lineResponse.statusText,
         error: errorData,
         channelId: channelId,
-        params: params.toString()
+        paramsLength: params.toString().length,
+        headers: Object.fromEntries(lineResponse.headers.entries())
       })
       
-      // より具体的なエラーメッセージ
+      // より具体的なエラーメッセージとスマートフォン用の対処法
       let userMessage = 'LINE認証に失敗しました'
-      if (errorData.error_description?.includes('client_id')) {
-        userMessage = 'LINE Channel IDが正しくありません。管理画面でLINEログインチャンネルのChannel IDを確認してください'
+      let hint = 'しばらく待ってから再度お試しください'
+      
+      if (errorData.error_description?.includes('client_id') || errorData.error === 'invalid_client') {
+        userMessage = 'LINEチャンネルIDの設定に問題があります'
+        hint = '管理者にLINEログインチャンネルのChannel IDの確認を依頼してください'
+      } else if (errorData.error?.includes('token') || lineResponse.status === 401) {
+        userMessage = 'LINEログインセッションの有効期限が切れています'
+        hint = 'ページを再読み込みしてから再度ログインしてください'
+      } else if (lineResponse.status >= 500) {
+        userMessage = 'LINEサーバーの一時的な問題です'
+        hint = '数分後に再度お試しください'
       }
       
       return NextResponse.json({ 
         error: userMessage,
         details: {
           ...errorData,
-          hint: 'LINEログインチャンネルのChannel ID（数字のみ）を設定する必要があります'
+          hint,
+          requestId,
+          shouldReload: errorData.error?.includes('token'),
+          isTemporary: lineResponse.status >= 500
         }
       }, { status: 401 })
     }
 
     const verifiedToken: LineVerifyResponse = await lineResponse.json()
-    console.log('[API /api/line/verify-token] LINE token verified successfully:', verifiedToken)
+    console.log(`[API /api/line/verify-token] [${requestId}] LINE token verified successfully:`, {
+      sub: verifiedToken.sub,
+      aud: verifiedToken.aud,
+      exp: verifiedToken.exp,
+      hasName: !!verifiedToken.name,
+      hasEmail: !!verifiedToken.email
+    })
 
     // 2. Convexでユーザー情報を登録/更新
     const lineUserId = verifiedToken.sub
@@ -349,17 +378,38 @@ export async function POST(req: NextRequest) {
 
     return response
   } catch (error: unknown) {
-    console.error('[API /api/line/verify-token] General error:', error)
+    console.error(`[API /api/line/verify-token] [${requestId}] General error:`, {
+      error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    })
     
-    // スタックトレースも出力
+    // スマートフォンユーザー向けのエラーメッセージ
+    let userMessage = 'システムエラーが発生しました'
+    let shouldReload = false
+    
     if (error instanceof Error) {
-      console.error('[API /api/line/verify-token] Error stack:', error.stack)
+      if (error.message.includes('timeout')) {
+        userMessage = '通信がタイムアウトしました'
+        shouldReload = true
+      } else if (error.message.includes('fetch') || error.message.includes('network')) {
+        userMessage = 'ネットワークエラーが発生しました'
+        shouldReload = true
+      } else if (error.message.includes('JSON')) {
+        userMessage = 'データの解析に失敗しました'
+      }
     }
     
     return NextResponse.json(
       {
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : String(error),
+        error: userMessage,
+        details: {
+          message: error instanceof Error ? error.message : String(error),
+          requestId,
+          shouldReload,
+          hint: shouldReload ? 'ページを再読み込みしてから再度お試しください' : 'しばらく待ってから再度お試しください'
+        },
       },
       { status: 500 }
     )
