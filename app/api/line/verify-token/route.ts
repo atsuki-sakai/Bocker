@@ -51,7 +51,9 @@ export async function POST(req: NextRequest) {
       found: !!organizationApiConfig,
       hasLiffId: !!organizationApiConfig?.liff_id,
       hasChannelId: !!organizationApiConfig?.line_channel_id,
-      channelId: organizationApiConfig?.line_channel_id
+      channelId: organizationApiConfig?.line_channel_id,
+      channelIdType: typeof organizationApiConfig?.line_channel_id,
+      fullConfig: organizationApiConfig
     })
 
     if (!idToken) {
@@ -95,6 +97,48 @@ export async function POST(req: NextRequest) {
       console.warn(
         '[API /api/line/verify-token] Using LIFF ID as fallback is deprecated. Please set line_channel_id in api_config.'
       )
+    }
+
+    // IDトークンをデコードして期限を確認（署名は検証しない）
+    let isExpiredOnServer = false
+    try {
+      const decoded = jwt.decode(idToken, { complete: true })
+      const currentTime = Math.floor(Date.now() / 1000)
+      const isExpired = decoded?.payload && typeof decoded.payload === 'object' && 'exp' in decoded.payload 
+        ? decoded.payload.exp < currentTime
+        : false
+      
+      isExpiredOnServer = isExpired
+      
+      console.log('[API /api/line/verify-token] ID Token decoded:', {
+        header: decoded?.header,
+        payload: decoded?.payload,
+        currentTime,
+        isExpired,
+        expiredBy: isExpired && decoded?.payload && typeof decoded.payload === 'object' && 'exp' in decoded.payload 
+          ? currentTime - decoded.payload.exp 
+          : 0
+      })
+      
+      // サーバー側でも期限切れを検出した場合の特別処理
+      if (isExpired) {
+        console.warn('[API /api/line/verify-token] Token is expired on server side, returning special error for re-authentication')
+        return NextResponse.json(
+          {
+            error: 'token_expired',
+            message: 'IDトークンが期限切れです。再度ログインしてください。',
+            details: {
+              error: 'token_expired',
+              error_description: 'ID token has expired on server side',
+              hint: '新しいIDトークンが必要です。ページを再読み込みしてください。',
+              shouldReload: true
+            }
+          },
+          { status: 401 }
+        )
+      }
+    } catch (e) {
+      console.error('[API /api/line/verify-token] Failed to decode ID token:', e)
     }
 
     console.log('[API /api/line/verify-token] Verifying idToken with LINE server...')
