@@ -38,7 +38,7 @@ interface TutorialStep {
 }
 
 export const Tutorial = () => {
-  const { tenantId, orgId, ready } = useTenantAndOrganization()
+  const { tenantId, orgId, ready, subscription } = useTenantAndOrganization()
   const t = useTranslations('common.tutorial')
 
   // 翻訳キーのみを保持するチュートリアル手順をメモ化して無限再レンダリングを防止
@@ -295,9 +295,10 @@ export const Tutorial = () => {
   if (isDataLoading) {
     return <Loading />
   }
-
   return (
-    <div className="container max-w-6xl mx-auto pb-8">
+    <div
+      className={`container max-w-6xl mx-auto pb-8 ${subscription && (subscription.status === 'active' || subscription.status === 'trialing') ? '' : 'bg-gray-200 blur-sm pointer-events-none select-none'}`}
+    >
       {!isAllRequiredStepsCompleted() && (
         <>
           <div className="mb-6 bg-neon-foreground p-4 rounded-lg border border-neon">
