@@ -129,6 +129,7 @@ export function ReservationDetailPageClient({
                 menus: detail.menus || undefined,
                 options: detail.options || undefined,
                 totalPrice: detail.total_price || undefined,
+                extraCharge: detail.extra_charge || undefined,
                 paymentMethod: detail.payment_method,
                 couponId: detail.coupon_id || undefined,
                 couponDiscount: detail.coupon_discount || undefined,
@@ -302,7 +303,6 @@ export function ReservationDetailPageClient({
   const totalPrice = reservationData.detail?.totalPrice || 0
   const couponDiscount = reservationData.detail?.couponDiscount || 0
   const usePoints = reservationData.detail?.usePoints || 0
-  const finalPrice = totalPrice - couponDiscount - usePoints
 
   // キャンセル可能かどうかを判定
   const checkCancellable = () => {
@@ -363,6 +363,16 @@ export function ReservationDetailPageClient({
       setIsCancelling(false)
     }
   }
+
+  const menuPrice =
+    reservationData.detail?.menus?.reduce((acc, menu) => acc + menu.price * menu.quantity, 0) || 0
+  const optionPrice =
+    reservationData.detail?.options?.reduce(
+      (acc, option) => acc + option.price * option.quantity,
+      0
+    ) || 0
+  const extraCharge = reservationData.detail?.extraCharge || 0
+  const subTotalPrice = menuPrice + optionPrice + extraCharge
 
   return (
     <div className="space-y-6">
@@ -490,9 +500,23 @@ export function ReservationDetailPageClient({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
+              <div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">メニュー</span>
+                  <span className="text-sm text-primary">¥{menuPrice.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">オプション</span>
+                  <span className="text-sm text-primary">¥{optionPrice.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">指名料</span>
+                  <span className="text-sm text-primary">¥{extraCharge.toLocaleString()}</span>
+                </div>
+              </div>
               <div className="flex justify-between">
                 <span>小計</span>
-                <span>¥{totalPrice.toLocaleString()}</span>
+                <span>¥{subTotalPrice.toLocaleString()}</span>
               </div>
 
               {couponDiscount > 0 && (
@@ -513,7 +537,7 @@ export function ReservationDetailPageClient({
 
               <div className="flex justify-between font-bold text-lg">
                 <span>合計</span>
-                <span>¥{finalPrice.toLocaleString()}</span>
+                <span>¥{totalPrice.toLocaleString()}</span>
               </div>
 
               <div className="flex items-center justify-between text-sm text-muted-foreground">

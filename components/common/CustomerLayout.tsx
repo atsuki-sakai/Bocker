@@ -38,8 +38,8 @@ export async function CustomerLayout({ children, customerUid, orgId }: CustomerL
       <header className=" shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <h1 className="text-xl font-semibold text-foreground">マイページ</h1>
+            <div className="flex flex-col md:flex-row items-center">
+              <h1 className="text-xl font-semibold text-foreground md:mr-2">マイページ</h1>
               <span className="text-sm text-muted-foreground">
                 {customer.customer?.last_name ?? '未設定'} {customer.customer?.first_name ?? ''} 様
               </span>
@@ -47,7 +47,7 @@ export async function CustomerLayout({ children, customerUid, orgId }: CustomerL
 
             <form action={logoutAction}>
               <input type="hidden" name="orgId" value={orgId} />
-              <Button variant="ghost" size="sm" type="submit">
+              <Button variant="default" size="sm" type="submit">
                 <LogOut className="h-4 w-4 mr-2" />
                 ログアウト
               </Button>

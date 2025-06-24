@@ -89,6 +89,7 @@ export type IntegratedReservation = {
     menus?: ReservationMenu[];
     options?: ReservationOption[];
     totalPrice?: number;
+    extraCharge?: number;
     paymentMethod?: string;
     couponId?: string;
     couponDiscount?: number;
@@ -185,7 +186,7 @@ export function useIntegratedReservations({
       .filter((item) => {
         const res = item.reservation;
         // キャンセル済み予約も含める（Supabaseに移行される前のキャンセル予約表示のため）
-        return res.status === 'confirmed' || res.status === 'pending' || res.status === 'cancelled';
+        return res.status === 'confirmed' || res.status === 'pending' || res.status === 'cancelled' || res.status === 'completed' || res.status === 'refunded';
       })
       .map((item) => {
         const res = item.reservation;
@@ -209,6 +210,7 @@ export function useIntegratedReservations({
             menus: detail.menus || undefined,
             options: detail.options || undefined,
             totalPrice: detail.total_price || undefined,
+            extraCharge: detail.extra_charge || undefined,
             paymentMethod: detail.payment_method,
             couponId: detail.coupon_id || undefined,
             couponDiscount: detail.coupon_discount || undefined,
@@ -328,7 +330,7 @@ export function useIntegratedReservations({
     
     if (status === 'completed') {
       // Supabaseのみ（完了済みは履歴データ）
-      allReservations = [...supabaseReservations];
+      allReservations = [...supabaseReservations,];
     } else if (status === 'confirmed' || status === 'pending' || status === 'cancelled') {
       // Convexのみ（現在アクティブなデータ）
       allReservations = [...convexReservations];
