@@ -5,10 +5,15 @@ export type Tables = Database['public']['Tables'];
 export type ReservationInsert = Tables['reservation']['Insert'];
 export type ReservationDetailInsert = Tables['reservation_detail']['Insert'];
 
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class MigrationRepository extends BaseRepository<any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private client: any;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(supabaseClient: any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super('carte' as any); // ダミーのテーブル名を渡す
     this.client = supabaseClient;
   }
@@ -28,7 +33,7 @@ export class MigrationRepository extends BaseRepository<any> {
     
     for (const chunk of chunks) {
       try {
-        const { data, error } = await this.client
+        const { error } = await this.client
           .from('reservation')
           .upsert(chunk, { 
             onConflict: '_convex_id',
@@ -61,7 +66,7 @@ export class MigrationRepository extends BaseRepository<any> {
     
     for (const chunk of chunks) {
       try {
-        const { data, error } = await this.client
+        const { error } = await this.client
           .from('reservation_detail')
           .upsert(chunk, { 
             onConflict: '_convex_id',
@@ -111,6 +116,7 @@ export class MigrationRepository extends BaseRepository<any> {
       }
       
       if (data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data.forEach((row: any) => {
           if (row._convex_id) {
             migratedIds.add(row._convex_id);
