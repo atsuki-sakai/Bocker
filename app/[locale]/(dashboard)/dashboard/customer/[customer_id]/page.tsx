@@ -264,8 +264,11 @@ function CustomerDetailPage() {
                 <Cake className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">{t('age')}:</span>
                 <span className="text-base">
-                  {completeCustomer.customerDetail?.age
-                    ? t('ageValue', { age: completeCustomer.customerDetail.age })
+                  {completeCustomer.customerDetail?.birthday
+                    ? new Date().getFullYear() -
+                      new Date(completeCustomer.customerDetail.birthday).getFullYear() +
+                      ' ' +
+                      t('age_suffix')
                     : t('notRegistered')}
                 </span>
               </div>
