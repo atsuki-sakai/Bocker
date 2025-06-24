@@ -2,7 +2,7 @@ import { CustomerRepository } from './CustomerRepository';
 import { BaseRepositoryOptions } from '../BaseRepository';
 import { RowType } from '@/services/supabase/SupabaseService';
 import { MemoryCache, createCacheKey } from '@/services/supabase/utils/cache';
-import { measurePerformance, withPerformanceMeasure } from '@/services/supabase/utils/performance';
+import { withPerformanceMeasure } from '@/services/supabase/utils/performance';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 
 /**
@@ -10,6 +10,7 @@ import { supabaseClientService } from '@/services/supabase/SupabaseService';
  * 頻繁にアクセスされる顧客データをメモリにキャッシュして高速化します
  */
 export class CachedCustomerRepository extends CustomerRepository {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private cache: MemoryCache<any>;
   
   constructor(
@@ -146,6 +147,7 @@ export class CachedCustomerRepository extends CustomerRepository {
    */
   async update(
     id: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateData: any,
     options?: BaseRepositoryOptions<'customer'>
   ): Promise<RowType<'customer'>> {
@@ -162,6 +164,7 @@ export class CachedCustomerRepository extends CustomerRepository {
     customerUid: string,
     tenantId: string,
     orgId: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateData: any
   ): Promise<RowType<'customer'>> {
     // 更新前に関連するキャッシュをクリア
