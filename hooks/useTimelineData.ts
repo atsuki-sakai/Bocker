@@ -257,7 +257,7 @@ export function useTimelineData({
 
   // 統計情報の計算（メモ化）
   const totalReservations = useMemo(() => 
-    reservations?.results?.length || 0,
+    reservations?.results?.filter(res => res.status === 'confirmed' && !res.is_archive).length || 0,
     [reservations?.results]
   )
 
