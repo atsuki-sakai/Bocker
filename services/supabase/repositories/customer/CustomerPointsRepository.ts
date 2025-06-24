@@ -1,4 +1,4 @@
-import { BaseRepository, BaseRepositoryOptions, ListOptions } from '../BaseRepository';
+import { BaseRepository, BaseRepositoryOptions } from '../BaseRepository';
 import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService  } from '@/services/supabase/SupabaseService';
 
