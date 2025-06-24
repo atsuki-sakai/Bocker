@@ -568,10 +568,10 @@ const ApiSettingsCard = () => {
                         </span>
                       </div>
                       <div>
-                        • <strong>スコープ</strong>：「profile」「openid」「email」をチェック
+                        • <strong>スコープ</strong>：「profile」「openid」をチェック
                       </div>
                       <div>
-                        • <strong>ボットリンク機能</strong>：「On (Aggressive)」を選択
+                        • <strong>友だち追加オプション</strong>：「On (Aggressive)」を選択
                       </div>
                     </div>
                   </li>
@@ -606,6 +606,27 @@ const ApiSettingsCard = () => {
                   <li>設定を保存</li>
                 </ol>
               </div>
+
+              {/* LINEログインの有効化・公式アカウントの紐付け設定 */}
+              <div className="bg-palette-1 border border-palette-1 p-3 rounded-md">
+                <p className="font-semibold text-palette-1-foreground text-base mb-2">
+                  🚀 LINEログインの有効化・公式アカウントの紐付け設定
+                </p>
+                <div className="text-sm py-3 text-link-foreground underline">
+                  <Link href="https://youtu.be/m0lKVIFZwyM" target="_blank">
+                    動画での作成方法はこちら
+                  </Link>
+                </div>
+                <ol className="list-decimal list-inside text-sm space-y-1">
+                  <li>LINEログインチャンネルの「LINEログイン設定」タブを開く</li>
+                  <li>LINEログインを開く</li>
+                  <li>開発中のクリックをして公開を選択</li>
+                  <li>LINEログインの有効化が完了</li>
+                  <li>基本設定の下部のリンクされた公式アカウントを編集で、公式アカウントを選択</li>
+                  <li>保存をクリック</li>
+                  <li>公式アカウントの紐付けが完了</li>
+                </ol>
+              </div>
             </div>
 
             {/* 設定完了チェックリスト */}
@@ -638,6 +659,7 @@ const ApiSettingsCard = () => {
                   <input type="checkbox" className="mt-1" disabled />
                   <span>チャンネル間のリンク設定済み</span>
                 </div>
+                <div></div>
               </div>
             </div>
 
@@ -647,7 +669,7 @@ const ApiSettingsCard = () => {
                 🎯 次のステップ
               </p>
               <p className="text-sm text-accent">
-                チャンネル作成が完了したら、上記の各アコーディオンを開いて、
+                チャンネル作成が完了したら、下記の各アコーディオンを開いて、
                 作成したチャンネルから必要な値（アクセストークン、シークレット、チャンネルID、LIFF
                 ID）を取得し、 このフォームに設定してください。
               </p>
