@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { Id } from '@/convex/_generated/dataModel'
-import { Gender, ActiveCustomerType } from '@/convex/types'
+import { Gender, ActiveCustomerType, convertGender } from '@/convex/types'
 import { getCustomerSession } from '@/lib/auth/customer'
 
 interface ProfilePageProps {
@@ -61,7 +61,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // 性別の表示
   const getGenderDisplay = (gender: Gender | null): string => {
     if (!gender) return '未設定'
-    return gender
+    return convertGender(gender)
   }
 
   // 顧客タイプの表示
