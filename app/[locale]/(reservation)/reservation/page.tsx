@@ -1,15 +1,22 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useLiff } from '@/hooks/useLiff'
 import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { toast } from 'sonner'
+import { batchAuthProcessing } from '@/lib/auth/batchProcessor'
 
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, ExternalLink } from 'lucide-react'
+
+interface StateData {
+  tenantId: string
+  orgId: string
+  isCustomerLogin?: boolean
+}
 
 export default function ReserveRedirectPage() {
   const {
@@ -28,12 +35,167 @@ export default function ReserveRedirectPage() {
   // タイムアウト用のRef（setTimeoutのIDを保持）
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // リトライ回数管理用のRef
-  const retryCountRef = useRef(0)
+  const abortControllerRef = useRef<AbortController | null>(null)
   const MAX_RETRY_COUNT = 3
+  const RETRY_DELAY = 1000 // 1秒
 
   // 現在の言語設定を取得
   const locale =
     typeof window !== 'undefined' ? window.location.pathname.split('/')[1] || 'ja' : 'ja'
+
+  // URLパラメータからstateデータを抽出する関数
+  const extractStateFromUrl = useCallback((): StateData | null => {
+    const urlParams = new URLSearchParams(window.location.search)
+    let stateId: string | null = null
+    let tenantId: string | null = null
+    let orgId: string | null = null
+
+    // liffRedirectUriパラメータから実際のstate IDを抽出
+    const liffRedirectUri = urlParams.get('liffRedirectUri')
+    if (liffRedirectUri) {
+      try {
+        const decodedUri = decodeURIComponent(liffRedirectUri)
+        const redirectUrl = new URL(decodedUri)
+        const liffState = redirectUrl.searchParams.get('liff.state')
+
+        if (liffState) {
+          const innerSearchParams = new URLSearchParams(liffState.split('?')[1])
+          stateId = innerSearchParams.get('state')
+          tenantId = innerSearchParams.get('tid')
+          orgId = innerSearchParams.get('oid')
+        }
+      } catch (e) {
+        console.error('[ReserveRedirectPage] Failed to parse liffRedirectUri:', e)
+      }
+    }
+
+    // フォールバック: 直接stateパラメータをチェック
+    if (!stateId) {
+      stateId = urlParams.get('state')
+    }
+
+    return {
+      tenantId: tenantId || '',
+      orgId: orgId || '',
+      isCustomerLogin: false,
+    }
+  }, [])
+
+  // state検証を行う関数（リトライ機能付き）
+  const validateStateWithRetry = useCallback(
+    async (stateId: string | null, controller: AbortController): Promise<StateData | null> => {
+      for (let attempt = 0; attempt < MAX_RETRY_COUNT; attempt++) {
+        if (attempt > 0) {
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
+        }
+
+        try {
+          const url = stateId
+            ? `/api/auth/line-state?stateId=${stateId}`
+            : '/api/auth/line-state?skipValidation=true'
+
+          const response = await fetch(url, {
+            method: 'GET',
+            credentials: 'include',
+            signal: controller.signal,
+          })
+
+          if (response.ok) {
+            return await response.json()
+          }
+
+          // state IDが一致しない場合、検証をスキップして再試行
+          if (!response.ok && stateId && attempt < MAX_RETRY_COUNT - 1) {
+            console.log('[ReserveRedirectPage] Retrying with skipValidation=true')
+            const retryResponse = await fetch('/api/auth/line-state?skipValidation=true', {
+              method: 'GET',
+              credentials: 'include',
+              signal: controller.signal,
+            })
+
+            if (retryResponse.ok) {
+              return await retryResponse.json()
+            }
+          }
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') {
+            throw error
+          }
+          console.error(`[ReserveRedirectPage] Attempt ${attempt + 1} failed:`, error)
+        }
+      }
+
+      return null
+    },
+    []
+  )
+
+  // トークン検証を行う関数（リトライ機能付き）
+  const verifyTokenWithRetry = useCallback(
+    async (
+      idToken: string,
+      tenantId: string,
+      orgId: string,
+      controller: AbortController
+    ): Promise<boolean> => {
+      for (let attempt = 0; attempt < MAX_RETRY_COUNT; attempt++) {
+        if (attempt > 0) {
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
+        }
+
+        try {
+          const response = await fetch('/api/line/verify-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              idToken,
+              tenantId,
+              orgId,
+            }),
+            signal: controller.signal,
+          })
+
+          const data = await response.json()
+
+          if (response.ok && data.success) {
+            return true
+          }
+
+          // トークン期限切れの場合、新しいトークンを取得して再試行
+          if (
+            data.error === 'token_expired' &&
+            liff?.isLoggedIn() &&
+            attempt < MAX_RETRY_COUNT - 1
+          ) {
+            console.log(
+              `[ReserveRedirectPage] Token expired, getting new token (attempt ${attempt + 2})...`
+            )
+            const newIdToken = liff.getIDToken()
+            if (newIdToken && newIdToken !== idToken) {
+              idToken = newIdToken
+              continue
+            }
+          }
+
+          throw new Error(data.message || data.error || 'LINE認証に失敗しました')
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') {
+            throw error
+          }
+          if (attempt === MAX_RETRY_COUNT - 1) {
+            throw error
+          }
+          console.error(
+            `[ReserveRedirectPage] Token verification attempt ${attempt + 1} failed:`,
+            error
+          )
+        }
+      }
+
+      return false
+    },
+    [liff]
+  )
 
   useEffect(() => {
     async function handleLiffLogin() {
@@ -48,7 +210,7 @@ export default function ReserveRedirectPage() {
         console.log('[ReserveRedirectPage] LIFF is still loading. Waiting...')
         return
       }
-      console.log('liffIsLoading', liffIsLoading)
+
       // LIFFエラーチェック
       if (liffIsError) {
         console.error(`[ReserveRedirectPage] LIFF initialization error: ${liffErrorMessage}`)
@@ -69,316 +231,103 @@ export default function ReserveRedirectPage() {
       setIsLoading(true)
       setErrorMessage(null)
 
-      // URLからstate IDを取得
-      const urlParams = new URLSearchParams(window.location.search)
-      console.log('[ReserveRedirectPage] All URL params:', Object.fromEntries(urlParams))
+      // 新しいAbortControllerを作成
+      const controller = new AbortController()
+      abortControllerRef.current = controller
 
-      let stateId: string | null = null
-      // 解析途中で参照されるため先に宣言
-      let tenantIdFromSession: string | null = null
-      let orgIdFromSession: string | null = null
+      try {
+        // URLからstateデータを抽出
+        const extractedData = extractStateFromUrl()
+        const urlParams = new URLSearchParams(window.location.search)
+        const stateId =
+          urlParams.get('state') ||
+          (urlParams.get('liffRedirectUri')
+            ? new URLSearchParams(
+                new URL(decodeURIComponent(urlParams.get('liffRedirectUri') || '')).searchParams
+                  .get('liff.state')
+                  ?.split('?')[1] || ''
+              ).get('state')
+            : null)
 
-      // liffRedirectUriパラメータから実際のstate IDを抽出
-      const liffRedirectUri = urlParams.get('liffRedirectUri')
-      console.log('[ReserveRedirectPage] liffRedirectUri:', liffRedirectUri)
-      if (liffRedirectUri) {
-        try {
-          const decodedUri = decodeURIComponent(liffRedirectUri)
-          console.log('[ReserveRedirectPage] Decoded liffRedirectUri:', decodedUri)
-          const redirectUrl = new URL(decodedUri)
-          const liffState = redirectUrl.searchParams.get('liff.state')
-          console.log('[ReserveRedirectPage] liff.state:', liffState)
+        // state検証（バッチ処理で最適化）
+        const stateValidationTasks = [
+          {
+            name: 'validateState',
+            task: () => validateStateWithRetry(stateId, controller),
+            priority: 3,
+          },
+        ]
 
-          if (liffState) {
-            // liff.state のクエリをパースし、本来の state / tid / oid を取得
-            const innerSearchParams = new URLSearchParams(liffState.split('?')[1])
-            const innerState = innerSearchParams.get('state')
-            const innerTid = innerSearchParams.get('tid')
-            const innerOid = innerSearchParams.get('oid')
+        const validationResults = await batchAuthProcessing(stateValidationTasks)
+        let stateData = validationResults.get('validateState') as StateData | null
 
-            if (innerState) {
-              stateId = innerState
-              console.log('[ReserveRedirectPage] Extracted state ID from liffRedirectUri:', stateId)
-            }
-
-            if (innerTid) {
-              console.log(
-                '[ReserveRedirectPage] Extracted tenantId from liffRedirectUri:',
-                innerTid
-              )
-              tenantIdFromSession = innerTid
-            }
-
-            if (innerOid) {
-              console.log('[ReserveRedirectPage] Extracted orgId from liffRedirectUri:', innerOid)
-              orgIdFromSession = innerOid
-            }
-          }
-        } catch (e) {
-          console.error('[ReserveRedirectPage] Failed to parse liffRedirectUri:', e)
+        // URLから抽出したデータとマージ
+        if (!stateData && extractedData && extractedData.tenantId && extractedData.orgId) {
+          stateData = extractedData
         }
-      }
 
-      // フォールバック: 直接stateパラメータをチェック（将来の互換性のため）
-      if (!stateId) {
-        const directState = urlParams.get('state')
-        console.log('[ReserveRedirectPage] Direct state param:', directState)
-        stateId = directState
-      }
+        if (!stateData || !stateData.tenantId || !stateData.orgId) {
+          throw new Error('サロン情報が見つかりません。予約フローを最初からやり直してください')
+        }
 
-      console.log('[ReserveRedirectPage] Final state ID:', stateId)
+        const { tenantId, orgId } = stateData
+        console.log('[ReserveRedirectPage] State data retrieved:', { tenantId, orgId })
 
-      // state IDが取得できた場合は通常の検証を試みる
-      if (stateId) {
-        // セキュアなstate検証APIを呼び出し
-        try {
-          // リトライ回数チェック
-          if (retryCountRef.current >= MAX_RETRY_COUNT) {
-            console.error('[ReserveRedirectPage] Max retry count exceeded')
-            setErrorMessage('認証の再試行回数が上限に達しました。最初からやり直してください。')
-            setIsLoading(false)
-            setHasProcessed(true)
-            return
-          }
+        const computedRedirectUrl = `/${locale}/reservation/${orgId}/calendar`
+        setRedirectUrl(computedRedirectUrl)
 
-          const stateResponse = await fetch(`/api/auth/line-state?stateId=${stateId}`, {
-            method: 'GET',
-            credentials: 'include',
-          })
+        // LINEログイン処理
+        if (liff && liff.isLoggedIn()) {
+          console.log('[ReserveRedirectPage] LIFF is logged in.')
+          let idToken: string | null = null
 
-          if (!stateResponse.ok) {
-            const error = await stateResponse.json()
-            console.error('[ReserveRedirectPage] State validation failed:', error)
-            retryCountRef.current++
-
-            // state IDが一致しない場合、検証をスキップして再試行
-            console.log('[ReserveRedirectPage] Retrying with skipValidation=true')
-            const retryResponse = await fetch(`/api/auth/line-state?skipValidation=true`, {
-              method: 'GET',
-              credentials: 'include',
-            })
-
-            if (!retryResponse.ok) {
-              if (tenantIdFromSession && orgIdFromSession) {
-                console.warn(
-                  '[ReserveRedirectPage] SkipValidation failed but IDs extracted from liffRedirectUri. Proceeding with fallback IDs.'
-                )
-              } else {
-                throw new Error('State validation failed even with skip validation')
-              }
-            } else {
-              const retryData = await retryResponse.json()
-              tenantIdFromSession = retryData.tenantId
-              orgIdFromSession = retryData.orgId
-              console.log('[ReserveRedirectPage] Retrieved data with skipValidation:', {
-                tenantIdFromSession,
-                orgIdFromSession,
-                originalStateId: retryData.originalStateId,
-              })
-            }
-          } else {
-            const stateData = await stateResponse.json()
-            tenantIdFromSession = stateData.tenantId
-            orgIdFromSession = stateData.orgId
-
-            console.log('[ReserveRedirectPage] State validated successfully:', {
-              tenantIdFromSession,
-              orgIdFromSession,
-            })
-          }
-        } catch (e) {
-          console.error('[ReserveRedirectPage] Failed to validate state:', e)
-
-          // 最後の手段として、クッキーから直接取得を試みる
           try {
-            const fallbackResponse = await fetch(`/api/auth/line-state?skipValidation=true`, {
-              method: 'GET',
-              credentials: 'include',
-            })
-
-            if (fallbackResponse.ok) {
-              const fallbackData = await fallbackResponse.json()
-              tenantIdFromSession = fallbackData.tenantId
-              orgIdFromSession = fallbackData.orgId
-              console.log('[ReserveRedirectPage] Retrieved data via fallback:', {
-                tenantIdFromSession,
-                orgIdFromSession,
-              })
-            } else {
-              if (tenantIdFromSession && orgIdFromSession) {
-                console.warn(
-                  '[ReserveRedirectPage] Fallback skipValidation failed but IDs extracted from liffRedirectUri. Proceeding.'
-                )
-              } else {
-                setErrorMessage(
-                  'セッション情報の検証に失敗しました。セキュリティのため、最初からやり直してください。'
-                )
-                setIsLoading(false)
-                setHasProcessed(true)
-                return
-              }
-            }
-          } catch (fallbackError) {
-            console.error('[ReserveRedirectPage] Fallback also failed:', fallbackError)
-            setErrorMessage('セッション情報の取得に失敗しました。最初からやり直してください。')
-            setIsLoading(false)
-            setHasProcessed(true)
-            return
-          }
-        }
-      } else {
-        // state IDが取得できない場合、クッキーから直接取得
-        console.log(
-          '[ReserveRedirectPage] No state ID found, trying to get data from cookie directly'
-        )
-        try {
-          const directResponse = await fetch(`/api/auth/line-state?skipValidation=true`, {
-            method: 'GET',
-            credentials: 'include',
-          })
-
-          if (!directResponse.ok) {
-            throw new Error('Failed to get state data from cookie')
+            idToken = liff.getIDToken()
+          } catch (e) {
+            console.error('[ReserveRedirectPage] Error getting ID token:', e)
+            throw new Error('LINE認証情報の取得に失敗しました')
           }
 
-          const directData = await directResponse.json()
-          tenantIdFromSession = directData.tenantId
-          orgIdFromSession = directData.orgId
-          console.log('[ReserveRedirectPage] Retrieved data directly from cookie:', {
-            tenantIdFromSession,
-            orgIdFromSession,
-          })
-        } catch (e) {
-          console.error('[ReserveRedirectPage] Failed to get data from cookie:', e)
-          setErrorMessage('セッション情報が見つかりません。最初からやり直してください。')
-          setIsLoading(false)
-          setHasProcessed(true)
-          return
-        }
-      }
+          if (!idToken) {
+            console.error('[ReserveRedirectPage] Could not get ID Token from LIFF')
+            throw new Error('LINE情報の取得に失敗しました。ログインし直してください')
+          }
 
-      if (!tenantIdFromSession || !orgIdFromSession) {
-        console.error(
-          '[ReserveRedirectPage] tenantId or orgId is missing from initial session. Cannot proceed.'
-        )
-        setErrorMessage('サロン情報が見つかりません。予約フローを最初からやり直してください')
-        setIsLoading(false)
-        setHasProcessed(true)
-        return
-      }
+          console.log('[ReserveRedirectPage] Got idToken. Verifying...')
 
-      console.log(
-        `[ReserveRedirectPage] Retrieved tenantId and orgId from session: ${tenantIdFromSession} ${orgIdFromSession}`
-      )
-      const computedRedirectUrl = `/${locale}/reservation/${orgIdFromSession}/calendar`
-      setRedirectUrl(computedRedirectUrl)
+          // トークン検証（リトライ機能付き）
+          const success = await verifyTokenWithRetry(idToken, tenantId, orgId, controller)
 
-      if (liff && liff.isLoggedIn()) {
-        console.log('[ReserveRedirectPage] LIFF is logged in.')
-        let idToken: string | null = null
-
-        try {
-          idToken = liff.getIDToken()
-        } catch (e) {
-          console.error('[ReserveRedirectPage] Error getting ID token:', e)
-          setErrorMessage('LINE認証情報の取得に失敗しました')
-          setIsLoading(false)
-          setHasProcessed(true)
-          return
-        }
-
-        if (!idToken) {
-          console.error(
-            '[ReserveRedirectPage] Could not get ID Token from LIFF even though logged in.'
-          )
-          setErrorMessage('LINE情報の取得に失敗しました。ログインし直してください')
-          if (liff) liff.logout()
-          setIsLoading(false)
-          setHasProcessed(true)
-          toast.error('認証に失敗しました。ログインし直してください')
-          router.push(`/${locale}/reservation/${orgIdFromSession}`)
-          return
-        }
-
-        console.log('[ReserveRedirectPage] Got idToken. Calling /api/line/verify-token...')
-        try {
-          const response = await fetch('/api/line/verify-token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              idToken,
-              tenantId: tenantIdFromSession,
-              orgId: orgIdFromSession,
-            }),
-          })
-
-          const data = await response.json()
-
-          if (response.ok && data.success) {
-            console.log('[ReserveRedirectPage] API call successful. Server issued session cookie.')
-            console.log('[ReserveRedirectPage] Redirecting to:', computedRedirectUrl)
-            // stateは使い捨てなので、削除処理は不要（サーバー側で削除済み）
+          if (success) {
+            console.log('[ReserveRedirectPage] Authentication successful. Redirecting...')
             toast.success('認証に成功しました。予約ページへ移動します')
             setHasProcessed(true)
             router.push(computedRedirectUrl)
           } else {
-            console.error('[ReserveRedirectPage] API call failed:', data)
-            // トークン期限切れの場合は特別な処理
-            if (data.details?.error_description?.includes('IdToken expired')) {
-              console.log('[ReserveRedirectPage] IdToken expired, forcing re-login')
-              setErrorMessage('認証の有効期限が切れました。再度ログインしてください。')
-              // LIFFログアウトして再ログイン
-              if (liff && liff.isLoggedIn()) {
-                liff.logout()
-              }
-              setHasProcessed(true)
-              setTimeout(() => {
-                router.push(`/${locale}/reservation/${orgIdFromSession}`)
-              }, 2000)
-            } else {
-              setErrorMessage(
-                `認証サーバーとの通信に失敗しました: ${data.message || data.error || '詳細不明'}`
-              )
-            }
-            setIsLoading(false)
+            throw new Error('認証サーバーとの通信に失敗しました')
           }
-        } catch (error) {
-          console.error('[ReserveRedirectPage] Error calling /api/line/verify-token:', error)
-          showErrorToast(error)
-          setIsLoading(false)
-          setHasProcessed(true)
-        }
-      } else if (liff && !liffIsLoading) {
-        console.log('[ReserveRedirectPage] LIFF is not logged in. Initiating LIFF login.')
-        if (!tenantIdFromSession || !orgIdFromSession) {
-          console.error(
-            '[ReserveRedirectPage] tenantId or orgId was not in session before trying to log in with LIFF.'
-          )
-          setErrorMessage('予約セッション情報が不足しています。最初からやり直してください')
-          setIsLoading(false)
-          setHasProcessed(true)
-          return
-        }
-        console.log(
-          `[ReserveRedirectPage] About to call liff.login(). Redirect URI should be this page or similar to continue the flow.`
-        )
-
-        try {
+        } else if (liff && !liffIsLoading) {
+          console.log('[ReserveRedirectPage] LIFF is not logged in. Initiating LIFF login.')
           liff.login({
             redirectUri: window.location.href,
           })
-        } catch (e) {
-          console.error('[ReserveRedirectPage] LIFF login failed:', e)
-          setErrorMessage(
-            `LINE連携ログインに失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`
-          )
-          setIsLoading(false)
-          setHasProcessed(true)
+        } else {
+          console.log('[ReserveRedirectPage] LIFF not ready, waiting...')
         }
-      } else {
-        console.log(
-          '[ReserveRedirectPage] LIFF object not available or still loading, cannot proceed with login check.'
-        )
+      } catch (error) {
+        console.error('[ReserveRedirectPage] Error in handleLiffLogin:', error)
+
+        if (error instanceof Error && error.name === 'AbortError') {
+          setErrorMessage('処理がキャンセルされました')
+        } else {
+          setErrorMessage(
+            error instanceof Error ? error.message : '認証処理中にエラーが発生しました'
+          )
+          showErrorToast(error)
+        }
+
+        setIsLoading(false)
+        setHasProcessed(true)
       }
     }
 
@@ -392,46 +341,62 @@ export default function ReserveRedirectPage() {
     locale,
     router,
     showErrorToast,
+    extractStateFromUrl,
+    validateStateWithRetry,
+    verifyTokenWithRetry,
   ])
 
-  // 8秒以上ロードが続いた場合に強制ログアウトし予約トップへリダイレクトする処理
+  // クリーンアップ: アンマウント時にAbortControllerをキャンセル
   useEffect(() => {
-    // isLoading が true の時のみタイマーをセット
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
+
+  // タイムアウト処理（最適化版）
+  useEffect(() => {
     if (isLoading) {
       timeoutRef.current = setTimeout(async () => {
-        console.warn('[ReserveRedirectPage] Loading timeout exceeded 8 seconds. Logging out...')
+        console.warn('[ReserveRedirectPage] Loading timeout exceeded. Cleaning up...')
 
-        // 1. サーバー側のセッション Cookie を削除
-        try {
-          await fetch('/api/auth/logout', {
-            method: 'POST',
-            credentials: 'include',
-          })
-        } catch (e) {
-          console.error('[ReserveRedirectPage] Failed to call logout API:', e)
+        // AbortControllerでリクエストをキャンセル
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort()
         }
 
-        // 2. LIFF 側のセッションも削除（エラーは握り潰す）
-        try {
-          if (liff && liff.isLoggedIn()) {
-            liff.logout()
-          }
-        } catch (e) {
-          console.error('[ReserveRedirectPage] Failed to logout from LIFF:', e)
-        }
+        // バッチ処理でログアウト
+        const logoutTasks = [
+          {
+            name: 'serverLogout',
+            task: () => fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }),
+            priority: 1,
+          },
+          {
+            name: 'liffLogout',
+            task: async () => {
+              if (liff?.isLoggedIn()) {
+                liff.logout()
+              }
+              return Promise.resolve()
+            },
+            priority: 2,
+          },
+        ]
 
-        // 3. ユーザーへトースト通知
+        await batchAuthProcessing(logoutTasks)
+
         toast.error('タイムアウトしました。再度ログインしてください')
-        await new Promise((resolve) => setTimeout(resolve, 3000))
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          credentials: 'include',
-        })
-        router.push(`/${locale}/reservation`)
-      }, 30000) // 30000ms = 30秒（LIFF初期化とConvexクエリの完了を待つ）
+        setIsLoading(false)
+        setHasProcessed(true)
+
+        setTimeout(() => {
+          router.push(`/${locale}/reservation`)
+        }, 2000)
+      }, 30000) // 30秒
     }
 
-    // クリーンアップ: isLoading が false もしくはアンマウント時にタイマーを解除
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)

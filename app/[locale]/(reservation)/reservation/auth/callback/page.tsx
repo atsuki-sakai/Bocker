@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useLiff } from '@/hooks/useLiff'
 import { toast } from 'sonner'
 import { Loading } from '@/components/common'
+import { batchAuthProcessing } from '@/lib/auth/batchProcessor'
+import { prefetchCustomerData } from '@/lib/auth/sessionCache'
 
 // LINEログイン共通コールバックページ
 // redirect_type パラメータで顧客用と予約用を切り替え
@@ -19,11 +21,81 @@ export default function AuthCallbackPage() {
   const [isClient, setIsClient] = useState(false)
   // 一度だけ実行するためのref（無限ループ防止）
   const hasProcessedRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // クライアントサイドでのみ実行
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  // クリーンアップ
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
+
+  // トークン検証の最適化版
+  const verifyTokenOptimized = useCallback(
+    async (
+      idToken: string,
+      tenantId: string,
+      orgId: string,
+      isCustomerLogin: boolean,
+      controller: AbortController
+    ) => {
+      const maxRetries = 2
+      let lastError = null
+
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          const response = await fetch('/api/line/verify-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              idToken,
+              tenantId,
+              orgId,
+              isCustomerLogin,
+            }),
+            signal: controller.signal,
+          })
+
+          const data = await response.json()
+
+          if (response.ok) {
+            return { success: true, data }
+          }
+
+          // トークン期限切れの場合、新しいトークンで再試行
+          if (data.error === 'token_expired' && attempt < maxRetries && liff?.isLoggedIn()) {
+            console.log(`[AuthCallback] Token expired, retrying (attempt ${attempt + 1})...`)
+            await new Promise((resolve) => setTimeout(resolve, 500))
+            const newIdToken = liff.getIDToken()
+            if (newIdToken && newIdToken !== idToken) {
+              idToken = newIdToken
+              continue
+            }
+          }
+
+          lastError = new Error(data.message || data.error || 'LINE認証に失敗しました')
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') {
+            throw error
+          }
+          lastError = error
+          if (attempt < maxRetries) {
+            await new Promise((resolve) => setTimeout(resolve, 500))
+          }
+        }
+      }
+
+      throw lastError || new Error('トークン検証に失敗しました')
+    },
+    [liff]
+  )
 
   useEffect(() => {
     // クライアントサイド以外または既に処理済みの場合は実行しない
@@ -36,6 +108,10 @@ export default function AuthCallbackPage() {
       // 処理開始をマーク（無限ループ防止）
       hasProcessedRef.current = true
       setIsProcessingCallback(true)
+
+      // AbortController作成
+      const controller = new AbortController()
+      abortControllerRef.current = controller
 
       // URLパラメータから情報を取得
       const liffRedirectUri = searchParams.get('liffRedirectUri')
@@ -59,25 +135,45 @@ export default function AuthCallbackPage() {
       }
 
       try {
-        // ステップ1: state検証
-        console.log('[AuthCallback] Step 1: Validating state...')
-        const stateResponse = await fetch(`/api/auth/line-state?stateId=${state}`, {
-          method: 'GET',
-          credentials: 'include',
-        })
+        // バッチ処理で最適化: state検証とLIFFログイン状態確認を並列実行
+        const authTasks = [
+          {
+            name: 'validateState',
+            task: () =>
+              fetch(`/api/auth/line-state?stateId=${state}`, {
+                method: 'GET',
+                credentials: 'include',
+                signal: controller.signal,
+              }).then((r) => {
+                if (!r.ok) throw new Error('State validation failed')
+                return r.json()
+              }),
+            priority: 3,
+          },
+          {
+            name: 'checkLiff',
+            task: async () => {
+              if (!liff.isLoggedIn()) {
+                throw new Error('Not logged in to LINE')
+              }
+              return Promise.resolve({ loggedIn: true })
+            },
+            priority: 2,
+          },
+        ]
 
-        if (!stateResponse.ok) {
-          const stateError = await stateResponse.json()
-          console.error('[AuthCallback] State validation failed:', stateError)
-          throw new Error(`状態検証に失敗しました: ${stateError.error || 'Unknown error'}`)
+        const results = await batchAuthProcessing(authTasks)
+        const stateData = results.get('validateState')
+        const liffStatus = results.get('checkLiff')
+
+        if (!stateData) {
+          throw new Error('状態検証に失敗しました')
         }
 
-        const stateData = await stateResponse.json()
         console.log('[AuthCallback] State data:', stateData)
 
-        // ステップ2: LINEログイン状態確認
-        console.log('[AuthCallback] Step 2: Checking LINE login status...')
-        if (!liff.isLoggedIn()) {
+        // LINEにログインしていない場合
+        if (!liffStatus?.loggedIn) {
           console.log('[AuthCallback] Not logged in to LINE, initiating login')
           liff.login({
             redirectUri: window.location.href,
@@ -85,132 +181,68 @@ export default function AuthCallbackPage() {
           return
         }
 
-        // ステップ3: LINE IDトークンを取得（必要に応じて再取得）
-        console.log('[AuthCallback] Step 3: Getting LINE ID token...')
+        // IDトークン取得
         let idToken: string | null = null
-        let attempts = 0
-        const maxAttempts = 2
-
-        while (attempts < maxAttempts && !idToken) {
-          attempts++
-          try {
-            if (attempts > 1) {
-              console.log(`[AuthCallback] Retrying ID token acquisition (attempt ${attempts})...`)
-              // 少し待ってから再試行
-              await new Promise((resolve) => setTimeout(resolve, 500))
-            }
-
-            idToken = liff.getIDToken()
-            console.log(
-              `[AuthCallback] ID token obtained successfully on attempt ${attempts}, length:`,
-              idToken?.length
-            )
-
-            // IDトークンの期限をクライアント側でも確認
-            if (idToken) {
-              try {
-                const payload = JSON.parse(atob(idToken.split('.')[1]))
-                const now = Math.floor(Date.now() / 1000)
-                const exp = payload.exp
-                console.log(
-                  `[AuthCallback] ID token expiry check - now: ${now}, exp: ${exp}, valid: ${exp > now}`
-                )
-
-                if (exp <= now) {
-                  console.warn(
-                    `[AuthCallback] ID token is expired on client side (exp: ${exp}, now: ${now}, diff: ${now - exp}s)`
-                  )
-
-                  // 期限切れでも一度サーバー側で検証を試行（サーバー側でハンドリング）
-                  console.log(
-                    '[AuthCallback] Token expired on client, but proceeding to server validation...'
-                  )
-                  break // while ループを抜けてサーバー検証に進む
-                }
-              } catch (e) {
-                console.warn('[AuthCallback] Failed to decode ID token on client:', e)
-              }
-            }
-          } catch (e) {
-            console.error(`[AuthCallback] Error getting ID token on attempt ${attempts}:`, e)
-            if (attempts >= maxAttempts) {
-              throw new Error('LINE認証情報の取得に失敗しました')
-            }
+        try {
+          idToken = liff.getIDToken()
+          if (!idToken) {
+            throw new Error('IDトークンが取得できませんでした')
           }
-        }
-
-        if (!idToken) {
+        } catch (e) {
+          console.error('[AuthCallback] Error getting ID token:', e)
           throw new Error('LINE認証情報の取得に失敗しました')
         }
 
-        // ステップ4: トークン検証とセッション作成
-        console.log('[AuthCallback] Step 4: Verifying token and creating session...')
-        const verifyResponse = await fetch('/api/line/verify-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            idToken,
-            tenantId: stateData.tenantId,
-            orgId: stateData.orgId,
-            isCustomerLogin: redirectType === 'customer',
-          }),
-        })
-
-        console.log('[AuthCallback] Verify response status:', verifyResponse.status)
-
-        const verifyData = await verifyResponse.json()
-        console.log('[AuthCallback] Verify response data:', verifyData)
-
-        if (!verifyResponse.ok) {
-          console.error('[AuthCallback] Token verification failed:', verifyData)
-
-          // トークン期限切れの場合は特別処理
-          if (verifyData.error === 'token_expired' || verifyData.details?.shouldReload) {
-            console.log(
-              '[AuthCallback] Token expired on server, reloading page for fresh authentication...'
-            )
-            // 少し待ってからページ再読み込み
-            setTimeout(() => {
-              window.location.reload()
-            }, 1000)
-            return
-          }
-
-          throw new Error(verifyData.message || verifyData.error || 'LINE認証に失敗しました')
-        }
-
-        console.log(
-          '[AuthCallback] Verification successful, redirecting based on type:',
-          redirectType
+        // トークン検証（最適化版）
+        const verifyResult = await verifyTokenOptimized(
+          idToken,
+          stateData.tenantId,
+          stateData.orgId,
+          redirectType === 'customer',
+          controller
         )
 
-        // ステップ5: redirect_type に基づいてリダイレクト
-        if (redirectType === 'customer') {
-          // 顧客用: セッションから customerUid を取得してプロフィールページへ
-          console.log('[AuthCallback] Step 5a: Getting customer session...')
-          const sessionResponse = await fetch('/api/auth/session', {
-            method: 'GET',
-            credentials: 'include',
-          })
+        if (!verifyResult.success) {
+          throw new Error('トークン検証に失敗しました')
+        }
 
-          if (sessionResponse.ok) {
-            const sessionData = await sessionResponse.json()
-            console.log('[AuthCallback] Session data:', sessionData)
-            if (sessionData.session && sessionData.session.customerUid) {
-              const profileUrl = `/${locale}/customer/${stateData.orgId}/${sessionData.session.customerUid}/profile`
-              console.log('[AuthCallback] Redirecting to customer profile:', profileUrl)
-              router.push(profileUrl)
-            } else {
-              throw new Error('セッション情報の取得に失敗しました')
-            }
+        console.log('[AuthCallback] Verification successful, preparing redirect...')
+
+        // リダイレクト準備
+        if (redirectType === 'customer') {
+          // 顧客プロフィールへのリダイレクト用にデータをプリフェッチ
+          const sessionTasks = [
+            {
+              name: 'getSession',
+              task: () =>
+                fetch('/api/auth/session', {
+                  method: 'GET',
+                  credentials: 'include',
+                  signal: controller.signal,
+                }).then((r) => r.json()),
+              priority: 3,
+            },
+          ]
+
+          const sessionResults = await batchAuthProcessing(sessionTasks)
+          const sessionData = sessionResults.get('getSession')
+
+          if (sessionData?.session?.customerUid) {
+            // 顧客データをプリフェッチ（バックグラウンド）
+            prefetchCustomerData(
+              sessionData.session.customerUid,
+              stateData.tenantId,
+              stateData.orgId
+            ).catch(console.warn) // エラーは無視
+
+            const profileUrl = `/${locale}/customer/${stateData.orgId}/${sessionData.session.customerUid}/profile`
+            console.log('[AuthCallback] Redirecting to customer profile:', profileUrl)
+            router.push(profileUrl)
           } else {
-            const sessionError = await sessionResponse.json()
-            console.error('[AuthCallback] Session check failed:', sessionError)
-            throw new Error('セッションの確認に失敗しました')
+            throw new Error('セッション情報の取得に失敗しました')
           }
         } else if (redirectType === 'reservation') {
-          // 予約用: カレンダーページへ
-          console.log('[AuthCallback] Step 5b: Redirecting to reservation calendar...')
+          // 予約カレンダーへ
           const calendarUrl = `/${locale}/reservation/${stateData.orgId}/calendar`
           console.log('[AuthCallback] Redirecting to reservation calendar:', calendarUrl)
           router.push(calendarUrl)
@@ -221,19 +253,40 @@ export default function AuthCallbackPage() {
         toast.success('LINEログインに成功しました')
       } catch (error) {
         console.error('[AuthCallback] Error in handleLineCallback:', error)
-        // エラーの詳細をログに出力
+
         if (error instanceof Error) {
-          console.error('[AuthCallback] Error message:', error.message)
-          console.error('[AuthCallback] Error stack:', error.stack)
+          console.error('[AuthCallback] Error details:', {
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+          })
+
+          // AbortErrorの場合は特別処理
+          if (error.name === 'AbortError') {
+            setError('処理がキャンセルされました')
+          } else {
+            setError(error.message)
+          }
+        } else {
+          setError('認証処理中にエラーが発生しました')
         }
-        setError(error instanceof Error ? error.message : '認証処理中にエラーが発生しました')
+
         setIsProcessingCallback(false)
-        // エラー時もhasProcessedRefをリセットしない（再実行を防ぐため）
       }
     }
 
     handleLineCallback()
-  }, [router, locale, searchParams, liff, liffIsLoggedIn, liffIsLoading, isClient])
+  }, [
+    router,
+    locale,
+    searchParams,
+    liff,
+    liffIsLoggedIn,
+    liffIsLoading,
+    isClient,
+    isProcessingCallback,
+    verifyTokenOptimized,
+  ])
 
   // サーバーサイドレンダリング時は何も表示しない
   if (!isClient) {
