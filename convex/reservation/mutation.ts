@@ -410,6 +410,18 @@ export const cancelReservation = mutation({
       reservation_id: args.reservationId,
     });
 
+    // クーポン使用回数をデクリメント
+    if (details.coupon_id) {
+      try {
+        await ctx.runMutation(internal.coupon.mutation.decrementUsageCount, {
+          couponId: details.coupon_id,
+        });
+      } catch (error) {
+        // クーポン使用回数の更新に失敗しても、キャンセル処理は続行
+        console.error('Failed to decrement coupon usage count:', error);
+      }
+    }
+
     // 予約のステータスを更新
     await ctx.db.patch(args.reservationId, {
       status: 'cancelled',
