@@ -12,8 +12,8 @@ const getStorageKey = (org_id: Id<'organization'>) => `liff_id_org_${org_id}`
 
 interface DynamicLiffProviderProps {
   children: React.ReactNode
-  tenantId: Id<'tenant'>
-  orgId: Id<'organization'>
+  tenantId: Id<'tenant'> | null
+  orgId: Id<'organization'> | null
 }
 
 export function DynamicLiffProvider({ children, tenantId, orgId }: DynamicLiffProviderProps) {
@@ -60,8 +60,21 @@ export function DynamicLiffProvider({ children, tenantId, orgId }: DynamicLiffPr
   // 3. 接続状態に関わらずクエリを実行（効率的なリトライ処理に任せる）
   const dbLiffId = useQuery(
     api.organization.api_config.query.getLiffId,
-    orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
+    orgId && tenantId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
   )
+
+  // デバッグログ: クエリの状態を確認
+  useEffect(() => {
+    console.log('[DynamicLiffProvider] Debug info:', {
+      tenantId,
+      orgId,
+      dbLiffId,
+      retryCount,
+      liffId,
+      showError,
+      errorMessage
+    })
+  }, [tenantId, orgId, dbLiffId, retryCount, liffId, showError, errorMessage])
 
   // 4. クエリ結果の処理とリトライロジック
   useEffect(() => {
@@ -90,14 +103,16 @@ export function DynamicLiffProvider({ children, tenantId, orgId }: DynamicLiffPr
 
       // キャッシュに保存
       try {
-        const storageKey = getStorageKey(orgId)
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify({
-            liffId: dbLiffId,
-            timestamp: Date.now(),
-          })
-        )
+        if (orgId) {
+          const storageKey = getStorageKey(orgId)
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify({
+              liffId: dbLiffId,
+              timestamp: Date.now(),
+            })
+          )
+        }
       } catch (err) {
         console.error('キャッシュ保存エラー:', err)
       }
