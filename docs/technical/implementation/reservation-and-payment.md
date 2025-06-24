@@ -1,21 +1,22 @@
 # 予約・決済処理統合ガイド
 
-最終更新日: 2025年1月
+**最終更新**: 2025年6月23日  
+**ドキュメントバージョン**: 2.0
 
-## 1. 概要
+## 概要
 
 本ガイドは、Bocker（ブッカー）の予約作成・キャンセル・決済処理の統合的な実装方針を定めます。Webhookベースの処理を中心に、シンプルで効率的な実装を目指します。
 
-## 2. アーキテクチャ方針
+## アーキテクチャ方針
 
-### 2.1 基本原則
+### 基本原則
 
 1. **Webhookファースト**: Stripe Webhookを主要な状態遷移トリガーとして使用
 2. **楽観的在庫管理**: 予約作成時に即座に在庫を減算し、失敗時に復元
 3. **最小限のCronジョブ**: Webhookのフォールバックとしてのみ使用（5分間隔）
 4. **統合エンドポイント**: `/api/webhook/stripe`に一本化（レガシーエンドポイントは廃止予定）
 
-### 2.2 データフロー
+### データフロー
 
 ```
 [顧客] → [予約作成] → [在庫減算] → [Stripe決済]
@@ -25,9 +26,9 @@
                          [予約確定 or キャンセル+在庫復元]
 ```
 
-## 3. 予約作成処理
+## 予約作成処理
 
-### 3.1 実装フロー
+### 実装フロー
 
 ```typescript
 // convex/reservation/mutation.ts
@@ -75,7 +76,7 @@ export const create = mutation({
 });
 ```
 
-### 3.2 決済処理統合
+### 決済処理統合
 
 ```typescript
 // app/api/stripe/checkout/route.ts
@@ -101,9 +102,9 @@ export async function POST(request: NextRequest) {
 }
 ```
 
-## 4. Webhook処理（決済結果の処理）
+## Webhook処理（決済結果の処理）
 
-### 4.1 統合Webhookハンドラー
+### 統合Webhookハンドラー
 
 ```typescript
 // services/webhook/stripe/handlers.checkout.ts
@@ -166,15 +167,15 @@ export async function handleCheckoutSessionExpired(event: Stripe.Event) {
 }
 ```
 
-### 4.2 必要なWebhookイベント
+### 必要なWebhookイベント
 
 - `checkout.session.completed`: 決済成功時の予約確定
 - `payment_intent.payment_failed`: 決済失敗時の即座キャンセル
 - `checkout.session.expired`: セッション期限切れ時のキャンセル
 
-## 5. キャンセル処理
+## キャンセル処理
 
-### 5.1 統一キャンセルMutation
+### 統一キャンセルMutation
 
 ```typescript
 // convex/reservation/mutation.ts
@@ -228,7 +229,7 @@ export const cancelReservation = mutation({
 });
 ```
 
-### 5.2 API Route（外部連携処理）
+### API Route（外部連携処理）
 
 ```typescript
 // app/api/reservation/cancel/route.ts
@@ -256,9 +257,9 @@ export async function POST(request: NextRequest) {
 }
 ```
 
-## 6. フォールバック処理（最小限のCronジョブ）
+## フォールバック処理（最小限のCronジョブ）
 
-### 6.1 期限切れPending予約のクリーンアップ
+### 期限切れPending予約のクリーンアップ
 
 ```typescript
 // convex/crons.ts
@@ -292,9 +293,9 @@ export const cleanupExpiredPendingReservations = internalMutation({
 });
 ```
 
-## 7. エラーハンドリングとリカバリー
+## エラーハンドリングとリカバリー
 
-### 7.1 部分的失敗の許容
+### 部分的失敗の許容
 
 ```typescript
 // 重要な処理とそうでない処理を分離
@@ -316,15 +317,15 @@ await Promise.all(criticalOperations);
 await Promise.allSettled(nonCriticalOperations);
 ```
 
-### 7.2 べき等性の保証
+### べき等性の保証
 
 - Stripe Webhookの重複処理防止（event.idで管理）
 - キャンセル済み予約の再キャンセル防止
 - 在庫の二重復元防止
 
-## 8. パフォーマンス最適化
+## パフォーマンス最適化
 
-### 8.1 インデックス戦略
+### インデックス戦略
 
 ```typescript
 // 効率的なクエリのためのインデックス
@@ -333,12 +334,12 @@ await Promise.allSettled(nonCriticalOperations);
 .index('by_customer_status_archive', ['customer_id', 'status', 'is_archive'])
 ```
 
-### 8.2 バッチ処理の最適化
+### バッチ処理の最適化
 
 - Cronジョブは100件ずつ処理（メモリ効率）
 - 5分間隔で実行（リアルタイム性とリソースのバランス）
 
-## 9. 実装チェックリスト
+## 実装チェックリスト
 
 ### Phase 1: 基本実装 ✅
 - [x] 楽観的在庫管理の実装
@@ -350,7 +351,7 @@ await Promise.allSettled(nonCriticalOperations);
 - [ ] レガシーWebhookエンドポイントの廃止
 - [ ] キャンセル料金の実装
 
-## 10. まとめ
+## まとめ
 
 本実装により、以下を実現します：
 

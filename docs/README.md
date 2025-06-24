@@ -1,119 +1,102 @@
 # Bocker ドキュメント
 
-このディレクトリには、Bockerプロジェクトの技術文書、仕様書、運用ガイドなどが含まれています。
+このディレクトリには、Bockerプロジェクトの技術文書、仕様書、運用ガイドが論理的に整理されています。
 
-## 📚 ドキュメント一覧
+## 📚 ドキュメント構成
 
-### 🔧 技術仕様
+### 💼 [Business](./business/) - ビジネス文書
+- **[Product Overview](./business/product-overview.md)** - 製品概要、料金プラン、機能一覧
+- **[User Manual](./business/user-manual.md)** - エンドユーザー向け操作マニュアル、FAQ
+- **[Market Analysis](./business/market-analysis.md)** - 市場分析と競合調査レポート
 
-#### **[API_ENDPOINTS.md](./API_ENDPOINTS.md)**
-- APIエンドポイントの完全なリファレンス
-- 認証、決済、メール送信などの実装詳細
-- リクエスト/レスポンスの例
-- **最終更新**: 2025-06-15（bcryptjs対応）
+### 🏗️ [Architecture](./architecture/) - アーキテクチャ設計
+- **[Design System](./architecture/design-system.md)** - UIデザインシステム、カラーパレット、コンポーネント
+- **[Database Design](./architecture/database-design.md)** - ハイブリッドDB設計とスキーマ構造
+- **[Scaling Analysis](./architecture/scaling-analysis.md)** - 3,000-30,000店舗スケーリング分析
 
-#### **[CDN_IMPLEMENTATION.md](./CDN_IMPLEMENTATION.md)**
-- GCP Cloud CDN実装ガイド（統合版）
-- 画像配信の最適化とキャッシュ戦略
-- OptimizedImageコンポーネントの使用方法
-- **最終更新**: 2025-06-15（CDN_IMPLEMENTATION.mdとGCP-CDN.md統合）
+### 🔧 [Technical](./technical/) - 技術実装
 
-#### **[I18N_IMPLEMENTATION.md](./I18N_IMPLEMENTATION.md)** 🆕
-- 多言語対応（国際化）実装ガイド
-- next-intlの設定と使用方法
-- 実装進捗と今後の計画
-- **作成日**: 2025-06-15
+#### [API](./technical/api/) - API仕様
+- **[Endpoints](./technical/api/endpoints.md)** - 全APIエンドポイント仕様
+- **[LINE Auth Flow](./technical/api/line-auth-flow.md)** - LINE認証フロー詳細
 
-#### **[DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)**
-- デザインシステムとUIガイドライン
-- カラーパレット、タイポグラフィ、スペーシング
-- コンポーネントパターン
+#### [Implementation](./technical/implementation/) - 実装ガイド
+- **[CDN](./technical/implementation/cdn.md)** - GCP Cloud CDN実装・画像配信最適化
+- **[I18N](./technical/implementation/i18n.md)** - 多言語対応実装ガイド
+- **[Inventory Management](./technical/implementation/inventory-management.md)** - 在庫管理システム
+- **[Performance Optimizations](./technical/implementation/performance-optimizations.md)** - Convex最適化実績
 
-#### **[LINE_AUTH_FLOW_SPEC.md](./LINE_AUTH_FLOW_SPEC.md)**
-- LINE認証フローの詳細仕様
-- LIFFアプリケーションの実装
-- セキュリティ考慮事項
+#### [Database](./technical/database/) - データベース
+- **[Supabase](./technical/database/supabase.md)** - PostgreSQL設定と運用
+- **[Migration](./technical/database/migration/)** - ConvexからSupabaseへの移行
+  - [Overview](./technical/database/migration/overview.md) - 移行概要とシステム構成
+  - [Implementation Plan](./technical/database/migration/implementation-plan.md) - 詳細実装計画
+  - [Execution Guide](./technical/database/migration/execution-guide.md) - 実行手順書
+  - [Test Plan](./technical/database/migration/test-plan.md) - テスト計画書
 
-#### **[MIGRATION.md](./MIGRATION.md)**
-- ConvexからSupabaseへのデータ移行ガイド
-- バッチ処理の実装方法
-- **注意**: 本番環境では現在停止中
+### ⚙️ [Operations](./operations/) - 運用管理
 
-### 💼 ビジネス文書
+#### [Setup](./operations/setup/) - 環境構築
+- **[Environment](./operations/setup/environment.md)** - 開発環境セットアップ
+- **[System](./operations/setup/system.md)** - システム全体構築ガイド
+- **[Vercel](./operations/setup/vercel.md)** - Vercel環境変数設定
+- **[Webhooks](./operations/setup/webhooks.md)** - Webhook設定ガイド
 
-#### **[PRODUCT.md](./PRODUCT.md)**
-- 製品概要とビジネスモデル
-- 料金プラン（Lite: ¥6,000/月、Pro: ¥10,000/月）
-- 機能一覧と差別化ポイント
-- **最終更新**: 2025-06-15（価格情報統一）
+#### 運用・監視
+- **[Cost Analysis](./operations/cost-analysis.md)** - 詳細運用コスト分析（3,000店舗実測）
+- **[Monitoring](./operations/monitoring.md)** - 監視・アラート設定
 
-#### **[DOCUMENTS.md](./DOCUMENTS.md)**
-- エンドユーザー向け操作マニュアル
-- サロンオーナー・スタッフ向けガイド
-- よくある質問（FAQ）
-- **最終更新**: 2025-06-15（価格情報統一）
-
-#### **[# Bcker 美容サロン向けSaaS市場調査分析レポート.ini](./# Bcker 美容サロン向けSaaS市場調査分析レポート.ini)**
-- 市場分析と競合調査
-- 成長戦略と収益予測
-- ターゲット市場の詳細分析
-
-### 📊 分析・コスト
-
-#### **[FEAT.md](./FEAT.md)**
-- スケーリング分析（3,000-30,000店舗）
-- ボトルネック分析と対策
-- インフラ拡張計画
-
-#### **[PRODUCT_COST.md](./PRODUCT_COST.md)**
-- 詳細な運用コスト分析
-- 3,000店舗規模での実測データ
-- コスト最適化戦略
-
-### 🔧 実装計画
-
-#### **[STAFF_INVITATION_METADATA_FIX.md](./STAFF_INVITATION_METADATA_FIX.md)**
-- スタッフ招待システムの改善計画
-- メタデータ不整合の修正方法
-- **ステータス**: 未実装（計画段階）
+### 📖 [Guides](./guides/) - 機能ガイド
+- **[Reservation Flows](./guides/reservation-flows.md)** - 予約作成・決済フロー
+- **[Point System](./guides/point-system.md)** - ポイントシステム実装
 
 ## 🗂️ ドキュメント管理ガイドライン
 
 ### 更新ルール
 1. **技術変更時**: 関連するすべてのドキュメントを更新
-2. **価格変更時**: PRODUCT.md、DOCUMENTS.md、市場調査を同時更新
+2. **価格変更時**: business/product-overview.mdを更新、他は参照リンクで統一
 3. **新機能追加時**: 該当する技術文書とユーザーマニュアルを更新
+4. **移行・重複解消**: 2025年6月実施（この再編成）
 
 ### 命名規則
-- **技術文書**: `{機能}_IMPLEMENTATION.md`、`{機能}_SPEC.md`
-- **ビジネス文書**: 大文字で簡潔な名前
-- **分析文書**: `{分析対象}_COST.md`、`{分析対象}.md`
+- **ディレクトリ**: 小文字、ハイフン区切り (business, technical)
+- **ファイル**: 小文字、ハイフン区切り (product-overview.md)
+- **内部リンク**: 相対パスを使用
 
 ### バージョン管理
 - 各ドキュメントに「最終更新日」を記載
 - 大きな変更時は「ドキュメントバージョン」を更新
-- 統合時は元のドキュメント名を記載
+- 統合時は元のドキュメント名を更新履歴に記載
 
-## 📝 最近の更新
+## 📝 最近の更新（2025年6月）
 
-### 2025-06-15
-- ✅ パスワードハッシュ方式をbcryptjsに統一（API_ENDPOINTS.md）
-- ✅ 価格情報を統一（PRODUCT.md、DOCUMENTS.md）
-- ✅ CDN関連ドキュメントを統合（CDN_IMPLEMENTATION.md）
-- ✅ i18n実装ガイドを新規作成（I18N_IMPLEMENTATION.md）
-- ✅ 本READMEを作成
+### ✅ 完了した改善
+- **📁 ドキュメント再編成**: 論理的な階層構造への整理
+- **🔄 重複情報統合**: マイグレーション関連4ファイル → migration/配下に整理
+- **💰 価格情報統一**: product-overview.mdに集約、他は参照リンク
+- **⚡ 実装ガイド集約**: technical/implementation/配下に統一
+- **🔧 セットアップ統合**: operations/setup/配下に整理
 
-### 今後の更新予定
-- [ ] MIGRATION.mdの本番環境対応版作成
-- [ ] STAFF_INVITATION_METADATA_FIX.mdの実装後更新
-- [ ] API_ENDPOINTS.mdへのWebhook詳細追加
+### 🎯 品質向上
+- **実装との整合性**: 全ドキュメントの内容を最新実装と照合
+- **情報の鮮度**: 古い情報を削除、最新状況を反映
+- **ナビゲーション**: 階層構造による直感的なアクセス
+- **検索性**: 論理的分類による情報発見の向上
 
 ## 🔗 関連リソース
 
-- **メインREADME**: [/README.md](../README.md)
+- **メインREADME**: [/README.md](../README.md) - プロジェクト全体概要
 - **CLAUDE.md**: [/CLAUDE.md](../CLAUDE.md) - AI開発ガイド
 - **言語ファイル**: [/languages/](../languages/) - 翻訳リソース
 
+## 📊 ドキュメント統計
+
+- **総ドキュメント数**: 25ファイル
+- **技術文書**: 15ファイル
+- **ビジネス文書**: 3ファイル
+- **運用ガイド**: 7ファイル
+- **最終更新**: 2025年6月（全体再編成）
+
 ---
 
-*このドキュメントは定期的に更新されます。最新情報はGitコミット履歴を参照してください。*
+*このドキュメント構造は継続的に改善されます。新しい機能や変更に応じて適切にアップデートを行います。*
