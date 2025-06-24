@@ -1,5 +1,5 @@
-import { BaseRepository, BaseRepositoryOptions, ListOptions } from '../BaseRepository';
-import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService';
+import { BaseRepository, ListOptions } from '../BaseRepository';
+import type { RowType, InsertType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
 
@@ -72,6 +72,7 @@ export class TrackingEventRepository extends BaseRepository<'tracking_event'> {
       utm_term?: string;
       utm_content?: string;
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     customData?: any
   ): Promise<RowType<'tracking_event'>> {
     console.log(`[TrackingEventRepository] recordPageView: pageUrl=${pageUrl}, sessionId=${sessionId}`);
@@ -111,6 +112,7 @@ export class TrackingEventRepository extends BaseRepository<'tracking_event'> {
     sessionId: string,
     targetElement: string,
     pageUrl: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     customData?: any
   ): Promise<RowType<'tracking_event'>> {
     console.log(`[TrackingEventRepository] recordClick: targetElement=${targetElement}, sessionId=${sessionId}`);
@@ -150,6 +152,7 @@ export class TrackingEventRepository extends BaseRepository<'tracking_event'> {
     sessionId: string,
     conversionType: string,
     pageUrl: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     customData?: any
   ): Promise<RowType<'tracking_event'>> {
     console.log(`[TrackingEventRepository] recordConversion: conversionType=${conversionType}, sessionId=${sessionId}`);
