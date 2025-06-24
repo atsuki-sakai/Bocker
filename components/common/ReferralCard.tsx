@@ -18,7 +18,7 @@ import { BASE_REFERRAL_DISCOUNT_AMOUNT, MAX_REFERRAL_COUNT } from '@/lib/constan
 
 export default function ReferralCard() {
   const t = useTranslations('referralCard')
-  const { tenantId } = useTenantAndOrganization()
+  const { tenantId, subscription } = useTenantAndOrganization()
   const [copied, setCopied] = useState<boolean>(false)
 
   const referral = useQuery(
@@ -93,7 +93,9 @@ export default function ReferralCard() {
     <AnimatePresence>
       {referral ? (
         referral.total_referral_count! < MAX_REFERRAL_COUNT ? (
-          <Card className="overflow-hidden border-border shadow-none">
+          <Card
+            className={`overflow-hidden border-border shadow-none ${subscription && (subscription.status === 'active' || subscription.status === 'trialing') ? '' : 'bg-gray-200 blur-sm pointer-events-none select-none'}`}
+          >
             <CardContent className="p-5">
               <div className="flex flex-col gap-4">
                 <div className="flex justify-between items-center">
