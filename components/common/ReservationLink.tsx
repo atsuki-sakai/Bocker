@@ -27,7 +27,7 @@ import { TRACKING_CODE_VALUES, TrackingCode } from '@/convex/types'
 
 export default function ReservationLink() {
   const t = useTranslations('reservationLink')
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, subscription } = useTenantAndOrganization()
   const [selectedTrackingType, setSelectedTrackingType] = useState<TrackingCode>('web')
   const apiConfig = useQuery(
     api.organization.api_config.query.findByTenantAndOrg,
@@ -39,7 +39,9 @@ export default function ReservationLink() {
   }
 
   return (
-    <div>
+    <div
+      className={`${subscription && (subscription.status === 'active' || subscription.status === 'trialing') ? '' : 'bg-gray-200 blur-sm pointer-events-none select-none'}`}
+    >
       {apiConfig &&
       apiConfig?.liff_id &&
       apiConfig?.line_channel_secret &&
@@ -83,46 +85,34 @@ export default function ReservationLink() {
                 <p className="text-primary">{t('aboutReservationLink')}</p>
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground text-sm tracking-normal leading-7 bg-muted rounded-md p-2">
-                <p className="mb-2">
-                  {t('trackingDescription')}
-                </p>
+                <p className="mb-2">{t('trackingDescription')}</p>
                 <ul className="list-disc pl-4 space-y-1">
                   <li>
-                    <strong>LINE</strong>:
-                    {t('lineDescription')}
+                    <strong>LINE</strong>:{t('lineDescription')}
                   </li>
                   <li>
-                    <strong>Web</strong>:
-                    {t('webDescription')}
+                    <strong>Web</strong>:{t('webDescription')}
                   </li>
                   <li>
-                    <strong>Instagram</strong>:
-                    {t('instagramDescription')}
+                    <strong>Instagram</strong>:{t('instagramDescription')}
                   </li>
                   <li>
-                    <strong>X (Twitter)</strong>:
-                    {t('twitterDescription')}
+                    <strong>X (Twitter)</strong>:{t('twitterDescription')}
                   </li>
                   <li>
-                    <strong>Facebook</strong>:
-                    {t('facebookDescription')}
+                    <strong>Facebook</strong>:{t('facebookDescription')}
                   </li>
                   <li>
-                    <strong>YouTube</strong>:
-                    {t('youtubeDescription')}
+                    <strong>YouTube</strong>:{t('youtubeDescription')}
                   </li>
                   <li>
-                    <strong>Tiktok</strong>:
-                    {t('tiktokDescription')}
+                    <strong>Tiktok</strong>:{t('tiktokDescription')}
                   </li>
                   <li>
-                    <strong>GoogleMap</strong>:
-                    {t('googleMapDescription')}
+                    <strong>GoogleMap</strong>:{t('googleMapDescription')}
                   </li>
                 </ul>
-                <p className="mt-2">
-                  {t('copyInstruction')}
-                </p>
+                <p className="mt-2">{t('copyInstruction')}</p>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -130,9 +120,7 @@ export default function ReservationLink() {
       ) : (
         <div className="flex flex-col gap-2">
           <p className="text-base font-bold text-primary">{t('lineConnectionRequired')}</p>
-          <span className="text-sm text-muted-foreground">
-            {t('lineConnectionDescription')}
-          </span>
+          <span className="text-sm text-muted-foreground">{t('lineConnectionDescription')}</span>
           <Link href={`${BASE_URL}/dashboard/setting`}>
             <Button>{t('connectWithLine')}</Button>
           </Link>
