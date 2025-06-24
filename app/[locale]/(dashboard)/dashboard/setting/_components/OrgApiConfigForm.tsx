@@ -927,7 +927,7 @@ const ApiSettingsCard = () => {
                     • <strong>サイズ</strong>：Full（推奨）、Tall、Compactから選択
                   </div>
                   <div>
-                    • <strong>エンドポイントURL</strong>：あなたのWebアプリのURL
+                    • <strong>エンドポイントURL</strong>：https://bocker.jp/ja/reservation
                   </div>
                   <div>
                     • <strong>スコープ</strong>：profile、openid、email（必要に応じて）
