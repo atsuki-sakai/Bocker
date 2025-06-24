@@ -227,7 +227,7 @@ export default function PointForm() {
                   onCheckedChange={(checked) => {
                     setValue('is_active', checked, { shouldDirty: true })
                   }}
-                  className="mx-2 "
+                  className="mx-2"
                 />
                 <div>
                   <span className="block text-xs text-muted-foreground">
@@ -256,6 +256,7 @@ export default function PointForm() {
                   <Switch
                     id="point-type"
                     checked={watchedIsFixedPoint}
+                    className="data-[state=checked]:bg-neon data-[state=unchecked]:bg-link-foreground"
                     onCheckedChange={(checked) => {
                       setValue('is_fixed_point', checked, { shouldDirty: true })
                     }}
