@@ -2,8 +2,8 @@
 
 
 import { Link } from '@/i18n/navigation'
-import React, { useState, useMemo, useCallback, memo, useEffect } from 'react'
-import { useTranslations, useLocale } from 'next-intl'
+import React, { useState, useMemo, useCallback, memo } from 'react'
+import { useTranslations } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useTimelineData, useReservationBars } from '@/hooks/useTimelineData'
 import type {
@@ -27,9 +27,8 @@ import {
   convertTimestampToDateString,
 } from '@/lib/schedules'
 import { format, addDays, subDays, isWeekend } from 'date-fns'
-import { formatDate } from '@/lib/formatDate'
-import type { SupportedLocale } from '@/lib/dateLocale'
 import Image from 'next/image'
+import { DatePicker } from '@/components/common/DatePicker'
 
 // 1スロット（10分）の幅(px) - 隙間をなくすために調整
 const SLOT_WIDTH = 32
@@ -402,7 +401,6 @@ ReservationList.displayName = 'ReservationList'
 // ■ メインコンポーネント
 export default function ReservationForm() {
   const t = useTranslations('reservations')
-  const locale = useLocale() as SupportedLocale
   // ■ ステート管理
   const { tenantId, orgId, ready } = useTenantAndOrganization()
   const [selectedDate, setSelectedDate] = useState(() => new Date())
@@ -412,7 +410,6 @@ export default function ReservationForm() {
 
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'timeline' | 'list'>('timeline')
-  const [dateLabel, setDateLabel] = useState('')
 
   // ■ データ取得（最適化されたカスタムフック使用）
   const targetDateStr = format(selectedDate, 'yyyy-MM-dd')
@@ -434,15 +431,6 @@ export default function ReservationForm() {
     () => staffTimelineData.flatMap((staff) => staff.reservations),
     [staffTimelineData]
   )
-
-  // ■ 日付フォーマット
-  useEffect(() => {
-    const formatSelectedDate = async () => {
-      const formatted = await formatDate(selectedDate, 'PPP', locale)
-      setDateLabel(formatted)
-    }
-    formatSelectedDate()
-  }, [selectedDate, locale])
 
   // ■ イベントハンドラー
   const handleReservationClick = useCallback((reservation: ReservationWithDetails) => {
@@ -478,20 +466,12 @@ export default function ReservationForm() {
                 <Button variant="outline" size="sm" onClick={() => handleDateChange(-1)}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <div
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2 border-2 rounded-xl shadow-sm',
-                    isWeekendDate
-                      ? 'bg-muted border-muted-foreground'
-                      : 'bg-background border-border'
-                  )}
-                >
-                  <CalendarDays className="w-4 h-4 text-link-foreground" />
-                  <span className="text-xs md:text-base font-bold text-primary">{dateLabel}</span>
-                  {isWeekendDate && (
-                    <span className="text-xs text-destructive font-medium">{t('weekend')}</span>
-                  )}
-                </div>
+
+                <DatePicker
+                  value={selectedDate}
+                  onChange={(date) => date && setSelectedDate(date)}
+                  className={cn('w-fit', isWeekendDate && 'border-muted-foreground')}
+                />
                 <Button variant="outline" size="sm" onClick={() => handleDateChange(1)}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
