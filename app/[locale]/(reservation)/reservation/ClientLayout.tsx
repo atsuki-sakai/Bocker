@@ -38,26 +38,57 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
         // 認証コールバックページの場合は特別処理
         if (pathname.includes('/reservation/auth/callback')) {
           console.log('[ClientLayout] Auth callback page detected, extracting orgId from searchParams')
-          const oid = searchParams.get('oid')
-          if (oid) {
+          
+          // URLパラメータから直接取得（優先）
+          const oidParam = searchParams.get('oid')
+          const tidParam = searchParams.get('tid')
+          
+          console.log('[ClientLayout] URL params - oid:', oidParam, 'tid:', tidParam, 'state:', stateId)
+          
+          if (oidParam && tidParam) {
+            console.log('[ClientLayout] Using orgId and tenantId from URL params')
+            setOrgId(oidParam as Id<'organization'>)
+            setTenantId(tidParam as Id<'tenant'>)
+            setIsLoading(false)
+            return
+          }
+          
+          // URLパラメータが不足している場合のみstateから取得
+          if (stateId) {
             try {
-              const existOrg = await fetchQuery(api.organization.query.findByOrgId, {
-                org_id: oid as Id<'organization'>,
+              console.log('[ClientLayout] Fetching state data for stateId:', stateId)
+              const stateResponse = await fetch(`/api/auth/line-state?stateId=${stateId}`, {
+                method: 'GET',
+                credentials: 'include',
               })
-              if (existOrg) {
-                setOrgId(oid as Id<'organization'>)
-                setTenantId(existOrg.tenant_id)
-                setIsLoading(false)
-                return
+              
+              if (stateResponse.ok) {
+                const stateData = await stateResponse.json()
+                console.log('[ClientLayout] State data received:', stateData)
+                
+                if (stateData?.orgId && stateData?.tenantId) {
+                  setOrgId(stateData.orgId)
+                  setTenantId(stateData.tenantId)
+                  setIsLoading(false)
+                  return
+                } else {
+                  console.error('[ClientLayout] State data missing orgId or tenantId:', stateData)
+                  setErrors((prev) => [...prev, '認証情報が不完全です'])
+                }
+              } else {
+                const errorData = await stateResponse.json()
+                console.error('[ClientLayout] State validation failed:', errorData)
+                setErrors((prev) => [...prev, `認証状態の確認に失敗しました: ${errorData.error || 'Unknown error'}`])
               }
             } catch (error) {
-              console.error('店舗の取得に失敗しました', error)
-              setErrors((prev) => [
-                ...prev,
-                `店舗の取得に失敗しました。URLが間違っているか、店舗が削除されている可能性があります。`,
-              ])
+              console.error('[ClientLayout] Error fetching state data:', error)
+              setErrors((prev) => [...prev, '認証状態の確認中にエラーが発生しました'])
             }
+          } else {
+            console.error('[ClientLayout] No stateId found in callback URL')
+            setErrors((prev) => [...prev, '認証情報が見つかりません'])
           }
+          
           setIsLoading(false)
           return
         }
