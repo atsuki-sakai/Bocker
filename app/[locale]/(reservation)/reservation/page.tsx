@@ -428,7 +428,7 @@ export default function ReserveRedirectPage() {
           credentials: 'include',
         })
         router.push(`/${locale}/reservation`)
-      }, 8000) // 8000ms = 8秒
+      }, 30000) // 30000ms = 30秒（LIFF初期化とConvexクエリの完了を待つ）
     }
 
     // クリーンアップ: isLoading が false もしくはアンマウント時にタイマーを解除
@@ -446,7 +446,7 @@ export default function ReserveRedirectPage() {
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="flex flex-col items-center bg-muted justify-center space-y-6 py-6">
             <div className="relative">
-              <Loader2 className="h-12 w-12 text-accent animate-spin" />
+              <Loader2 className="h-12 w-12 text-neon animate-spin" />
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="h-6 w-6 rounded-full bg-accent animate-pulse"></div>
               </div>
