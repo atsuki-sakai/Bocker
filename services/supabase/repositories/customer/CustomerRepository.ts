@@ -1,5 +1,5 @@
 import { BaseRepository, ListOptions, BaseRepositoryOptions } from '../BaseRepository';
-import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService'; // supabase.types から直接も可
+import type { RowType, InsertType } from '@/services/supabase/SupabaseService'; // supabase.types から直接も可
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
 
@@ -452,7 +452,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     
     try {
       // JSONBパラメータ用のオブジェクトを作成
-      const params: Record<string, any> = {
+      const params: Record<string, string | number | null> = {
         p_customer_uid: customerUid,
         p_tenant_id: tenantId,
         p_org_id: orgId
@@ -501,7 +501,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       return data[0];
     } catch (error) {
       console.error('[CustomerRepository] updateCustomer: Unexpected error', error);
-      if (error instanceof Error && (error as any).name === 'SupabaseError') {
+      if (error instanceof Error && error.constructor.name === 'SupabaseError') {
         throw error;
       }
       throwSupabaseError({
@@ -643,6 +643,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     } catch (error) {
       console.error('[CustomerRepository] updateCustomerPoints: Unexpected error', error);
       // SupabaseError でない場合は SupabaseError にラップして再スロー
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (!(error instanceof Error && (error as any).name === 'SupabaseError')) {
         throwSupabaseError({
           callFunc: 'CustomerRepository.updateCustomerPoints',
@@ -725,7 +726,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       };
     } catch (error) {
       console.error('[CustomerRepository] updatePointsAtomic: Error', error);
-      if (error instanceof Error && (error as any).name === 'SupabaseError') {
+      if (error instanceof Error && error.constructor.name === 'SupabaseError') {
         throw error;
       }
       
@@ -783,6 +784,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
 
     try {
       const { data, error } = await this.supabaseServiceInstance.rpc<{
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         customers: any; // JSONB型
         total_count: number;
         has_more: boolean;
@@ -827,7 +829,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       };
     } catch (error) {
       console.error('[CustomerRepository] searchCustomersOptimized: Error', error);
-      if (error instanceof Error && (error as any).name === 'SupabaseError') {
+      if (error instanceof Error && error.constructor.name === 'SupabaseError') {
         throw error;
       }
       
@@ -901,7 +903,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       };
     } catch (error) {
       console.error('[CustomerRepository] recalculatePointsBalance: Error', error);
-      if (error instanceof Error && (error as any).name === 'SupabaseError') {
+      if (error instanceof Error && error.constructor.name === 'SupabaseError') {
         throw error;
       }
       
