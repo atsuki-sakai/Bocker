@@ -7,6 +7,7 @@ import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { Id } from '@/convex/_generated/dataModel';
 import { PointTransactionRepository, PointTaskQueueRepository } from '@/services/supabase/repositories/point';
 import { CustomerRepository } from '@/services/supabase/repositories/customer';
+import { CouponTransactionRepository } from '@/services/supabase/repositories/coupon';
 import { createClient } from '@supabase/supabase-js';
 import { LineService } from '@/services/line/LineService';
 import { SupabaseService } from '@/services/supabase/SupabaseService';
@@ -146,7 +147,29 @@ export async function handleCheckoutSessionCompleted(
       console.log(`💎 [${eventId}] ポイント使用完了: ${reservation.intended_point_use}pt`, context);
     }
     
-    // 5. 通知送信（並列処理）
+    // 5. クーポン使用履歴を作成
+    if (reservationDetail.coupon_id && reservationDetail.coupon_discount && reservationDetail.coupon_discount > 0) {
+      const couponTransactionRepo = new CouponTransactionRepository(supabaseService);
+      
+      try {
+        await couponTransactionRepo.create({
+          tenant_id: tenantId,
+          org_id: orgId,
+          coupon_id: reservationDetail.coupon_id,
+          customer_id: customerUid,
+          reservation_id: reservationId,
+          transaction_date_unix: Date.now(),
+          discount_amount: reservationDetail.coupon_discount,
+        });
+        
+        console.log(`🎟️ [${eventId}] クーポン使用履歴作成完了: couponId=${reservationDetail.coupon_id}, discount=${reservationDetail.coupon_discount}`, context);
+      } catch (error) {
+        console.error(`⚠️ [${eventId}] クーポン使用履歴作成失敗:`, error);
+        // クーポン履歴の作成失敗は処理を継続
+      }
+    }
+    
+    // 6. 通知送信（並列処理）
     const notificationResults = await Promise.allSettled([
       // メール送信
       customer.email ? sendReservationConfirmationEmail({
@@ -229,7 +252,7 @@ export async function handleCheckoutSessionCompleted(
       }
     });
     
-    // 6. ポイント付与予約（30日後）
+    // 7. ポイント付与予約（30日後）
     const pointTaskQueueRepo = new PointTaskQueueRepository(supabaseService);
     
     // ポイント設定を取得
