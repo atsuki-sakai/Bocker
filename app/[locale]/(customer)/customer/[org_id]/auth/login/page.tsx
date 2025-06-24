@@ -453,13 +453,15 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
                     className="object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-palette-1 to-palette-2 opacity-30"></div>
-                  <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/50">
-                    <h1 className="text-xl font-bold text-white">{organization.org.org_name}</h1>
-                    <p className="text-sm text-white mt-1">{organization.config.address}</p>
+                  <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-background">
+                    <h1 className="text-xl font-bold text-foreground">
+                      {organization.org.org_name}
+                    </h1>
+                    <p className="text-sm text-foreground mt-1">{organization.config.address}</p>
                   </div>
                 </div>
               ) : (
-                <div className="flex-col w-full h-full bg-gradient-to-b from-palette-1 to-palette-2 text-white flex items-center justify-center">
+                <div className="flex-col w-full h-full bg-gradient-to-b from-palette-1 to-palette-2 text-foreground flex items-center justify-center">
                   <h1 className="text-2xl font-bold text-muted-foreground">
                     {organization.org.org_name}
                   </h1>

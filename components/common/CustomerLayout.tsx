@@ -33,14 +33,14 @@ export async function CustomerLayout({ children, customerUid, orgId }: CustomerL
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* ヘッダー */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-background shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
-              <h1 className="text-xl font-semibold text-gray-900">マイページ</h1>
-              <span className="text-sm text-gray-500">
+              <h1 className="text-xl font-semibold text-foreground">マイページ</h1>
+              <span className="text-sm text-muted-foreground">
                 {customer.customer?.last_name ?? '未設定'} {customer.customer?.first_name ?? ''} 様
               </span>
             </div>
@@ -91,9 +91,9 @@ export async function CustomerLayout({ children, customerUid, orgId }: CustomerL
 
               {/* ポイント残高表示 */}
               {customer.customerPoints && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-600">現在のポイント</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="bg-background rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground">現在のポイント</p>
+                  <p className="text-2xl font-bold text-foreground">
                     {customer.customerPoints.total_points || 0}
                     <span className="text-sm font-normal text-muted-foreground ml-1">pt</span>
                   </p>

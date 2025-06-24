@@ -84,10 +84,25 @@ export function ProfileEditPageClient({
     setValue('email', customer.email || customerDetail?.email || '')
     setValue('phone', customer.phone || '')
     setValue('birthday', customerDetail?.birthday || '')
-    const gender = customerDetail?.gender ?? 'unselected'
-    setValue('gender', gender as Gender)
+
+    // 性別の設定: null, undefined, 空文字の場合は'unselected'にする
+    const genderValue = customerDetail?.gender
+    
+    if (
+      genderValue &&
+      genderValue.trim() !== '' &&
+      ['male', 'female', 'unselected'].includes(genderValue)
+    ) {
+      setValue('gender', genderValue as Gender)
+    } else {
+      setValue('gender', 'unselected')
+    }
+
     setValue('notes', customerDetail?.notes || '')
   }, [initialData, setValue])
+
+  // フォーム値の変更を監視
+  const currentGender = watch('gender')
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsSubmitting(true)
@@ -201,8 +216,12 @@ export function ProfileEditPageClient({
               <div className="space-y-2">
                 <Label htmlFor="gender">性別</Label>
                 <Select
-                  value={watch('gender') || 'unselected'}
-                  onValueChange={(value) => setValue('gender', value as Gender)}
+                  value={currentGender}
+                  onValueChange={(value) => {
+                    if (value && ['male', 'female', 'unselected'].includes(value)) {
+                      setValue('gender', value as Gender)
+                    }
+                  }}
                 >
                   <SelectTrigger id="gender">
                     <SelectValue placeholder="選択してください" />
