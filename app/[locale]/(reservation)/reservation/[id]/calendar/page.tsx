@@ -16,7 +16,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
-import { PointTaskQueueRepository, CouponTransactionRepository } from '@/services/supabase/repositories'
+import { PointTaskQueueRepository } from '@/services/supabase/repositories'
 import { CarteRepository } from '@/services/supabase/repositories/carte/CarteRepository'
 import { CarteDetailRepository } from '@/services/supabase/repositories/carte/CarteDetailRepository'
 import { formatDateToYYYYMMDD } from '@/lib/formatDate'
@@ -55,9 +55,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useQuery } from 'convex/react'
-import { RowType, SupabaseService } from '@/services/supabase/SupabaseService'
-import { createClient } from '@supabase/supabase-js'
-import { getEnv } from '@/lib/env-config'
+import { RowType } from '@/services/supabase/SupabaseService'
 
 // 曜日をソートするための順序を定義
 const dayOrder: Record<string, number> = {
@@ -847,48 +845,72 @@ export default function CalendarPage() {
         }
 
         // クーポンを利用していれば、クーポントランザクションを作成
-        if (appliedDiscount.couponId && appliedDiscount.discount > 0 && customerData?.customer?.uid) {
+        if (
+          appliedDiscount.couponId &&
+          appliedDiscount.discount > 0 &&
+          customerData?.customer?.uid
+        ) {
+          console.log('[CalendarPage] Creating coupon transaction:', {
+            couponId: appliedDiscount.couponId,
+            discount: appliedDiscount.discount,
+            customerId: customerData.customer.uid,
+            reservationId,
+          })
+
           try {
-            const supabase = createClient(
-              getEnv('NEXT_PUBLIC_SUPABASE_URL'),
-              getEnv('SUPABASE_SERVICE_ROLE_KEY')
-            )
-            const supabaseService = new SupabaseService(supabase)
-            const couponTransactionRepo = new CouponTransactionRepository(supabaseService)
-            
-            await couponTransactionRepo.create({
-              tenant_id: sessionCustomer.tenantId,
-              org_id: organizationComplete.organization._id as Id<'organization'>,
-              coupon_id: appliedDiscount.couponId,
-              customer_id: customerData.customer.uid,
-              reservation_id: reservationId!,
-              transaction_date_unix: Date.now(),
-              discount_amount: appliedDiscount.discount,
+            // APIエンドポイントを呼び出してクーポントランザクションを作成
+            const response = await fetch('/api/coupon/create-transaction', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                tenant_id: sessionCustomer.tenantId,
+                org_id: organizationComplete.organization._id as Id<'organization'>,
+                coupon_id: appliedDiscount.couponId,
+                customer_id: customerData.customer.uid,
+                reservation_id: reservationId!,
+                discount_amount: appliedDiscount.discount,
+              }),
             })
-            console.log('クーポン利用履歴を作成しました')
+
+            if (!response.ok) {
+              const errorData = await response.json()
+              throw new Error(errorData.message || 'Failed to create coupon transaction')
+            }
+
+            const result = await response.json()
+            console.log('[CalendarPage] クーポン利用履歴を作成しました:', result.data)
           } catch (error) {
-            console.error('クーポン利用履歴の作成でエラーが発生しました:', error)
+            console.error('[CalendarPage] クーポン利用履歴の作成でエラーが発生しました:', error)
             // クーポン履歴のエラーは予約を妨げないようにする
           }
+        } else {
+          console.log('[CalendarPage] Skipping coupon transaction creation:', {
+            hasCouponId: !!appliedDiscount.couponId,
+            discount: appliedDiscount.discount,
+            hasCustomerUid: !!customerData?.customer?.uid,
+          })
         }
 
         if (sessionCustomer.lineUserId && organizationComplete.config) {
           // Lineにメッセージ予約の確認用Flexメッセージを作成
           const flexMessages = reservationFlexMessageTemplate(
-            organizationComplete.organization,
-            organizationComplete.config,
-            sessionCustomer.name ?? '不明',
-            selectedStaffCompleted.staff,
-            selectedDate!,
-            selectedTime!,
-            selectedMenus,
-            selectedOptions,
-            reservationBaseData.total_price, // 小計（割引前）
-            usePoints, // 使用ポイント
-            appliedDiscount.discount || 0, // クーポン割引額
-            calculateTotal(), // 最終合計料金
-            reservationId!,
-            organizationComplete.reservationConfig?.available_cancel_days ?? 3
+            organizationComplete.organization, // 1. organization
+            organizationComplete.config, // 2. orgConfig
+            sessionCustomer.name ?? '不明', // 3. customerName
+            organizationComplete.organization._id as Id<'organization'>, // 4. orgId
+            sessionCustomer.customerUid, // 5. customerUid
+            selectedStaffCompleted.staff, // 6. selectedStaff
+            selectedDate!, // 7. selectedDate
+            selectedTime!, // 8. selectedTimeSlot
+            selectedMenus, // 9. selectedMenus
+            selectedOptions, // 10. selectedOptions
+            usePoints, // 11. usePoints
+            appliedDiscount.discount || 0, // 12. couponDiscount
+            calculateTotal(), // 13. calculateTotalPrice
+            reservationId!, // 14. reservationId
+            organizationComplete.reservationConfig?.available_cancel_days ?? 3 // 15. availableCancelDay
           )
           // Lineにメッセージ送信
           const response = await fetch('/api/line/flex-message', {
