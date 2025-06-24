@@ -1,5 +1,5 @@
-import { BaseRepository, BaseRepositoryOptions, ListOptions } from '../BaseRepository';
-import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService';
+import { BaseRepository, ListOptions } from '../BaseRepository';
+import type { RowType, InsertType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
 
@@ -373,6 +373,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
     
     try {
       // Point task queue is a separate table, so we need to use direct supabase client
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = (this.supabaseServiceInstance as any).client;
       const { error } = await supabase
         .from('point_task_queue')
