@@ -50,17 +50,18 @@ export function LiffProvider({ children, liffId }: { children: React.ReactNode; 
       setErrorMessage(null)
 
       try {
-        console.log(`[LiffProvider] Initializing LIFF (attempt ${retryCount + 1})...`)
+        console.log(`[LiffProvider] Initializing LIFF (attempt ${retryCount + 1}) with LIFF ID:`, liffId)
 
         // LIFFをインポート
         const liffModule = (await import('@line/liff')).default
 
         // LIFFを初期化
+        console.log(`[LiffProvider] Calling liff.init() at:`, new Date().toISOString())
         await liffModule.init({
           liffId,
         })
 
-        console.log('[LiffProvider] LIFF initialized successfully')
+        console.log(`[LiffProvider] LIFF initialized successfully at:`, new Date().toISOString())
         setLiffObject(liffModule)
         setIsInitialized(true)
 
@@ -88,6 +89,12 @@ export function LiffProvider({ children, liffId }: { children: React.ReactNode; 
         }
       } catch (error) {
         console.error('[LiffProvider] LIFF initialization failed', error)
+        console.error('[LiffProvider] Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : 'No stack trace',
+          liffId: liffId,
+          timestamp: new Date().toISOString()
+        })
         setIsError(true)
         setErrorMessage(error instanceof Error ? error.message : 'LIFF初期化に失敗しました')
 
