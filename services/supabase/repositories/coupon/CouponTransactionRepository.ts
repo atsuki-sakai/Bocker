@@ -1,5 +1,5 @@
 import { BaseRepository } from '../BaseRepository';
-import { RowType, supabaseClientService } from '@/services/supabase/SupabaseService';
+import { RowType, SupabaseService } from '@/services/supabase/SupabaseService';
 
 interface CouponTransactionData {
   tenant_id: string;
@@ -14,8 +14,8 @@ interface CouponTransactionData {
 
 export class CouponTransactionRepository extends BaseRepository<'coupon_transaction'> {
 
-  constructor(instance: typeof supabaseClientService = supabaseClientService) {
-    super('coupon_transaction', instance);
+  constructor(supabaseService: SupabaseService) {
+    super('coupon_transaction', supabaseService);
   }
 
   /**
@@ -30,7 +30,7 @@ export class CouponTransactionRepository extends BaseRepository<'coupon_transact
       updated_at: new Date().toISOString(),
     };
 
-    return await this.create(insertData);
+    return await super.create(insertData);
   }
 
   /**

@@ -1,4 +1,4 @@
-import { supabaseClientService, RowType, InsertType, UpdateType, TableName, SelectCols } from '@/services/supabase/SupabaseService';
+import { supabaseClientService, SupabaseService, RowType, InsertType, UpdateType, TableName, SelectCols } from '@/services/supabase/SupabaseService';
 import { addCreationCommonFields, addUpdateCommonFields } from '@/services/supabase/utils/helper';
 
 /**
@@ -27,14 +27,14 @@ export interface ListOptions<T extends TableName> extends BaseRepositoryOptions<
  */
 export class BaseRepository<K extends TableName> {
   protected tableName: K;
-  protected supabaseServiceInstance: typeof supabaseClientService;
+  protected supabaseServiceInstance: SupabaseService;
 
   /**
    * BaseRepository のコンストラクタ
    * @param tableName - 操作対象のテーブル名
    * @param supabaseInstance - Supabase クライアントインスタンス (テスト用に注入可能)
    */
-  constructor(tableName: K, supabaseInstance: typeof supabaseClientService = supabaseClientService) {
+  constructor(tableName: K, supabaseInstance: SupabaseService = supabaseClientService) {
     this.tableName = tableName;
     this.supabaseServiceInstance = supabaseInstance;
   }

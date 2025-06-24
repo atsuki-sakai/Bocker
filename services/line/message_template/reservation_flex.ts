@@ -4,23 +4,27 @@ import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { TimeRange } from '@/lib/types'
 import type { StaffDisplay } from '@/lib/types'
+import { Id } from '@/convex/_generated/dataModel'
+import { BASE_URL } from '@/lib/constants'
 
 export const reservationFlexMessageTemplate = (
   organization: Doc<'organization'>,
   orgConfig: Doc<'config'>,
   customerName: string,
+  orgId: Id<'organization'>,
+  customerUid: string,
   selectedStaff: StaffDisplay,
   selectedDate: Date,
   selectedTimeSlot: TimeRange,
   selectedMenus: Doc<'menu'>[],
   selectedOptions: Doc<'option'>[],
-  subtotalPrice: number,
   usePoints: number,
   couponDiscount: number,
   calculateTotalPrice: number,
   reservationId: string,
   availableCancelDay: number
 ): Message[] => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reservationDetailsContents: any[] = [
     {
       type: 'box',
@@ -173,40 +177,6 @@ export const reservationFlexMessageTemplate = (
     })
   }
 
-  reservationDetailsContents.push({
-    type: 'box',
-    layout: 'horizontal',
-    contents: [
-      {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '小計',
-            size: 'sm',
-            color: '#8C8C8C',
-            weight: 'bold',
-          },
-        ],
-        width: '80px',
-      },
-      {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: subtotalPrice.toLocaleString() + '円',
-            size: 'sm',
-            color: '#000000',
-            wrap: true,
-          },
-        ],
-      },
-    ],
-    margin: 'md',
-  })
 
   if (usePoints > 0) {
     reservationDetailsContents.push({
@@ -342,7 +312,7 @@ export const reservationFlexMessageTemplate = (
         contents: [
           {
             type: 'text',
-            text: selectedStaff?.name ?? '',
+            text: selectedStaff?.name ?? '' + (selectedStaff?.extra_charge ? '（指名料：' + selectedStaff.extra_charge + '円）' : ''),
             size: 'sm',
             color: '#000000',
             wrap: true,
@@ -387,13 +357,14 @@ export const reservationFlexMessageTemplate = (
     margin: 'md',
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const contentsBody: any[] = [
     {
       type: 'text',
       text: '予約内容',
       weight: 'bold',
       size: 'lg',
-      color: '#5dade2',
+      color: '#214A58FF',
     },
     {
       type: 'separator',
@@ -420,7 +391,7 @@ export const reservationFlexMessageTemplate = (
           text: '店舗情報',
           weight: 'bold',
           size: 'md',
-          color: '#5dade2',
+          color: '#214A58FF',
         },
         {
           type: 'box',
@@ -560,7 +531,7 @@ export const reservationFlexMessageTemplate = (
             },
           ],
           paddingAll: '20px',
-          backgroundColor: '#5dade2',
+          backgroundColor: '#214A58FF',
           spacing: 'md',
           paddingTop: '22px',
         },
@@ -580,19 +551,10 @@ export const reservationFlexMessageTemplate = (
               style: 'primary',
               action: {
                 type: 'uri',
-                label: '予約を確認する',
-                uri: 'https://example.com/change-reservation',
+                label: '予約確認・キャンセル',
+                uri: `${BASE_URL}/customer/${orgId}/${customerUid}/reservation`,
               },
-              color: '#5dade2',
-            },
-            {
-              type: 'button',
-              style: 'secondary',
-              action: {
-                type: 'uri',
-                label: '予約をキャンセルする',
-                uri: 'https://example.com/cancel-reservation',
-              },
+              color: '#214A58FF',
             },
             {
               type: 'box',
@@ -615,7 +577,7 @@ export const reservationFlexMessageTemplate = (
         },
         styles: {
           header: {
-            backgroundColor: '#5dade2',
+            backgroundColor: '#214A58FF',
           },
           footer: {
             separator: true,

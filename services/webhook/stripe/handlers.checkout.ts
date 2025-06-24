@@ -148,11 +148,18 @@ export async function handleCheckoutSessionCompleted(
     }
     
     // 5. クーポン使用履歴を作成
+    console.log(`💳 [${eventId}] Checking coupon transaction creation:`, {
+      hasCouponId: !!reservationDetail.coupon_id,
+      couponId: reservationDetail.coupon_id,
+      couponDiscount: reservationDetail.coupon_discount,
+      customerUid,
+    });
+    
     if (reservationDetail.coupon_id && reservationDetail.coupon_discount && reservationDetail.coupon_discount > 0) {
       const couponTransactionRepo = new CouponTransactionRepository(supabaseService);
       
       try {
-        await couponTransactionRepo.create({
+        const couponTransaction = await couponTransactionRepo.create({
           tenant_id: tenantId,
           org_id: orgId,
           coupon_id: reservationDetail.coupon_id,
@@ -162,11 +169,17 @@ export async function handleCheckoutSessionCompleted(
           discount_amount: reservationDetail.coupon_discount,
         });
         
-        console.log(`🎟️ [${eventId}] クーポン使用履歴作成完了: couponId=${reservationDetail.coupon_id}, discount=${reservationDetail.coupon_discount}`, context);
+        console.log(`🎟️ [${eventId}] クーポン使用履歴作成完了:`, {
+          couponId: reservationDetail.coupon_id,
+          discount: reservationDetail.coupon_discount,
+          transactionId: couponTransaction.id,
+        }, context);
       } catch (error) {
         console.error(`⚠️ [${eventId}] クーポン使用履歴作成失敗:`, error);
         // クーポン履歴の作成失敗は処理を継続
       }
+    } else {
+      console.log(`ℹ️ [${eventId}] Skipping coupon transaction - no coupon used or zero discount`);
     }
     
     // 6. 通知送信（並列処理）
