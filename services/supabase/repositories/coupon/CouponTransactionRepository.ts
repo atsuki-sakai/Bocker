@@ -1,5 +1,5 @@
 import { BaseRepository } from '../BaseRepository';
-import { SupabaseService } from '../../SupabaseService';
+import { RowType, supabaseClientService } from '@/services/supabase/SupabaseService';
 
 interface CouponTransactionData {
   tenant_id: string;
@@ -12,15 +12,16 @@ interface CouponTransactionData {
   sort_key?: string;
 }
 
-export class CouponTransactionRepository extends BaseRepository {
-  constructor(supabaseService: SupabaseService) {
-    super(supabaseService, 'coupon_transaction');
+export class CouponTransactionRepository extends BaseRepository<'coupon_transaction'> {
+
+  constructor(instance: typeof supabaseClientService = supabaseClientService) {
+    super('coupon_transaction', instance);
   }
 
   /**
    * クーポン取引レコードを作成
    */
-  async create(data: CouponTransactionData) {
+  async create(data: CouponTransactionData): Promise<RowType<'coupon_transaction'>> {
     const insertData = {
       ...data,
       sort_key: data.sort_key || `${data.tenant_id}_${data.org_id}_${data.transaction_date_unix}`,
@@ -29,11 +30,7 @@ export class CouponTransactionRepository extends BaseRepository {
       updated_at: new Date().toISOString(),
     };
 
-    return await this.client
-      .from(this.tableName)
-      .insert(insertData)
-      .select()
-      .single();
+    return await this.create(insertData);
   }
 
   /**
@@ -44,18 +41,12 @@ export class CouponTransactionRepository extends BaseRepository {
     org_id: string,
     reservation_id: string
   ) {
-    const { data, error } = await this.client
-      .from(this.tableName)
-      .select('*')
-      .eq('tenant_id', tenant_id)
-      .eq('org_id', org_id)
-      .eq('reservation_id', reservation_id)
-      .eq('is_archive', false)
-      .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
+    const data = await this.findOne({
+      tenant_id,
+      org_id,
+      reservation_id,
+      is_archive: false,
+    });
 
     return data;
   }
@@ -67,17 +58,14 @@ export class CouponTransactionRepository extends BaseRepository {
     customer_id: string,
     limit: number = 100
   ) {
-    const { data, error } = await this.client
-      .from(this.tableName)
-      .select('*')
-      .eq('customer_id', customer_id)
-      .eq('is_archive', false)
-      .order('transaction_date_unix', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      throw error;
-    }
+    const data = await this.list({
+      filters: {
+        customer_id,
+        is_archive: false,
+      },
+      orderBy: { column: 'transaction_date_unix', ascending: false },
+      pageSize: limit,
+    });
 
     return data || [];
   }
@@ -90,17 +78,14 @@ export class CouponTransactionRepository extends BaseRepository {
     org_id: string,
     coupon_id: string
   ): Promise<number> {
-    const { count, error } = await this.client
-      .from(this.tableName)
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenant_id)
-      .eq('org_id', org_id)
-      .eq('coupon_id', coupon_id)
-      .eq('is_archive', false);
-
-    if (error) {
-      throw error;
-    }
+    const { count } = await this.list({
+      filters: {
+        tenant_id,
+        org_id,
+        coupon_id,
+        is_archive: false,
+      },
+    });
 
     return count || 0;
   }
