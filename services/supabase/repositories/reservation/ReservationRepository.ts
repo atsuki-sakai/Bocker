@@ -1,5 +1,5 @@
-import { BaseRepository, BaseRepositoryOptions, ListOptions } from '../BaseRepository';
-import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService';
+import { BaseRepository, ListOptions } from '../BaseRepository';
+import type { RowType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
 
