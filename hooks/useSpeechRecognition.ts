@@ -48,10 +48,13 @@ export const useSpeechRecognition = ({
   onResult,
   onError,
   language = 'ja-JP',
+  continuous = true,
 }: UseSpeechRecognitionProps) => {
   const [isListening, setIsListening] = useState(false)
   const [isSupported, setIsSupported] = useState(false)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const shouldRestartRef = useRef(false) // onend で再起動するかどうか
+  const isIOS = /iP(hone|ad|od)/.test(typeof navigator !== 'undefined' ? navigator.userAgent : '')
 
   // ブラウザサポート確認
   useEffect(() => {
@@ -70,17 +73,27 @@ export const useSpeechRecognition = ({
     const recognition = recognitionRef.current
 
     // 音声認識の設定
-    recognition.continuous = true // 継続的な音声認識
+    recognition.continuous = !isIOS && continuous
     recognition.interimResults = true
     recognition.lang = language
 
     // 音声認識開始時
     recognition.onstart = () => {
       setIsListening(true)
+      shouldRestartRef.current = true
     }
 
     // 音声認識終了時
     recognition.onend = () => {
+      if (continuous && shouldRestartRef.current) {
+        try {
+          recognition.start() // 擬似連続再開
+          return
+        } catch (err) {
+          // 再開に失敗した場合はリスニング状態を終了させる
+          console.error('音声認識の再開に失敗しました:', err)
+        }
+      }
       setIsListening(false)
     }
 
@@ -125,7 +138,8 @@ export const useSpeechRecognition = ({
           errorMessage = 'マイクが利用できません'
           break
         case 'service-not-allowed':
-          errorMessage = '音声認識サービスが利用できません'
+          errorMessage =
+            '音声認識がブロックされています。iOS の「設定 ▸ プライバシーとセキュリティ ▸ 音声認識」で Safari を許可してください'
           break
         default:
           errorMessage = `音声認識エラー: ${event.error}`
@@ -145,6 +159,7 @@ export const useSpeechRecognition = ({
 
     try {
       initializeRecognition()
+      shouldRestartRef.current = true
       recognitionRef.current.start()
     } catch (error) {
       console.error('音声認識の開始に失敗しました:', error)
@@ -161,6 +176,7 @@ export const useSpeechRecognition = ({
     }
 
     try {
+      shouldRestartRef.current = false
       recognitionRef.current.stop()
     } catch (error) {
       console.error('音声認識の停止に失敗しました:', error)
