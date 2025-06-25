@@ -242,9 +242,6 @@ importers:
       stripe:
         specifier: ^17.7.0
         version: 17.7.0
-      supabase-js@2:
-        specifier: link:jsr:@supabase/supabase-js@2
-        version: link:jsr:@supabase/supabase-js@2
       svix:
         specifier: ^1.62.0
         version: 1.65.0
