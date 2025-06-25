@@ -55,7 +55,7 @@ export const getById = query({
 
 /**
  * リマインダー送信対象の予約を取得（内部使用専用）
- * - 指定時間範囲内に開始される確定済み予約を取得
+ * - 指定時間範囲内に開始される予約受付済み予約を取得
  * - リマインダー未送信のものだけを対象
  * - is_archive: false のみ対象
  */
@@ -65,7 +65,7 @@ export const getReservationsForReminder = internalQuery({
     startTimeTo: v.number(),   // 開始時刻の上限（Unix timestamp）
   },
   handler: async (ctx, args) => {
-    // 確定済みで、指定時間範囲内に開始される予約を取得
+    // 予約受付済みで、指定時間範囲内に開始される予約を取得
     const reservations = await ctx.db
       .query('reservation')
       .withIndex('status_start_time_archive', (q) =>
@@ -163,6 +163,61 @@ export const list = query({
       .filter((q) => q.eq(q.field('is_archive'), false))
 
     return reservationQuery.order(args.sort || 'desc').paginate(args.paginationOpts)
+  },
+})
+
+/**
+ * 組織レベルで全ステータスの予約一覧を取得
+ * - 組織全体の予約管理画面用
+ * - is_archive: false のみ対象
+ * - 全ステータスまたは特定ステータスでフィルタ可能
+ * - 日付範囲での絞り込み対応
+ * データ取得専用でバリデーションはmutationで担保
+ */
+export const listOrganizationAllStatus = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    paginationOpts: paginationOptsValidator,
+    sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    status_filter: v.optional(reservationStatusType),
+    start_date: v.optional(v.string()),
+    end_date: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    validateStringLength(args.org_id, 'org_id');
+    if (args.start_date) validateDateStrFormat(args.start_date, 'start_date');
+    if (args.end_date) validateDateStrFormat(args.end_date, 'end_date');
+
+    let reservationQuery = ctx.db
+      .query('reservation')
+      .withIndex('by_tenant_org_date_status_archive', (q) =>
+        q
+          .eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+      )
+      .filter((q) => q.eq(q.field('is_archive'), false));
+
+    // ステータスフィルター
+    if (args.status_filter) {
+      reservationQuery = reservationQuery.filter((q) => q.eq(q.field('status'), args.status_filter));
+    }
+
+    // 日付範囲フィルター
+    if (args.start_date && args.end_date) {
+      reservationQuery = reservationQuery.filter((q) =>
+        q.and(
+          q.gte(q.field('date'), args.start_date!),
+          q.lte(q.field('date'), args.end_date!)
+        )
+      );
+    } else if (args.start_date) {
+      reservationQuery = reservationQuery.filter((q) => q.gte(q.field('date'), args.start_date!));
+    } else if (args.end_date) {
+      reservationQuery = reservationQuery.filter((q) => q.lte(q.field('date'), args.end_date!));
+    }
+
+    return reservationQuery.order(args.sort || 'desc').paginate(args.paginationOpts);
   },
 })
 
@@ -1030,7 +1085,7 @@ export const calculateReservationTime = query({
         .filter((q) => q.eq(q.field('is_all_day'), false))
         .collect(),
       
-      // 確定済み予約
+      // 予約受付済み予約
       ctx.db
         .query('reservation')
         .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
