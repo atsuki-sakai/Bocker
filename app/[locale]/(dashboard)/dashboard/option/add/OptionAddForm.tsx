@@ -288,188 +288,216 @@ function OptionAddForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-          e.preventDefault()
-        }
-      }}
-    >
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="md:col-span-1">
-            <Card className="border border-dashed h-full flex flex-col">
-              <CardHeader className="pb-0">
-                <CardTitle className="text-base flex items-center gap-2 mb-2">
-                  <ImageIcon size={18} className="text-muted-foreground" />
-                  {t('form.optionImage')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow flex items-center justify-center">
-                <div className="w-full">
-                  <SingleImageDrop
-                    currentFile={currentFile}
-                    onFileSelect={(file) => {
-                      setCurrentFile(file ?? null)
-                    }}
-                    className="rounded-md"
-                    aspectType="square"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+    <>
+      <div className="mb-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <Info size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="space-y-2">
+              <h3 className="font-semibold text-blue-900 text-sm">オプション機能について</h3>
+              <div className="text-sm text-blue-800 space-y-1">
+                <p>
+                  • <strong>物販対応：</strong>{' '}
+                  在庫数を設定することで、シャンプーやトリートメントなどの商品販売が可能です
+                </p>
+                <p>
+                  • <strong>施術メニュー：</strong>{' '}
+                  施術時間を設定することで、ヘッドスパやトリートメントなどのオプション施術を提供できます。この場合は在庫数は最大値である
+                  <strong>999</strong>と設定してください。
+                </p>
 
-          <div className="md:col-span-2">
-            <div className="flex flex-col md:flex-row items-end gap-4">
-              <div className="w-full">
-                <ZodTextField
-                  register={register}
-                  name="name"
-                  label={t('form.optionName')}
-                  placeholder={t('form.optionNamePlaceholder')}
-                  errors={errors}
-                  required
-                />
-              </div>
-              <ZodTextField
-                name="order_limit"
-                label={t('form.maxOrder')}
-                type="number"
-                placeholder="例: 1"
-                register={register}
-                errors={errors}
-                required
-                className="border-border focus-within:border-active transition-colors"
-              />
-              <ZodTextField
-                name="in_stock"
-                label={t('form.stock')}
-                type="number"
-                placeholder="例: 1"
-                register={register}
-                errors={errors}
-                required
-                className="border-border focus-within:border-active transition-colors"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <ZodTextField
-                name="unit_price"
-                label={t('form.unitPrice')}
-                icon={<DollarSign className="text-primary" />}
-                type="number"
-                placeholder="例: 5000"
-                register={register}
-                errors={errors}
-                required
-                className="border-border focus-within:border-active transition-colors"
-              />
-
-              <ZodTextField
-                name="sale_price"
-                label={t('form.salePrice')}
-                type="number"
-                icon={<ShoppingBag className="text-primary" />}
-                placeholder="例: 4000"
-                register={register}
-                errors={errors}
-                className="border-border focus-within:border-active transition-colors"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-              <div className="w-full">
-                <Label className="text-sm flex items-center gap-2 mb-2">
-                  <Clock size={16} className="text-primary" />
-                  {t('form.durationTitle')} <span className="text-destructive ml-1">*</span>
-                </Label>
-                <Select
-                  onValueChange={(value) => {
-                    setValue('duration_min', value, { shouldValidate: true })
-                  }}
-                >
-                  <SelectTrigger className="border-border transition-colors">
-                    <SelectValue placeholder={t('form.durationPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MINUTE_OPTIONS.map((time) => (
-                      <SelectItem key={time} value={time.toString()}>
-                        {time}
-                        {t('form.minutes')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-xs text-muted-foreground">{t('form.timeHelp')}</span>
-                {errors.duration_min && (
-                  <p className="text-destructive text-sm mt-1">{errors.duration_min.message}</p>
-                )}
+                <p>
+                  • <strong>時間管理：</strong>{' '}
+                  施術時間を0分に設定すると物販、時間を設定すると施術メニューとしても使用できます。
+                </p>
               </div>
             </div>
-
-            <TagInput
-              tags={currentTags}
-              setTagsAction={setCurrentTags}
-              error={errors.tags?.message}
-              title={t('form.tags')}
-              exampleText={t('form.tagsPlaceholder')}
-            />
           </div>
-        </div>
-
-        <Label className="flex items-center gap-2 text-sm mt-4">
-          <Info size={16} className="text-primary" />
-          {t('form.description')} <span className="text-destructive ml-1">*</span>
-        </Label>
-        <Textarea
-          id="description"
-          placeholder={t('form.descriptionPlaceholder')}
-          {...register('description')}
-          onChange={(e) => setValue('description', e.target.value, { shouldValidate: true })}
-          rows={8}
-          className="border-border focus-visible:ring-active"
-        />
-        {errors.description && (
-          <p className="text-destructive text-sm mt-1">{errors.description.message}</p>
-        )}
-
-        <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-4">
-          <div>
-            <p className="text-sm font-bold">{t('form.publishToggle')}</p>
-            <p className="text-xs text-muted-foreground">{t('form.publishHelp')}</p>
-          </div>
-          <Switch
-            id="is_archive"
-            checked={isArchive}
-            onCheckedChange={() => setValue('is_archive', !isArchive)}
-            className="data-[state=checked]:bg-active"
-          />
-        </div>
-
-        <div className="flex justify-end">
-          <Button
-            variant="default"
-            type="submit"
-            disabled={isSubmitting || isUploading || !isDirty}
-          >
-            {isSubmitting || isUploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('form.adding')}
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                {t('form.addButton')}
-              </>
-            )}
-          </Button>
         </div>
       </div>
-    </form>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+            e.preventDefault()
+          }
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="md:col-span-1">
+              <Card className="border border-dashed h-full flex flex-col">
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-base flex items-center gap-2 mb-2">
+                    <ImageIcon size={18} className="text-muted-foreground" />
+                    {t('form.optionImage')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-grow flex items-center justify-center">
+                  <div className="w-full">
+                    <SingleImageDrop
+                      currentFile={currentFile}
+                      onFileSelect={(file) => {
+                        setCurrentFile(file ?? null)
+                      }}
+                      className="rounded-md"
+                      aspectType="square"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="md:col-span-2">
+              <div className="flex flex-col md:flex-row items-end gap-4">
+                <div className="w-full">
+                  <ZodTextField
+                    register={register}
+                    name="name"
+                    label={t('form.optionName')}
+                    placeholder={t('form.optionNamePlaceholder')}
+                    errors={errors}
+                    required
+                  />
+                </div>
+                <ZodTextField
+                  name="order_limit"
+                  label={t('form.maxOrder')}
+                  type="number"
+                  placeholder="例: 1"
+                  register={register}
+                  errors={errors}
+                  required
+                  className="border-border focus-within:border-accent-2 transition-colors"
+                />
+                <ZodTextField
+                  name="in_stock"
+                  label={t('form.stock')}
+                  type="number"
+                  placeholder="例: 1"
+                  register={register}
+                  errors={errors}
+                  required
+                  className="border-border focus-within:border-accent-2 transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <ZodTextField
+                  name="unit_price"
+                  label={t('form.unitPrice')}
+                  icon={<DollarSign className="text-primary" />}
+                  type="number"
+                  placeholder="例: 5000"
+                  register={register}
+                  errors={errors}
+                  required
+                  className="border-border focus-within:border-accent-2 transition-colors"
+                />
+
+                <ZodTextField
+                  name="sale_price"
+                  label={t('form.salePrice')}
+                  type="number"
+                  icon={<ShoppingBag className="text-primary" />}
+                  placeholder="例: 4000"
+                  register={register}
+                  errors={errors}
+                  className="border-border focus-within:border-accent-2 transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+                <div className="w-full">
+                  <Label className="text-sm flex items-center gap-2 mb-2">
+                    <Clock size={16} className="text-primary" />
+                    {t('form.durationTitle')} <span className="text-destructive ml-1">*</span>
+                  </Label>
+                  <Select
+                    onValueChange={(value) => {
+                      setValue('duration_min', value, { shouldValidate: true })
+                    }}
+                  >
+                    <SelectTrigger className="border-border transition-colors">
+                      <SelectValue placeholder={t('form.durationPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MINUTE_OPTIONS.map((time) => (
+                        <SelectItem key={time} value={time.toString()}>
+                          {time}
+                          {t('form.minutes')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-xs text-muted-foreground">{t('form.timeHelp')}</span>
+                  {errors.duration_min && (
+                    <p className="text-destructive text-sm mt-1">{errors.duration_min.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <TagInput
+                tags={currentTags}
+                setTagsAction={setCurrentTags}
+                error={errors.tags?.message}
+                title={t('form.tags')}
+                exampleText={t('form.tagsPlaceholder')}
+              />
+            </div>
+          </div>
+
+          <Label className="flex items-center gap-2 text-sm mt-4">
+            <Info size={16} className="text-primary" />
+            {t('form.description')} <span className="text-destructive ml-1">*</span>
+          </Label>
+          <Textarea
+            id="description"
+            placeholder={t('form.descriptionPlaceholder')}
+            {...register('description')}
+            onChange={(e) => setValue('description', e.target.value, { shouldValidate: true })}
+            rows={8}
+            className="border-border focus-visible:ring-accent-2"
+          />
+          {errors.description && (
+            <p className="text-destructive text-sm mt-1">{errors.description.message}</p>
+          )}
+
+          <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-4">
+            <div>
+              <p className="text-sm font-bold">{t('form.publishToggle')}</p>
+              <p className="text-xs text-muted-foreground">{t('form.publishHelp')}</p>
+            </div>
+            <Switch
+              id="is_archive"
+              checked={isArchive}
+              onCheckedChange={() => setValue('is_archive', !isArchive)}
+              className="data-[state=checked]:bg-accent-2"
+            />
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              variant="default"
+              type="submit"
+              disabled={isSubmitting || isUploading || !isDirty}
+            >
+              {isSubmitting || isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('form.adding')}
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {t('form.addButton')}
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </form>
+    </>
   )
 }
 

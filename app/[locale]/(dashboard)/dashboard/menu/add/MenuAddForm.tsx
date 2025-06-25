@@ -499,7 +499,7 @@ export default function MenuAddForm() {
                   value={targetType}
                   onValueChange={(value) => {
                     setTargetType(value as ActiveCustomerType)
-                    setValue('target_type', value as ActiveCustomerType)
+                    setValue('target_type', value as ActiveCustomerType, { shouldValidate: true })
                   }}
                 >
                   <SelectTrigger className="transition-colors">
@@ -507,10 +507,11 @@ export default function MenuAddForm() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('allCustomers')}</SelectItem>
-                    <SelectItem value="first">{t('firstTime')}</SelectItem>
+                    <SelectItem value="first_time">{t('firstTime')}</SelectItem>
                     <SelectItem value="repeat">{t('repeat')}</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.target_type && <ErrorMessage message={errors.target_type.message} />}
                 <span className="text-xs text-muted-foreground">{t('help.targetCustomer')}</span>
               </div>
               <div>
@@ -523,7 +524,7 @@ export default function MenuAddForm() {
                   value={targetGender}
                   onValueChange={(value) => {
                     setTargetGender(value as Gender)
-                    setValue('target_gender', value as Gender)
+                    setValue('target_gender', value as Gender, { shouldValidate: true })
                   }}
                 >
                   <SelectTrigger className="transition-colors">
@@ -541,6 +542,7 @@ export default function MenuAddForm() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.target_gender && <ErrorMessage message={errors.target_gender.message} />}
                 <span className="text-xs text-muted-foreground">{t('help.targetGender')}</span>
               </div>
             </div>
@@ -631,7 +633,6 @@ export default function MenuAddForm() {
             id="is_active"
             checked={watch('is_active')}
             onCheckedChange={(checked) => setValue('is_active', checked)}
-            className="data-[state=checked]:bg-active"
           />
         </div>
 

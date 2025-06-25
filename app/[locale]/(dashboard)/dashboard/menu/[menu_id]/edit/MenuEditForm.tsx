@@ -644,7 +644,7 @@ export default function MenuEditForm() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('form.targetAll')}</SelectItem>
-                    <SelectItem value="first">{t('form.targetFirst')}</SelectItem>
+                    <SelectItem value="first_time">{t('form.targetFirst')}</SelectItem>
                     <SelectItem value="repeat">{t('form.targetRepeat')}</SelectItem>
                   </SelectContent>
                 </Select>

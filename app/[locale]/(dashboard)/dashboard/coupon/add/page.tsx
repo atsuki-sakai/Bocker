@@ -13,9 +13,7 @@ import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Loading } from '@/components/common'
 import { toast } from 'sonner'
-import { useTranslations, useLocale } from 'next-intl'
-import { formatDate } from '@/lib/formatDate'
-import type { SupportedLocale } from '@/lib/dateLocale'
+import { useTranslations } from 'next-intl'
 // コンポーネントのインポート
 import { DashboardSection } from '@/components/common'
 import { Label } from '@/components/ui/label'
@@ -34,8 +32,7 @@ import {
   User,
 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
-import { Calendar as CalendarComponent } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { DatePicker } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { ZodTextField } from '@/components/common'
 import {
@@ -63,21 +60,6 @@ const fadeIn = {
   exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
 }
 
-// 日付表示コンポーネント
-function DateDisplay({ date, locale }: { date: Date; locale: SupportedLocale }) {
-  const [formattedDate, setFormattedDate] = useState('')
-
-  useEffect(() => {
-    const format = async () => {
-      const formatted = await formatDate(date, 'PPP', locale)
-      setFormattedDate(formatted)
-    }
-    format()
-  }, [date, locale])
-
-  return <>{formattedDate}</>
-}
-
 // プレビューデータ型定義
 interface CouponPreviewData {
   name?: string
@@ -94,29 +76,8 @@ interface CouponPreviewData {
 }
 
 // クーポンプレビューコンポーネント
-function CouponPreview({ data, locale }: { data: CouponPreviewData; locale: SupportedLocale }) {
+function CouponPreview({ data }: { data: CouponPreviewData }) {
   const t = useTranslations('coupon')
-  const [formattedStartDate, setFormattedStartDate] = useState('')
-  const [formattedEndDate, setFormattedEndDate] = useState('')
-
-  useEffect(() => {
-    const formatDates = async () => {
-      if (data.start_date) {
-        const start = await formatDate(data.start_date, 'PPP', locale)
-        setFormattedStartDate(start)
-      } else {
-        setFormattedStartDate(t('notSet'))
-      }
-
-      if (data.end_date) {
-        const end = await formatDate(data.end_date, 'PPP', locale)
-        setFormattedEndDate(end)
-      } else {
-        setFormattedEndDate(t('notSet'))
-      }
-    }
-    formatDates()
-  }, [data.start_date, data.end_date, locale, t])
 
   return (
     <div className="w-full">
@@ -149,13 +110,13 @@ function CouponPreview({ data, locale }: { data: CouponPreviewData; locale: Supp
                 <CalendarFull size={14} />
                 <span>{t('startDate')}:</span>
               </div>
-              <div className="text-right">{formattedStartDate}</div>
+              <div className="text-right">{data.start_date?.toLocaleDateString()}</div>
 
               <div className="flex items-center gap-1 text-muted-foreground">
                 <CalendarFull size={14} />
                 <span>{t('endDate')}:</span>
               </div>
-              <div className="text-right">{formattedEndDate}</div>
+              <div className="text-right">{data.end_date?.toLocaleDateString()}</div>
 
               <div className="flex items-center gap-1 text-muted-foreground">
                 <Hash size={14} />
@@ -187,7 +148,6 @@ function CouponPreview({ data, locale }: { data: CouponPreviewData; locale: Supp
 function CouponForm() {
   const router = useRouter()
   const t = useTranslations('coupon')
-  const locale = useLocale() as SupportedLocale
 
   // 状態管理
   const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([])
@@ -520,31 +480,13 @@ function CouponForm() {
                         control={control}
                         name="start_date"
                         render={({ field }) => (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className={`w-full justify-start text-left font-normal border-border bg-input ${
-                                  errors.start_date ? 'border-destructive' : ''
-                                }`}
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {field.value ? (
-                                  <DateDisplay date={field.value} locale={locale} />
-                                ) : (
-                                  <span>{t('selectDate')}</span>
-                                )}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <CalendarComponent
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder={t('selectDate')}
+                            error={!!errors.start_date}
+                            isBirthday={false}
+                          />
                         )}
                       />
                       {errors.start_date && (
@@ -570,31 +512,14 @@ function CouponForm() {
                         control={control}
                         name="end_date"
                         render={({ field }) => (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className={`w-full justify-start text-left font-normal border-border bg-input ${
-                                  errors.end_date ? 'border-destructive' : ''
-                                }`}
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {field.value ? (
-                                  <DateDisplay date={field.value} locale={locale} />
-                                ) : (
-                                  <span>{t('selectDate')}</span>
-                                )}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <CalendarComponent
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder={t('selectDate')}
+                            error={!!errors.end_date}
+                            fromDate={new Date()}
+                            isBirthday={false}
+                          />
                         )}
                       />
                       {errors.end_date && (
@@ -720,7 +645,7 @@ function CouponForm() {
         {/* プレビュー部分 */}
         <div className="md:col-span-1">
           <div className="sticky top-4 space-y-4">
-            <CouponPreview data={previewData} locale={locale} />
+            <CouponPreview data={previewData} />
 
             <div className="mt-6">
               <Button type="submit" disabled={isSubmitting} className="w-full " size="lg">

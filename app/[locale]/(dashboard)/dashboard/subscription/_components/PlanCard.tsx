@@ -143,7 +143,7 @@ const PlanCard = memo(function PlanCard({
             )}
             {billingPeriod === 'year' && (
               <div className="text-xs text-muted-foreground mt-1">
-                {t('monthlyEquivalent', { amount: Number(monthlyEquivalent) ?? 0 })}
+                {t('monthlyEquivalent', { amount: monthlyEquivalent ?? 0 })}
               </div>
             )}
           </div>
