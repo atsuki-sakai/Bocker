@@ -22,7 +22,6 @@ import { Link } from '@/i18n/navigation'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { ZodTextField } from '@/components/common'
 import { OptimizedLineLoginButton } from '@/components/auth/OptimizedLineLoginButton'
-import { batchAuthProcessing } from '@/lib/auth/batchProcessor'
 
 const emailLoginSchema = z.object({
   email: z
@@ -74,18 +73,12 @@ export default function ReservePage() {
           throw new Error('テナントIDが見つかりません')
         }
 
-        // バッチ処理で既存ユーザー確認とセッション作成を最適化
-        const authTasks = [
-          {
-            name: 'checkCustomer',
-            task: () =>
-              customerRepository.findByTenantAndOrgAndCustomerEmail(tenantId, orgId, data.email),
-            priority: 3,
-          },
-        ]
-
-        const results = await batchAuthProcessing(authTasks)
-        const existingCustomer = results.get('checkCustomer')
+        // 既存ユーザー確認
+        const existingCustomer = await customerRepository.findByTenantAndOrgAndCustomerEmail(
+          tenantId,
+          orgId,
+          data.email
+        )
 
         if (existingCustomer) {
           // 既存ユーザーの場合

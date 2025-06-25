@@ -23,7 +23,6 @@ import { CustomerRepository } from '@/services/supabase/repositories/customer/Cu
 import { ZodTextField } from '@/components/common'
 import { OptimizedLineLoginButton } from '@/components/auth/OptimizedLineLoginButton'
 import { useLineAuthHandler } from '@/hooks/useLineAuthHandler'
-import { prefetchCustomerData } from '@/lib/auth/sessionCache'
 
 const emailLoginSchema = z.object({
   email: z
@@ -68,13 +67,6 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
       if (sessionResponse.ok) {
         const sessionData = await sessionResponse.json()
         if (sessionData.session && sessionData.session.customerUid) {
-          // 顧客データをプリフェッチ
-          if (tenantId && orgId) {
-            prefetchCustomerData(sessionData.session.customerUid, tenantId, orgId).catch(
-              console.warn
-            )
-          }
-
           router.push(`/${locale}/customer/${orgId}/${sessionData.session.customerUid}/profile`)
         }
       }
@@ -383,11 +375,6 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
                   if (sessionResponse.ok) {
                     const sessionData = await sessionResponse.json()
                     if (sessionData.session && sessionData.session.customerUid) {
-                      // 顧客データをプリフェッチ
-                      prefetchCustomerData(sessionData.session.customerUid, tenantId, orgId).catch(
-                        console.warn
-                      )
-
                       router.push(
                         `/${locale}/customer/${orgId}/${sessionData.session.customerUid}/profile`
                       )
