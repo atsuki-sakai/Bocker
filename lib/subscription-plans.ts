@@ -19,8 +19,6 @@ export const getSubscriptionPlans = () => ({
       'features.lite.7',
       'features.lite.8',
       'features.lite.9',
-      'features.lite.10',
-      'features.lite.11',
     ],
     monthly: {
       priceId: getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID'),

@@ -1629,6 +1629,7 @@
       "title": "Staff Schedule Management",
       "selectStaffLabel": "Select staff to add schedule",
       "selectStaffPlaceholder": "Select staff",
+      "noStaff": "No staff registered yet",
       "alertSelectStaff": "Please select staff first.",
       "weekScheduleTab": "Weekly Schedule Settings",
       "scheduleCreationTab": "Create Schedule",

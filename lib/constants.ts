@@ -139,6 +139,7 @@ export const SUBSCRIPTION_PLANS = {
       'features.lite.6',
       'features.lite.7',
       'features.lite.8',
+      'features.lite.9',
     ],
     monthly: {
       priceId: '',  // Set dynamically in runtime
