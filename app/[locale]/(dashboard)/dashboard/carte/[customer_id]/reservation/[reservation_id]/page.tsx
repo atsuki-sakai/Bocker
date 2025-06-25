@@ -47,6 +47,7 @@ import Image from 'next/image'
 import { uploadImage } from '@/services/gcp/cloud_storage/helpers'
 import { ImageType, ReservationMenu, ReservationOption } from '@/convex/types'
 import Uploader from '@/components/common/Uploader'
+import { VoiceInputButton } from '@/components/common/VoiceInputButton'
 
 type CarteDetailPageProps = {
   params: Promise<{
@@ -88,7 +89,7 @@ const HAIR_TYPE_MAP: Record<string, string> = {
 export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPageProps) {
   const locale = useLocale() as SupportedLocale
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
+  const { tenantId, orgId, isLoaded, subscription } = useTenantAndOrganization()
 
   const [customerId, setCustomerId] = useState<string | null>(null)
   const [reservationId, setReservationId] = useState<string | null>(null)
@@ -483,7 +484,10 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
         {/* アコーディオンセクション */}
         <Accordion type="multiple" defaultValue={['photos', 'treatment']} className="space-y-4">
           {/* 施術後写真 */}
-          <AccordionItem value="photos" className="border rounded-lg px-6">
+          <AccordionItem
+            value="photos"
+            className={`border rounded-lg px-6 ${subscription?.plan_name === 'LITE' ? 'hidden' : ''}`}
+          >
             <AccordionTrigger className="hover:no-underline">
               <div className="flex items-center gap-2">
                 <Camera className="w-5 h-5" />
@@ -638,25 +642,47 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
             </AccordionTrigger>
             <AccordionContent className="space-y-4">
               <div>
-                <Label htmlFor="customer-requests">お客様のご要望</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="customer-requests">お客様のご要望</Label>
+                  <VoiceInputButton
+                    onResult={(transcript) => {
+                      // 既存のテキストに音声認識結果を追加
+                      const newText = customerRequests
+                        ? `${customerRequests}\n${transcript}`
+                        : transcript
+                      setCustomerRequests(newText)
+                    }}
+                    disabled={isSaving || isUploading}
+                  />
+                </div>
                 <Textarea
                   id="customer-requests"
                   value={customerRequests}
                   onChange={(e) => setCustomerRequests(e.target.value)}
                   placeholder="お客様からのご要望を記録してください"
                   className="mt-2 text-primary"
-                  rows={3}
+                  rows={6}
                 />
               </div>
               <div>
-                <Label htmlFor="staff-notes">スタッフメモ</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="staff-notes">スタッフメモ</Label>
+                  <VoiceInputButton
+                    onResult={(transcript) => {
+                      // 既存のテキストに音声認識結果を追加
+                      const newText = notes ? `${notes}\n${transcript}` : transcript
+                      setNotes(newText)
+                    }}
+                    disabled={isSaving || isUploading}
+                  />
+                </div>
                 <Textarea
                   id="staff-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="施術に関するメモを記録してください"
                   className="mt-2 text-primary"
-                  rows={4}
+                  rows={8}
                 />
               </div>
             </AccordionContent>

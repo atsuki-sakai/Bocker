@@ -63,6 +63,13 @@ export async function CustomerLayout({ children, customerUid, orgId }: CustomerL
             <Card className="p-4">
               <nav className="space-y-2">
                 <Link
+                  href={`/reservation/${orgId}/calendar`}
+                  className="flex items-center space-x-3 text-muted-foreground hover:text-primary hover:bg-background rounded-md px-3 py-2 transition-colors"
+                >
+                  <Receipt className="h-5 w-5" />
+                  <span>予約ページへ</span>
+                </Link>
+                <Link
                   href={`/customer/${orgId}/${customerUid}/profile`}
                   className="flex items-center space-x-3 text-muted-foreground hover:text-primary hover:bg-background rounded-md px-3 py-2 transition-colors"
                 >

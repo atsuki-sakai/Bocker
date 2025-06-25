@@ -119,12 +119,112 @@ const ApiSettingsCard = () => {
         <div className="flex items-center gap-2">
           <p className="text-2xl font-bold">{t('title')}</p>
         </div>
-        <p className="flex items-center mt-1 text-sm text-muted-foreground">
-          {t('description')}
-          <br />
-          {t('lineIntegrationNote')}
-        </p>
+        <div className="flex flex-col gap-2 mt-1 text-sm text-muted-foreground">
+          <p>{t('description')}</p>
+          <p>{t('lineIntegrationNote')}</p>
+          <p className="mt-2 bg-link p-2 rounded-md border border-link-foreground w-fit">
+            <span className="text-link-foreground font-semibold">{t('lineIntegrationNote2')}</span>
+          </p>
+        </div>
       </div>
+
+      {/* 有料サポート案内アコーディオン */}
+      <Accordion type="multiple" className="mt-6">
+        <AccordionItem value="paid-support">
+          <AccordionTrigger className="text-primary bg-accent-2-foreground hover:opacity-80 p-3 border border-primary rounded-md text-base font-bold mb-2">
+            💡 設定でお困りの方へ - 専門サポートサービス（5,000円）
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4">
+            <div>
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-active-foreground rounded-full flex items-center justify-center">
+                    <span className="text-active-foreground text-xl">🔧</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="bg-background border border-primary/20 rounded-md p-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl font-bold text-primary">
+                        5,000円<small>（税込）</small>
+                      </span>
+                      <span className="text-sm text-muted-foreground">でトータルサポート</span>
+                    </div>
+                    <p className="text-sm text-accent-2 font-medium">
+                      LINE公式アカウント作成からBockerとの完全API連携まで、すべてお任せください
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-start gap-3">
+                      <span className="text-primary text-lg flex-shrink-0">⏰</span>
+                      <div>
+                        <p className="font-semibold text-foreground">
+                          迅速対応：2〜3日以内に設定完了
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          お急ぎの場合もご相談ください
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <span className="text-accent text-lg flex-shrink-0">🎯</span>
+                      <div>
+                        <p className="font-semibold text-foreground">完全サポート内容</p>
+                        <ul className="text-xs text-muted-foreground mt-1 space-y-1 ml-2">
+                          <li>
+                            • LINE公式アカウントがない場合：新規作成からアカウント情報のお渡しまで
+                          </li>
+                          <li>• LINE公式アカウントをお持ちの場合：BockerとのAPI連携設定</li>
+                          <li>• Messaging APIチャンネル・LINEログインチャンネルの作成</li>
+                          <li>• LIFF設定・Webhook設定・セキュリティ設定の完全構築</li>
+                          <li>• 動作確認・テスト送信まで完了</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <span className="text-destructive text-lg flex-shrink-0">🔒</span>
+                      <div>
+                        <p className="font-semibold text-foreground">セキュリティについて</p>
+                        <p className="text-xs text-muted-foreground">
+                          既存の公式アカウントをお持ちの場合は、一時的にログイン情報をお預かりいたします。
+                          <br />
+                          <span className="text-destructive font-semibold">
+                            作業完了後は必ずパスワードの変更をお願いいたします。
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-background border border-accent-5/20 rounded-md">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-accent text-lg">💬</span>
+                      <p className="font-semibold text-accent">お申し込み・ご相談方法</p>
+                    </div>
+                    <p className="text-xs text-accent-2 leading-relaxed">
+                      設定が難しいと感じたら、まずはお気軽にご相談ください。
+                      <br />
+                      <span className="font-bold text-primary">画面右下のチャットマーク（💬）</span>
+                      をクリックして、「LINE設定サポート希望」とお声がけください。
+                      <br />
+                      弊社スタッフが対応させて頂きます。
+                    </p>
+                  </div>
+
+                  <div className="mt-3 text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                    <span className="text-accent font-semibold">💡 こんな方におすすめ：</span>
+                    技術的な設定に不安がある方 / 時間をかけたくない方 / 確実に動作する状態にしたい方
+                    / LINE公式アカウントを初めて作る方
+                  </div>
+                </div>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       <form
         onSubmit={handleSubmit(onApiSubmit)}

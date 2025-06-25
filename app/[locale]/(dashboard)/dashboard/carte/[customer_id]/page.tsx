@@ -128,13 +128,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
   }, [tenantId, orgId, customerId, isLoaded, customerRepo, carteRepo, tCarte])
 
   // 統合予約データの取得
-  const {
-    reservations,
-    loadMore,
-    hasMore,
-    stats: reservationStats,
-    totalCount,
-  } = useIntegratedReservations({
+  const { reservations, loadMore, hasMore } = useIntegratedReservations({
     tenantId: tenantId || '',
     orgId: orgId || '',
     customerId: customerId || '',
@@ -354,33 +348,11 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                   </p>
                 </div>
               </div>
-              {/* 予約統計情報 */}
-              {reservationStats && (
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <Card className="h-fit">
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold">{totalCount}</div>
-                      <p className="text-xs text-muted-foreground">
-                        {tCarte('detail.totalReservations')}
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card className="h-fit">
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold">
-                        {formatPrice(customerCarteData?.ltv_price || 0)}
-                      </div>
-
-                      <p className="text-xs text-muted-foreground">{tCarte('detail.totalSales')}</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* 予約履歴 */}
+        {/* 施術履歴 */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -391,120 +363,124 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
           <CardContent>
             <div className="grid grid-cols-1 gap-4">
               {reservations.length > 0 ? (
-                reservations.map((item) => (
-                  <Link
-                    href={`/dashboard/carte/${customerId}/reservation/${item.id}`}
-                    key={item.id}
-                  >
-                    <Card
+                reservations
+                  .filter((item) => item.status !== 'cancelled')
+                  .map((item) => (
+                    <Link
+                      href={`/dashboard/carte/${customerId}/reservation/${item.id}`}
                       key={item.id}
-                      className="border-l-4 relative"
-                      style={{
-                        borderLeftColor:
-                          item.status === 'completed'
-                            ? 'accent-green-500'
-                            : item.status === 'cancelled'
-                              ? 'destructive'
-                              : item.status === 'confirmed'
-                                ? 'neon'
-                                : 'secondary',
-                      }}
                     >
-                      <CardContent className="pt-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <CalendarDays className="w-4 h-4 text-muted-foreground" />
-                              <span className="font-medium">{formatDate(item.startTimeUnix)}</span>
-                              {/* リアルタイムインジケーター */}
-                              {item.source === 'convex' && (
-                                <Badge variant="outline" className="gap-1 text-xs bg-warning">
-                                  <Zap className="w-3 h-3 text-warning-foreground" />
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <User className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-sm">
-                                {tCarte('detail.assignedStaff', { staffName: item.staffName })}
-                              </span>
-                            </div>
-                          </div>
-                          {getStatusBadge(item.status)}
-                        </div>
-                        {item.detail && (
-                          <div className="mt-3 space-y-2">
-                            {/* メニュー情報 */}
-                            {item.detail.menus &&
-                              Array.isArray(item.detail.menus) &&
-                              item.detail.menus.length > 0 && (
-                                <div>
-                                  <span className="text-sm text-muted-foreground">
-                                    {tCarte('detail.menu')}
-                                  </span>
-                                  <div className="mt-1">
-                                    {(item.detail.menus as ReservationMenu[]).map(
-                                      (menu: ReservationMenu, index: number) => (
-                                        <Badge key={index} variant="outline" className="mr-1">
-                                          {menu.name}
-                                        </Badge>
-                                      )
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-
-                            {/* オプション情報 */}
-                            {item.detail.options &&
-                              Array.isArray(item.detail.options) &&
-                              item.detail.options.length > 0 && (
-                                <div>
-                                  <span className="text-sm text-muted-foreground">
-                                    {tCarte('detail.option')}
-                                  </span>
-                                  <div className="mt-1">
-                                    {(item.detail.options as ReservationOption[]).map(
-                                      (option: ReservationOption, index: number) => (
-                                        <Badge
-                                          key={index}
-                                          variant="secondary"
-                                          className="mr-1 text-xs"
-                                        >
-                                          {option.name}
-                                        </Badge>
-                                      )
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-
-                            {/* 料金情報 */}
-                            <div className="flex items-center justify-between pt-2 border-t">
+                      <Card
+                        key={item.id}
+                        className="border-l-4 relative"
+                        style={{
+                          borderLeftColor:
+                            item.status === 'completed'
+                              ? 'accent-green-500'
+                              : item.status === 'cancelled'
+                                ? 'destructive'
+                                : item.status === 'confirmed'
+                                  ? 'neon'
+                                  : 'secondary',
+                        }}
+                      >
+                        <CardContent className="pt-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
                               <div className="flex items-center gap-2">
-                                <CreditCard className="w-4 h-4 text-muted-foreground" />
+                                <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                                <span className="font-medium">
+                                  {formatDate(item.startTimeUnix)}
+                                </span>
+                                {/* リアルタイムインジケーター */}
+                                {item.source === 'convex' && (
+                                  <Badge variant="outline" className="gap-1 text-xs bg-warning">
+                                    <Zap className="w-3 h-3 text-warning-foreground" />
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <User className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm">
-                                  {item.detail.paymentMethod === 'cash'
-                                    ? tCarte('detail.paymentMethod.cash')
-                                    : tCarte('detail.paymentMethod.card')}
+                                  {tCarte('detail.assignedStaff', { staffName: item.staffName })}
                                 </span>
                               </div>
-                              <span className="font-semibold">
-                                {formatPrice(item.detail.totalPrice || 0)}
-                              </span>
                             </div>
-
-                            {/* 備考 */}
-                            {item.detail.notes && (
-                              <div className="text-sm text-muted-foreground">
-                                {tCarte('detail.notes', { notes: item.detail.notes })}
-                              </div>
-                            )}
+                            {getStatusBadge(item.status)}
                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))
+                          {item.detail && (
+                            <div className="mt-3 space-y-2">
+                              {/* メニュー情報 */}
+                              {item.detail.menus &&
+                                Array.isArray(item.detail.menus) &&
+                                item.detail.menus.length > 0 && (
+                                  <div>
+                                    <span className="text-sm text-muted-foreground">
+                                      {tCarte('detail.menu')}
+                                    </span>
+                                    <div className="mt-1">
+                                      {(item.detail.menus as ReservationMenu[]).map(
+                                        (menu: ReservationMenu, index: number) => (
+                                          <Badge key={index} variant="outline" className="mr-1">
+                                            {menu.name}
+                                          </Badge>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                              {/* オプション情報 */}
+                              {item.detail.options &&
+                                Array.isArray(item.detail.options) &&
+                                item.detail.options.length > 0 && (
+                                  <div>
+                                    <span className="text-sm text-muted-foreground">
+                                      {tCarte('detail.option')}
+                                    </span>
+                                    <div className="mt-1">
+                                      {(item.detail.options as ReservationOption[]).map(
+                                        (option: ReservationOption, index: number) => (
+                                          <Badge
+                                            key={index}
+                                            variant="secondary"
+                                            className="mr-1 text-xs"
+                                          >
+                                            {option.name}
+                                          </Badge>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                              {/* 料金情報 */}
+                              <div className="flex items-center justify-between pt-2 border-t">
+                                <div className="flex items-center gap-2">
+                                  <CreditCard className="w-4 h-4 text-muted-foreground" />
+                                  <span className="text-sm">
+                                    {item.detail.paymentMethod === 'cash'
+                                      ? tCarte('detail.paymentMethod.cash')
+                                      : tCarte('detail.paymentMethod.card')}
+                                  </span>
+                                </div>
+                                <span className="font-semibold">
+                                  {formatPrice(item.detail.totalPrice || 0)}
+                                </span>
+                              </div>
+
+                              {/* 備考 */}
+                              {item.detail.notes && (
+                                <div className="text-sm text-muted-foreground">
+                                  {tCarte('detail.notes', { notes: item.detail.notes })}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   {tCarte('detail.noReservationHistory')}
