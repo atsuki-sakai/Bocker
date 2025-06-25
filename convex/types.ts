@@ -123,7 +123,7 @@ export type ReservationStatus = Infer<typeof reservationStatusType>
 export const convertReservationStatus = (status: ReservationStatus): string => {
   switch (status) {
     case 'confirmed':
-      return '予約確定'
+      return '予約受付済み'
     case 'cancelled':
       return 'キャンセル'
     case 'pending':

@@ -18,13 +18,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { AlertCircle } from 'lucide-react'
 import { DollarSign, Percent } from 'lucide-react'
@@ -124,12 +124,12 @@ export default function PointForm() {
     formState: { isSubmitting, errors, isDirty },
   } = useZodForm(pointConfigSchema)
 
-  const handleExpirationChange = (value: string) => {
-    setValue('point_expiration_days', parseInt(value), {
-      shouldValidate: true,
-      shouldDirty: true,
-    })
-  }
+  // const handleExpirationChange = (value: string) => {
+  //   setValue('point_expiration_days', parseInt(value), {
+  //     shouldValidate: true,
+  //     shouldDirty: true,
+  //   })
+  // }
 
   useEffect(() => {
     if (pointConfig) {
@@ -310,7 +310,7 @@ export default function PointForm() {
                   )}
                 </div>
               )}
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="expiration" className=" font-medium">
                   {t('basicSettings.expirationPeriod')}
                 </Label>
@@ -340,7 +340,7 @@ export default function PointForm() {
                       POINT_EXPIRATION_DAYS[0].label,
                   })}
                 </span>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

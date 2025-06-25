@@ -110,7 +110,7 @@ export const sendHourlyReminders = internalAction({
       console.log(`対象時間帯（JST）: ${threeHoursLaterJST} - ${fourHoursLaterJST}`);
       console.log(`対象時間帯（UTC Unix）: ${threeHoursLaterUTC} - ${fourHoursLaterUTC}`);
       
-      // 3-4時間後に開始される、確定済みでリマインダー未送信の予約を取得
+      // 3-4時間後に開始される、予約受付済みでリマインダー未送信の予約を取得
       // ConvexはUTC時間で処理するため、UTC時間を渡す
       const reminderData = await ctx.runQuery(internal.reservation.query.getReservationsForReminder, {
         startTimeFrom: threeHoursLaterUTC,

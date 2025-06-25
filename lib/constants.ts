@@ -230,12 +230,20 @@ export const NAV_ITEMS: NavItem[] = [
     minPlan: 'LITE',
   },
   {
+    name: 'reservationCollection',
+    href: `/dashboard/reservation/collection`,
+    icon: CalendarIcon,
+    minRole: 'manager',
+    minPlan: 'LITE',
+  },
+  {
     name: 'staffSchedule',
     href: `/dashboard/staff-schedule`,
     icon: TimerIcon,
     minRole: 'manager',
     minPlan: 'LITE',
   },
+  
   {
     name: 'staff',
     href: `/dashboard/staff`,

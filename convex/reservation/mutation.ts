@@ -42,9 +42,9 @@ Convex ミューテーションはサーバーサイドで一度にバッチ的�
 3. 以下の順序で処理を行っています。
 	1.	入力バリデーション・スタッフ・組織の存在チェック
 	2.	reservation_config から availableSheet を取得
-	3.	組織全体で同日・確定済みの既存予約をクエリし、時間帯重複数 overlapCount を算出
+	3.	組織全体で同日・予約受付済みの既存予約をクエリし、時間帯重複数 overlapCount を算出
 	•	overlapCount >= availableSheet の場合は即例外投げ
-	4.	同じスタッフ・同日・確定済みで時間帯が重複する予約をクエリし、1件でも存在すれば例外投げ
+	4.	同じスタッフ・同日・予約受付済みで時間帯が重複する予約をクエリし、1件でも存在すれば例外投げ
 	5.	例外が発生しなければ ctx.db.insert('reservation', …) で新規予約レコードを作成
 	6.	createReservationWithDetails で関連テーブルにも同一関数内でレコードを挿入
 
@@ -445,9 +445,9 @@ export const cancelReservation = mutation({
   },
 });
 
-// 支払い確定処理
+// 支払い予約受付処理
 // Stripe決済成功後に呼び出され、予約ステータスと支払いステータスを更新する。
-// pending状態の予約を確定済みに変更し、決済情報を記録する。
+// pending状態の予約を予約受付済みに変更し、決済情報を記録する。
 export const confirmPayment = mutation({
   args: {
     reservation_id: v.id('reservation'),
@@ -468,7 +468,7 @@ export const confirmPayment = mutation({
       });
     }
 
-    // すでに確定済みの場合は何もしない（冪等性）
+    // すでに予約受付済みの場合は何もしない（冪等性）
     if (reservation.status === 'confirmed' && reservation.payment_status === 'paid') {
       return { success: true, alreadyConfirmed: true };
     }

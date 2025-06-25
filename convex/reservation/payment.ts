@@ -6,7 +6,7 @@ import { updateRecord } from '@/convex/utils/helpers';
 import { api, internal } from '@/convex/_generated/api';
 
 /**
- * 決済成功時の予約確定処理
+ * 決済成功時の予約受付処理
  * Stripe Webhookから呼び出される
  */
 export const confirmPayment = mutation({
@@ -30,12 +30,12 @@ export const confirmPayment = mutation({
       });
     }
 
-    // すでに確定済みの場合はスキップ（べき等性）
+    // すでに予約受付済みの場合はスキップ（べき等性）
     if (reservation.status === 'confirmed' && reservation.payment_status === 'completed') {
       return true;
     }
 
-    // 予約ステータスを確定に更新
+    // 予約ステータスを予約受付に更新
     await updateRecord(ctx, reservation_id, {
       status: 'confirmed',
       payment_status: 'completed',
@@ -74,7 +74,7 @@ export const confirmPayment = mutation({
           couponId: detail.coupon_id,
         });
       } catch (error) {
-        // クーポン使用回数の更新に失敗しても、予約確定は成功とする
+        // クーポン使用回数の更新に失敗しても、予約受付は成功とする
         console.error('Failed to increment coupon usage count:', error);
       }
     }
