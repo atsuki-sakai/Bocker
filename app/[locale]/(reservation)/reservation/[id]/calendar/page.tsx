@@ -578,7 +578,7 @@ export default function CalendarPage() {
         console.warn('Stripeに渡す合計金額が50円未満です。Stripe側でエラーになる可能性があります。')
       }
       if (totalAmountForStripe === 0 && subtotalBeforeDiscount > 0) {
-        // 全額割引で実質0円の場合の処理 (例: Stripe Checkoutをスキップして予約を確定)
+        // 全額割引で実質0円の場合の処理 (例: Stripe Checkoutをスキップして予約を予約受付(confirmed)ステータスに変更する)
         // このシナリオは別途設計が必要
         console.log('合計金額が0円のため、Stripe Checkoutはスキップします。')
         // ここで予約ステータスを 'confirmed' に更新し、完了ページへリダイレクトするなどの処理を行う。
@@ -719,7 +719,7 @@ export default function CalendarPage() {
           setIsProcessingPayment(false)
         }
       } else if (selectedPaymentMethod === 'cash') {
-        // 1. Convexに予約データを'confirmed'ステータスで作成（現金決済はすぐに確定）
+        // 1. Convexに予約データを'confirmed'ステータスで作成（現金決済はすぐに予約受付）
         const reservationDataForCash = {
           ...reservationBaseData,
           status: 'confirmed' as ReservationStatus,

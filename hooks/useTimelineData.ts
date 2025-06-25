@@ -231,7 +231,7 @@ export function useTimelineData({
       staff => staff.is_active && !staff.is_archive
     )
 
-    // 確定済み予約のみフィルタリング
+    // 予約受付済み予約のみフィルタリング
     const confirmedReservations = reservations.results.filter(
       res => res.status === 'confirmed' && !res.is_archive
     ) as ReservationWithDetails[]

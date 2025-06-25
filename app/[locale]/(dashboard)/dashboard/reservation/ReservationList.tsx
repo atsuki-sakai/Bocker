@@ -41,7 +41,7 @@ const TimelineHeader = memo(({ timeSlots }: { timeSlots: TimeSlot[] }) => {
       {/* スタッフ名カラムのヘッダー */}
       <div className="sticky left-0 z-30 bg-background border-r border-border w-20 md:w-40 p-3 flex items-center justify-center font-bold text-muted-foreground">
         <User className="w-4 h-4 mr-2" />
-        <span className="hidden md:block">{t('staff')}</span>
+        <span className="hidden md:block text-sm">{t('staff')}</span>
       </div>
 
       {/* 時間スロットヘッダー */}
@@ -123,7 +123,7 @@ const ReservationBarComponent = memo(
         onClick={() => onReservationClick(reservation)}
         title={`${reservation.customer_name} (${convertTimestampToHour(reservation.start_time_unix)} - ${convertTimestampToHour(reservation.end_time_unix)})`}
       >
-        <div className="flex flex-col items-start gap-1">
+        <div className="flex flex-col items-start gap-1 overflow-hidden">
           <div className="flex items-center gap-1">
             {getStatusIcon(reservation.status)}
             <span className="truncate font-medium">

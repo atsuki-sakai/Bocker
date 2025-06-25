@@ -37,7 +37,7 @@ export function ReservationPageClient({
   ): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
     switch (status) {
       case 'confirmed':
-        return { label: '確定', variant: 'default' }
+        return { label: '予約受付済み', variant: 'default' }
       case 'pending':
         return { label: '保留', variant: 'secondary' }
       case 'completed':

@@ -466,7 +466,11 @@ export default function StaffSchedulePage() {
   }, [currentDate, selectedDate, viewMode, locale])
 
   return (
-    <DashboardSection title={tNav('staffSchedule')} backLink="/dashboard" backLinkTitle={t('backToDashboard')}>
+    <DashboardSection
+      title={tNav('staffSchedule')}
+      backLink="/dashboard"
+      backLinkTitle={t('backToDashboard')}
+    >
       <div className="flex h-full flex-col">
         <div className="sticky bg-background z-10 md:pt-5">
           <header className="flex flex-none items-center justify-between border-b border-border md:px-6 pb-2">
@@ -599,7 +603,7 @@ export default function StaffSchedulePage() {
         </div>
         {reservations && reservations.length > 0 ? (
           <div className="flex h-full flex-col">
-            <ScrollArea className="relative h-[calc(100vh-15rem)]">
+            <ScrollArea className="relative h-[calc(100vh)]">
               <div className="flex flex-auto flex-col">
                 {/* 日付ヘッダー部分（モバイル） - 日本語化 */}
                 {viewMode === 'week' && (

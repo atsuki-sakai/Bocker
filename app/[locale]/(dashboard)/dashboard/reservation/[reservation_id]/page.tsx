@@ -164,10 +164,6 @@ export default function ReservationPage() {
     }
   }
 
-  const handleShowDeleteModal = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    setIsDeleteModalOpen(true)
-  }
 
   const handleDeleteReservation = async () => {
     try {
@@ -212,14 +208,6 @@ export default function ReservationPage() {
               </Select>
               <Button variant="default" onClick={(e) => handleShowUpdateStatusModal(e)}>
                 {t('changeStatus')}
-              </Button>
-
-              <Button
-                variant="ghost"
-                className="text-destructive bg-destructive-foreground"
-                onClick={(e) => handleShowDeleteModal(e)}
-              >
-                {t('delete')}
               </Button>
             </div>
           </div>

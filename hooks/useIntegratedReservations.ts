@@ -130,8 +130,8 @@ type UseIntegratedReservationsReturn = {
 
 /**
  * ConvexとSupabaseの予約データを統合して取得するフック
- * - Convex: リアルタイムの未来の予約（confirmed, pending）
- * - Supabase: 過去の完了済み予約（completed）とキャンセル済み予約
+ * - Convex: リアルタイムのアクティブ予約（confirmed, pending）
+ * - Supabase: 非アクティブ予約（completed, cancelled, refunded等）
  */
 export function useIntegratedReservations({
   tenantId,
@@ -267,8 +267,8 @@ export function useIntegratedReservations({
       // Supabaseデータを統合型に変換
       const converted = data
         .filter((item) => {
-          // 過去の完了済みまたはキャンセル済みのみ
-          return item.reservation.status === 'completed' || item.reservation.status === 'cancelled';
+          // confirmed/pending以外の全てのステータス（completed, cancelled, refunded等）
+          return item.reservation.status !== 'confirmed' && item.reservation.status !== 'pending';
         })
         .map((item) => ({
           id: item.reservation.uid,

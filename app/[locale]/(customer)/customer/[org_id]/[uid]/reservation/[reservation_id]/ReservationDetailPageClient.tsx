@@ -231,7 +231,7 @@ export function ReservationDetailPageClient({
   ): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
     switch (status) {
       case 'confirmed':
-        return { label: '確定', variant: 'default' }
+        return { label: '予約受付済み', variant: 'default' }
       case 'pending':
         return { label: '保留', variant: 'secondary' }
       case 'completed':
@@ -307,7 +307,7 @@ export function ReservationDetailPageClient({
   // キャンセル可能かどうかを判定
   const checkCancellable = () => {
     if (!reservationData || reservationData.status !== 'confirmed') {
-      return { cancellable: false, reason: '確定済みの予約のみキャンセル可能です' }
+      return { cancellable: false, reason: '予約受付済みの予約のみキャンセル可能です' }
     }
 
     const now = Date.now()
