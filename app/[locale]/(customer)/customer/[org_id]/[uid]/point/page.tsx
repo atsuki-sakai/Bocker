@@ -97,6 +97,9 @@ export default async function PointPage({ params }: PointPageProps) {
       <div>
         <h2 className="text-2xl font-bold text-primary">ポイント</h2>
         <p className="text-muted-foreground mt-1">ポイントの残高と履歴を確認できます</p>
+        <p className="w-fit text-sm bg-warning text-warning-foreground border border-warning-foreground rounded-md p-2 mt-2">
+          ポイントはご利用日から30日後に自動的に付与されます。
+        </p>
       </div>
 
       {/* ポイント残高カード */}

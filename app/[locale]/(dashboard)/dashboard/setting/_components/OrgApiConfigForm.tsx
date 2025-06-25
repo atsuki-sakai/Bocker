@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { Loading, ZodTextField } from '@/components/common'
 import { Key, Save, EyeOff, Eye, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useLocale } from 'next-intl'
 import {
   Accordion,
   AccordionItem,
@@ -41,6 +42,7 @@ type OrganizationApiConfigFormValues = z.infer<typeof organizationApiConfigFormS
 
 const ApiSettingsCard = () => {
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
+  const locale = useLocale()
   const { showErrorToast } = useErrorHandler()
   const t = useTranslations('settings.apiConfig')
   const [submitting, setSubmitting] = useState<boolean>(false)
@@ -113,6 +115,8 @@ const ApiSettingsCard = () => {
     return <Loading />
   }
 
+  const endpointUrl = `${window.location.origin}/${locale}/reservation`
+
   return (
     <div className="">
       <div className="">
@@ -131,7 +135,7 @@ const ApiSettingsCard = () => {
       {/* 有料サポート案内アコーディオン */}
       <Accordion type="multiple" className="mt-6">
         <AccordionItem value="paid-support">
-          <AccordionTrigger className="text-primary bg-accent-2-foreground hover:opacity-80 p-3 border border-primary rounded-md text-base font-bold mb-2">
+          <AccordionTrigger className=" mb-2">
             💡 設定でお困りの方へ - 専門サポートサービス（5,000円）
           </AccordionTrigger>
           <AccordionContent className="space-y-4">
@@ -661,7 +665,7 @@ const ApiSettingsCard = () => {
                       <div>
                         • <strong>エンドポイントURL</strong>：
                         <span className="text-accent underline">
-                          https://bocker.jp/ja/reservation
+                          {window.location.origin}/{locale}/reservation
                         </span>
                       </div>
                       <div>
@@ -691,11 +695,8 @@ const ApiSettingsCard = () => {
                   <li>
                     「コールバックURL」に以下を追加：
                     <div className="ml-4 mt-1 space-y-1 font-mono text-xs">
-                      <Link
-                        href="https://bocker.jp/ja/reservation"
-                        className="text-accent underline"
-                      >
-                        https://bocker.jp/ja/reservation
+                      <Link href={endpointUrl} className="text-accent underline">
+                        {endpointUrl}
                       </Link>
                     </div>
                   </li>
@@ -1046,7 +1047,7 @@ const ApiSettingsCard = () => {
                     • <strong>サイズ</strong>：Full（推奨）、Tall、Compactから選択
                   </div>
                   <div>
-                    • <strong>エンドポイントURL</strong>：https://bocker.jp/ja/reservation
+                    • <strong>エンドポイントURL</strong>：{window.location.origin}/reservation
                   </div>
                   <div>
                     • <strong>スコープ</strong>：profile、openid、email（必要に応じて）

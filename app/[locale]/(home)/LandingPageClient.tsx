@@ -498,7 +498,7 @@ export function LandingPageClient({
           >
             {/* Badge */}
             <motion.div variants={fadeIn}>
-              <Badge className="px-4 py-1.5 text-sm font-semibold bg-primary text-primary-foreground">
+              <Badge variant="default" className="px-4 py-1.5 text-lg font-semibold">
                 {translations.hero.badge}
               </Badge>
             </motion.div>
@@ -733,7 +733,7 @@ export function LandingPageClient({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-3">
-                    {subscriptionTranslations.features.lite.slice(0, 5).map((feature, index) => (
+                    {subscriptionTranslations.features.lite.slice(0, 10).map((feature, index) => (
                       <li key={index} className="flex items-start gap-3">
                         <CheckIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                         <span className="text-sm">{feature}</span>
@@ -920,7 +920,7 @@ export function LandingPageClient({
             <p className="text-lg opacity-90">{translations.cta.subtitle}</p>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link href="/sign-up">
-                <Button size="lg" variant="secondary" className="min-w-[250px]">
+                <Button size="lg" variant="default" className="min-w-[250px]">
                   {translations.cta.button}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>

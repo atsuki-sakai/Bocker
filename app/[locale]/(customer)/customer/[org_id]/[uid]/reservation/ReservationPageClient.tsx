@@ -73,6 +73,9 @@ export function ReservationPageClient({
       <div>
         <h2 className="text-2xl font-bold text-primary">施術履歴</h2>
         <p className="text-muted-foreground mt-1">過去と未来の予約を確認できます</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          予約のキャンセルは詳細ページから行えます。
+        </p>
       </div>
 
       {/* ステータスフィルター */}
