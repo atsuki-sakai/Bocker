@@ -6,15 +6,15 @@ import { useLiff } from '@/hooks/useLiff'
 import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { toast } from 'sonner'
-import { batchAuthProcessing } from '@/lib/auth/batchProcessor'
 
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, ExternalLink } from 'lucide-react'
+import { Id } from '@/convex/_generated/dataModel'
 
 interface StateData {
-  tenantId: string
-  orgId: string
+  tenantId: Id<'tenant'>
+  orgId: Id<'organization'>
   isCustomerLogin?: boolean
 }
 
@@ -47,8 +47,8 @@ export default function ReserveRedirectPage() {
   const extractStateFromUrl = useCallback((): StateData | null => {
     const urlParams = new URLSearchParams(window.location.search)
     let stateId: string | null = null
-    let tenantId: string | null = null
-    let orgId: string | null = null
+    let tenantId: Id<'tenant'> | null = null
+    let orgId: Id<'organization'> | null = null
 
     // liffRedirectUriパラメータから実際のstate IDを抽出
     const liffRedirectUri = urlParams.get('liffRedirectUri')
@@ -61,8 +61,8 @@ export default function ReserveRedirectPage() {
         if (liffState) {
           const innerSearchParams = new URLSearchParams(liffState.split('?')[1])
           stateId = innerSearchParams.get('state')
-          tenantId = innerSearchParams.get('tid')
-          orgId = innerSearchParams.get('oid')
+          tenantId = innerSearchParams.get('tid') as Id<'tenant'>
+          orgId = innerSearchParams.get('oid') as Id<'organization'>
         }
       } catch (e) {
         console.error('[ReserveRedirectPage] Failed to parse liffRedirectUri:', e)
@@ -75,8 +75,8 @@ export default function ReserveRedirectPage() {
     }
 
     return {
-      tenantId: tenantId || '',
-      orgId: orgId || '',
+      tenantId: tenantId as Id<'tenant'>,
+      orgId: orgId as Id<'organization'>,
       isCustomerLogin: false,
     }
   }, [])
@@ -249,17 +249,8 @@ export default function ReserveRedirectPage() {
               ).get('state')
             : null)
 
-        // state検証（バッチ処理で最適化）
-        const stateValidationTasks = [
-          {
-            name: 'validateState',
-            task: () => validateStateWithRetry(stateId, controller),
-            priority: 3,
-          },
-        ]
-
-        const validationResults = await batchAuthProcessing(stateValidationTasks)
-        let stateData = validationResults.get('validateState') as StateData | null
+        // state検証
+        let stateData = await validateStateWithRetry(stateId, controller)
 
         // URLから抽出したデータとマージ
         if (!stateData && extractedData && extractedData.tenantId && extractedData.orgId) {
@@ -366,26 +357,15 @@ export default function ReserveRedirectPage() {
           abortControllerRef.current.abort()
         }
 
-        // バッチ処理でログアウト
-        const logoutTasks = [
-          {
-            name: 'serverLogout',
-            task: () => fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }),
-            priority: 1,
-          },
-          {
-            name: 'liffLogout',
-            task: async () => {
-              if (liff?.isLoggedIn()) {
-                liff.logout()
-              }
-              return Promise.resolve()
-            },
-            priority: 2,
-          },
-        ]
-
-        await batchAuthProcessing(logoutTasks)
+        // ログアウト処理
+        try {
+          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+          if (liff?.isLoggedIn()) {
+            liff.logout()
+          }
+        } catch (error) {
+          console.warn('Logout error:', error)
+        }
 
         toast.error('タイムアウトしました。再度ログインしてください')
         setIsLoading(false)

@@ -1,249 +1,162 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useLiff } from '@/hooks/useLiff'
 import { toast } from 'sonner'
 import { Loading } from '@/components/common'
-import { batchAuthProcessing } from '@/lib/auth/batchProcessor'
-import { prefetchCustomerData } from '@/lib/auth/sessionCache'
+import { isLineTokenValid } from '@/lib/auth/lineAuthCleanup'
+import type { Liff } from '@line/liff'
+import { Id } from '@/convex/_generated/dataModel'
 
-// LINEログイン共通コールバックページ
-// redirect_type パラメータで顧客用と予約用を切り替え
+// LINEログイン認証状態の型定義
+interface AuthState {
+  tenantId: Id<'tenant'>
+  orgId: Id<'organization'>
+  isCustomerLogin: boolean
+}
+
+// トークン検証APIのレスポンス型
+interface TokenVerifyResponse {
+  success: boolean
+  customerUid?: string
+  message?: string
+  error?: string
+}
+
+// State検証APIのレスポンス型
+interface StateValidationResponse {
+  tenantId: Id<'tenant'>
+  orgId: Id<'organization'>
+  isCustomerLogin: boolean
+}
+
 export default function AuthCallbackPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const locale = useLocale()
   const { liff, isLoggedIn: liffIsLoggedIn, isLoading: liffIsLoading } = useLiff()
-  const [isProcessingCallback, setIsProcessingCallback] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isClient, setIsClient] = useState(false)
-  // 一度だけ実行するためのref（無限ループ防止）
   const hasProcessedRef = useRef(false)
-  const abortControllerRef = useRef<AbortController | null>(null)
 
   // クライアントサイドでのみ実行
   useEffect(() => {
     setIsClient(true)
   }, [])
 
-  // クリーンアップ
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
+  // トークン検証処理
+  const verifyToken = async (liff: Liff, authState: AuthState): Promise<TokenVerifyResponse> => {
+    const idToken = liff.getIDToken()
+    if (!idToken) {
+      throw new Error('IDトークンが取得できませんでした')
     }
-  }, [])
 
-  // トークン検証の最適化版
-  const verifyTokenOptimized = useCallback(
-    async (
-      idToken: string,
-      tenantId: string,
-      orgId: string,
-      isCustomerLogin: boolean,
-      controller: AbortController
-    ) => {
-      const maxRetries = 2
-      let lastError = null
+    // トークン有効性の事前チェック
+    if (!(await isLineTokenValid(idToken))) {
+      throw new Error('IDトークンの有効期限が切れています')
+    }
 
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-          const response = await fetch('/api/line/verify-token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              idToken,
-              tenantId,
-              orgId,
-              isCustomerLogin,
-            }),
-            signal: controller.signal,
-          })
+    const response = await fetch('/api/line/verify-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idToken,
+        tenantId: authState.tenantId,
+        orgId: authState.orgId,
+        isCustomerLogin: authState.isCustomerLogin,
+      }),
+    })
 
-          const data = await response.json()
+    const data: TokenVerifyResponse = await response.json()
 
-          if (response.ok) {
-            return { success: true, data }
-          }
+    if (!response.ok) {
+      throw new Error(data.error || data.message || 'トークン検証に失敗しました')
+    }
 
-          // トークン期限切れの場合、新しいトークンで再試行
-          if (data.error === 'token_expired' && attempt < maxRetries && liff?.isLoggedIn()) {
-            console.log(`[AuthCallback] Token expired, retrying (attempt ${attempt + 1})...`)
-            await new Promise((resolve) => setTimeout(resolve, 500))
-            const newIdToken = liff.getIDToken()
-            if (newIdToken && newIdToken !== idToken) {
-              idToken = newIdToken
-              continue
-            }
-          }
+    return data
+  }
 
-          lastError = new Error(data.message || data.error || 'LINE認証に失敗しました')
-        } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') {
-            throw error
-          }
-          lastError = error
-          if (attempt < maxRetries) {
-            await new Promise((resolve) => setTimeout(resolve, 500))
-          }
-        }
-      }
+  // State検証処理
+  const validateState = async (stateId: string): Promise<StateValidationResponse> => {
+    const response = await fetch(`/api/auth/line-state?stateId=${stateId}`, {
+      method: 'GET',
+      credentials: 'include',
+    })
 
-      throw lastError || new Error('トークン検証に失敗しました')
-    },
-    [liff]
-  )
+    if (!response.ok) {
+      throw new Error('認証状態の検証に失敗しました')
+    }
 
+    return response.json()
+  }
+
+  // セッション取得処理
+  const getSession = async () => {
+    const response = await fetch('/api/auth/session', {
+      method: 'GET',
+      credentials: 'include',
+    })
+    return response.json()
+  }
+
+  // LINEコールバック処理
   useEffect(() => {
-    // クライアントサイド以外または既に処理済みの場合は実行しない
     if (!isClient || hasProcessedRef.current) return
 
     async function handleLineCallback() {
-      // 処理中またはLIFF未初期化の場合は実行しない
-      if (isProcessingCallback || liffIsLoading || !liff) return
+      if (isProcessing || liffIsLoading || !liff) return
 
-      // 処理開始をマーク（無限ループ防止）
       hasProcessedRef.current = true
-      setIsProcessingCallback(true)
-
-      // AbortController作成
-      const controller = new AbortController()
-      abortControllerRef.current = controller
-
-      // URLパラメータから情報を取得
-      const liffRedirectUri = searchParams.get('liffRedirectUri')
-      const state = searchParams.get('state')
-      const redirectType = searchParams.get('redirect_type') // 'customer' or 'reservation'
-
-      console.log('[AuthCallback] URL params:', {
-        liffRedirectUri,
-        state,
-        redirectType,
-        hasLiff: !!liff,
-        isLoggedIn: liffIsLoggedIn,
-      })
-
-      // 必須パラメータの確認
-      if (!state || !redirectType) {
-        console.error('[AuthCallback] Missing required parameters')
-        setError('認証情報が不足しています')
-        setIsProcessingCallback(false)
-        return
-      }
+      setIsProcessing(true)
 
       try {
-        // バッチ処理で最適化: state検証とLIFFログイン状態確認を並列実行
-        const authTasks = [
-          {
-            name: 'validateState',
-            task: () =>
-              fetch(`/api/auth/line-state?stateId=${state}`, {
-                method: 'GET',
-                credentials: 'include',
-                signal: controller.signal,
-              }).then((r) => {
-                if (!r.ok) throw new Error('State validation failed')
-                return r.json()
-              }),
-            priority: 3,
-          },
-          {
-            name: 'checkLiff',
-            task: async () => {
-              if (!liff.isLoggedIn()) {
-                throw new Error('Not logged in to LINE')
-              }
-              return Promise.resolve({ loggedIn: true })
-            },
-            priority: 2,
-          },
-        ]
+        // URLパラメータから情報を取得
+        const state = searchParams.get('state')
+        const redirectType = searchParams.get('redirect_type')
 
-        const results = await batchAuthProcessing(authTasks)
-        const stateData = results.get('validateState')
-        const liffStatus = results.get('checkLiff')
+        console.log('[AuthCallback] Processing callback with params:', {
+          state,
+          redirectType,
+          hasLiff: !!liff,
+          isLoggedIn: liffIsLoggedIn,
+        })
 
-        if (!stateData) {
-          throw new Error('状態検証に失敗しました')
+        // 必須パラメータの確認
+        if (!state || !redirectType) {
+          throw new Error('認証情報が不足しています')
         }
 
-        console.log('[AuthCallback] State data:', stateData)
-
-        // LINEにログインしていない場合
-        if (!liffStatus?.loggedIn) {
+        // LINEログイン状態確認
+        if (!liff.isLoggedIn()) {
           console.log('[AuthCallback] Not logged in to LINE, initiating login')
-          liff.login({
-            redirectUri: window.location.href,
-          })
+          liff.login({ redirectUri: window.location.href })
           return
         }
 
-        // IDトークン取得
-        let idToken: string | null = null
-        try {
-          idToken = liff.getIDToken()
-          if (!idToken) {
-            throw new Error('IDトークンが取得できませんでした')
-          }
-        } catch (e) {
-          console.error('[AuthCallback] Error getting ID token:', e)
-          throw new Error('LINE認証情報の取得に失敗しました')
-        }
+        // State検証
+        const authState = await validateState(state)
+        console.log('[AuthCallback] State validated:', authState)
 
-        // トークン検証（最適化版）
-        const verifyResult = await verifyTokenOptimized(
-          idToken,
-          stateData.tenantId,
-          stateData.orgId,
-          redirectType === 'customer',
-          controller
-        )
+        // トークン検証
+        await verifyToken(liff, authState)
+        console.log('[AuthCallback] Token verified successfully')
 
-        if (!verifyResult.success) {
-          throw new Error('トークン検証に失敗しました')
-        }
-
-        console.log('[AuthCallback] Verification successful, preparing redirect...')
-
-        // リダイレクト準備
+        // リダイレクト処理
         if (redirectType === 'customer') {
-          // 顧客プロフィールへのリダイレクト用にデータをプリフェッチ
-          const sessionTasks = [
-            {
-              name: 'getSession',
-              task: () =>
-                fetch('/api/auth/session', {
-                  method: 'GET',
-                  credentials: 'include',
-                  signal: controller.signal,
-                }).then((r) => r.json()),
-              priority: 3,
-            },
-          ]
-
-          const sessionResults = await batchAuthProcessing(sessionTasks)
-          const sessionData = sessionResults.get('getSession')
+          const sessionData = await getSession()
 
           if (sessionData?.session?.customerUid) {
-            // 顧客データをプリフェッチ（バックグラウンド）
-            prefetchCustomerData(
-              sessionData.session.customerUid,
-              stateData.tenantId,
-              stateData.orgId
-            ).catch(console.warn) // エラーは無視
-
-            const profileUrl = `/${locale}/customer/${stateData.orgId}/${sessionData.session.customerUid}/profile`
+            const profileUrl = `/${locale}/customer/${authState.orgId}/${sessionData.session.customerUid}/profile`
             console.log('[AuthCallback] Redirecting to customer profile:', profileUrl)
             router.push(profileUrl)
           } else {
             throw new Error('セッション情報の取得に失敗しました')
           }
         } else if (redirectType === 'reservation') {
-          // 予約カレンダーへ
-          const calendarUrl = `/${locale}/reservation/${stateData.orgId}/calendar`
+          const calendarUrl = `/${locale}/reservation/${authState.orgId}/calendar`
           console.log('[AuthCallback] Redirecting to reservation calendar:', calendarUrl)
           router.push(calendarUrl)
         } else {
@@ -252,41 +165,20 @@ export default function AuthCallbackPage() {
 
         toast.success('LINEログインに成功しました')
       } catch (error) {
-        console.error('[AuthCallback] Error in handleLineCallback:', error)
+        console.error('[AuthCallback] Error:', error)
 
         if (error instanceof Error) {
-          console.error('[AuthCallback] Error details:', {
-            message: error.message,
-            name: error.name,
-            stack: error.stack,
-          })
-
-          // AbortErrorの場合は特別処理
-          if (error.name === 'AbortError') {
-            setError('処理がキャンセルされました')
-          } else {
-            setError(error.message)
-          }
+          setError(error.message)
         } else {
           setError('認証処理中にエラーが発生しました')
         }
 
-        setIsProcessingCallback(false)
+        setIsProcessing(false)
       }
     }
 
     handleLineCallback()
-  }, [
-    router,
-    locale,
-    searchParams,
-    liff,
-    liffIsLoggedIn,
-    liffIsLoading,
-    isClient,
-    isProcessingCallback,
-    verifyTokenOptimized,
-  ])
+  }, [router, locale, searchParams, liff, liffIsLoggedIn, liffIsLoading, isClient, isProcessing])
 
   // サーバーサイドレンダリング時は何も表示しない
   if (!isClient) {

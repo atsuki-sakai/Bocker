@@ -4,9 +4,17 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLiff } from '@/hooks/useLiff'
 import { toast } from 'sonner'
+import { isLineTokenValid } from '@/lib/auth/lineAuthCleanup'
+
+// LINEログイン成功時のレスポンス型
+interface LineAuthSuccessData {
+  customerUid?: string
+  success: boolean
+  message?: string
+}
 
 interface UseLineAuthHandlerOptions {
-  onSuccess?: (data: any) => void
+  onSuccess?: (data: LineAuthSuccessData) => void
   onError?: (error: Error) => void
   maxRetries?: number
   retryDelay?: number
@@ -52,21 +60,25 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
         signal: controller.signal,
       })
 
-      if (!response.ok && response.status === 401 && attempt < maxRetries) {
-        const data = await response.json()
+      if (!response.ok) {
+        // リトライ可能なエラーかチェック
+        const isRetryableError = 
+          response.status === 503 || 
+          response.status === 504 ||
+          (response.status === 500 && attempt === 1)
         
-        // トークン期限切れの場合、新しいトークンを取得して再試行
-        if (data.error === 'token_expired' && liff?.isLoggedIn()) {
-          console.log(`[useLineAuthHandler] Token expired, retrying (attempt ${attempt + 1})...`)
-          
-          // 少し待機
-          await new Promise(resolve => setTimeout(resolve, retryDelay))
-          
-          // 新しいトークンを取得
-          const newIdToken = liff.getIDToken()
-          if (newIdToken) {
-            return verifyTokenWithRetry(newIdToken, tenantId, orgId, isCustomerLogin, attempt + 1)
+        if (isRetryableError && attempt < maxRetries) {
+          console.log(`[useLineAuthHandler] Retrying due to ${response.status} error (attempt ${attempt + 1}/${maxRetries})`)
+          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt))
+          return verifyTokenWithRetry(idToken, tenantId, orgId, isCustomerLogin, attempt + 1)
+        }
+        
+        // 認証エラーの場合は再ログインを促す
+        if (response.status === 401) {
+          if (liff?.isLoggedIn()) {
+            liff.logout()
           }
+          throw new Error('認証情報の有効期限が切れています。再度ログインしてください。')
         }
       }
 
@@ -74,6 +86,9 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('認証処理がキャンセルされました')
+      }
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('ネットワークエラーが発生しました。インターネット接続を確認してください。')
       }
       throw error
     }
@@ -94,9 +109,7 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
 
     try {
       // LIFF初期化の最終確認
-      if (!liff.isReady()) {
-        throw new Error('LIFF SDKの初期化が完了していません。ページを再読み込みしてください。')
-      }
+      // liff.readyはPromiseなので、ここではLIFFオブジェクトの存在確認のみ行う
 
       // LINEログイン状態を確認
       if (!liff.isLoggedIn()) {
@@ -145,9 +158,10 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
           liff.login({ redirectUri: callbackUrl.toString() })
         } catch (loginError) {
           console.error('[useLineAuthHandler] LIFF login failed, trying window.location:', loginError)
-          // フォールバック：直接リダイレクト
+          // フォールバック：基本的なリダイレクト（LIFF IDを使用）
+          const liffId = liff.id || ''
           const lineAuthUrl = `https://access.line.me/oauth2/v2.1/authorize?` +
-            `response_type=code&client_id=${liff.getClientId()}&` +
+            `response_type=code&client_id=${liffId}&` +
             `redirect_uri=${encodeURIComponent(callbackUrl.toString())}&` +
             `state=${stateId}&scope=profile%20openid`
           window.location.href = lineAuthUrl
@@ -158,14 +172,22 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
       // IDトークンを取得
       console.log('[useLineAuthHandler] User already logged in, getting ID token')
       const idToken = liff.getIDToken()
+      
       if (!idToken) {
         console.warn('[useLineAuthHandler] ID token not available, forcing re-login')
-        // IDトークンが取得できない場合は再ログインを促す
         liff.logout()
         throw new Error('LINE認証情報の取得に失敗しました。再度ログインしてください。')
       }
       
       console.log('[useLineAuthHandler] ID token acquired, length:', idToken.length)
+      
+      // トークンの有効性を事前チェック
+      const tokenValid = await isLineTokenValid(idToken)
+      if (!tokenValid) {
+        console.warn('[useLineAuthHandler] ID token is expired')
+        liff.logout()
+        throw new Error('LINE認証情報の有効期限が切れています。再度ログインしてください。')
+      }
 
       // トークン検証（リトライ付き）
       const response = await verifyTokenWithRetry(idToken, tenantId, orgId, isCustomerLogin)
@@ -192,7 +214,7 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
         error,
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        liffIsReady: liff?.isReady(),
+        liffId: liff?.id,
         liffIsLoggedIn: liff?.isLoggedIn(),
         tenantId,
         orgId,

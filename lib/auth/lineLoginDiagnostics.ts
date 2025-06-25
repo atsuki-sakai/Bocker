@@ -1,33 +1,45 @@
 'use client'
 
+import type { Liff } from '@line/liff'
+import { Id } from '@/convex/_generated/dataModel'
+
 /**
  * LINEログイン診断ツール
  * スマートフォン環境での問題を特定・解決するためのユーティリティ
  */
 
+/**
+ * 診断結果の型定義
+ */
 interface DiagnosticResult {
+  /** 診断カテゴリ（例: LIFF, Network, Browser） */
   category: string
+  /** 診断結果のステータス */
   status: 'success' | 'warning' | 'error'
+  /** 診断結果のメッセージ */
   message: string
-  details?: any
+  /** 詳細情報（エラー情報など） */
+  details?: Record<string, unknown>
+  /** ユーザーへの提案・対処法 */
   suggestion?: string
 }
 
-interface LiffDiagnostics {
-  isReady: boolean
-  isLoggedIn: boolean
-  isInClient: boolean
-  environment: any
-  error?: string
-}
-
+/**
+ * LINEログイン診断クラス
+ * スマートフォン環境でのLINEログイン問題を診断する
+ */
 export class LineLoginDiagnostics {
+  /** 診断結果を格納する配列 */
   private results: DiagnosticResult[] = []
 
   /**
    * 包括的な診断を実行
+   * @param liff - LIFF SDKインスタンス（正式な@line/liffパッケージから）
+   * @param tenantId - テナントID（オプション）
+   * @param orgId - 組織ID（オプション）
+   * @returns 診断結果の配列
    */
-  async runDiagnostics(liff: any, tenantId?: string, orgId?: string): Promise<DiagnosticResult[]> {
+  async runDiagnostics(liff: Liff | null, tenantId?: Id<'tenant'>, orgId?: Id<'organization'>): Promise<DiagnosticResult[]> {
     this.results = []
     
     console.log('[LineLoginDiagnostics] Starting comprehensive diagnostics...')
@@ -56,7 +68,7 @@ export class LineLoginDiagnostics {
   /**
    * LIFF環境の診断
    */
-  private async diagnoseLiff(liff: any): Promise<void> {
+  private async diagnoseLiff(liff: Liff | null): Promise<void> {
     try {
       if (!liff) {
         this.addResult({
@@ -68,28 +80,25 @@ export class LineLoginDiagnostics {
         return
       }
 
-      // LIFF基本状態
-      const isReady = liff.isReady()
+      // LIFF基本状態チェック
       const isLoggedIn = liff.isLoggedIn()
       const isInClient = liff.isInClient()
 
       this.addResult({
         category: 'LIFF',
-        status: isReady ? 'success' : 'error',
-        message: isReady ? 'LIFF SDKは正常に初期化されています' : 'LIFF SDKの初期化が不完全です',
-        details: { isReady, isLoggedIn, isInClient },
-        suggestion: !isReady ? 'アプリを再起動するかページを再読み込みしてください' : undefined
+        status: 'success',
+        message: 'LIFF SDKは正常に初期化されています',
+        details: { isLoggedIn, isInClient }
       })
 
       // LIFF環境情報
-      if (isReady) {
+      try {
         const environment = {
           os: liff.getOS(),
           language: liff.getLanguage(),
           version: liff.getVersion(),
           lineVersion: liff.getLineVersion(),
-          context: liff.getContext(),
-          clientId: liff.getClientId()
+          context: liff.getContext()
         }
 
         this.addResult({
@@ -97,6 +106,13 @@ export class LineLoginDiagnostics {
           status: 'success',
           message: `LIFF環境: ${environment.os} / LINE ${environment.lineVersion}`,
           details: environment
+        })
+      } catch (error) {
+        this.addResult({
+          category: 'LIFF Environment',
+          status: 'warning',
+          message: 'LIFF環境情報の取得に失敗',
+          details: { error: this.errorToString(error) }
         })
       }
 
@@ -123,7 +139,7 @@ export class LineLoginDiagnostics {
             category: 'LINE Login',
             status: 'warning',
             message: 'ログイン情報の取得に失敗',
-            details: error,
+            details: { error: this.errorToString(error) },
             suggestion: '一度ログアウトしてから再ログインしてください'
           })
         }
@@ -134,7 +150,7 @@ export class LineLoginDiagnostics {
         category: 'LIFF',
         status: 'error',
         message: 'LIFF診断中にエラーが発生',
-        details: error
+        details: { error: this.errorToString(error) }
       })
     }
   }
@@ -176,7 +192,7 @@ export class LineLoginDiagnostics {
             category: 'API Connectivity',
             status: 'error',
             message: 'APIサーバーに接続できません',
-            details: error,
+            details: { error: this.errorToString(error) },
             suggestion: 'しばらく待ってから再試行してください'
           })
         }
@@ -186,7 +202,7 @@ export class LineLoginDiagnostics {
         category: 'Network',
         status: 'error',
         message: 'ネットワーク診断中にエラーが発生',
-        details: error
+        details: { error: this.errorToString(error) }
       })
     }
   }
@@ -242,7 +258,7 @@ export class LineLoginDiagnostics {
         category: 'Browser',
         status: 'error',
         message: 'ブラウザ診断中にエラーが発生',
-        details: error
+        details: { error: this.errorToString(error) }
       })
     }
   }
@@ -282,7 +298,7 @@ export class LineLoginDiagnostics {
         category: 'API Configuration',
         status: 'warning',
         message: 'API設定診断中にエラーが発生',
-        details: error
+        details: { error: this.errorToString(error) }
       })
     }
   }
@@ -324,9 +340,19 @@ export class LineLoginDiagnostics {
         category: 'Storage',
         status: 'error',
         message: 'ストレージ診断中にエラーが発生',
-        details: error
+        details: { error: this.errorToString(error) }
       })
     }
+  }
+
+  /**
+   * エラーオブジェクトを文字列に変換（安全な方法）
+   */
+  private errorToString(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message
+    }
+    return String(error)
   }
 
   /**
@@ -391,10 +417,14 @@ export class LineLoginDiagnostics {
 }
 
 /**
- * 診断実行のヘルパー関数
+ * LINEログイン診断を実行するヘルパー関数
+ * @param liff - LIFF SDKインスタンス（@line/liffパッケージから）
+ * @param tenantId - テナントID（組織診断用）
+ * @param orgId - 組織ID（組織診断用）
+ * @returns 診断結果、サマリー、推奨対処法
  */
 export async function runLineLoginDiagnostics(
-  liff?: any, 
+  liff?: Liff | null, 
   tenantId?: string, 
   orgId?: string
 ): Promise<{
@@ -403,7 +433,7 @@ export async function runLineLoginDiagnostics(
   recommendations: string[]
 }> {
   const diagnostics = new LineLoginDiagnostics()
-  const results = await diagnostics.runDiagnostics(liff, tenantId, orgId)
+  const results = await diagnostics.runDiagnostics(liff || null, tenantId as Id<'tenant'>, orgId as Id<'organization'>)
   const summary = diagnostics.generateSummary()
   const recommendations = diagnostics.getMobileRecommendations()
 

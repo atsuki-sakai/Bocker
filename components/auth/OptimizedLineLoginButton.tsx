@@ -1,21 +1,30 @@
 'use client'
 
-import React, { memo, useCallback, useState } from 'react'
+import React, { memo, useCallback, useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronRight, Loader2 } from 'lucide-react'
 import { useLineAuthHandler } from '@/hooks/useLineAuthHandler'
 import { toast } from 'sonner'
 import { Id } from '@/convex/_generated/dataModel'
+import { cleanupLineAuthState } from '@/lib/auth/lineAuthCleanup'
+
+// LINEログイン成功時のレスポンス型
+interface LineLoginSuccessData {
+  customerUid?: string
+  success: boolean
+  message?: string
+}
 
 interface OptimizedLineLoginButtonProps {
   tenantId: Id<'tenant'>
   orgId: Id<'organization'>
   isCustomerLogin?: boolean
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSuccess?: (data: any) => void
+  onSuccess?: (data: LineLoginSuccessData) => void
   className?: string
   children?: React.ReactNode
 }
+
+const CLICK_TIMEOUT = 10000 // 10秒のタイムアウト
 
 export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
   tenantId,
@@ -27,11 +36,17 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
 }: OptimizedLineLoginButtonProps) {
   const [isClicked, setIsClicked] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   const { handleLineAuth, isProcessing, isLiffLoading } = useLineAuthHandler({
     onSuccess: (data) => {
       console.log('[OptimizedLineLoginButton] Login successful:', data)
       setIsClicked(false)
       setRetryCount(0) // 成功時にリトライカウントをリセット
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
       if (onSuccess) {
         onSuccess(data)
       }
@@ -39,9 +54,26 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
     onError: (error) => {
       console.error('[OptimizedLineLoginButton] Error:', error)
       setIsClicked(false)
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
       // エラーは useLineAuthHandler 内で処理される
     },
   })
+
+  // コンポーネントマウント時にクリーンアップ
+  useEffect(() => {
+    // 古い認証情報をクリーンアップ
+    cleanupLineAuthState().catch(console.warn)
+
+    // アンマウント時のクリーンアップ
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleClick = useCallback(async () => {
     console.log('[OptimizedLineLoginButton] Click initiated', {
@@ -50,7 +82,7 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       isLiffLoading,
       tenantId,
       orgId,
-      retryCount
+      retryCount,
     })
 
     // 二重クリック防止
@@ -63,11 +95,11 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
     if (isLiffLoading) {
       const remainingTime = Math.max(10 - retryCount * 2, 3) // 最低3秒待機
       toast.info(`LINEログイン機能を読み込み中です。${remainingTime}秒後にもう一度お試しください。`)
-      
+
       // 自動リトライ機能
       if (retryCount < 3) {
         setTimeout(() => {
-          setRetryCount(prev => prev + 1)
+          setRetryCount((prev) => prev + 1)
           handleClick()
         }, remainingTime * 1000)
       }
@@ -80,7 +112,17 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       return
     }
 
+    // 処理開始前に古い認証情報をクリーンアップ
+    await cleanupLineAuthState().catch(console.warn)
+
     setIsClicked(true)
+
+    // タイムアウト設定
+    timeoutRef.current = setTimeout(() => {
+      console.warn('[OptimizedLineLoginButton] Click timeout reached')
+      setIsClicked(false)
+      toast.error('認証処理がタイムアウトしました。もう一度お試しください。')
+    }, CLICK_TIMEOUT)
 
     try {
       console.log('[OptimizedLineLoginButton] Starting LINE auth...')
@@ -90,8 +132,21 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       // エラーはuseLineAuthHandler内で処理されるが、念のためフォールバック
       toast.error('ログイン処理で予期しないエラーが発生しました')
       setIsClicked(false)
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
     }
-  }, [tenantId, orgId, isCustomerLogin, handleLineAuth, isClicked, isProcessing, isLiffLoading, retryCount])
+  }, [
+    tenantId,
+    orgId,
+    isCustomerLogin,
+    handleLineAuth,
+    isClicked,
+    isProcessing,
+    isLiffLoading,
+    retryCount,
+  ])
 
   const isDisabled = isProcessing || isLiffLoading || isClicked || !tenantId || !orgId
   
