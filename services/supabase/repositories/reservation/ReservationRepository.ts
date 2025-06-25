@@ -104,7 +104,7 @@ export class ReservationRepository extends BaseRepository<'reservation'> {
       const { data: reservations, count } = await this.supabaseServiceInstance.listRecords('reservation', {
         filters,
         rangeFilter,
-        orderBy: { column: 'start_time_unix', ascending: false },
+        orderBy: { column: 'start_time_unix', ascending: true },
         page: options?.page,
         pageSize: options?.pageSize || 10,
         select: '*'
@@ -243,7 +243,7 @@ export class ReservationRepository extends BaseRepository<'reservation'> {
         (reservations || []).map(async (reservation) => {
           const { data: details } = await this.supabaseServiceInstance.listRecords('reservation_detail', {
             filters: {
-              convex_reservation_id: reservation._convex_id
+              _convex_reservation_id: reservation._convex_id
             } as Partial<RowType<'reservation_detail'>>,
             pageSize: 1
           });
@@ -291,6 +291,203 @@ export class ReservationRepository extends BaseRepository<'reservation'> {
           error: error,
           severity: 'medium',
           details: { tenantId, orgId, customerUid }
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 組織レベルで予約を詳細情報と共に取得します。
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param options - リスト取得オプション
+   * @returns 予約と詳細情報
+   */
+  async findByOrganizationWithDetails(
+    tenantId: string,
+    orgId: string,
+    options?: {
+      page?: number;
+      pageSize?: number;
+      status?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ): Promise<{ 
+    data: Array<{
+      reservation: RowType<'reservation'>;
+      detail: RowType<'reservation_detail'> | null;
+    }>; 
+    count: number | null 
+  }> {
+    console.log(`[ReservationRepository] findByOrganizationWithDetails: tenantId=${tenantId}, orgId=${orgId}`);
+    
+    try {
+      // 日付範囲フィルター用のfilters
+      const filters: Partial<RowType<'reservation'>> = {
+        tenant_id: tenantId,
+        org_id: orgId,
+        is_archive: false
+      };
+
+      // ステータスフィルター
+      if (options?.status) {
+        filters.status = options.status;
+      }
+
+      // rangeFilterを使用して日付範囲を指定
+      let rangeFilter: { column: keyof RowType<'reservation'>; from?: string | number; to?: string | number } | undefined;
+      if (options?.startDate || options?.endDate) {
+        rangeFilter = {
+          column: 'start_time_unix',
+          from: options.startDate ? new Date(options.startDate).getTime() : undefined,
+          to: options.endDate ? new Date(options.endDate).getTime() : undefined
+        };
+      }
+
+      // listRecordsを使用してデータ取得
+      const { data: reservations, count } = await this.supabaseServiceInstance.listRecords('reservation', {
+        filters,
+        rangeFilter,
+        orderBy: { column: 'start_time_unix', ascending: true },
+        page: options?.page,
+        pageSize: options?.pageSize || 10,
+        select: '*'
+      });
+
+      // 予約詳細を取得
+      const formattedData = await Promise.all(
+        (reservations || []).map(async (reservation) => {
+          // _convex_idを使用して詳細を取得
+          const { data: details } = await this.supabaseServiceInstance.listRecords('reservation_detail', {
+            filters: {
+              _convex_reservation_id: reservation._convex_id
+            } as Partial<RowType<'reservation_detail'>>,
+            pageSize: 1
+          });
+
+          return {
+            reservation,
+            detail: details?.[0] || null
+          };
+        })
+      );
+
+      return { data: formattedData, count };
+    } catch (error) {
+      if (error instanceof Error) {
+        throwSupabaseError({
+          callFunc: 'ReservationRepository.findByOrganizationWithDetails',
+          message: error.message,
+          error: error,
+          severity: 'high',
+          details: { tenantId, orgId, options }
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 組織の予約統計情報を取得します。
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param startDate - 開始日（オプション）
+   * @param endDate - 終了日（オプション）
+   * @returns 統計情報
+   */
+  async getOrganizationReservationStats(
+    tenantId: string,
+    orgId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    totalCount: number;
+    completedCount: number;
+    cancelledCount: number;
+    upcomingCount: number;
+    totalAmount: number;
+  }> {
+    console.log(`[ReservationRepository] getOrganizationReservationStats: tenantId=${tenantId}, orgId=${orgId}`);
+    
+    try {
+      // フィルター設定
+      const filters: Partial<RowType<'reservation'>> = {
+        tenant_id: tenantId,
+        org_id: orgId,
+        is_archive: false
+      };
+
+      // 日付範囲フィルター
+      let rangeFilter: { column: keyof RowType<'reservation'>; from?: string | number; to?: string | number } | undefined;
+      if (startDate || endDate) {
+        rangeFilter = {
+          column: 'start_time_unix',
+          from: startDate ? new Date(startDate).getTime() : undefined,
+          to: endDate ? new Date(endDate).getTime() : undefined
+        };
+      }
+
+      // 予約データを取得
+      const { data: reservations } = await this.supabaseServiceInstance.listRecords('reservation', {
+        filters,
+        rangeFilter
+      });
+
+      // 予約詳細を取得して統計を計算
+      const reservationDetails = await Promise.all(
+        (reservations || []).map(async (reservation) => {
+          const { data: details } = await this.supabaseServiceInstance.listRecords('reservation_detail', {
+            filters: {
+              _convex_reservation_id: reservation._convex_id
+            } as Partial<RowType<'reservation_detail'>>,
+            pageSize: 1
+          });
+          return {
+            reservation,
+            detail: details?.[0] || null
+          };
+        })
+      );
+
+      const now = Date.now();
+      let totalCount = 0;
+      let completedCount = 0;
+      let cancelledCount = 0;
+      let upcomingCount = 0;
+      let totalAmount = 0;
+
+      reservationDetails.forEach(({ reservation, detail }) => {
+        totalCount++;
+        
+        if (reservation.status === 'completed') {
+          completedCount++;
+          if (detail?.total_price) {
+            totalAmount += detail.total_price;
+          }
+        } else if (reservation.status === 'cancelled') {
+          cancelledCount++;
+        } else if (reservation.status === 'confirmed' && Number(reservation.start_time_unix) > now) {
+          upcomingCount++;
+        }
+      });
+
+      return {
+        totalCount,
+        completedCount,
+        cancelledCount,
+        upcomingCount,
+        totalAmount
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throwSupabaseError({
+          callFunc: 'ReservationRepository.getOrganizationReservationStats',
+          message: error.message,
+          error: error,
+          severity: 'medium',
+          details: { tenantId, orgId, startDate, endDate }
         });
       }
       throw error;

@@ -3,16 +3,19 @@
 import { internalAction } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
-import { getEnv } from '@/lib/env-config'
+import { createClient } from "@supabase/supabase-js";
 
 // Supabaseクライアントの取得（Node.js環境用）
-const getSupabaseClient = async () => {
-  const { createClient } = await import("@supabase/supabase-js");
-  
-  const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL');
-  const serviceRoleKey = getEnv('SUPABASE_SERVICE_ROLE_KEY');
+const getSupabaseClient = () => {
+  // 環境変数を直接取得
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!supabaseUrl || !serviceRoleKey) {
+    console.error('Environment variables:', {
+      supabaseUrl: !!supabaseUrl,
+      serviceRoleKey: !!serviceRoleKey
+    });
     throw new Error('Missing Supabase environment variables');
   }
   
@@ -49,12 +52,8 @@ export const runDailyMigration = internalAction({
         return;
       }
       
-      // 2. 完了済み予約を移行
-      await migrateCompletedReservations(ctx, cutoffTime);
-      
-      // 3. キャンセル済み予約を移行（7日以上経過）
-      const cancelCutoffTime = startTime - (7 * 24 * 60 * 60 * 1000);
-      await migrateCancelledReservations(ctx, cancelCutoffTime);
+      // 2. 非アクティブ予約（confirmed/pending以外）を移行
+      await migrateNonActiveReservations(ctx, cutoffTime);
       
       const duration = Date.now() - startTime;
       console.log(`[Migration] Completed in ${duration}ms`);
@@ -89,14 +88,81 @@ export const runDailyMigration = internalAction({
 });
 
 /**
- * 完了済み予約の移行処理
+ * 非アクティブ予約（confirmed/pending以外）の移行処理
+ * confirmed、pending以外のすべてのステータス（completed、cancelled、refunded等）を移行
+ */
+async function migrateNonActiveReservations(ctx: any, cutoffTime: number) {
+  const batchSize = 500;
+  let cursor: string | undefined;
+  let totalMigrated = 0;
+  
+  const supabase = getSupabaseClient();
+  
+  while (true) {
+    // Convexから非アクティブ予約データを取得
+    const { records, nextCursor, hasMore } = await ctx.runQuery(
+      (internal as any).migration.query.getNonActiveReservations,
+      { cursor, limit: batchSize, cutoffTime }
+    );
+    
+    if (records.length === 0) break;
+    
+    console.log(`[Migration] Processing batch of ${records.length} non-active reservations`);
+    
+    // 予約IDの配列を作成
+    const reservationIds = records.map((r: any) => r._id as Id<'reservation'>);
+    
+    // 関連する予約詳細を取得
+    const details = await ctx.runQuery(
+      (internal as any).migration.query.getReservationDetails,
+      { reservationIds }
+    );
+    
+    // Supabaseへ移行
+    const migrationResult = await migrateToSupabase(
+      supabase,
+      records,
+      details
+    );
+    
+    if (migrationResult.success) {
+      // 成功したレコードをConvexから削除
+      const deleteResult = await ctx.runMutation(
+        (internal as any).migration.mutation.deleteReservations,
+        { reservationIds: migrationResult.migratedReservationIds }
+      );
+      
+      // 予約詳細も削除
+      if (migrationResult.migratedDetailIds.length > 0) {
+        await ctx.runMutation(
+          (internal as any).migration.mutation.deleteReservationDetails,
+          { detailIds: migrationResult.migratedDetailIds }
+        );
+      }
+      
+      totalMigrated += deleteResult.deletedCount;
+    }
+    
+    cursor = nextCursor;
+    if (!hasMore) break;
+    
+    // 負荷軽減のため短時間待機
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  console.log(`[Migration] Migrated ${totalMigrated} non-active reservations`);
+}
+
+/**
+ * 完了済み予約の移行処理（下位互換のため残す）
+ * @deprecated migrateNonActiveReservationsを使用してください
  */
 async function migrateCompletedReservations(ctx: any, cutoffTime: number) {
   const batchSize = 500;
   let cursor: string | undefined;
   let totalMigrated = 0;
   
-  const supabase = await getSupabaseClient();
+  const supabase = getSupabaseClient();
   
   while (true) {
     // Convexから予約データを取得
@@ -154,14 +220,15 @@ async function migrateCompletedReservations(ctx: any, cutoffTime: number) {
 }
 
 /**
- * キャンセル済み予約の移行処理
+ * キャンセル済み予約の移行処理（下位互換のため残す）
+ * @deprecated migrateNonActiveReservationsを使用してください
  */
 async function migrateCancelledReservations(ctx: any, cutoffTime: number) {
   const batchSize = 500;
   let cursor: string | undefined;
   let totalMigrated = 0;
   
-  const supabase = await getSupabaseClient();
+  const supabase = getSupabaseClient();
   
   while (true) {
     const { records, nextCursor, hasMore } = await ctx.runQuery(
@@ -228,7 +295,7 @@ async function migrateToSupabase(
   const migratedDetailIds: Id<'reservation_detail'>[] = [];
   
   try {
-    // 予約データの変換（_creationTimeはBIGINTとして保存）
+    // 予約データの変換（_creationTimeは整数のBIGINTとして保存）
     const reservationPayloads = reservations.map(reservation => ({
       tenant_id: reservation.tenant_id,
       org_id: reservation.org_id,
@@ -245,29 +312,44 @@ async function migrateToSupabase(
       is_archive: reservation.is_archive || false,
       sort_key: reservation.sort_key || null,
       _convex_id: reservation._id, // ConvexレコードIDを保持
-      _creation_time: reservation._creationTime // BIGINTとしてそのまま保存
+      _creation_time: Math.floor(reservation._creationTime) // 小数点を切り捨てて整数に変換
     }));
     
-    // 予約詳細データの変換
-    const detailPayloads = details.map(detail => ({
-      tenant_id: detail.tenant_id,
-      org_id: detail.org_id,
-      coupon_id: detail.coupon_id || null,
-      total_price: detail.total_price || null,
-      payment_method: detail.payment_method,
-      menus: detail.menus || [],
-      options: detail.options || [],
-      extra_charge: detail.extra_charge || null,
-      use_points: detail.use_points || null,
-      coupon_discount: detail.coupon_discount || null,
-      featured_hair_images: detail.featured_hair_images || [],
-      notes: detail.notes || null,
-      is_archive: detail.is_archive || false,
-      sort_key: detail.sort_key || null,
-      _convex_id: detail._id,
-      _convex_reservation_id: detail.reservation_id,
-      _creation_time: detail._creationTime // BIGINTとしてそのまま保存
-    }));
+    // 予約詳細データの変換（_creationTimeは整数のBIGINTとして保存）
+    const detailPayloads = details.map(detail => {
+      // reservation_idのデバッグログ出力
+      console.log(`[Migration] Detail reservation_id mapping:`, {
+        detail_id: detail._id,
+        reservation_id: detail.reservation_id,
+        reservation_id_type: typeof detail.reservation_id
+      });
+      
+      // reservation_idがNULLの場合はエラーとして扱う
+      if (!detail.reservation_id) {
+        throw new Error(`reservation_id is null/undefined for detail ${detail._id}`);
+      }
+      
+      return {
+        tenant_id: detail.tenant_id,
+        org_id: detail.org_id,
+        reservation_id: detail.reservation_id, // NOT NULL制約があるため必須
+        coupon_id: detail.coupon_id || null,
+        total_price: detail.total_price || null,
+        payment_method: detail.payment_method || 'unknown', // NOT NULL制約がある可能性を考慮
+        menus: detail.menus || [],
+        options: detail.options || [],
+        extra_charge: detail.extra_charge || null,
+        use_points: detail.use_points || null,
+        coupon_discount: detail.coupon_discount || null,
+        featured_hair_images: detail.featured_hair_images || [],
+        notes: detail.notes || null,
+        is_archive: detail.is_archive || false,
+        sort_key: detail.sort_key || null,
+        _convex_id: detail._id,
+        _convex_reservation_id: detail.reservation_id,
+        _creation_time: Math.floor(detail._creationTime) // 小数点を切り捨てて整数に変換
+      };
+    });
     
     // Supabaseへバルクインサート（500件ずつ分割）
     const chunkSize = 500;

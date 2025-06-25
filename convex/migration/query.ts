@@ -3,9 +3,9 @@ import { v } from "convex/values";
 
 /**
  * 移行対象の予約データを取得するクエリ
- * 完了済みかつ24時間以上経過した予約を取得
+ * confirmed以外のステータス（completed, cancelled, refunded等）かつ24時間以上経過した予約を取得
  */
-export const getCompletedReservations = query({
+export const getNonActiveReservations = query({
   args: {
     cursor: v.optional(v.string()),
     limit: v.number(),
@@ -17,13 +17,15 @@ export const getCompletedReservations = query({
     hasMore: v.boolean()
   }),
   handler: async (ctx, { cursor, limit, cutoffTime }) => {
-    // カーソルからクエリを構築
+    // confirmed以外のステータスの予約を取得
+    // confirmed、pendingは現在アクティブな予約として除外
     let query = ctx.db
       .query('reservation')
-      .withIndex('status_start_time_archive')
+      .withIndex('by_tenant_org_archive')
       .filter((q) => 
         q.and(
-          q.eq(q.field('status'), 'completed'),
+          q.neq(q.field('status'), 'confirmed'),
+          q.neq(q.field('status'), 'pending'),
           q.lt(q.field('end_time_unix'), cutoffTime),
           q.eq(q.field('is_archive'), false)
         )
@@ -56,8 +58,8 @@ export const getCompletedReservations = query({
 });
 
 /**
- * 移行対象のキャンセル済み予約データを取得するクエリ
- * キャンセルされて7日以上経過した予約を取得
+ * 移行対象のキャンセル済み予約データを取得するクエリ（下位互換のため残す）
+ * @deprecated getNonActiveReservationsを使用してください
  */
 export const getCancelledReservations = query({
   args: {
@@ -78,6 +80,58 @@ export const getCancelledReservations = query({
         q.and(
           q.eq(q.field('status'), 'cancelled'),
           q.lt(q.field('updated_at'), cutoffTime),
+          q.eq(q.field('is_archive'), false)
+        )
+      )
+      .order('asc');
+
+    if (cursor) {
+      const cursorDoc = await ctx.db.get(cursor as any);
+      if (cursorDoc) {
+        query = query.filter((q) => 
+          q.gt(q.field('_creationTime'), cursorDoc._creationTime)
+        );
+      }
+    }
+
+    const records = await query.take(limit + 1);
+    
+    const hasMore = records.length > limit;
+    const returnRecords = hasMore ? records.slice(0, limit) : records;
+    const nextCursor = hasMore ? records[limit]._id : undefined;
+
+    return {
+      records: returnRecords,
+      nextCursor,
+      hasMore
+    };
+  }
+});
+
+/**
+ * 移行対象の完了済み予約データを取得するクエリ（下位互換のため残す）
+ * @deprecated getNonActiveReservationsを使用してください
+ */
+export const getCompletedReservations = query({
+  args: {
+    cursor: v.optional(v.string()),
+    limit: v.number(),
+    cutoffTime: v.number() // 基準時刻（Unix timestamp）
+  },
+  returns: v.object({
+    records: v.array(v.any()),
+    nextCursor: v.optional(v.string()),
+    hasMore: v.boolean()
+  }),
+  handler: async (ctx, { cursor, limit, cutoffTime }) => {
+    // 下位互換のため、完了済み予約のみを対象とする元の実装を維持
+    let query = ctx.db
+      .query('reservation')
+      .withIndex('status_start_time_archive')
+      .filter((q) => 
+        q.and(
+          q.eq(q.field('status'), 'completed'),
+          q.lt(q.field('end_time_unix'), cutoffTime),
           q.eq(q.field('is_archive'), false)
         )
       )
@@ -148,40 +202,33 @@ export const getMigrationStats = query({
   returns: v.object({
     completedReservations: v.number(),
     cancelledReservations: v.number(),
+    nonActiveReservations: v.number(),
     totalToMigrate: v.number()
   }),
   handler: async (ctx, { cutoffTime }) => {
-    // 完了済み予約の件数
-    const completedReservations = await ctx.db
+    // confirmed以外の全ての予約の件数
+    const nonActiveReservations = await ctx.db
       .query('reservation')
-      .withIndex('status_start_time_archive')
+      .withIndex('by_tenant_org_archive')
       .filter((q) => 
         q.and(
-          q.eq(q.field('status'), 'completed'),
+          q.neq(q.field('status'), 'confirmed'),
+          q.neq(q.field('status'), 'pending'),
           q.lt(q.field('end_time_unix'), cutoffTime),
           q.eq(q.field('is_archive'), false)
         )
       )
       .collect();
 
-    // キャンセル済み予約の件数（7日前）
-    const cancelCutoffTime = cutoffTime - (7 * 24 * 60 * 60 * 1000);
-    const cancelledReservations = await ctx.db
-      .query('reservation')
-      .withIndex('status_start_time_archive')
-      .filter((q) => 
-        q.and(
-          q.eq(q.field('status'), 'cancelled'),
-          q.lt(q.field('updated_at'), cancelCutoffTime),
-          q.eq(q.field('is_archive'), false)
-        )
-      )
-      .collect();
+    // 個別の統計情報（下位互換のため）
+    const completedReservations = nonActiveReservations.filter(r => r.status === 'completed');
+    const cancelledReservations = nonActiveReservations.filter(r => r.status === 'cancelled');
 
     return {
       completedReservations: completedReservations.length,
       cancelledReservations: cancelledReservations.length,
-      totalToMigrate: completedReservations.length + cancelledReservations.length
+      nonActiveReservations: nonActiveReservations.length,
+      totalToMigrate: nonActiveReservations.length
     };
   }
 });
