@@ -164,14 +164,14 @@ export function useOrganizationReservations({
   // 日付範囲がある場合は専用のクエリを使用
   const useDataRangeQuery = canFetchConvex && startDate && endDate;
   
-  // 日付範囲クエリ（Convex） - 新しいクエリを使用して全ステータス取得
+  // 日付範囲クエリ（Convex） - paginationOptsを追加
   const {
     results: convexDateRangeResults,
     status: convexDateRangeStatus,
     loadMore: convexDateRangeLoadMore,
   } = usePaginatedQuery(
     api.reservation.query.listOrganizationAllStatus,
-    useDataRangeQuery
+    useDataRangeQuery && tenantId && orgId
       ? {
           tenant_id: tenantId as Id<'tenant'>,
           org_id: orgId as Id<'organization'>,
@@ -184,14 +184,14 @@ export function useOrganizationReservations({
     { initialNumItems: pageSize }
   );
   
-  // 通常クエリ（Convex） - 新しいクエリを使用
+  // 通常クエリ（Convex） - paginationOptsを追加
   const {
     results: convexResults,
     status: convexStatus,
     loadMore: convexLoadMore,
   } = usePaginatedQuery(
     api.reservation.query.listOrganizationAllStatus,
-    canFetchConvex && !useDataRangeQuery
+    canFetchConvex && !useDataRangeQuery && tenantId && orgId
       ? {
           tenant_id: tenantId as Id<'tenant'>,
           org_id: orgId as Id<'organization'>,

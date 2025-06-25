@@ -22,42 +22,49 @@ interface DatePickerProps {
   /**
    * 選択された日付
    */
-  value?: Date;
-  
+  value?: Date
+
   /**
    * 日付変更時のコールバック
    */
-  onChange?: (date: Date | undefined) => void;
-  
+  onChange?: (date: Date | undefined) => void
+
   /**
    * プレースホルダーテキスト
    */
-  placeholder?: string;
-  
+  placeholder?: string
+
   /**
    * 無効化フラグ
    */
-  disabled?: boolean;
-  
+  disabled?: boolean
+
   /**
    * 最小選択可能日付
    */
-  fromDate?: Date;
-  
+  fromDate?: Date
+
   /**
    * 最大選択可能日付
    */
-  toDate?: Date;
-  
+  toDate?: Date
+
   /**
    * 追加のクラス名
    */
-  className?: string;
-  
+  className?: string
+
   /**
    * エラー状態
    */
-  error?: boolean;
+  error?: boolean
+
+  /**
+   * 誕生日選択モードかどうか（デフォルト: true）
+   * true: 過去120年まで選択可能（誕生日用）
+   * false: 現在から未来100年まで選択可能（予約日等用）
+   */
+  isBirthday?: boolean
 }
 
 /**
@@ -73,11 +80,12 @@ export function DatePicker({
   toDate,
   className,
   error = false,
+  isBirthday = true,
 }: DatePickerProps) {
-  const currentLocale = useLocale() as SupportedLocale;
-  const t = useTranslations('common.datePicker');
-  const [dateFnsLocale, setDateFnsLocale] = useState<Locale | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const currentLocale = useLocale() as SupportedLocale
+  const t = useTranslations('common.datePicker')
+  const [dateFnsLocale, setDateFnsLocale] = useState<Locale | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
   const [displayMonth, setDisplayMonth] = useState<Date>(value || new Date())
 
   // 現在のロケールに基づいてdate-fnsロケールを動的に読み込み
@@ -104,8 +112,10 @@ export function DatePicker({
   const currentYear = displayMonth.getFullYear()
   const currentMonth = displayMonth.getMonth()
 
-  // 年のリスト生成（現在の年から120年前まで表示、誕生日選択用に拡張）
-  const years = Array.from({ length: 121 }, (_, i) => currentYear - i)
+  // 年のリスト生成（用途に応じて範囲を変更）
+  const years = isBirthday
+    ? Array.from({ length: 121 }, (_, i) => currentYear - i) // 誕生日用：現在の年から120年前まで
+    : Array.from({ length: 101 }, (_, i) => currentYear + i) // 予約日等用：現在の年から100年先まで
 
   // 月のリスト（0-11）
   const months =
@@ -117,7 +127,7 @@ export function DatePicker({
     const newDate = new Date(displayMonth)
     newDate.setFullYear(parseInt(year))
     setDisplayMonth(newDate)
-    
+
     // 年を変更した場合、現在選択されている日付の年も更新
     if (value) {
       const updatedDate = new Date(value)
@@ -130,7 +140,7 @@ export function DatePicker({
     const newDate = new Date(displayMonth)
     newDate.setMonth(parseInt(month))
     setDisplayMonth(newDate)
-    
+
     // 月を変更した場合、現在選択されている日付の月も更新
     if (value) {
       const updatedDate = new Date(value)

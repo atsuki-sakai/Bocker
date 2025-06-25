@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress'
 import { Loading } from '@/components/common'
 import { AlertTitle } from '@/components/ui/alert'
-import { BASE_URL } from '@/lib/constants'
 import {
   CheckCircle2,
   Circle,
@@ -25,7 +24,7 @@ import {
 import { toast } from 'sonner'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Link } from '@/i18n/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 interface TutorialStep {
   id: number
@@ -41,6 +40,7 @@ export const Tutorial = () => {
   const { tenantId, orgId, ready, subscription } = useTenantAndOrganization()
   const t = useTranslations('common.tutorial')
 
+  const locale = useLocale()
   // 翻訳キーのみを保持するチュートリアル手順をメモ化して無限再レンダリングを防止
   const tutorialSteps: TutorialStep[] = useMemo(
     () => [
@@ -170,13 +170,13 @@ export const Tutorial = () => {
       : 'skip'
   )
 
-  const staffSchedules = useQuery(
-    api.staff.week_schedule.query.getByTenantOrgStaff,
-    tenantId && orgId && staffList.results.length > 0
+  // 組織内で少なくとも一人のスタッフがスケジュール設定されているかチェック
+  const hasAnyStaffSchedule = useQuery(
+    api.staff.week_schedule.query.hasAnyStaffSchedule,
+    tenantId && orgId
       ? {
           tenant_id: tenantId,
           org_id: orgId,
-          staff_id: staffList.results[0]._id,
         }
       : 'skip'
   )
@@ -238,8 +238,8 @@ export const Tutorial = () => {
       missing.push(t(tutorialSteps[5].checkLabelKey))
     }
 
-    // Step 7: スタッフ勤務スケジュール
-    if (staffSchedules && staffSchedules.length > 0) {
+    // Step 7: スタッフ勤務スケジュール（一人でもスケジュールが設定されていればOK）
+    if (hasAnyStaffSchedule === true) {
       completed.push(7)
     } else {
       missing.push(t(tutorialSteps[6].checkLabelKey))
@@ -253,7 +253,7 @@ export const Tutorial = () => {
     menus?.results.length,
     staffList?.results.length,
     reservationConfig,
-    staffSchedules,
+    hasAnyStaffSchedule,
     apiConfig,
     t,
   ])
@@ -267,9 +267,9 @@ export const Tutorial = () => {
   const getOrganizationUrl = (type: 'reservation' | 'customer') => {
     if (!org?.org._id) return ''
     if (type === 'reservation') {
-      return `${BASE_URL}/reservation/${org.org._id}`
+      return `${window.location.origin}/${locale}/reservation/${org.org._id}`
     } else if (type === 'customer') {
-      return `${BASE_URL}/customer/${org.org._id}/auth/login`
+      return `${window.location.origin}/${locale}/customer/${org.org._id}/auth/login`
     } else {
       return ''
     }
@@ -290,18 +290,18 @@ export const Tutorial = () => {
     staffList === undefined ||
     reservationConfig === undefined ||
     apiConfig === undefined ||
-    (staffList.results.length > 0 && staffSchedules === undefined)
+    hasAnyStaffSchedule === undefined
 
   if (isDataLoading) {
     return <Loading />
   }
   return (
     <div
-      className={`container max-w-6xl mx-auto pb-8 ${subscription && (subscription.status === 'active' || subscription.status === 'trialing') ? '' : 'bg-gray-200 blur-sm pointer-events-none select-none'}`}
+      className={`container max-w-6xl mx-auto pb-8 ${subscription && (subscription.status === 'active' || subscription.status === 'trialing') ? '' : ' blur-sm pointer-events-none select-none'}`}
     >
       {!isAllRequiredStepsCompleted() && (
         <>
-          <div className="mb-6 bg-neon-foreground p-4 rounded-lg border border-neon">
+          <div className="mb-6 p-4 rounded-lg border border-neon">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h1 className="text-2xl font-bold mb-2 text-neon">{t('setupGuide.title')}</h1>

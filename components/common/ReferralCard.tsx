@@ -94,7 +94,7 @@ export default function ReferralCard() {
       {referral ? (
         referral.total_referral_count! < MAX_REFERRAL_COUNT ? (
           <Card
-            className={`overflow-hidden border-border shadow-none ${subscription && (subscription.status === 'active' || subscription.status === 'trialing') ? '' : 'bg-gray-200 blur-sm pointer-events-none select-none'}`}
+            className={`overflow-hidden border-border shadow-none ${subscription && (subscription.status === 'active' || subscription.status === 'trialing') ? '' : ' blur-sm pointer-events-none select-none'}`}
           >
             <CardContent className="p-5">
               <div className="flex flex-col gap-4">
