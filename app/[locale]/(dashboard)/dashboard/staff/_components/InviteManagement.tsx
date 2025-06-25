@@ -116,6 +116,8 @@ export default function InviteManagement() {
           staff_id: invitation.staff_id,
           invitation_id: invitation.invitation_id,
           org_id: orgId,
+          email: invitation.email,
+          role: invitation.metadata?.role,
         }),
       })
 

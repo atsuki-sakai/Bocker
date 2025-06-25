@@ -9,7 +9,6 @@ import { ja } from 'date-fns/locale'
 import Link from 'next/link'
 import { useIntegratedReservations } from '@/hooks/useIntegratedReservations'
 import { ReservationPaymentStatus } from '@/convex/types'
-
 interface ReservationPageClientProps {
   orgId: string
   customerUid: string
@@ -72,7 +71,7 @@ export function ReservationPageClient({
     <div className="space-y-6">
       {/* ヘッダー */}
       <div>
-        <h2 className="text-2xl font-bold text-primary">予約履歴</h2>
+        <h2 className="text-2xl font-bold text-primary">施術履歴</h2>
         <p className="text-muted-foreground mt-1">過去と未来の予約を確認できます</p>
       </div>
 

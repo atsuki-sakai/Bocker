@@ -12,33 +12,46 @@ export async function POST(request: NextRequest) {
   try {
     
     const clerk = await clerkClient();
-    const { staff_id, invitation_id, org_id } = await request.json();
+    const { staff_id, invitation_id, org_id, email, role } = await request.json();
 
-    if (!staff_id || !invitation_id) {
+    if (!staff_id) {
       return NextResponse.json(
-        { error: 'staff_id and invitation_id are required' },
+        { error: 'staff_id is required' },
         { status: 400 }
       );
     }
 
+    let invitationEmail = email;
+    let invitationRole = role;
 
-    // まず既存の招待情報を取得
-    const existingInvitation = await convex.query(api.staff.invitation.query.getInvitation, {
-      invitation_id: invitation_id,
-    });
-    if(!existingInvitation) {
+    // invitation_idがある場合は既存の招待情報を取得
+    if (invitation_id) {
+      const existingInvitation = await convex.query(api.staff.invitation.query.getInvitation, {
+        invitation_id: invitation_id,
+      });
+      
+      if (existingInvitation) {
+        invitationEmail = existingInvitation.invitation_email || email;
+        invitationRole = existingInvitation.role || role;
+      }
+    }
+
+    // メールアドレスが取得できない場合はエラー
+    if (!invitationEmail) {
       return NextResponse.json(
-        { error: 'Invitation not found' },
-        { status: 404 }
+        { error: 'Invitation email not found' },
+        { status: 400 }
       );
     }
 
-    // 古い招待を取り消す（存在する場合のみ）
-    try {
-      await clerk.invitations.revokeInvitation(invitation_id);
-    } catch (error) {
-      console.warn('Failed to revoke old invitation:', error);
-      // 既に取り消されている可能性があるため、エラーは無視して続行
+    // 古い招待を取り消す（invitation_idが存在する場合のみ）
+    if (invitation_id) {
+      try {
+        await clerk.invitations.revokeInvitation(invitation_id);
+      } catch (error) {
+        console.warn('Failed to revoke old invitation:', error);
+        // 既に取り消されている可能性があるため、エラーは無視して続行
+      }
     }
 
     // 環境に応じてベースURLを設定  
@@ -46,11 +59,11 @@ export async function POST(request: NextRequest) {
 
     // 新しい招待を作成
     const newInvitation = await clerk.invitations.createInvitation({
-      emailAddress: existingInvitation.invitation_email!,
+      emailAddress: invitationEmail,
       redirectUrl,
       publicMetadata: {
         org_id: org_id,
-        role: existingInvitation.role,
+        role: invitationRole,
         staff_id: staff_id,
       },
     });
@@ -59,9 +72,9 @@ export async function POST(request: NextRequest) {
     await convex.mutation(api.staff.mutation.updateInvitationInfo, {
       staff_id: staff_id,
       invitation_id: newInvitation.id,
-      invitation_email: existingInvitation.invitation_email!,
+      invitation_email: invitationEmail,
       invitation_status: 'pending' as const,
-      role: existingInvitation.role,
+      role: invitationRole,
     });
 
     return NextResponse.json({

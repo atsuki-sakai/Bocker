@@ -29,12 +29,10 @@ const organizationApiConfigFormSchema = z.object({
   line_access_token: z.string().optional(),
   line_channel_secret: z.string().optional(),
   liff_id: z.string().optional(),
-  line_channel_id: z.string()
+  line_channel_id: z
+    .string()
     .optional()
-    .refine(
-      (val) => !val || /^\d+$/.test(val),
-      'LINE Channel IDは数字のみで入力してください'
-    ),
+    .refine((val) => !val || /^\d+$/.test(val), 'LINE Channel IDは数字のみで入力してください'),
   destination_id: z.string().optional(),
 })
 
@@ -121,7 +119,6 @@ const ApiSettingsCard = () => {
         <div className="flex items-center gap-2">
           <p className="text-2xl font-bold">{t('title')}</p>
         </div>
-
         <p className="flex items-center mt-1 text-sm text-muted-foreground">
           {t('description')}
           <br />
