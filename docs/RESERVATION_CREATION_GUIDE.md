@@ -171,7 +171,7 @@ sequenceDiagram
     Customer->>UI: 決済方法選択
     
     alt 現金決済
-        Customer->>UI: 予約確定
+        Customer->>UI: 予約受付済み
         UI->>Convex: createReservation(status: 'confirmed')
         UI->>Convex: balanceStock（在庫調整）
         UI->>Supabase: ポイント使用・顧客情報更新
@@ -180,7 +180,7 @@ sequenceDiagram
         UI->>Supabase: ポイント付与キュー作成
         UI-->>Customer: 完了画面
     else クレジットカード決済
-        Customer->>UI: 予約確定
+        Customer->>UI: 予約受付済み
         UI->>Convex: createReservation(status: 'pending')
         UI->>Convex: balanceStock（在庫調整）
         UI->>Supabase: ポイント使用・顧客情報更新
@@ -552,7 +552,7 @@ const reservationSchema = z.object({
 1. **現金決済予約**
    - メニュー・スタッフ・日時選択
    - ポイント使用なし
-   - 予約確定 → 通知受信確認
+   - 予約受付済み → 通知受信確認
 
 2. **クレジットカード決済予約**
    - 全オプション選択
@@ -712,7 +712,7 @@ await holdStockMutation({
   hold_duration_minutes: 30,
 });
 
-// 決済成功時に確定
+// 決済成功時に予約受付済み
 await confirmStockHold({ reservation_id });
 
 // キャンセル時に解放

@@ -644,7 +644,7 @@ Bckerの予約システムは、メールアドレスとLINEの2つのログイ�
 
 ```typescript
 // ⚠️ 注意: checkout.session.completedイベントハンドラーは未実装
-// 現在の実装では、クレジットカード決済完了後の予約確定処理が不足
+// 現在の実装では、クレジットカード決済完了後の予約受付処理が不足
 // TODO: 以下の処理を実装する必要あり
 1. StripeWebhookProcessor.processWebhook()で署名検証
 2. handleCheckoutSessionCompleted()の実装:
@@ -765,7 +765,7 @@ LINEログイン後のクレジットカード決済は、メールログイン�
 ### 在庫管理
 
 **オプション在庫**:
-- 予約確定時に即座に減算
+- 予約受付時に即座に減算
 - balanceStockMutation()で在庫更新
 - 同時実行制御により在庫の整合性保証
 
@@ -774,7 +774,7 @@ LINEログイン後のクレジットカード決済は、メールログイン�
 **⚠️ クレジットカード決済の未完成部分**:
 1. **Stripe Webhook Handler未実装**
    - `checkout.session.completed`イベントのハンドラーが存在しない
-   - 決済完了後も予約が'pending'状態のまま確定されない
+   - 決済完了後も予約が'pending'状態のまま予約受付されない
    - 顧客への確認通知が送信されない
    
 2. **必要な実装**:

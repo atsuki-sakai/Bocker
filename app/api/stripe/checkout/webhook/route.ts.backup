@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
               contents: [
                 {
                   type: 'text' as const,
-                  text: '予約が確定しました',
+                  text: '予約を受け付けました',
                   weight: 'bold' as const,
                   size: 'xl' as const,
                 },

@@ -488,7 +488,7 @@ export async function handleCheckoutSessionExpired(
       throw new Error(`予約が見つかりません: ${reservationId}`);
     }
     
-    // 既にキャンセルまたは確定されている場合はスキップ
+    // 既にキャンセルまたは予約受付されている場合はスキップ
     if (reservation.status === 'cancelled' || reservation.status === 'refunded' || reservation.status === 'confirmed') {
       console.log(`ℹ️ [${eventId}] 予約は既に処理済みです: ${reservationId} (status: ${reservation.status})`, context);
       return {

@@ -119,7 +119,7 @@ sequenceDiagram
     participant Convex as Convex DB
     participant Supabase as Supabase DB
     
-    Note over UI,Supabase: 予約確定時の処理（最適化版）
+    Note over UI,Supabase: 予約受付時の処理（最適化版）
     
     UI->>Convex: 1. 予約作成 (createReservationMutation)
     Note over Convex: status: 'confirmed'

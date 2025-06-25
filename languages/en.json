@@ -622,6 +622,7 @@
     "reservationCreate": "Create Reservation",
     "reservationTimeline": "Reservation Timeline",
     "staffSchedule": "Staff Schedule",
+    "reservationCollection": "Reservation List",
     "staff": "Staff Management",
     "menu": "Menu Management",
     "customers": "Customer Management",
@@ -821,7 +822,7 @@
   },
   "reservations": {
     "title": "Reservation Management",
-    "list": "Reservation List",
+    "list": "Active Reservation List",
     "calendar": "Calendar",
     "timeline": "Timeline",
     "timelineTitle": "Reservation Timeline",
@@ -2301,7 +2302,8 @@
     "apiConfig": {
       "title": "API Settings",
       "description": "Configure integration with external services.",
-      "lineIntegrationNote": "Refer to the help section at the bottom of the settings page for information required for LINE integration.",
+      "lineIntegrationNote": "Bocker and LINE can be integrated to receive reservations via LINE.",
+      "lineIntegrationNote2": "Please refer to the \"LINE Channel Guide\" at the bottom of the settings page for API settings.",
       "fields": {
         "lineAccessToken": "LINE Access Token",
         "lineChannelSecret": "LINE Channel Secret",

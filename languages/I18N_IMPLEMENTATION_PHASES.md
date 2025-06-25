@@ -199,7 +199,7 @@ useEffect(() => {
     "service": "サービス / Service",
     "staff": "担当者 / Staff",
     "status": "ステータス / Status",
-    "confirmed": "確定 / Confirmed",
+    "confirmed": "予約受付 / Confirmed",
     "pending": "保留中 / Pending",
     "cancelled": "キャンセル / Cancelled",
     "search": "検索 / Search",

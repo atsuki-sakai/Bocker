@@ -23,7 +23,7 @@
                                       ↓
                             [Webhook: 成功/失敗]
                                       ↓
-                         [予約確定 or キャンセル+在庫復元]
+                         [予約受付 or キャンセル+在庫復元]
 ```
 
 ## 予約作成処理
@@ -112,7 +112,7 @@ export async function handleCheckoutSessionCompleted(event: Stripe.Event) {
   const session = event.data.object as Stripe.Checkout.Session;
   const { reservationId, customerUid } = session.metadata;
 
-  // 1. 予約確定
+  // 1. 予約受付
   await fetchMutation(api.reservation.payment.confirmPayment, {
     reservation_id: reservationId,
     stripe_payment_intent_id: session.payment_intent,
@@ -169,7 +169,7 @@ export async function handleCheckoutSessionExpired(event: Stripe.Event) {
 
 ### 必要なWebhookイベント
 
-- `checkout.session.completed`: 決済成功時の予約確定
+- `checkout.session.completed`: 決済成功時の予約受付
 - `payment_intent.payment_failed`: 決済失敗時の即座キャンセル
 - `checkout.session.expired`: セッション期限切れ時のキャンセル
 

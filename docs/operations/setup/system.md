@@ -18,7 +18,7 @@
 
 ```yaml
 決済関連（必須）:
-  - checkout.session.completed     # 決済成功時の予約確定
+  - checkout.session.completed     # 決済成功時の予約受付
   - payment_intent.payment_failed  # 決済失敗時の即座キャンセル
   - checkout.session.expired       # セッション期限切れ
 

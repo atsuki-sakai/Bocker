@@ -17,7 +17,7 @@
 
 ```mermaid
 graph TD
-    A[予約確定] --> B{決済方法}
+    A[予約受付] --> B{決済方法}
     B -->|現金決済| C[Calendar Page]
     B -->|クレジット決済| D[Stripe Webhook]
     
@@ -127,7 +127,7 @@ export class CouponTransactionRepository extends BaseRepository<'coupon_transact
 ```typescript
 // app/[locale]/(reservation)/reservation/[id]/calendar/page.tsx
 
-// 決済確定処理内
+// 決済予約受付処理内
 if (appliedDiscount.couponId && appliedDiscount.discount > 0 && customerData?.customer?.uid) {
   try {
     const supabase = createClient(
