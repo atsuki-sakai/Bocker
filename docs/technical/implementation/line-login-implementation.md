@@ -271,6 +271,8 @@ NEXT_PUBLIC_LIFF_ID=your-liff-id
 ## テスト環境
 
 ### 開発環境
+- LIFFのエンドポイントURLに設定してください。
+### 開発環境
 - URL: https://bocker-project.vercel.app
 - LIFF Endpoint: `https://bocker-project.vercel.app/ja/reservation/`
 
