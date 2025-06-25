@@ -30,9 +30,10 @@ export const createReminderFlexMessage = ({
   orgConfig,
   reservationData
 }: ReminderFlexMessageParams): Message[] => {
+  // Unix時間をそのままDate型に変換（reservation_flex.tsと同じ方法）
   const startDate = new Date(reservationData.startTimeUnix)
   const endDate = new Date(reservationData.endTimeUnix)
-  
+
   // 日付と時刻をフォーマット
   const dateStr = format(startDate, 'yyyy年MM月dd日', { locale: ja })
   const startTimeStr = format(startDate, 'HH:mm')
