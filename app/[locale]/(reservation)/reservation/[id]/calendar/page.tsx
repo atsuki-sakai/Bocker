@@ -33,6 +33,7 @@ import {
   CreditCard,
   CheckCircle,
   ChevronRight,
+  Loader2,
 } from 'lucide-react'
 import type { StaffDisplay } from '@/lib/types'
 import { Separator } from '@/components/ui/separator'
@@ -1385,11 +1386,16 @@ export default function CalendarPage() {
                       <Button
                         onClick={goToNextStep}
                         disabled={selectedMenus.length === 0}
-                        className="relative overflow-hidden w-full"
+                        className="relative overflow-hidden w-full transition-all duration-200 ease-in-out"
                       >
-                        <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <motion.div
+                          className="flex items-center justify-center gap-2"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                        >
                           次へ進む
-                        </motion.span>
+                        </motion.div>
                       </Button>
                     </motion.div>
                   </div>
@@ -1421,11 +1427,16 @@ export default function CalendarPage() {
                       <Button
                         onClick={goToNextStep}
                         disabled={!selectedStaffCompleted}
-                        className="relative overflow-hidden w-full"
+                        className="relative overflow-hidden w-full transition-all duration-200 ease-in-out"
                       >
-                        <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <motion.div
+                          className="flex items-center justify-center gap-2"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                        >
                           次へ進む
-                        </motion.span>
+                        </motion.div>
                       </Button>
                     </motion.div>
                   </motion.div>
@@ -1628,7 +1639,14 @@ export default function CalendarPage() {
                             className="relative overflow-hidden w-full"
                           >
                             <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                              {isCreatingCheckoutSession ? '処理中...' : 'クレジットカードで支払う'}
+                              {isCreatingCheckoutSession ? (
+                                <div className="flex items-center justify-center gap-2">
+                                  処理中...
+                                  <Loader2 className="animate-spin ml-2" />
+                                </div>
+                              ) : (
+                                'クレジットカードで支払う'
+                              )}
                             </motion.span>
                           </Button>
                         )}
@@ -1642,11 +1660,16 @@ export default function CalendarPage() {
                           className="relative overflow-hidden w-full"
                         >
                           <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                            {isProcessingPayment
-                              ? '処理中...'
-                              : selectedPaymentMethod === 'credit_card'
-                                ? '予約内容を確認 (現金払い)'
-                                : '予約を確定する'}
+                            {isProcessingPayment ? (
+                              <div className="flex items-center justify-center gap-2">
+                                処理中...
+                                <Loader2 className="animate-spin ml-2" />
+                              </div>
+                            ) : selectedPaymentMethod === 'credit_card' ? (
+                              '予約内容を確認 (現金払い)'
+                            ) : (
+                              '予約を確定する'
+                            )}
                           </motion.span>
                         </Button>
                       </div>
@@ -1950,7 +1973,7 @@ export default function CalendarPage() {
             <DialogTitle>ログアウト</DialogTitle>
           </DialogHeader>
           <DialogDescription>ログアウトしますか？</DialogDescription>
-          <DialogFooter>
+          <DialogFooter className="flex flex-col md:flex-row gap-4">
             <Button variant="outline" onClick={() => setShowLogoutDialog(false)}>
               キャンセル
             </Button>

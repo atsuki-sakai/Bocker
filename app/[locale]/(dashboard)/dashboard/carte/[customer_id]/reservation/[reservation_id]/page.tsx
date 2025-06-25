@@ -482,16 +482,29 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
         </Card>
 
         {/* アコーディオンセクション */}
-        <Accordion type="multiple" defaultValue={['photos', 'treatment']} className="space-y-4">
+        <Accordion
+          type="multiple"
+          defaultValue={
+            subscription?.plan_name === 'LITE'
+              ? ['treatment', 'notes']
+              : ['photos', 'treatment', 'notes']
+          }
+          className="space-y-4"
+        >
           {/* 施術後写真 */}
           <AccordionItem
             value="photos"
-            className={`border rounded-lg px-6 ${subscription?.plan_name === 'LITE' ? 'hidden' : ''}`}
+            className={`border rounded-lg px-6 ${subscription?.plan_name === 'LITE' ? 'pointer-events-none opacity-50' : ''}`}
           >
             <AccordionTrigger className="hover:no-underline">
               <div className="flex items-center gap-2">
                 <Camera className="w-5 h-5" />
                 <span className="font-semibold">施術後の写真</span>
+                {subscription?.plan_name === 'LITE' && (
+                  <span className="text-xs text-muted-foreground">
+                    (PROプランからご利用できます)
+                  </span>
+                )}
               </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-4">
@@ -644,16 +657,23 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label htmlFor="customer-requests">お客様のご要望</Label>
-                  <VoiceInputButton
-                    onResult={(transcript) => {
-                      // 既存のテキストに音声認識結果を追加
-                      const newText = customerRequests
-                        ? `${customerRequests}\n${transcript}`
-                        : transcript
-                      setCustomerRequests(newText)
-                    }}
-                    disabled={isSaving || isUploading}
-                  />
+                  <div
+                    className={`${subscription?.plan_name === 'LITE' ? 'pointer-events-none opacity-50' : ''}`}
+                  >
+                    {subscription?.plan_name === 'LITE' && (
+                      <span className="text-xs text-muted-foreground mr-2">
+                        (PROプランからご利用できます)
+                      </span>
+                    )}
+                    <VoiceInputButton
+                      onResult={(transcript) => {
+                        // 既存のテキストに音声認識結果を追加
+                        const newText = notes ? `${notes}\n${transcript}` : transcript
+                        setNotes(newText)
+                      }}
+                      disabled={isSaving || isUploading}
+                    />
+                  </div>
                 </div>
                 <Textarea
                   id="customer-requests"
@@ -667,14 +687,23 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label htmlFor="staff-notes">スタッフメモ</Label>
-                  <VoiceInputButton
-                    onResult={(transcript) => {
-                      // 既存のテキストに音声認識結果を追加
-                      const newText = notes ? `${notes}\n${transcript}` : transcript
-                      setNotes(newText)
-                    }}
-                    disabled={isSaving || isUploading}
-                  />
+                  <div
+                    className={`${subscription?.plan_name === 'LITE' ? 'pointer-events-none opacity-50' : ''}`}
+                  >
+                    {subscription?.plan_name === 'LITE' && (
+                      <span className="text-xs text-muted-foreground mr-2">
+                        (PROプランからご利用できます)
+                      </span>
+                    )}
+                    <VoiceInputButton
+                      onResult={(transcript) => {
+                        // 既存のテキストに音声認識結果を追加
+                        const newText = notes ? `${notes}\n${transcript}` : transcript
+                        setNotes(newText)
+                      }}
+                      disabled={isSaving || isUploading}
+                    />
+                  </div>
                 </div>
                 <Textarea
                   id="staff-notes"

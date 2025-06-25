@@ -146,9 +146,9 @@ export default function OrganizationReservationCollectionPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">予約一覧（全体）</h1>
+        <h1 className="text-3xl font-bold mb-2">予約一覧</h1>
         <p className="text-muted-foreground">
-          組織全体の予約を一覧で確認できます。期間やステータスで絞り込みが可能です。
+          サロンの予約を一覧で確認できます。期間やスタッフ、ステータスで絞り込みが可能です。
         </p>
       </div>
       <div className="flex w-fit gap-2 items-center mb-4">
