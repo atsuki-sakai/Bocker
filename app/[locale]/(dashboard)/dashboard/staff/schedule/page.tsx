@@ -236,11 +236,7 @@ export default function StaffSchedulePage() {
   }
 
   return (
-    <DashboardSection
-      title={t('title')}
-      backLink="/dashboard/staff"
-      backLinkTitle="スタッフ一覧"
-    >
+    <DashboardSection title={t('title')} backLink="/dashboard/staff" backLinkTitle="スタッフ一覧">
       <div className="space-y-3">
         <div className="flex flex-col justify-end items-end gap-2">
           <div className="w-fit min-w-[180px]">
@@ -253,11 +249,17 @@ export default function StaffSchedulePage() {
                 <SelectValue placeholder={t('selectStaffPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                {staffs.map((staff) => (
-                  <SelectItem key={staff._id} value={staff._id}>
-                    {staff.name}
-                  </SelectItem>
-                ))}
+                {staffs.length > 0 ? (
+                  staffs.map((staff) => (
+                    <SelectItem key={staff._id} value={staff._id}>
+                      {staff.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="bg-warning text-warning-foreground text-sm border border-warning bg-warning-foreground/10 p-2 rounded-md">
+                    {t('noStaff')}
+                  </div>
+                )}
               </SelectContent>
             </Select>
           </div>

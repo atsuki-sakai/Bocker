@@ -557,11 +557,13 @@ export default function StaffSchedulePage() {
                       <SelectValue placeholder={t('selectStaff')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {staffs.results?.map((staff) => (
-                        <SelectItem key={staff._id} value={staff._id}>
-                          {staff.name}
-                        </SelectItem>
-                      ))}
+                      {staffs.results &&
+                        staffs.results.length > 0 &&
+                        staffs.results?.map((staff) => (
+                          <SelectItem key={staff._id} value={staff._id}>
+                            {staff.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>

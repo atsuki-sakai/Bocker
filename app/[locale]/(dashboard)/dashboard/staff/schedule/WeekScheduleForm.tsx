@@ -512,7 +512,7 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
               <div className="relative mb-4">
                 <div
                   ref={scrollContainerRef}
-                  className="flex overflow-x-auto w-full divide-x p-2 items-start gap-2 bg-muted rounded-lg pr-6"
+                  className="flex overflow-x-auto w-full md:w-fit divide-x p-2 items-start gap-2 bg-muted rounded-lg pr-6"
                 >
                   {DAYS_OF_WEEK.map((day) => {
                     const schedule = orgWeekSchedules?.find(

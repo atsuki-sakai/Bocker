@@ -46,12 +46,46 @@ export const getByTenantOrgStaff = query({
         )
         .filter((q) => q.eq(q.field('is_archive'), false))
         .collect();
-    } catch (error) {
+    } catch {
       throw new ConvexError({
         message: 'スタッフのスケジュール取得に失敗しました',
         statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'staff.week_schedule.getByTenantOrgStaff',
+        code: 'UNEXPECTED_ERROR',
+      });
+    }
+  },
+});
+
+// 組織内で少なくとも一人のスタッフがスケジュール設定されているかチェック
+export const hasAnyStaffSchedule = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+  },
+  handler: async (ctx, args) => {
+    checkAuth(ctx, true)
+    try {
+      // 組織内で少なくとも一つのスタッフスケジュールが存在するかチェック
+      const anySchedule = await ctx.db
+        .query('staff_week_schedule')
+        .filter((q) => 
+          q.and(
+            q.eq(q.field('tenant_id'), args.tenant_id),
+            q.eq(q.field('org_id'), args.org_id),
+            q.eq(q.field('is_archive'), false)
+          )
+        )
+        .first();
+      
+      return !!anySchedule; // 存在すればtrue、なければfalse
+    } catch {
+      throw new ConvexError({
+        message: 'スタッフスケジュールの存在確認に失敗しました',
+        statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'staff.week_schedule.hasAnyStaffSchedule',
         code: 'UNEXPECTED_ERROR',
       });
     }
