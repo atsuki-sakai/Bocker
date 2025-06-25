@@ -8,8 +8,8 @@ import { createReminderFlexMessage } from '@/services/line/message_template/remi
 
 // リクエストボディの型定義
 export type ReminderRequestBody = {
-    tenant_id: string
-    org_id: string
+    tenant_id: Id<'tenant'>
+    org_id: Id<'organization'>
     line_user_id: string
     message_type: 'reminder'
     reservation_data: {
