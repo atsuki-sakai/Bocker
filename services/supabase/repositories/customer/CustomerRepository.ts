@@ -288,12 +288,45 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     console.log(`[CustomerRepository] getCompleteCustomerData: customerUid=${customerUid}, tenantId=${tenantId}, orgId=${orgId}`)
 
     try {
-      // 顧客基本情報を取得
-      const customer = await this.findOne({ 
-        uid: customerUid, 
-        tenant_id: tenantId, 
-        org_id: orgId 
-      } as Partial<RowType<'customer'>>)
+      // 顧客基本情報を取得（customerUidがTEXT型の場合はUUIDにキャスト）
+      let customer: RowType<'customer'> | null = null;
+      
+      try {
+        // まずUUID型として検索を試行
+        customer = await this.findOne({ 
+          uid: customerUid, 
+          tenant_id: tenantId, 
+          org_id: orgId 
+        } as Partial<RowType<'customer'>>);
+      } catch (error) {
+        // UUID形式エラーの場合、TEXT型からUUID型への変換を試行
+        if (error instanceof Error && error.message.includes('invalid input syntax for type uuid')) {
+          console.log(`[CustomerRepository] Attempting UUID cast for customer_id: ${customerUid}`);
+          
+          // Supabaseの専用関数を使用してTEXT型UUIDを変換
+          const { data: customerData, error: rpcError } = await this.supabaseServiceInstance.rpc<RowType<'customer'>>(
+            'find_customer_by_text_uuid',
+            {
+              p_customer_uid: customerUid,
+              p_tenant_id: tenantId,
+              p_org_id: orgId
+            }
+          );
+            
+          if (rpcError) {
+            console.error('[CustomerRepository] UUID conversion RPC failed:', rpcError);
+            throw rpcError;
+          }
+          
+          if (customerData && customerData.length > 0) {
+            customer = customerData[0];
+          } else {
+            console.warn(`[CustomerRepository] Customer not found with UUID conversion: ${customerUid}`);
+          }
+        } else {
+          throw error;
+        }
+      }
 
       if (!customer) {
         return { customer: null, customerDetail: null, customerPoints: null }
