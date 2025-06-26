@@ -64,8 +64,8 @@ export async function isLineTokenValid(idToken: string | null): Promise<boolean>
     // 有効期限をチェック（exp は秒単位）
     const currentTime = Math.floor(Date.now() / 1000)
     
-    // 有効期限の10秒前には無効と判定（バッファを持たせる）
-    return currentTime < (expiryTime - 10)
+    // 有効期限の30秒前には無効と判定（バッファを拡大してクライアント・サーバー間のタイミングズレを考慮）
+    return currentTime < (expiryTime - 30)
   } catch (error) {
     console.error('[isLineTokenValid] Error checking token validity:', error)
     return false

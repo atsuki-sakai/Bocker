@@ -35,6 +35,7 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
   children,
 }: OptimizedLineLoginButtonProps) {
   const [isClicked, setIsClicked] = useState(false)
+  const [isAuthChecking, setIsAuthChecking] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -42,6 +43,7 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
     onSuccess: (data) => {
       console.log('[OptimizedLineLoginButton] Login successful:', data)
       setIsClicked(false)
+      setIsAuthChecking(false)
       setRetryCount(0) // 成功時にリトライカウントをリセット
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
@@ -54,6 +56,7 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
     onError: (error) => {
       console.error('[OptimizedLineLoginButton] Error:', error)
       setIsClicked(false)
+      setIsAuthChecking(false)
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
@@ -116,11 +119,13 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
     await cleanupLineAuthState().catch(console.warn)
 
     setIsClicked(true)
+    setIsAuthChecking(true)
 
     // タイムアウト設定
     timeoutRef.current = setTimeout(() => {
       console.warn('[OptimizedLineLoginButton] Click timeout reached')
       setIsClicked(false)
+      setIsAuthChecking(false)
       toast.error('認証処理がタイムアウトしました。もう一度お試しください。')
     }, CLICK_TIMEOUT)
 
@@ -132,6 +137,7 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       // エラーはuseLineAuthHandler内で処理されるが、念のためフォールバック
       toast.error('ログイン処理で予期しないエラーが発生しました')
       setIsClicked(false)
+      setIsAuthChecking(false)
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
@@ -148,7 +154,7 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
     retryCount,
   ])
 
-  const isDisabled = isProcessing || isLiffLoading || isClicked || !tenantId || !orgId
+  const isDisabled = isProcessing || isLiffLoading || isClicked || isAuthChecking || !tenantId || !orgId
   
   // デバッグ情報を表示（開発環境のみ）
   if (process.env.NODE_ENV === 'development') {
@@ -156,6 +162,7 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       isProcessing,
       isLiffLoading,
       isClicked,
+      isAuthChecking,
       isDisabled,
       hasOrgId: !!orgId,
       hasTenantId: !!tenantId,
@@ -176,6 +183,11 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
           <>
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
             <span className="font-bold text-base">処理中...</span>
+          </>
+        ) : isAuthChecking ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+            <span className="font-bold text-base">認証確認中...</span>
           </>
         ) : isLiffLoading ? (
           <>

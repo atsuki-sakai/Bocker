@@ -113,19 +113,17 @@ export default function AuthCallbackPage() {
       setIsProcessing(true)
 
       try {
-        // URLパラメータから情報を取得
+        // URLパラメータからstateを取得
         const state = searchParams.get('state')
-        const redirectType = searchParams.get('redirect_type')
 
         console.log('[AuthCallback] Processing callback with params:', {
           state,
-          redirectType,
           hasLiff: !!liff,
           isLoggedIn: liffIsLoggedIn,
         })
 
         // 必須パラメータの確認
-        if (!state || !redirectType) {
+        if (!state) {
           throw new Error('認証情報が不足しています')
         }
 
@@ -144,8 +142,8 @@ export default function AuthCallbackPage() {
         await verifyToken(liff, authState)
         console.log('[AuthCallback] Token verified successfully')
 
-        // リダイレクト処理
-        if (redirectType === 'customer') {
+        // リダイレクト処理（stateから取得したisCustomerLoginを使用）
+        if (authState.isCustomerLogin) {
           const sessionData = await getSession()
 
           if (sessionData?.session?.customerUid) {
@@ -155,12 +153,10 @@ export default function AuthCallbackPage() {
           } else {
             throw new Error('セッション情報の取得に失敗しました')
           }
-        } else if (redirectType === 'reservation') {
+        } else {
           const calendarUrl = `/${locale}/reservation/${authState.orgId}/calendar`
           console.log('[AuthCallback] Redirecting to reservation calendar:', calendarUrl)
           router.push(calendarUrl)
-        } else {
-          throw new Error('不正なリダイレクトタイプです')
         }
 
         toast.success('LINEログインに成功しました')

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useLiff } from '@/hooks/useLiff'
 import { toast } from 'sonner'
 import { isLineTokenValid } from '@/lib/auth/lineAuthCleanup'
+import { getEnv } from '@/lib/env-config'
 
 // LINEログイン成功時のレスポンス型
 interface LineAuthSuccessData {
@@ -135,21 +136,16 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
         const { stateId } = await stateResponse.json()
         console.log('[useLineAuthHandler] State created:', stateId)
         
-        // より堅牢なコールバックURL構築
+        // コールバックURL構築（クエリパラメータなし）
         const locale = window.location.pathname.split('/')[1] || 'ja'
         const baseUrl = process.env.NODE_ENV === 'production' 
-          ? 'https://bocker.jp' 
+          ? getEnv('NEXT_PUBLIC_DEPLOY_URL') 
           : window.location.origin
         
         const callbackUrl = new URL(
           `/${locale}/reservation/auth/callback`,
           baseUrl
         )
-        
-        callbackUrl.searchParams.set('redirect_type', isCustomerLogin ? 'customer' : 'reservation')
-        callbackUrl.searchParams.set('state', stateId)
-        callbackUrl.searchParams.set('tid', tenantId)
-        callbackUrl.searchParams.set('oid', orgId)
 
         console.log('[useLineAuthHandler] Redirecting to LINE login with callback:', callbackUrl.toString())
         
@@ -184,9 +180,60 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
       // トークンの有効性を事前チェック
       const tokenValid = await isLineTokenValid(idToken)
       if (!tokenValid) {
-        console.warn('[useLineAuthHandler] ID token is expired')
+        console.warn('[useLineAuthHandler] ID token is expired, initiating silent re-authentication')
         liff.logout()
-        throw new Error('LINE認証情報の有効期限が切れています。再度ログインしてください。')
+        
+        // エラー表示せず、サイレントに再ログインを開始
+        if (!liff.isLoggedIn()) {
+          console.log('[useLineAuthHandler] Starting silent re-authentication flow')
+          
+          // セキュアなstateを生成してログイン
+          const stateResponse = await fetch('/api/auth/line-state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              tenantId,
+              orgId,
+              isCustomerLogin,
+            }),
+          })
+
+          if (!stateResponse.ok) {
+            const errorData = await stateResponse.json().catch(() => ({}))
+            throw new Error(errorData.message || '認証の準備に失敗しました')
+          }
+
+          const { stateId } = await stateResponse.json()
+          console.log('[useLineAuthHandler] Silent re-auth state created:', stateId)
+          
+          // コールバックURL構築（クエリパラメータなし）
+          const locale = window.location.pathname.split('/')[1] || 'ja'
+          const baseUrl = process.env.NODE_ENV === 'production' 
+            ? getEnv('NEXT_PUBLIC_DEPLOY_URL') 
+            : window.location.origin
+          
+          const callbackUrl = new URL(
+            `/${locale}/reservation/auth/callback`,
+            baseUrl
+          )
+
+          console.log('[useLineAuthHandler] Silent re-auth redirecting to LINE login')
+          
+          try {
+            liff.login({ redirectUri: callbackUrl.toString() })
+          } catch (loginError) {
+            console.error('[useLineAuthHandler] Silent re-auth LIFF login failed:', loginError)
+            const liffId = liff.id || ''
+            const lineAuthUrl = `https://access.line.me/oauth2/v2.1/authorize?` +
+              `response_type=code&client_id=${liffId}&` +
+              `redirect_uri=${encodeURIComponent(callbackUrl.toString())}&` +
+              `state=${stateId}&scope=profile%20openid`
+            window.location.href = lineAuthUrl
+          }
+          return
+        }
+        return
       }
 
       // トークン検証（リトライ付き）
@@ -222,6 +269,18 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
       })
       
       const err = error instanceof Error ? error : new Error('認証処理中にエラーが発生しました')
+      
+      // 認証切れかどうかを判定
+      const isAuthExpired = err.message.includes('有効期限が切れています') || 
+                           err.message.includes('token_expired')
+      
+      if (isAuthExpired) {
+        // 認証切れの場合はエラー表示せず、ログ出力のみ
+        console.warn('[useLineAuthHandler] Authentication expired, silent handling')
+        return
+      }
+      
+      // 実際のエラーの場合のみ表示
       setError(err)
       
       if (onError) {
