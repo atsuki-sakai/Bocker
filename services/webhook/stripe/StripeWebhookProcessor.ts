@@ -138,7 +138,7 @@ export class StripeWebhookProcessor extends WebhookProcessor {
       stripeCustomerId = session.customer as string;
       // metadataも記録（サロン予約の識別用）
     }
-    if(evt.type === 'payment_intent.payment_failed'){
+    if(evt.type === 'payment_intent.payment_failed' || evt.type === 'payment_intent.succeeded'){
       const paymentIntent = evt.data.object as any;
       stripeCustomerId = paymentIntent.customer as string;
     }
@@ -198,6 +198,18 @@ export class StripeWebhookProcessor extends WebhookProcessor {
         // Payment Intent が失敗した場合（決済失敗）
         case 'payment_intent.payment_failed':
           return (await handlePaymentIntentFailed(evt, eventId, this.dependencies, metrics)).result;
+        // Payment Intent が成功した場合（決済成功）
+        case 'payment_intent.succeeded':
+          // payment_intent.succeededは通常checkout.session.completedと重複するため、
+          // メタデータにreservationIdがある場合のみスキップ（サロン予約以外は処理継続）
+          const paymentIntent = evt.data.object;
+          if (paymentIntent.metadata?.reservationId || paymentIntent.metadata?.reservation_id) {
+            console.log(`ℹ️ [${eventId}] payment_intent.succeeded - サロン予約はcheckout.session.completedで処理済みのためスキップ`);
+            return 'skipped';
+          }
+          // サロン予約以外の決済（例：サブスクリプション）の場合は処理を継続
+          console.log(`ℹ️ [${eventId}] payment_intent.succeeded - 非サロン予約決済のため処理をスキップ`);
+          return 'skipped';
         // Checkout Session が期限切れになった場合
         case 'checkout.session.expired':
           return (await handleCheckoutSessionExpired(evt, eventId, this.dependencies, metrics)).result;

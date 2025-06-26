@@ -111,10 +111,6 @@ export async function handleSubscriptionDeleted(
 
   try {
 
-    const customer = await deps.stripe.customers.retrieve(evt.data.object.customer as string) as Stripe.Customer;
-    metrics.incrementApiCall("stripe");
-    const tenant_id = customer.metadata?.tenant_id as Id<'tenant'>;
-
     const subscription = await deps.retry(() =>
       fetchQuery(deps.convex.tenant.subscription.query.findByStripeCustomerId, {
         stripe_customer_id: evt.data.object.customer as string,

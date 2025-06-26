@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/nextjs';
 import { api } from '@/convex/_generated/api';
 import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { Id } from '@/convex/_generated/dataModel';
-import { PointTransactionRepository, PointTaskQueueRepository } from '@/services/supabase/repositories/point';
+import { PointTransactionRepository } from '@/services/supabase/repositories/point';
 import { CustomerRepository } from '@/services/supabase/repositories/customer';
 import { CouponTransactionRepository } from '@/services/supabase/repositories/coupon';
 import { createClient } from '@supabase/supabase-js';
@@ -150,10 +150,11 @@ export async function handleCheckoutSessionCompleted(
     // 組織情報とAPI設定を取得（通知用）
     const [organization, apiConfig] = await Promise.all([
       deps.retry(() =>
-        fetchQuery(api.organization.query.findByOrgId, {
-          org_id: orgId as Id<"organization">
-        })
-      ),
+      fetchQuery(api.organization.config.query.findByTenantAndOrg, {
+        tenant_id: tenantId as Id<"tenant">,
+        org_id: orgId as Id<"organization">
+      })
+    ),
       deps.retry(() =>
         fetchQuery(api.organization.api_config.query.findByTenantAndOrg, {
           tenant_id: tenantId as Id<"tenant">,
@@ -199,9 +200,12 @@ export async function handleCheckoutSessionCompleted(
     
     // 6. 通知送信（並列処理）
     const notificationResults = await Promise.allSettled([
-      // メール送信
-      customer.email ? sendReservationConfirmationEmail({
+      // メール送信（LINE IDがない場合のみ）
+      !customer.line_id && customer.email ? sendReservationConfirmationEmail({
         to: customer.email,
+        orgName: organization?.org.org_name || '',
+        orgAddress: organization?.config?.address || '',
+        orgPhone: organization?.config?.phone || '',
         customerName: reservation.customer_name,
         reservationDate: reservation.date,
         reservationTime: new Date(reservation.start_time_unix).toLocaleTimeString('ja-JP', {
@@ -209,14 +213,13 @@ export async function handleCheckoutSessionCompleted(
           minute: '2-digit'
         }),
         staffName: reservation.staff_name,
-        salonName: session.metadata?.salon_name || 'サロン',
         menus: reservationDetail.menus || [],
         options: reservationDetail.options || [],
         totalPrice: reservationDetail.total_price || 0,
         paymentMethod: 'credit_card',
       }) : Promise.resolve(),
       
-      // LINE送信
+      // LINE送信（LINE IDがある場合のみ）
       customer.line_id ? (async () => {
         const lineService = new LineService();
         const flexMessage = {
@@ -275,7 +278,7 @@ export async function handleCheckoutSessionCompleted(
 
         const lineService = new LineService();
         const salonFlexMessage = createSalonReservationNotification({
-          organization: organization!,
+          organization: organization?.org,
           reservation: {
             _id: reservation._id,
             customer_name: reservation.customer_name,
@@ -322,34 +325,35 @@ export async function handleCheckoutSessionCompleted(
       }
     });
     
+    // FIXME: これは予約が完了した時に行うべき
     // 7. ポイント付与予約（30日後）
-    const pointTaskQueueRepo = new PointTaskQueueRepository(supabaseService);
+    // const pointTaskQueueRepo = new PointTaskQueueRepository(supabaseService);
     
-    // ポイント設定を取得
-    const pointConfig = await deps.retry(() =>
-      fetchQuery(api.point.query.findByTenantAndOrg, {
-        tenant_id: tenantId as Id<"tenant">,
-        org_id: orgId as Id<"organization">,
-      })
-    );
+    // // ポイント設定を取得
+    // const pointConfig = await deps.retry(() =>
+    //   fetchQuery(api.point.query.findByTenantAndOrg, {
+    //     tenant_id: tenantId as Id<"tenant">,
+    //     org_id: orgId as Id<"organization">,
+    //   })
+    // );
     
-    if (pointConfig?.is_active) {
-      const earnPoints = pointConfig.is_fixed_point 
-        ? pointConfig.fixed_point || 0
-        : Math.floor((reservationDetail.total_price || 0) * (pointConfig.point_rate || 0) / 100);
+    // if (pointConfig?.is_active) {
+    //   const earnPoints = pointConfig.is_fixed_point 
+    //     ? pointConfig.fixed_point || 0
+    //     : Math.floor((reservationDetail.total_price || 0) * (pointConfig.point_rate || 0) / 100);
       
-      if (earnPoints > 0) {
-        await pointTaskQueueRepo.create({
-          tenant_id: tenantId,
-          org_id: orgId,
-          customer_id: customerUid,
-          reservation_id: reservationId,
-          points: earnPoints,
-          scheduled_for_unix: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30日後
-          status: 'pending'
-        });
-      }
-    }
+    //   if (earnPoints > 0) {
+    //     await pointTaskQueueRepo.create({
+    //       tenant_id: tenantId,
+    //       org_id: orgId,
+    //       customer_id: customerUid,
+    //       reservation_id: reservationId,
+    //       points: earnPoints,
+    //       scheduled_for_unix: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30日後
+    //       status: 'pending'
+    //     });
+    //   }
+    // }
     
     console.log(`✅ [${eventId}] CheckoutSessionCompleted処理完了: reservationId=${reservationId}`, context);
     
