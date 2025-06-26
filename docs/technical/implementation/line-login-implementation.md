@@ -4,7 +4,10 @@
 
 BockerプラットフォームにおけるLINE Front-end Framework (LIFF) を使用したLINEログイン機能の実装詳細。
 
-## アーキテクチャ
+## アーキテクチャ]
+
+### LINE Documents
+https://developers.line.biz/ja/docs/liff/overview/
 
 ### 技術スタック
 - **LIFF SDK**: `@line/liff` v2.x
