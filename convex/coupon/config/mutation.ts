@@ -55,3 +55,32 @@ export const update = mutation({
   },
 });
 
+
+
+export const updateNumberOfUse = mutation({
+  args: {
+    type: v.union(v.literal('increment'), v.literal('decrement')),
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    coupon_id: v.id('coupon'),
+  },
+  handler: async (ctx, args) => {
+    const couponConfig = await ctx.db.query('coupon_config').withIndex('by_tenant_org_coupon_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('coupon_id', args.coupon_id)).first();
+    if(!couponConfig) {
+      throw new ConvexError({
+        severity: ERROR_SEVERITY.ERROR,
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        message: 'クーポン設定が見つかりません',
+        code: 'COUPON_CONFIG_NOT_FOUND',
+        details: {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+          coupon_id: args.coupon_id,
+        },
+      });
+    }
+    return await updateRecord(ctx,couponConfig._id, {
+      number_of_use: args.type === 'increment' ? (couponConfig.number_of_use || 0) + 1 : (couponConfig.number_of_use || 0) - 1,
+    });
+  },
+});

@@ -337,11 +337,28 @@ export const trackingEventType = v.union(
 )
 export type TrackingEventType = Infer<typeof trackingEventType>
 
-export const PAYMENT_STATUS_VALUES = ['pending', 'paid', 'failed', 'cancelled', 'refunded'] as const
+export const PAYMENT_STATUS_VALUES = ['pending', 'paid', 'failed', 'cancelled', 'refunded', 'completed'] as const
 export const paymentStatusType = v.union(
   ...PAYMENT_STATUS_VALUES.map((status) => v.literal(status))
 )
 export type PaymentStatus = Infer<typeof paymentStatusType>
+export const convertPaymentStatus = (status: PaymentStatus): string => {
+  switch (status) {
+    case 'pending':
+      return '未払い'
+    case 'paid':
+    case 'completed':
+      return '支払い済み'
+    case 'failed':
+      return '支払い失敗'
+    case 'cancelled':
+      return 'キャンセル'
+    case 'refunded':
+      return '返金'
+    default:
+      return '不明'
+  }
+}
 
 export const WEBHOOK_EVENT_PROCESSING_RESULT_VALUES = ['processing', 'success', 'error', 'skipped'] as const
 export const webhookEventProcessingResultType = v.union(
