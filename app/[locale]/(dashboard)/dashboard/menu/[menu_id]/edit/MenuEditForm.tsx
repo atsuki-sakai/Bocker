@@ -702,7 +702,7 @@ export default function MenuEditForm() {
               {stripeConnectStatus === 'active' ? (
                 <ToggleGroup
                   type="single"
-                  className="w-full flex flex-wrap justify-start items-center gap-6"
+                  className="w-full flex flex-wrap justify-start items-center gap-3"
                   value={paymentMethod}
                   onValueChange={(value) => {
                     if (value) {

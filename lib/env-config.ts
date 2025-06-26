@@ -96,6 +96,7 @@ class EnvConfigManager {
       NEXT_PUBLIC_DEPLOY_URL: process.env.NEXT_PUBLIC_DEPLOY_URL!,
       NEXT_PUBLIC_DEVELOP_URL: process.env.NEXT_PUBLIC_DEVELOP_URL!,
       
+      
       // Convex
       CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT!,
       NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL!,

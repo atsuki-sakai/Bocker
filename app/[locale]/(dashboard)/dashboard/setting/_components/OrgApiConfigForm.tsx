@@ -367,6 +367,30 @@ const ApiSettingsCard = () => {
                   )}
                 </Button>
               </div>
+              <div className="hidden">
+                <div className="flex items-center w-full relative">
+                  <ZodTextField
+                    label="LINE Destination ID"
+                    icon={<Key className="h-4 w-4 text-primary" />}
+                    errors={errors}
+                    register={register}
+                    name="destination_id"
+                    className="w-full pr-10"
+                  />
+                  <Button
+                    className="absolute right-0 bottom-0"
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => handleShowFields(e, 'destination_id')}
+                  >
+                    {showFields.destination_id ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
 
               <div className="hidden">
                 <div className="flex items-center w-full relative">
