@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { Link } from '@/i18n/navigation'
 import { useLiff } from '@/hooks/useLiff'
 import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
@@ -9,7 +8,7 @@ import { toast } from 'sonner'
 
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Loader2, ExternalLink } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Id } from '@/convex/_generated/dataModel'
 
 interface StateData {
@@ -27,7 +26,6 @@ export default function ReserveRedirectPage() {
   } = useLiff()
   const router = useRouter()
   const { showErrorToast } = useErrorHandler()
-  const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [hasProcessed, setHasProcessed] = useState(false)
@@ -42,44 +40,6 @@ export default function ReserveRedirectPage() {
   // 現在の言語設定を取得
   const locale =
     typeof window !== 'undefined' ? window.location.pathname.split('/')[1] || 'ja' : 'ja'
-
-  // URLパラメータからstateデータを抽出する関数
-  const extractStateFromUrl = useCallback((): StateData | null => {
-    const urlParams = new URLSearchParams(window.location.search)
-    let stateId: string | null = null
-    let tenantId: Id<'tenant'> | null = null
-    let orgId: Id<'organization'> | null = null
-
-    // liffRedirectUriパラメータから実際のstate IDを抽出
-    const liffRedirectUri = urlParams.get('liffRedirectUri')
-    if (liffRedirectUri) {
-      try {
-        const decodedUri = decodeURIComponent(liffRedirectUri)
-        const redirectUrl = new URL(decodedUri)
-        const liffState = redirectUrl.searchParams.get('liff.state')
-
-        if (liffState) {
-          const innerSearchParams = new URLSearchParams(liffState.split('?')[1])
-          stateId = innerSearchParams.get('state')
-          tenantId = innerSearchParams.get('tid') as Id<'tenant'>
-          orgId = innerSearchParams.get('oid') as Id<'organization'>
-        }
-      } catch (e) {
-        console.error('[ReserveRedirectPage] Failed to parse liffRedirectUri:', e)
-      }
-    }
-
-    // フォールバック: 直接stateパラメータをチェック
-    if (!stateId) {
-      stateId = urlParams.get('state')
-    }
-
-    return {
-      tenantId: tenantId as Id<'tenant'>,
-      orgId: orgId as Id<'organization'>,
-      isCustomerLogin: false,
-    }
-  }, [])
 
   // state検証を行う関数（リトライ機能付き）
   const validateStateWithRetry = useCallback(
@@ -236,87 +196,52 @@ export default function ReserveRedirectPage() {
       abortControllerRef.current = controller
 
       try {
-        // URLからstateデータを抽出
-        const extractedData = extractStateFromUrl()
-        const urlParams = new URLSearchParams(window.location.search)
-        const stateId =
-          urlParams.get('state') ||
-          (urlParams.get('liffRedirectUri')
-            ? new URLSearchParams(
-                new URL(decodeURIComponent(urlParams.get('liffRedirectUri') || '')).searchParams
-                  .get('liff.state')
-                  ?.split('?')[1] || ''
-              ).get('state')
-            : null)
+        // 1) URL から stateId を取得（LIFF が付与）
+        const stateId = new URLSearchParams(window.location.search).get('state')
 
-        // state検証
-        let stateData = await validateStateWithRetry(stateId, controller)
-
-        // URLから抽出したデータとマージ
-        if (!stateData && extractedData && extractedData.tenantId && extractedData.orgId) {
-          stateData = extractedData
+        if (!stateId) {
+          throw new Error('認証情報が不足しています。ログインを最初からやり直してください')
         }
 
-        if (!stateData || !stateData.tenantId || !stateData.orgId) {
-          throw new Error('サロン情報が見つかりません。予約フローを最初からやり直してください')
+        // 2) state 検証
+        const stateData = await validateStateWithRetry(stateId, controller)
+        if (!stateData) {
+          throw new Error('サロン情報が取得できませんでした')
         }
 
         const { tenantId, orgId } = stateData
-        console.log('[ReserveRedirectPage] State data retrieved:', { tenantId, orgId })
 
-        const computedRedirectUrl = `/${locale}/reservation/${orgId}/calendar`
-        setRedirectUrl(computedRedirectUrl)
-
-        // LINEログイン処理
-        if (liff && liff.isLoggedIn()) {
-          console.log('[ReserveRedirectPage] LIFF is logged in.')
-          let idToken: string | null = null
-
-          try {
-            idToken = liff.getIDToken()
-          } catch (e) {
-            console.error('[ReserveRedirectPage] Error getting ID token:', e)
-            throw new Error('LINE認証情報の取得に失敗しました')
-          }
-
-          if (!idToken) {
-            console.error('[ReserveRedirectPage] Could not get ID Token from LIFF')
-            throw new Error('LINE情報の取得に失敗しました。ログインし直してください')
-          }
-
-          console.log('[ReserveRedirectPage] Got idToken. Verifying...')
-
-          // トークン検証（リトライ機能付き）
-          const success = await verifyTokenWithRetry(idToken, tenantId, orgId, controller)
-
-          if (success) {
-            console.log('[ReserveRedirectPage] Authentication successful. Redirecting...')
-            toast.success('認証に成功しました。予約ページへ移動します')
-            setHasProcessed(true)
-            router.push(computedRedirectUrl)
-          } else {
-            throw new Error('認証サーバーとの通信に失敗しました')
-          }
-        } else if (liff && !liffIsLoading) {
-          console.log('[ReserveRedirectPage] LIFF is not logged in. Initiating LIFF login.')
-          liff.login({
-            redirectUri: window.location.href,
-          })
-        } else {
-          console.log('[ReserveRedirectPage] LIFF not ready, waiting...')
+        // 3) LINE ログイン状態を確認し、未ログインならリダイレクト
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: window.location.href })
+          return
         }
+
+        // 4) ID トークン取得
+        const idToken = liff.getIDToken()
+        if (!idToken) {
+          throw new Error('LINE IDトークンの取得に失敗しました')
+        }
+
+        // 5) トークン検証
+        const verified = await verifyTokenWithRetry(idToken, tenantId, orgId, controller)
+        if (!verified) {
+          throw new Error('LINE認証に失敗しました')
+        }
+
+        toast.success('認証に成功しました')
+
+        // 6) 予約カレンダーへ遷移
+        router.push(`/${locale}/reservation/${orgId}/calendar`)
+
+        setHasProcessed(true)
+        setIsLoading(false)
       } catch (error) {
         console.error('[ReserveRedirectPage] Error in handleLiffLogin:', error)
 
-        if (error instanceof Error && error.name === 'AbortError') {
-          setErrorMessage('処理がキャンセルされました')
-        } else {
-          setErrorMessage(
-            error instanceof Error ? error.message : '認証処理中にエラーが発生しました'
-          )
-          showErrorToast(error)
-        }
-
+        const message = error instanceof Error ? error.message : '認証処理中にエラーが発生しました'
+        setErrorMessage(message)
+        showErrorToast(error)
         setIsLoading(false)
         setHasProcessed(true)
       }
@@ -332,7 +257,6 @@ export default function ReserveRedirectPage() {
     locale,
     router,
     showErrorToast,
-    extractStateFromUrl,
     validateStateWithRetry,
     verifyTokenWithRetry,
   ])
@@ -437,18 +361,8 @@ export default function ReserveRedirectPage() {
         </CardContent>
         <CardFooter className="flex flex-col space-y-3 pt-0">
           <div className="text-xs text-muted-foreground text-center">
-            画面が切り替わらない場合は下のボタンをクリックしてください
+            画面が切り替わらない場合は再度、画面を戻ってからやり直してください。
           </div>
-          <Button
-            variant="default"
-            className="w-full flex items-center justify-center gap-2 transition-all"
-            asChild
-          >
-            <Link href={redirectUrl ?? '#'}>
-              <span className=" font-bold">予約ページへ移動</span>
-              <ExternalLink className="h-4 w-4" />
-            </Link>
-          </Button>
         </CardFooter>
       </Card>
     </div>
