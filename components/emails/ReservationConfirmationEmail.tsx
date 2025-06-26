@@ -25,6 +25,7 @@ interface ReservationConfirmationEmailProps {
   reservationDate: string
   reservationTime: string
   staffName: string
+  extraCharge?: number
   menus: { name: string; price: number }[]
   options: { name: string; price: number; count: number }[]
   subtotal: number
@@ -192,6 +193,7 @@ export const ReservationConfirmationEmail = ({
   reservationDate,
   reservationTime,
   staffName,
+  extraCharge,
   menus,
   options,
   subtotal,
@@ -230,7 +232,8 @@ export const ReservationConfirmationEmail = ({
               <br />
               <strong>{t.reservationDateTime}</strong> {reservationDate} {reservationTime}
               <br />
-              <strong>{t.assignedStaff}</strong> {staffName}
+              <strong>{t.assignedStaff}</strong> {staffName}{' '}
+              {extraCharge ? `（¥${extraCharge.toLocaleString()}）` : ''}
             </Text>
 
             {menus && menus.length > 0 && (

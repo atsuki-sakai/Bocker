@@ -1,6 +1,8 @@
 interface ReservationEmailProps {
+  orgName: string;
+  orgAddress: string;
+  orgPhone: string;
   customerName: string
-  salonName: string
   staffName: string
   reservationDate: string // 例: "2024年7月30日(火)"
   reservationTime: string // 例: "10:00 〜 11:00"
@@ -8,8 +10,6 @@ interface ReservationEmailProps {
   totalPrice: number
   reservationId: string
   pinCode?: string
-  salonAddress: string
-  salonPhone: string
 }
 
 interface EmailContent {
@@ -25,11 +25,13 @@ const resend = new Resend(getEnv('RESEND_API_KEY'));
 
 interface SendReservationConfirmationEmailProps {
   to: string;
+  orgName: string;
+  orgAddress: string;
+  orgPhone: string;
   customerName: string;
   reservationDate: string;
   reservationTime: string;
   staffName: string;
-  salonName: string;
   menus: Array<{ name: string; price: number; quantity: number }>;
   options: Array<{ name: string; price: number; quantity: number }>;
   totalPrice: number;
@@ -38,11 +40,13 @@ interface SendReservationConfirmationEmailProps {
 
 interface SendReservationCancellationEmailProps {
   to: string;
+  orgName: string;
+  orgAddress: string;
+  orgPhone: string;
   customerName: string;
   reservationDate: string;
   reservationTime: string;
-  staffName: string;
-  salonName: string;
+  staffName: string;    
   refundAmount?: number;
   refundMethod?: 'points' | 'credit_card';
 }
@@ -50,16 +54,16 @@ interface SendReservationCancellationEmailProps {
 export async function sendReservationCancellationEmail(props: SendReservationCancellationEmailProps) {
   const { 
     to, 
+    orgName,
     customerName, 
     reservationDate, 
     reservationTime, 
     staffName, 
-    salonName,
     refundAmount,
     refundMethod 
   } = props;
 
-  const subject = `【${salonName}】予約キャンセルのお知らせ`;
+  const subject = `【${orgName}】予約キャンセルのお知らせ`;
   
   const textContent = `
 ${customerName} 様
@@ -69,7 +73,7 @@ ${customerName} 様
 --------------------------------
 キャンセル内容
 --------------------------------
-サロン名: ${salonName}
+サロン名: ${orgName}
 予約日時: ${reservationDate} ${reservationTime}
 担当スタッフ: ${staffName}
 
@@ -82,7 +86,7 @@ ${refundAmount && refundMethod === 'points'
 
 ご不明な点がございましたら、サロンまでお問い合わせください。
 
-${salonName}
+${orgName}
 `;
 
   const htmlContent = `
@@ -116,7 +120,7 @@ ${salonName}
 
       <div class="section">
         <h2 style="color: #ff6b6b; font-size: 18px;">キャンセル内容</h2>
-        <p><span class="section-title">サロン名:</span><span class="section-content">${salonName}</span></p>
+        <p><span class="section-title">サロン名:</span><span class="section-content">${orgName}</span></p>
         <p><span class="section-title">予約日時:</span><span class="section-content">${reservationDate} ${reservationTime}</span></p>
         <p><span class="section-title">担当スタッフ:</span><span class="section-content">${staffName}</span></p>
       </div>
@@ -135,7 +139,7 @@ ${salonName}
       <p style="margin-top: 20px;">ご不明な点がございましたら、サロンまでお問い合わせください。</p>
     </div>
     <div class="footer">
-      <p>${salonName}</p>
+      <p>${orgName}</p>
       <p>このメールは自動送信されています。返信はできません。</p>
     </div>
   </div>
@@ -165,12 +169,14 @@ ${salonName}
 
 export async function sendReservationConfirmationEmail(props: SendReservationConfirmationEmailProps) {
   const { 
+    orgName,
+    orgAddress,
+    orgPhone,
     to, 
     customerName, 
     reservationDate, 
     reservationTime, 
     staffName, 
-    salonName,
     menus,
     options,
     totalPrice
@@ -182,16 +188,16 @@ export async function sendReservationConfirmationEmail(props: SendReservationCon
   ];
 
   const emailContent = generateReservationEmail({
+    orgName,
+    orgAddress,
+    orgPhone,
     customerName,
-    salonName,
     staffName,
     reservationDate,
     reservationTime,
     menus: menuItems,
     totalPrice,
     reservationId: new Date().getTime().toString(),
-    salonAddress: '', // TODO: 組織情報から取得
-    salonPhone: '', // TODO: 組織情報から取得
   });
 
   try {
@@ -216,25 +222,24 @@ export async function sendReservationConfirmationEmail(props: SendReservationCon
 
 export const generateReservationEmail = (props: ReservationEmailProps): EmailContent => {
   const {
+    orgName,
+    orgAddress,
+    orgPhone,
     customerName,
-    salonName,
     staffName,
     reservationDate,
     reservationTime,
     menus,
     totalPrice,
-    reservationId,
-    pinCode,
-    salonAddress,
-    salonPhone,
+    reservationId
   } = props
 
-  const subject = `【${salonName}】ご予約内容の確認`
+  const subject = `【${orgName}】ご予約内容の確認`
 
   const textContent = `
   ${customerName} 様
   
-  この度は「${salonName}」にご予約いただき、誠にありがとうございます。
+  この度は「${orgName}」にご予約いただき、誠にありがとうございます。
   以下の内容でご予約を承りました。
   
   --------------------------------
@@ -247,14 +252,13 @@ export const generateReservationEmail = (props: ReservationEmailProps): EmailCon
   合計料金: ${totalPrice.toLocaleString()}円
   担当: ${staffName}
   予約番号: ${reservationId}
-  ${pinCode ? `ポイント利用PINコード: ${pinCode}` : ''}
-  
+
   --------------------------------
   店舗情報
   --------------------------------
-  店舗名: ${salonName}
-  住所: ${salonAddress}
-  電話番号: ${salonPhone}
+  店舗名: ${orgName}
+  住所: ${orgAddress}
+  電話番号: ${orgPhone}
   
   --------------------------------
   ご予約に関する注意事項
@@ -263,8 +267,8 @@ export const generateReservationEmail = (props: ReservationEmailProps): EmailCon
   ・キャンセルは予約日の2日前までにご連絡ください。
   
   ご不明な点がございましたら、お電話にてお問い合わせください。
-  ${salonName}
-  電話: ${salonPhone}
+  ${orgName}
+  電話: ${orgPhone}
   `
 
   const htmlContent = `
@@ -295,12 +299,12 @@ export const generateReservationEmail = (props: ReservationEmailProps): EmailCon
   <body>
     <div class="container">
       <div class="header">
-        <h1>${salonName}</h1>
+        <h1>${orgName}</h1>
         <p>ご予約の確認</p>
       </div>
       <div class="content">
         <p>${customerName} 様</p>
-        <p>この度は「${salonName}」にご予約いただき、誠にありがとうございます。<br>以下の内容でご予約を承りました。</p>
+        <p>この度は「${orgName}」にご予約いただき、誠にありがとうございます。<br>以下の内容でご予約を承りました。</p>
   
         <div class="section">
           <h2>予約内容</h2>
@@ -314,14 +318,13 @@ export const generateReservationEmail = (props: ReservationEmailProps): EmailCon
           <p><span class="section-title">合計料金:</span><span class="section-content">${totalPrice.toLocaleString()}円</span></p>
           <p><span class="section-title">担当:</span><span class="section-content">${staffName}</span></p>
           <p><span class="section-title">予約番号:</span><span class="section-content">${reservationId}</span></p>
-          ${pinCode ? `<p><span class="section-title">PINコード:</span><span class="section-content">${pinCode}</span></p>` : ''}
         </div>
   
         <div class="section">
           <h2>店舗情報</h2>
-          <p><span class="section-title">店舗名:</span><span class="section-content">${salonName}</span></p>
-          <p><span class="section-title">住所:</span><span class="section-content">${salonAddress}</span></p>
-          <p><span class="section-title">電話番号:</span><span class="section-content">${salonPhone}</span></p>
+          <p><span class="section-title">店舗名:</span><span class="section-content">${orgName}</span></p>
+          <p><span class="section-title">住所:</span><span class="section-content">${orgAddress}</span></p>
+          <p><span class="section-title">電話番号:</span><span class="section-content">${orgPhone}</span></p>
         </div>
   
         <div class="notes">
@@ -333,7 +336,7 @@ export const generateReservationEmail = (props: ReservationEmailProps): EmailCon
         <p>ご不明な点がございましたら、お電話にてお問い合わせください。</p>
       </div>
       <div class="footer">
-        <p>${salonName}<br>電話: ${salonPhone}</p>
+        <p>${orgName}<br>電話: ${orgPhone}</p>
       </div>
     </div>
   </body>
