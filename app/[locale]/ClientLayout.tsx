@@ -31,7 +31,7 @@ export default function RootLayout({
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <ConvexClientProvider>
           <div className="pb-12 md:pb-20">{children}</div>
-          <Toaster position="top-right" richColors />
+          <Toaster position="bottom-right" richColors />
         </ConvexClientProvider>
       </ThemeProvider>
     </ClerkProvider>

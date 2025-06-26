@@ -4,7 +4,10 @@
 
 BockerプラットフォームにおけるLINE Front-end Framework (LIFF) を使用したLINEログイン機能の実装詳細。
 
-## アーキテクチャ
+## アーキテクチャ]
+
+### LINE Documents
+https://developers.line.biz/ja/docs/liff/overview/
 
 ### 技術スタック
 - **LIFF SDK**: `@line/liff` v2.x
@@ -67,6 +70,9 @@ export function useLiff() {
 #### ステップ1: ログイン開始
 ```typescript
 // useLineAuthHandler.ts - handleLineAuth関数
+// 型定義には state プロパティが無いため拡張する簡易型
+type LoginParamsWithState = { redirectUri: string; state?: string }
+
 if (!liff.isLoggedIn()) {
   // 1. セキュアなstateを生成
   const stateResponse = await fetch('/api/auth/line-state', {
@@ -74,13 +80,32 @@ if (!liff.isLoggedIn()) {
     body: JSON.stringify({ tenantId, orgId, isCustomerLogin })
   })
   
-  // 2. コールバックURL構築
-  const callbackUrl = new URL(`/${locale}/reservation/auth/callback`, baseUrl)
-  callbackUrl.searchParams.set('redirect_type', isCustomerLogin ? 'customer' : 'reservation')
-  callbackUrl.searchParams.set('state', stateId)
+  // 2. コールバックURL構築（環境判定ロジック含む）
+  const getBaseUrl = () => {
+    // 開発環境
+    if (process.env.NODE_ENV === 'development') {
+      return window.location.origin
+    }
+    
+    // Preview環境（Vercel）
+    if (process.env.VERCEL_ENV === 'preview') {
+      return 'https://bocker-project.vercel.app'
+    }
+    
+    // Production環境
+    if (process.env.VERCEL_ENV === 'production') {
+      return 'https://bocker.jp'
+    }
+    
+    // フォールバック
+    return process.env.NEXT_PUBLIC_DEPLOY_URL || window.location.origin
+  }
+  
+  const callbackUrl = new URL(`/${locale}/reservation/auth/callback`, getBaseUrl())
   
   // 3. LINEログインにリダイレクト
-  liff.login({ redirectUri: callbackUrl.toString() })
+  // NOTE: redirectUri は完全固定。state は LIFF SDK のオプションで付与（OAuth 2.0 仕様準拠）
+  liff.login({ redirectUri: callbackUrl.toString(), state: stateId } as LoginParamsWithState)
 }
 ```
 
@@ -107,8 +132,13 @@ const response = await fetch('/api/line/verify-token', {
 ```typescript
 // app/.../auth/callback/page.tsx
 async function handleLineCallback() {
+  // LIFFが自動でstateパラメータを付与するため、URLから取得可能
   const state = searchParams.get('state')
-  const redirectType = searchParams.get('redirect_type')
+  
+  // 必須パラメータの確認
+  if (!state) {
+    throw new Error('認証情報が不足しています')
+  }
   
   // State検証
   const authState = await validateState(state)
@@ -116,11 +146,16 @@ async function handleLineCallback() {
   // トークン検証
   await verifyToken(liff, authState)
   
-  // 適切なページにリダイレクト
-  if (redirectType === 'customer') {
-    router.push(`/${locale}/customer/${orgId}/${customerUid}/profile`)
+  // 適切なページにリダイレクト（authStateから取得したisCustomerLoginを使用）
+  if (authState.isCustomerLogin) {
+    const sessionData = await getSession()
+    if (sessionData?.session?.customerUid) {
+      router.push(`/${locale}/customer/${authState.orgId}/${sessionData.session.customerUid}/profile`)
+    } else {
+      throw new Error('セッション情報の取得に失敗しました')
+    }
   } else {
-    router.push(`/${locale}/reservation/${orgId}/calendar`)
+    router.push(`/${locale}/reservation/${authState.orgId}/calendar`)
   }
 }
 ```
@@ -149,6 +184,12 @@ interface TokenVerifyResponse {
   message?: string
   error?: string
 }
+
+// LIFF SDK の型拡張（state パラメータ対応）
+type LoginParamsWithState = { 
+  redirectUri: string
+  state?: string 
+}
 ```
 
 ### 4. エラーハンドリング
@@ -173,6 +214,7 @@ if (error instanceof TypeError && error.message.includes('fetch')) {
 ### 1. CSRF対策
 - セキュアなstateパラメータの生成・検証
 - サーバーサイドでのstate管理
+- LIFF SDKの`state`オプションによる透過的な付与
 
 ### 2. トークン管理
 - IDトークンの有効期限チェック
@@ -180,8 +222,9 @@ if (error instanceof TypeError && error.message.includes('fetch')) {
 - セッション情報の適切な削除
 
 ### 3. リダイレクト検証
-- 許可されたリダイレクトURIのみ使用
-- URLパラメータの検証
+- 完全固定のリダイレクトURI（LINE Developers Console設定と完全一致）
+- 環境別URL判定（`VERCEL_ENV`使用）
+- 動的パラメータは`state`で管理
 
 ## 診断・デバッグ機能
 
