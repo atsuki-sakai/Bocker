@@ -78,6 +78,13 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
         
         // 認証エラーの場合は再ログインを促す
         if (response.status === 401) {
+          // サーバー側セッションをクリアしてからログアウト
+          try {
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+          } catch (error) {
+            console.warn('[useLineAuthHandler] Server logout failed:', error)
+          }
+          
           if (liff?.isLoggedIn()) {
             liff.logout()
           }
@@ -166,6 +173,12 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
           baseUrl
         )
         
+        // 予約 or 顧客マイページを判定してリダイレクト先を示す
+        callbackUrl.searchParams.set(
+          'redirect_type',
+          isCustomerLogin ? 'customer' : 'reservation'
+        )
+        
         // NOTE: redirectUri は固定。state は LIFF SDK のオプションで付与（OAuth 仕様準拠）
         console.log('[useLineAuthHandler] Redirecting to LINE login with callback:', callbackUrl.toString())
 
@@ -191,7 +204,18 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
       
       if (!idToken) {
         console.warn('[useLineAuthHandler] ID token not available, forcing re-login')
-        liff.logout()
+        
+        // サーバー側セッションをクリアしてからログアウト
+        try {
+          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+        } catch (error) {
+          console.warn('[useLineAuthHandler] Server logout failed:', error)
+        }
+        
+        if (liff.isLoggedIn()) {
+          liff.logout()
+        }
+        
         throw new Error('LINE認証情報の取得に失敗しました。再度ログインしてください。')
       }
       
@@ -200,76 +224,89 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
       // トークンの有効性を事前チェック
       const tokenValid = await isLineTokenValid(idToken)
       if (!tokenValid) {
-        console.warn('[useLineAuthHandler] ID token is expired, initiating silent re-authentication')
-        liff.logout()
+        console.warn('[useLineAuthHandler] ID token is expired, initiating re-authentication')
         
-        // エラー表示せず、サイレントに再ログインを開始
-        if (!liff.isLoggedIn()) {
-          console.log('[useLineAuthHandler] Starting silent re-authentication flow')
-          
-          // セキュアなstateを生成してログイン
-          const stateResponse = await fetch('/api/auth/line-state', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              tenantId,
-              orgId,
-              isCustomerLogin,
-            }),
-          })
+        // サーバー側セッションをクリアしてからログアウト
+        try {
+          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+        } catch (error) {
+          console.warn('[useLineAuthHandler] Server logout failed:', error)
+        }
+        
+        // LIFF ログアウト
+        if (liff.isLoggedIn()) {
+          liff.logout()
+        }
+        
+        // ログアウト後は必ず新しいログインフローを開始
+        console.log('[useLineAuthHandler] Starting new authentication flow after logout')
+        
+        // セキュアなstateを生成してログイン
+        const stateResponse = await fetch('/api/auth/line-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            tenantId,
+            orgId,
+            isCustomerLogin,
+          }),
+        })
 
-          if (!stateResponse.ok) {
-            const errorData = await stateResponse.json().catch(() => ({}))
-            throw new Error(errorData.message || '認証の準備に失敗しました')
-          }
+        if (!stateResponse.ok) {
+          const errorData = await stateResponse.json().catch(() => ({}))
+          throw new Error(errorData.message || '認証の準備に失敗しました')
+        }
 
-          const { stateId } = await stateResponse.json()
-          console.log('[useLineAuthHandler] Silent re-auth state created:', stateId)
-          
-          // コールバックURL構築
-          const locale = window.location.pathname.split('/')[1] || 'ja'
-          const getBaseUrl = () => {
-            // 開発環境
-            if (process.env.NODE_ENV === 'development') {
-              return window.location.origin
-            }
-            
-            // Preview環境（Vercel）
-            if (process.env.VERCEL_ENV === 'preview') {
-              return 'https://bocker-project.vercel.app'
-            }
-            
-            // Production環境
-            if (process.env.VERCEL_ENV === 'production') {
-              return 'https://bocker.jp'
-            }
-            
-            // フォールバック
-            return process.env.NEXT_PUBLIC_DEPLOY_URL || window.location.origin
+        const { stateId } = await stateResponse.json()
+        console.log('[useLineAuthHandler] New state created after logout:', stateId)
+        
+        // コールバックURL構築
+        const locale = window.location.pathname.split('/')[1] || 'ja'
+        const getBaseUrl = () => {
+          // 開発環境
+          if (process.env.NODE_ENV === 'development') {
+            return window.location.origin
           }
           
-          const baseUrl = getBaseUrl()
-          const callbackUrl = new URL(
-            `/${locale}/reservation/auth/callback`,
-            baseUrl
-          )
-          
-          // NOTE: redirectUri は固定。state は LIFF SDK のオプションで付与（OAuth 仕様準拠）
-          console.log('[useLineAuthHandler] Silent re-auth redirecting to LINE login')
-          
-          try {
-            liff.login({ redirectUri: callbackUrl.toString(), state: stateId } as LoginParamsWithState)
-          } catch (loginError) {
-            console.error('[useLineAuthHandler] Silent re-auth LIFF login failed:', loginError)
-            const liffId = liff.id || ''
-            const lineAuthUrl = `https://access.line.me/oauth2/v2.1/authorize?` +
-              `response_type=code&client_id=${liffId}&` +
-              `redirect_uri=${encodeURIComponent(callbackUrl.toString())}&` +
-              `state=${stateId}&scope=profile%20openid`
-            window.location.href = lineAuthUrl
+          // Preview環境（Vercel）
+          if (process.env.VERCEL_ENV === 'preview') {
+            return 'https://bocker-project.vercel.app'
           }
-          return
+          
+          // Production環境
+          if (process.env.VERCEL_ENV === 'production') {
+            return 'https://bocker.jp'
+          }
+          
+          // フォールバック
+          return process.env.NEXT_PUBLIC_DEPLOY_URL || window.location.origin
+        }
+        
+        const baseUrl = getBaseUrl()
+        const callbackUrl = new URL(
+          `/${locale}/reservation/auth/callback`,
+          baseUrl
+        )
+        
+        // 予約 or 顧客マイページを判定してリダイレクト先を示す
+        callbackUrl.searchParams.set(
+          'redirect_type',
+          isCustomerLogin ? 'customer' : 'reservation'
+        )
+        
+        console.log('[useLineAuthHandler] Redirecting to LINE login after logout')
+        
+        try {
+          liff.login({ redirectUri: callbackUrl.toString(), state: stateId } as LoginParamsWithState)
+        } catch (loginError) {
+          console.error('[useLineAuthHandler] LIFF login failed after logout:', loginError)
+          const liffId = liff.id || ''
+          const lineAuthUrl = `https://access.line.me/oauth2/v2.1/authorize?` +
+            `response_type=code&client_id=${liffId}&` +
+            `redirect_uri=${encodeURIComponent(callbackUrl.toString())}&` +
+            `state=${stateId}&scope=profile%20openid`
+          window.location.href = lineAuthUrl
         }
         return
       }

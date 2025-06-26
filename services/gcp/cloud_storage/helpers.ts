@@ -194,7 +194,7 @@ export async function compressAndCropImage(
       } catch (bitmapError) {
         console.warn('[画像圧縮] createImageBitmap失敗、フォールバックを使用:', bitmapError);
         // フォールバックパスに転送
-        return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext, rotation);
+        return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext);
       }
       
       const { width, height } = bitmap;
@@ -235,7 +235,7 @@ export async function compressAndCropImage(
     } catch (error) {
       console.error('[画像圧縮] OffscreenCanvasパスでエラー、フォールバックを試行:', error);
       // フォールバックパスに転送
-      return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext, rotation);
+      return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext);
     } finally {
       // メモリ解放
       if (bitmap) {
@@ -252,7 +252,7 @@ export async function compressAndCropImage(
   // ========================================================================
   // 2) フォールバックパス  (toDataURL → fetch で全 iOS 対応)
   // ========================================================================
-  return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext, rotation);
+  return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext);
 }
 
 /**
