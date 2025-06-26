@@ -182,7 +182,7 @@ export async function compressAndCropImage(
   // ========================================================================
   if (useOffscreenPath) {
     let bitmap: ImageBitmap | null = null;
-    let fileUrl: string | null = null;
+    const fileUrl: string | null = null;
     
     try {
       console.log('[画像圧縮] OffscreenCanvasパス開始');
@@ -265,7 +265,6 @@ async function executeCanvasFallback(
   effectiveQuality: number,
   mime: string,
   ext: string,
-  rotation: number
 ): Promise<File> {
   console.log('[画像圧縮] Canvasフォールバックパス開始');
   
