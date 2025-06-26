@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useLiff } from '@/hooks/useLiff'
 import { toast } from 'sonner'
 import { isLineTokenValid } from '@/lib/auth/lineAuthCleanup'
-import { getEnv } from '@/lib/env-config'
 
 // LINEログイン成功時のレスポンス型
 interface LineAuthSuccessData {
@@ -20,6 +19,9 @@ interface UseLineAuthHandlerOptions {
   maxRetries?: number
   retryDelay?: number
 }
+
+// 型定義には state プロパティが無いため拡張する簡易型
+type LoginParamsWithState = { redirectUri: string; state?: string }
 
 export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
   const { liff, isLoading: liffIsLoading } = useLiff()
@@ -136,22 +138,40 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
         const { stateId } = await stateResponse.json()
         console.log('[useLineAuthHandler] State created:', stateId)
         
-        // コールバックURL構築（クエリパラメータなし）
+        // コールバックURL構築
         const locale = window.location.pathname.split('/')[1] || 'ja'
-        const baseUrl = process.env.NODE_ENV === 'production' 
-          ? getEnv('NEXT_PUBLIC_DEPLOY_URL') 
-          : window.location.origin
+        const getBaseUrl = () => {
+          // 開発環境
+          if (process.env.NODE_ENV === 'development') {
+            return window.location.origin
+          }
+          
+          // Preview環境（Vercel）
+          if (process.env.VERCEL_ENV === 'preview') {
+            return 'https://bocker-project.vercel.app'
+          }
+          
+          // Production環境
+          if (process.env.VERCEL_ENV === 'production') {
+            return 'https://bocker.jp'
+          }
+          
+          // フォールバック
+          return process.env.NEXT_PUBLIC_DEPLOY_URL || window.location.origin
+        }
         
+        const baseUrl = getBaseUrl()
         const callbackUrl = new URL(
           `/${locale}/reservation/auth/callback`,
           baseUrl
         )
-
-        console.log('[useLineAuthHandler] Redirecting to LINE login with callback:', callbackUrl.toString())
         
+        // NOTE: redirectUri は固定。state は LIFF SDK のオプションで付与（OAuth 仕様準拠）
+        console.log('[useLineAuthHandler] Redirecting to LINE login with callback:', callbackUrl.toString())
+
         // スマホ環境での確実なリダイレクト
         try {
-          liff.login({ redirectUri: callbackUrl.toString() })
+          liff.login({ redirectUri: callbackUrl.toString(), state: stateId } as LoginParamsWithState)
         } catch (loginError) {
           console.error('[useLineAuthHandler] LIFF login failed, trying window.location:', loginError)
           // フォールバック：基本的なリダイレクト（LIFF IDを使用）
@@ -207,21 +227,39 @@ export function useLineAuthHandler(options: UseLineAuthHandlerOptions = {}) {
           const { stateId } = await stateResponse.json()
           console.log('[useLineAuthHandler] Silent re-auth state created:', stateId)
           
-          // コールバックURL構築（クエリパラメータなし）
+          // コールバックURL構築
           const locale = window.location.pathname.split('/')[1] || 'ja'
-          const baseUrl = process.env.NODE_ENV === 'production' 
-            ? getEnv('NEXT_PUBLIC_DEPLOY_URL') 
-            : window.location.origin
+          const getBaseUrl = () => {
+            // 開発環境
+            if (process.env.NODE_ENV === 'development') {
+              return window.location.origin
+            }
+            
+            // Preview環境（Vercel）
+            if (process.env.VERCEL_ENV === 'preview') {
+              return 'https://bocker-project.vercel.app'
+            }
+            
+            // Production環境
+            if (process.env.VERCEL_ENV === 'production') {
+              return 'https://bocker.jp'
+            }
+            
+            // フォールバック
+            return process.env.NEXT_PUBLIC_DEPLOY_URL || window.location.origin
+          }
           
+          const baseUrl = getBaseUrl()
           const callbackUrl = new URL(
             `/${locale}/reservation/auth/callback`,
             baseUrl
           )
-
+          
+          // NOTE: redirectUri は固定。state は LIFF SDK のオプションで付与（OAuth 仕様準拠）
           console.log('[useLineAuthHandler] Silent re-auth redirecting to LINE login')
           
           try {
-            liff.login({ redirectUri: callbackUrl.toString() })
+            liff.login({ redirectUri: callbackUrl.toString(), state: stateId } as LoginParamsWithState)
           } catch (loginError) {
             console.error('[useLineAuthHandler] Silent re-auth LIFF login failed:', loginError)
             const liffId = liff.id || ''
