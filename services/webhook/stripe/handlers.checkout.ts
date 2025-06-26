@@ -147,6 +147,21 @@ export async function handleCheckoutSessionCompleted(
       console.log(`💎 [${eventId}] ポイント使用完了: ${reservation.intended_point_use}pt`, context);
     }
     
+    // 組織情報とAPI設定を取得（通知用）
+    const [organization, apiConfig] = await Promise.all([
+      deps.retry(() =>
+        fetchQuery(api.organization.query.findByOrgId, {
+          org_id: orgId as Id<"organization">
+        })
+      ),
+      deps.retry(() =>
+        fetchQuery(api.organization.api_config.query.findByTenantAndOrg, {
+          tenant_id: tenantId as Id<"tenant">,
+          org_id: orgId as Id<"organization">
+        })
+      )
+    ]);
+    
     // 5. クーポン使用履歴を作成
     console.log(`💳 [${eventId}] Checking coupon transaction creation:`, {
       hasCouponId: !!reservationDetail.coupon_id,
@@ -237,14 +252,6 @@ export async function handleCheckoutSessionCompleted(
           }
         };
         
-        // API設定からアクセストークンを取得
-        const apiConfig = await deps.retry(() =>
-          fetchQuery(api.organization.api_config.query.findByTenantAndOrg, {
-            tenant_id: tenantId as Id<"tenant">,
-            org_id: orgId as Id<"organization">
-          })
-        );
-        
         if (apiConfig?.line_access_token) {
           await lineService.sendFlexMessage(
             customer.line_id!,
@@ -253,14 +260,64 @@ export async function handleCheckoutSessionCompleted(
           );
         }
       })() : Promise.resolve(),
+
+      // サロンへのLINE通知（弊社チャンネル経由）
+      apiConfig?.org_line_id ? (async () => {
+        const { createSalonReservationNotification } = await import('@/services/line/message_template/salon_reservation_notification');
+        
+        // 環境変数から弊社のLINEチャンネルアクセストークンを取得
+        const companyLineAccessToken = process.env.COMPANY_LINE_CHANNEL_ACCESS_TOKEN;
+        
+        if (!companyLineAccessToken) {
+          console.warn('弊社LINEチャンネルのアクセストークンが設定されていません');
+          return;
+        }
+
+        const lineService = new LineService();
+        const salonFlexMessage = createSalonReservationNotification({
+          organization: organization!,
+          reservation: {
+            _id: reservation._id,
+            customer_name: reservation.customer_name,
+            staff_name: reservation.staff_name,
+            date: reservation.date,
+            start_time_unix: reservation.start_time_unix,
+            end_time_unix: reservation.end_time_unix,
+            status: reservation.status,
+            payment_status: reservation.payment_status,
+          },
+          reservationDetail: {
+            total_price: reservationDetail.total_price,
+            payment_method: reservationDetail.payment_method,
+            menus: reservationDetail.menus,
+            options: reservationDetail.options,
+            extra_charge: reservationDetail.extra_charge,
+            coupon_discount: reservationDetail.coupon_discount,
+            use_points: reservationDetail.use_points,
+          },
+          customer: {
+            phone: customer.phone || undefined,
+            email: customer.email || undefined,
+            line_id: customer.line_id || undefined,
+          },
+          paymentMethod: 'credit_card',
+        });
+
+        await lineService.sendFlexMessage(
+          apiConfig.org_line_id!,
+          [salonFlexMessage],
+          companyLineAccessToken
+        );
+      })() : Promise.resolve(),
     ]);
     
     // 通知エラーはログのみ（処理は続行）
     notificationResults.forEach((result, index) => {
       if (result.status === 'rejected') {
-        console.error(`通知送信失敗 [${index}]:`, result.reason);
+        const notificationType = index === 0 ? 'email' : index === 1 ? 'customer_line' : 'salon_line';
+        console.error(`通知送信失敗 [${notificationType}]:`, result.reason);
         Sentry.captureException(result.reason, {
-          tags: { ...context, notification_type: index === 0 ? 'email' : 'line' }
+          tags: { ...context, notification_type: notificationType }
         });
       }
     });

@@ -35,6 +35,7 @@ const organizationApiConfigFormSchema = z.object({
     .optional()
     .refine((val) => !val || /^\d+$/.test(val), 'LINE Channel IDは数字のみで入力してください'),
   destination_id: z.string().optional(),
+  org_line_id: z.string().optional(),
 })
 
 // スキーマから型を生成
@@ -52,6 +53,7 @@ const ApiSettingsCard = () => {
     liffId: false,
     destinationId: false,
     lineChannelId: false,
+    orgLineId: false,
   })
 
   // すべてのフックをここでトップレベルで宣言
@@ -334,6 +336,31 @@ const ApiSettingsCard = () => {
                   onClick={(e) => handleShowFields(e, 'line_channel_id')}
                 >
                   {showFields.line_channel_id ? (
+                    <Eye className="h-4 w-4" />
+                  ) : (
+                    <EyeOff className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+
+              <div className="flex items-center w-full relative">
+                <ZodTextField
+                  label="LineユーザーID(予約受付の通知用)"
+                  icon={<Key className="h-4 w-4 text-primary" />}
+                  errors={errors}
+                  register={register}
+                  name="org_line_id"
+                  type={showFields.org_line_id ? 'text' : 'password'}
+                  className="w-full pr-10"
+                  placeholder="例: Uabcdef1234567890abcdef1234567890"
+                />
+                <Button
+                  className="absolute right-0 bottom-0"
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => handleShowFields(e, 'org_line_id')}
+                >
+                  {showFields.org_line_id ? (
                     <Eye className="h-4 w-4" />
                   ) : (
                     <EyeOff className="h-4 w-4" />
@@ -1226,6 +1253,59 @@ const ApiSettingsCard = () => {
                 <p>4. LIFFアプリも同じLINEログインチャンネル内に作成されていること</p>
               </div>
             </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 受信用ユーザーID(Messaging API) */}
+        <AccordionItem value="line-user-id">
+          <AccordionTrigger>予約受付の通知用LineユーザーIDの取得方法</AccordionTrigger>
+          <AccordionContent className="space-y-2 text-sm text-muted-foreground">
+            {/* 重要な注意 */}
+            <div className="bg-palette-3 border border-palette-3 p-3 rounded-md mb-4">
+              <p className="font-semibold text-palette-3-foreground text-sm mb-1">📌 重要</p>
+              <p className="text-xs text-accent-2">
+                このユーザーIDは<strong>Messaging APIチャンネルの基本設定</strong>
+                から取得します。
+              </p>
+            </div>
+            {/* 前提条件 */}
+            <div className="bg-warning border border-warning p-3 rounded-md">
+              <p className="font-semibold text-warning-foreground text-sm mb-2">📋 前提条件</p>
+              <p className="text-xs text-warning-foreground">
+                <strong>Messaging APIチャンネル</strong>が作成済みであること
+              </p>
+            </div>
+            {/* 取得手順 */}
+            <p className="font-semibold">取得手順</p>
+            <ol className="list-decimal list-inside space-y-1 bg-background p-4 rounded-md">
+              <li>
+                <Link
+                  href="https://developers.line.biz/console/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={externalLinkCls}
+                >
+                  LINE Developers コンソール
+                </Link>
+                にログインします。
+              </li>
+              <li>
+                対象のプロバイダーを選択し、<strong>Messaging APIチャンネル</strong>
+                をクリックします。
+              </li>
+              <li>
+                画面上部のタブメニューから<strong>チャネル基本設定</strong>
+                タブが選択されていることを確認します。
+              </li>
+              <li>
+                ページ下部に表示される<strong>「あなたのユーザーID」</strong>
+                の数値（例：U47fd8e362cb11c75fdcd6f67f7543204d）を確認します。
+              </li>
+              <li>
+                チャンネルID横の<strong>コピーアイコン</strong>をクリックしてコピーします。
+              </li>
+              <li>コピーした値を本フォームの「LINE&nbsp;ユーザーID」欄に貼り付けます。</li>
+            </ol>
           </AccordionContent>
         </AccordionItem>
       </Accordion>

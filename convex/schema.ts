@@ -428,6 +428,7 @@ const api_config = defineTable({
   liff_id: v.optional(v.string()), // LIFF ID
   line_channel_id: v.optional(v.string()), // LINE Channel ID
   destination_id: v.optional(v.string()), // 送信先ID
+  org_line_id: v.optional(v.string()), // サロンのLINE ID（通知受信用）
   ...CommonFields,
 })
 .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']);

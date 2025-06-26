@@ -15,6 +15,7 @@ export const create = mutation({
     liff_id: v.optional(v.string()),
     line_channel_id: v.optional(v.string()),
     destination_id: v.optional(v.string()),
+    org_line_id: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     validateRequired(args.org_id, 'org_id');
@@ -23,6 +24,7 @@ export const create = mutation({
     validateStringLength(args.liff_id, 'liff_id', 512);
     validateStringLength(args.line_channel_id, 'line_channel_id', 512);
     validateStringLength(args.destination_id, 'destination_id', 512);
+    validateStringLength(args.org_line_id, 'org_line_id', 512);
     return await createRecord(ctx, 'api_config', args);
   },
 })
@@ -35,6 +37,7 @@ export const update = mutation({
     liff_id: v.optional(v.string()),
     line_channel_id: v.optional(v.string()),
     destination_id: v.optional(v.string()),
+    org_line_id: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
@@ -43,6 +46,7 @@ export const update = mutation({
     validateStringLength(args.liff_id, 'liff_id', 512);
     validateStringLength(args.line_channel_id, 'line_channel_id', 512);
     validateStringLength(args.destination_id, 'destination_id', 512);
+    validateStringLength(args.org_line_id, 'org_line_id', 512);
     const apiConfig = await ctx.db.get(args.api_config_id);
     if (!apiConfig) {
       throw new ConvexError({
@@ -70,6 +74,7 @@ export const upsert = mutation({
     liff_id: v.optional(v.string()),
     line_channel_id: v.optional(v.string()),
     destination_id: v.optional(v.string()),
+    org_line_id: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
@@ -79,6 +84,7 @@ export const upsert = mutation({
     validateStringLength(args.liff_id, 'liff_id', 512);
     validateStringLength(args.line_channel_id, 'line_channel_id', 512);
     validateStringLength(args.destination_id, 'destination_id', 512);
+    validateStringLength(args.org_line_id, 'org_line_id', 512);
   
     const existing = await ctx.db.query('api_config')
       .withIndex('by_tenant_org_archive', q =>

@@ -952,6 +952,25 @@ export default function CalendarPage() {
           try {
             const result = await response.json()
             if (result.success) {
+              // サロンへのLINE通知を送信（エラーは無視）
+              try {
+                if (organizationComplete.apiConfig?.org_line_id) {
+                  await fetch('/api/line/salon-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      tenantId: sessionCustomer.tenantId,
+                      organizationId: organizationComplete.organization._id,
+                      reservationId: reservationId,
+                      paymentMethod: 'cash',
+                    }),
+                  })
+                }
+              } catch (salonNotificationError) {
+                console.warn('サロン通知の送信に失敗しました:', salonNotificationError)
+                // サロン通知の失敗は顧客の予約処理をブロックしない
+              }
+
               router.push(
                 `/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`
               )
@@ -1020,6 +1039,26 @@ export default function CalendarPage() {
             }
             const emailResult = await emailResponse.json()
             console.log('メール送信成功:', emailResult)
+
+            // サロンへのLINE通知を送信（エラーは無視）
+            try {
+              if (organizationComplete.apiConfig?.org_line_id) {
+                await fetch('/api/line/salon-notification', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    tenantId: sessionCustomer.tenantId,
+                    organizationId: organizationComplete.organization._id,
+                    reservationId: reservationId,
+                    paymentMethod: 'cash',
+                  }),
+                })
+              }
+            } catch (salonNotificationError) {
+              console.warn('サロン通知の送信に失敗しました:', salonNotificationError)
+              // サロン通知の失敗は顧客の予約処理をブロックしない
+            }
+
             router.push(
               `/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`
             )

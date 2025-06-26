@@ -1,6 +1,5 @@
 import { query } from '../../_generated/server';
 import { v } from 'convex/values';
-import { checkAuth } from '@/convex/utils/auth';
 import { validateStringLength } from '@/convex/utils/validations';
 
 
