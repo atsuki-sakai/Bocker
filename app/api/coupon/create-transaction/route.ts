@@ -5,6 +5,9 @@ import { SupabaseService } from '@/services/supabase/SupabaseService'
 import { CouponTransactionRepository } from '@/services/supabase/repositories/coupon/CouponTransactionRepository'
 import { auth } from '@clerk/nextjs/server'
 import { z } from 'zod'
+import { api } from '@/convex/_generated/api'
+import { fetchMutation } from 'convex/nextjs'
+import { Id } from '@/convex/_generated/dataModel'
 
 // バリデーションスキーマ
 const createCouponTransactionSchema = z.object({
@@ -60,6 +63,13 @@ export async function POST(request: NextRequest) {
       reservation_id: data.reservation_id,
       transaction_date_unix: Date.now(),
       discount_amount: data.discount_amount,
+    })
+
+    await fetchMutation(api.coupon.config.mutation.updateNumberOfUse, {
+      type: 'decrement',
+      tenant_id: data.tenant_id as Id<'tenant'>,
+      org_id: data.org_id as Id<'organization'>,
+      coupon_id: data.coupon_id as Id<'coupon'>,
     })
 
     console.log(

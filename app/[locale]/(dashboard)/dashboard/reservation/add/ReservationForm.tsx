@@ -603,7 +603,7 @@ export default function ReservationForm() {
         try {
           const result = await customerRepository.createCustomerWithDetailsAndPoints(
             {
-              uid: crypto.randomUUID(), // 一時的にUIDを生成（RPC側では無視される）
+              uid: crypto.randomUUID(), // 一時的にUIDを生成（RPC側自動で設定されるので、実際は違うUIDが設定される）
               email: '', // 新規顧客の場合、emailは必須ではない
               first_name: data.customer_first_name || '',
               last_name: data.customer_last_name || '',
@@ -682,9 +682,9 @@ export default function ReservationForm() {
           { ltv_price: 0 }
         )
 
-        // 既存のLTV価格に今回の合計金額を加算
-        const newLtvPrice = (carte.ltv_price || 0) + totalPriceCalculated
-        await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
+        // 既存のLTV価格に今回の合計金額を加算　// FIXME: これは予約が完了した時におこなうべき
+        // const newLtvPrice = (carte.ltv_price || 0) + totalPriceCalculated
+        // await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
 
         // 選択されたスタッフの情報を取得
         const selectedStaffData = availableStaff.find((staff) => staff._id === selectedStaffId)

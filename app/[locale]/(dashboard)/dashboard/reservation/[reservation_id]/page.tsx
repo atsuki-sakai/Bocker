@@ -15,6 +15,7 @@ import {
   convertReservationStatus,
   ReservationStatus,
   convertPaymentMethod,
+  convertPaymentStatus,
   PaymentMethod,
   convertGender,
 } from '@/convex/types'
@@ -164,7 +165,6 @@ export default function ReservationPage() {
     }
   }
 
-
   const handleDeleteReservation = async () => {
     try {
       await deleteReservation({
@@ -187,9 +187,33 @@ export default function ReservationPage() {
       backLink="/dashboard/reservation"
       backLinkTitle={t('backToList')}
     >
-      <div className="flex flex-col gap-8 bg-background">
+      <div className="flex flex-col gap-4 bg-background">
+        <p className="text-sm text-muted-foreground">
+          施術が完了した予約は必ず「施術完了」に変更してください。
+          <br />
+          施術完了に変更しない場合、ポイントの付与やその他の処理に影響が出ます。
+        </p>
+        <div className="text-sm text-muted-foreground bg-muted p-4 rounded-md leading-relaxed border border-muted-foreground w-fit">
+          一度 <strong>完了、キャンセル、または返金した予約</strong>{' '}
+          のステータスを変更することはできません。
+          <br />
+          予約を再度受け付ける場合は、一度 <strong>キャンセル</strong> し{' '}
+          <strong>新規予約作成</strong> を行ってください。
+          <br />
+          <strong>保留</strong> の予約は予約枠の計算に含まれずその時間帯は予約可能となります。
+          <br />
+          それを防ぎたい場合は<strong>予約受付済み</strong>に設定してください。
+        </div>
         <div className="border-b pb-4">
-          <div className="flex justify-end w-full">
+          <div
+            className={`flex justify-end w-full ${
+              reservationData.reservation.status === 'completed' ||
+              reservationData.reservation.status === 'cancelled' ||
+              reservationData.reservation.status === 'refunded'
+                ? 'hidden'
+                : ''
+            }`}
+          >
             <div className="flex gap-4">
               <Select
                 value={status}
@@ -212,12 +236,22 @@ export default function ReservationPage() {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <p
-                className={`w-fit px-4 py-1 my-2 rounded-md font-medium text-sm ${statusColorMap[reservationData.reservation.status as ReservationStatus]}`}
-              >
-                {convertReservationStatus(reservationData.reservation.status as ReservationStatus)}
-              </p>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <p
+                  className={`w-fit px-4 py-1 my-2 rounded-md font-medium text-sm ${statusColorMap[reservationData.reservation.status as ReservationStatus]}`}
+                >
+                  {convertReservationStatus(
+                    reservationData.reservation.status as ReservationStatus
+                  )}
+                </p>
+              </div>
+
+              <div className="border border-primary rounded-md px-4 py-1 w-fit">
+                <p className="text-primary text-sm font-medium">
+                  {convertPaymentStatus(reservationData.reservation.payment_status)}
+                </p>
+              </div>
             </div>
             <div>
               <p className="text-muted-foreground">{t('dateTime')}:</p>
@@ -260,15 +294,6 @@ export default function ReservationPage() {
                 )}
               </p>
             </div>
-            {reservationData.reservationDetail?.notes &&
-              reservationData.reservationDetail?.notes.trim() !== '' && (
-                <div className="text-muted-foreground text-sm">
-                  <p className="font-medium text-lg">{t('notes')}:</p>
-                  <p className="text-muted-foreground text-sm">
-                    {reservationData.reservationDetail?.notes}
-                  </p>
-                </div>
-              )}
           </div>
         </div>
 
@@ -345,8 +370,8 @@ export default function ReservationPage() {
                 <Image
                   src={staff.images[0].thumbnail_url}
                   alt={staff.name ?? ''}
-                  width={50}
-                  height={50}
+                  width={150}
+                  height={150}
                   className=""
                 />
               </div>

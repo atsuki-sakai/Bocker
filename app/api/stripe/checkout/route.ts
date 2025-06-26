@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
       pointsUsedAmount
     });
 
-    const successUrl = `${BASE_URL}/reservation/${orgId}/calendar/complete?reservation_id=${reservationId}&session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${BASE_URL}/reservation/${orgId}/calendar?canceled=true&reservation_id=${reservationId}`;
+    const successUrl = `${BASE_URL}/reservation/${orgId}/calendar/complete?reservationId=${reservationId}&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${BASE_URL}/reservation/${orgId}/calendar?canceled=true&reservationId=${reservationId}`;
 
     // Create checkout session arguments
     const checkoutSessionArgs = {

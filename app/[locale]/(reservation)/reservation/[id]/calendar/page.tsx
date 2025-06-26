@@ -16,7 +16,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
-import { PointTaskQueueRepository } from '@/services/supabase/repositories'
+// import { PointTaskQueueRepository } from '@/services/supabase/repositories'
 import { CarteRepository } from '@/services/supabase/repositories/carte/CarteRepository'
 import { CarteDetailRepository } from '@/services/supabase/repositories/carte/CarteDetailRepository'
 import { formatDateToYYYYMMDD } from '@/lib/formatDate'
@@ -175,7 +175,7 @@ export default function CalendarPage() {
   const { showErrorToast } = useErrorHandler()
   // STATES
   const customerRepository = useMemo(() => new CustomerRepository(), [])
-  const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
+  // const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
   const carteRepository = useMemo(() => new CarteRepository(), [])
   const carteDetailRepository = useMemo(() => new CarteDetailRepository(), [])
   const [sessionCustomer, setSessionCustomer] = useState<SessionPayload | null>(null)
@@ -365,7 +365,7 @@ export default function CalendarPage() {
         start_time_unix: reservationStartDateTime.getTime(),
         end_time_unix: reservationEndDateTime.getTime(),
         total_price: calculateTotal(), // 表示・保存用の最終合計金額
-        coupon_id: appliedDiscount.couponId || undefined,
+        coupon_id: appliedDiscount.couponId ?? undefined,
         payment_method: 'credit_card' as PaymentMethod,
         stripe_checkout_session_id: undefined,
         payment_status: 'pending' as ReservationPaymentStatus,
@@ -404,10 +404,6 @@ export default function CalendarPage() {
               { ltv_price: 0 }
             )
 
-            // 既存のLTV価格に今回の合計金額を加算
-            const newLtvPrice = (carte.ltv_price || 0) + reservationData.total_price
-            await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
-
             // カルテ詳細を作成
             await carteDetailRepository.createCarteDetail({
               tenant_id: sessionCustomer.tenantId,
@@ -417,7 +413,7 @@ export default function CalendarPage() {
               staff_id: reservationData.staff_id,
               staff_name: reservationData.staff_name, // スタッフ名を追加
               service_start_time: reservationData.start_time_unix
-                ? new Date(reservationData.start_time_unix * 1000).toISOString()
+                ? new Date(reservationData.start_time_unix).toISOString()
                 : undefined, // 施術開始時間を追加
               menu_details: reservationData.menus,
               option_details: reservationData.options,
@@ -601,7 +597,7 @@ export default function CalendarPage() {
         orgId,
         customerEmail: sessionCustomer.email,
         lineItems: stripeLineItems,
-        couponId: appliedDiscount.couponId,
+        couponId: appliedDiscount.couponId ?? undefined,
         pointsUsedAmount: usePoints,
       }
       console.log(
@@ -660,8 +656,9 @@ export default function CalendarPage() {
           last_name: customerData.customer.last_name,
           line_id: customerData.customer.line_id,
           line_user_name: customerData.customer.line_user_name,
-          last_reservation_date_unix: Math.floor(reservationStartDateTime.getTime() / 1000),
-          total_reservation_count: (customerData.customer.total_reservation_count || 0) + 1,
+          // FIXME: これは予約が完了した時におこなうべき
+          // last_reservation_date_unix: Math.floor(reservationStartDateTime.getTime() / 1000),
+          // total_reservation_count: (customerData.customer.total_reservation_count || 0) + 1,
         }
 
         try {
@@ -692,7 +689,7 @@ export default function CalendarPage() {
         start_time_unix: reservationStartDateTime.getTime(),
         end_time_unix: reservationEndDateTime.getTime(),
         total_price: calculateTotal(), // 表示・保存用の最終合計金額
-        coupon_id: appliedDiscount.couponId || undefined,
+        coupon_id: appliedDiscount.couponId ?? undefined,
         payment_method: selectedPaymentMethod,
         stripe_checkout_session_id: undefined,
         payment_status: 'pending' as ReservationPaymentStatus,
@@ -745,9 +742,9 @@ export default function CalendarPage() {
                 { ltv_price: 0 }
               )
 
-              // 既存のLTV価格に今回の合計金額を加算
-              const newLtvPrice = (carte.ltv_price || 0) + reservationDataForCash.total_price
-              await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
+              // 既存のLTV価格に今回の合計金額を加算　// FIXME: これは予約が完了した時におこなうべき
+              // const newLtvPrice = (carte.ltv_price || 0) + reservationDataForCash.total_price
+              // await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
 
               // カルテ詳細を作成
               await carteDetailRepository.createCarteDetail({
@@ -1005,6 +1002,7 @@ export default function CalendarPage() {
                 ? `${selectedTime.startHour}～${selectedTime.endHour}`
                 : '時間未定',
               staffName: selectedStaffCompleted.staff.name,
+              extraCharge: selectedStaffCompleted.staff.extra_charge,
               menus: selectedMenus.map((menu) => ({
                 name: menu.name,
                 price: menu.sale_price || menu.unit_price || 0,
@@ -1077,69 +1075,70 @@ export default function CalendarPage() {
           )
         }
 
+        // FIXME: これは予約が完了した時におこなうべき
         // ポイントを付与するqueueを作成
-        if (sessionCustomer?.customerUid && pointConfig && pointConfig.is_active) {
-          // ポイント計算（割引前金額で計算）
-          const calculateEarnedPoints = (
-            menus: Doc<'menu'>[],
-            options: Doc<'option'>[],
-            extraCharge: number = 0
-          ) => {
-            // 1. ベース金額計算（クーポン割引前、税込金額）
-            const baseAmount =
-              menus.reduce((sum, menu) => {
-                return sum + (menu.sale_price || menu.unit_price)
-              }, 0) + extraCharge
+        // if (sessionCustomer?.customerUid && pointConfig && pointConfig.is_active) {
+        //   // ポイント計算（割引前金額で計算）
+        //   const calculateEarnedPoints = (
+        //     menus: Doc<'menu'>[],
+        //     options: Doc<'option'>[],
+        //     extraCharge: number = 0
+        //   ) => {
+        //     // 1. ベース金額計算（クーポン割引前、税込金額）
+        //     const baseAmount =
+        //       menus.reduce((sum, menu) => {
+        //         return sum + (menu.sale_price || menu.unit_price)
+        //       }, 0) + extraCharge
 
-            // 2. オプション金額追加
-            const optionAmount = options.reduce((sum, option) => {
-              return sum + (option.sale_price || option.unit_price)
-            }, 0)
+        //     // 2. オプション金額追加
+        //     const optionAmount = options.reduce((sum, option) => {
+        //       return sum + (option.sale_price || option.unit_price)
+        //     }, 0)
 
-            // 3. 税込み総額（クーポン・ポイント使用前）
-            const totalAmount = baseAmount + optionAmount
+        //     // 3. 税込み総額（クーポン・ポイント使用前）
+        //     const totalAmount = baseAmount + optionAmount
 
-            // 4. ポイント計算（割引前金額で計算）
-            const earnedPoints = pointConfig.is_fixed_point
-              ? pointConfig.fixed_point || 0
-              : Math.floor(totalAmount * ((pointConfig.point_rate || 0) / 100))
+        //     // 4. ポイント計算（割引前金額で計算）
+        //     const earnedPoints = pointConfig.is_fixed_point
+        //       ? pointConfig.fixed_point || 0
+        //       : Math.floor(totalAmount * ((pointConfig.point_rate || 0) / 100))
 
-            return Math.max(0, earnedPoints)
-          }
+        //     return Math.max(0, earnedPoints)
+        //   }
 
-          const earnPoints = calculateEarnedPoints(
-            selectedMenus,
-            selectedOptions,
-            selectedStaffCompleted?.staff?.extra_charge || 0
-          )
+        //   const earnPoints = calculateEarnedPoints(
+        //     selectedMenus,
+        //     selectedOptions,
+        //     selectedStaffCompleted?.staff?.extra_charge || 0
+        //   )
 
-          // ポイントが0より大きい場合のみキューを作成
-          if (earnPoints > 0) {
-            const scheduledForUnix =
-              Math.floor(reservationStartDateTime.getTime() / 1000) + 60 * 60 * 24 * 30 // 予約日の30日後（Unix秒単位）
+        //   // ポイントが0より大きい場合のみキューを作成
+        //   if (earnPoints > 0) {
+        //     const scheduledForUnix =
+        //       Math.floor(reservationStartDateTime.getTime() / 1000) + 60 * 60 * 24 * 30 // 予約日の30日後（Unix秒単位）
 
-            try {
-              // 顧客UIDが確実に存在することを確認
-              if (!customerData?.customer?.uid) {
-                console.warn('[CalendarPage] Customer UID not found, skipping point queue creation')
-              } else {
-                // Supabaseでポイントキューを作成する
-                const pointQueue = await pointTaskQueueRepository.createPointTask({
-                  tenant_id: sessionCustomer.tenantId,
-                  org_id: organizationComplete.organization._id as Id<'organization'>,
-                  reservation_id: reservationId,
-                  customer_id: customerData.customer.uid,
-                  points: earnPoints,
-                  scheduled_for_unix: scheduledForUnix,
-                })
-                console.log('Point queue created:', pointQueue)
-              }
-            } catch (error) {
-              console.error('Failed to create point queue:', error)
-              // ポイントキュー作成に失敗しても予約は成功としてそのまま続行
-            }
-          }
-        }
+        //     try {
+        //       // 顧客UIDが確実に存在することを確認
+        //       if (!customerData?.customer?.uid) {
+        //         console.warn('[CalendarPage] Customer UID not found, skipping point queue creation')
+        //       } else {
+        //         // Supabaseでポイントキューを作成する
+        //         const pointQueue = await pointTaskQueueRepository.createPointTask({
+        //           tenant_id: sessionCustomer.tenantId,
+        //           org_id: organizationComplete.organization._id as Id<'organization'>,
+        //           reservation_id: reservationId,
+        //           customer_id: customerData.customer.uid,
+        //           points: earnPoints,
+        //           scheduled_for_unix: scheduledForUnix,
+        //         })
+        //         console.log('Point queue created:', pointQueue)
+        //       }
+        //     } catch (error) {
+        //       console.error('Failed to create point queue:', error)
+        //       // ポイントキュー作成に失敗しても予約は成功としてそのまま続行
+        //     }
+        //   }
+        // }
 
         toast.success(
           '予約を受け付けしました。予約確認メールまたはLINEメッセージを送信しましたのでご確認ください。'
