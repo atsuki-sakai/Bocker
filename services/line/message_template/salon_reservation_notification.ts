@@ -177,6 +177,7 @@ export const createSalonReservationNotification = ({
     altText: `${organization.org_name}に新しい予約が入りました`,
     contents: {
       type: 'bubble',
+      size: 'giga',
       hero: {
         type: 'box',
         layout: 'vertical',
@@ -198,7 +199,7 @@ export const createSalonReservationNotification = ({
             margin: 'sm',
           },
         ],
-        backgroundColor: '#06d755',
+        backgroundColor: '#2B664DFF',
         paddingAll: '20px',
       },
       body: {
@@ -206,6 +207,15 @@ export const createSalonReservationNotification = ({
         layout: 'vertical',
         contents: [
           // 予約基本情報
+          {
+            type: 'button',
+            action: {
+              type: 'uri',
+              label: '予約詳細を確認',
+              uri: `${window.location.origin}/dashboard/reservation/${reservation._id}`,
+            },
+            style: 'primary',
+          },
           {
             type: 'box',
             layout: 'vertical',
@@ -266,6 +276,7 @@ export const createSalonReservationNotification = ({
                 ],
                 margin: 'sm',
               },
+              
               {
                 type: 'box',
                 layout: 'horizontal',
@@ -279,7 +290,7 @@ export const createSalonReservationNotification = ({
                   },
                   {
                     type: 'text',
-                    text: reservation.staff_name,
+                    text: reservation.staff_name + " " + (reservationDetail.extra_charge ? `（¥${reservationDetail.extra_charge.toLocaleString()}）` : ''),
                     size: 'sm',
                     color: '#333333',
                     weight: 'bold',
@@ -411,7 +422,7 @@ export const createSalonReservationNotification = ({
         contents: [
           {
             type: 'text',
-            text: '🤖 Bocker予約管理システム',
+            text: 'Bocker 予約管理システム',
             size: 'xs',
             color: '#888888',
             align: 'center',

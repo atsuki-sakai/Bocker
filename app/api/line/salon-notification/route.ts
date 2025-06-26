@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     console.log('Environment check:', {
       hasToken: !!companyLineAccessToken,
       tokenLength: companyLineAccessToken?.length || 0,
+      tokenPrefix: companyLineAccessToken?.substring(0, 10) + '...',
       nodeEnv: process.env.NODE_ENV
     })
 
