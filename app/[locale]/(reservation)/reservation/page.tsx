@@ -1,348 +1,138 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
-import { useLiff } from '@/hooks/useLiff'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { toast } from 'sonner'
-
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import { useLineAuthHandler } from '@/hooks/useLineAuthHandler'
+import { api } from '@/convex/_generated/api'
+import { fetchQuery } from 'convex/nextjs'
+import { Card, CardContent } from '@/components/ui/card'
+import { Processing } from '@/components/common/Processing'
 import { Button } from '@/components/ui/button'
-import { Loader2 } from 'lucide-react'
 import { Id } from '@/convex/_generated/dataModel'
 
-interface StateData {
-  tenantId: Id<'tenant'>
-  orgId: Id<'organization'>
-  isCustomerLogin?: boolean
-}
-
 export default function ReserveRedirectPage() {
-  const {
-    liff,
-    isLoading: liffIsLoading,
-    isError: liffIsError,
-    errorMessage: liffErrorMessage,
-  } = useLiff()
   const router = useRouter()
+  const locale = useLocale()
   const { showErrorToast } = useErrorHandler()
-  const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [hasProcessed, setHasProcessed] = useState(false)
+  const [orgId, setOrgId] = useState<Id<'organization'> | null>(null)
+  const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null)
 
-  // タイムアウト用のRef（setTimeoutのIDを保持）
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // リトライ回数管理用のRef
-  const abortControllerRef = useRef<AbortController | null>(null)
-  const MAX_RETRY_COUNT = 3
-  const RETRY_DELAY = 1000 // 1秒
-
-  // 現在の言語設定を取得
-  const locale =
-    typeof window !== 'undefined' ? window.location.pathname.split('/')[1] || 'ja' : 'ja'
-
-  // state検証を行う関数（リトライ機能付き）
-  const validateStateWithRetry = useCallback(
-    async (stateId: string | null, controller: AbortController): Promise<StateData | null> => {
-      for (let attempt = 0; attempt < MAX_RETRY_COUNT; attempt++) {
-        if (attempt > 0) {
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
-        }
-
-        try {
-          const url = stateId
-            ? `/api/auth/line-state?stateId=${stateId}`
-            : '/api/auth/line-state?skipValidation=true'
-
-          const response = await fetch(url, {
-            method: 'GET',
-            credentials: 'include',
-            signal: controller.signal,
-          })
-
-          if (response.ok) {
-            return await response.json()
-          }
-
-          // state IDが一致しない場合、検証をスキップして再試行
-          if (!response.ok && stateId && attempt < MAX_RETRY_COUNT - 1) {
-            console.log('[ReserveRedirectPage] Retrying with skipValidation=true')
-            const retryResponse = await fetch('/api/auth/line-state?skipValidation=true', {
-              method: 'GET',
-              credentials: 'include',
-              signal: controller.signal,
-            })
-
-            if (retryResponse.ok) {
-              return await retryResponse.json()
-            }
-          }
-        } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') {
-            throw error
-          }
-          console.error(`[ReserveRedirectPage] Attempt ${attempt + 1} failed:`, error)
-        }
-      }
-
-      return null
-    },
-    []
-  )
-
-  // トークン検証を行う関数（リトライ機能付き）
-  const verifyTokenWithRetry = useCallback(
-    async (
-      idToken: string,
-      tenantId: string,
-      orgId: string,
-      controller: AbortController
-    ): Promise<boolean> => {
-      for (let attempt = 0; attempt < MAX_RETRY_COUNT; attempt++) {
-        if (attempt > 0) {
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
-        }
-
-        try {
-          const response = await fetch('/api/line/verify-token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              idToken,
-              tenantId,
-              orgId,
-            }),
-            signal: controller.signal,
-          })
-
-          const data = await response.json()
-
-          if (response.ok && data.success) {
-            return true
-          }
-
-          // トークン期限切れの場合、新しいトークンを取得して再試行
-          if (
-            data.error === 'token_expired' &&
-            liff?.isLoggedIn() &&
-            attempt < MAX_RETRY_COUNT - 1
-          ) {
-            console.log(
-              `[ReserveRedirectPage] Token expired, getting new token (attempt ${attempt + 2})...`
-            )
-            const newIdToken = liff.getIDToken()
-            if (newIdToken && newIdToken !== idToken) {
-              idToken = newIdToken
-              continue
-            }
-          }
-
-          throw new Error(data.message || data.error || 'LINE認証に失敗しました')
-        } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') {
-            throw error
-          }
-          if (attempt === MAX_RETRY_COUNT - 1) {
-            throw error
-          }
-          console.error(
-            `[ReserveRedirectPage] Token verification attempt ${attempt + 1} failed:`,
-            error
-          )
-        }
-      }
-
-      return false
-    },
-    [liff]
-  )
-
-  useEffect(() => {
-    async function handleLiffLogin() {
-      // 既に処理済みの場合は早期リターン
-      if (hasProcessed) {
-        console.log('[ReserveRedirectPage] Already processed, skipping...')
-        return
-      }
-
-      // LIFF初期化中はまだ処理しない
-      if (liffIsLoading) {
-        console.log('[ReserveRedirectPage] LIFF is still loading. Waiting...')
-        return
-      }
-
-      // LIFFエラーチェック
-      if (liffIsError) {
-        console.error(`[ReserveRedirectPage] LIFF initialization error: ${liffErrorMessage}`)
-        setErrorMessage(`LINE連携でエラーが発生しました: ${liffErrorMessage || '不明なエラー'}`)
-        setIsLoading(false)
-        setHasProcessed(true)
-        return
-      }
-
-      // LIFF初期化が完了していない場合は早期リターン
-      if (!liff) {
-        console.log(
-          '[ReserveRedirectPage] LIFF is not initialized yet. Waiting for initialization...'
-        )
-        return
-      }
-
-      setIsLoading(true)
-      setErrorMessage(null)
-
-      // 新しいAbortControllerを作成
-      const controller = new AbortController()
-      abortControllerRef.current = controller
-
-      try {
-        // 1) URL から stateId を取得（LIFF が付与）
-        const stateId = new URLSearchParams(window.location.search).get('state')
-
-        if (!stateId) {
-          throw new Error('認証情報が不足しています。ログインを最初からやり直してください')
-        }
-
-        // 2) state 検証
-        const stateData = await validateStateWithRetry(stateId, controller)
-        if (!stateData) {
-          throw new Error('サロン情報が取得できませんでした')
-        }
-
-        const { tenantId, orgId } = stateData
-
-        // 3) LINE ログイン状態を確認し、未ログインならリダイレクト
-        if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: window.location.href })
-          return
-        }
-
-        // 4) ID トークン取得
-        const idToken = liff.getIDToken()
-        if (!idToken) {
-          throw new Error('LINE IDトークンの取得に失敗しました')
-        }
-
-        // 5) トークン検証
-        const verified = await verifyTokenWithRetry(idToken, tenantId, orgId, controller)
-        if (!verified) {
-          throw new Error('LINE認証に失敗しました')
-        }
-
-        toast.success('認証に成功しました')
-
-        // 6) 予約カレンダーへ遷移
+  const {
+    handleLineAuth,
+    isProcessing: isProcessingLineCallback,
+    error: lineCallbackError,
+  } = useLineAuthHandler({
+    onSuccess: async () => {
+      if (orgId) {
         router.push(`/${locale}/reservation/${orgId}/calendar`)
-
-        setHasProcessed(true)
-        setIsLoading(false)
-      } catch (error) {
-        console.error('[ReserveRedirectPage] Error in handleLiffLogin:', error)
-
-        const message = error instanceof Error ? error.message : '認証処理中にエラーが発生しました'
-        setErrorMessage(message)
-        showErrorToast(error)
-        setIsLoading(false)
-        setHasProcessed(true)
       }
-    }
+    },
+  })
 
-    handleLiffLogin()
-  }, [
-    liff,
-    liffIsLoading,
-    liffIsError,
-    liffErrorMessage,
-    hasProcessed,
-    locale,
-    router,
-    showErrorToast,
-    validateStateWithRetry,
-    verifyTokenWithRetry,
-  ])
-
-  // クリーンアップ: アンマウント時にAbortControllerをキャンセル
+  // Handle LINE callback detection (similar to customer login page)
   useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
+    const urlParams = new URLSearchParams(window.location.search)
+    const hasLineCallback = urlParams.get('liffRedirectUri') || urlParams.get('state')
+
+    if (hasLineCallback && orgId && tenantId && !isProcessingLineCallback) {
+      handleLineAuth(tenantId, orgId, false) // false for reservation login
     }
-  }, [])
+  }, [orgId, tenantId, handleLineAuth, isProcessingLineCallback])
 
-  // タイムアウト処理（最適化版）
+  // Get organization info from state or URL
   useEffect(() => {
-    if (isLoading) {
-      timeoutRef.current = setTimeout(async () => {
-        console.warn('[ReserveRedirectPage] Loading timeout exceeded. Cleaning up...')
+    async function getOrgInfo() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search)
+        const state = urlParams.get('state')
 
-        // AbortControllerでリクエストをキャンセル
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort()
-        }
+        // Get state information
+        const stateEndpoint = state
+          ? `/api/auth/line-state?stateId=${state}`
+          : '/api/auth/line-state?skipValidation=true'
 
-        // ログアウト処理
-        try {
-          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-          if (liff?.isLoggedIn()) {
-            liff.logout()
+        const stateResponse = await fetch(stateEndpoint, {
+          method: 'GET',
+          credentials: 'include',
+        })
+
+        if (stateResponse.ok) {
+          const stateData = await stateResponse.json()
+          if (stateData?.orgId && stateData?.tenantId) {
+            setOrgId(stateData.orgId)
+            setTenantId(stateData.tenantId)
+            return
           }
-        } catch (error) {
-          console.warn('Logout error:', error)
         }
 
-        toast.error('タイムアウトしました。再度ログインしてください')
-        setIsLoading(false)
-        setHasProcessed(true)
+        // Fallback: try to get from URL path
+        const pathParts = window.location.pathname.split('/').filter(Boolean)
+        const reservationIndex = pathParts.indexOf('reservation')
+        const pathOrgId =
+          reservationIndex !== -1 && pathParts.length > reservationIndex + 1
+            ? pathParts[reservationIndex + 1]
+            : undefined
 
-        setTimeout(() => {
-          router.push(`/${locale}/reservation`)
-        }, 2000)
-      }, 30000) // 30秒
-    }
-
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-        timeoutRef.current = null
+        if (pathOrgId) {
+          const existOrg = await fetchQuery(api.organization.query.findByOrgId, {
+            org_id: pathOrgId as Id<'organization'>,
+          })
+          if (existOrg) {
+            setOrgId(pathOrgId as Id<'organization'>)
+            setTenantId(existOrg.tenant_id)
+          }
+        }
+      } catch (error) {
+        console.error('[ReserveRedirectPage] Error getting organization info:', error)
+        showErrorToast(error)
       }
     }
-  }, [isLoading, liff, router, locale])
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="flex flex-col items-center bg-muted justify-center space-y-6 py-6">
-            <div className="relative">
-              <Loader2 className="h-12 w-12 text-neon animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-6 w-6 rounded-full bg-accent animate-pulse"></div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center space-y-6 py-6">
-            <p className="text-center text-primary font-medium animate-pulse">
-              認証情報を確認中...
-            </p>
-            <p className="text-center text-sm text-muted-foreground max-w-xs">
-              LINEアカウント情報を確認し、安全にログイン処理を行っています。
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    getOrgInfo()
+  }, [showErrorToast])
+
+  if (!orgId || !tenantId || isProcessingLineCallback) {
+    return <Processing />
   }
 
-  if (errorMessage) {
+  // Show error state for LINE callback errors
+  if (lineCallbackError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <Card className="w-full max-w-md shadow-lg border-destructive">
-          <CardContent className="flex flex-col items-center justify-center space-y-4 py-6">
-            <p className="text-center text-destructive font-semibold">エラーが発生しました</p>
-            <p className="text-center text-sm text-muted-foreground max-w-xs">{errorMessage}</p>
-            <Button variant="outline" onClick={() => router.push(`/${locale}/reservation`)}>
-              予約トップに戻る
+      <div className="w-full mx-auto bg-background min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-2xl border-destructive/20 bg-card/90 backdrop-blur-sm">
+          <CardContent className="flex flex-col items-center justify-center space-y-6 py-8">
+            {/* エラーアイコン */}
+            <div className="relative">
+              <div className="w-16 h-16 bg-destructive rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-destructive rounded-full flex items-center justify-center">
+                  <div className="w-1 h-4 bg-destructive-foreground rounded-full"></div>
+                  <div className="w-1 h-1 bg-destructive-foreground rounded-full mt-1 ml-0.5"></div>
+                </div>
+              </div>
+              <div className="absolute inset-0 animate-ping opacity-25">
+                <div className="w-16 h-16 bg-destructive rounded-full"></div>
+              </div>
+            </div>
+
+            <div className="text-center space-y-3">
+              <p className="text-lg font-semibold text-destructive">エラーが発生しました</p>
+              <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
+                {lineCallbackError.message}
+              </p>
+            </div>
+
+            <Button
+              variant="outline"
+              className="min-w-[120px] transition-all duration-200 hover:scale-105"
+              onClick={() => {
+                // Clear URL parameters
+                const newUrl = window.location.pathname
+                window.history.replaceState({}, '', newUrl)
+              }}
+            >
+              予約画面に戻る
             </Button>
           </CardContent>
         </Card>
@@ -350,21 +140,5 @@ export default function ReserveRedirectPage() {
     )
   }
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-      <Card className="w-full max-w-md shadow-lg border-none">
-        <CardContent className="flex flex-col items-center justify-center space-y-6 py-6">
-          <p className="text-center text-primary font-medium">処理が完了しました</p>
-          <p className="text-center text-sm text-muted-foreground max-w-xs">
-            まもなく予約ページへ移動します。
-          </p>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-3 pt-0">
-          <div className="text-xs text-muted-foreground text-center">
-            画面が切り替わらない場合は再度、画面を戻ってからやり直してください。
-          </div>
-        </CardFooter>
-      </Card>
-    </div>
-  )
+  return <Processing />
 }

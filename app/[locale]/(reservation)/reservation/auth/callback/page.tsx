@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useLiff } from '@/hooks/useLiff'
 import { toast } from 'sonner'
-import { Loading } from '@/components/common'
+import { Processing } from '@/components/common/Processing'
 import { isLineTokenValid } from '@/lib/auth/lineAuthCleanup'
 import type { Liff } from '@line/liff'
 import { Id } from '@/convex/_generated/dataModel'
@@ -30,6 +30,21 @@ interface StateValidationResponse {
   tenantId: Id<'tenant'>
   orgId: Id<'organization'>
   isCustomerLogin: boolean
+}
+
+// state 抽出ヘルパー（liff.state対応）
+const extractStateId = (sp: URLSearchParams): string | null => {
+  const direct = sp.get('state')
+  if (direct) return direct
+  const ls = sp.get('liff.state')
+  if (ls) {
+    try {
+      return new URLSearchParams(ls.split('?')[1] ?? '').get('state')
+    } catch {
+      return null
+    }
+  }
+  return null
 }
 
 export default function AuthCallbackPage() {
@@ -80,8 +95,16 @@ export default function AuthCallbackPage() {
   }
 
   // State検証処理
-  const validateState = async (stateId: string): Promise<StateValidationResponse> => {
-    const response = await fetch(`/api/auth/line-state?stateId=${stateId}`, {
+  const validateState = async (
+    stateId: string | null,
+    skip = false
+  ): Promise<StateValidationResponse> => {
+    const url =
+      skip || !stateId
+        ? '/api/auth/line-state?skipValidation=true'
+        : `/api/auth/line-state?stateId=${stateId}`
+
+    const response = await fetch(url, {
       method: 'GET',
       credentials: 'include',
     })
@@ -114,7 +137,7 @@ export default function AuthCallbackPage() {
 
       try {
         // URLパラメータからstateを取得
-        const state = searchParams.get('state')
+        const state = extractStateId(searchParams)
 
         console.log('[AuthCallback] Processing callback with params:', {
           state,
@@ -122,9 +145,10 @@ export default function AuthCallbackPage() {
           isLoggedIn: liffIsLoggedIn,
         })
 
-        // 必須パラメータの確認
+        // State検証（stateが不足している場合はskipValidation=trueでフォールバック）
+        console.log('[AuthCallback] State parameter:', state)
         if (!state) {
-          throw new Error('認証情報が不足しています')
+          console.warn('[AuthCallback] State parameter missing, will use skipValidation fallback')
         }
 
         // LINEログイン状態確認
@@ -134,9 +158,13 @@ export default function AuthCallbackPage() {
           return
         }
 
-        // State検証
-        const authState = await validateState(state)
+        // State検証（stateが不足している場合はskipValidation=trueを使用）
+        const authState = await validateState(state, !state)
         console.log('[AuthCallback] State validated:', authState)
+
+        if (!authState || !authState.tenantId || !authState.orgId) {
+          throw new Error('認証状態の取得に失敗しました。再度ログインしてください。')
+        }
 
         // トークン検証
         await verifyToken(liff, authState)
@@ -174,7 +202,8 @@ export default function AuthCallbackPage() {
     }
 
     handleLineCallback()
-  }, [router, locale, searchParams, liff, liffIsLoggedIn, liffIsLoading, isClient, isProcessing])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liff, liffIsLoading, isClient])
 
   // サーバーサイドレンダリング時は何も表示しない
   if (!isClient) {
@@ -201,5 +230,5 @@ export default function AuthCallbackPage() {
     )
   }
 
-  return <Loading />
+  return <Processing />
 }

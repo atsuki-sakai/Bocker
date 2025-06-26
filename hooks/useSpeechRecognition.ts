@@ -139,7 +139,7 @@ export const useSpeechRecognition = ({
           break
         case 'service-not-allowed':
           errorMessage =
-            '音声認識がブロックされています。iOS の「設定 ▸ プライバシーとセキュリティ ▸ 音声認識」で Safari を許可してください'
+            '現在スマートフォンでの音声認識はサポートしていません。ご不便ですがPCでのご利用をお願いします。'
           break
         default:
           errorMessage = `音声認識エラー: ${event.error}`

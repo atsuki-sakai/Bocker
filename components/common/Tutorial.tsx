@@ -247,6 +247,7 @@ export const Tutorial = () => {
 
     setCompletedSteps(completed)
     setMissingItems(missing)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     org,
     weekSchedules,
