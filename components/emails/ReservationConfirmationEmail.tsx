@@ -5,7 +5,6 @@ import {
   Heading,
   Hr,
   Html,
-  Img,
   Link,
   Preview,
   Section,
@@ -34,7 +33,6 @@ interface ReservationConfirmationEmailProps {
   totalAmount: number
   reservationRules?: string | null
   reservationDetailUrl: string
-  logoUrl?: string
   locale?: SupportedLocale
 }
 
@@ -46,7 +44,6 @@ interface ContactEmailProps {
   subject: string
   message: string
 }
-
 
 const main = {
   backgroundColor: '#F7F9FA',
@@ -185,13 +182,6 @@ const link = {
   textDecoration: 'underline',
 }
 
-const logo = {
-  margin: '0 auto',
-  marginBottom: '15px',
-  width: '100px', // Adjust as needed
-  height: 'auto',
-}
-
 export const ReservationConfirmationEmail = ({
   customerName,
   customerEmail,
@@ -210,139 +200,140 @@ export const ReservationConfirmationEmail = ({
   totalAmount,
   reservationRules,
   reservationDetailUrl,
-  logoUrl,
   locale = 'ja',
 }: ReservationConfirmationEmailProps) => {
   const t = getEmailTemplateTranslations('reservationConfirmation', locale)
   const displayName = customerName || customerEmail
-  
+
   return (
-  <Html>
-    <Head />
-    <Preview>{t.subject.replace('{orgName}', orgName)}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Section style={header}>
-          {logoUrl && <Img src={logoUrl} alt={`${orgName} Logo`} style={logo} />}
-          <Heading style={headerTitle}>{t.title}</Heading>
-        </Section>
-        <Section style={content}>
-          <Text style={text}>{t.greeting.replace('{customerName}', displayName || '')}</Text>
-          <Text style={text}>
-            {t.thankYouMessage.replace('{orgName}', orgName)}
-            <br />
-            {t.confirmationMessage}
-          </Text>
-
-          <Heading as="h2" style={sectionTitle}>
-            {t.reservationDetails}
-          </Heading>
-          <Text style={text}>
-            <strong>{t.shopName}</strong> {orgName}
-            <br />
-            <strong>{t.reservationDateTime}</strong> {reservationDate} {reservationTime}
-            <br />
-            <strong>{t.assignedStaff}</strong> {staffName}
-          </Text>
-
-          {menus && menus.length > 0 && (
-            <>
-              <Heading as="h3" style={{ ...sectionTitle, fontSize: '16px', borderBottom: 'none' }}>
-                {t.selectedMenus}
-              </Heading>
-              {menus.map((menu, index) => (
-                <Section key={`menu-${index}`} style={listItem}>
-                  <Row style={itemDetail}>
-                    <Column style={itemName}>{menu.name}</Column>
-                    <Column style={itemPrice}>¥{menu.price.toLocaleString()}</Column>
-                  </Row>
-                </Section>
-              ))}
-            </>
-          )}
-
-          {options && options.length > 0 && (
-            <>
-              <Heading
-                as="h3"
-                style={{
-                  ...sectionTitle,
-                  fontSize: '16px',
-                  borderBottom: 'none',
-                  marginTop: '15px',
-                }}
-              >
-                {t.selectedOptions}
-              </Heading>
-              {options.map((option, index) => (
-                <Section key={`option-${index}`} style={listItem}>
-                  <Row style={itemDetail}>
-                    <Column style={itemName}>
-                      {option.name}
-                      {option.count > 1 ? ` ×${option.count}` : ''}
-                    </Column>
-                    <Column style={itemPrice}>
-                      ¥{(option.price * option.count).toLocaleString()}
-                    </Column>
-                  </Row>
-                </Section>
-              ))}
-            </>
-          )}
-
-          <Section style={totalSection}>
-            <Row style={totalRow}>
-              <Column style={totalLabel}>{t.subtotal}</Column>
-              <Column style={totalValue}>¥{subtotal.toLocaleString()}</Column>
-            </Row>
-            {pointsUsed && pointsUsed > 0 && (
-              <Row style={totalRow}>
-                <Column style={totalLabel}>{t.pointsUsed}</Column>
-                <Column style={totalValue}>-{pointsUsed.toLocaleString()} P</Column>
-              </Row>
-            )}
-            {couponDiscount && couponDiscount > 0 && (
-              <Row style={totalRow}>
-                <Column style={totalLabel}>{t.couponDiscount}</Column>
-                <Column style={totalValue}>-¥{couponDiscount.toLocaleString()}</Column>
-              </Row>
-            )}
-            <Hr style={{ borderColor: '#cccccc', margin: '10px 0' }} />
-            <Row style={{ ...totalRow, ...grandTotalRow }}>
-              <Column>{t.totalAmount}</Column>
-              <Column style={{ textAlign: 'right' as const }}>
-                ¥{totalAmount.toLocaleString()}
-              </Column>
-            </Row>
+    <Html>
+      <Head />
+      <Preview>{t.subject.replace('{orgName}', orgName)}</Preview>
+      <Body style={main}>
+        <Container style={container}>
+          <Section style={header}>
+            <Heading style={headerTitle}>{t.title}</Heading>
           </Section>
-        </Section>
-
-        <Section style={footer}>
-          <Text style={footerText}>{t.thankYouVisit}</Text>
-          <Text style={{ ...footerText, fontWeight: 'bold' as const }}>{orgName}</Text>
-          <Text style={footerText}>
-            {t.phone}{' '}
-            <Link href={`tel:${orgPhone}`} style={link}>
-              {orgPhone}
-            </Link>
-          </Text>
-          <Text style={footerText}>
-            {t.address} {orgPostalCode} {orgAddress}
-          </Text>
-          {reservationRules && (
-            <Text style={footerText}>
-              <strong>{t.reservationRules}</strong> {reservationRules}
+          <Section style={content}>
+            <Text style={text}>{t.greeting.replace('{customerName}', displayName || '')}</Text>
+            <Text style={text}>
+              {t.thankYouMessage.replace('{orgName}', orgName)}
+              <br />
+              {t.confirmationMessage}
             </Text>
-          )}
-          <Section style={{ textAlign: 'center' as const, marginTop: '20px' }}>
-            <Link href={reservationDetailUrl} style={buttonStyle}>
-              {t.reservationDetailsButton}
-            </Link>
+
+            <Heading as="h2" style={sectionTitle}>
+              {t.reservationDetails}
+            </Heading>
+            <Text style={text}>
+              <strong>{t.shopName}</strong> {orgName}
+              <br />
+              <strong>{t.reservationDateTime}</strong> {reservationDate} {reservationTime}
+              <br />
+              <strong>{t.assignedStaff}</strong> {staffName}
+            </Text>
+
+            {menus && menus.length > 0 && (
+              <>
+                <Heading
+                  as="h3"
+                  style={{ ...sectionTitle, fontSize: '16px', borderBottom: 'none' }}
+                >
+                  {t.selectedMenus}
+                </Heading>
+                {menus.map((menu, index) => (
+                  <Section key={`menu-${index}`} style={listItem}>
+                    <Row style={itemDetail}>
+                      <Column style={itemName}>{menu.name}</Column>
+                      <Column style={itemPrice}>¥{menu.price.toLocaleString()}</Column>
+                    </Row>
+                  </Section>
+                ))}
+              </>
+            )}
+
+            {options && options.length > 0 && (
+              <>
+                <Heading
+                  as="h3"
+                  style={{
+                    ...sectionTitle,
+                    fontSize: '16px',
+                    borderBottom: 'none',
+                    marginTop: '15px',
+                  }}
+                >
+                  {t.selectedOptions}
+                </Heading>
+                {options.map((option, index) => (
+                  <Section key={`option-${index}`} style={listItem}>
+                    <Row style={itemDetail}>
+                      <Column style={itemName}>
+                        {option.name}
+                        {option.count > 1 ? ` ×${option.count}` : ''}
+                      </Column>
+                      <Column style={itemPrice}>
+                        ¥{(option.price * option.count).toLocaleString()}
+                      </Column>
+                    </Row>
+                  </Section>
+                ))}
+              </>
+            )}
+
+            <Section style={totalSection}>
+              <Row style={totalRow}>
+                <Column style={totalLabel}>{t.subtotal}</Column>
+                <Column style={totalValue}>¥{subtotal.toLocaleString()}</Column>
+              </Row>
+              {pointsUsed && pointsUsed > 0 && (
+                <Row style={totalRow}>
+                  <Column style={totalLabel}>{t.pointsUsed}</Column>
+                  <Column style={totalValue}>-{pointsUsed.toLocaleString()} P</Column>
+                </Row>
+              )}
+              {couponDiscount && couponDiscount > 0 && (
+                <Row style={totalRow}>
+                  <Column style={totalLabel}>{t.couponDiscount}</Column>
+                  <Column style={totalValue}>-¥{couponDiscount.toLocaleString()}</Column>
+                </Row>
+              )}
+              <Hr style={{ borderColor: '#cccccc', margin: '10px 0' }} />
+              <Row style={{ ...totalRow, ...grandTotalRow }}>
+                <Column>{t.totalAmount}</Column>
+                <Column style={{ textAlign: 'right' as const }}>
+                  ¥{totalAmount.toLocaleString()}
+                </Column>
+              </Row>
+            </Section>
           </Section>
-        </Section>
-      </Container>
-    </Body>
-  </Html>
+
+          <Section style={footer}>
+            <Text style={footerText}>{t.thankYouVisit}</Text>
+            <Text style={{ ...footerText, fontWeight: 'bold' as const }}>{orgName}</Text>
+            <Text style={footerText}>
+              {t.phone}{' '}
+              <Link href={`tel:${orgPhone}`} style={link}>
+                {orgPhone}
+              </Link>
+            </Text>
+            <Text style={footerText}>
+              {t.address} {orgPostalCode} {orgAddress}
+            </Text>
+            {reservationRules && (
+              <Text style={footerText}>
+                <strong>{t.reservationRules}</strong> {reservationRules}
+              </Text>
+            )}
+            <Section style={{ textAlign: 'center' as const, marginTop: '20px' }}>
+              <Link href={reservationDetailUrl} style={buttonStyle}>
+                {t.reservationDetailsButton}
+              </Link>
+            </Section>
+          </Section>
+        </Container>
+      </Body>
+    </Html>
   )
 }
 

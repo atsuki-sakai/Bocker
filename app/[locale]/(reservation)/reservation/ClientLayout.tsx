@@ -7,7 +7,7 @@ import type { NextFontWithVariable } from 'next/dist/compiled/@next/font'
 import { getCookie } from '@/lib/utils'
 import { Id } from '@/convex/_generated/dataModel'
 import { LOGIN_SESSION_KEY } from '@/services/line/constants'
-import { Processing } from '@/components/common/Processing'
+import { Loading } from '@/components/common'
 import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
 import { motion } from 'framer-motion'
@@ -216,7 +216,7 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
     (pathname.endsWith('/reservation') || pathname.includes('/reservation/auth/callback'))
 
   if (isLoading && !orgId && !tenantId && !isOAuthCallback) {
-    return <Processing />
+    return <Loading />
   }
   if (!orgId || !tenantId) {
     // LINE認証コールバックページの場合は、子コンポーネントに処理を委譲

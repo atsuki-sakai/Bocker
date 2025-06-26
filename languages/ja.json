@@ -173,6 +173,7 @@
       "newPasswordSubtitle": "新しいパスワードを設定してください",
       "newPasswordRequired": "新しいパスワードを入力してください",
       "confirmPasswordPlaceholderNew": "同じパスワードを再入力",
+      "newPasswordPlaceholder": "8文字以上のパスワード",
       "message": {
         "resetPassword": "パスワードリセットメールを送信しました",
         "resetPasswordFailed": "パスワードリセットメールの送信に失敗しました",

@@ -178,6 +178,7 @@
       "emailSentSubtitle": "Enter your email address to receive a verification code",
       "newPasswordSubtitle": "Set a new password",
       "newPasswordRequired": "Please enter a new password",
+      "newPasswordPlaceholder": "Enter new password",
       "confirmPasswordPlaceholderNew": "Re-enter the same password",
       "message": {
         "resetPassword": "Password reset email sent",

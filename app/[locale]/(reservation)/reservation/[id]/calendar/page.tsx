@@ -1001,7 +1001,6 @@ export default function CalendarPage() {
               totalAmount: calculateTotal(),
               reservationRules: organizationComplete.config?.reservation_rules,
               reservationDetailUrl: `${BASE_URL}/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`,
-              logoUrl: organizationComplete.config?.images?.[0]?.thumbnail_url ?? null,
             }
 
             const emailResponse = await fetch('/api/resend', {

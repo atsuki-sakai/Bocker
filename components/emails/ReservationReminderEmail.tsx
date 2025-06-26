@@ -119,27 +119,27 @@ const ReservationReminderEmail: React.FC<ReservationReminderEmailProps> = ({
                 </Row>
               )}
 
-              {extraCharge && extraCharge > 0 && (
+              {(extraCharge ?? 0) > 0 && (
                 <Row style={detailRow}>
                   <Column style={detailLabel}>指名料</Column>
-                  <Column style={detailValue}>¥{extraCharge.toLocaleString()}</Column>
+                  <Column style={detailValue}>¥{(extraCharge ?? 0).toLocaleString()}</Column>
                 </Row>
               )}
 
-              {couponDiscount && couponDiscount > 0 && (
+              {(couponDiscount ?? 0) > 0 && (
                 <Row style={detailRow}>
                   <Column style={detailLabel}>クーポン割引</Column>
                   <Column style={detailValue} color="#FF6B6B">
-                    -¥{couponDiscount.toLocaleString()}
+                    -¥{(couponDiscount ?? 0).toLocaleString()}
                   </Column>
                 </Row>
               )}
 
-              {usePoints && usePoints > 0 && (
+              {(usePoints ?? 0) > 0 && (
                 <Row style={detailRow}>
                   <Column style={detailLabel}>ポイント使用</Column>
                   <Column style={detailValue} color="#FF6B6B">
-                    -{usePoints}pt
+                    -{usePoints ?? 0}pt
                   </Column>
                 </Row>
               )}
