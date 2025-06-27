@@ -145,7 +145,7 @@ if (earnPoints > 0) {
 const reservationId = await createReservationMutation({
   ...reservationData,
   status: 'pending',
-  intended_point_use: usePoints, // 使用予定ポイント
+  use_points: usePoints, // 使用予定ポイント
   pending_duration_minutes: 30, // 30分有効期限
 })
 ```
@@ -223,7 +223,7 @@ if (args.options && args.options.length > 0) {
 // convex/reservation/mutation.ts:201
 const { reservationId } = await createReservationWithDetails(ctx, {
   ...args,
-  intended_point_use: args.intended_point_use || args.use_points,
+  use_points: args.use_points || args.use_points,
   pending_expiry,
 })
 ```
