@@ -120,7 +120,7 @@ export async function handleCheckoutSessionCompleted(
     const customer = customerResult.customer;
     
     // 4. ポイント使用処理（決済成功後に実行）
-    if (reservation.intended_point_use && reservation.intended_point_use > 0) {
+    if (reservationDetail && reservationDetail.use_points && reservationDetail.use_points > 0) {
       const pointTransactionRepo = new PointTransactionRepository(supabaseService);
       
       // ポイント使用履歴を作成
@@ -129,7 +129,7 @@ export async function handleCheckoutSessionCompleted(
         org_id: orgId,
         reservation_id: reservationId,
         customer_id: customerUid,
-        points: -reservation.intended_point_use, // マイナス値で使用を表現
+        points: -reservationDetail.use_points, // マイナス値で使用を表現
         transaction_type: 'used',
         transaction_date_unix: Date.now(),
         description: `予約での使用 (予約ID: ${reservationId})`,
@@ -140,11 +140,11 @@ export async function handleCheckoutSessionCompleted(
         tenantId,
         orgId,
         customerUid,
-        -reservation.intended_point_use,
+        -reservationDetail.use_points,
         new Date().getTime() * 1000
       );
       
-      console.log(`💎 [${eventId}] ポイント使用完了: ${reservation.intended_point_use}pt`, context);
+      console.log(`💎 [${eventId}] ポイント使用完了: ${reservationDetail.use_points}pt`, context);
     }
     
     // 組織情報とAPI設定を取得（通知用）
