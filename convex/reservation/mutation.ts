@@ -8,6 +8,7 @@ import { validateRequired, validateRequiredNumber, validateDateStrToDate } from 
 import { checkAuth } from '@/convex/utils/auth';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
+import { cancelableDeadline } from '@/convex/reservation/reservation.helpers';
 import {
   createReservationWithDetails,
   archiveReservationWithDetails,
@@ -294,7 +295,7 @@ export const update = mutation({
     }
 
     // reservation_idを除外した更新データを作成（予約IDは更新対象外のため除外）
-    // @ts-ignore
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { reservation_id, ...updateData } = args
 
     // 予約本体の更新処理を実行し、データの整合性を保ちながら情報を更新
@@ -374,7 +375,7 @@ export const cancelReservation = mutation({
         .first();
 
       // キャンセル可能期限を計算（デフォルト1日前）
-      const cancelDeadline = reservation.start_time_unix - (orgConfig?.available_cancel_days || 1) * 24 * 60 * 60 * 1000;
+      const cancelDeadline = cancelableDeadline(orgConfig?.available_cancel_days || 1, reservation.start_time_unix);
       
       if (Date.now() > cancelDeadline) {
         throw new ConvexError({
