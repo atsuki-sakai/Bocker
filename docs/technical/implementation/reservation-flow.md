@@ -168,7 +168,7 @@ sequenceDiagram
    **重要**: 
    - `unit_amount`はクーポンとポイント適用後の最終支払額
    - クーポン情報は`reservation_detail`に保存済み
-   - ポイントは`intended_point_use`として保存（決済成功後に実際に使用）
+   - ポイントは`use_points`として保存
 
 3. **決済成功時の処理** (`services/webhook/stripe/handlers.checkout.ts - handleCheckoutSessionCompleted`)
    - 予約ステータスを`confirmed`に更新
@@ -320,7 +320,7 @@ const calculateTotalPrice = () => {
   coupon_discount: 500,  // 計算済みの割引額
   
   // ポイント関連（クレジットカード決済の場合）
-  intended_point_use: 300,  // 使用予定ポイント（決済成功後に実際に使用）
+  use_points: 300,  
   
   // 最終金額
   total_price: 4200,  // クーポン・ポイント適用後の金額
@@ -429,7 +429,7 @@ args: {
 
 ```typescript
 // services/webhook/stripe/handlers.checkout.ts
-if (reservation.intended_point_use && reservation.intended_point_use > 0) {
+if (reservation.use_points && reservation.use_points > 0) {
   const pointTransactionRepo = new PointTransactionRepository(supabaseService);
   
   // ポイント使用履歴を作成
@@ -438,7 +438,7 @@ if (reservation.intended_point_use && reservation.intended_point_use > 0) {
     org_id: orgId,
     reservation_id: reservationId,
     customer_id: customerUid,
-    points: -reservation.intended_point_use,
+    points: -reservation.use_points,
     transaction_type: 'used',
     transaction_date_unix: Date.now(),
     description: `予約での使用 (予約ID: ${reservationId})`,
@@ -449,7 +449,7 @@ if (reservation.intended_point_use && reservation.intended_point_use > 0) {
     tenantId,
     orgId,
     customerUid,
-    -reservation.intended_point_use,
+    -reservation.use_points,
     new Date().getTime() * 1000
   );
 }
