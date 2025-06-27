@@ -679,15 +679,19 @@ const reservationSchema = z.object({
 // 予約作成時
 const reservationData = {
   use_points: 0, // 即座には使用しない
-  intended_point_use: usePoints, // 使用予定を記録
+  use_points: usePoints, // 使用予定を記録
   pending_duration_minutes: 30, // 有効期限設定
 };
 
 // Stripe Webhook（決済成功時）
-if (reservation.intended_point_use > 0) {
+if (reservation.use_points > 0) {
   // 実際にポイントを使用
   await pointTransactionRepo.create({
-    points: -reservation.intended_point_use,
+    points: -reservation.use_points,
+    reservation_id: reservation._id,
+    customer_id: reservation.customer_id,
+    tenant_id: reservation.tenant_id,
+    org_id: reservation.org_id,
     transaction_type: 'used',
   });
 }
@@ -774,7 +778,7 @@ await retryPaymentMutation({
 
 ### 7.4 実装チェックリスト
 
-- [x] Convexスキーマに `intended_point_use` と `pending_expiry` フィールドを追加
+- [x] Convexスキーマに`pending_expiry` フィールドを追加
 - [x] `option_stock_hold` テーブルを作成
 - [x] 在庫管理を仮押さえ方式に変更
 - [x] Stripe Webhook handlerでポイント使用処理を実装
@@ -792,9 +796,7 @@ await retryPaymentMutation({
 2. **在庫数が正しくない**
    - `option_stock_hold` テーブルで仮押さえ状態を確認
    - 期限切れの仮押さえが解放されているか確認
-
-3. **ポイントが二重に使用される**
-   - `intended_point_use` と `use_points` の値を確認
+3.
    - Webhook処理が重複実行されていないか確認
 
 ---
