@@ -7,6 +7,6 @@ export const findByTenantAndOrg = query({
     org_id: v.id('organization'),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.query('point_config').withIndex('by_tenant_org_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)).first()
+    return await ctx.db.query('point_config').withIndex('by_tenant_org_active_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', true).eq('is_archive', false)).first()
   },
 });
