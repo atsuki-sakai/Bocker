@@ -377,8 +377,7 @@ export default function CalendarPage() {
         })),
         options: countOptionOccurrences(selectedOptions),
         extra_charge: selectedStaffCompleted.staff.extra_charge || 0,
-        use_points: 0, // 決済成功後に使用
-        intended_point_use: usePoints, // 使用予定ポイントを記録
+        use_points: usePoints,
         coupon_discount: appliedDiscount.discount || undefined,
         featured_hair_images: [],
         notes: notes,
@@ -721,7 +720,7 @@ export default function CalendarPage() {
         const reservationDataForCash = {
           ...reservationBaseData,
           status: 'confirmed' as ReservationStatus,
-          intended_point_use: 0, // 現金決済は即座にポイント使用
+          // intended_point_use: 0, // 現金決済は即座にポイント使用
         }
 
         let reservationId: Id<'reservation'> | null = null
