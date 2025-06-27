@@ -3,7 +3,7 @@ import { ImageDirectory, ImageQuality } from "./types";
 import { v4 as uuidv4 } from 'uuid';
 import { Id } from "@/convex/_generated/dataModel";
 import { STORAGE_URL } from "./constants";
-import { getEnv } from '@/lib/env-config'
+import { getAppUrl, getEnv } from '@/lib/env-config'
 /**
  * GCS URLをCDN URLに変換する（クライアントサイド版）
  * @param gcsUrl - GCSの直接URL（例: https://storage.googleapis.com/bucket/path/to/image.webp）
@@ -107,8 +107,8 @@ function sanitizeFileName(fileName: string, preferredExt: string = '.webp'): str
  */
 function isLowMemoryDevice(): boolean {
   // navigator.deviceMemoryがサポートされている場合は使用（GB単位）
-  if ('deviceMemory' in navigator && typeof (navigator as any).deviceMemory === 'number') {
-    return (navigator as any).deviceMemory <= 4; // 4GB以下は低メモリ端末と判定（より安全な閾値）
+  if ('deviceMemory' in navigator && typeof (navigator).deviceMemory === 'number') {
+    return (navigator).deviceMemory <= 4; // 4GB以下は低メモリ端末と判定（より安全な閾値）
   }
   
   // User Agentベースの推定（フォールバック）
@@ -167,7 +167,7 @@ export async function compressAndCropImage(
     typeof OffscreenCanvas !== 'undefined' &&
     typeof createImageBitmap === 'function' &&
     // 型定義に convertToBlob がまだ無い場合があるため any キャスト
-    (OffscreenCanvas.prototype as any).convertToBlob !== undefined;
+    (OffscreenCanvas.prototype).convertToBlob !== undefined;
 
   // 低メモリ端末の場合は強制的にフォールバックを使用
   const useOffscreenPath = supportsOffscreen && !isLowMemory;
@@ -175,7 +175,6 @@ export async function compressAndCropImage(
 
   // --- 画像の向きは変更しない方針 ---------------------------------------
   // Exif の Orientation タグを読まず、常に 0° で描画する
-  const rotation = 0;
 
   // ========================================================================
   // 1) OffscreenCanvas パス  (iOS 17+ / 最新ブラウザ)
@@ -227,7 +226,7 @@ export async function compressAndCropImage(
       ctx.drawImage(bitmap, left, top, cropWidth, cropHeight, 0, 0, outW, outH);
 
       // ----- 画像エンコード ---------------------------------------------------
-      const blob: Blob = await (off as any).convertToBlob({ type: mime, quality: effectiveQuality });
+      const blob: Blob = await (off).convertToBlob({ type: mime, quality: effectiveQuality });
       console.log('[画像圧縮] OffscreenCanvas圧縮完了:', { originalSize: file.size, compressedSize: blob.size });
       
       return new File([blob], sanitizeFileName(file.name, ext), { type: mime });
@@ -373,7 +372,7 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
         directory,
         aspectType,
         quality,
-        currentOrigin: typeof window !== 'undefined' ? window.location.origin : 'サーバーサイド',
+        currentOrigin: typeof window !== 'undefined' ? getAppUrl() : 'サーバーサイド',
         currentHostname: typeof window !== 'undefined' ? window.location.hostname : 'サーバーサイド'
     })
     
