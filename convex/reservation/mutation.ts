@@ -102,7 +102,6 @@ export const create = mutation({
     featured_hair_images: v.array(imageType), // フィーチャー画像
     notes: v.optional(v.string()), // メモ
     // 決済失敗対策用フィールド
-    intended_point_use: v.optional(v.number()), // 使用予定ポイント（決済成功後に実際に使用）
     pending_duration_minutes: v.optional(v.number()), // pending状態の有効期限（分）
   },
   handler: async (ctx, args) => {
@@ -201,7 +200,7 @@ export const create = mutation({
     // 予約本体と詳細情報を一括で作成する共通ヘルパーを呼び出すことで、データの整合性を確保しつつ効率的に処理
     const { reservationId } = await createReservationWithDetails(ctx, {
       ...args,
-      intended_point_use: args.intended_point_use || args.use_points,
+      use_points: args.use_points,
       pending_expiry,
     });
     return reservationId;
