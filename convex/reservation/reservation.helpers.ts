@@ -172,7 +172,6 @@ export async function createReservationWithDetails(
     coupon_discount?: number;
     featured_hair_images: ImageType[];
     notes?: string;
-    intended_point_use?: number;
     pending_expiry?: number;
   }
 ) {
@@ -190,7 +189,6 @@ export async function createReservationWithDetails(
     date: args.date,
     start_time_unix: args.start_time_unix,
     end_time_unix: args.end_time_unix,
-    intended_point_use: args.intended_point_use,
     pending_expiry: args.pending_expiry,
     reminder_sent: false, // リマインダー送信フラグの初期値
   });
