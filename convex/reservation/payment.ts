@@ -43,7 +43,10 @@ export const confirmPayment = mutation({
     });
 
     // ポイント使用処理
-    if (reservation.intended_point_use && reservation.intended_point_use > 0) {
+    const reservationDetail = await ctx.db.query('reservation_detail').withIndex('by_reservation_archive', (q) =>
+      q.eq('reservation_id', reservation_id).eq('is_archive', false)
+    ).first();
+    if (reservationDetail && reservationDetail.use_points && reservationDetail.use_points > 0) {
       // ポイント使用処理はSupabase側で行う（API経由）
       // ここではフラグ管理のみ
       const detail = await ctx.db
@@ -55,7 +58,7 @@ export const confirmPayment = mutation({
       
       if (detail) {
         await updateRecord(ctx, detail._id, {
-          use_points: reservation.intended_point_use,
+          use_points: reservationDetail.use_points,
         });
       }
     }
