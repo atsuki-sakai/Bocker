@@ -25,7 +25,7 @@ export const stripeCheckoutSchema = z.object({
   reservationId: convexIdSchema,
   tenantId: convexIdSchema,
   orgId: convexIdSchema,
-  customerEmail: z.string().email(),
+  customerEmail: z.string().email().optional(),
   lineItems: z.array(z.object({
     price_data: z.object({
       unit_amount: z.number().int().positive(),
