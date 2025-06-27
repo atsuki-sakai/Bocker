@@ -58,7 +58,6 @@ export const create = mutation({
       status: args.payment_method === 'cash' ? 'confirmed' : 'pending',
       payment_status: args.payment_method === 'cash' ? 'pending' : 'pending',
       pending_expiry: Date.now() + 30 * 60 * 1000, // 30分
-      intended_point_use: args.usePoints || 0, // ポイントは決済成功後に使用
     };
 
     const reservationId = await ctx.db.insert('reservation', reservation);
@@ -118,15 +117,15 @@ export async function handleCheckoutSessionCompleted(event: Stripe.Event) {
     stripe_payment_intent_id: session.payment_intent,
   });
 
-  // 2. ポイント使用処理（intended_point_useを実際に使用）
+  // 2. ポイント使用処理（use_pointがtrueの場合を実際に使用）
   const reservation = await fetchQuery(api.reservation.query.getById, { 
     reservationId 
   });
   
-  if (reservation.intended_point_use > 0) {
+  if (reservation.use_points > 0) {
     await pointTransactionRepo.create({
       customer_id: customerUid,
-      points: -reservation.intended_point_use,
+      points: -reservation.use_points,
       transaction_type: 'used',
       reservation_id: reservationId,
     });
