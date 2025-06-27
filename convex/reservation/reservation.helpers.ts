@@ -283,4 +283,10 @@ export async function deleteReservationWithDetails(
   return true;
 }
 
-
+export function cancelableDeadline(availableCancelDays: number, start_time_unix: number) {
+    const MS_PER_DAY = 86_400_000 // 24 * 60 * 60 * 1000 1日のミリ秒
+    // 予約日の 0:00を取得
+    const reservationMidnight = new Date(start_time_unix).setHours(0, 0, 0, 0)
+    // (n-1) 日分をミリ秒で前倒し
+    return reservationMidnight - (availableCancelDays - 1) * MS_PER_DAY
+}
