@@ -263,8 +263,8 @@ await ctx.db.patch(optionId, {
 | **CONFIRM (決済成功)** |
 | 1 | Convex | `reservation` | patch | `_id` | `status:confirmed`<br>`payment_status:paid` | `confirmReservationCore` |
 | 2 | Convex | `option_stock_hold` *(将来)* | patch → delete |  | `status:confirmed` | |
-| 3 | Supabase | `point_transaction` | insert | `id` | `points:-intended_point_use` | **if** intended_point_use>0 |
-| 4 | Supabase | `customer_points` | update | `uid` | `total_points - intended_point_use` | |
+| 3 | Supabase | `point_transaction` | insert | `id` | `points:-use_points` | **if** use_points>0 |
+| 4 | Supabase | `customer_points` | update | `uid` | `total_points - use_points` | |
 | 5 | Supabase | `coupon_transaction` | insert | `id` | `discount_amount` | **if** coupon_discount>0 |
 | 6 | Supabase | `carte.ltv_price` | update | `id` | `+ total_price` | |
 | 7 | Supabase | `point_task_queue` | insert | `id` | `points: earnPoints`<br>`scheduled_for_unix: +30d` | **if** earnPoints>0 |
@@ -376,7 +376,7 @@ export interface CreateArgs {
   extra_charge?: number;
   coupon_id?: Id<"coupon">;
   coupon_discount?: number;
-  intended_point_use?: number;
+  use_points?: number;
 }
 
 export async function createReservationCore(ctx: Ctx, p: CreateArgs) {
@@ -422,7 +422,7 @@ export async function createReservationCore(ctx: Ctx, p: CreateArgs) {
       p.payment_method === "credit_card"
         ? Date.now() + 30 * 60 * 1000
         : undefined,
-    intended_point_use: p.intended_point_use ?? 0,
+    use_points: p.use_points ?? 0,
     _creationTime: Date.now(),
   });
 
@@ -504,18 +504,18 @@ export async function updateStatusCore(ctx: Ctx, { reservationId, status }: { re
 
 ```ts
 if (mode === "confirm" && coreResult) {
-  if (detail.intended_point_use > 0) {
+  if (detail.use_points > 0) {
     await trx.from("point_transaction").insert({
       tenant_id: detail.tenant_id,
       org_id: detail.org_id,
       reservation_id: detail.reservation_id,
       customer_id: customerUid,
-      points: -detail.intended_point_use,
+      points: -detail.use_points,
       transaction_type: "used",
       transaction_date_unix: Date.now(),
     });
     await trx.from("customer_points").update({
-      total_points: trx.raw("total_points - ?", [detail.intended_point_use]),
+      total_points: trx.raw("total_points - ?", [detail.use_points]),
     }).eq("customer_uid", customerUid);
   }
 }
