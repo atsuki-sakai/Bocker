@@ -700,7 +700,6 @@ const reservation = defineTable({
   start_time_unix: v.number(), // 予約開始時間
   end_time_unix: v.number(), // 予約終了時間
   // 決済失敗対策用フィールド
-  intended_point_use: v.optional(v.number()), // 使用予定ポイント（決済成功後に実際に使用）
   pending_expiry: v.optional(v.number()), // pending状態の有効期限（Unix timestamp）
   // キャンセル情報
   cancelled_at: v.optional(v.number()), // キャンセル日時（Unix timestamp）
@@ -783,7 +782,7 @@ const point_config = defineTable({
   point_expiration_days: v.optional(v.number()),
   ...CommonFields,
 })
-.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']);
+.index('by_tenant_org_active_archive', ['tenant_id', 'org_id', 'is_active', 'is_archive']);
 
 
 
