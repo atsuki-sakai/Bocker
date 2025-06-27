@@ -1,5 +1,6 @@
 import type { Message } from '@line/bot-sdk'
 import type { Doc } from '@/convex/_generated/dataModel'
+import { getAppUrl } from '@/lib/env-config'
 
 export interface SalonReservationNotificationParams {
   organization: Doc<'organization'>
@@ -177,7 +178,6 @@ export const createSalonReservationNotification = ({
     altText: `${organization.org_name}に新しい予約が入りました`,
     contents: {
       type: 'bubble',
-      size: 'giga',
       hero: {
         type: 'box',
         layout: 'vertical',
@@ -199,23 +199,24 @@ export const createSalonReservationNotification = ({
             margin: 'sm',
           },
         ],
-        backgroundColor: '#2B664DFF',
+        backgroundColor: '#06d755',
         paddingAll: '20px',
       },
       body: {
         type: 'box',
         layout: 'vertical',
         contents: [
-          // 予約基本情報
           {
             type: 'button',
             action: {
               type: 'uri',
               label: '予約詳細を確認',
-              uri: `${window.location.origin}/dashboard/reservation/${reservation._id}`,
+              uri: `${getAppUrl()}/dashboard/reservation/${reservation._id}`,
             },
             style: 'primary',
+            margin: 'md',
           },
+          // 予約基本情報
           {
             type: 'box',
             layout: 'vertical',
@@ -276,7 +277,6 @@ export const createSalonReservationNotification = ({
                 ],
                 margin: 'sm',
               },
-              
               {
                 type: 'box',
                 layout: 'horizontal',
@@ -290,7 +290,7 @@ export const createSalonReservationNotification = ({
                   },
                   {
                     type: 'text',
-                    text: reservation.staff_name + " " + (reservationDetail.extra_charge ? `（¥${reservationDetail.extra_charge.toLocaleString()}）` : ''),
+                    text: reservation.staff_name,
                     size: 'sm',
                     color: '#333333',
                     weight: 'bold',
@@ -414,7 +414,7 @@ export const createSalonReservationNotification = ({
             ],
           }] : []),
         ],
-        paddingAll: '20px',
+        paddingAll: '28px',
       },
       footer: {
         type: 'box',
@@ -436,7 +436,7 @@ export const createSalonReservationNotification = ({
             margin: 'xs',
           },
         ],
-        paddingAll: '10px',
+        paddingAll: '20px',
       },
     },
   }
