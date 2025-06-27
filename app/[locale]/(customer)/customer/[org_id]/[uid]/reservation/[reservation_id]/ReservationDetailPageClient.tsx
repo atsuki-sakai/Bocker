@@ -18,6 +18,7 @@ import { ReservationRepository } from '@/services/supabase/repositories/reservat
 import type { RowType } from '@/services/supabase/SupabaseService'
 import type { IntegratedReservation } from '@/hooks/useIntegratedReservations'
 import { toast } from 'sonner'
+import { cancelableDeadline } from '@/convex/reservation/reservation.helpers'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -312,7 +313,7 @@ export function ReservationDetailPageClient({
 
     const now = Date.now()
     const availableCancelDays = reservationConfig?.available_cancel_days || 1
-    const cancelDeadline = reservationData.startTimeUnix - availableCancelDays * 24 * 60 * 60 * 1000
+    const cancelDeadline = cancelableDeadline(availableCancelDays, reservationData.startTimeUnix)
 
     if (now > cancelDeadline) {
       return {
