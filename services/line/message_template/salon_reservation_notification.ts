@@ -210,11 +210,12 @@ export const createSalonReservationNotification = ({
             type: 'button',
             action: {
               type: 'uri',
-              label: '予約詳細を確認',
+              label: '予　約　詳　細　を　確　認',
               uri: `${getAppUrl()}/dashboard/reservation/${reservation._id}`,
             },
             style: 'primary',
             margin: 'md',
+            height: 'md',
           },
           // 予約基本情報
           {
@@ -414,7 +415,8 @@ export const createSalonReservationNotification = ({
             ],
           }] : []),
         ],
-        paddingAll: '28px',
+        paddingAll: '20px',
+        spacing: 'md',
       },
       footer: {
         type: 'box',
