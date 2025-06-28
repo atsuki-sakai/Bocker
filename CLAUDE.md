@@ -6,6 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Bocker（ブッカー）は美容サロン向けの予約・顧客管理SaaSプラットフォームです。マルチテナント設計で、サロンオーナー・スタッフが効率的に予約管理や顧客管理を行えるよう設計されています。
 
+
+  1. 不明な点は「わからない」と正直に言う
+  2. 推測や嘘は一切しない
+  3. 実際に確認してから回答する
+  4. 事実のみを報告する
+
+  
 ## 本番環境と開発環境について
 
 本番環境URL: https://bocker.jp
