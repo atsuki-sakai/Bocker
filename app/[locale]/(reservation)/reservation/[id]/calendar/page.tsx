@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { api } from '@/convex/_generated/api'
 import { convertDayOfWeekToJa } from '@/lib/schedules'
 import { fetchQuery } from 'convex/nextjs'
+import { useMutation } from 'convex/react'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
 import { Label } from '@/components/ui/label'
@@ -16,9 +17,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import Image from 'next/image'
 import { ReservationPaymentStatus } from '@/convex/types'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
-// import { PointTaskQueueRepository } from '@/services/supabase/repositories'
-import { CarteRepository } from '@/services/supabase/repositories/carte/CarteRepository'
-import { CarteDetailRepository } from '@/services/supabase/repositories/carte/CarteDetailRepository'
 import { formatDateToYYYYMMDD } from '@/lib/formatDate'
 import { BASE_URL } from '@/lib/constants'
 
@@ -50,7 +48,6 @@ import { useLiff } from '@/hooks/useLiff'
 import { ModeToggle } from '@/components/common'
 import { PaymentMethod, ReservationStatus } from '@/convex/types'
 import type { TimeRange } from '@/lib/types'
-import { useMutation } from 'convex/react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
@@ -176,8 +173,8 @@ export default function CalendarPage() {
   // STATES
   const customerRepository = useMemo(() => new CustomerRepository(), [])
   // const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
-  const carteRepository = useMemo(() => new CarteRepository(), [])
-  const carteDetailRepository = useMemo(() => new CarteDetailRepository(), [])
+  // const carteRepository = useMemo(() => new CarteRepository(), [])
+  // const carteDetailRepository = useMemo(() => new CarteDetailRepository(), [])
   const [sessionCustomer, setSessionCustomer] = useState<SessionPayload | null>(null)
   const [customerPhone, setCustomerPhone] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<{
@@ -243,8 +240,7 @@ export default function CalendarPage() {
       : 'skip'
   )
   // Convex mutations
-  const createReservationMutation = useMutation(api.reservation.mutation.create)
-  const balanceStockMutation = useMutation(api.option.mutation.balanceStock)
+  const handleReservationManage = useMutation(api.reservation.manage.handleReservationManage)
 
   // ステップ変更時に画面トップへ自動スクロール
   useEffect(() => {
@@ -352,8 +348,8 @@ export default function CalendarPage() {
     try {
       // 予約データを準備 (status: 'pending' で作成)
       const reservationData = {
-        org_id: organizationComplete.organization._id as Id<'organization'>,
         tenant_id: sessionCustomer.tenantId,
+        org_id: organizationComplete.organization._id as Id<'organization'>,
         customer_id: sessionCustomer.customerUid,
         staff_id: selectedStaffCompleted.staff._id as Id<'staff'>,
         customer_name: sessionCustomer.email
@@ -385,51 +381,17 @@ export default function CalendarPage() {
       }
 
       // 1. Convexに予約データを'pending'ステータスで作成
-      let reservationId: Id<'reservation'> | null = null
+      let result: {
+        reservationId: Id<'reservation'>
+        status?: ReservationStatus
+        payment_method?: PaymentMethod
+        checkout_url?: string
+      } | null = null
       try {
-        reservationId = await createReservationMutation(reservationData)
-
-        // カルテのUpsert処理（クレジットカード決済時）
-        try {
-          // 顧客データが存在することを確認
-          if (!customerData?.customer?.uid) {
-            console.warn('[CalendarPage] Customer data not found, skipping carte creation')
-          } else {
-            // カルテを取得または作成
-            const carte = await carteRepository.findOrCreateByCustomer(
-              sessionCustomer.tenantId,
-              organizationComplete.organization._id as Id<'organization'>,
-              customerData.customer.uid,
-              { ltv_price: 0 }
-            )
-
-            // カルテ詳細を作成
-            await carteDetailRepository.createCarteDetail({
-              tenant_id: sessionCustomer.tenantId,
-              org_id: organizationComplete.organization._id as Id<'organization'>,
-              carte_id: carte.id,
-              reservation_id: reservationId, // Convex で作成された予約ID
-              staff_id: reservationData.staff_id,
-              staff_name: reservationData.staff_name, // スタッフ名を追加
-              service_start_time: reservationData.start_time_unix
-                ? new Date(reservationData.start_time_unix).toISOString()
-                : undefined, // 施術開始時間を追加
-              menu_details: reservationData.menus,
-              option_details: reservationData.options,
-              total_price: reservationData.total_price,
-              customer_requests: notes, // 顧客のリクエスト（メモ欄）
-              notes: '', // スタッフメモは空で初期化
-              after_images: null, // 施術後画像は後で追加
-            })
-
-            console.log(
-              `[CalendarPage] Created carte and carte_detail for customer ${sessionCustomer.customerUid}`
-            )
-          }
-        } catch (carteError) {
-          console.error('[CalendarPage] Error creating carte:', carteError)
-          // カルテ作成に失敗してもユーザーにはエラーを表示しない（予約は既に作成済み）
-        }
+        result = await handleReservationManage({
+          mode: 'create',
+          payload: reservationData,
+        })
       } catch (error) {
         // 重複予約エラーの場合
         const errorData = error as {
@@ -455,39 +417,11 @@ export default function CalendarPage() {
         throw error
       }
 
-      // 楽観的アプローチ: 在庫は予約作成時に即座に減算されるため、ここでの処理は不要
-
-      // ポイントは決済成功後に使用されるため、ここでは処理しない
-      if (usePoints > 0) {
-        console.log(`決済成功後に${usePoints}ポイントが使用されます`)
+      if (!result?.reservationId) {
+        throw new Error('予約の作成に失敗しました。')
       }
 
-      // 顧客情報を更新（電話番号、最終予約日、予約回数）
-      if (customerData?.customer) {
-        const updatedCustomerData = {
-          phone: customerPhone || customerData.customer.phone,
-          email: customerData.customer.email,
-          first_name: customerData.customer.first_name,
-          last_name: customerData.customer.last_name,
-          line_id: customerData.customer.line_id,
-          line_user_name: customerData.customer.line_user_name,
-          last_reservation_date_unix: Math.floor(reservationStartDateTime.getTime() / 1000),
-          total_reservation_count: (customerData.customer.total_reservation_count || 0) + 1,
-        }
-
-        try {
-          await customerRepository.updateCustomer(
-            customerData.customer.uid,
-            sessionCustomer.tenantId,
-            organizationComplete.organization._id as Id<'organization'>,
-            updatedCustomerData
-          )
-          console.log('顧客情報を更新しました')
-        } catch (error) {
-          console.error('顧客情報の更新に失敗しました:', error)
-          // エラーでも予約処理は継続
-        }
-      }
+      const reservationId = result.reservationId
 
       // 2. Stripe Checkoutセッションを作成するためのlineItemsを準備
       // 各アイテムの unit_amount には、独自システムで計算した割引適用後の価格を設定する
@@ -646,18 +580,13 @@ export default function CalendarPage() {
     setIsProcessingPayment(true)
 
     try {
-      // 顧客情報を更新（電話番号、最終予約日、予約回数）
+      // 顧客情報を更新（電話番号, email）
       if (customerData?.customer) {
         const updatedCustomerData = {
           phone: customerPhone || customerData.customer.phone,
           email: customerData.customer.email,
-          first_name: customerData.customer.first_name,
-          last_name: customerData.customer.last_name,
           line_id: customerData.customer.line_id,
           line_user_name: customerData.customer.line_user_name,
-          // FIXME: これは予約が完了した時におこなうべき
-          // last_reservation_date_unix: Math.floor(reservationStartDateTime.getTime() / 1000),
-          // total_reservation_count: (customerData.customer.total_reservation_count || 0) + 1,
         }
 
         try {
@@ -673,6 +602,7 @@ export default function CalendarPage() {
           // エラーでも予約処理は継続
         }
       }
+
       // 予約データを準備 (handleConfirmReservation内ではstatusをまだ設定しない)
       const reservationBaseData = {
         org_id: organizationComplete.organization._id as Id<'organization'>,
@@ -716,179 +646,22 @@ export default function CalendarPage() {
           setIsProcessingPayment(false)
         }
       } else if (selectedPaymentMethod === 'cash') {
-        // 1. Convexに予約データを'confirmed'ステータスで作成（現金決済はすぐに予約受付）
+        // 1. Convexに予約データを'confirmed'ステータスで作成（現金決済は予約を確定する）
         const reservationDataForCash = {
           ...reservationBaseData,
           status: 'confirmed' as ReservationStatus,
-          // intended_point_use: 0, // 現金決済は即座にポイント使用
         }
 
-        let reservationId: Id<'reservation'> | null = null
-        try {
-          reservationId = await createReservationMutation(reservationDataForCash)
+        const result = await handleReservationManage({
+          mode: 'create',
+          payload: reservationDataForCash,
+        })
 
-          // カルテのUpsert処理（現金決済時）
-          try {
-            // 顧客データが存在することを確認
-            if (!customerData?.customer?.uid) {
-              console.warn('[CalendarPage] Customer data not found, skipping carte creation')
-            } else {
-              // カルテを取得または作成
-              const carte = await carteRepository.findOrCreateByCustomer(
-                sessionCustomer.tenantId,
-                organizationComplete.organization._id as Id<'organization'>,
-                customerData.customer.uid,
-                { ltv_price: 0 }
-              )
-
-              // 既存のLTV価格に今回の合計金額を加算　// FIXME: これは予約が完了した時におこなうべき
-              // const newLtvPrice = (carte.ltv_price || 0) + reservationDataForCash.total_price
-              // await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
-
-              // カルテ詳細を作成
-              await carteDetailRepository.createCarteDetail({
-                tenant_id: sessionCustomer.tenantId,
-                org_id: organizationComplete.organization._id as Id<'organization'>,
-                carte_id: carte.id,
-                reservation_id: reservationId, // Convex で作成された予約ID
-                staff_id: reservationDataForCash.staff_id,
-                staff_name: reservationDataForCash.staff_name, // スタッフ名を追加
-                service_start_time: reservationDataForCash.start_time_unix
-                  ? new Date(reservationDataForCash.start_time_unix).toISOString()
-                  : undefined, // 施術開始時間を追加（Unix時間はミリ秒単位）
-                menu_details: reservationDataForCash.menus,
-                option_details: reservationDataForCash.options,
-                total_price: reservationDataForCash.total_price,
-                customer_requests: notes, // 顧客のリクエスト（メモ欄）
-                notes: '', // スタッフメモは空で初期化
-                after_images: null, // 施術後画像は後で追加
-              })
-
-              console.log(
-                `[CalendarPage] Created carte and carte_detail for customer ${sessionCustomer.customerUid}`
-              )
-            }
-          } catch (carteError) {
-            console.error('[CalendarPage] Error creating carte:', carteError)
-            // カルテ作成に失敗してもユーザーにはエラーを表示しない（予約は既に作成済み）
-          }
-        } catch (error) {
-          setIsProcessingPayment(false)
-
-          // 重複予約エラーの場合
-          const errorData = error as {
-            data?: {
-              code?: string
-              statusCode?: number
-              severity?: string
-              callFunc?: string
-              message?: string
-            }
-          }
-          if (errorData?.data?.code === 'CONFLICT' || errorData?.data?.statusCode === 409) {
-            toast.error(
-              '申し訳ございません。選択された時間帯は既に予約済みです。別の時間帯を選択してください。'
-            )
-
-            // 日時選択ステップに戻る（空き時間は自動的に再取得される）
-            setCurrentStep('date')
-            return
-          }
-
-          // その他のエラー
-          showErrorToast(error)
-          return
+        if (!result?.reservationId) {
+          throw new Error('予約の作成に失敗しました。')
         }
 
-        // オプション在庫数の調整（現金決済は即座に在庫を減らす）
-        const optionCounts = countOptionOccurrences(selectedOptions)
-        for (const { id, quantity } of optionCounts) {
-          // 選択されたオプションから対象のオプション情報を取得
-          const option = selectedOptions.find((opt) => opt._id === id)
-          if (option && option.in_stock !== undefined && option.in_stock !== null && quantity > 0) {
-            // 現在の在庫数から使用数を減算
-            try {
-              await balanceStockMutation({
-                option_id: id,
-                quantity: -quantity, // 負の値で減算
-              })
-              console.log(`オプション「${option.name}」の在庫を${quantity}個減らしました`)
-            } catch (error) {
-              console.error(`オプション在庫の更新に失敗しました: ${error}`)
-            }
-          }
-        }
-
-        setIsProcessingPayment(false)
-
-        // ポイントを利用していれば、アトミックポイント更新
-        if (pointConfig?.is_active && usePoints && usePoints > 0 && customerData?.customer?.uid) {
-          try {
-            // Supabaseでアトミックポイント更新を実行
-            const result = await customerRepository.updatePointsAtomic(
-              sessionCustomer.customerUid,
-              sessionCustomer.tenantId,
-              organizationComplete.organization._id as Id<'organization'>,
-              -usePoints, // 使用は負の値
-              'used',
-              'ポイント使用による割引',
-              reservationId
-            )
-            console.log('ポイント使用処理が完了しました:', result)
-          } catch (error) {
-            console.error('ポイント処理でエラーが発生しました:', error)
-            // ポイント処理のエラーは予約を妨げないようにする
-          }
-        }
-
-        // クーポンを利用していれば、クーポントランザクションを作成
-        if (
-          appliedDiscount.couponId &&
-          appliedDiscount.discount > 0 &&
-          customerData?.customer?.uid
-        ) {
-          console.log('[CalendarPage] Creating coupon transaction:', {
-            couponId: appliedDiscount.couponId,
-            discount: appliedDiscount.discount,
-            customerId: customerData.customer.uid,
-            reservationId,
-          })
-
-          try {
-            // APIエンドポイントを呼び出してクーポントランザクションを作成
-            const response = await fetch('/api/coupon/create-transaction', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                tenant_id: sessionCustomer.tenantId,
-                org_id: organizationComplete.organization._id as Id<'organization'>,
-                coupon_id: appliedDiscount.couponId,
-                customer_id: customerData.customer.uid,
-                reservation_id: reservationId!,
-                discount_amount: appliedDiscount.discount,
-              }),
-            })
-
-            if (!response.ok) {
-              const errorData = await response.json()
-              throw new Error(errorData.message || 'Failed to create coupon transaction')
-            }
-
-            const result = await response.json()
-            console.log('[CalendarPage] クーポン利用履歴を作成しました:', result.data)
-          } catch (error) {
-            console.error('[CalendarPage] クーポン利用履歴の作成でエラーが発生しました:', error)
-            // クーポン履歴のエラーは予約を妨げないようにする
-          }
-        } else {
-          console.log('[CalendarPage] Skipping coupon transaction creation:', {
-            hasCouponId: !!appliedDiscount.couponId,
-            discount: appliedDiscount.discount,
-            hasCustomerUid: !!customerData?.customer?.uid,
-          })
-        }
+        const reservationId = result.reservationId
 
         if (sessionCustomer.lineUserId && organizationComplete.config) {
           // Lineにメッセージ予約の確認用Flexメッセージを作成
@@ -1073,72 +846,6 @@ export default function CalendarPage() {
             `/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`
           )
         }
-
-        // FIXME: これは予約が完了した時におこなうべき
-        // ポイントを付与するqueueを作成
-        // if (sessionCustomer?.customerUid && pointConfig && pointConfig.is_active) {
-        //   // ポイント計算（割引前金額で計算）
-        //   const calculateEarnedPoints = (
-        //     menus: Doc<'menu'>[],
-        //     options: Doc<'option'>[],
-        //     extraCharge: number = 0
-        //   ) => {
-        //     // 1. ベース金額計算（クーポン割引前、税込金額）
-        //     const baseAmount =
-        //       menus.reduce((sum, menu) => {
-        //         return sum + (menu.sale_price || menu.unit_price)
-        //       }, 0) + extraCharge
-
-        //     // 2. オプション金額追加
-        //     const optionAmount = options.reduce((sum, option) => {
-        //       return sum + (option.sale_price || option.unit_price)
-        //     }, 0)
-
-        //     // 3. 税込み総額（クーポン・ポイント使用前）
-        //     const totalAmount = baseAmount + optionAmount
-
-        //     // 4. ポイント計算（割引前金額で計算）
-        //     const earnedPoints = pointConfig.is_fixed_point
-        //       ? pointConfig.fixed_point || 0
-        //       : Math.floor(totalAmount * ((pointConfig.point_rate || 0) / 100))
-
-        //     return Math.max(0, earnedPoints)
-        //   }
-
-        //   const earnPoints = calculateEarnedPoints(
-        //     selectedMenus,
-        //     selectedOptions,
-        //     selectedStaffCompleted?.staff?.extra_charge || 0
-        //   )
-
-        //   // ポイントが0より大きい場合のみキューを作成
-        //   if (earnPoints > 0) {
-        //     const scheduledForUnix =
-        //       Math.floor(reservationStartDateTime.getTime() / 1000) + 60 * 60 * 24 * 30 // 予約日の30日後（Unix秒単位）
-
-        //     try {
-        //       // 顧客UIDが確実に存在することを確認
-        //       if (!customerData?.customer?.uid) {
-        //         console.warn('[CalendarPage] Customer UID not found, skipping point queue creation')
-        //       } else {
-        //         // Supabaseでポイントキューを作成する
-        //         const pointQueue = await pointTaskQueueRepository.createPointTask({
-        //           tenant_id: sessionCustomer.tenantId,
-        //           org_id: organizationComplete.organization._id as Id<'organization'>,
-        //           reservation_id: reservationId,
-        //           customer_id: customerData.customer.uid,
-        //           points: earnPoints,
-        //           scheduled_for_unix: scheduledForUnix,
-        //         })
-        //         console.log('Point queue created:', pointQueue)
-        //       }
-        //     } catch (error) {
-        //       console.error('Failed to create point queue:', error)
-        //       // ポイントキュー作成に失敗しても予約は成功としてそのまま続行
-        //     }
-        //   }
-        // }
-
         toast.success(
           '予約を受け付けしました。予約確認メールまたはLINEメッセージを送信しましたのでご確認ください。'
         )

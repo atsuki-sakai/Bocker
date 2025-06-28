@@ -125,15 +125,15 @@ export const handleReservationManage = mutation({
         status: reservationStatusType,
       })
     ),
-    idempotency_key: v.optional(v.string()),
+    eventId: v.optional(v.string()),
   },
-  handler: async (ctx, { mode, payload, idempotency_key }) => {
+  handler: async (ctx, { mode, payload, eventId }) => {
     // ① べき等性チェック
-    if (idempotency_key) {
+    if (eventId) {
       const done = await ctx.db
         .query("webhook_events")
         .withIndex("by_event_id", (q) => 
-          q.eq("event_id", idempotency_key)
+          q.eq("event_id", eventId)
         )
         .unique();
       if (done && done.processing_result === "success") {
@@ -224,10 +224,10 @@ export const handleReservationManage = mutation({
         coreResult: result,
       });
 
-      // ③ idempotency 保存
-      if (idempotency_key && 'tenant_id' in payload && 'org_id' in payload && payload.tenant_id && payload.org_id) {
+      // ③ eventId保存
+      if (eventId && 'tenant_id' in payload && 'org_id' in payload && payload.tenant_id && payload.org_id) {
         await ctx.db.insert("webhook_events", {
-          event_id: idempotency_key,
+          event_id: eventId,
           processing_result: "success",
           event_type: "reservation_manage:" + mode,
           processed_at: Date.now(),
@@ -236,10 +236,10 @@ export const handleReservationManage = mutation({
 
       return result;
     } catch (error) {
-      // エラー時もidempotency保存
-      if (idempotency_key && 'tenant_id' in payload && 'org_id' in payload && payload.tenant_id && payload.org_id) {
+      // エラー時もeventId保存
+      if (eventId && 'tenant_id' in payload && 'org_id' in payload && payload.tenant_id && payload.org_id) {
         await ctx.db.insert("webhook_events", {
-          event_id: idempotency_key,
+          event_id: eventId,
           processing_result: "error",
           event_type: "reservation_manage:" + mode,
           processed_at: Date.now(),
@@ -301,6 +301,7 @@ async function createReservationCore(ctx: MutationCtx, p: CreatePayload) {
       status: ERROR_STATUS_CODE.CONFLICT,
     });
   }
+  
 
   // 2. 在庫減算（オプションがある場合）
   if (p.options && p.options.length > 0) {
@@ -353,8 +354,6 @@ async function createReservationCore(ctx: MutationCtx, p: CreatePayload) {
     pending_expiry: pending_expiry || undefined,
   });
 
-  // 5. 現金決済の場合のカルテ作成は、共通の performSideEffects で行うため、ここでは何もしない
-  // （以前はここで個別にスケジュールしていたが、二重実行の原因となっていた）
 
   return { 
     reservationId,
@@ -469,17 +468,6 @@ async function cancelReservationCore(
     reservation_id: args.reservationId,
   });
 
-  // クーポン使用回数デクリメント
-  if (detail?.coupon_id) {
-    try {
-      await ctx.runMutation(internal.coupon.mutation.decrementUsageCount, {
-        couponId: detail.coupon_id,
-      });
-    } catch (error) {
-      console.error('Failed to decrement coupon usage count:', error);
-    }
-  }
-
   // ステータス更新
   await ctx.db.patch(args.reservationId, {
     status: "cancelled",
@@ -532,3 +520,6 @@ async function updateStatusCore(
     newStatus: payload.status,
   };
 }
+
+
+

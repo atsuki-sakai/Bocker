@@ -6,11 +6,11 @@ import { validateNumberLength, validateStringLength } from '../utils/validations
 import { createRecord, killRecord, updateRecord } from '../utils/helpers';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
-import { Doc, Id } from '../_generated/dataModel';
 
 /**
  * バリデーションラッパー: undefinedはスキップ、他は実行
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function safeValidateNumberLength(val: any, msg: string) {
   if (val !== undefined) validateNumberLength(val, msg);
 }
@@ -190,7 +190,7 @@ export const createCouponRelatedTables = mutation({
       is_active: args.is_active ?? true, // 有効/無効
     });
 
-    const couponConfig = await createRecord(ctx, 'coupon_config', {
+    await createRecord(ctx, 'coupon_config', {
       tenant_id: args.tenant_id, // テナントID
       org_id: args.org_id, // 店舗ID
       coupon_id: couponId, // クーポンID
@@ -328,6 +328,60 @@ export const decrementUsageCount = internalMutation({
         updated_at: Date.now(),
       });
     }
+
+    return true;
+  },
+});
+
+
+// クーポン使用回数をバランスする内部ミューテーション
+export const balanceUsageCount = internalMutation({
+  args: {
+    couponId: v.id('coupon'),
+    balance: v.number(),
+    type: v.union(v.literal('plus'), v.literal('minus')),
+  },
+  handler: async (ctx, args) => {
+    const coupon = await ctx.db.get(args.couponId);
+    if (!coupon) {
+      throw new ConvexError({
+        message: 'クーポンが見つかりません',
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        code: 'COUPON_NOT_FOUND',
+        details: { couponId: args.couponId },
+      });
+    }
+
+    // coupon_configを取得
+    const couponConfig = await ctx.db.query('coupon_config')
+      .withIndex('by_tenant_org_coupon_archive', (q) =>
+        q.eq('tenant_id', coupon.tenant_id)
+          .eq('org_id', coupon.org_id)
+          .eq('coupon_id', args.couponId)
+          .eq('is_archive', false)
+      )
+      .first();
+
+    if (!couponConfig) {
+      throw new ConvexError({
+        message: 'クーポン設定が見つかりません',
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        code: 'COUPON_CONFIG_NOT_FOUND',
+        details: { couponId: args.couponId },
+      });
+    }
+
+    // 使用回数を更新（マイナスになる場合は0にする）
+    const newUsageCount = args.type === 'plus' 
+      ? (couponConfig.number_of_use || 0) + args.balance 
+      : Math.max(0, (couponConfig.number_of_use || 0) - args.balance);
+    
+    await ctx.db.patch(couponConfig._id, {
+      number_of_use: newUsageCount,
+      updated_at: Date.now(),
+    });
 
     return true;
   },

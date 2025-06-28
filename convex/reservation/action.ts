@@ -468,6 +468,7 @@ async function handleCreateSideEffects(
   const { CarteRepository } = await import('@/services/supabase/repositories/carte');
   
   const carteRepo = new CarteRepository(supabaseService);
+  
 
   // カルテ作成（現金決済の場合のみ）
   if (payload.payment_method === "cash" && payload.customer_id) {
@@ -593,41 +594,42 @@ async function handleCancelSideEffects(
       await carteDetailRepo.deleteRecord('id', carteDetail.id);
       console.log(`[handleCancelSideEffects] Deleted carte_detail record: ${carteDetail.id}`);
     }
-    
-    // 2. ポイント返還処理
-    if (reservation.detail?.use_points && reservation.detail.use_points > 0) {
-      await pointTransactionRepo.create({
-        tenant_id: reservation.tenant_id,
-        org_id: reservation.org_id,
-        customer_id: reservation.customer_id,
-        reservation_id: reservation._id,
-        points: reservation.detail.use_points, // プラスで返還
-        transaction_type: 'refunded',
-        transaction_date_unix: Date.now(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      
-      // 顧客ポイント更新
-      const { customer, customerPoints } = await customerRepo.getCompleteCustomerData(
-        reservation.customer_id,
-        reservation.tenant_id,
-        reservation.org_id
-      );
-      if (customer) {
-        await customerRepo.updateCustomerWithDetailsAndPoints(
+
+       // 2. ポイント返還処理
+       if (reservation.detail?.use_points && reservation.detail.use_points > 0) {
+        await pointTransactionRepo.create({
+          tenant_id: reservation.tenant_id,
+          org_id: reservation.org_id,
+          customer_id: reservation.customer_id,
+          reservation_id: reservation._id,
+          points: reservation.detail.use_points, // プラスで返還
+          transaction_type: 'refunded',
+          transaction_date_unix: Date.now(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+        
+        // 顧客ポイント更新
+        const { customer, customerPoints } = await customerRepo.getCompleteCustomerData(
           reservation.customer_id,
           reservation.tenant_id,
-          reservation.org_id,
-          {},
-          {},
-          (customerPoints?.total_points || 0) + reservation.detail.use_points,
-          []
+          reservation.org_id
         );
+        if (customer) {
+          await customerRepo.updateCustomerWithDetailsAndPoints(
+            reservation.customer_id,
+            reservation.tenant_id,
+            reservation.org_id,
+            {},
+            {},
+            (customerPoints?.total_points || 0) + reservation.detail.use_points,
+            []
+          );
+        }
       }
-    }
     
-    // 3. ポイント付与タスク削除（既に別処理で削除済みだが念のため）
+      
+    // 3. ポイント付与タスク削除
     const pointTask = await pointTaskQueueRepo.findByReservation(
       reservation.tenant_id,
       reservation.org_id,
