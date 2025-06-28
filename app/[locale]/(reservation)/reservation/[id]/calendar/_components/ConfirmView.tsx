@@ -186,22 +186,19 @@ export const ConfirmView = ({
           ? coupon.percentage_discount_value
           : coupon.fixed_discount_value
 
-      const resultDiscount =
-        totalAmount +
-        extraCharge -
-        (coupon.discount_type === 'percentage'
+      // 割引額を計算（割引後の金額ではなく、割引額そのもの）
+      const discountAmount =
+        coupon.discount_type === 'percentage'
           ? coupon.percentage_discount_value
-            ? totalAmount +
-              extraCharge -
-              (totalAmount + extraCharge) * (discount ? discount / 100 : 0)
+            ? Math.floor((totalAmount + extraCharge) * (discount / 100))
             : 0
-          : coupon.fixed_discount_value
-            ? totalAmount + extraCharge - coupon.fixed_discount_value
-            : 0)
+          : coupon.fixed_discount_value || 0
 
-      console.log(resultDiscount)
-      console.log(totalAmount + extraCharge)
-      if (resultDiscount > totalAmount + extraCharge) {
+      console.log('割引額:', discountAmount)
+      console.log('合計金額:', totalAmount + extraCharge)
+      
+      // 割引額が合計金額を超えていないかチェック
+      if (discountAmount > totalAmount + extraCharge) {
         setCouponError('割引金額が合計金額を超えています。')
         setAppliedCoupon(null)
         return
@@ -209,11 +206,11 @@ export const ConfirmView = ({
 
       setAppliedCoupon({
         code: couponCode,
-        discount: resultDiscount,
+        discount: discountAmount,  // 割引額を設定
         name: coupon.name + formattedDiscount,
       })
       if (onApplyCoupon) {
-        onApplyCoupon(resultDiscount, coupon._id)
+        onApplyCoupon(discountAmount, coupon._id)
       }
       setCouponError(null)
     } catch (error) {
@@ -408,7 +405,7 @@ export const ConfirmView = ({
             )}
             <div className="flex justify-between text-lg text-muted-foreground">
               <p>小計</p>
-              <p>¥{menuTotalPrice + optionTotalPrice + extraCharge}</p>
+              <p>¥{(totalAmount + extraCharge).toLocaleString()}</p>
             </div>
             <div className="flex justify-between font-bold text-lg">
               <p>お支払い金額</p>

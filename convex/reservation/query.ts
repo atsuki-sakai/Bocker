@@ -1127,12 +1127,18 @@ export const calculateReservationTime = query({
       : Number.MAX_SAFE_INTEGER
 
     let resultStart = Math.max(salonStart!, staffStart!)
-    const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000)
-    if (
-      jstNow.getUTCFullYear() === targetDate.getFullYear() &&
-      jstNow.getUTCMonth() === targetDate.getMonth() &&
-      jstNow.getUTCDate() === targetDate.getDate()
-    ) {
+    
+    // 現在時刻を日本時間で取得して当日判定
+    const nowJST = new Date(Date.now())
+    const jstDateStr = nowJST.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: 'Asia/Tokyo'
+    }).replace(/\//g, '-')
+    
+    // targetDateの日付文字列（YYYY-MM-DD形式）と比較
+    if (jstDateStr === args.date) {
       const rawNextLater = Date.now() + todayFirstLaterMinutes
       const stepMs = 10 * 60 * 1000
       const alignedNextLater = Math.ceil(rawNextLater / stepMs) * stepMs
