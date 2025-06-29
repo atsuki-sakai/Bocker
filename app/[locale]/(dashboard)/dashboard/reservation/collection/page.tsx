@@ -55,10 +55,17 @@ export default function OrganizationReservationCollectionPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedStaff, setSelectedStaff] = useState<string>('all')
 
-  // 実際の検索で使用する日付範囲
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(new Date().setHours(0, 0, 0, 0)),
-    to: new Date(new Date().setHours(23, 59, 59, 999)),
+  // 実際の検索で使用する日付範囲（本日から1週間）
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekLater = new Date(today);
+    weekLater.setDate(weekLater.getDate() + 6); // 7日後（本日含む）
+    weekLater.setHours(23, 59, 59, 999);
+    return {
+      from: today,
+      to: weekLater,
+    };
   })
 
   // カレンダーで選択中の一時的な日付範囲
@@ -70,19 +77,42 @@ export default function OrganizationReservationCollectionPage() {
   // 日付範囲を文字列に変換
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined
+  
+  console.log('[ReservationCollection] Date range processing:', {
+    dateRange,
+    startDate,
+    endDate,
+    fromHours: dateRange?.from?.getHours(),
+    fromMinutes: dateRange?.from?.getMinutes(),
+    toHours: dateRange?.to?.getHours(),
+    toMinutes: dateRange?.to?.getMinutes()
+  })
 
   // 日付範囲適用の処理
   const handleApplyDateRange = () => {
-    setDateRange(tempDateRange)
+    // 単一日付が選択された場合、endDateも同じ日付に設定
+    if (tempDateRange?.from && !tempDateRange?.to) {
+      setDateRange({
+        from: tempDateRange.from,
+        to: tempDateRange.from
+      })
+    } else {
+      setDateRange(tempDateRange)
+    }
     setIsCalendarOpen(false)
   }
 
-  // 日付範囲リセットの処理
+  // 日付範囲リセットの処理（本日から1週間）
   const handleResetDateRange = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekLater = new Date(today);
+    weekLater.setDate(weekLater.getDate() + 6); // 7日後（本日含む）
+    weekLater.setHours(23, 59, 59, 999);
     const defaultRange = {
-      from: new Date(new Date().setHours(0, 0, 0, 0)),
-      to: new Date(new Date().setHours(23, 59, 59, 999)),
-    }
+      from: today,
+      to: weekLater,
+    };
     setTempDateRange(defaultRange)
     setDateRange(defaultRange)
     setIsCalendarOpen(false)
@@ -154,6 +184,23 @@ export default function OrganizationReservationCollectionPage() {
       <div className="flex w-fit gap-2 items-center mb-4">
         <CardTitle className="text-sm font-medium">総予約数</CardTitle>
         <div className="text-2xl font-bold text-accent-2">{totalCount}</div>
+      </div>
+
+      {/* デバッグ情報 */}
+      <div className="mb-4 p-4 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+        <h3 className="font-bold mb-2">デバッグ情報（期間フィルター）</h3>
+        <div className="text-sm space-y-1">
+          <p className="font-semibold">APIに送信される日付:</p>
+          <p>開始日: {startDate || '未設定'}</p>
+          <p>終了日: {endDate || '未設定'}</p>
+          <p className="font-semibold mt-2">選択された日付オブジェクト:</p>
+          <p>From: {dateRange?.from?.toISOString() || '未設定'}</p>
+          <p>To: {dateRange?.to?.toISOString() || '未設定'}</p>
+          <p className="font-semibold mt-2">結果:</p>
+          <p>予約総数: {totalCount}</p>
+          <p>表示中の予約数: {filteredReservations.length}</p>
+          <p>ステータスフィルター: {selectedStatus}</p>
+        </div>
       </div>
 
       {/* フィルター */}
@@ -293,6 +340,9 @@ export default function OrganizationReservationCollectionPage() {
                       </div>
                       <div className="text-muted-foreground">
                         {formatReservationTime(reservation.startTimeUnix, reservation.endTimeUnix)}
+                      </div>
+                      <div className="text-xs text-blue-600 dark:text-blue-400">
+                        DB日付: {reservation.date} | ソース: {reservation.source}
                       </div>
                     </div>
                   </TableCell>

@@ -164,6 +164,17 @@ export function useOrganizationReservations({
   // 日付範囲がある場合は専用のクエリを使用
   const useDataRangeQuery = canFetchConvex && startDate && endDate;
   
+  console.log('[useOrganizationReservations] Query parameters:', {
+    canFetchConvex,
+    startDate,
+    endDate,
+    useDataRangeQuery,
+    tenantId,
+    orgId,
+    status,
+    statusFilter: status === 'all' ? undefined : status
+  });
+  
   // 日付範囲クエリ（Convex） - paginationOptsを追加
   const {
     results: convexDateRangeResults,
@@ -205,34 +216,52 @@ export function useOrganizationReservations({
   // Convex予約データを統合型に変換（日付範囲クエリと通常クエリの結果をマージ）
   const convexReservations: IntegratedReservation[] = useMemo(() => {
     const results = useDataRangeQuery ? convexDateRangeResults : convexResults;
+    
+    console.log('[useOrganizationReservations] Convex data processing:', {
+      useDataRangeQuery,
+      startDate,
+      endDate,
+      status,
+      resultsCount: results?.length || 0,
+      sampleResults: results?.slice(0, 3).map(r => ({ id: r._id, date: r.date, status: r.status }))
+    });
+    
     if (!results) return [];
     
-    return results
+    const filteredResults = results
       .filter((res) => {
         // ステータスフィルター
         if (!status || status === 'all') return true;
         return res.status === status;
-      })
-      .map((res) => {
-        return {
-          id: res._id,
-          source: 'convex' as const,
-          tenantId: res.tenant_id,
-          orgId: res.org_id,
-          customerId: res.customer_id || '',
-          staffId: res.staff_id,
-          customerName: res.customer_name,
-          staffName: res.staff_name,
-          status: res.status,
-          paymentStatus: res.payment_status,
-          date: res.date,
-          startTimeUnix: res.start_time_unix,
-          endTimeUnix: res.end_time_unix,
-          createdAt: new Date(res._creationTime),
-          convexData: res,
-        };
       });
-  }, [convexResults, convexDateRangeResults, useDataRangeQuery, status]);
+    
+    console.log('[useOrganizationReservations] After status filter:', {
+      originalCount: results.length,
+      filteredCount: filteredResults.length,
+      status,
+      sampleFiltered: filteredResults.slice(0, 3).map(r => ({ id: r._id, date: r.date, status: r.status }))
+    });
+    
+    return filteredResults.map((res) => {
+      return {
+        id: res._id,
+        source: 'convex' as const,
+        tenantId: res.tenant_id,
+        orgId: res.org_id,
+        customerId: res.customer_id || '',
+        staffId: res.staff_id,
+        customerName: res.customer_name,
+        staffName: res.staff_name,
+        status: res.status,
+        paymentStatus: res.payment_status,
+        date: res.date,
+        startTimeUnix: res.start_time_unix,
+        endTimeUnix: res.end_time_unix,
+        createdAt: new Date(res._creationTime),
+        convexData: res,
+      };
+    });
+  }, [convexResults, convexDateRangeResults, useDataRangeQuery, status, startDate, endDate]);
   
   // Convexから予約詳細を取得（現在は無効化）
   // TODO: 必要に応じて詳細情報取得ロジックを実装
@@ -305,8 +334,17 @@ export function useOrganizationReservations({
       // Supabaseデータを統合型に変換
       const converted = data
         .filter((item) => {
-          // confirmed/pending以外の全てのステータス（completed, cancelled, refunded等）
-          return item.reservation.status !== 'confirmed' && item.reservation.status !== 'pending';
+          // ステータスフィルタリング
+          // - confirmed/pending: Convexから取得するためスキップ（重複防止）
+          // - all: 全て取得（ただしConvexとの重複は後で除去）
+          // - その他: 指定されたステータスのみ
+          if (status === 'all') {
+            return true; // 全てのステータスを取得
+          }
+          if (status === 'confirmed' || status === 'pending') {
+            return false; // これらはConvexから取得
+          }
+          return item.reservation.status === status;
         })
         .map((item) => ({
           id: item.reservation.uid,
@@ -376,6 +414,14 @@ export function useOrganizationReservations({
   
   // データの統合とソート
   const integratedReservations = useMemo(() => {
+    console.log('[useOrganizationReservations] Data integration:', {
+      status,
+      convexCount: convexReservations.length,
+      supabaseCount: supabaseReservations.length,
+      convexSample: convexReservations.slice(0, 2).map(r => ({ id: r.id, date: r.date, status: r.status, source: r.source })),
+      supabaseSample: supabaseReservations.slice(0, 2).map(r => ({ id: r.id, date: r.date, status: r.status, source: r.source }))
+    });
+    
     // ステータスごとのデータソース選択
     // - confirmed, pending: アクティブな予約 → Convexのみ
     // - completed: 最近の完了データも含む → 両方から取得して統合
@@ -394,6 +440,12 @@ export function useOrganizationReservations({
       // completed, cancelled, allまたは未指定の場合は両方から取得
       allReservations = [...convexReservations, ...supabaseReservations];
     }
+    
+    console.log('[useOrganizationReservations] Before deduplication:', {
+      allReservationsCount: allReservations.length,
+      dateRange: { startDate, endDate },
+      sampleDates: allReservations.slice(0, 5).map(r => r.date)
+    });
     
     // 重複除去（Convex IDとSupabase _convex_idの照合）
     const uniqueReservations = allReservations.reduce((acc, reservation) => {
@@ -414,13 +466,25 @@ export function useOrganizationReservations({
       return acc;
     }, [] as IntegratedReservation[]);
     
+    console.log('[useOrganizationReservations] Final integrated data:', {
+      uniqueCount: uniqueReservations.length,
+      dateFilter: { startDate, endDate },
+      finalSample: uniqueReservations.slice(0, 5).map(r => ({ 
+        id: r.id, 
+        date: r.date, 
+        status: r.status, 
+        source: r.source,
+        customerName: r.customerName 
+      }))
+    });
+    
     // 日時でソート（早い順）
     return uniqueReservations.sort((a, b) => {
       const aTime = Number(a.startTimeUnix) || 0;
       const bTime = Number(b.startTimeUnix) || 0;
       return aTime - bTime;
     });
-  }, [convexReservations, supabaseReservations, status]);
+  }, [convexReservations, supabaseReservations, status, startDate, endDate]);
   
   // さらに読み込む
   const loadMore = useCallback(() => {
@@ -502,8 +566,9 @@ export function useOrganizationReservations({
     };
   }, [stats, convexReservations]);
   
-  // 総件数（統計情報から取得）
-  const totalCount = calculatedStats?.totalCount || integratedReservations.length;
+  // 総件数（日付範囲フィルタリングを考慮して実際の表示件数を使用）
+  // 統計情報は日付範囲を考慮していない可能性があるため、実際の統合データの件数を優先
+  const totalCount = integratedReservations.length;
   
   return {
     reservations: integratedReservations,
