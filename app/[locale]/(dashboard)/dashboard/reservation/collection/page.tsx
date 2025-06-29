@@ -186,23 +186,6 @@ export default function OrganizationReservationCollectionPage() {
         <div className="text-2xl font-bold text-accent-2">{totalCount}</div>
       </div>
 
-      {/* デバッグ情報 */}
-      <div className="mb-4 p-4 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-        <h3 className="font-bold mb-2">デバッグ情報（期間フィルター）</h3>
-        <div className="text-sm space-y-1">
-          <p className="font-semibold">APIに送信される日付:</p>
-          <p>開始日: {startDate || '未設定'}</p>
-          <p>終了日: {endDate || '未設定'}</p>
-          <p className="font-semibold mt-2">選択された日付オブジェクト:</p>
-          <p>From: {dateRange?.from?.toISOString() || '未設定'}</p>
-          <p>To: {dateRange?.to?.toISOString() || '未設定'}</p>
-          <p className="font-semibold mt-2">結果:</p>
-          <p>予約総数: {totalCount}</p>
-          <p>表示中の予約数: {filteredReservations.length}</p>
-          <p>ステータスフィルター: {selectedStatus}</p>
-        </div>
-      </div>
-
       {/* フィルター */}
       <Card className="mb-6">
         <CardHeader>
