@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       reservation: {
         _id: reservation._id,
         customer_name: reservation.customer_name,
-        staff_name: reservation.staff_name,
+        staff_name: reservation.staff_name || '指名フリー',
         date: reservation.date,
         start_time_unix: reservation.start_time_unix,
         end_time_unix: reservation.end_time_unix,

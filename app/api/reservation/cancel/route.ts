@@ -132,7 +132,7 @@ interface ReservationData {
   stripe_payment_intent_id?: string;
   date: string;
   start_time_unix: number;
-  staff_name: string;
+  staff_name?: string;
   customer_name: string;
 }
 
