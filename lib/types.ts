@@ -90,4 +90,35 @@ export const PLAN_LEVEL: Record<SubscriptionPlanName, number> = {
   PRO: 2,
 };
 
+// スタッフ選択の状態管理用の型
+export type StaffSelection = StaffDisplay | 'free' | null;
+
+// 指名フリー予約の統合可能時間情報
+export type IntegratedAvailabilityInfo = {
+  available: boolean;
+  timeSlots: Array<{
+    start: string;
+    end: string;
+    availableStaffs: Array<{
+      id: Id<'staff'>;
+      name: string;
+      priority: number;
+      extra_charge: number;
+    }>;
+  }>;
+  totalAvailableStaffs: number;
+};
+
+// 指名フリー予約のスタッフ割り当て結果
+export type StaffAssignmentResult = {
+  success: boolean;
+  assignedStaff?: {
+    id: Id<'staff'>;
+    name: string;
+    priority: number;
+    extra_charge: number;
+  };
+  error?: string;
+};
+
 

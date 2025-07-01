@@ -212,7 +212,7 @@ export async function handleCheckoutSessionCompleted(
           hour: '2-digit',
           minute: '2-digit'
         }),
-        staffName: reservation.staff_name,
+        staffName: reservation.staff_name || '指名フリー',
         menus: reservationDetail.menus || [],
         options: reservationDetail.options || [],
         totalPrice: reservationDetail.total_price || 0,
@@ -282,7 +282,7 @@ export async function handleCheckoutSessionCompleted(
           reservation: {
             _id: reservation._id,
             customer_name: reservation.customer_name,
-            staff_name: reservation.staff_name,
+            staff_name: reservation.staff_name || '指名フリー',
             date: reservation.date,
             start_time_unix: reservation.start_time_unix,
             end_time_unix: reservation.end_time_unix,

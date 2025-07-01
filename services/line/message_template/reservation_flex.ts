@@ -13,7 +13,7 @@ export const reservationFlexMessageTemplate = (
   customerName: string,
   orgId: Id<'organization'>,
   customerUid: string,
-  selectedStaff: StaffDisplay,
+  selectedStaff: StaffDisplay | null,
   selectedDate: Date,
   selectedTimeSlot: TimeRange,
   selectedMenus: Doc<'menu'>[],
@@ -312,7 +312,9 @@ export const reservationFlexMessageTemplate = (
         contents: [
           {
             type: 'text',
-            text: selectedStaff?.name ?? '' + (selectedStaff?.extra_charge ? '（指名料：' + selectedStaff.extra_charge + '円）' : ''),
+            text: selectedStaff === null 
+              ? '指名フリー' 
+              : selectedStaff.name + (selectedStaff.extra_charge ? '（指名料：' + selectedStaff.extra_charge + '円）' : ''),
             size: 'sm',
             color: '#000000',
             wrap: true,
