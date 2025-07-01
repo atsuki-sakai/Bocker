@@ -133,9 +133,9 @@ export default function OrganizationReservationCollectionPage() {
     const uniqueStaff = reservations
       .map(r => ({ id: r.staffId, name: r.staffName }))
       .filter((staff, index, self) => 
-        self.findIndex(s => s.id === staff.id) === index
+        staff.id && self.findIndex(s => s.id === staff.id) === index
       )
-      .sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     return uniqueStaff
   }, [reservations])
 
@@ -276,8 +276,8 @@ export default function OrganizationReservationCollectionPage() {
                 <SelectContent>
                   <SelectItem value="all">すべて</SelectItem>
                   {staffList.map((staff) => (
-                    <SelectItem key={staff.id} value={staff.id}>
-                      {staff.name}
+                    <SelectItem key={staff.id || 'free'} value={staff.id || 'free'}>
+                      {staff.name || '指名フリー'}
                     </SelectItem>
                   ))}
                 </SelectContent>

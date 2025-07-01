@@ -12,14 +12,14 @@ import type {
   TimeSlot,
   ReservationBar,
 } from '@/hooks/useTimelineData'
-import { RESERVATION_COLORS } from '@/hooks/useTimelineData'
+import { RESERVATION_COLORS, FREE_NOMINATION_COLORS } from '@/hooks/useTimelineData'
 import { Loading } from '@/components/common'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { CalendarDays, Clock, User, ChevronLeft, ChevronRight, UserCheck } from 'lucide-react'
+import { CalendarDays, Clock, User, ChevronLeft, ChevronRight, UserCheck, Shuffle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   formatTimestamp,
@@ -92,6 +92,11 @@ const ReservationBarComponent = memo(
 
     // ステータスに基づいてアイコンを選択
     const getStatusIcon = (status: string) => {
+      // フリー指名の場合は専用アイコンを表示
+      if (reservation.is_free_nomination) {
+        return <Shuffle className="w-3 h-3" />
+      }
+      
       switch (status) {
         case 'confirmed':
           return <UserCheck className="w-3 h-3" />
@@ -104,9 +109,8 @@ const ReservationBarComponent = memo(
       }
     }
 
-    const enhancedColor =
-      RESERVATION_COLORS[reservation.status as keyof typeof RESERVATION_COLORS] ||
-      RESERVATION_COLORS.confirmed
+    const colorSet = reservation.is_free_nomination ? FREE_NOMINATION_COLORS : RESERVATION_COLORS
+    const enhancedColor = colorSet[reservation.status as keyof typeof colorSet] || colorSet.confirmed
 
     return (
       <div
@@ -121,7 +125,7 @@ const ReservationBarComponent = memo(
           zIndex: 20,
         }}
         onClick={() => onReservationClick(reservation)}
-        title={`${reservation.customer_name} (${convertTimestampToHour(reservation.start_time_unix)} - ${convertTimestampToHour(reservation.end_time_unix)})`}
+        title={`${reservation.is_free_nomination ? '[指名フリー] ' : ''}${reservation.customer_name} (${convertTimestampToHour(reservation.start_time_unix)} - ${convertTimestampToHour(reservation.end_time_unix)})`}
       >
         <div className="flex flex-col items-start gap-1 overflow-hidden">
           <div className="flex items-center gap-1">
@@ -129,6 +133,11 @@ const ReservationBarComponent = memo(
             <span className="truncate font-medium">
               {reservation.customer_name ?? t('nameNotSet')} 様
             </span>
+            {reservation.is_free_nomination && (
+              <span className="text-xs bg-purple-200 text-purple-800 px-1 rounded-full font-medium">
+                フリー
+              </span>
+            )}
           </div>
           {/* 時間表示（幅が十分な場合のみ） */}
           <div className="flex items-center justify-between w-full gap-1">
@@ -255,17 +264,25 @@ const ReservationDetailDialog = memo(
 
     if (!reservation) return null
 
-    const enhancedColor =
-      RESERVATION_COLORS[reservation.status as keyof typeof RESERVATION_COLORS] ||
-      RESERVATION_COLORS.confirmed
+    const colorSet = reservation.is_free_nomination ? FREE_NOMINATION_COLORS : RESERVATION_COLORS
+    const enhancedColor = colorSet[reservation.status as keyof typeof colorSet] || colorSet.confirmed
 
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
+              {reservation.is_free_nomination ? (
+                <Shuffle className="w-5 h-5 text-purple-600" />
+              ) : (
+                <User className="w-5 h-5" />
+              )}
               {t('detail')}
+              {reservation.is_free_nomination && (
+                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium ml-2">
+                  指名フリー
+                </span>
+              )}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
@@ -349,20 +366,28 @@ const ReservationList = memo(
     return (
       <div className="p-4 space-y-3">
         {reservations.map((reservation) => {
-          const enhancedColor =
-            RESERVATION_COLORS[reservation.status as keyof typeof RESERVATION_COLORS] ||
-            RESERVATION_COLORS.confirmed
+          const colorSet = reservation.is_free_nomination ? FREE_NOMINATION_COLORS : RESERVATION_COLORS
+          const enhancedColor = colorSet[reservation.status as keyof typeof colorSet] || colorSet.confirmed
+
+          // フリー指名用のボーダー色を設定
+          const getBorderColor = () => {
+            if (reservation.is_free_nomination) {
+              return enhancedColor.includes('purple') ? '#9333ea' 
+                   : enhancedColor.includes('orange') ? '#ea580c'
+                   : enhancedColor.includes('emerald') ? '#059669'
+                   : '#7c3aed'
+            }
+            return enhancedColor.includes('emerald') ? '#008724FF'
+                 : enhancedColor.includes('amber') ? '#f59e0b'
+                 : '#6b7280'
+          }
 
           return (
             <Card
               key={reservation._id}
               className="cursor-pointer  border-l-4"
               style={{
-                borderLeftColor: enhancedColor.includes('emerald')
-                  ? '#008724FF'
-                  : enhancedColor.includes('amber')
-                    ? '#f59e0b'
-                    : '#6b7280',
+                borderLeftColor: getBorderColor(),
               }}
               onClick={() => onReservationClick(reservation)}
             >
@@ -370,8 +395,17 @@ const ReservationList = memo(
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
                     <div className="font-semibold text-primary flex items-center gap-2">
-                      <User className="w-4 h-4" />
+                      {reservation.is_free_nomination ? (
+                        <Shuffle className="w-4 h-4 text-purple-600" />
+                      ) : (
+                        <User className="w-4 h-4" />
+                      )}
                       {reservation.customer_name}
+                      {reservation.is_free_nomination && (
+                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium ml-2">
+                          指名フリー
+                        </span>
+                      )}
                     </div>
                     <div className="text-sm text-muted-foreground flex items-center gap-2">
                       <span className="font-semibold">{t('assignedStaff')}</span>{' '}

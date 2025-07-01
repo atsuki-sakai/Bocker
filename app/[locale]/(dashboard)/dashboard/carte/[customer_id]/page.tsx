@@ -402,7 +402,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                               <div className="flex items-center gap-2 mt-1">
                                 <User className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm">
-                                  {tCarte('detail.assignedStaff', { staffName: item.staffName })}
+                                  {tCarte('detail.assignedStaff', { staffName: item.staffName || '指名フリー' })}
                                 </span>
                               </div>
                             </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { useQuery, useMutation } from 'convex/react'
+import { useQuery, useMutation, usePaginatedQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
@@ -40,6 +40,7 @@ import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import { useTranslations } from 'next-intl'
+import { Loader2 } from 'lucide-react'
 
 const statusColorMap = {
   confirmed: 'bg-palette-2 border border-palette-2-foreground text-palette-2-foreground',
@@ -57,6 +58,9 @@ export default function ReservationPage() {
   const commonT = useTranslations('common')
   const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isStaffChangeModalOpen, setIsStaffChangeModalOpen] = useState(false)
+  const [selectedNewStaffId, setSelectedNewStaffId] = useState<Id<'staff'> | null>(null)
+  const [isChangingStaff, setIsChangingStaff] = useState(false)
 
   const [customerData, setCustomerData] = useState<{
     customer: RowType<'customer'> | null
@@ -75,6 +79,7 @@ export default function ReservationPage() {
 
   const updateStatus = useMutation(api.reservation.mutation.updateStatus)
   const deleteReservation = useMutation(api.reservation.mutation.kill)
+  const changeStaff = useMutation(api.reservation.mutation.changeStaffForFreeNomination)
 
   const reservationMenuDetails = useQuery(
     api.menu.query.getDisplayByIds,
@@ -88,13 +93,44 @@ export default function ReservationPage() {
       : 'skip'
   )
 
+  // 利用可能なスタッフ一覧を取得（スタッフ変更用）
+  const { results: availableStaffsData } = usePaginatedQuery(
+    api.staff.query.list,
+    reservationData?.reservation?.is_free_nomination
+      ? {
+          tenant_id: reservationData.reservation.tenant_id,
+          org_id: reservationData.reservation.org_id,
+        }
+      : 'skip',
+    { initialNumItems: 50 }
+  )
+
+  const availableStaffs = availableStaffsData || []
+
+  // 通常の指名スタッフ情報を取得（指名フリーでstaff_idが設定されている場合も含む）
   const staff = useQuery(
     api.staff.query.getRelatedTables,
-    reservationData?.reservation?.staff_id
+    reservationData?.reservation?.staff_id &&
+      (!reservationData?.reservation?.is_free_nomination ||
+        (reservationData?.reservation?.is_free_nomination &&
+          !reservationData?.reservation?.assigned_staff_id))
       ? {
           tenant_id: reservationData.reservation.tenant_id,
           org_id: reservationData.reservation.org_id,
           staff_id: reservationData.reservation.staff_id as Id<'staff'>,
+        }
+      : 'skip'
+  )
+
+  // 指名フリーの場合の割り当てスタッフ情報を取得
+  const assignedStaff = useQuery(
+    api.staff.query.getRelatedTables,
+    reservationData?.reservation?.is_free_nomination &&
+      reservationData?.reservation?.assigned_staff_id
+      ? {
+          tenant_id: reservationData.reservation.tenant_id,
+          org_id: reservationData.reservation.org_id,
+          staff_id: reservationData.reservation.assigned_staff_id as Id<'staff'>,
         }
       : 'skip'
   )
@@ -138,7 +174,42 @@ export default function ReservationPage() {
     t,
   ])
 
-  if (!reservationData || !staff || !reservationMenuDetails) return <Loading />
+  // ローディング条件を指名フリー予約に対応
+  const shouldShowLoading = () => {
+    // 基本データがない場合
+    if (!reservationData || !reservationMenuDetails) {
+      return true
+    }
+
+    // 指名フリー予約の場合
+    if (reservationData.reservation.is_free_nomination) {
+      // assigned_staff_idがある場合はassignedStaffのデータを待つ
+      if (reservationData.reservation.assigned_staff_id && !assignedStaff) {
+        return true
+      }
+      // staff_idがあるがassigned_staff_idがない場合は、staffデータを確認
+      if (
+        !reservationData.reservation.assigned_staff_id &&
+        reservationData.reservation.staff_id &&
+        !staff
+      ) {
+        return true
+      }
+      // どちらもない場合はスタッフ未割り当てなのでLoading不要
+      return false
+    }
+
+    // 通常の指名予約の場合
+    if (reservationData.reservation.staff_id && !staff) {
+      return true
+    }
+
+    return false
+  }
+
+  if (shouldShowLoading()) {
+    return <Loading />
+  }
 
   const formatUnixTimestamp = (unixTimestamp: number) => {
     return format(new Date(unixTimestamp), 'yyyy年MM月dd日 HH:mm')
@@ -151,6 +222,7 @@ export default function ReservationPage() {
 
   const handleUpdateStatus = async () => {
     try {
+      if (!reservationData) return
       await updateStatus({
         reservation_id: reservationData.reservation._id,
         status: status,
@@ -167,6 +239,7 @@ export default function ReservationPage() {
 
   const handleDeleteReservation = async () => {
     try {
+      if (!reservationData) return
       await deleteReservation({
         reservation_id: reservationData.reservation._id,
         tenant_id: reservationData.reservation.tenant_id,
@@ -180,6 +253,30 @@ export default function ReservationPage() {
       setIsDeleteModalOpen(false)
     }
   }
+
+  const handleStaffChange = async () => {
+    if (!selectedNewStaffId || !reservationData) return
+
+    try {
+      setIsChangingStaff(true)
+      await changeStaff({
+        reservation_id: reservationData.reservation._id,
+        new_staff_id: selectedNewStaffId,
+        changed_by: 'admin', // 管理画面からの変更
+      })
+
+      toast.success('スタッフを変更しました')
+      setIsStaffChangeModalOpen(false)
+      // ページをリロードして最新データを取得
+      router.refresh()
+    } catch (error) {
+      showErrorToast(error)
+    } finally {
+      setIsChangingStaff(false)
+    }
+  }
+
+  if (!reservationData) return <Loading />
 
   return (
     <DashboardSection
@@ -364,41 +461,92 @@ export default function ReservationPage() {
         </div>
         <div className="border-b pb-4">
           <h2 className="text-xl font-semibold mb-3">{t('assignedStaff')}</h2>
-          <div className="flex  items-center gap-4">
-            {staff.images.length > 0 && staff.images[0].thumbnail_url && (
-              <div className="relative h-auto border border-border shadow-sm rounded-md overflow-hidden flex items-center justify-center">
-                <Image
-                  src={staff.images[0].thumbnail_url}
-                  alt={staff.name ?? ''}
-                  width={150}
-                  height={150}
-                  className=""
-                />
-              </div>
-            )}
-            <div>
-              <p className="font-medium text-lg">{staff.name}</p>
-              {staff.description && (
-                <p className="text-muted-foreground text-sm mt-1">{staff.description}</p>
-              )}
-              {staff.tags && staff.tags.length > 0 && (
-                <div className="mt-2">
-                  {staff.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="inline-block bg-muted rounded-full px-3 py-1 text-sm font-semibold text-muted-foreground mr-2 mb-2"
+          {reservationData.reservation.is_free_nomination && (
+            <div className="mb-4 p-3 bg-muted rounded-md">
+              <p className="text-sm font-medium text-muted-foreground">🎯 指名フリー予約</p>
+            </div>
+          )}
+          {staff || assignedStaff ? (
+            <div className="flex items-center gap-4">
+              {((staff || assignedStaff)?.images?.length ?? 0) > 0 &&
+                (staff || assignedStaff)?.images[0].thumbnail_url && (
+                  <div className="relative h-auto border border-border shadow-sm rounded-md overflow-hidden flex items-center justify-center">
+                    <Image
+                      src={(staff || assignedStaff)!.images[0].thumbnail_url!}
+                      alt={(staff || assignedStaff)?.name ?? ''}
+                      width={150}
+                      height={150}
+                      className=""
+                    />
+                  </div>
+                )}
+              <div>
+                <p className="font-medium text-lg">
+                  {reservationData.reservation.is_free_nomination && assignedStaff
+                    ? `${assignedStaff.name} (自動割り当て)`
+                    : (staff || assignedStaff)?.name}
+                </p>
+                {(staff || assignedStaff)?.description && (
+                  <p className="text-muted-foreground text-sm mt-1">
+                    {(staff || assignedStaff)?.description}
+                  </p>
+                )}
+                {((staff || assignedStaff)?.tags?.length ?? 0) > 0 && (
+                  <div className="mt-2">
+                    {(staff || assignedStaff)?.tags?.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-block bg-muted rounded-full px-3 py-1 text-sm font-semibold text-muted-foreground mr-2 mb-2"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* スタッフ変更は指名フリー予約（is_free_nomination: true）の場合のみ可能 */}
+                {reservationData.reservation.is_free_nomination && (
+                  <div className="mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsStaffChangeModalOpen(true)}
+                      disabled={
+                        reservationData.reservation.status === 'completed' ||
+                        reservationData.reservation.status === 'cancelled' ||
+                        reservationData.reservation.status === 'refunded'
+                      }
                     >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+                      スタッフを変更
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-muted-foreground">
+              <p>スタッフ未割り当て</p>
+              {/* スタッフ割り当ては指名フリー予約（is_free_nomination: true）の場合のみ可能 */}
+              {reservationData.reservation.is_free_nomination && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => setIsStaffChangeModalOpen(true)}
+                  disabled={
+                    reservationData.reservation.status === 'completed' ||
+                    reservationData.reservation.status === 'cancelled' ||
+                    reservationData.reservation.status === 'refunded'
+                  }
+                >
+                  スタッフを割り当て
+                </Button>
               )}
             </div>
-          </div>
+          )}
         </div>
         <div className="border-b pb-4">
           <h2 className="text-xl font-semibold mb-3">{t('reservationContent')}</h2>
-          {reservationMenuDetails?.menus?.length > 0 && (
+          {reservationMenuDetails?.menus?.length && reservationMenuDetails?.menus?.length > 0 && (
             <div className="flex flex-col gap-3">
               {reservationData.reservationDetail?.menus?.map((reservationMenuItem, index) => {
                 const menuDetail = reservationMenuDetails.menus.find(
@@ -426,21 +574,22 @@ export default function ReservationPage() {
             </div>
           )}
 
-          {reservationMenuDetails?.options?.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">{t('options')}</h3>
-              <ul className="list-disc list-inside">
-                {reservationMenuDetails.options.map((option, index) => (
-                  <li key={index} className="text-muted-foreground">
-                    {option.name} - ¥{option.unit_price?.toLocaleString()} x{' '}
-                    {reservationData.reservationDetail?.options?.find((o) => o.id === option._id)
-                      ?.quantity ?? 0}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {reservationMenuDetails?.menus?.length === 0 && (
+          {reservationMenuDetails?.options?.length &&
+            reservationMenuDetails?.options?.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2">{t('options')}</h3>
+                <ul className="list-disc list-inside">
+                  {reservationMenuDetails.options.map((option, index) => (
+                    <li key={index} className="text-muted-foreground">
+                      {option.name} - ¥{option.unit_price?.toLocaleString()} x{' '}
+                      {reservationData.reservationDetail?.options?.find((o) => o.id === option._id)
+                        ?.quantity ?? 0}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          {reservationMenuDetails?.menus?.length && reservationMenuDetails?.menus?.length === 0 && (
             <p className="text-muted-foreground">{t('noMenuReserved')}</p>
           )}
         </div>
@@ -454,6 +603,56 @@ export default function ReservationPage() {
             </div>
           )}
       </div>
+      <Dialog open={isStaffChangeModalOpen} onOpenChange={setIsStaffChangeModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>スタッフを変更</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              指名フリー予約のスタッフを変更します。新しいスタッフを選択してください。
+            </p>
+            <Select
+              value={selectedNewStaffId || undefined}
+              onValueChange={(value) => setSelectedNewStaffId(value as Id<'staff'>)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="スタッフを選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableStaffs
+                  ?.filter((staff) => {
+                    // 現在割り当てられているスタッフを除外
+                    const currentAssignedStaffId =
+                      reservationData?.reservation?.assigned_staff_id ||
+                      reservationData?.reservation?.staff_id
+                    return staff._id !== currentAssignedStaffId
+                  })
+                  ?.map((staff) => (
+                    <SelectItem key={staff._id} value={staff._id}>
+                      {staff.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsStaffChangeModalOpen(false)}>
+              {commonT('cancel')}
+            </Button>
+            <Button onClick={handleStaffChange} disabled={!selectedNewStaffId || isChangingStaff}>
+              {isChangingStaff ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  変更中...
+                </>
+              ) : (
+                '変更する'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={isUpdateStatusModalOpen}>
         <DialogContent>
           <DialogHeader>
