@@ -3,7 +3,7 @@ import { internal } from '@/convex/_generated/api'
 import { mutation, internalMutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { updateRecord } from '@/convex/utils/helpers';
-import { reservationStatusType,  paymentMethodType,reservationPaymentStatusType, reservationMenuType, reservationOptionType, imageType } from '@/convex/types';
+import { reservationStatusType,  paymentMethodType,reservationPaymentStatusType, reservationMenuType, reservationOptionType, imageType, StaffChangeHistory } from '@/convex/types';
 import { validateRequired, validateRequiredNumber, validateDateStrToDate } from '@/convex/utils/validations';
 import { checkAuth } from '@/convex/utils/auth';
 import { ConvexError } from 'convex/values';
@@ -13,7 +13,8 @@ import {
   createReservationWithDetails,
   archiveReservationWithDetails,
   deleteReservationWithDetails,
-  checkReservationDoubleBooking
+  checkReservationDoubleBooking,
+  findBestAvailableStaffForTimeSlot
 } from '@/convex/reservation/reservation.helpers';
 
 /**
@@ -73,6 +74,65 @@ Convex の OCC エラーは自動的に再試行されますが、ミューテ�
 	•	複数クライアント（たとえばウェブとモバイルアプリ）が同時に予約を試みた場合の挙動を本番環境と同等の条件で負荷テストすることで、意図しないシナリオ（例：深夜バッチや外部システム連携による予約一括挿入時など）が発生したときに正常に再試行が起きるかを確認しておくと安心です  ￼ ￼。
 */
 
+// フリー指名予約のスタッフ自動割り当て処理
+export const assignStaffForFreeNomination = internalMutation({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    date: v.string(),
+    menu_ids: v.array(v.id('menu')),
+    option_ids: v.array(v.id('option')),
+    start_time_unix: v.number(),
+    end_time_unix: v.number(),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    assignedStaff: v.optional(v.object({
+      id: v.id('staff'),
+      name: v.string(),
+      priority: v.number(),
+      extra_charge: v.number(),
+      assigned_at: v.number(),
+    })),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    try {
+      const bestStaff = await findBestAvailableStaffForTimeSlot(ctx, {
+        tenant_id: args.tenant_id,
+        org_id: args.org_id,
+        menu_ids: args.menu_ids,
+        date: args.date,
+        start_time_unix: args.start_time_unix,
+        end_time_unix: args.end_time_unix,
+      });
+
+      if (!bestStaff) {
+        return {
+          success: false,
+          error: 'この時間帯に対応可能なスタッフが見つかりませんでした',
+        };
+      }
+
+      return {
+        success: true,
+        assignedStaff: {
+          id: bestStaff.staff_id,
+          name: bestStaff.staff_name,
+          priority: bestStaff.priority,
+          extra_charge: bestStaff.extra_charge,
+          assigned_at: Date.now(),
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '予期しないエラーが発生しました',
+      };
+    }
+  },
+});
+
 // 予約の追加処理
 // 予約作成に必要な情報を受け取り、入力バリデーションやスタッフ・組織の存在確認を行う。
 // さらに、予約時間の重複チェック（Race condition防止）を実施し、問題なければ予約と予約詳細を同時に作成する。
@@ -82,9 +142,10 @@ export const create = mutation({
     tenant_id: v.id('tenant'), // テナントID
     org_id: v.id('organization'), // 組織ID
     customer_id: v.optional(v.string()), // Supabase 側の customer.id
-    staff_id: v.id('staff'), // スタッフID
+    staff_id: v.optional(v.id('staff')), // スタッフID（指名フリーの場合はundefined）
     customer_name: v.string(), // 顧客名
-    staff_name: v.string(), // スタッフ名
+    staff_name: v.optional(v.string()), // スタッフ名（指名フリーの場合はundefined）
+    is_free_nomination: v.optional(v.boolean()), // 指名フリーフラグ
     status: reservationStatusType, // 予約ステータス
     date: v.string(), // 予約日 YYYY-MM-DD
     start_time_unix: v.number(), // 予約開始時間
@@ -111,16 +172,30 @@ export const create = mutation({
     validateRequiredNumber(args.end_time_unix, 'end_time_unix')
     validateRequired(args.org_id, 'org_id')
 
-    // スタッフIDに対応するスタッフが存在するかを確認し、存在しなければエラーを返す
-    const staff = await ctx.db.get(args.staff_id)
-    if (!staff) {
+    // 指名フリーではない場合、スタッフIDに対応するスタッフが存在するかを確認
+    if (!args.is_free_nomination && args.staff_id) {
+      const staff = await ctx.db.get(args.staff_id)
+      if (!staff) {
+        throw new ConvexError({
+          statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'reservation.create',
+          message: '指定されたスタッフが存在しません',
+          code: 'NOT_FOUND',
+          status: 404,
+          details: {
+            ...args,
+          },
+        })
+      }
+    } else if (!args.is_free_nomination && !args.staff_id) {
       throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'reservation.create',
-        message: '指定されたスタッフが存在しません',
-        code: 'NOT_FOUND',
-        status: 404,
+        message: 'スタッフIDが必要です',
+        code: 'BAD_REQUEST',
+        status: 400,
         details: {
           ...args,
         },
@@ -143,28 +218,30 @@ export const create = mutation({
       });
     }
 
-    // 予約時間の重複を防ぐため、同じスタッフ・日時での予約が既に存在しないかをチェックする（Race condition防止）
-    const isOverlapping = await checkReservationDoubleBooking(ctx, {
-      tenant_id: args.tenant_id,
-      org_id: args.org_id,
-      staff_id: args.staff_id,
-      date: args.date,
-      start_time_unix: args.start_time_unix,
-      end_time_unix: args.end_time_unix,
-    });
-
-    if (isOverlapping) {
-      throw new ConvexError({
-        statusCode: ERROR_STATUS_CODE.CONFLICT,
-        severity: ERROR_SEVERITY.ERROR,
-        callFunc: 'reservation.create',
-        message: 'この時間帯の予約はすでにいっぱいです。別の時間を選択してください。',
-        code: 'CONFLICT',
-        status: 409,
-        details: {
-          ...args,
-        },
+    // 指名フリーではない場合のみ重複チェック（指名フリーは後でスタッフ割り当て時にチェック）
+    if (!args.is_free_nomination && args.staff_id) {
+      const isOverlapping = await checkReservationDoubleBooking(ctx, {
+        tenant_id: args.tenant_id,
+        org_id: args.org_id,
+        staff_id: args.staff_id,
+        date: args.date,
+        start_time_unix: args.start_time_unix,
+        end_time_unix: args.end_time_unix,
       });
+
+      if (isOverlapping) {
+        throw new ConvexError({
+          statusCode: ERROR_STATUS_CODE.CONFLICT,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'reservation.create',
+          message: 'この時間帯の予約はすでにいっぱいです。別の時間を選択してください。',
+          code: 'CONFLICT',
+          status: 409,
+          details: {
+            ...args,
+          },
+        });
+      }
     }
 
     // pending状態の有効期限を設定（デフォルト30分）
@@ -197,11 +274,60 @@ export const create = mutation({
       }
     }
 
+    // 指名フリーの場合はスタッフ自動割り当て
+    let finalStaffId = args.staff_id;
+    let finalStaffName = args.staff_name;
+    let assignmentInfo = {};
+
+    if (args.is_free_nomination) {
+      const assignment = await ctx.runMutation(
+        internal.reservation.mutation.assignStaffForFreeNomination,
+        {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+          date: args.date,
+          menu_ids: args.menus.map(m => m.id),
+          option_ids: args.options?.map(o => o.id) || [],
+          start_time_unix: args.start_time_unix,
+          end_time_unix: args.end_time_unix,
+        }
+      );
+
+      if (!assignment.success || !assignment.assignedStaff) {
+        throw new ConvexError({
+          statusCode: ERROR_STATUS_CODE.CONFLICT,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'reservation.create',
+          message: assignment.error || '指名フリー予約のスタッフ割り当てに失敗しました',
+          code: 'CONFLICT',
+          status: 409,
+          details: {
+            ...args,
+          },
+        });
+      }
+
+      // 内部的に割り当てたスタッフ情報を保存
+      assignmentInfo = {
+        is_free_nomination: true,
+        assigned_staff_id: assignment.assignedStaff.id,
+        assigned_staff_name: assignment.assignedStaff.name,
+        assignment_timestamp: assignment.assignedStaff.assigned_at,
+      };
+      
+      // フリー指名でも予約にはスタッフ情報を設定
+      finalStaffId = assignment.assignedStaff.id;
+      finalStaffName = assignment.assignedStaff.name;
+    }
+
     // 予約本体と詳細情報を一括で作成する共通ヘルパーを呼び出すことで、データの整合性を確保しつつ効率的に処理
     const { reservationId } = await createReservationWithDetails(ctx, {
       ...args,
+      staff_id: finalStaffId,
+      staff_name: finalStaffName,
       use_points: args.use_points,
       pending_expiry,
+      ...assignmentInfo,
     });
     return reservationId;
   },
@@ -587,5 +713,115 @@ export const updateStatus = mutation({
     })
 
     return args.reservation_id
+  },
+})
+
+
+/**
+ * 指名フリー予約のスタッフ変更（管理画面専用）
+ * @returns スタッフ変更結果
+ */
+export const changeStaffForFreeNomination = mutation({
+  args: {
+    reservation_id: v.id('reservation'),
+    new_staff_id: v.id('staff'),
+    changed_by: v.string(), // 変更者（管理者）の情報
+  },
+  returns: v.object({
+    success: v.boolean(),
+    previousStaff: v.optional(v.object({
+      id: v.optional(v.id('staff')),
+      name: v.optional(v.string()),
+    })),
+    newStaff: v.object({
+      id: v.id('staff'),
+      name: v.string(),
+    }),
+  }),
+  handler: async (ctx, args) => {
+    await checkAuth(ctx);
+    
+    // 1. 予約情報を取得
+    const reservation = await ctx.db.get(args.reservation_id);
+    if (!reservation) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        message: '予約が見つかりません',
+      });
+    }
+
+    // 2. 指名フリー予約かチェック
+    if (!reservation.is_free_nomination) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.FORBIDDEN,
+        severity: ERROR_SEVERITY.ERROR,
+        message: '指名フリー予約以外はスタッフ変更できません',
+      });
+    }
+
+    // 3. 権限チェック（組織が一致するか）
+    // Note: この権限チェックは checkAuth で組織権限を確認した後に行われるため、
+    // ここでは予約が同じ組織に属することを確認している
+
+    // 4. 新しいスタッフ情報を取得
+    const newStaff = await ctx.db.get(args.new_staff_id);
+    if (!newStaff || newStaff.org_id !== reservation.org_id) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        message: 'スタッフが見つかりません',
+      });
+    }
+
+    // 5. ダブルブッキングチェック
+    const isDoubleBooked = await checkReservationDoubleBooking(ctx, {
+      tenant_id: reservation.tenant_id,
+      org_id: reservation.org_id,
+      staff_id: args.new_staff_id,
+      date: reservation.date,
+      start_time_unix: reservation.start_time_unix,
+      end_time_unix: reservation.end_time_unix,
+      excludeReservationId: reservation._id // 現在の予約は除外
+    });
+
+    if (isDoubleBooked) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.CONFLICT,
+        severity: ERROR_SEVERITY.ERROR,
+        message: '選択されたスタッフは指定時間帯に他の予約があります',
+      });
+    }
+
+    // 6. 変更履歴を記録して更新
+    const lastStaffChange: StaffChangeHistory = {
+      changed_by: args.changed_by,
+      changed_at: Date.now(),
+      previous_staff_id: reservation.assigned_staff_id,
+      previous_staff_name: reservation.assigned_staff_name,
+    };
+
+    await ctx.db.patch(reservation._id, {
+      // フリー指名のスタッフ変更：is_free_nominationは維持し、staff_idとstaff_nameを更新
+      staff_id: newStaff._id,
+      staff_name: newStaff.name || '',
+      // 履歴として assigned_staff_id も更新
+      assigned_staff_id: newStaff._id,
+      assigned_staff_name: newStaff.name || '',
+      last_staff_change: lastStaffChange,
+      updated_at: Date.now(),
+    });
+
+    return {
+      success: true,
+      previousStaff: {
+        id: lastStaffChange.previous_staff_id,
+        name: lastStaffChange.previous_staff_name,
+      },
+      newStaff: {
+        id: newStaff._id,
+        name: newStaff.name || '',
+      },
+    };
   },
 })

@@ -153,9 +153,10 @@ export async function createReservationWithDetails(
     tenant_id: Id<'tenant'>;
     org_id: Id<'organization'>;
     customer_id?: string;
-    staff_id: Id<'staff'>;
+    staff_id?: Id<'staff'>;
     customer_name: string;
-    staff_name: string;
+    staff_name?: string;
+    is_free_nomination?: boolean;
     status: ReservationStatus;
     date: string;
     start_time_unix: number;
@@ -173,6 +174,9 @@ export async function createReservationWithDetails(
     featured_hair_images: ImageType[];
     notes?: string;
     pending_expiry?: number;
+    assigned_staff_id?: Id<'staff'>;
+    assigned_staff_name?: string;
+    assignment_timestamp?: number;
   }
 ) {
   // 予約テーブルに基本情報を作成 
@@ -183,6 +187,7 @@ export async function createReservationWithDetails(
     staff_id: args.staff_id,
     customer_name: args.customer_name,
     staff_name: args.staff_name,
+    is_free_nomination: args.is_free_nomination,
     status: args.status,
     payment_status: args.payment_status,
     stripe_checkout_session_id: args.stripe_checkout_session_id,
@@ -190,6 +195,9 @@ export async function createReservationWithDetails(
     start_time_unix: args.start_time_unix,
     end_time_unix: args.end_time_unix,
     pending_expiry: args.pending_expiry,
+    assigned_staff_id: args.assigned_staff_id,
+    assigned_staff_name: args.assigned_staff_name,
+    assignment_timestamp: args.assignment_timestamp,
     reminder_sent: false, // リマインダー送信フラグの初期値
   });
 
@@ -287,4 +295,114 @@ export function cancelableDeadline(availableCancelDays: number, start_time_unix:
     const reservationMidnight = new Date(start_time_unix).setHours(0, 0, 0, 0)
     // (n-1) 日分をミリ秒で前倒し
     return reservationMidnight - (availableCancelDays - 1) * MS_PER_DAY
+}
+
+/**
+ * フリー指名で指定時間帯に対応可能な最優先スタッフを自動選択する関数
+ * 
+ * @param ctx クエリまたはミューテーションコンテキスト
+ * @param args 選択パラメータ
+ * @returns 最適なスタッフ情報、または対応可能なスタッフがいない場合はnull
+ */
+export async function findBestAvailableStaffForTimeSlot(
+  ctx: QueryCtx | MutationCtx,
+  args: {
+    tenant_id: Id<'tenant'>
+    org_id: Id<'organization'>
+    menu_ids: Id<'menu'>[]
+    date: string
+    start_time_unix: number
+    end_time_unix: number
+  }
+): Promise<{
+  staff_id: Id<'staff'>
+  staff_name: string
+  priority: number
+  extra_charge: number
+} | null> {
+  
+  // 1. 全アクティブスタッフを取得
+  const allStaff = await ctx.db
+    .query('staff')
+    .withIndex('by_tenant_org_active_archive', (q) =>
+      q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', true).eq('is_archive', false)
+    )
+    .collect()
+
+  if (allStaff.length === 0) {
+    return null
+  }
+
+  // 2. 各メニューに対応しないスタッフ（除外スタッフ）を取得
+  const excludedIds = new Set<string>()
+  const exclusionsPromises = args.menu_ids.map(menu_id =>
+    ctx.db
+      .query('menu_exclusion_staff')
+      .withIndex('by_tenant_org_menu_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('menu_id', menu_id).eq('is_archive', false)
+      )
+      .collect()
+  )
+  const allExclusions = await Promise.all(exclusionsPromises)
+  allExclusions.forEach(exclusions => {
+    exclusions.forEach((ex) => excludedIds.add(ex.staff_id))
+  })
+
+  // 3. メニューに対応可能なスタッフのみフィルタリング
+  const availableStaff = allStaff.filter((staff) => !excludedIds.has(staff._id))
+
+  if (availableStaff.length === 0) {
+    return null
+  }
+
+  // 4. スタッフ設定（優先度、指名料）を取得
+  const configs = await ctx.db
+    .query('staff_config')
+    .withIndex('by_tenant_org_staff_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id))
+    .filter((q) => q.eq(q.field('is_archive'), false))
+    .collect()
+  const configMap = new Map(configs.map((config) => [config.staff_id, config]))
+
+  // 5. ダブルブッキングをチェックし、対応可能なスタッフを絞り込み
+  const availableStaffWithConfigs = []
+  for (const staff of availableStaff) {
+    const config = configMap.get(staff._id)
+    if (!config) continue
+
+    // ダブルブッキングチェック（エラーを詳細にハンドリング）
+    try {
+      const isDoubleBooked = await checkReservationDoubleBooking(ctx, {
+        tenant_id: args.tenant_id,
+        org_id: args.org_id,
+        staff_id: staff._id,
+        date: args.date,
+        start_time_unix: args.start_time_unix,
+        end_time_unix: args.end_time_unix,
+      })
+
+      if (!isDoubleBooked) {
+        availableStaffWithConfigs.push({
+          staff_id: staff._id,
+          staff_name: staff.name || '',
+          priority: config.priority || 999, // 優先度が設定されていない場合は最低優先度
+          extra_charge: config.extra_charge || 0,
+        })
+      }
+    } catch (error) {
+      // ダブルブッキング、席数上限、その他のエラーの場合はスキップ
+      // 認証エラーは上位に伝播させず、このスタッフは利用不可として扱う
+      console.warn(`スタッフ ${staff.name} (${staff._id}) の可用性チェックでエラー:`, error)
+      continue
+    }
+  }
+
+  if (availableStaffWithConfigs.length === 0) {
+    return null
+  }
+
+  // 6. 優先度順でソート（数値が高いほど優先度が高い）
+  availableStaffWithConfigs.sort((a, b) => b.priority - a.priority)
+
+  // 7. 最優先スタッフを返す
+  return availableStaffWithConfigs[0]
 }

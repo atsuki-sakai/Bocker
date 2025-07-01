@@ -11,13 +11,13 @@
  *   → これらは必ずmutation/helpers（checkDoubleBooking）側で担保すること
  * ---------------------------------------------------------------
  */
-import { DayOfWeek } from '@/convex/types';
 import { paginationOptsValidator } from 'convex/server';
 import { reservationStatusType } from '@/convex/types';
 import { checkAuth } from '@/convex/utils/auth';
 import { AvailableStaff } from '@/hooks/usePriceCalculation';
 import { Doc } from '@/convex/_generated/dataModel';
 import { query } from '@/convex/_generated/server';
+import { api, internal } from '@/convex/_generated/api';
 import { v } from 'convex/values';
 
 import { validateDateStrFormat, validateStringLength } from '@/convex/utils/validations';
@@ -28,13 +28,13 @@ import {
   toHourString,
   convertTimestampToHour
 } from '@/lib/schedules';
-import { TimeRange } from '@/lib/types';
+import { TimeRange, IntegratedAvailabilityInfo } from '@/lib/types';
 import { validateDateStrToDate } from '@/convex/utils/validations';
 import { ConvexError } from 'convex/values';
-import { getReservationWithDetail, checkReservationDoubleBooking } from './reservation.helpers';
-import { api } from '@/convex/_generated/api';
+import { getReservationWithDetail, checkReservationDoubleBooking, findBestAvailableStaffForTimeSlot } from './reservation.helpers';
 import { internalQuery } from '@/convex/_generated/server';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
+import { IntegratedTimeSlot, integratedTimeSlotType, DayOfWeek } from '@/convex/types';
 
 
 /**
@@ -984,7 +984,7 @@ export const calculateReservationTime = query({
           q
             .eq('tenant_id', args.tenant_id)
             .eq('org_id', args.org_id)
-            .eq('day_of_week', dayOfWeek as any)
+            .eq('day_of_week', dayOfWeek as DayOfWeek)
             .eq('is_archive', false)
         )
         .filter((q) => q.eq(q.field('is_open'), true))
@@ -1011,7 +1011,7 @@ export const calculateReservationTime = query({
             .eq('tenant_id', args.tenant_id)
             .eq('org_id', args.org_id)
             .eq('staff_id', args.staff_id)
-            .eq('day_of_week', dayOfWeek as any)
+            .eq('day_of_week', dayOfWeek as DayOfWeek)
             .eq('is_open', true)
             .eq('is_archive', false)
         )
@@ -1189,6 +1189,163 @@ export const calculateReservationTime = query({
   },
 })
 
+/**
+ * 指名フリー予約用：複数スタッフの統合空き時間を計算
+ * @returns IntegratedAvailabilityInfo 統合された空き時間情報
+ */
+export const calculateIntegratedAvailableTimes = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    menu_ids: v.array(v.id('menu')),
+    option_ids: v.array(v.id('option')),
+    date: v.string(), // YYYY-MM-DD
+  },
+  returns: v.object({
+    available: v.boolean(),
+    timeSlots: v.array(integratedTimeSlotType),
+    totalAvailableStaffs: v.number(),
+  }),
+  handler: async (ctx, args): Promise<IntegratedAvailabilityInfo> => {
+    // 日付形式バリデーション
+    if (!validateDateStrFormat(args.date)) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        message: '日付形式が正しくありません',
+      });
+    }
+
+    // 1. 対応可能なスタッフを取得（認証チェックをスキップ）
+    // 顧客予約フローからの呼び出しのため認証は不要
+    const availableStaffs = await ctx.runQuery(
+      internal.staff.query.findByAvailableStaffsInternal,
+      {
+        tenant_id: args.tenant_id,
+        org_id: args.org_id,
+        menu_ids: args.menu_ids,
+      }
+    );
+
+    if (availableStaffs.length === 0) {
+      return { 
+        available: false, 
+        timeSlots: [],
+        totalAvailableStaffs: 0 
+      };
+    }
+
+    // メニューとオプションの合計時間を計算（パフォーマンス最適化：並列取得）
+    const [menus, options] = await Promise.all([
+      // メニュー取得
+      Promise.all(args.menu_ids.map(id => ctx.db.get(id))),
+      // オプション取得
+      args.option_ids.length > 0 
+        ? Promise.all(args.option_ids.map(id => ctx.db.get(id)))
+        : Promise.resolve([])
+    ]);
+
+    // null除外とアーカイブチェック
+    const validMenus = menus.filter((menu): menu is NonNullable<typeof menu> => menu !== null && !menu.is_archive);
+    const validOptions = options.filter((option): option is NonNullable<typeof option> => option !== null && !option.is_archive);
+
+    const totalDuration = validMenus.reduce((sum, menu) => sum + (menu.duration_min || 0), 0) +
+                         validOptions.reduce((sum, option) => sum + (option?.duration_min || 0), 0);
+
+    // 2. 各スタッフの空き時間を並列で取得（エラーハンドリング付き）
+    const staffAvailabilities = await Promise.all(
+      availableStaffs.map(async (staff) => {
+        try {
+          const times = await ctx.runQuery(
+            api.reservation.query.calculateReservationTime,
+            {
+              tenant_id: args.tenant_id,
+              org_id: args.org_id,
+              staff_id: staff._id,
+              date: args.date,
+              duration_min: totalDuration,
+            }
+          );
+          return { 
+            staff: {
+              _id: staff._id,
+              name: staff.name || '',
+              priority: staff.priority || 0,
+              extra_charge: staff.extra_charge || 0,
+            }, 
+            times 
+          };
+        } catch {
+          // スタッフが休みの日などのエラーは無視して、空の時間枠を返す
+          return {
+            staff: {
+              _id: staff._id,
+              name: staff.name || '',
+              priority: staff.priority || 0,
+              extra_charge: staff.extra_charge || 0,
+            },
+            times: [] // 空の時間枠
+          };
+        }
+      })
+    );
+
+    // 3. 時間帯ごとに統合（Map使用でO(n)で処理）
+    const integratedSlots = new Map<string, IntegratedTimeSlot>();
+
+    staffAvailabilities.forEach(({ staff, times }) => {
+      if (times && times.length > 0) {
+        times.forEach((timeRange: TimeRange) => {
+          const key = `${timeRange.startHour}-${timeRange.endHour}`;
+          const existing = integratedSlots.get(key);
+          
+          if (existing) {
+            existing.availableStaffs.push({
+              id: staff._id,
+              name: staff.name,
+              priority: staff.priority,
+              extra_charge: staff.extra_charge,
+            });
+          } else {
+            integratedSlots.set(key, {
+              start: timeRange.startHour,
+              end: timeRange.endHour,
+              availableStaffs: [{
+                id: staff._id,
+                name: staff.name,
+                priority: staff.priority,
+                extra_charge: staff.extra_charge,
+              }],
+            });
+          }
+        });
+      }
+    });
+
+    // 4. 各スロットのスタッフを優先度でソート
+    const sortedSlots: IntegratedTimeSlot[] = Array.from(integratedSlots.values()).map(slot => ({
+      ...slot,
+      availableStaffs: slot.availableStaffs.sort((a, b) => {
+        const priorityDiff = b.priority - a.priority;
+        if (priorityDiff !== 0) return priorityDiff;
+        return a.extra_charge - b.extra_charge;
+      }),
+    }));
+
+    // 5. スロット自体を開始時間でソート
+    sortedSlots.sort((a, b) => {
+      const aMinutes = hourToMinutes(a.start);
+      const bMinutes = hourToMinutes(b.start);
+      return aMinutes - bMinutes;
+    });
+
+    return {
+      available: sortedSlots.length > 0,
+      timeSlots: sortedSlots,
+      totalAvailableStaffs: availableStaffs.length,
+    };
+  },
+});
 
 /**
  * Supabaseアーカイブ連携用クエリ
@@ -1204,7 +1361,7 @@ export const syncReservationToSupabase = query({
   },
   handler: async (ctx, { cursor, limit = 5000 }) => {
     
-    let queryBuilder = ctx.db.query("reservation").withIndex("status_start_time_archive", q => 
+    const queryBuilder = ctx.db.query("reservation").withIndex("status_start_time_archive", q => 
       q
       .eq("status", "completed")
       .lt("start_time_unix", new Date().getTime())
@@ -1320,7 +1477,7 @@ export const listByStaffIds = query({
     }
     
     // 各スタッフの予約を効率的に取得
-    const allReservations: any[] = []
+    const allReservations: Doc<'reservation'>[] = []
     
     // スタッフごとの予約を並列取得
     const reservationPromises = args.staff_ids.map(async (staff_id) => {
@@ -1579,5 +1736,33 @@ export const getPendingReservations = query({
       ...result,
       page: enrichedData,
     }
+  },
+})
+
+/**
+ * フリー指名用：指定時間帯に対応可能な最優先スタッフを取得
+ * DateView コンポーネントから呼び出され、時間選択時に自動でスタッフを割り当てる
+ */
+export const getBestAvailableStaffForTimeSlot = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    menu_ids: v.array(v.id('menu')),
+    date: v.string(),
+    start_time_unix: v.number(),
+    end_time_unix: v.number(),
+  },
+  returns: v.union(
+    v.object({
+      staff_id: v.id('staff'),
+      staff_name: v.string(),
+      priority: v.number(),
+      extra_charge: v.number(),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    // 顧客予約フローからの呼び出しのため認証チェックは不要
+    return await findBestAvailableStaffForTimeSlot(ctx, args)
   },
 })

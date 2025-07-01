@@ -18,9 +18,10 @@ type CreatePayload = {
   tenant_id: Id<'tenant'>;
   org_id: Id<'organization'>;
   customer_id?: string;
-  staff_id: Id<'staff'>;
+  staff_id?: Id<'staff'>;
   customer_name: string;
-  staff_name: string;
+  staff_name?: string;
+  is_free_nomination?: boolean;
   status: ReservationStatus;
   date: string;
   start_time_unix: number;
@@ -84,9 +85,10 @@ export const handleReservationManage = mutation({
         tenant_id: v.id('tenant'),
         org_id: v.id('organization'),
         customer_id: v.optional(v.string()),
-        staff_id: v.id('staff'),
+        staff_id: v.optional(v.id('staff')),
         customer_name: v.string(),
-        staff_name: v.string(),
+        staff_name: v.optional(v.string()),
+        is_free_nomination: v.optional(v.boolean()),
         status: reservationStatusType,
         date: v.string(),
         start_time_unix: v.number(),
@@ -259,13 +261,15 @@ async function createReservationCore(ctx: MutationCtx, p: CreatePayload) {
   validateRequiredNumber(p.end_time_unix, 'end_time_unix');
   validateRequired(p.org_id, 'org_id');
 
-  // スタッフ存在確認
-  const staff = await ctx.db.get(p.staff_id);
-  if (!staff) {
-    throw new ConvexError({
-      code: "NOT_FOUND",
-      message: "指定されたスタッフが存在しません",
-    });
+  // スタッフ存在確認（指名フリーでない場合のみ）
+  if (p.staff_id) {
+    const staff = await ctx.db.get(p.staff_id);
+    if (!staff) {
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "指定されたスタッフが存在しません",
+      });
+    }
   }
 
   // 組織存在確認
@@ -283,23 +287,25 @@ async function createReservationCore(ctx: MutationCtx, p: CreatePayload) {
     });
   }
 
-  // 1. 重複チェック
-  const isOverlapping = await checkReservationDoubleBooking(ctx, {
-    tenant_id: p.tenant_id,
-    org_id: p.org_id,
-    staff_id: p.staff_id,
-    date: p.date,
-    start_time_unix: p.start_time_unix,
-    end_time_unix: p.end_time_unix,
-  });
-  
-  if (isOverlapping) {
-    throw new ConvexError({ 
-      code: ERROR_STATUS_CODE.CONFLICT, 
-      severity: ERROR_SEVERITY.ERROR,
-      message: "この時間帯の予約はすでにいっぱいです。別の時間を選択してください。",
-      status: ERROR_STATUS_CODE.CONFLICT,
+  // 1. 重複チェック（指名フリーでない場合のみ）
+  if (p.staff_id && !p.is_free_nomination) {
+    const isOverlapping = await checkReservationDoubleBooking(ctx, {
+      tenant_id: p.tenant_id,
+      org_id: p.org_id,
+      staff_id: p.staff_id,
+      date: p.date,
+      start_time_unix: p.start_time_unix,
+      end_time_unix: p.end_time_unix,
     });
+    
+    if (isOverlapping) {
+      throw new ConvexError({ 
+        code: ERROR_STATUS_CODE.CONFLICT, 
+        severity: ERROR_SEVERITY.ERROR,
+        message: "この時間帯の予約はすでにいっぱいです。別の時間を選択してください。",
+        status: ERROR_STATUS_CODE.CONFLICT,
+      });
+    }
   }
   
 
@@ -335,6 +341,7 @@ async function createReservationCore(ctx: MutationCtx, p: CreatePayload) {
     staff_id: p.staff_id,
     customer_name: p.customer_name,
     staff_name: p.staff_name,
+    is_free_nomination: p.is_free_nomination,
     status: p.payment_method === "cash" ? "confirmed" : "pending",
     date: p.date,
     start_time_unix: p.start_time_unix,

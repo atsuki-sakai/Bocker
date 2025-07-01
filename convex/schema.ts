@@ -689,9 +689,9 @@ const reservation = defineTable({
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.id('organization'), // 店舗ID
   customer_id: v.optional(v.string()), // Supabase 側の customer.uid (UUID)
-  staff_id: v.id('staff'), // スタッフID
+  staff_id: v.optional(v.id('staff')), // スタッフID（指名フリーの場合は任意）
   customer_name: v.string(), // 顧客名
-  staff_name: v.string(), // スタッフ名
+  staff_name: v.optional(v.string()), // スタッフ名（指名フリーの場合は任意）
   status: reservationStatusType, // 予約ステータス
   payment_status: reservationPaymentStatusType, // 支払ステータス
   stripe_checkout_session_id: v.optional(v.string()), // Stripe Checkout Session ID
@@ -708,6 +708,17 @@ const reservation = defineTable({
   // リマインダー情報
   reminder_sent: v.optional(v.boolean()), // リマインダー送信済みフラグ
   reminder_sent_at: v.optional(v.number()), // リマインダー送信日時（Unix timestamp）
+  // 指名フリー関連フィールド
+  is_free_nomination: v.optional(v.boolean()), // 指名フリーフラグ
+  assigned_staff_id: v.optional(v.id('staff')), // 実際に割り当てられたスタッフID
+  assigned_staff_name: v.optional(v.string()), // 実際に割り当てられたスタッフ名
+  assignment_timestamp: v.optional(v.number()), // スタッフ割り当て時刻（Unix timestamp）
+  last_staff_change: v.optional(v.object({ // スタッフ変更履歴
+    changed_by: v.string(), // 変更者ID
+    changed_at: v.number(), // 変更日時
+    previous_staff_id: v.optional(v.id('staff')), // 前のスタッフID
+    previous_staff_name: v.optional(v.string()), // 前のスタッフ名
+  })),
   ...CommonFields,　// デフォルトでこれらのフィールドを持つ _creationTime: number | undefined; is_archive?: boolean | undefined; updated_at?: number | undefined; deleted_at?: number | undefined;
 })
   // ① Convex ID による単一レコード取得（_idフィールド使用）

@@ -1,19 +1,49 @@
-import { query } from "../_generated/server";
+import { query, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
 
 /**
  * 移行対象の予約データを取得するクエリ
  * confirmed以外のステータス（completed, cancelled, refunded等）かつ24時間以上経過した予約を取得
  */
-export const getNonActiveReservations = query({
+export const getNonActiveReservations = internalQuery({
   args: {
-    cursor: v.optional(v.string()),
+    cursor: v.optional(v.id('reservation')),
     limit: v.number(),
     cutoffTime: v.number() // 基準時刻（Unix timestamp）
   },
   returns: v.object({
-    records: v.array(v.any()),
-    nextCursor: v.optional(v.string()),
+    records: v.array(v.object({
+      _id: v.id('reservation'),
+      _creationTime: v.number(),
+      tenant_id: v.id('tenant'),
+      org_id: v.id('organization'),
+      customer_id: v.optional(v.string()),
+      staff_id: v.optional(v.id('staff')),
+      customer_name: v.string(),
+      staff_name: v.optional(v.string()),
+      status: v.string(),
+      payment_status: v.string(),
+      stripe_checkout_session_id: v.optional(v.string()),
+      stripe_payment_intent_id: v.optional(v.string()),
+      date: v.string(),
+      start_time_unix: v.number(),
+      end_time_unix: v.number(),
+      pending_expiry: v.optional(v.number()),
+      cancelled_at: v.optional(v.number()),
+      cancelled_by: v.optional(v.string()),
+      cancel_reason: v.optional(v.string()),
+      reminder_sent: v.optional(v.boolean()),
+      reminder_sent_at: v.optional(v.number()),
+      is_free_nomination: v.optional(v.boolean()),
+      assigned_staff_id: v.optional(v.id('staff')),
+      assigned_staff_name: v.optional(v.string()),
+      assignment_timestamp: v.optional(v.number()),
+      last_staff_change: v.optional(v.any()),
+      is_archive: v.optional(v.boolean()),
+      updated_at: v.optional(v.number()),
+      deleted_at: v.optional(v.number())
+    })),
+    nextCursor: v.optional(v.id('reservation')),
     hasMore: v.boolean()
   }),
   handler: async (ctx, { cursor, limit, cutoffTime }) => {
@@ -34,10 +64,10 @@ export const getNonActiveReservations = query({
 
     // カーソルがある場合は、その位置から開始
     if (cursor) {
-      const cursorDoc = await ctx.db.get(cursor as any);
-      if (cursorDoc) {
+      const cursorReservation = await ctx.db.get(cursor);
+      if (cursorReservation) {
         query = query.filter((q) => 
-          q.gt(q.field('_creationTime'), cursorDoc._creationTime)
+          q.gt(q.field('_creationTime'), cursorReservation._creationTime)
         );
       }
     }
@@ -61,15 +91,45 @@ export const getNonActiveReservations = query({
  * 移行対象のキャンセル済み予約データを取得するクエリ（下位互換のため残す）
  * @deprecated getNonActiveReservationsを使用してください
  */
-export const getCancelledReservations = query({
+export const getCancelledReservations = internalQuery({
   args: {
-    cursor: v.optional(v.string()),
+    cursor: v.optional(v.id('reservation')),
     limit: v.number(),
     cutoffTime: v.number() // 7日前のUnix timestamp
   },
   returns: v.object({
-    records: v.array(v.any()),
-    nextCursor: v.optional(v.string()),
+    records: v.array(v.object({
+      _id: v.id('reservation'),
+      _creationTime: v.number(),
+      tenant_id: v.id('tenant'),
+      org_id: v.id('organization'),
+      customer_id: v.optional(v.string()),
+      staff_id: v.optional(v.id('staff')),
+      customer_name: v.string(),
+      staff_name: v.optional(v.string()),
+      status: v.string(),
+      payment_status: v.string(),
+      stripe_checkout_session_id: v.optional(v.string()),
+      stripe_payment_intent_id: v.optional(v.string()),
+      date: v.string(),
+      start_time_unix: v.number(),
+      end_time_unix: v.number(),
+      pending_expiry: v.optional(v.number()),
+      cancelled_at: v.optional(v.number()),
+      cancelled_by: v.optional(v.string()),
+      cancel_reason: v.optional(v.string()),
+      reminder_sent: v.optional(v.boolean()),
+      reminder_sent_at: v.optional(v.number()),
+      is_free_nomination: v.optional(v.boolean()),
+      assigned_staff_id: v.optional(v.id('staff')),
+      assigned_staff_name: v.optional(v.string()),
+      assignment_timestamp: v.optional(v.number()),
+      last_staff_change: v.optional(v.any()),
+      is_archive: v.optional(v.boolean()),
+      updated_at: v.optional(v.number()),
+      deleted_at: v.optional(v.number())
+    })),
+    nextCursor: v.optional(v.id('reservation')),
     hasMore: v.boolean()
   }),
   handler: async (ctx, { cursor, limit, cutoffTime }) => {
@@ -86,10 +146,10 @@ export const getCancelledReservations = query({
       .order('asc');
 
     if (cursor) {
-      const cursorDoc = await ctx.db.get(cursor as any);
-      if (cursorDoc) {
+      const cursorReservation = await ctx.db.get(cursor);
+      if (cursorReservation) {
         query = query.filter((q) => 
-          q.gt(q.field('_creationTime'), cursorDoc._creationTime)
+          q.gt(q.field('_creationTime'), cursorReservation._creationTime)
         );
       }
     }
@@ -112,15 +172,45 @@ export const getCancelledReservations = query({
  * 移行対象の完了済み予約データを取得するクエリ（下位互換のため残す）
  * @deprecated getNonActiveReservationsを使用してください
  */
-export const getCompletedReservations = query({
+export const getCompletedReservations = internalQuery({
   args: {
-    cursor: v.optional(v.string()),
+    cursor: v.optional(v.id('reservation')),
     limit: v.number(),
     cutoffTime: v.number() // 基準時刻（Unix timestamp）
   },
   returns: v.object({
-    records: v.array(v.any()),
-    nextCursor: v.optional(v.string()),
+    records: v.array(v.object({
+      _id: v.id('reservation'),
+      _creationTime: v.number(),
+      tenant_id: v.id('tenant'),
+      org_id: v.id('organization'),
+      customer_id: v.optional(v.string()),
+      staff_id: v.optional(v.id('staff')),
+      customer_name: v.string(),
+      staff_name: v.optional(v.string()),
+      status: v.string(),
+      payment_status: v.string(),
+      stripe_checkout_session_id: v.optional(v.string()),
+      stripe_payment_intent_id: v.optional(v.string()),
+      date: v.string(),
+      start_time_unix: v.number(),
+      end_time_unix: v.number(),
+      pending_expiry: v.optional(v.number()),
+      cancelled_at: v.optional(v.number()),
+      cancelled_by: v.optional(v.string()),
+      cancel_reason: v.optional(v.string()),
+      reminder_sent: v.optional(v.boolean()),
+      reminder_sent_at: v.optional(v.number()),
+      is_free_nomination: v.optional(v.boolean()),
+      assigned_staff_id: v.optional(v.id('staff')),
+      assigned_staff_name: v.optional(v.string()),
+      assignment_timestamp: v.optional(v.number()),
+      last_staff_change: v.optional(v.any()),
+      is_archive: v.optional(v.boolean()),
+      updated_at: v.optional(v.number()),
+      deleted_at: v.optional(v.number())
+    })),
+    nextCursor: v.optional(v.id('reservation')),
     hasMore: v.boolean()
   }),
   handler: async (ctx, { cursor, limit, cutoffTime }) => {
@@ -138,10 +228,10 @@ export const getCompletedReservations = query({
       .order('asc');
 
     if (cursor) {
-      const cursorDoc = await ctx.db.get(cursor as any);
-      if (cursorDoc) {
+      const cursorReservation = await ctx.db.get(cursor);
+      if (cursorReservation) {
         query = query.filter((q) => 
-          q.gt(q.field('_creationTime'), cursorDoc._creationTime)
+          q.gt(q.field('_creationTime'), cursorReservation._creationTime)
         );
       }
     }
@@ -163,11 +253,31 @@ export const getCompletedReservations = query({
 /**
  * 特定の予約に関連する予約詳細を取得
  */
-export const getReservationDetails = query({
+export const getReservationDetails = internalQuery({
   args: {
     reservationIds: v.array(v.id('reservation'))
   },
-  returns: v.array(v.any()),
+  returns: v.array(v.object({
+    _id: v.id('reservation_detail'),
+    _creationTime: v.number(),
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    reservation_id: v.id('reservation'),
+    coupon_id: v.optional(v.id('coupon')),
+    total_price: v.optional(v.number()),
+    payment_method: v.string(),
+    menus: v.array(v.any()),
+    options: v.array(v.any()),
+    extra_charge: v.optional(v.number()),
+    use_points: v.optional(v.number()),
+    coupon_discount: v.optional(v.number()),
+    featured_hair_images: v.array(v.any()),
+    notes: v.optional(v.string()),
+    cancellation_info: v.optional(v.any()),
+    is_archive: v.optional(v.boolean()),
+    updated_at: v.optional(v.number()),
+    deleted_at: v.optional(v.number())
+  })),
   handler: async (ctx, { reservationIds }) => {
     // 複数の予約IDに対応する詳細を一括取得
     const details = await Promise.all(
@@ -195,7 +305,7 @@ export const getReservationDetails = query({
 /**
  * 移行前のデータ件数を確認するクエリ
  */
-export const getMigrationStats = query({
+export const getMigrationStats = internalQuery({
   args: {
     cutoffTime: v.number()
   },
@@ -238,17 +348,17 @@ export const getMigrationStats = query({
  */
 export const checkMigratedRecords = query({
   args: {
-    convexIds: v.array(v.string())
+    convexIds: v.array(v.id('reservation'))
   },
   returns: v.array(v.object({
-    convexId: v.string(),
+    convexId: v.id('reservation'),
     exists: v.boolean()
   })),
   handler: async (ctx, { convexIds }) => {
     const results = await Promise.all(
       convexIds.map(async (convexId) => {
         try {
-          const doc = await ctx.db.get(convexId as any);
+          const doc = await ctx.db.get(convexId);
           return {
             convexId,
             exists: doc !== null

@@ -1,5 +1,5 @@
 import { dayOfWeekType, imageType, genderType } from '@/convex/types'
-import { query } from '@/convex/_generated/server'
+import { query, internalQuery } from '@/convex/_generated/server'
 import { v } from 'convex/values'
 import { paginationOptsValidator } from 'convex/server'
 import { checkAuth } from '@/convex/utils/auth'
@@ -308,6 +308,98 @@ export const listDisplayData = query({
         extra_charge: config?.extra_charge,
         priority: config?.priority,
         featured_hair_images: config?.featured_hair_images,
+      }
+    })
+  },
+})
+
+// 内部用：認証チェックなしバージョン（顧客予約フロー用）
+export const findByAvailableStaffsInternal = internalQuery({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    menu_ids: v.array(v.id('menu')),
+  },
+  handler: async (ctx, args) => {
+    // 認証チェックをスキップ（顧客予約フローからの呼び出し用）
+
+    // 1. 全スタッフ取得（アクティブかつアーカイブされていない）
+    const allStaff = await ctx.db
+      .query('staff')
+      .withIndex('by_tenant_org_active_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', true).eq('is_archive', false)
+      )
+      .collect()
+
+    // 2. 各メニューに対応しないスタッフ（除外スタッフ）を並列で取得して集約
+    const excludedIds = new Set<string>()
+    const exclusionsPromises = args.menu_ids.map(menu_id =>
+      ctx.db
+        .query('menu_exclusion_staff')
+        .withIndex('by_tenant_org_menu_archive', (q) =>
+          q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('menu_id', menu_id).eq('is_archive', false)
+        )
+        .collect()
+    )
+    const allExclusions = await Promise.all(exclusionsPromises)
+    allExclusions.forEach(exclusions => {
+      exclusions.forEach((ex) => excludedIds.add(ex.staff_id))
+    })
+
+    // 3. 除外されたスタッフを除去
+    const availableStaff = allStaff.filter((staff) => !excludedIds.has(staff._id))
+
+    // 4. スタッフ設定を取得してマッピング (指名料、優先度)
+    const configs = await ctx.db
+      .query('staff_config')
+      .withIndex('by_tenant_org_staff_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id))
+      .filter((q) => q.eq(q.field('is_archive'), false))
+      .collect()
+    const configMap = new Map(configs.map((config) => [config.staff_id, config]))
+
+    // 5. weekScheduleを取得
+    const availableStaffWeekSchedules = await Promise.all(availableStaff.map(async (staff) => {
+      const weekSchedules = await ctx.db
+        .query('staff_week_schedule')
+        .withIndex('by_tenant_org_staff_week_open_archive', (q) =>
+          q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('staff_id', staff._id)
+        )
+        .filter((q) => q.eq(q.field('is_archive'), false))
+        .collect()
+      return {
+        staff_id: staff._id,
+        week_schedules: weekSchedules,
+      }
+    }));
+
+    // 5. 結果を整形して返却
+    return availableStaff.map((staff) => {
+      const config = configMap.get(staff._id)
+      return {
+        _id: staff._id,
+        name: staff.name,
+        age: config?.age,
+        instagram_link: config?.instagram_link,
+        gender: config?.gender,
+        description: staff.description,
+        images: staff.images ? [
+          ...staff.images.map((image) => ({
+            original_url: image.original_url,
+            thumbnail_url: image.thumbnail_url,
+          })),
+        ] : [],
+        tags: config?.tags,
+        is_active: staff.is_active,
+        _creationTime: staff._creationTime,
+        featured_hair_images: config?.featured_hair_images ? [
+          ...config?.featured_hair_images.map((image) => ({
+            original_url: image.original_url,
+            thumbnail_url: image.thumbnail_url,
+          })),
+        ] : [],
+        extra_charge: config?.extra_charge,
+        priority: config?.priority,
+        week_schedules: availableStaffWeekSchedules.find((schedule) => schedule.staff_id === staff._id)?.week_schedules,
       }
     })
   },

@@ -316,6 +316,45 @@ export const IMAGE_DIRECTORY_VALUES = ['setting', 'staff', 'menu', 'option', 'ca
 export const imageDirectoryType = v.union(...IMAGE_DIRECTORY_VALUES.map((directory) => v.literal(directory)))
 export type ImageDirectory = Infer<typeof imageDirectoryType>
 
+// 指名フリー予約関連の型定義
+export const staffSelectionType = v.union(
+  v.literal('specific'),  // 特定スタッフ指名
+  v.literal('free')       // 指名フリー
+)
+export type StaffSelectionType = Infer<typeof staffSelectionType>
+
+// スタッフ割り当て情報の型定義
+export const staffAssignmentType = v.object({
+  id: v.id('staff'),
+  name: v.string(),
+  priority: v.number(),
+  extra_charge: v.number(),
+  assigned_at: v.number(),
+})
+export type StaffAssignment = Infer<typeof staffAssignmentType>
+
+// 統合空き時間スロットの型定義
+export const integratedTimeSlotType = v.object({
+  start: v.string(),  // HH:mm
+  end: v.string(),    // HH:mm
+  availableStaffs: v.array(v.object({
+    id: v.id('staff'),
+    name: v.string(),
+    priority: v.number(),
+    extra_charge: v.number(),
+  })),
+})
+export type IntegratedTimeSlot = Infer<typeof integratedTimeSlotType>
+
+// スタッフ変更履歴の型定義
+export const staffChangeHistoryType = v.object({
+  changed_by: v.string(),
+  changed_at: v.number(),
+  previous_staff_id: v.optional(v.id('staff')),
+  previous_staff_name: v.optional(v.string()),
+})
+export type StaffChangeHistory = Infer<typeof staffChangeHistoryType>
+
 export const TRACKING_CODE_VALUES = [
   'web',
   'line',

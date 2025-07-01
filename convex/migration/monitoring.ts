@@ -255,19 +255,13 @@ export const ALERT_THRESHOLDS = {
  * 監視ダッシュボード用のメトリクス取得関数
  */
 export async function getMigrationDashboardMetrics(
-  supabase: any,
-  convexClient: any
 ): Promise<{
-  lastMigrationMetrics: MigrationMetrics | null;
-  supabaseStats: any;
-  convexStats: any;
+  lastMigrationMetrics: MigrationMetrics | null
   healthStatus: 'healthy' | 'warning' | 'critical';
 }> {
   // 実装は省略（実際のダッシュボードツールに依存）
   return {
     lastMigrationMetrics: null,
-    supabaseStats: {},
-    convexStats: {},
     healthStatus: 'healthy'
   };
 }
