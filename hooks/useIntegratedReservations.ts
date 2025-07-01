@@ -74,9 +74,9 @@ export type IntegratedReservation = {
   tenantId: string;
   orgId: string;
   customerId: string;
-  staffId: string;
+  staffId: string | undefined;
   customerName: string;
-  staffName: string;
+  staffName: string | undefined;
   status: string;
   paymentStatus: string;
   date: string;

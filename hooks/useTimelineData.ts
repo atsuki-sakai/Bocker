@@ -20,7 +20,9 @@ interface StaffTimelineData {
 
 interface ReservationWithDetails {
   _id: Id<'reservation'>
-  staff_id: Id<'staff'>
+  staff_id: Id<'staff'> | null
+  assigned_staff_id?: Id<'staff'>  // フリー指名の場合に使用
+  is_free_nomination?: boolean     // フリー指名フラグ
   customer_id?: string  // Supabase側のcustomer.uid (UUID) - オプショナルフィールド
   staff_name: string
   customer_name: string
@@ -82,6 +84,13 @@ const RESERVATION_COLORS = {
   completed: 'bg-green-100 border-green-300 text-green-800',
 } as const
 
+const FREE_NOMINATION_COLORS = {
+  confirmed: 'bg-purple-100 border-purple-300 text-purple-800',
+  pending: 'bg-orange-100 border-orange-300 text-orange-800',
+  cancelled: 'bg-red-100 border-red-300 text-red-800',
+  completed: 'bg-emerald-100 border-emerald-300 text-emerald-800',
+} as const
+
 const SCHEDULE_COLORS = {
   break: 'bg-gray-100 border-gray-300 text-gray-800',
   holiday: 'bg-red-50 border-red-200 text-red-700',
@@ -132,11 +141,14 @@ const calculateReservationBar = (reservation: ReservationWithDetails): Reservati
   const endColumn = Math.ceil(adjustedEndMinutes / TIME_SLOT_MINUTES)
   const spanColumns = endColumn - startColumn
   
+  // フリー指名予約の場合は専用色を使用
+  const colorSet = reservation.is_free_nomination ? FREE_NOMINATION_COLORS : RESERVATION_COLORS
+  
   return {
     reservation,
     startColumn,
     spanColumns,
-    color: RESERVATION_COLORS[reservation.status as keyof typeof RESERVATION_COLORS] || RESERVATION_COLORS.pending,
+    color: colorSet[reservation.status as keyof typeof colorSet] || colorSet.pending,
   }
 }
 
@@ -226,6 +238,19 @@ export function useTimelineData({
   const staffTimelineData = useMemo(() => {
     if (!staffList?.results || !reservations?.results) return []
     
+    console.log('[useTimelineData] データ確認:', {
+      staffCount: staffList.results.length,
+      reservationCount: reservations.results.length,
+      freeNominationCount: reservations.results.filter(r => r.is_free_nomination).length,
+      sampleReservations: reservations.results.slice(0, 3).map(r => ({
+        id: r._id,
+        is_free_nomination: r.is_free_nomination,
+        staff_id: r.staff_id,
+        assigned_staff_id: r.assigned_staff_id,
+        status: r.status
+      }))
+    })
+    
     // アクティブなスタッフのみフィルタリング
     const activeStaffs = staffList.results.filter(
       staff => staff.is_active && !staff.is_archive
@@ -235,24 +260,59 @@ export function useTimelineData({
     const confirmedReservations = reservations.results.filter(
       res => res.status === 'confirmed' && !res.is_archive
     ) as ReservationWithDetails[]
+    
+    console.log('[useTimelineData] フィルタ後:', {
+      activeStaffCount: activeStaffs.length,
+      confirmedReservationCount: confirmedReservations.length,
+      confirmedFreeNominationCount: confirmedReservations.filter(r => r.is_free_nomination).length
+    })
 
     // スタッフIDでグループ化（パフォーマンス最適化）
+    // フリー指名の場合はassigned_staff_idを使用、未割り当ての場合は通常のstaff_idを使用
     const reservationsByStaff = confirmedReservations.reduce((acc, reservation) => {
-      const staffId = reservation.staff_id
-      if (!acc[staffId]) {
+      let staffId: string | null = null
+      
+      if (reservation.is_free_nomination) {
+        // フリー指名の場合: assigned_staff_idがあればそれを使用、なければstaff_idを使用
+        staffId = reservation.assigned_staff_id || reservation.staff_id
+      } else {
+        // 通常の指名予約の場合
+        staffId = reservation.staff_id
+      }
+      
+      if (staffId && !acc[staffId]) {
         acc[staffId] = []
       }
-      acc[staffId].push(reservation)
+      if (staffId) {
+        acc[staffId].push(reservation)
+      }
       return acc
     }, {} as Record<string, ReservationWithDetails[]>)
 
+    console.log('[useTimelineData] スタッフ別グループ化結果:', {
+      reservationsByStaffKeys: Object.keys(reservationsByStaff),
+      reservationsByStaffValues: Object.entries(reservationsByStaff).map(([staffId, reservations]) => ({
+        staffId,
+        count: reservations.length,
+        freeNominationCount: reservations.filter(r => r.is_free_nomination).length
+      }))
+    })
+
     // スタッフごとのタイムラインデータを構築
     // スケジュールは後で個別に取得するため、ここでは空配列
-    return activeStaffs.map(staff => ({
+    const result = activeStaffs.map(staff => ({
       staff,
       reservations: reservationsByStaff[staff._id]|| [],
       schedules: [], // 個別取得するため空配列
     }))
+    
+    console.log('[useTimelineData] 最終結果:', {
+      totalStaffs: result.length,
+      totalReservations: result.reduce((sum, staff) => sum + staff.reservations.length, 0),
+      staffWithReservations: result.filter(staff => staff.reservations.length > 0).length
+    })
+    
+    return result
   }, [staffList?.results, reservations?.results])
 
   // 統計情報の計算（メモ化）
@@ -357,6 +417,7 @@ export type {
 export {
   TIME_SLOT_MINUTES,
   RESERVATION_COLORS,
+  FREE_NOMINATION_COLORS,
   SCHEDULE_COLORS,
   calculateReservationBar,
   calculateScheduleBar
