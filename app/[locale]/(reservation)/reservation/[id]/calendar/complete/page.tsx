@@ -239,7 +239,9 @@ export default function CompletePage() {
   }
 
   // reservationデータがロードされるまでローディング表示
-  if (!reservationWithDetail || !organizationConfig || !reservationItems || !staff) {
+  // フリー指名の場合はstaffチェックを無視
+  const isStaffLoading = reservationWithDetail?.reservation?.staff_id && !staff;
+  if (!reservationWithDetail || !organizationConfig || !reservationItems || isStaffLoading) {
     return <Loading />
   }
 
@@ -400,11 +402,15 @@ export default function CompletePage() {
                     </div>
                     <div className="flex justify-between items-center w-full space-y-2">
                       <span className="text-clip text-sm w-3/5">
-                        {reservationWithDetail?.reservation?.staff_name ?? '未指定'}
+                        {reservationWithDetail?.reservation?.is_free_nomination 
+                          ? '指名フリー' 
+                          : reservationWithDetail?.reservation?.staff_name ?? '未指定'}
                       </span>
                       <span className="text-sm font-medium text-muted-foreground text-right w-2/5 text-clip">
                         <span className="text-xs">指名料</span> /
-                        {staff?.extra_charge ? `¥${staff.extra_charge.toLocaleString()}` : '0円'}
+                        {reservationWithDetail?.reservation?.is_free_nomination 
+                          ? '0円' 
+                          : staff?.extra_charge ? `¥${staff.extra_charge.toLocaleString()}` : '0円'}
                       </span>
                     </div>
                   </div>
@@ -470,7 +476,7 @@ export default function CompletePage() {
                     </>
                   )}
 
-                  {staff?.extra_charge && staff.extra_charge > 0 ? (
+                  {!reservationWithDetail?.reservation?.is_free_nomination && staff?.extra_charge && staff.extra_charge > 0 ? (
                     <div>
                       <Separator className="my-2" />
                       <div className="flex justify-between items-center mt-2">

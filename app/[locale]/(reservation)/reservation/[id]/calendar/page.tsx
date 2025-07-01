@@ -34,6 +34,12 @@ import {
   Loader2,
 } from 'lucide-react'
 import type { StaffDisplay } from '@/lib/types'
+
+// 自動割り当てされたスタッフ用の型
+type AutoAssignedStaff = StaffDisplay & {
+  isAutoAssigned: boolean
+  extraCharge: number
+}
 import { Separator } from '@/components/ui/separator'
 import { Questionnaire } from './_components/Questionnaire'
 import {
@@ -170,6 +176,18 @@ export default function CalendarPage() {
   const orgId = params.id as Id<'organization'>
   const { liff } = useLiff()
   const { showErrorToast } = useErrorHandler()
+
+  // ユーティリティ関数: 自動割り当てスタッフかどうかをチェック
+  const isAutoAssignedStaff = (staff: StaffDisplay | 'free' | null | undefined): boolean => {
+    return (
+      staff !== null &&
+      staff !== undefined &&
+      staff !== 'free' &&
+      typeof staff === 'object' &&
+      'isAutoAssigned' in staff &&
+      staff.isAutoAssigned === true
+    )
+  }
   // STATES
   const customerRepository = useMemo(() => new CustomerRepository(), [])
   // const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
@@ -189,7 +207,7 @@ export default function CalendarPage() {
   )
   const [selectedMenus, setSelectedMenus] = useState<Doc<'menu'>[]>([])
   const [selectedStaffCompleted, setSelectedStaffCompleted] = useState<{
-    staff: StaffDisplay | null
+    staff: StaffDisplay | 'free' | null
   } | null>(null)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [selectedOptions, setSelectedOptions] = useState<Doc<'option'>[]>([])
@@ -345,17 +363,43 @@ export default function CalendarPage() {
       return null
     }
 
+    // 指名フリーの場合のスタッフ情報設定
+    const isAutoAssigned =
+      selectedStaffCompleted.staff !== 'free' &&
+      'isAutoAssigned' in selectedStaffCompleted.staff &&
+      selectedStaffCompleted.staff.isAutoAssigned
+
+    const staffData =
+      selectedStaffCompleted.staff === 'free'
+        ? {
+            staff_id: undefined as Id<'staff'> | undefined,
+            staff_name: undefined as string | undefined,
+            is_free_nomination: true,
+          }
+        : isAutoAssigned
+          ? {
+              // 自動割り当てされたスタッフ（元はフリー指名）
+              staff_id: selectedStaffCompleted.staff._id as Id<'staff'>,
+              staff_name: selectedStaffCompleted.staff.name ?? '不明',
+              is_free_nomination: true, // フリー指名として扱う
+            }
+          : {
+              // 通常の指名予約
+              staff_id: selectedStaffCompleted.staff._id as Id<'staff'>,
+              staff_name: selectedStaffCompleted.staff.name ?? '不明',
+              is_free_nomination: false,
+            }
+
     try {
       // 予約データを準備 (status: 'pending' で作成)
       const reservationData = {
         tenant_id: sessionCustomer.tenantId,
         org_id: organizationComplete.organization._id as Id<'organization'>,
         customer_id: sessionCustomer.customerUid,
-        staff_id: selectedStaffCompleted.staff._id as Id<'staff'>,
+        ...staffData,
         customer_name: sessionCustomer.email
           ? sessionCustomer.email
           : (sessionCustomer.name ?? '不明'),
-        staff_name: selectedStaffCompleted.staff.name ?? '不明',
         status: 'pending' as ReservationStatus,
         date: selectedDate ? formatDateToYYYYMMDD(selectedDate) : '',
         start_time_unix: reservationStartDateTime.getTime(),
@@ -372,7 +416,12 @@ export default function CalendarPage() {
           quantity: 1,
         })),
         options: countOptionOccurrences(selectedOptions),
-        extra_charge: selectedStaffCompleted.staff.extra_charge || 0,
+        extra_charge:
+          selectedStaffCompleted.staff === 'free'
+            ? 0
+            : 'extraCharge' in selectedStaffCompleted.staff
+              ? (selectedStaffCompleted.staff as AutoAssignedStaff).extraCharge || 0
+              : selectedStaffCompleted.staff.extra_charge || 0,
         use_points: usePoints,
         coupon_discount: appliedDiscount.discount || undefined,
         featured_hair_images: [],
@@ -444,7 +493,8 @@ export default function CalendarPage() {
             quantity, // オプションの場合、quantityはここで考慮済みなので按分後の価格計算では使わない
           }
         }),
-        ...(selectedStaffCompleted?.staff?.extra_charge &&
+        ...(selectedStaffCompleted?.staff !== 'free' &&
+        selectedStaffCompleted?.staff?.extra_charge &&
         selectedStaffCompleted.staff.extra_charge > 0
           ? [
               {
@@ -577,6 +627,31 @@ export default function CalendarPage() {
       return
     }
 
+    // 指名フリーの場合のスタッフ情報設定
+    const isAutoAssigned =
+      selectedStaffCompleted.staff !== 'free' &&
+      selectedStaffCompleted.staff !== null &&
+      typeof selectedStaffCompleted.staff === 'object' &&
+      'isAutoAssigned' in selectedStaffCompleted.staff &&
+      selectedStaffCompleted.staff.isAutoAssigned
+
+    const staffData =
+      selectedStaffCompleted.staff === 'free'
+        ? { staff_id: undefined, staff_name: undefined, is_free_nomination: true }
+        : isAutoAssigned
+          ? {
+              // 自動割り当てされたスタッフ（元はフリー指名）
+              staff_id: selectedStaffCompleted.staff._id as Id<'staff'>,
+              staff_name: selectedStaffCompleted.staff.name ?? '不明',
+              is_free_nomination: true, // フリー指名として扱う
+            }
+          : {
+              // 通常の指名予約
+              staff_id: selectedStaffCompleted.staff._id as Id<'staff'>,
+              staff_name: selectedStaffCompleted.staff.name ?? '不明',
+              is_free_nomination: false,
+            }
+
     setIsProcessingPayment(true)
 
     try {
@@ -608,11 +683,10 @@ export default function CalendarPage() {
         org_id: organizationComplete.organization._id as Id<'organization'>,
         tenant_id: sessionCustomer.tenantId,
         customer_id: sessionCustomer.customerUid,
-        staff_id: selectedStaffCompleted.staff._id as Id<'staff'>,
+        ...staffData,
         customer_name: sessionCustomer.email
           ? sessionCustomer.email
           : (sessionCustomer.name ?? '不明'),
-        staff_name: selectedStaffCompleted.staff.name ?? '不明',
         status: 'confirmed' as ReservationStatus,
         date: selectedDate ? formatDateToYYYYMMDD(selectedDate) : '',
         start_time_unix: reservationStartDateTime.getTime(),
@@ -629,7 +703,12 @@ export default function CalendarPage() {
           quantity: 1,
         })),
         options: countOptionOccurrences(selectedOptions),
-        extra_charge: selectedStaffCompleted.staff.extra_charge || 0,
+        extra_charge:
+          selectedStaffCompleted.staff === 'free'
+            ? 0
+            : 'extraCharge' in selectedStaffCompleted.staff
+              ? (selectedStaffCompleted.staff as AutoAssignedStaff).extraCharge || 0
+              : selectedStaffCompleted.staff.extra_charge || 0,
         use_points: usePoints,
         coupon_discount: appliedDiscount.discount || undefined,
         featured_hair_images: [],
@@ -671,7 +750,7 @@ export default function CalendarPage() {
             sessionCustomer.name ?? '不明', // 3. customerName
             organizationComplete.organization._id as Id<'organization'>, // 4. orgId
             sessionCustomer.customerUid, // 5. customerUid
-            selectedStaffCompleted.staff, // 6. selectedStaff
+            selectedStaffCompleted.staff === 'free' ? null : selectedStaffCompleted.staff, // 6. selectedStaff (null for free nomination)
             selectedDate!, // 7. selectedDate
             selectedTime!, // 8. selectedTimeSlot
             selectedMenus, // 9. selectedMenus
@@ -773,8 +852,14 @@ export default function CalendarPage() {
               reservationTime: selectedTime
                 ? `${selectedTime.startHour}～${selectedTime.endHour}`
                 : '時間未定',
-              staffName: selectedStaffCompleted.staff.name,
-              extraCharge: selectedStaffCompleted.staff.extra_charge,
+              staffName:
+                selectedStaffCompleted.staff === 'free'
+                  ? '指名フリー'
+                  : selectedStaffCompleted.staff.name,
+              extraCharge:
+                selectedStaffCompleted.staff === 'free'
+                  ? 0
+                  : selectedStaffCompleted.staff.extra_charge || 0,
               menus: selectedMenus.map((menu) => ({
                 name: menu.name,
                 price: menu.sale_price || menu.unit_price || 0,
@@ -971,8 +1056,11 @@ export default function CalendarPage() {
       0
     )
 
-    // 指名料
-    const extraChargeTotal = selectedStaffCompleted?.staff?.extra_charge || 0
+    // 指名料（指名フリーの場合は0、自動割り当ての場合も0として表示）
+    const extraChargeTotal =
+      selectedStaffCompleted?.staff === 'free' || isAutoAssignedStaff(selectedStaffCompleted?.staff)
+        ? 0
+        : selectedStaffCompleted?.staff?.extra_charge || 0
 
     // 割引額
     const discount = appliedDiscount.discount + usePoints
@@ -1154,10 +1242,15 @@ export default function CalendarPage() {
                       tenantId={organizationComplete.organization.tenant_id as Id<'tenant'>}
                       orgId={organizationComplete.organization._id as Id<'organization'>}
                       selectedMenuIds={selectedMenus.map((menu) => menu._id)}
-                      selectedStaff={selectedStaffCompleted?.staff as Doc<'staff'> | null}
+                      selectedStaff={selectedStaffCompleted?.staff as Doc<'staff'> | 'free' | null}
                       onChangeStaffAction={(staff) => {
                         if (staff) {
                           setSelectedStaffCompleted({ staff })
+                          // 指名フリー選択時は今日の日付を自動選択
+                          if (staff === 'free' && !selectedDate) {
+                            const today = new Date()
+                            setSelectedDate(today)
+                          }
                         }
                       }}
                     />
@@ -1222,16 +1315,18 @@ export default function CalendarPage() {
                       tenantId={organizationComplete.organization.tenant_id as Id<'tenant'>}
                       orgId={organizationComplete.organization._id as Id<'organization'>}
                       selectedDate={selectedDate}
-                      selectedStaff={selectedStaffCompleted?.staff as Doc<'staff'> | null}
+                      selectedStaff={selectedStaffCompleted?.staff as Doc<'staff'> | 'free' | null}
                       selectedTime={selectedTime}
                       totalMinutes={calculateTotalMinutes()}
+                      selectedMenuIds={selectedMenus.map((menu) => menu._id)}
+                      selectedOptionIds={selectedOptions.map((option) => option._id)}
                       onChangeDateAction={(date) => {
                         setSelectedDate(date)
                         setSelectedTime(null)
                         setReservationStartDateTime(null)
                         setReservationEndDateTime(null)
                       }}
-                      onChangeTimeAction={(time) => {
+                      onChangeTimeAction={async (time) => {
                         setSelectedTime(time)
                         if (selectedDate) {
                           const startDateTime = new Date(selectedDate)
@@ -1242,6 +1337,58 @@ export default function CalendarPage() {
                           endDateTime.setHours(eh, em, 0, 0)
                           setReservationStartDateTime(startDateTime)
                           setReservationEndDateTime(endDateTime)
+
+                          // フリー指名の場合は自動でスタッフを割り当て
+                          if (selectedStaffCompleted?.staff === 'free') {
+                            try {
+                              const assignedStaff = await fetchQuery(
+                                api.reservation.query.getBestAvailableStaffForTimeSlot,
+                                {
+                                  tenant_id: organizationComplete.organization
+                                    .tenant_id as Id<'tenant'>,
+                                  org_id: organizationComplete.organization
+                                    ._id as Id<'organization'>,
+                                  menu_ids: selectedMenus.map((menu) => menu._id),
+                                  date: selectedDate.toISOString().split('T')[0], // YYYY-MM-DD形式
+                                  start_time_unix: startDateTime.getTime(),
+                                  end_time_unix: endDateTime.getTime(),
+                                }
+                              )
+
+                              if (assignedStaff) {
+                                // スタッフが自動割り当てされた場合も、顧客側表示は「指名フリー」として保持
+                                // 内部的にスタッフ情報を保存するため、selectedStaffCompletedには特別なフラグをつける
+                                setSelectedStaffCompleted({
+                                  staff: {
+                                    _id: assignedStaff.staff_id,
+                                    name: assignedStaff.staff_name,
+                                    priority: assignedStaff.priority,
+                                    extraCharge: assignedStaff.extra_charge,
+                                    isAutoAssigned: true, // 自動割り当てフラグ
+                                  } as AutoAssignedStaff,
+                                })
+                                // 顧客には指名フリーとして表示するため、スタッフ名は表示しない
+                                toast.success('時間帯を選択しました。指名フリーで進めます。')
+                              } else {
+                                toast.error(
+                                  'この時間帯に対応可能なスタッフが見つかりませんでした。他の時間をお選びください。'
+                                )
+                                // 時間選択をリセット
+                                setSelectedTime(null)
+                                setReservationStartDateTime(null)
+                                setReservationEndDateTime(null)
+                              }
+                            } catch (error) {
+                              console.error('スタッフ自動割り当てエラー:', error)
+                              toast.error(
+                                'スタッフの割り当てに失敗しました。他の時間をお選びください。'
+                              )
+                              // 時間選択をリセット
+                              setSelectedTime(null)
+                              setReservationStartDateTime(null)
+                              setReservationEndDateTime(null)
+                            }
+                          }
                         }
                       }}
                     />
@@ -1305,7 +1452,13 @@ export default function CalendarPage() {
                       orgId={organizationComplete.organization._id as Id<'organization'>}
                       selectedMenus={selectedMenus}
                       selectedOptions={selectedOptions}
-                      selectedStaff={selectedStaffCompleted?.staff as StaffDisplay | null}
+                      selectedStaff={
+                        // 自動割り当てされたスタッフ（フリー指名）は顧客には「free」として表示
+                        selectedStaffCompleted?.staff === 'free' ||
+                        isAutoAssignedStaff(selectedStaffCompleted?.staff)
+                          ? 'free'
+                          : (selectedStaffCompleted?.staff as StaffDisplay | null)
+                      }
                       availablePoints={availablePoints ?? 0}
                       usePoints={usePoints}
                       selectedPaymentMethod={selectedPaymentMethod as PaymentMethod}
@@ -1593,7 +1746,10 @@ export default function CalendarPage() {
                   <div>
                     <span className="font-bold">スタッフ</span>
                     <br />
-                    {selectedStaffCompleted.staff.name}
+                    {selectedStaffCompleted.staff === 'free' ||
+                    isAutoAssignedStaff(selectedStaffCompleted.staff)
+                      ? '指名フリー'
+                      : selectedStaffCompleted.staff?.name || '不明'}
                   </div>
                 )}
 

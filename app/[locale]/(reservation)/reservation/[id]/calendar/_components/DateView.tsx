@@ -19,9 +19,11 @@ type DateViewProps = {
   tenantId: Id<'tenant'>
   orgId: Id<'organization'>
   selectedDate: Date | null
-  selectedStaff: Doc<'staff'> | null
+  selectedStaff: Doc<'staff'> | 'free' | null
   totalMinutes: number
   selectedTime: TimeRange | null
+  selectedMenuIds: Id<'menu'>[]
+  selectedOptionIds: Id<'option'>[]
   onChangeDateAction: (date: Date) => void
   onChangeTimeAction: (time: TimeRange) => void
 }
@@ -33,6 +35,8 @@ export const DateView = ({
   selectedStaff,
   totalMinutes,
   selectedTime,
+  selectedMenuIds,
+  selectedOptionIds,
   onChangeDateAction,
   onChangeTimeAction,
 }: DateViewProps) => {
@@ -76,7 +80,7 @@ export const DateView = ({
 
   const { results: staffExceptionDates, isLoading: staffExceptionDatesLoading } = usePaginatedQuery(
     api.staff.exception_schedule.query.listByTenantOrgStaff,
-    selectedStaff
+    selectedStaff && selectedStaff !== 'free'
       ? {
           tenant_id: tenantId,
           org_id: orgId,
@@ -91,7 +95,7 @@ export const DateView = ({
 
   const staffWeekSchedule = useQuery(
     api.staff.week_schedule.query.getByTenantOrgStaff,
-    selectedStaff
+    selectedStaff && selectedStaff !== 'free'
       ? {
           tenant_id: tenantId,
           org_id: orgId,
@@ -115,21 +119,70 @@ export const DateView = ({
 
   // スタッフまたは日付が変更された時のみ利用可能時間を取得
   useEffect(() => {
-    if (!selectedStaff || !selectedDate) return
-    setIsLoading(true)
-    fetchQuery(api.reservation.query.calculateReservationTime, {
-      tenant_id: tenantId,
-      org_id: orgId,
-      staff_id: selectedStaff._id,
-      date: format(selectedDate, 'yyyy-MM-dd'),
-      duration_min: totalMinutes,
-    })
-      .then(setAvailableTimes)
-      .catch((err) => showErrorToast(err))
-      .finally(() => setIsLoading(false))
-  }, [tenantId, orgId, selectedStaff, selectedDate, totalMinutes, showErrorToast])
+    if (!selectedStaff || !selectedDate) {
+      setAvailableTimes([])
+      return
+    }
+    
+    // メニューが選択されていない場合は空き時間を計算できない
+    if (selectedStaff === 'free' && selectedMenuIds.length === 0) {
+      setAvailableTimes([])
+      return
+    }
+    
+    setIsLoading(true);
+    
+    // 指名フリーの場合は統合空き時間を取得
+    if (selectedStaff === 'free') {
+      fetchQuery(api.reservation.query.calculateIntegratedAvailableTimes, {
+        tenant_id: tenantId,
+        org_id: orgId,
+        menu_ids: selectedMenuIds,
+        option_ids: selectedOptionIds,
+        date: format(selectedDate, 'yyyy-MM-dd'),
+      })
+        .then((result) => {
+          if (result.available && result.timeSlots) {
+            // 統合スロットをTimeRange形式に変換
+            const timeRanges = result.timeSlots.map((slot) => ({
+              startHour: slot.start,    // "14:00"
+              endHour: slot.end,        // "15:00"  
+            }));
+            
+            setAvailableTimes(timeRanges);
+          } else {
+            setAvailableTimes([]);
+          }
+        })
+        .catch((err) => {
+          showErrorToast(err)
+          setAvailableTimes([])
+        })
+        .finally(() => {
+          setIsLoading(false);
+        })
+    } else {
+      // 通常のスタッフ指名の場合
+      fetchQuery(api.reservation.query.calculateReservationTime, {
+        tenant_id: tenantId,
+        org_id: orgId,
+        staff_id: selectedStaff._id,
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        duration_min: totalMinutes,
+      })
+        .then(setAvailableTimes)
+        .catch((err) => {
+          showErrorToast(err)
+          setAvailableTimes([])
+        })
+        .finally(() => setIsLoading(false))
+    }
+  }, [tenantId, orgId, selectedStaff, selectedDate, totalMinutes, selectedMenuIds, selectedOptionIds])
 
-  if (staffExceptionDatesLoading || organizationExceptionDates === undefined || reservationConfig === undefined || reservationConfig === null) {
+  // フリー指名の場合はstaffExceptionDatesLoadingを無視
+  const isActuallyLoading = (selectedStaff !== 'free' && staffExceptionDatesLoading) || organizationExceptionDates === undefined || reservationConfig === undefined || reservationConfig === null;
+  
+  if (isActuallyLoading) {
     return <Loading />
   }
 
@@ -147,8 +200,10 @@ export const DateView = ({
     ...(organizationWeeekSchedule
       ?.filter((s) => !s.is_open)
       .map((s) => weekdayToIndex[s.day_of_week!]) ?? []),
-    ...(staffWeekSchedule?.filter((s) => !s.is_open).map((s) => weekdayToIndex[s.day_of_week!]) ??
-      []),
+    // 指名フリーの場合はスタッフの休みは考慮しない（複数スタッフから選ぶため）
+    ...(selectedStaff === 'free' 
+      ? [] 
+      : staffWeekSchedule?.filter((s) => !s.is_open).map((s) => weekdayToIndex[s.day_of_week!]) ?? []),
   ]
   const uniqueClosedDayIndices = Array.from(new Set(closedDayIndices))
 
@@ -162,7 +217,8 @@ export const DateView = ({
     // 予約制限日以降を選択不可
     { after: maxReservationDate },
     ...organizationExceptionDates.map((e) => parseISO(e.date!)),
-    ...staffExceptionDates.map((e) => parseISO(e.date!)),
+    // 指名フリーの場合はスタッフの例外日は考慮しない
+    ...(selectedStaff === 'free' ? [] : staffExceptionDates.map((e) => parseISO(e.date!))),
     { dayOfWeek: uniqueClosedDayIndices },
   ]
 

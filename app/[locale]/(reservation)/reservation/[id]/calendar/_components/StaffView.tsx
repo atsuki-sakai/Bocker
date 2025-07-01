@@ -27,8 +27,8 @@ type StaffViewProps = {
   tenantId: Id<'tenant'>
   orgId: Id<'organization'>
   selectedMenuIds: Id<'menu'>[]
-  selectedStaff: Doc<'staff'> | null
-  onChangeStaffAction: (staff: StaffDisplay | null) => void
+  selectedStaff: Doc<'staff'> | 'free' | null
+  onChangeStaffAction: (staff: StaffDisplay | 'free' | null) => void
 }
 
 
@@ -72,6 +72,36 @@ export const StaffView = ({
       <p className="text-muted-foreground mb-4 text-sm">
         担当してほしいスタッフを選択してください。
       </p>
+      
+      {/* 指名フリーボタン */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between border rounded-lg p-4 bg-muted/50">
+          <div className="flex items-start gap-2">
+            <div className="relative w-14 h-14 flex-shrink-0">
+              <div className="w-full h-full flex items-center justify-center bg-primary/10 rounded-sm">
+                <User className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+            <div className="flex justify-start items-start flex-col">
+              <p className="font-medium">指名フリー</p>
+              <p className="text-xs text-muted-foreground">
+                空いているスタッフが自動で割り当てられます
+              </p>
+              <div className="flex items-end gap-2 text-muted-foreground">
+                <p className="text-xs">指名料</p>
+                <span className="text-sm text-accent-2">無料</span>
+              </div>
+            </div>
+          </div>
+          <Button
+            variant={selectedStaff === 'free' ? 'selected' : 'default'}
+            onClick={() => onChangeStaffAction('free')}
+          >
+            {selectedStaff === 'free' ? '選択中' : '選択する'}
+          </Button>
+        </div>
+      </div>
+      
       <div className="space-y-3">
         {sortedStaffs.length > 0 ? (
           sortedStaffs.map((staff) => (
@@ -178,12 +208,12 @@ export const StaffView = ({
                 </div>
               </div>
               <Button
-                variant={selectedStaff?._id !== staff._id ? 'default' : 'selected'}
+                variant={selectedStaff !== 'free' && selectedStaff?._id === staff._id ? 'selected' : 'default'}
                 onClick={() => {
                   onChangeStaffAction(staff)
                 }}
               >
-                {selectedStaff?._id === staff._id ? '選択中' : '選択する'}
+                {selectedStaff !== 'free' && selectedStaff?._id === staff._id ? '選択中' : '選択する'}
               </Button>
             </div>
           ))

@@ -41,7 +41,7 @@ type ConfirmViewProps = {
   selectedMenus: Doc<'menu'>[]
   selectedOptions: Doc<'option'>[]
   selectedPaymentMethod: PaymentMethod
-  selectedStaff: StaffDisplay | null
+  selectedStaff: StaffDisplay | 'free' | null
   selectedDate: Date | null
   selectedTime: TimeRange | null
   // クーポン関連のpropsを追加
@@ -70,8 +70,9 @@ export const ConfirmView = ({
     return total + (option.sale_price ? option.sale_price : option.unit_price || 0)
   }, 0)
 
-  // 指名料の計算
+  // 指名料の計算（指名フリーの場合は0）
   const calculateExtraCharge = () => {
+    if (selectedStaff === 'free') return 0
     return selectedStaff?.extra_charge || 0
   }
 
@@ -181,16 +182,11 @@ export const ConfirmView = ({
           ? coupon.percentage_discount_value + '%'
           : '¥' + coupon.fixed_discount_value
 
-      const discount =
-        coupon.discount_type === 'percentage'
-          ? coupon.percentage_discount_value
-          : coupon.fixed_discount_value
-
       // 割引額を計算（割引後の金額ではなく、割引額そのもの）
       const discountAmount =
         coupon.discount_type === 'percentage'
           ? coupon.percentage_discount_value
-            ? Math.floor((totalAmount + extraCharge) * (discount / 100))
+            ? Math.floor((totalAmount + extraCharge) * (coupon.percentage_discount_value / 100))
             : 0
           : coupon.fixed_discount_value || 0
 
@@ -304,7 +300,7 @@ export const ConfirmView = ({
               <div>
                 <p className="text-base font-bold mb-3 text-primary">スタッフ</p>
                 <div className="text-sm md:text-base pl-4 flex justify-between items-start text-muted-foreground">
-                  <span className="flex-grow mr-2">{selectedStaff.name}</span>
+                  <span className="flex-grow mr-2">{selectedStaff === 'free' ? '指名フリー' : selectedStaff.name}</span>
                   {extraCharge > 0 ? (
                     <span className="text-muted-foreground text-nowrap text-right">
                       指名料 / ¥{extraCharge.toLocaleString()}
