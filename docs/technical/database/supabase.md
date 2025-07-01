@@ -1,7 +1,7 @@
 # Supabase データベース仕様書
 
-**最終更新**: 2025年6月23日  
-**ドキュメントバージョン**: 2.0
+**最終更新**: 2025年7月1日  
+**ドキュメントバージョン**: 3.0
 
 このドキュメントは、BockerプロジェクトのSupabaseデータベースの最新仕様を記載しています。
 データベースは顧客管理、予約管理、ポイント管理、カルテ管理、トラッキングの各機能をサポートしています。
@@ -23,7 +23,7 @@
 - **プロジェクト名**: DEV_Bocker
 - **プロジェクトID**: kafcgxiddgxbuimeitrm
 - **リージョン**: ap-northeast-1
-- **PostgreSQLバージョン**: 15.8.1.094
+- **PostgreSQLバージョン**: 17.4.1.043
 - **Convexとの連携**: 一部のテーブルでConvex IDを保持
 
 *重要* Supabaseの本番環境と開発環境は完全に同じ設定する必要があります。もし変更がある場合は必ず本番と開発それぞれのMCPツールを利用して設定を確認して同期する必要があります。RPC関数などDBのスキーマ以外にも完全に全て同じにします。
@@ -257,6 +257,8 @@
 | carte_id | uuid | NO | - | カルテID（外部キー） |
 | reservation_id | text | NO | - | 予約ID（Convex形式・TEXT型） |
 | staff_id | text | NO | - | スタッフID（Convex形式・TEXT型） |
+| staff_name | text | YES | - | 施術者名 |
+| service_start_time | timestamptz | YES | - | サービス開始時刻 |
 | after_images | jsonb | YES | - | 施術後の画像パス（original_url, thumbnail_url × 4枚 = 計8枚） |
 | menu_details | jsonb | YES | - | メニュー詳細情報（Convex ID、名前、数量、価格を含む） |
 | option_details | jsonb | YES | - | オプション詳細情報（Convex ID、名前、数量、価格を含む） |
@@ -322,9 +324,21 @@
 | status | text | NO | - | 予約ステータス |
 | payment_status | text | NO | - | 支払いステータス |
 | stripe_checkout_session_id | text | YES | - | Stripe決済セッションID |
+| stripe_payment_intent_id | text | YES | - | Stripe決済インテントID |
 | date | text | NO | - | 予約日 |
 | start_time_unix | bigint | NO | - | 開始時刻（Unix時間） |
 | end_time_unix | bigint | NO | - | 終了時刻（Unix時間） |
+| pending_expiry | bigint | YES | - | pending状態の有効期限（Unix時間） |
+| cancelled_at | bigint | YES | - | キャンセル日時（Unix時間） |
+| cancelled_by | text | YES | - | キャンセル者（'customer'/'staff'/'system'） |
+| cancel_reason | text | YES | - | キャンセル理由 |
+| reminder_sent | boolean | YES | false | リマインダー送信済みフラグ |
+| reminder_sent_at | bigint | YES | - | リマインダー送信日時（Unix時間） |
+| is_free_nomination | boolean | YES | false | 指名フリーフラグ |
+| assigned_staff_id | text | YES | - | 実際に割り当てられたスタッフID（Convex形式） |
+| assigned_staff_name | text | YES | - | 実際に割り当てられたスタッフ名 |
+| assignment_timestamp | bigint | YES | - | スタッフ割り当て時刻（Unix時間） |
+| last_staff_change | jsonb | YES | - | スタッフ変更履歴 |
 | sort_key | text | YES | - | ソートキー |
 | _creation_time | bigint | YES | - | 作成日時（Convex由来） |
 | created_at | timestamptz | NO | now() | 作成日時 |
@@ -336,10 +350,22 @@
 - PRIMARY KEY (uid)
 - UNIQUE (_convex_id)
 - FOREIGN KEY (customer_id) REFERENCES customer(uid) [fk_reservation_customer]
+- CHECK (cancelled_by IN ('customer', 'staff', 'system'))
 
 **インデックス**:
 - idx_reservation_customer_id (customer_id)
 - idx_reservation_convex_id (_convex_id)
+
+**JSONBフィールドの構造例**:
+```json
+// last_staff_change
+{
+  "changed_at": 1672531200000,
+  "changed_by": "user_id_or_system",
+  "previous_staff_id": "previous_convex_staff_id",
+  "previous_staff_name": "前のスタッフ名"
+}
+```
 
 ### 10. reservation_detail（予約詳細）
 
@@ -363,6 +389,7 @@
 | coupon_discount | integer | YES | - | クーポン割引額 |
 | featured_hair_images | jsonb | YES | - | ヘアスタイル画像 |
 | notes | text | YES | - | 備考 |
+| cancellation_info | jsonb | YES | - | キャンセル情報 |
 | sort_key | text | YES | - | ソートキー |
 | _creation_time | bigint | YES | - | 作成日時（Convex由来） |
 | created_at | timestamptz | NO | now() | 作成日時 |
@@ -378,6 +405,16 @@
 **インデックス**:
 - idx_reservation_detail_convex_reservation_id (_convex_reservation_id)
 - idx_reservation_detail_reservation_id (reservation_id)
+
+**JSONBフィールドの構造例**:
+```json
+// cancellation_info
+{
+  "cancelled_at": 1672531200000,
+  "cancelled_by": "customer",
+  "reason": "急用のため"
+}
+```
 
 ### 11. tracking_event（トラッキングイベント）
 
@@ -440,19 +477,20 @@
 |-----------|---------|-----------|---------|-------------|--------|
 | customer_detail | customer_uid | customer | uid | RESTRICT | customer_detail_customer_uid_fkey |
 | customer_points | customer_uid | customer | uid | RESTRICT | customer_points_customer_uid_fkey |
-| point_transaction | customer_id | customer | uid | RESTRICT | fk_point_transaction_customer |
-| point_task_queue | customer_id | customer | uid | RESTRICT | fk_point_task_queue_customer |
+| point_transaction | customer_id | customer | uid | RESTRICT | point_transaction_customer_id_fkey |
+| point_task_queue | customer_id | customer | uid | RESTRICT | point_task_queue_customer_id_fkey |
 | coupon_transaction | customer_id | customer | uid | RESTRICT | coupon_transaction_customer_id_fkey |
 | carte | customer_id | customer | uid | CASCADE | carte_customer_id_fkey |
 | carte_detail | carte_id | carte | id | CASCADE | carte_detail_carte_id_fkey |
-| reservation | customer_id | customer | uid | RESTRICT | fk_reservation_customer |
-| reservation_detail | _convex_reservation_id | reservation | _convex_id | CASCADE | reservation_detail_convex_reservation_id_fkey |
+| reservation | customer_id | customer | uid | RESTRICT | reservation_customer_id_fkey |
+| reservation_detail | _convex_reservation_id | reservation | _convex_id | CASCADE | reservation_detail__convex_reservation_id_fkey |
 
 **注意**: 以下のカラムは外部キー制約がありません（Convex参照のため）
 - carte_detail.staff_id (TEXT型)
 - carte_detail.reservation_id (TEXT型)
 - coupon_transaction.coupon_id (TEXT型)
 - reservation.staff_id (TEXT型)
+- reservation.assigned_staff_id (TEXT型)
 - reservation_detail.coupon_id (TEXT型)
 
 ## 関数（Functions）
@@ -530,6 +568,9 @@ CREATE INDEX idx_reservation_date_range ON reservation(start_time_unix, end_time
 -- ステータス別検索用
 CREATE INDEX idx_reservation_status ON reservation(status) WHERE is_archive = false;
 
+-- フリー指名検索用
+CREATE INDEX idx_reservation_free_nomination ON reservation(is_free_nomination) WHERE is_free_nomination = true;
+
 -- Convex ID検索用（TEXT型）
 CREATE INDEX idx_carte_detail_staff_id ON carte_detail(staff_id);
 CREATE INDEX idx_carte_detail_reservation_id ON carte_detail(reservation_id);
@@ -552,7 +593,33 @@ CREATE INDEX idx_point_transaction_deleted_at ON point_transaction(deleted_at) W
 
 ## 変更履歴
 
-### 2025年1月の主な変更
+### 2025年7月1日の主な変更（v3.0）
+1. **フリー指名機能に対応したreservationテーブルの拡張**：
+   - is_free_nomination: 指名フリーフラグ
+   - assigned_staff_id: 実際に割り当てられたスタッフID
+   - assigned_staff_name: 実際に割り当てられたスタッフ名
+   - assignment_timestamp: スタッフ割り当て時刻
+   - last_staff_change: スタッフ変更履歴（JSONB）
+
+2. **決済・キャンセル管理の強化**：
+   - stripe_payment_intent_id: Stripe決済インテントID
+   - pending_expiry: pending状態の有効期限
+   - cancelled_at: キャンセル日時
+   - cancelled_by: キャンセル者識別
+   - cancel_reason: キャンセル理由
+
+3. **リマインダー機能対応**：
+   - reminder_sent: リマインダー送信済みフラグ
+   - reminder_sent_at: リマインダー送信日時
+
+4. **reservation_detailテーブルの拡張**：
+   - cancellation_info: キャンセル情報（JSONB）
+
+5. **Convexスキーマとの完全互換性確保**
+   - 全フィールドがConvex schema.tsと一致
+   - データ移行処理での型変換エラーを防止
+
+### 2025年1月の主な変更（v2.0）
 1. reservation.master_idカラムを削除
 2. reservation.customer_idをUUID型に変更し外部キー制約を追加
 3. Convex参照IDを全てTEXT型に統一：
