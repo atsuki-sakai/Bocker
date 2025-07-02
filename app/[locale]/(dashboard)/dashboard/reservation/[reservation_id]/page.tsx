@@ -42,6 +42,12 @@ import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import { useTranslations } from 'next-intl'
 import { Loader2 } from 'lucide-react'
 import { fetchMutation } from 'convex/nextjs'
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion'
 
 const statusColorMap = {
   confirmed: 'bg-palette-2 border border-palette-2-foreground text-palette-2-foreground',
@@ -288,22 +294,36 @@ export default function ReservationPage() {
       backLinkTitle={t('backToList')}
     >
       <div className="flex flex-col gap-4 bg-background">
-        <p className="text-sm text-muted-foreground">
-          施術が完了した予約は必ず「施術完了」に変更してください。
-          <br />
-          施術完了に変更しない場合、ポイントの付与やその他の処理に影響が出ます。
-        </p>
-        <div className="text-sm text-muted-foreground bg-muted p-4 rounded-md leading-relaxed border border-muted-foreground w-fit">
-          一度 <strong>完了、キャンセル、または返金した予約</strong>{' '}
-          のステータスを変更することはできません。
-          <br />
-          予約を再度受け付ける場合は、一度 <strong>キャンセル</strong> し{' '}
-          <strong>新規予約作成</strong> を行ってください。
-          <br />
-          <strong>保留</strong> の予約は予約枠の計算に含まれずその時間帯は予約可能となります。
-          <br />
-          それを防ぎたい場合は<strong>予約受付済み</strong>に設定してください。
+        <div className="text-sm text-muted-foreground">
+          <p>
+            <strong className="text-warning-foreground bg-warning px-2 py-1 rounded-md">
+              施術が完了した予約は必ず &quot;完了&quot;
+            </strong>{' '}
+            に変更してください。
+            施術完了に変更しない場合、ポイントの付与やその他の処理に影響が出ます。
+          </p>
         </div>
+        <Accordion type="single" collapsible>
+          <AccordionItem value="item-1">
+            <AccordionTrigger className="text-sm font-semibold">
+              予約ステータスについて
+            </AccordionTrigger>
+            <AccordionContent>
+              一度 <strong>完了、キャンセル、または返金した予約</strong>{' '}
+              のステータスを再度、変更することはできません。
+              <br />
+              予約を再度受け付ける場合は、一度 <strong>キャンセル</strong> し{' '}
+              <strong>新規予約作成</strong> を行ってください。
+              <br />
+              ステータスが<strong>保留</strong>{' '}
+              の予約は予約枠の計算に含まれずその時間帯は予約可能となります。
+              <br />
+              それを防ぎたい場合は<strong>予約受付済み</strong>に設定してください。
+              <br />
+              ステータスが予約受付済みの予約のみが、予約枠の計算に含まれます。
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
         <div className="border-b pb-4">
           <div
             className={`flex justify-end w-full ${
@@ -353,6 +373,11 @@ export default function ReservationPage() {
                 </p>
               </div>
             </div>
+            {reservationData.reservation.is_free_nomination && (
+              <div className="mb-4 px-2 py-1.5 bg-palette-5 border border-palette-5-foreground rounded-md w-fit">
+                <p className="text-xs font-medium text-palette-5-foreground">🎯 指名フリー予約</p>
+              </div>
+            )}
             <div>
               <p className="text-muted-foreground">{t('dateTime')}:</p>
               <p className="font-medium text-lg">
@@ -464,11 +489,7 @@ export default function ReservationPage() {
         </div>
         <div className="border-b pb-4">
           <h2 className="text-xl font-semibold mb-3">{t('assignedStaff')}</h2>
-          {reservationData.reservation.is_free_nomination && (
-            <div className="mb-4 p-3 bg-purple-100 rounded-md">
-              <p className="text-sm font-medium text-muted-foreground">🎯 指名フリー予約</p>
-            </div>
-          )}
+
           {staff || assignedStaff ? (
             <div className="flex items-center gap-4">
               {((staff || assignedStaff)?.images?.length ?? 0) > 0 &&
@@ -510,7 +531,6 @@ export default function ReservationPage() {
                 {reservationData.reservation.is_free_nomination && (
                   <div className="mt-4">
                     <Button
-                      variant="outline"
                       size="sm"
                       onClick={() => setIsStaffChangeModalOpen(true)}
                       disabled={
