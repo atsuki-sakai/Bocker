@@ -321,11 +321,8 @@ export default function OrganizationReservationCollectionPage() {
                       <div className="font-medium">
                         {formatReservationDate(reservation.startTimeUnix)}
                       </div>
-                      <div className="text-muted-foreground">
+                      <div className="text-accent-2 tracking-wide text-sm font-semibold">
                         {formatReservationTime(reservation.startTimeUnix, reservation.endTimeUnix)}
-                      </div>
-                      <div className="text-xs text-blue-600 dark:text-blue-400">
-                        DB日付: {reservation.date} | ソース: {reservation.source}
                       </div>
                     </div>
                   </TableCell>

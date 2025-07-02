@@ -41,6 +41,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import { useTranslations } from 'next-intl'
 import { Loader2 } from 'lucide-react'
+import { fetchMutation } from 'convex/nextjs'
 
 const statusColorMap = {
   confirmed: 'bg-palette-2 border border-palette-2-foreground text-palette-2-foreground',
@@ -76,8 +77,6 @@ export default function ReservationPage() {
   const [status, setStatus] = useState<ReservationStatus>(
     reservationData?.reservation?.status as ReservationStatus
   )
-
-  const updateStatus = useMutation(api.reservation.mutation.updateStatus)
   const deleteReservation = useMutation(api.reservation.mutation.kill)
   const changeStaff = useMutation(api.reservation.mutation.changeStaffForFreeNomination)
 
@@ -223,9 +222,13 @@ export default function ReservationPage() {
   const handleUpdateStatus = async () => {
     try {
       if (!reservationData) return
-      await updateStatus({
-        reservation_id: reservationData.reservation._id,
-        status: status,
+
+      await fetchMutation(api.reservation.manage.handleReservationManage, {
+        mode: 'status',
+        payload: {
+          reservationId: reservationData.reservation._id,
+          status: status,
+        },
       })
 
       toast.success(t('statusUpdated'))
@@ -354,7 +357,7 @@ export default function ReservationPage() {
               <p className="text-muted-foreground">{t('dateTime')}:</p>
               <p className="font-medium text-lg">
                 {formatUnixTimestamp(reservationData.reservation.start_time_unix ?? 0)} -{' '}
-                {format(new Date(reservationData.reservation.start_time_unix ?? 0), 'HH:mm')}
+                {format(new Date(reservationData.reservation.end_time_unix ?? 0), 'HH:mm')}
               </p>
             </div>
             <div>
@@ -462,7 +465,7 @@ export default function ReservationPage() {
         <div className="border-b pb-4">
           <h2 className="text-xl font-semibold mb-3">{t('assignedStaff')}</h2>
           {reservationData.reservation.is_free_nomination && (
-            <div className="mb-4 p-3 bg-muted rounded-md">
+            <div className="mb-4 p-3 bg-purple-100 rounded-md">
               <p className="text-sm font-medium text-muted-foreground">🎯 指名フリー予約</p>
             </div>
           )}
@@ -574,21 +577,22 @@ export default function ReservationPage() {
             </div>
           )}
 
-          {reservationMenuDetails?.options?.length &&
-            reservationMenuDetails?.options?.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-lg font-semibold mb-2">{t('options')}</h3>
-                <ul className="list-disc list-inside">
-                  {reservationMenuDetails.options.map((option, index) => (
+          {reservationMenuDetails?.options && reservationMenuDetails?.options?.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold mb-2">{t('options')}</h3>
+              <ul className="list-disc list-inside">
+                {reservationMenuDetails.options &&
+                  reservationMenuDetails.options.length > 0 &&
+                  reservationMenuDetails.options.map((option, index) => (
                     <li key={index} className="text-muted-foreground">
                       {option.name} - ¥{option.unit_price?.toLocaleString()} x{' '}
                       {reservationData.reservationDetail?.options?.find((o) => o.id === option._id)
                         ?.quantity ?? 0}
                     </li>
                   ))}
-                </ul>
-              </div>
-            )}
+              </ul>
+            </div>
+          )}
           {reservationMenuDetails?.menus?.length && reservationMenuDetails?.menus?.length === 0 && (
             <p className="text-muted-foreground">{t('noMenuReserved')}</p>
           )}

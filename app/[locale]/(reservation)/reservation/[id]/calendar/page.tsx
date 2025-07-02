@@ -273,7 +273,7 @@ export default function CalendarPage() {
   }, [selectedMenus, selectedStaffCompleted, selectedOptions])
 
   // 次のステップに進む
-  const goToNextStep = () => {
+  const goToNextStep = async () => {
     setDirection(1) // 前進方向を設定
     switch (currentStep) {
       case 'menu':
@@ -319,6 +319,10 @@ export default function CalendarPage() {
         setSelectedTime(null)
         setReservationStartDateTime(null)
         setReservationEndDateTime(null)
+        // 指名フリーで自動割り当てされたスタッフをリセット
+        if (selectedStaffCompleted?.staff && isAutoAssignedStaff(selectedStaffCompleted.staff)) {
+          setSelectedStaffCompleted({ staff: 'free' })
+        }
         break
       case 'payment':
         setCurrentStep('date')
@@ -1339,8 +1343,16 @@ export default function CalendarPage() {
                           setReservationEndDateTime(endDateTime)
 
                           // フリー指名の場合は自動でスタッフを割り当て
-                          if (selectedStaffCompleted?.staff === 'free') {
+                          if (
+                            selectedStaffCompleted?.staff === 'free' &&
+                            organizationComplete &&
+                            selectedDate
+                          ) {
                             try {
+                              const startDateTime = new Date(selectedDate)
+                              const [sh, sm] = time.startHour.split(':').map(Number)
+                              startDateTime.setHours(sh, sm, 0, 0)
+
                               const assignedStaff = await fetchQuery(
                                 api.reservation.query.getBestAvailableStaffForTimeSlot,
                                 {
@@ -1367,8 +1379,6 @@ export default function CalendarPage() {
                                     isAutoAssigned: true, // 自動割り当てフラグ
                                   } as AutoAssignedStaff,
                                 })
-                                // 顧客には指名フリーとして表示するため、スタッフ名は表示しない
-                                toast.success('時間帯を選択しました。指名フリーで進めます。')
                               } else {
                                 toast.error(
                                   'この時間帯に対応可能なスタッフが見つかりませんでした。他の時間をお選びください。'

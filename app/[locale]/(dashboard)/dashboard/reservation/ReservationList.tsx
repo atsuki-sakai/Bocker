@@ -128,16 +128,16 @@ const ReservationBarComponent = memo(
         title={`${reservation.is_free_nomination ? '[指名フリー] ' : ''}${reservation.customer_name} (${convertTimestampToHour(reservation.start_time_unix)} - ${convertTimestampToHour(reservation.end_time_unix)})`}
       >
         <div className="flex flex-col items-start gap-1 overflow-hidden">
+          {reservation.is_free_nomination && (
+            <span className="text-xs text-nowrap bg-purple-200 text-purple-800 px-1 rounded-full font-medium">
+              指名フリー <small>(スタッフの変更可)</small>
+            </span>
+          )}
           <div className="flex items-center gap-1">
             {getStatusIcon(reservation.status)}
             <span className="truncate font-medium">
               {reservation.customer_name ?? t('nameNotSet')} 様
             </span>
-            {reservation.is_free_nomination && (
-              <span className="text-xs bg-purple-200 text-purple-800 px-1 rounded-full font-medium">
-                フリー
-              </span>
-            )}
           </div>
           {/* 時間表示（幅が十分な場合のみ） */}
           <div className="flex items-center justify-between w-full gap-1">

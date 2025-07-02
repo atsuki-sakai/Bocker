@@ -15,12 +15,10 @@ import { getDayOfWeek, formatTimestamp } from '@/lib/schedules'
 import { convertGender, ReservationMenu, ReservationOption } from '@/convex/types'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
-import { CarteRepository } from '@/services/supabase/repositories/carte/CarteRepository'
-import { CarteDetailRepository } from '@/services/supabase/repositories/carte/CarteDetailRepository'
-import type { RowType, InsertType } from '@/services/supabase/SupabaseService'
-import { useMutation } from 'convex/react'
+import type { RowType } from '@/services/supabase/SupabaseService'
 import { useTranslations } from 'next-intl'
 import { Doc } from '@/convex/_generated/dataModel'
+import { fetchMutation } from 'convex/nextjs'
 
 // 入力値を数値または undefined に変換するプリプロセス関数
 const preprocessNumber = (val: unknown) => {
@@ -135,6 +133,7 @@ const schemaReservation = z
 import { Input } from '@/components/ui/input'
 import { useQuery, usePaginatedQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
+import { InsertType } from '@/services/supabase/SupabaseService'
 import {
   Select,
   SelectContent,
@@ -251,8 +250,6 @@ export default function ReservationForm() {
   const [isLoadingCustomers, setIsLoadingCustomers] = useState<boolean>(false)
   const [selectedCustomer, setSelectedCustomer] = useState<RowType<'customer'> | null>(null)
   const customerRepository = useMemo(() => new CustomerRepository(), [])
-  const carteRepository = useMemo(() => new CarteRepository(), [])
-  const carteDetailRepository = useMemo(() => new CarteDetailRepository(), [])
 
   // 初期データ取得（メニュー・オプション・設定など）
   const initialFormData = useQuery(
@@ -321,9 +318,6 @@ export default function ReservationForm() {
       initialNumItems: 100,
     }
   )
-
-  // Mutation
-  const createReservation = useMutation(api.reservation.mutation.create)
 
   const {
     register,
@@ -642,90 +636,41 @@ export default function ReservationForm() {
         ? selectedCustomer?.last_name + ' ' + selectedCustomer?.first_name
         : data.customer_last_name + ' ' + data.customer_first_name
 
-      // 予約作成
-      const reservationResult = await createReservation({
-        tenant_id: tenantId, // テナントID
-        org_id: orgId, // 組織ID
-        customer_id: isExistingCustomer ? (selectedCustomer?.uid ?? '') : (customerUid ?? ''), // Supabase 側の customer.id
-        staff_id: selectedStaffId as Id<'staff'>, // スタッフID
-        customer_name: customerName, // 顧客名
-        staff_name: selectStaff?.name ?? '', // スタッフ名
-        status: 'confirmed', // 予約ステータス
-        date: format(selectdate as Date, 'yyyy-MM-dd'), // 予約日 YYYY-MM-DD
-        start_time_unix: data.start_time_unix as number, // 予約開始時間
-        end_time_unix: data.end_time_unix as number, // 予約終了時間
-        total_price: totalPriceCalculated, // 合計金額
-        coupon_id: undefined, // クーポンID
-        payment_method: 'cash', // 支払方法
-        stripe_checkout_session_id: undefined, // Stripe Checkout Session ID
-        payment_status: 'pending', // 支払ステータス
-        menus: selectedMenus, // メニュー
-        options: selectedOptions, // オプション
-        extra_charge: extraChargePrice, // 追加料金
-        use_points: undefined, // 使用ポイント数
-        coupon_discount: undefined, // クーポン割引額
-        featured_hair_images: [], // フィーチャー画像
-        notes: data.notes ?? '', // メモ
-      })
-
-      // カルテのUpsert処理
-      const finalCustomerId = isExistingCustomer
-        ? (selectedCustomer?.uid ?? 'Error SelectedCustomerUid')
-        : (customerUid ?? 'Error CustomerUid')
-
-      try {
-        // カルテを取得または作成
-        const carte = await carteRepository.findOrCreateByCustomer(
-          tenantId,
-          orgId,
-          finalCustomerId,
-          { ltv_price: 0 }
-        )
-
-        // 既存のLTV価格に今回の合計金額を加算　// FIXME: これは予約が完了した時におこなうべき
-        // const newLtvPrice = (carte.ltv_price || 0) + totalPriceCalculated
-        // await carteRepository.updateLtvPrice(carte.id, newLtvPrice)
-
-        // 選択されたスタッフの情報を取得
-        const selectedStaffData = availableStaff.find((staff) => staff._id === selectedStaffId)
-        const staffName = selectedStaffData?.name || '不明'
-
-        // カルテ詳細を作成
-        await carteDetailRepository.createCarteDetail({
+      const trimmedCustomerName = customerName.trim()
+      const finalCustomerName =
+        trimmedCustomerName === ''
+          ? (selectedCustomer?.email ?? selectedCustomer?.line_user_name)
+          : customerName
+      await fetchMutation(api.reservation.manage.handleReservationManage, {
+        mode: 'create',
+        payload: {
           tenant_id: tenantId,
           org_id: orgId,
-          carte_id: carte.id,
-          reservation_id: reservationResult, // Convex で作成された予約ID
-          staff_id: selectedStaffId as string,
-          staff_name: staffName, // スタッフ名を追加
-          service_start_time: data.start_time_unix
-            ? new Date(data.start_time_unix).toISOString()
-            : undefined, // 施術開始時間を追加（Unix時間はミリ秒単位）
-          menu_details: selectedMenus.map((menu) => ({
-            id: menu.id,
-            name: menu.name,
-            quantity: menu.quantity,
-            price: menu.price,
-          })),
-          option_details: selectedOptions.map((option) => ({
-            id: option.id,
-            name: option.name,
-            quantity: option.quantity,
-            price: option.price,
-          })),
+          customer_id: isExistingCustomer ? (selectedCustomer?.uid ?? '') : (customerUid ?? ''),
+          staff_id: selectedStaffId as Id<'staff'>,
+          customer_name: finalCustomerName ?? selectedCustomer?.phone ?? '不明',
+          staff_name: selectStaff?.name ?? '',
+          is_free_nomination: false,
+          status: 'confirmed',
+          date: format(selectdate as Date, 'yyyy-MM-dd'),
+          start_time_unix: data.start_time_unix as number,
+          end_time_unix: data.end_time_unix as number,
           total_price: totalPriceCalculated,
-          customer_requests: data.notes ?? '', // 顧客のリクエスト（メモ欄）
-          notes: '', // スタッフメモは空で初期化
-          after_images: null, // 施術後画像は後で追加
-        })
-
-        console.log(
-          `[ReservationForm] Created carte and carte_detail for customer ${finalCustomerId}`
-        )
-      } catch (carteError) {
-        console.error('[ReservationForm] Error creating carte:', carteError)
-        // カルテ作成に失敗してもユーザーにはエラーを表示しない（予約は既に作成済み）
-      }
+          coupon_id: undefined,
+          payment_method: 'cash',
+          stripe_checkout_session_id: undefined,
+          payment_status: 'pending',
+          menus: selectedMenus,
+          options: selectedOptions,
+          extra_charge: extraChargePrice,
+          use_points: undefined,
+          coupon_discount: undefined,
+          featured_hair_images: [],
+          notes: data.notes ?? '',
+          pending_duration_minutes: undefined,
+          checkout_url: undefined,
+        },
+      })
 
       toast.success(t('reservationCompleted'))
       router.push('/dashboard/reservation')

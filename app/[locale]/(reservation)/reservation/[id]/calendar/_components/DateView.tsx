@@ -14,6 +14,7 @@ import { Loader2, AlertCircle } from 'lucide-react'
 import { useQuery, usePaginatedQuery } from 'convex/react'
 import { Loading } from '@/components/common'
 import { parseISO } from 'date-fns'
+import { toast } from 'sonner'
 
 type DateViewProps = {
   tenantId: Id<'tenant'>
@@ -46,13 +47,10 @@ export const DateView = ({
   const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate || startOfToday())
 
   // 予約設定を取得
-  const reservationConfig = useQuery(
-    api.organization.reservation_config.query.findByTenantAndOrg,
-    {
-      tenant_id: tenantId,
-      org_id: orgId,
-    }
-  )
+  const reservationConfig = useQuery(api.organization.reservation_config.query.findByTenantAndOrg, {
+    tenant_id: tenantId,
+    org_id: orgId,
+  })
 
   const organizationExceptionDates = useQuery(
     api.organization.exception_schedule.query.displayExceptionSchedule,
@@ -113,8 +111,44 @@ export const DateView = ({
   }
 
   const handleTimeSelect = (time: TimeRange) => {
-    // 楽観的UI: 即座に選択を反映
-    onChangeTimeAction(time)
+    if (!selectedDate) return
+
+    // スタッフ指名時のみ、重複予約の上限チェックを事前に実施
+    const validateAndSelect = async () => {
+      // フリー指名の場合はスキップ（統合計算で除外済み）
+      if (selectedStaff && selectedStaff !== 'free') {
+        const startDateTime = new Date(selectedDate)
+        const [sh, sm] = time.startHour.split(':').map(Number)
+        startDateTime.setHours(sh, sm, 0, 0)
+        const endDateTime = new Date(selectedDate)
+        const [eh, em] = time.endHour.split(':').map(Number)
+        endDateTime.setHours(eh, em, 0, 0)
+
+        try {
+          const isConflict = await fetchQuery(api.reservation.query.checkDoubleBooking, {
+            tenant_id: tenantId,
+            org_id: orgId,
+            staff_id: selectedStaff._id,
+            date: format(selectedDate, 'yyyy-MM-dd'),
+            start_time_unix: startDateTime.getTime(),
+            end_time_unix: endDateTime.getTime(),
+          })
+
+          if (isConflict) {
+            toast.error('この時間帯の最大同時予約数は上限です。別の時間を選択してください。')
+            return
+          }
+        } catch (err) {
+          showErrorToast(err)
+          return
+        }
+      }
+
+      // 重複がない場合のみ反映
+      onChangeTimeAction(time)
+    }
+
+    validateAndSelect()
   }
 
   // スタッフまたは日付が変更された時のみ利用可能時間を取得
@@ -123,15 +157,15 @@ export const DateView = ({
       setAvailableTimes([])
       return
     }
-    
+
     // メニューが選択されていない場合は空き時間を計算できない
     if (selectedStaff === 'free' && selectedMenuIds.length === 0) {
       setAvailableTimes([])
       return
     }
-    
-    setIsLoading(true);
-    
+
+    setIsLoading(true)
+
     // 指名フリーの場合は統合空き時間を取得
     if (selectedStaff === 'free') {
       fetchQuery(api.reservation.query.calculateIntegratedAvailableTimes, {
@@ -145,13 +179,13 @@ export const DateView = ({
           if (result.available && result.timeSlots) {
             // 統合スロットをTimeRange形式に変換
             const timeRanges = result.timeSlots.map((slot) => ({
-              startHour: slot.start,    // "14:00"
-              endHour: slot.end,        // "15:00"  
-            }));
-            
-            setAvailableTimes(timeRanges);
+              startHour: slot.start, // "14:00"
+              endHour: slot.end, // "15:00"
+            }))
+
+            setAvailableTimes(timeRanges)
           } else {
-            setAvailableTimes([]);
+            setAvailableTimes([])
           }
         })
         .catch((err) => {
@@ -159,7 +193,7 @@ export const DateView = ({
           setAvailableTimes([])
         })
         .finally(() => {
-          setIsLoading(false);
+          setIsLoading(false)
         })
     } else {
       // 通常のスタッフ指名の場合
@@ -177,11 +211,23 @@ export const DateView = ({
         })
         .finally(() => setIsLoading(false))
     }
-  }, [tenantId, orgId, selectedStaff, selectedDate, totalMinutes, selectedMenuIds, selectedOptionIds])
+  }, [
+    tenantId,
+    orgId,
+    selectedStaff,
+    selectedDate,
+    totalMinutes,
+    selectedMenuIds,
+    selectedOptionIds,
+  ])
 
   // フリー指名の場合はstaffExceptionDatesLoadingを無視
-  const isActuallyLoading = (selectedStaff !== 'free' && staffExceptionDatesLoading) || organizationExceptionDates === undefined || reservationConfig === undefined || reservationConfig === null;
-  
+  const isActuallyLoading =
+    (selectedStaff !== 'free' && staffExceptionDatesLoading) ||
+    organizationExceptionDates === undefined ||
+    reservationConfig === undefined ||
+    reservationConfig === null
+
   if (isActuallyLoading) {
     return <Loading />
   }
@@ -200,15 +246,20 @@ export const DateView = ({
     ...(organizationWeeekSchedule
       ?.filter((s) => !s.is_open)
       .map((s) => weekdayToIndex[s.day_of_week!]) ?? []),
+    // FIXME: 指名フリーの場合もスタッフの休みとサロンの休みは除外する様に変更する
     // 指名フリーの場合はスタッフの休みは考慮しない（複数スタッフから選ぶため）
-    ...(selectedStaff === 'free' 
-      ? [] 
-      : staffWeekSchedule?.filter((s) => !s.is_open).map((s) => weekdayToIndex[s.day_of_week!]) ?? []),
+    ...(selectedStaff === 'free'
+      ? []
+      : (staffWeekSchedule?.filter((s) => !s.is_open).map((s) => weekdayToIndex[s.day_of_week!]) ??
+        [])),
   ]
   const uniqueClosedDayIndices = Array.from(new Set(closedDayIndices))
 
   // 予約可能な最大日付を計算
-  const maxReservationDate = addDays(startOfToday(), reservationConfig?.reservation_limit_days || 30)
+  const maxReservationDate = addDays(
+    startOfToday(),
+    reservationConfig?.reservation_limit_days || 30
+  )
 
   // 過去の日付とサロン・スタッフの例外日および曜日の休みを無効化する日付/曜日配列を作成
   const disabledDates = [
