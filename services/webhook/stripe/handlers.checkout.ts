@@ -64,9 +64,7 @@ export async function handleCheckoutSessionCompleted(
         }
       };
     }
-    
-    // const customerId = session.customer || metadata?.customerId || metadata?.customer_id; // Stripeのcustomerフィールドを優先
-    
+
     // 1. Payment Intent IDを取得
     const paymentIntentId = typeof session.payment_intent === 'string' 
       ? session.payment_intent 
@@ -288,6 +286,7 @@ export async function handleCheckoutSessionCompleted(
             end_time_unix: reservation.end_time_unix,
             status: reservation.status,
             payment_status: reservation.payment_status,
+            is_free_nomination: reservation.is_free_nomination ?? false,
           },
           reservationDetail: {
             total_price: reservationDetail.total_price,
@@ -324,37 +323,6 @@ export async function handleCheckoutSessionCompleted(
         });
       }
     });
-    
-    // FIXME: これは予約が完了した時に行うべき
-    // 7. ポイント付与予約（30日後）
-    // const pointTaskQueueRepo = new PointTaskQueueRepository(supabaseService);
-    
-    // // ポイント設定を取得
-    // const pointConfig = await deps.retry(() =>
-    //   fetchQuery(api.point.query.findByTenantAndOrg, {
-    //     tenant_id: tenantId as Id<"tenant">,
-    //     org_id: orgId as Id<"organization">,
-    //   })
-    // );
-    
-    // if (pointConfig?.is_active) {
-    //   const earnPoints = pointConfig.is_fixed_point 
-    //     ? pointConfig.fixed_point || 0
-    //     : Math.floor((reservationDetail.total_price || 0) * (pointConfig.point_rate || 0) / 100);
-      
-    //   if (earnPoints > 0) {
-    //     await pointTaskQueueRepo.create({
-    //       tenant_id: tenantId,
-    //       org_id: orgId,
-    //       customer_id: customerUid,
-    //       reservation_id: reservationId,
-    //       points: earnPoints,
-    //       scheduled_for_unix: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30日後
-    //       status: 'pending'
-    //     });
-    //   }
-    // }
-    
     console.log(`✅ [${eventId}] CheckoutSessionCompleted処理完了: reservationId=${reservationId}`, context);
     
     return {

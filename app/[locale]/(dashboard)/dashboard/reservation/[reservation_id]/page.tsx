@@ -294,33 +294,72 @@ export default function ReservationPage() {
       backLinkTitle={t('backToList')}
     >
       <div className="flex flex-col gap-4 bg-background">
-        <div className="text-sm text-muted-foreground">
-          <p>
-            <strong className="text-warning-foreground bg-warning px-2 py-1 rounded-md">
-              施術が完了した予約は必ず &quot;完了&quot;
-            </strong>{' '}
-            に変更してください。
-            施術完了に変更しない場合、ポイントの付与やその他の処理に影響が出ます。
-          </p>
+        <div className="rounded-lg bg-blue-50 p-4 border border-blue-200 mb-4">
+          <div className="flex items-start gap-3">
+            <div className="text-blue-600 mt-0.5">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-blue-800 mb-1">重要なお知らせ</p>
+              <p className="text-sm text-gray-700">
+                施術が終了したら、必ず予約ステータスを
+                <span className="font-bold text-blue-800">「完了」</span>に変更してください。
+              </p>
+              <div className="mt-2 text-xs text-gray-600">
+                <p className="mb-1">ステータスを完了にしないと：</p>
+                <ul className="list-disc list-inside space-y-0.5 ml-2">
+                  <li>お客様にポイントが付与されません</li>
+                  <li>タイムラインに表示されたままになります</li>
+                </ul>
+                <p className="mt-2 text-xs text-gray-600 font-bold">
+                  その他様々な処理に影響が出るので、必ず適切にステータスを変更してください
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
         <Accordion type="single" collapsible>
           <AccordionItem value="item-1">
             <AccordionTrigger className="text-sm font-semibold">
               予約ステータスについて
             </AccordionTrigger>
-            <AccordionContent>
-              一度 <strong>完了、キャンセル、または返金した予約</strong>{' '}
-              のステータスを再度、変更することはできません。
-              <br />
-              予約を再度受け付ける場合は、一度 <strong>キャンセル</strong> し{' '}
-              <strong>新規予約作成</strong> を行ってください。
-              <br />
-              ステータスが<strong>保留</strong>{' '}
-              の予約は予約枠の計算に含まれずその時間帯は予約可能となります。
-              <br />
-              それを防ぎたい場合は<strong>予約受付済み</strong>に設定してください。
-              <br />
-              ステータスが予約受付済みの予約のみが、予約枠の計算に含まれます。
+            <AccordionContent className="space-y-3">
+              <div className="rounded-lg bg-orange-50 p-3 border border-orange-200">
+                <p className="text-sm font-medium text-orange-800 mb-1">⚠️ ステータス変更の制限</p>
+                <p className="text-sm text-gray-700">
+                  <strong>完了・キャンセル・返金済み</strong>の予約は、ステータスを変更できません。
+                  再予約が必要な場合は、新規で予約を作成してください。
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-yellow-500 mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <p className="text-sm font-medium">保留中</p>
+                    <p className="text-xs text-gray-600">
+                      予約枠に含まれません。他のお客様がこの時間帯を予約できます。ステータスを変更できます。
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <p className="text-sm font-medium">予約受付済み</p>
+                    <p className="text-xs text-gray-600">
+                      予約枠に含まれます。この時間帯は他の予約を受け付けません。ステータスを変更できます。
+                    </p>
+                  </div>
+                </div>
+              </div>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
@@ -401,7 +440,9 @@ export default function ReservationPage() {
                 </p>
                 <p className="text-muted-foreground text-sm">
                   <span className="font-medium mr-2">指名料</span> ¥
-                  {reservationData.reservationDetail?.extra_charge?.toLocaleString() ?? 0}
+                  {reservationData.reservation.is_free_nomination
+                    ? '0'
+                    : (reservationData.reservationDetail?.extra_charge?.toLocaleString() ?? 0)}
                 </p>
                 <div className="flex items-center mt-3">
                   <p className="text-primary text-base font-bold">

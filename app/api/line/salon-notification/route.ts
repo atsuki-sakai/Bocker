@@ -93,12 +93,13 @@ export async function POST(request: NextRequest) {
       reservation: {
         _id: reservation._id,
         customer_name: reservation.customer_name,
-        staff_name: reservation.staff_name || '指名フリー',
+        staff_name: reservation.is_free_nomination ? '指名フリー' + ('自動割り当て'　+ reservation.staff_name || reservation.assigned_staff_name || '不明') : reservation.staff_name || '不明',
         date: reservation.date,
         start_time_unix: reservation.start_time_unix,
         end_time_unix: reservation.end_time_unix,
         status: reservation.status,
         payment_status: reservation.payment_status,
+        is_free_nomination: reservation.is_free_nomination ?? false,
       },
       reservationDetail: {
         total_price: reservationDetail.total_price,
