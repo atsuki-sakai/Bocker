@@ -12,6 +12,7 @@ import { ReservationMenu, ReservationOption, ImageType, PaymentMethod, Reservati
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from "@/lib/errors/constants";
 import { cancelableDeadline } from "./reservation.helpers";
 import { reservationMenuType, reservationOptionType, imageType, paymentMethodType, reservationStatusType, reservationPaymentStatusType } from "@/convex/types";
+import { getAppUrl } from "@/lib/env-config";
 
 // Payload型定義
 type CreatePayload = {
@@ -468,13 +469,6 @@ async function cancelReservationCore(
     });
   }
 
-  // ポイントタスク削除
-  await ctx.scheduler.runAfter(0, internal.reservation.action.deletePointTaskForReservation, {
-    tenant_id: reservation.tenant_id,
-    org_id: reservation.org_id,
-    reservation_id: args.reservationId,
-  });
-
   // ステータス更新
   await ctx.db.patch(args.reservationId, {
     status: "cancelled",
@@ -495,7 +489,127 @@ async function cancelReservationCore(
       updated_at: Date.now(),
     });
   }
+  
+  // LINEでキャンセル通知を送信
+  try {
+    // 組織情報とAPIコンフィグを取得
+    const [organization, apiConfig] = await Promise.all([
+      ctx.db
+        .query('organization')
+        .withIndex('by_tenant_active_archive', q => 
+          q.eq('tenant_id', reservation.tenant_id).eq('is_active', true).eq('is_archive', false)
+        )
+        .first(),
+      ctx.db
+        .query('api_config')
+        .withIndex('by_tenant_org_archive', q =>
+          q.eq('tenant_id', reservation.tenant_id)
+            .eq('org_id', reservation.org_id)
+            .eq('is_archive', false)
+        )
+        .first(),
+    ]);
 
+    if (!organization) {
+      console.warn('キャンセル通知: 組織情報が見つかりません');
+      return { 
+        reservationId: args.reservationId,
+        refundedOptions: detail?.options || [],
+      };
+    }
+
+    // 顧客にキャンセル通知を送信（customer_idがある場合のみ）
+    if (reservation.customer_id && apiConfig?.line_access_token) {
+      try {
+        // 顧客向けキャンセル通知のデータを準備
+        const customerNotificationData = {
+          tenantId: reservation.tenant_id,
+          organizationId: reservation.org_id,
+          customerUid: reservation.customer_id,
+          cancelData: {
+            reservationId: reservation._id,
+            date: reservation.date,
+            startTimeUnix: reservation.start_time_unix,
+            endTimeUnix: reservation.end_time_unix,
+            staffName: reservation.staff_name || '指名フリー',
+            menus: detail?.menus || [],
+            options: detail?.options || [],
+            totalPrice: detail?.total_price || 0,
+            cancelledBy: args.cancelledBy,
+            cancelReason: args.cancelReason,
+          },
+        };
+
+        const baseUrl = getAppUrl()
+        const customerResponse = await fetch(`${baseUrl}/api/line/customer-cancellation-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(customerNotificationData),
+        });
+
+        if (!customerResponse.ok) {
+          console.error('顧客キャンセル通知APIエラー:', customerResponse.status);
+        } else {
+          console.log('顧客キャンセル通知送信成功');
+        }
+        
+      } catch (customerNotificationError) {
+        console.warn('顧客キャンセル通知の送信に失敗しました:', customerNotificationError);
+        // 顧客通知の失敗はキャンセル処理をブロックしない
+      }
+    }
+
+    // サロンにキャンセル通知を送信（org_line_idがある場合のみ）
+    if (apiConfig?.org_line_id) {
+      try {
+        // 環境変数から弊社のLINEチャンネル情報を取得
+        const companyLineAccessToken = process.env.COMPANY_LINE_CHANNEL_ACCESS_TOKEN;
+        
+        if (companyLineAccessToken) {
+          // サロン向けキャンセル通知のデータを準備
+          const salonNotificationData = {
+            tenantId: reservation.tenant_id,
+            organizationId: reservation.org_id,
+            reservationId: reservation._id,
+            cancelData: {
+              reservationId: reservation._id,
+              customerName: reservation.customer_name,
+              staffName: reservation.staff_name || '不明なスタッフ',
+              date: reservation.date,
+              startTimeUnix: reservation.start_time_unix,
+              endTimeUnix: reservation.end_time_unix,
+              menus: detail?.menus || [],
+              options: detail?.options || [],
+              totalPrice: detail?.total_price || 0,
+              cancelledBy: args.cancelledBy,
+              cancelReason: args.cancelReason,
+            },
+          };
+
+          const baseUrl = getAppUrl()
+          const salonResponse = await fetch(`${baseUrl}/api/line/salon-cancellation-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(salonNotificationData),
+          });
+
+          if (!salonResponse.ok) {
+            console.error('サロンキャンセル通知APIエラー:', salonResponse.status);
+          } else {
+            console.log('サロンキャンセル通知送信成功');
+          }
+        } else {
+          console.warn('キャンセル通知: COMPANY_LINE_CHANNEL_ACCESS_TOKENが設定されていません');
+        }
+      } catch (salonNotificationError) {
+        console.warn('サロンキャンセル通知の送信に失敗しました:', salonNotificationError);
+        // サロン通知の失敗はキャンセル処理をブロックしない
+      }
+    }
+  } catch (notificationError) {
+    console.warn('キャンセル通知処理でエラーが発生しました:', notificationError);
+    // 通知の失敗はキャンセル処理をブロックしない
+  }
   return { 
     reservationId: args.reservationId,
     refundedOptions: detail?.options || [],
