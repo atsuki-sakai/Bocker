@@ -2,6 +2,7 @@ import { BaseRepository, ListOptions, BaseRepositoryOptions } from '../BaseRepos
 import type { RowType, InsertType } from '@/services/supabase/SupabaseService'; // supabase.types から直接も可
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
+import { generateUUID } from '@/services/supabase/utils/uuid';
 
 // テーブル名を指定して型を具体化
 
@@ -642,7 +643,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
 
     // UPSERT 用データを構築
     const upsertData: InsertType<'customer_points'> = {
-      uid: crypto.randomUUID(),            // 新規挿入時にのみ使用される
+      uid: generateUUID(),            // 新規挿入時にのみ使用される
       customer_uid: customerUid,
       tenant_id: tenantId,
       org_id: orgId,

@@ -2,6 +2,7 @@ import { BaseRepository, ListOptions } from '../BaseRepository';
 import type { RowType, InsertType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
+import { generateUUID } from '@/services/supabase/utils/uuid';
 
 /**
  * トラッキングイベントログ (tracking_event) テーブル操作リポジトリ
@@ -28,7 +29,7 @@ export class TrackingEventRepository extends BaseRepository<'tracking_event'> {
     console.log(`[TrackingEventRepository] createEvent: data=${JSON.stringify(eventData)}`);
     
     const newEventData: InsertType<'tracking_event'> = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       ...eventData,
     };
 

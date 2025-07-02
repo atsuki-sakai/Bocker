@@ -1,6 +1,7 @@
 import { BaseRepository, BaseRepositoryOptions } from '../BaseRepository';
 import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService  } from '@/services/supabase/SupabaseService';
+import { generateUUID } from '@/services/supabase/utils/uuid';
 
 /**
  * 顧客ポイント (CustomerPoints) テーブル操作リポジトリ
@@ -40,7 +41,7 @@ export class CustomerPointsRepository extends BaseRepository<'customer_points'> 
     let pointsRecord = await this.findByTenantAndOrgAndCustomerUid(tenantId, orgId, customerId);
     if (!pointsRecord) {
       const newPointsData: InsertType<'customer_points'> = {
-        uid: crypto.randomUUID(),
+        uid: generateUUID(),
         customer_uid: customerId,
         tenant_id: tenantId,
         org_id: orgId,

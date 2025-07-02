@@ -3,6 +3,17 @@ import type { RowType, InsertType, UpdateType } from '@/services/supabase/Supaba
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
 
+// Convex環境でも動作するUUID生成関数
+function generateUUID(): string {
+  // Convex環境ではMath.randomを使用した簡易UUID生成
+  // 実用レベルの一意性を保証
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 /**
  * カルテ詳細（施術ごと）(carte_detail) テーブル操作リポジトリ
  * 
@@ -28,7 +39,7 @@ export class CarteDetailRepository extends BaseRepository<'carte_detail'> {
     console.log(`[CarteDetailRepository] createCarteDetail: data=${JSON.stringify(detailData)}`);
     
     const newDetailData: InsertType<'carte_detail'> = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       ...detailData,
     };
 

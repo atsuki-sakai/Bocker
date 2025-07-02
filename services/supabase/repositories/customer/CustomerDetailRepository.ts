@@ -1,6 +1,7 @@
 import { BaseRepository, BaseRepositoryOptions } from '../BaseRepository';
 import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
+import { generateUUID } from '@/services/supabase/utils/uuid';
 
 /**
  * 顧客詳細 (CustomerDetail) テーブル操作リポジトリ
@@ -29,7 +30,7 @@ export class CustomerDetailRepository extends BaseRepository<'customer_detail'> 
         // なければ新規作成 (共通フィールドは BaseRepository.create で自動設定)
         const dataToCreate = { ...detailData };
         if (!dataToCreate.uid) {
-             dataToCreate.uid = crypto.randomUUID(); // uid がなければクライアント側で生成
+             dataToCreate.uid = generateUUID(); // uid がなければクライアント側で生成
         }
         // created_at, updated_at, is_archive は BaseRepository.create で自動設定されるため、ここでは何もしない
         return this.create(dataToCreate as InsertType<'customer_detail'>, options);

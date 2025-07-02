@@ -2,6 +2,7 @@ import { BaseRepository, ListOptions } from '../BaseRepository';
 import type { RowType, InsertType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
+import { generateUUID } from '@/services/supabase/utils/uuid';
 
 /**
  * ポイント履歴 (point_transaction) テーブル操作リポジトリ
@@ -27,7 +28,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
     console.log(`[PointTransactionRepository] createTransaction: data=${JSON.stringify(transactionData)}`);
     
     const newTransactionData: InsertType<'point_transaction'> = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       ...transactionData,
     };
 

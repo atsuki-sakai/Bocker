@@ -2,6 +2,7 @@ import { BaseRepository, BaseRepositoryOptions, ListOptions } from '../BaseRepos
 import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
+import { generateUUID } from '@/services/supabase/utils/uuid';
 
 /**
  * ポイント付与キュー (point_task_queue) テーブル操作リポジトリ
@@ -27,7 +28,7 @@ export class PointTaskQueueRepository extends BaseRepository<'point_task_queue'>
     console.log(`[PointTaskQueueRepository] createPointTask: data=${JSON.stringify(taskData)}`);
     
     const newTaskData: InsertType<'point_task_queue'> = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       status: 'pending', // 初期ステータスは pending
       ...taskData,
     };

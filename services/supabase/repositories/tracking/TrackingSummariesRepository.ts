@@ -2,6 +2,7 @@ import { BaseRepository, ListOptions } from '../BaseRepository';
 import type { RowType, InsertType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
+import { generateUUID } from '@/services/supabase/utils/uuid';
 
 /**
  * トラッキング集計サマリー (tracking_summaries) テーブル操作リポジトリ
@@ -27,7 +28,7 @@ export class TrackingSummariesRepository extends BaseRepository<'tracking_summar
     console.log(`[TrackingSummariesRepository] createSummary: data=${JSON.stringify(summaryData)}`);
     
     const newSummaryData: InsertType<'tracking_summaries'> = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       ...summaryData,
     };
 
@@ -394,7 +395,7 @@ export class TrackingSummariesRepository extends BaseRepository<'tracking_summar
     console.log(`[TrackingSummariesRepository] bulkUpsertSummaries: ${summaries.length} summaries`);
     
     const summaryData = summaries.map(summary => ({
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       ...summary,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

@@ -2,6 +2,7 @@ import { BaseRepository, BaseRepositoryOptions, ListOptions } from '../BaseRepos
 import type { RowType, InsertType, UpdateType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
+import { generateUUID } from '@/services/supabase/utils/uuid';
 
 /**
  * カルテ基本情報 (carte) テーブル操作リポジトリ
@@ -27,7 +28,7 @@ export class CarteRepository extends BaseRepository<'carte'> {
     console.log(`[CarteRepository] createCarte: data=${JSON.stringify(carteData)}`);
     
     const newCarteData: InsertType<'carte'> = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       ...carteData,
     };
 
