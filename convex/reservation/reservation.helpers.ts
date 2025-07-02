@@ -1,5 +1,5 @@
 import { MutationCtx, QueryCtx } from '@/convex/_generated/server';
-import { Id } from '@/convex/_generated/dataModel';
+import { Id, Doc } from '@/convex/_generated/dataModel';
 import { createRecord, archiveRecord, killRecord } from '@/convex/utils/helpers';
 import {
   ReservationMenu,
@@ -11,6 +11,13 @@ import {
 } from '@/convex/types';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
+// Convex環境内では fetchQuery は使用できないためコメントアウト
+// import { fetchQuery } from 'convex/nextjs';
+// import { api } from '@/convex/_generated/api';
+import { getAppUrl } from '@/lib/env-config';
+import { SupabaseService } from '@/services/supabase/SupabaseService';
+import { getDayOfWeek, convertHourToTimestamp } from '@/lib/schedules';
+import { DayOfWeek} from '@/convex/types';
 
 
 
@@ -355,6 +362,96 @@ export async function findBestAvailableStaffForTimeSlot(
     return null
   }
 
+  // 4. スケジュール・週間勤務時間チェックで更にスタッフを絞り込み
+  // ------------------------------------------------------------
+  // ・当日の例外スケジュール(staff_exception_schedule)
+  // 　 - is_all_day = true なら終日休み → 除外
+  // 　 - is_all_day = false なら部分休み → 予約時間帯と被れば除外
+  // ・週間スケジュール(staff_week_schedule)
+  // 　 - is_open = false なら出勤していない → 除外
+  // 　 - 勤務時間外(開始/終了)に被れば除外
+  // ------------------------------------------------------------
+
+  // 対象日の曜日を取得 (例: "monday")
+  const dayOfWeek = getDayOfWeek(new Date(args.date))
+
+  const filteredBySchedule: typeof availableStaff = []
+
+  for (const staff of availableStaff) {
+    let skip = false
+
+    // 4.1 当日の例外スケジュール取得
+    const staffSchedules = await ctx.db
+      .query('staff_exception_schedule')
+      .withIndex('by_tenant_org_staff_date_archive', (q) =>
+        q
+          .eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('staff_id', staff._id)
+          .eq('date', args.date)
+          .eq('is_archive', false)
+      )
+      .collect()
+
+    // 例外スケジュールチェック
+    for (const sch of staffSchedules) {
+      if (sch.is_all_day) {
+        skip = true
+        break
+      }
+      if (
+        !sch.is_all_day &&
+        sch.start_time_unix !== undefined &&
+        sch.end_time_unix !== undefined &&
+        args.start_time_unix < sch.end_time_unix &&
+        args.end_time_unix > sch.start_time_unix
+      ) {
+        skip = true
+        break
+      }
+    }
+
+    if (skip) continue
+
+    // 4.2 週間スケジュール取得
+    const weekSchedule = await ctx.db
+      .query('staff_week_schedule')
+      .withIndex('by_tenant_org_staff_week_open_archive', (q) =>
+        q
+          .eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('staff_id', staff._id)
+          .eq('day_of_week', dayOfWeek as DayOfWeek) 
+          .eq('is_open', true)
+          .eq('is_archive', false)
+      )
+      .first()
+
+    if (!weekSchedule) {
+      // 出勤していない
+      continue
+    }
+
+    // 勤務時間内判定
+    const workStart = weekSchedule.start_hour
+      ? convertHourToTimestamp(weekSchedule.start_hour, args.date) ?? Number.MIN_SAFE_INTEGER
+      : Number.MIN_SAFE_INTEGER
+    const workEnd = weekSchedule.end_hour
+      ? convertHourToTimestamp(weekSchedule.end_hour, args.date) ?? Number.MAX_SAFE_INTEGER
+      : Number.MAX_SAFE_INTEGER
+
+    if (args.start_time_unix < workStart || args.end_time_unix > workEnd) {
+      continue // 勤務時間外
+    }
+
+    // ここまで到達すればスケジュールOK
+    filteredBySchedule.push(staff)
+  }
+
+  if (filteredBySchedule.length === 0) {
+    return null
+  }
+
   // 4. スタッフ設定（優先度、指名料）を取得
   const configs = await ctx.db
     .query('staff_config')
@@ -363,9 +460,13 @@ export async function findBestAvailableStaffForTimeSlot(
     .collect()
   const configMap = new Map(configs.map((config) => [config.staff_id, config]))
 
+  if(filteredBySchedule.length === 0) {
+    return null
+  }
+
   // 5. ダブルブッキングをチェックし、対応可能なスタッフを絞り込み
   const availableStaffWithConfigs = []
-  for (const staff of availableStaff) {
+  for (const staff of filteredBySchedule) {
     const config = configMap.get(staff._id)
     if (!config) continue
 
@@ -405,4 +506,242 @@ export async function findBestAvailableStaffForTimeSlot(
 
   // 7. 最優先スタッフを返す
   return availableStaffWithConfigs[0]
+}
+
+
+// キャンセル通知を送信するヘルパー関数
+export async function cancelNotification(
+  ctx: QueryCtx | MutationCtx,
+  args: {
+    reservation: Doc<'reservation'> & {
+      detail?: Doc<'reservation_detail'> | null;
+    };
+  }
+) {
+    // LINEでキャンセル通知を送信
+    try {
+      // 組織情報を取得
+      const organization = await ctx.db.get(args.reservation.org_id);
+      if (!organization) {
+        console.warn('キャンセル通知: 組織情報が見つかりません');
+        return { 
+          reservationId: args.reservation._id,
+          refundedOptions: args.reservation.detail?.options || [],
+        };
+      }
+      
+      // APIコンフィグを取得
+      const apiConfig = await ctx.db
+        .query('api_config')
+        .withIndex('by_tenant_org_archive', (q) =>
+          q.eq('tenant_id', args.reservation.tenant_id)
+            .eq('org_id', args.reservation.org_id)
+            .eq('is_archive', false)
+        )
+        .first();
+        
+      if (!apiConfig) {
+        console.warn('キャンセル通知: APIコンフィグが見つかりません');
+        return { 
+          reservationId: args.reservation._id,
+          refundedOptions: args.reservation.detail?.options || [],
+        };
+      }
+  
+      // 顧客にキャンセル通知を送信（customer_idがある場合のみ）
+      if (args.reservation.customer_id && apiConfig.line_access_token) {
+        try {
+          // 顧客向けキャンセル通知のデータを準備
+          const customerNotificationData = {
+            tenantId: args.reservation.tenant_id,
+            organizationId: args.reservation.org_id,
+            customerUid: args.reservation.customer_id,
+            cancelData: {
+              reservationId: args.reservation._id,
+              date: args.reservation.date,
+              startTimeUnix: args.reservation.start_time_unix,
+              endTimeUnix: args.reservation.end_time_unix,
+              staffName: args.reservation.staff_name || '指名フリー',
+              menus: args.reservation.detail?.menus || [],
+              options: args.reservation.detail?.options || [],
+              totalPrice: args.reservation.detail?.total_price || 0,
+              cancelledBy: args.reservation.cancelled_by,
+              cancelReason: args.reservation.cancel_reason || '',
+            },
+          };
+  
+          const baseUrl = getAppUrl()
+          const customerResponse = await fetch(`${baseUrl}/api/line/customer-cancellation-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(customerNotificationData),
+          });
+  
+          if (!customerResponse.ok) {
+            console.error('顧客キャンセル通知APIエラー:', customerResponse.status);
+          } else {
+            console.log('顧客キャンセル通知送信成功');
+          }
+          
+        } catch (customerNotificationError) {
+          console.warn('顧客キャンセル通知の送信に失敗しました:', customerNotificationError);
+          // 顧客通知の失敗はキャンセル処理をブロックしない
+        }
+      }
+  
+      // サロンにキャンセル通知を送信（org_line_idがある場合のみ）
+      if (apiConfig.org_line_id) {  
+        try {
+          // 環境変数から弊社のLINEチャンネル情報を取得
+          const companyLineAccessToken = process.env.COMPANY_LINE_CHANNEL_ACCESS_TOKEN;
+          
+          if (companyLineAccessToken) {
+            // サロン向けキャンセル通知のデータを準備
+            const salonNotificationData = {
+              tenantId: args.reservation.tenant_id,
+              organizationId: args.reservation.org_id,
+              reservationId: args.reservation._id,
+              cancelData: {
+                reservationId: args.reservation._id,
+                customerName: args.reservation.customer_name,
+                staffName: args.reservation.staff_name || '不明なスタッフ',
+                date: args.reservation.date,
+                startTimeUnix: args.reservation.start_time_unix,
+                endTimeUnix: args.reservation.end_time_unix,
+                menus: args.reservation.detail?.menus || [],
+                options: args.reservation.detail?.options || [],
+                totalPrice: args.reservation.detail?.total_price || 0,
+                cancelledBy: args.reservation.cancelled_by,
+                cancelReason: args.reservation.cancel_reason || '',
+              },
+            };
+  
+            const baseUrl = getAppUrl()
+            const salonResponse = await fetch(`${baseUrl}/api/line/salon-cancellation-notification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(salonNotificationData),
+            });
+  
+            if (!salonResponse.ok) {
+              console.error('サロンキャンセル通知APIエラー:', salonResponse.status);
+            } else {
+              console.log('サロンキャンセル通知送信成功');
+            }
+          } else {
+            console.warn('キャンセル通知: COMPANY_LINE_CHANNEL_ACCESS_TOKENが設定されていません');
+          }
+        } catch (salonNotificationError) {
+          console.warn('サロンキャンセル通知の送信に失敗しました:', salonNotificationError);
+          // サロン通知の失敗はキャンセル処理をブロックしない
+        }
+      }
+    } catch (notificationError) {
+      console.warn('キャンセル通知処理でエラーが発生しました:', notificationError);
+      // 通知の失敗はキャンセル処理をブロックしない
+    }
+}
+
+
+export async function cancelForCompletedReservation(
+  supabaseService: SupabaseService,
+  reservation: Doc<'reservation'> & {
+    detail?: Doc<'reservation_detail'> | null;
+  }
+) { 
+
+  if(reservation.status === "completed" && reservation.customer_id) {
+    const { PointTaskQueueRepository } = await import('@/services/supabase/repositories/point');
+    const { CustomerRepository } = await import('@/services/supabase/repositories/customer');
+    const { CarteRepository } = await import('@/services/supabase/repositories/carte');
+    
+    const pointTaskQueueRepo = new PointTaskQueueRepository(supabaseService);
+    const customerRepo = new CustomerRepository(supabaseService);
+    const carteRepo = new CarteRepository(supabaseService);
+    
+   // 1. カルテを取得し、LTV価格から今回の支払総額を減算
+   const carte = await carteRepo.findOrCreateByCustomer(
+    reservation.tenant_id,
+    reservation.org_id,
+    reservation.customer_id,
+    {
+      ltv_price: 0, // 初期値
+    }
+  );
+  await carteRepo.update(carte.id, {
+    ltv_price: (carte.ltv_price || 0) - (reservation.detail?.total_price || 0),
+    updated_at: new Date().toISOString(),
+  });
+
+  // 2. ポイント返還処理
+  const { PointTransactionRepository } = await import('@/services/supabase/repositories/point');
+  const pointTransactionRepo = new PointTransactionRepository(supabaseService);
+  if (reservation.detail?.use_points && reservation.detail.use_points > 0) {
+    await pointTransactionRepo.create({
+      tenant_id: reservation.tenant_id,
+      org_id: reservation.org_id,
+      customer_id: reservation.customer_id,
+      reservation_id: reservation._id,
+      points: reservation.detail.use_points, // プラスで返還
+      transaction_type: 'refunded',
+      transaction_date_unix: Date.now(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    
+    // 顧客ポイント更新
+    const { customer, customerPoints } = await customerRepo.getCompleteCustomerData(
+      reservation.customer_id,
+      reservation.tenant_id,
+      reservation.org_id
+    );
+    if (customer) {
+      await customerRepo.updateCustomerWithDetailsAndPoints(
+        reservation.customer_id,
+        reservation.tenant_id,
+        reservation.org_id,
+        {},
+        {},
+        (customerPoints?.total_points || 0) + reservation.detail.use_points,
+        []
+      );
+    }
+  }
+
+  
+  // 3. ポイント付与タスク削除
+  const pointTask = await pointTaskQueueRepo.findByReservation(
+    reservation.tenant_id,
+    reservation.org_id,
+    reservation._id
+  );
+  
+  if (pointTask && pointTask.status === 'pending') {
+    await pointTaskQueueRepo.deleteRecord('id', pointTask.id);
+  }
+  // 3. 顧客情報を取得・更新
+  const { customer, customerPoints } = await customerRepo.getCompleteCustomerData(
+    reservation.customer_id,
+    reservation.tenant_id,
+    reservation.org_id
+  );
+  
+  if (customer && reservation.detail?.use_points && reservation.detail.use_points > 0) {
+    
+    const updateData: Record<string, any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
+      // 4. total_reservation_countを1 減らす
+      total_reservation_count: (customer.total_reservation_count || 0) - 1,
+    };
+    
+    await customerRepo.updateCustomerWithDetailsAndPoints(
+      reservation.customer_id,
+      reservation.tenant_id,
+      reservation.org_id,
+      updateData,
+      {},
+      (customerPoints?.total_points || 0) + reservation.detail.use_points,
+      []
+    );
+  }
+  }
 }

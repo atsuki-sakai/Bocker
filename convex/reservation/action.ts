@@ -2,8 +2,6 @@
 
 import { internalAction } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import { PointTaskQueueRepository } from '@/services/supabase/repositories/point';
-import { CustomerRepository } from '@/services/supabase/repositories/customer';
 import { RowType, SupabaseService } from '@/services/supabase/SupabaseService';
 import { createClient } from '@supabase/supabase-js';
 import { getEnv } from '@/lib/env-config'
@@ -12,6 +10,10 @@ import { Doc, Id} from '@/convex/_generated/dataModel';
 import { ReservationMenu, ReservationOption, ReservationStatus, PaymentMethod } from '@/convex/types';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
+import { PointTaskQueueRepository } from '@/services/supabase/repositories/point';
+import { CustomerRepository } from '@/services/supabase/repositories/customer';
+import { getAppUrl } from '@/lib/env-config';
+import { cancelForCompletedReservation } from './reservation.helpers';
 
 /**
  * 予約IDに紐づくポイントタスクを削除する
@@ -374,6 +376,12 @@ export const performSideEffects = internalAction({
     payload: v.any(), 
     coreResult: v.object({
       reservationId: v.id('reservation'),
+      status: v.optional(v.string()),
+      payment_method: v.optional(v.string()),
+      checkout_url: v.optional(v.string()),
+      alreadyConfirmed: v.optional(v.boolean()),
+      newStatus: v.optional(v.string()),
+      refundedOptions: v.optional(v.any()),
     })
   },
   handler: async (ctx, { mode, payload, coreResult }) => {
@@ -517,38 +525,40 @@ async function handleConfirmSideEffects(
     reservationId: Id<'reservation'>;
   }
 ) {
-  // 予約詳細はpayloadから取得する必要がある
-  const reservation = payload.reservation;
-  
-  if (!reservation || !reservation.detail) return;
-  
-  const { PointTransactionRepository } = await import('@/services/supabase/repositories/point');
-  // const { CustomerRepository } = await import('@/services/supabase/repositories/customer');
-  // const { CarteRepository } = await import('@/services/supabase/repositories/carte');
-  // const { CouponTransactionRepository } = await import('@/services/supabase/repositories/coupon');
-  
-  const pointTransactionRepo = new PointTransactionRepository(supabaseService);
-  // const pointTaskQueueRepo = new PointTaskQueueRepository(supabaseService);
-  // const customerRepo = new CustomerRepository(supabaseService);
-  // const carteRepo = new CarteRepository(supabaseService);
-  // const couponTransactionRepo = new CouponTransactionRepository(supabaseService);
-  
   try {
-    // ポイント使用処理
-    if (reservation.detail?.use_points && reservation.detail.use_points > 0 && reservation.customer_id) {
-      await pointTransactionRepo.create({
-        tenant_id: reservation.tenant_id,
-        org_id: reservation.org_id,
-        customer_id: reservation.customer_id,
+
+    const { CarteRepository } = await import('@/services/supabase/repositories/carte');
+  
+    // クレジットカード決済の場合のみカルテ作成
+    if(payload.reservation?.detail?.payment_method === "credit_card" && payload.reservation?.customer_id && payload.reservation?.org_id) {
+      const carteRepo = new CarteRepository(supabaseService);
+      const carte = await carteRepo.findOrCreateByCustomer(
+          payload.reservation.tenant_id,
+          payload.reservation.org_id,
+          payload.reservation.customer_id,
+        {
+          ltv_price: 0, // 作成時はLTVに加算しない
+        }
+      );
+      // カルテ詳細を追加
+      const { CarteDetailRepository } = await import('@/services/supabase/repositories/carte');
+      const carteDetailRepo = new CarteDetailRepository(supabaseService);
+      await carteDetailRepo.createCarteDetail({
+        tenant_id: payload.reservation.tenant_id,
+        org_id: payload.reservation.org_id,
+        carte_id: carte.id,
         reservation_id: coreResult.reservationId,
-        points: -reservation.detail.use_points,
-        transaction_type: 'used',
-        transaction_date_unix: Date.now(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        staff_id: payload.reservation.staff_id || '',
+        staff_name: payload.reservation.staff_name || '',
+        // JST(UTC+9) の ISO 文字列に変換
+        service_start_time: new Date(payload.reservation.start_time_unix + 9 * 60 * 60 * 1000).toISOString(),
+        menu_details: payload.reservation.detail?.menus || [],
+        option_details: payload.reservation.detail?.options || [],
+        total_price: payload.reservation.detail?.total_price || 0,
+        notes: '',
+        customer_requests: payload.reservation.detail?.notes || '',
       });
     }
-  
   } catch (error) {
     console.error("Confirm side effects error:", error);
     throw error;
@@ -573,13 +583,7 @@ async function handleCancelSideEffects(
   
   if (!reservation || !reservation.customer_id) return;
   
-  const { PointTransactionRepository, PointTaskQueueRepository } = await import('@/services/supabase/repositories/point');
-  const { CustomerRepository } = await import('@/services/supabase/repositories/customer');
   const { CarteDetailRepository } = await import('@/services/supabase/repositories/carte');
-  
-  const pointTransactionRepo = new PointTransactionRepository(supabaseService);
-  const pointTaskQueueRepo = new PointTaskQueueRepository(supabaseService);
-  const customerRepo = new CustomerRepository(supabaseService);
   const carteDetailRepo = new CarteDetailRepository(supabaseService);
   
   try {
@@ -589,55 +593,12 @@ async function handleCancelSideEffects(
       reservation.org_id,
       reservation._id
     );
-    
     if (carteDetail) {
       await carteDetailRepo.deleteRecord('id', carteDetail.id);
       console.log(`[handleCancelSideEffects] Deleted carte_detail record: ${carteDetail.id}`);
     }
-
-       // 2. ポイント返還処理
-       if (reservation.detail?.use_points && reservation.detail.use_points > 0) {
-        await pointTransactionRepo.create({
-          tenant_id: reservation.tenant_id,
-          org_id: reservation.org_id,
-          customer_id: reservation.customer_id,
-          reservation_id: reservation._id,
-          points: reservation.detail.use_points, // プラスで返還
-          transaction_type: 'refunded',
-          transaction_date_unix: Date.now(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-        
-        // 顧客ポイント更新
-        const { customer, customerPoints } = await customerRepo.getCompleteCustomerData(
-          reservation.customer_id,
-          reservation.tenant_id,
-          reservation.org_id
-        );
-        if (customer) {
-          await customerRepo.updateCustomerWithDetailsAndPoints(
-            reservation.customer_id,
-            reservation.tenant_id,
-            reservation.org_id,
-            {},
-            {},
-            (customerPoints?.total_points || 0) + reservation.detail.use_points,
-            []
-          );
-        }
-      }
-    
-      
-    // 3. ポイント付与タスク削除
-    const pointTask = await pointTaskQueueRepo.findByReservation(
-      reservation.tenant_id,
-      reservation.org_id,
-      reservation._id
-    );
-    
-    if (pointTask && pointTask.status === 'pending') {
-      await pointTaskQueueRepo.deleteRecord('id', pointTask.id);
+    if(reservation.status === "completed" && reservation.customer_id) {
+      await cancelForCompletedReservation(supabaseService, reservation);
     }
   } catch (error) {
     console.error("Cancel side effects error:", error);
@@ -668,11 +629,10 @@ async function handleStatusSideEffects(
     const { PointTaskQueueRepository } = await import('@/services/supabase/repositories/point');
     const { CustomerRepository } = await import('@/services/supabase/repositories/customer');
     const { CarteRepository } = await import('@/services/supabase/repositories/carte');
-    
+
     const pointTaskQueueRepo = new PointTaskQueueRepository(supabaseService);
     const customerRepo = new CustomerRepository(supabaseService);
     const carteRepo = new CarteRepository(supabaseService);
-    
     try {
       // 1. カルテのLTV価格に今回の支払総額を加算
       const carte = await carteRepo.findOrCreateByCustomer(
@@ -692,9 +652,9 @@ async function handleStatusSideEffects(
       // 2. 30日後のポイント付与タスクを作成
       const pointConfig = payload.pointConfig;
       if (pointConfig && pointConfig.is_active) {
-        const earnPoints = Math.floor((reservation.detail?.total_price || 0) * ((pointConfig.point_rate || 0) / 100));
+        const earnPoints = pointConfig.is_fixed_point ? pointConfig.fixed_point : Math.floor((reservation.detail?.total_price || 0) * ((pointConfig.point_rate || 0) / 100));
         
-        if (earnPoints > 0) {
+        if (earnPoints && earnPoints > 0) {
           await pointTaskQueueRepo.create({
             tenant_id: reservation.tenant_id,
             org_id: reservation.org_id,
@@ -729,16 +689,35 @@ async function handleStatusSideEffects(
         if (customer.customer_type === 'first_time') {
           updateData.customer_type = 'repeat';
         }
-        
+        // 6. ポイント使用時は顧客のポイントを更新する、利用していなければそのままのポイントで保存
+        if(reservation.detail.use_points) {
+          updateData.total_points = (customerPoints?.total_points || 0) - (reservation.detail.use_points || 0);
+        }else{
+          updateData.total_points = (customerPoints?.total_points || 0);
+        }
         await customerRepo.updateCustomerWithDetailsAndPoints(
           reservation.customer_id,
           reservation.tenant_id,
           reservation.org_id,
           updateData,
           {},
-          customerPoints?.total_points || 0,
+          updateData.total_points, // 顧客のポイントを更新
           []
         );
+
+        // 7. クーポン利用時はトランザクションを作成
+        if(reservation.detail.coupon_discount && reservation.detail.coupon_discount > 0 && reservation.detail.coupon_id) {
+          await fetch(`${getAppUrl()}/api/coupon/create-transaction`, {
+            method: 'POST',
+            body: JSON.stringify({
+              tenant_id: reservation.tenant_id,
+              org_id: reservation.org_id,
+              customer_id: reservation.customer_id,
+              reservation_id: reservation._id,
+              discount_amount: reservation.detail.coupon_discount,
+            }),
+          });
+        }
       }
       
       console.log('[handleStatusSideEffects] Completed status side effects successfully');
@@ -746,10 +725,34 @@ async function handleStatusSideEffects(
       console.error('[handleStatusSideEffects] Error in completed status side effects:', error);
       throw error;
     }
-  } else if (payload.status === 'cancelled' && reservation.customer_id) {
+  } else if ((payload.status === 'cancelled' || payload.status === 'refunded') && reservation.customer_id) {
     console.log('[handleStatusSideEffects] Cancelled status side effects');
-  } else if (payload.status === 'refunded' && reservation.customer_id) {
-    console.log('[handleStatusSideEffects] Refunded status side effects');
+
+    const { CarteDetailRepository } = await import('@/services/supabase/repositories/carte');
+    const carteDetailRepo = new CarteDetailRepository(supabaseService);
+    console.log('handleCancelSideEffects', coreResult);
+    // 予約詳細はpayloadから取得
+    const reservation = payload.reservation;
+    if (!reservation || !reservation.customer_id) return;
+    try {
+      // 1. カルテ詳細レコードを削除
+      const carteDetail = await carteDetailRepo.findByReservation(
+        reservation.tenant_id,
+        reservation.org_id,
+        reservation._id
+      );
+      if (carteDetail) {
+        await carteDetailRepo.deleteRecord('id', carteDetail.id);
+        console.log(`[handleCancelSideEffects] Deleted carte_detail record: ${carteDetail.id}`);
+      }
+
+      if(reservation.status === "completed" && reservation.customer_id) {
+        await cancelForCompletedReservation(supabaseService, reservation);
+      }
+    } catch (error) {
+      console.error("Cancel side effects error:", error);
+      throw error;
+    }
   } else if (payload.status === 'confirmed' && reservation.customer_id) {
     console.log('[handleStatusSideEffects] Confirmed status side effects');
   } else if (payload.status === 'pending' && reservation.customer_id) {

@@ -13,6 +13,7 @@ export interface SalonReservationNotificationParams {
     end_time_unix: number
     status: string
     payment_status: string
+    is_free_nomination: boolean
   }
   reservationDetail: {
     total_price?: number
@@ -210,7 +211,7 @@ export const createSalonReservationNotification = ({
             type: 'button',
             action: {
               type: 'uri',
-              label: '予　約　詳　細　を　確　認',
+              label: '予約詳細を確認',
               uri: `${getAppUrl()}/dashboard/reservation/${reservation._id}`,
             },
             style: 'primary',
@@ -291,7 +292,7 @@ export const createSalonReservationNotification = ({
                   },
                   {
                     type: 'text',
-                    text: reservation.staff_name,
+                    text: reservation.is_free_nomination ? '指名フリー' : reservation.staff_name || '不明',
                     size: 'sm',
                     color: '#333333',
                     weight: 'bold',

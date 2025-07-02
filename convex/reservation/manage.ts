@@ -1,3 +1,4 @@
+import { updateRecord } from '@/convex/utils/helpers'
 import { v } from "convex/values";
 import { mutation, MutationCtx } from "@/convex/_generated/server";
 import { internal } from "@/convex/_generated/api";
@@ -10,9 +11,8 @@ import {
 import { validateDateStrToDate, validateRequiredNumber, validateRequired } from "@/convex/utils/validations";
 import { ReservationMenu, ReservationOption, ImageType, PaymentMethod, ReservationStatus, ReservationPaymentStatus } from "@/convex/types";
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from "@/lib/errors/constants";
-import { cancelableDeadline } from "./reservation.helpers";
+import { cancelableDeadline, cancelNotification } from "./reservation.helpers";
 import { reservationMenuType, reservationOptionType, imageType, paymentMethodType, reservationStatusType, reservationPaymentStatusType } from "@/convex/types";
-import { getAppUrl } from "@/lib/env-config";
 
 // Payload型定義
 type CreatePayload = {
@@ -54,6 +54,7 @@ type CancelPayload = {
   cancelledBy: 'customer' | 'staff' | 'system';
   cancelReason?: string;
   skipValidation?: boolean;
+  checkCancelable: boolean;
 };
 
 type StatusPayload = {
@@ -121,6 +122,7 @@ export const handleReservationManage = mutation({
         cancelledBy: v.union(v.literal('customer'), v.literal('staff'), v.literal('system')),
         cancelReason: v.optional(v.string()),
         skipValidation: v.optional(v.boolean()),
+        checkCancelable: v.optional(v.boolean()),
       }),
       // status mode
       v.object({
@@ -438,24 +440,26 @@ async function cancelReservationCore(
     .first();
 
   // 顧客キャンセルの場合は期限チェック
-  if (args.cancelledBy === "customer" && !args.skipValidation) {
-    const orgConfig = await ctx.db
-      .query("reservation_config")
-      .withIndex("by_tenant_org_archive", (q) =>
-        q.eq("tenant_id", reservation.tenant_id)
-          .eq("org_id", reservation.org_id)
-          .eq("is_archive", false)
-      )
-      .first();
-    const cancelDeadline = cancelableDeadline(orgConfig?.available_cancel_days ?? 1, reservation.start_time_unix);
-    
-    if (Date.now() > cancelDeadline) {
-      throw new ConvexError({
-        code: "CANCELLATION_DEADLINE_PASSED",
-        message: "キャンセル期限を過ぎているため、キャンセルできません",
-        severity: ERROR_SEVERITY.ERROR,
-        status: ERROR_STATUS_CODE.BAD_REQUEST,
-      });
+  if(args.checkCancelable){
+    if ( args.cancelledBy === "customer" && !args.skipValidation) {
+      const orgConfig = await ctx.db
+        .query("reservation_config")
+        .withIndex("by_tenant_org_archive", (q) =>
+          q.eq("tenant_id", reservation.tenant_id)
+            .eq("org_id", reservation.org_id)
+            .eq("is_archive", false)
+        )
+        .first();
+      const cancelDeadline = cancelableDeadline(orgConfig?.available_cancel_days ?? 1, reservation.start_time_unix);
+      
+      if (Date.now() > cancelDeadline) {
+        throw new ConvexError({
+          code: "CANCELLATION_DEADLINE_PASSED",
+          message: "キャンセル期限を過ぎているため、キャンセルできません",
+          severity: ERROR_SEVERITY.ERROR,
+          status: ERROR_STATUS_CODE.BAD_REQUEST,
+        });
+      }
     }
   }
 
@@ -489,127 +493,11 @@ async function cancelReservationCore(
       updated_at: Date.now(),
     });
   }
-  
-  // LINEでキャンセル通知を送信
-  try {
-    // 組織情報とAPIコンフィグを取得
-    const [organization, apiConfig] = await Promise.all([
-      ctx.db
-        .query('organization')
-        .withIndex('by_tenant_active_archive', q => 
-          q.eq('tenant_id', reservation.tenant_id).eq('is_active', true).eq('is_archive', false)
-        )
-        .first(),
-      ctx.db
-        .query('api_config')
-        .withIndex('by_tenant_org_archive', q =>
-          q.eq('tenant_id', reservation.tenant_id)
-            .eq('org_id', reservation.org_id)
-            .eq('is_archive', false)
-        )
-        .first(),
-    ]);
-
-    if (!organization) {
-      console.warn('キャンセル通知: 組織情報が見つかりません');
-      return { 
-        reservationId: args.reservationId,
-        refundedOptions: detail?.options || [],
-      };
+  await cancelNotification(ctx, {
+    reservation: reservation as Doc<'reservation'> & {
+      detail?: Doc<'reservation_detail'> | null;
     }
-
-    // 顧客にキャンセル通知を送信（customer_idがある場合のみ）
-    if (reservation.customer_id && apiConfig?.line_access_token) {
-      try {
-        // 顧客向けキャンセル通知のデータを準備
-        const customerNotificationData = {
-          tenantId: reservation.tenant_id,
-          organizationId: reservation.org_id,
-          customerUid: reservation.customer_id,
-          cancelData: {
-            reservationId: reservation._id,
-            date: reservation.date,
-            startTimeUnix: reservation.start_time_unix,
-            endTimeUnix: reservation.end_time_unix,
-            staffName: reservation.staff_name || '指名フリー',
-            menus: detail?.menus || [],
-            options: detail?.options || [],
-            totalPrice: detail?.total_price || 0,
-            cancelledBy: args.cancelledBy,
-            cancelReason: args.cancelReason,
-          },
-        };
-
-        const baseUrl = getAppUrl()
-        const customerResponse = await fetch(`${baseUrl}/api/line/customer-cancellation-notification`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(customerNotificationData),
-        });
-
-        if (!customerResponse.ok) {
-          console.error('顧客キャンセル通知APIエラー:', customerResponse.status);
-        } else {
-          console.log('顧客キャンセル通知送信成功');
-        }
-        
-      } catch (customerNotificationError) {
-        console.warn('顧客キャンセル通知の送信に失敗しました:', customerNotificationError);
-        // 顧客通知の失敗はキャンセル処理をブロックしない
-      }
-    }
-
-    // サロンにキャンセル通知を送信（org_line_idがある場合のみ）
-    if (apiConfig?.org_line_id) {
-      try {
-        // 環境変数から弊社のLINEチャンネル情報を取得
-        const companyLineAccessToken = process.env.COMPANY_LINE_CHANNEL_ACCESS_TOKEN;
-        
-        if (companyLineAccessToken) {
-          // サロン向けキャンセル通知のデータを準備
-          const salonNotificationData = {
-            tenantId: reservation.tenant_id,
-            organizationId: reservation.org_id,
-            reservationId: reservation._id,
-            cancelData: {
-              reservationId: reservation._id,
-              customerName: reservation.customer_name,
-              staffName: reservation.staff_name || '不明なスタッフ',
-              date: reservation.date,
-              startTimeUnix: reservation.start_time_unix,
-              endTimeUnix: reservation.end_time_unix,
-              menus: detail?.menus || [],
-              options: detail?.options || [],
-              totalPrice: detail?.total_price || 0,
-              cancelledBy: args.cancelledBy,
-              cancelReason: args.cancelReason,
-            },
-          };
-
-          const baseUrl = getAppUrl()
-          const salonResponse = await fetch(`${baseUrl}/api/line/salon-cancellation-notification`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(salonNotificationData),
-          });
-
-          if (!salonResponse.ok) {
-            console.error('サロンキャンセル通知APIエラー:', salonResponse.status);
-          } else {
-            console.log('サロンキャンセル通知送信成功');
-          }
-        } else {
-          console.warn('キャンセル通知: COMPANY_LINE_CHANNEL_ACCESS_TOKENが設定されていません');
-        }
-      } catch (salonNotificationError) {
-        console.warn('サロンキャンセル通知の送信に失敗しました:', salonNotificationError);
-        // サロン通知の失敗はキャンセル処理をブロックしない
-      }
-    }
-  } catch (notificationError) {
-    console.warn('キャンセル通知処理でエラーが発生しました:', notificationError);
-    // 通知の失敗はキャンセル処理をブロックしない
-  }
+  });
   return { 
     reservationId: args.reservationId,
     refundedOptions: detail?.options || [],
@@ -630,12 +518,55 @@ async function updateStatusCore(
       status: ERROR_STATUS_CODE.NOT_FOUND,
     });
   }
+  const reservationDetail = await ctx.db.query("reservation_detail")
+    .withIndex("by_reservation_archive", (q) => 
+      q.eq("reservation_id", reservation._id).eq("is_archive", false)
+    )
+    .first();
+  if (!reservationDetail) {
+    throw new ConvexError({ 
+      code: "NOT_FOUND", 
+      message: "予約が見つかりません",
+      severity: ERROR_SEVERITY.ERROR,
+      status: ERROR_STATUS_CODE.NOT_FOUND,
+    });
+  }
 
-  await ctx.db.patch(payload.reservationId, { 
-    status: payload.status,
-    updated_at: Date.now(),
-  });
-  
+  switch(payload.status){
+    case "completed":
+      // 支払いステータスをpaidに更新 ステータスをcompletedに更新
+      await updateRecord(ctx, payload.reservationId, {
+        payment_status: "paid",
+        status: "completed",
+      });
+      // クーポンを利用している場合は利用回数をデクリメント
+      if(reservationDetail.coupon_id){
+        await ctx.runMutation(internal.coupon.mutation.decrementUsageCount, {
+          couponId: reservationDetail.coupon_id,
+        });
+      }
+      break;
+    case "cancelled":
+    case "refunded":
+      // キャンセル処理
+      await cancelReservationCore(ctx, {
+        reservationId: payload.reservationId,
+        cancelledBy: "staff",
+        skipValidation: true,
+        cancelReason: "スタッフによるキャンセル",
+        checkCancelable: false,
+      });
+      break;
+    case "confirmed": case "pending":
+      // ステータスを更新 予約計算にはPendingは含まれないため、ステータスのみ更新
+      await updateRecord(ctx, payload.reservationId, {
+        status: payload.status,
+      });
+      break;
+    default:
+      console.log(`[updateStatusCore] default case status: ${payload.status}`);
+      break;
+  }
   return { 
     reservationId: payload.reservationId,
     newStatus: payload.status,
