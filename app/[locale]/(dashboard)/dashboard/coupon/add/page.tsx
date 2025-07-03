@@ -264,7 +264,7 @@ function CouponForm() {
       await fetchQuery(api.tenant.plan.query.checkLimitByPlan, {
         tenant_id: tenantId,
         org_id: orgId,
-        limit_type: 'staff',
+        limit_type: 'coupon',
       })
 
       // FIXME: active_customer_typeは仮でallを設定　設定できるように修正

@@ -179,7 +179,7 @@ function OptionAddForm() {
       await fetchQuery(api.tenant.plan.query.checkLimitByPlan, {
         tenant_id: tenantId,
         org_id: orgId,
-        limit_type: 'staff',
+        limit_type: 'option',
       })
 
       if (currentFile) {
