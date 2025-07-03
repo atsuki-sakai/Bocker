@@ -25,6 +25,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { useRouter } from 'next/navigation'
@@ -42,12 +43,6 @@ import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import { useTranslations } from 'next-intl'
 import { Loader2 } from 'lucide-react'
 import { fetchMutation } from 'convex/nextjs'
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from '@/components/ui/accordion'
 
 const statusColorMap = {
   confirmed: 'bg-palette-2 border border-palette-2-foreground text-palette-2-foreground',
@@ -325,44 +320,7 @@ export default function ReservationPage() {
             </div>
           </div>
         </div>
-        <Accordion type="single" collapsible>
-          <AccordionItem value="item-1">
-            <AccordionTrigger className="text-sm font-semibold">
-              予約ステータスについて
-            </AccordionTrigger>
-            <AccordionContent className="space-y-3">
-              <div className="rounded-lg bg-orange-50 p-3 border border-orange-200">
-                <p className="text-sm font-medium text-orange-800 mb-1">⚠️ ステータス変更の制限</p>
-                <p className="text-sm text-gray-700">
-                  <strong>完了・キャンセル・返金済み</strong>の予約は、ステータスを変更できません。
-                  再予約が必要な場合は、新規で予約を作成してください。
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-yellow-500 mt-1.5 flex-shrink-0"></div>
-                  <div>
-                    <p className="text-sm font-medium">保留中</p>
-                    <p className="text-xs text-gray-600">
-                      予約枠に含まれません。他のお客様がこの時間帯を予約できます。ステータスを変更できます。
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
-                  <div>
-                    <p className="text-sm font-medium">予約受付済み</p>
-                    <p className="text-xs text-gray-600">
-                      予約枠に含まれます。この時間帯は他の予約を受け付けません。ステータスを変更できます。
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
         <div className="border-b pb-4">
           <div
             className={`flex justify-end w-full ${
@@ -389,7 +347,11 @@ export default function ReservationPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="default" onClick={(e) => handleShowUpdateStatusModal(e)}>
+              <Button
+                variant="default"
+                disabled={reservationData.reservation.status === status}
+                onClick={(e) => handleShowUpdateStatusModal(e)}
+              >
                 {t('changeStatus')}
               </Button>
             </div>
@@ -718,11 +680,45 @@ export default function ReservationPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={isUpdateStatusModalOpen}>
+      <Dialog open={isUpdateStatusModalOpen} onOpenChange={() => setIsUpdateStatusModalOpen(false)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('changeStatusDialog.title')}</DialogTitle>
           </DialogHeader>
+          <div className="rounded-lg bg-orange-50 p-3 border border-orange-200">
+            <p className="text-sm font-medium text-orange-800 mb-1">⚠️ ステータス変更の制限</p>
+            <p className="text-sm text-gray-700">
+              <strong>完了・キャンセル・返金済み</strong>の予約は、ステータスを変更できません。
+              再予約が必要な場合は、新規で予約を作成してください。
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-start gap-2">
+              <div className="w-2 h-2 rounded-full bg-yellow-500 mt-1.5 flex-shrink-0"></div>
+              <div>
+                <p className="text-sm font-medium">保留中</p>
+                <p className="text-xs text-gray-600">
+                  予約枠に含まれません。他のお客様がこの時間帯を予約できます。ステータスを変更できます。
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
+              <div>
+                <p className="text-sm font-medium">予約受付済み</p>
+                <p className="text-xs text-gray-600">
+                  予約枠に含まれます。この時間帯は他の予約を受け付けません。ステータスを変更できます。
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogDescription className="text-sm text-neon bg-neon-foreground p-4 rounded-lg mt-4">
+            <strong>{convertReservationStatus(reservationData.reservation.status)}</strong>
+            {'から'}
+            <strong>{convertReservationStatus(status)}</strong>へ変更する。
+          </DialogDescription>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsUpdateStatusModalOpen(false)}>
               {commonT('cancel')}

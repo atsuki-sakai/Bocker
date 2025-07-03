@@ -689,21 +689,26 @@ async function handleStatusSideEffects(
         if (customer.customer_type === 'first_time') {
           updateData.customer_type = 'repeat';
         }
-        // 6. ポイント使用時は顧客のポイントを更新する、利用していなければそのままのポイントで保存
-        if(reservation.detail.use_points) {
-          updateData.total_points = (customerPoints?.total_points || 0) - (reservation.detail.use_points || 0);
-        }else{
-          updateData.total_points = (customerPoints?.total_points || 0);
-        }
-        await customerRepo.updateCustomerWithDetailsAndPoints(
+        
+        // 顧客基本情報を RPC 経由で更新
+        await customerRepo.updateCustomer(
           reservation.customer_id,
           reservation.tenant_id,
           reservation.org_id,
           updateData,
-          {},
-          updateData.total_points, // 顧客のポイントを更新
-          []
         );
+
+        // 6. ポイント使用時は顧客ポイントを更新する
+        if (reservation.detail.use_points) {
+          const newTotalPoints = (customerPoints?.total_points || 0) - (reservation.detail.use_points || 0);
+          await customerRepo.updateCustomerPoints(
+            reservation.customer_id,
+            reservation.tenant_id,
+            reservation.org_id,
+            newTotalPoints,
+            Date.now(),
+          );
+        }
 
         // 7. クーポン利用時はトランザクションを作成
         if(reservation.detail.coupon_discount && reservation.detail.coupon_discount > 0 && reservation.detail.coupon_id) {

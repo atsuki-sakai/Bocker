@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useLocale } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useOrganizationReservations } from '@/hooks/useOrganizationReservations'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -31,6 +31,7 @@ import { Calendar as CalendarIcon, User } from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { Shuffle } from 'lucide-react'
 
 // 予約ステータスの表示設定
 const statusConfig = {
@@ -45,6 +46,7 @@ const statusConfig = {
 const paymentStatusConfig = {
   pending: { label: '未払い', color: 'bg-yellow-500' },
   completed: { label: '支払済み', color: 'bg-green-500' },
+  paid: { label: '支払済み', color: 'bg-green-500' },
   failed: { label: '失敗', color: 'bg-red-500' },
   refunded: { label: '返金済み', color: 'bg-gray-500' },
 } as const
@@ -57,15 +59,15 @@ export default function OrganizationReservationCollectionPage() {
 
   // 実際の検索で使用する日付範囲（本日から1週間）
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const weekLater = new Date(today);
-    weekLater.setDate(weekLater.getDate() + 6); // 7日後（本日含む）
-    weekLater.setHours(23, 59, 59, 999);
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const weekLater = new Date(today)
+    weekLater.setDate(weekLater.getDate() + 6) // 7日後（本日含む）
+    weekLater.setHours(23, 59, 59, 999)
     return {
       from: today,
       to: weekLater,
-    };
+    }
   })
 
   // カレンダーで選択中の一時的な日付範囲
@@ -77,7 +79,7 @@ export default function OrganizationReservationCollectionPage() {
   // 日付範囲を文字列に変換
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined
-  
+
   console.log('[ReservationCollection] Date range processing:', {
     dateRange,
     startDate,
@@ -85,7 +87,7 @@ export default function OrganizationReservationCollectionPage() {
     fromHours: dateRange?.from?.getHours(),
     fromMinutes: dateRange?.from?.getMinutes(),
     toHours: dateRange?.to?.getHours(),
-    toMinutes: dateRange?.to?.getMinutes()
+    toMinutes: dateRange?.to?.getMinutes(),
   })
 
   // 日付範囲適用の処理
@@ -94,7 +96,7 @@ export default function OrganizationReservationCollectionPage() {
     if (tempDateRange?.from && !tempDateRange?.to) {
       setDateRange({
         from: tempDateRange.from,
-        to: tempDateRange.from
+        to: tempDateRange.from,
       })
     } else {
       setDateRange(tempDateRange)
@@ -104,15 +106,15 @@ export default function OrganizationReservationCollectionPage() {
 
   // 日付範囲リセットの処理（本日から1週間）
   const handleResetDateRange = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const weekLater = new Date(today);
-    weekLater.setDate(weekLater.getDate() + 6); // 7日後（本日含む）
-    weekLater.setHours(23, 59, 59, 999);
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const weekLater = new Date(today)
+    weekLater.setDate(weekLater.getDate() + 6) // 7日後（本日含む）
+    weekLater.setHours(23, 59, 59, 999)
     const defaultRange = {
       from: today,
       to: weekLater,
-    };
+    }
     setTempDateRange(defaultRange)
     setDateRange(defaultRange)
     setIsCalendarOpen(false)
@@ -131,9 +133,9 @@ export default function OrganizationReservationCollectionPage() {
   // スタッフリストを予約データから抽出
   const staffList = useMemo(() => {
     const uniqueStaff = reservations
-      .map(r => ({ id: r.staffId, name: r.staffName }))
-      .filter((staff, index, self) => 
-        staff.id && self.findIndex(s => s.id === staff.id) === index
+      .map((r) => ({ id: r.staffId, name: r.staffName }))
+      .filter(
+        (staff, index, self) => staff.id && self.findIndex((s) => s.id === staff.id) === index
       )
       .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     return uniqueStaff
@@ -144,7 +146,7 @@ export default function OrganizationReservationCollectionPage() {
     if (selectedStaff === 'all') {
       return reservations
     }
-    return reservations.filter(r => r.staffId === selectedStaff)
+    return reservations.filter((r) => r.staffId === selectedStaff)
   }, [reservations, selectedStaff])
 
   // 予約行データをフォーマット
@@ -175,23 +177,22 @@ export default function OrganizationReservationCollectionPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="text-3xl font-bold mb-2">予約一覧</h1>
         <p className="text-muted-foreground">
           サロンの予約を一覧で確認できます。期間やスタッフ、ステータスで絞り込みが可能です。
         </p>
       </div>
-      <div className="flex w-fit gap-2 items-center mb-4">
-        <CardTitle className="text-sm font-medium">総予約数</CardTitle>
-        <div className="text-2xl font-bold text-accent-2">{totalCount}</div>
+      <div className="flex w-fit gap-2 items-end mb-4 ">
+        <CardTitle className="text-sm font-medium">予約数</CardTitle>
+        <div className="text-2xl font-bold text-accent-2 flex items-end gap-2">
+          {totalCount} <small className="text-sm text-muted-foreground">件</small>
+        </div>
       </div>
 
       {/* フィルター */}
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>フィルター</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <label className="text-sm font-medium mb-2 block">期間</label>
@@ -330,8 +331,18 @@ export default function OrganizationReservationCollectionPage() {
                   {/* 担当スタッフ */}
                   <TableCell className="px-4">
                     <div className="flex items-center gap-2 text-sm">
-                      <User size={14} className="text-muted-foreground" />
-                      <span className="text-nowrap">{reservation.staffName}</span>
+                      {reservation.isFreeNomination ? (
+                        <Shuffle
+                          size={14}
+                          className="min-w-6 min-h-6 text-palette-5-foreground bg-palette-5 rounded-full p-1"
+                        />
+                      ) : (
+                        <User
+                          size={14}
+                          className="text-muted-foreground bg-muted min-w-6 min-h-6 p-1 rounded-full"
+                        />
+                      )}
+                      <p>{reservation.staffName}</p>
                     </div>
                   </TableCell>
 

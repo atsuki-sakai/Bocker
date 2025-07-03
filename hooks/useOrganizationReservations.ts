@@ -77,6 +77,7 @@ export type IntegratedReservation = {
   staffId: string | undefined;
   customerName: string;
   staffName: string | undefined;
+  isFreeNomination: boolean;
   status: string;
   paymentStatus: string;
   date: string;
@@ -254,6 +255,7 @@ export function useOrganizationReservations({
         staffName: res.staff_name,
         status: res.status,
         paymentStatus: res.payment_status,
+        isFreeNomination: res.is_free_nomination ?? false,
         date: res.date,
         startTimeUnix: res.start_time_unix,
         endTimeUnix: res.end_time_unix,
@@ -357,6 +359,7 @@ export function useOrganizationReservations({
           staffName: item.reservation.staff_name,
           status: item.reservation.status,
           paymentStatus: item.reservation.payment_status,
+          isFreeNomination: item.reservation.is_free_nomination ?? false,
           date: item.reservation.date,
           startTimeUnix: Number(item.reservation.start_time_unix),
           endTimeUnix: Number(item.reservation.end_time_unix),
