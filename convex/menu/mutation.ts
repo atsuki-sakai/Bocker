@@ -42,8 +42,21 @@ export const create = mutation({
     validateNumberLength(args.sale_price, '販売価格は必須です')
     validateNumberLength(args.duration_min, '所要時間は必須です')
 
+    // デバッグ出力: メニュー作成処理開始
+    console.log('[DEBUG] menu.mutation.create - Start creating menu:', {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      plan_name: args.plan_name,
+      menu_name: args.name,
+    });
 
     const limits = getPlanLimits(args.plan_name as SubscriptionPlanName);
+
+    // デバッグ出力: プラン制限取得
+    console.log('[DEBUG] menu.mutation.create - Plan limits retrieved:', {
+      plan_name: args.plan_name,
+      limits: limits,
+    });
 
     // 3. 現在のメニュー数を取得
     // メニュー数を取得するために、最大数+1件取得して、その数をチェックする無駄なデータの取得をしない
@@ -54,8 +67,30 @@ export const create = mutation({
       ).filter((q) => q.eq(q.field('is_archive'), false))
       .take(limits.maxMenuCount + 1);
 
+    // デバッグ出力: 現在のメニュー数
+    console.log('[DEBUG] menu.mutation.create - Current menu count:', {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      plan_name: args.plan_name,
+      current_menu_count: menuCount.length,
+      max_menu_count: limits.maxMenuCount,
+      is_limit_exceeded: menuCount.length >= limits.maxMenuCount,
+      existing_menus: menuCount.map(menu => ({ 
+        id: menu._id, 
+        name: menu.name, 
+        is_archive: menu.is_archive 
+      }))
+    });
+
     // 4. 上限チェック
     if (menuCount.length >= limits.maxMenuCount) {
+      // デバッグ出力: 制限超過
+      console.log('[DEBUG] menu.mutation.create - Menu limit exceeded!', {
+        current_count: menuCount.length,
+        max_count: limits.maxMenuCount,
+        plan_name: args.plan_name
+      });
+      
       // 2 . ConvexError を使用してエラーをスローする
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
@@ -83,7 +118,16 @@ export const create = mutation({
       });
     }
 
-    return await createRecord(ctx, 'menu', {
+    // デバッグ出力: メニュー作成実行前
+    console.log('[DEBUG] menu.mutation.create - About to create menu:', {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      plan_name: args.plan_name,
+      menu_name: args.name,
+      passed_limit_check: true,
+    });
+
+    const menuId = await createRecord(ctx, 'menu', {
       tenant_id: args.tenant_id,
       org_id: args.org_id,
       name: args.name,
@@ -99,6 +143,17 @@ export const create = mutation({
       payment_method: args.payment_method,
       is_active: args.is_active,
     });
+
+    // デバッグ出力: メニュー作成完了
+    console.log('[DEBUG] menu.mutation.create - Menu created successfully:', {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      plan_name: args.plan_name,
+      menu_name: args.name,
+      created_menu_id: menuId,
+    });
+
+    return menuId;
   },
 })
 

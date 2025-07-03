@@ -31,8 +31,24 @@ export const checkLimitByPlan = query({
             }
         });
     }
+    
+    // デバッグ出力: サブスクリプション情報
+    console.log('[DEBUG] checkLimitByPlan - Subscription info:', {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      plan_name: subscription.plan_name,
+      limit_type: args.limit_type,
+      subscription_id: subscription._id,
+    });
+    
     // 2. サブスクリプションのプランから制限を取得
     const limits = getPlanLimits(subscription.plan_name as SubscriptionPlanName);
+    
+    // デバッグ出力: プラン制限情報
+    console.log('[DEBUG] checkLimitByPlan - Plan limits:', {
+      plan_name: subscription.plan_name,
+      limits: limits,
+    });
 
     // 3. limit_typeに応じて制限を取得
     switch (args.limit_type) {
@@ -61,7 +77,28 @@ export const checkLimitByPlan = query({
             q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
           ).filter((q) => q.eq(q.field('is_archive'), false))
           .take(limits.maxMenuCount + 1);
+          
+        // デバッグ出力: メニューカウント情報
+        console.log('[DEBUG] checkLimitByPlan - Menu count check:', {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+          plan_name: subscription.plan_name,
+          current_menu_count: menuCount.length,
+          max_menu_count: limits.maxMenuCount,
+          is_limit_exceeded: menuCount.length >= limits.maxMenuCount,
+          actual_menus: menuCount.map(menu => ({ 
+            id: menu._id, 
+            name: menu.name, 
+            is_archive: menu.is_archive 
+          }))
+        });
+        
         if (menuCount.length >= limits.maxMenuCount) {
+          console.log('[DEBUG] checkLimitByPlan - Menu limit exceeded!', {
+            current_count: menuCount.length,
+            max_count: limits.maxMenuCount,
+            plan_name: subscription.plan_name
+          });
           throw new ConvexError({
             statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
             severity: ERROR_SEVERITY.ERROR,
@@ -116,6 +153,15 @@ export const checkLimitByPlan = query({
           message: '無効なlimit_typeです。',
         });
     }
+    
+    // デバッグ出力: 制限チェック成功
+    console.log('[DEBUG] checkLimitByPlan - Limit check passed successfully:', {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      limit_type: args.limit_type,
+      plan_name: subscription.plan_name,
+    });
+    
     return true;
   },
 })
