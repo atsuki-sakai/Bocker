@@ -14,6 +14,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Loading } from '@/components/common'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
+import { SubscriptionPlanName } from '@/convex/types'
 // コンポーネントのインポート
 import { DashboardSection } from '@/components/common'
 import { Label } from '@/components/ui/label'
@@ -152,7 +153,7 @@ function CouponForm() {
   // 状態管理
   const [selectedMenuIds, setSelectedMenuIds] = useState<Id<'menu'>[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
 
   const { showErrorToast } = useErrorHandler()
   const createCouponRelatedTables = useMutation(api.coupon.mutation.createCouponRelatedTables)
@@ -272,6 +273,7 @@ function CouponForm() {
         org_id: orgId,
         coupon_uid: data.coupon_uid,
         name: data.name,
+        plan_name: planName as SubscriptionPlanName,
         discount_type: data.discount_type,
         percentage_discount_value: data.percentage_discount_value ?? 0,
         fixed_discount_value: data.fixed_discount_value ?? 0,

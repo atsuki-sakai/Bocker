@@ -143,6 +143,7 @@ export async function archiveRecord<T extends keyof DataModel>(ctx: MutationCtx,
       },
     });
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await ctx.db.patch(id as Id<T> | any, {
     is_archive: true,
     updated_at: getCurrentUnixTime(),

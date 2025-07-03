@@ -1,10 +1,9 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
-import { createRecord, killRecord, archiveRecord, excludeFields, updateRecord } from '@/convex/utils/helpers';
+import { createRecord, killRecord, archiveRecord, updateRecord } from '@/convex/utils/helpers';
 import { validateNumberLength, validateStringLength } from '@/convex/utils/validations';
 import { checkAuth } from '@/convex/utils/auth';
 import { ConvexError } from 'convex/values';
-import { SystemError } from '@/lib/errors/custom_errors';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
 import {
   genderType,
@@ -12,6 +11,7 @@ import {
   menuPaymentMethodType,
   menuCategoryType,
   imageType,
+  SubscriptionPlanName,
   subscriptionPlanNameType
 } from '@/convex/types';
 import { getPlanLimits } from '@/convex/utils/helpers';
@@ -21,6 +21,7 @@ export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
+    plan_name: subscriptionPlanNameType,
     name: v.string(),
     categories: v.array(menuCategoryType),
     unit_price: v.number(),
@@ -40,6 +41,32 @@ export const create = mutation({
     validateNumberLength(args.unit_price, '単価は必須です')
     validateNumberLength(args.sale_price, '販売価格は必須です')
     validateNumberLength(args.duration_min, '所要時間は必須です')
+
+
+    const limits = getPlanLimits(args.plan_name as SubscriptionPlanName);
+
+    // 3. 現在のメニュー数を取得
+    // メニュー数を取得するために、最大数+1件取得して、その数をチェックする無駄なデータの取得をしない
+    const menuCount = await ctx.db
+      .query('menu')
+      .withIndex('by_tenant_org_active_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+      ).filter((q) => q.eq(q.field('is_archive'), false))
+      .take(limits.maxMenuCount + 1);
+
+    // 4. 上限チェック
+    if (menuCount.length >= limits.maxMenuCount) {
+      // 2 . ConvexError を使用してエラーをスローする
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'menu.core.create',
+        message: `${args.plan_name}プランのメニューの最大登録数は${limits.maxMenuCount}件です。`,
+        code: 'BAD_REQUEST',
+      });
+    }
+
+
     // 組織の存在確認
     const org = await ctx.db.get(args.org_id)
     if (!org) {

@@ -1,4 +1,4 @@
-import { mutation, internalMutation } from '@/convex/_generated/server'
+import { mutation } from '@/convex/_generated/server'
 import { v } from 'convex/values'
 import { checkAuth } from '@/convex/utils/auth'
 import { imageType } from '../types'
@@ -7,7 +7,7 @@ import { ConvexError } from 'convex/values'
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
 import { MAX_OPTION_STOCK } from '@/convex/constants'
 import { getPlanLimits } from '@/convex/utils/helpers'
-import { subscriptionPlanNameType } from '@/convex/types'
+import { SubscriptionPlanName, subscriptionPlanNameType } from '@/convex/types'
 
 export const create = mutation({
   args: {
@@ -15,6 +15,7 @@ export const create = mutation({
     org_id: v.id('organization'),
     name: v.string(), // オプションメニュー名
     unit_price: v.number(), // 価格
+    plan_name: subscriptionPlanNameType, // プラン名
     sale_price: v.optional(v.number()), // セール価格
     order_limit: v.number(), // 注文制限
     in_stock: v.number(), // 在庫数
@@ -26,6 +27,30 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
+
+    const limits = getPlanLimits(args.plan_name as SubscriptionPlanName);
+
+    // 3. 現在のメニュー数を取得
+    // メニュー数を取得するために、最大数+1件取得して、その数をチェックする無駄なデータの取得をしない
+    const optionCount = await ctx.db
+      .query('option')
+      .withIndex('by_tenant_org_active_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+      ).filter((q) => q.eq(q.field('is_archive'), false))
+      .take(limits.maxMenuCount + 1);
+
+    // 4. 上限チェック
+    if (optionCount.length >= limits.maxOptionCount) {
+      // 2 . ConvexError を使用してエラーをスローする
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'menu.core.create',
+        message: `${args.plan_name}プランのメニューの最大登録数は${limits.maxMenuCount}件です。`,
+        code: 'BAD_REQUEST',
+      });
+    }
+
     
     return await createRecord(ctx, 'option', {
       tenant_id: args.tenant_id,

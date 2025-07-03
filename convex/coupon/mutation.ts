@@ -6,6 +6,8 @@ import { validateNumberLength, validateStringLength } from '../utils/validations
 import { createRecord, killRecord, updateRecord } from '../utils/helpers';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
+import { getPlanLimits } from '../utils/helpers';
+import { SubscriptionPlanName, subscriptionPlanNameType } from '../types';
 
 /**
  * バリデーションラッパー: undefinedはスキップ、他は実行
@@ -19,6 +21,7 @@ export const create = mutation({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
+    plan_name: subscriptionPlanNameType,
     coupon_uid: v.string(),
     name: v.string(),
     discount_type: couponDiscountType,
@@ -30,6 +33,29 @@ export const create = mutation({
     checkAuth(ctx);
     validateStringLength(args.name,"クーポン名は255文字以下で入力してください");
     validateStringLength(args.coupon_uid,"クーポンUIDは255文字以下で入力してください");
+
+    const limits = getPlanLimits(args.plan_name as SubscriptionPlanName);
+
+    // 3. 現在のメニュー数を取得
+    // メニュー数を取得するために、最大数+1件取得して、その数をチェックする無駄なデータの取得をしない
+    const couponCount = await ctx.db
+      .query('coupon')
+      .withIndex('by_tenant_org_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+      ).filter((q) => q.eq(q.field('is_archive'), false))
+      .take(limits.maxCouponCount + 1);
+
+    // 4. 上限チェック
+    if (couponCount.length >= limits.maxCouponCount) {
+      // 2 . ConvexError を使用してエラーをスローする
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'menu.core.create',
+        message: `${args.plan_name}プランのクーポンの最大登録数は${limits.maxCouponCount}件です。`,
+        code: 'BAD_REQUEST',
+      });
+    }
     return await createRecord(ctx, 'coupon', args);
   },
 });
@@ -157,6 +183,7 @@ export const createCouponRelatedTables = mutation({
     org_id: v.id('organization'),
     coupon_uid: v.string(),
     name: v.string(),
+    plan_name: subscriptionPlanNameType,
     discount_type: couponDiscountType,
     percentage_discount_value: v.optional(v.number()),
     fixed_discount_value: v.optional(v.number()),
@@ -178,6 +205,29 @@ export const createCouponRelatedTables = mutation({
     safeValidateNumberLength(args.fixed_discount_value, "割引額は1000000000以下で入力してください");
     safeValidateNumberLength(args.start_date_unix, "開始日は1000000000以下で入力してください");
     safeValidateNumberLength(args.end_date_unix, "終了日は1000000000以下で入力してください");
+
+    const limits = getPlanLimits(args.plan_name as SubscriptionPlanName);
+
+    // 3. 現在のメニュー数を取得
+    // メニュー数を取得するために、最大数+1件取得して、その数をチェックする無駄なデータの取得をしない
+    const optionCount = await ctx.db
+      .query('option')
+      .withIndex('by_tenant_org_active_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+      ).filter((q) => q.eq(q.field('is_archive'), false))
+      .take(limits.maxMenuCount + 1);
+
+    // 4. 上限チェック
+    if (optionCount.length >= limits.maxOptionCount) {
+      // 2 . ConvexError を使用してエラーをスローする
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'menu.core.create',
+        message: `${args.plan_name}プランのメニューの最大登録数は${limits.maxMenuCount}件です。`,
+        code: 'BAD_REQUEST',
+      });
+    }
 
     const couponId = await createRecord(ctx, 'coupon', {
       tenant_id: args.tenant_id,

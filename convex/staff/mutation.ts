@@ -2,17 +2,20 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { createRecord, updateRecord, excludeFields, archiveRecord, killRecord } from '@/convex/utils/helpers';
-import { validateRequired, validateStringLength, validateEmail, validateTags } from '@/convex/utils/validations';
+import { validateRequired, validateStringLength } from '@/convex/utils/validations';
 import { checkAuth } from '@/convex/utils/auth';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
 import { imageType, roleType, invitationStatusType } from '@/convex/types';
 import { MAX_NOTES_LENGTH } from '../constants';
+import { getPlanLimits } from '../utils/helpers';
+import { SubscriptionPlanName, subscriptionPlanNameType } from '../types';
 
 export const create = mutation({
   args: {
     tenant_id: v.id('tenant'), // テナントID
     org_id: v.id('organization'), // 店舗ID
+    plan_name: subscriptionPlanNameType, // プラン名
     connect_clerk: v.boolean(), // Clerk ユーザーID (true = clerk認証ユーザー, false = 未認証スタッフ)
     clerk_user_id: v.optional(v.string()), // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
     name: v.string(), // スタッフ名
@@ -25,6 +28,33 @@ export const create = mutation({
     validateRequired(args.name, 'name');
     validateStringLength(args.name, 'name');
     validateStringLength(args.description, 'description', MAX_NOTES_LENGTH);
+
+
+    const limits = getPlanLimits(args.plan_name as SubscriptionPlanName);
+
+    // 3. 現在のメニュー数を取得
+    // メニュー数を取得するために、最大数+1件取得して、その数をチェックする無駄なデータの取得をしない
+    const staffCount = await ctx.db
+      .query('staff')
+      .withIndex('by_tenant_org_active_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+      ).filter((q) => q.eq(q.field('is_archive'), false))
+      .take(limits.maxStaffCount + 1);
+
+    // 4. 上限チェック
+    if (staffCount.length >= limits.maxStaffCount) {
+      // 2 . ConvexError を使用してエラーをスローする
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'menu.core.create',
+        message: `${args.plan_name}プランのメニューの最大登録数は${limits.maxMenuCount}件です。`,
+        code: 'BAD_REQUEST',
+      });
+    }
+
+
+
     // スタッフの存在確認
     let existingStaff
     if (args.connect_clerk && args.clerk_user_id) {

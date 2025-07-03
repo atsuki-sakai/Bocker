@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useEffect, useState, memo } from 'react'
 import { toast } from 'sonner'
+import { SubscriptionPlanName } from '@/convex/types'
 import { DollarSign, ShoppingBag, Clock, Save, Loader2, ImageIcon } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -184,13 +185,7 @@ function OptionAddForm() {
       if (currentFile) {
         try {
           setIsUploading(true)
-          const result = await uploadImage(
-            currentFile!,
-            orgId,
-            'option',
-            'square',
-            'medium'
-          )
+          const result = await uploadImage(currentFile!, orgId, 'option', 'square', 'medium')
           // 新方式のレスポンス形式に合わせて修正
           newUploadedImageUrls = [
             {
@@ -210,6 +205,7 @@ function OptionAddForm() {
         tenant_id: tenantId,
         org_id: orgId,
         name: data.name,
+        plan_name: planName as SubscriptionPlanName,
         unit_price: data.unit_price, // 価格
         sale_price: data.sale_price ? data.sale_price : undefined, // セール価格
         order_limit: data.order_limit as number, // 注文制限

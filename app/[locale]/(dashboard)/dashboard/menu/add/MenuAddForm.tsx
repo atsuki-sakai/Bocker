@@ -20,6 +20,8 @@ import { TagInput } from '@/components/common'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { ImageType } from '@/convex/types'
 import { useTranslations } from 'next-intl'
+import { getPlanLimits } from '@/convex/utils/helpers'
+import { SubscriptionPlanName } from '@/convex/types'
 import {
   Accordion,
   AccordionItem,
@@ -101,6 +103,9 @@ export default function MenuAddForm() {
   const createMenu = useMutation(api.menu.mutation.create)
   const org = useQuery(api.organization.query.findByOrgId, orgId ? { org_id: orgId } : 'skip')
 
+  const limits = getPlanLimits(planName as SubscriptionPlanName)
+
+  console.log('limits', limits)
   // バリデーションスキーマ
   const schemaMenu = z
     .object({
@@ -217,13 +222,7 @@ export default function MenuAddForm() {
         try {
           // Promise.allを使って複数の画像を並列アップロード
           const uploadPromises = currentFiles.map(async (file) => {
-            return uploadImage(
-              file,
-              orgId,
-              'menu',
-              'mobile',
-              'medium'
-            );
+            return uploadImage(file, orgId, 'menu', 'mobile', 'medium')
           })
 
           const uploadResults = await Promise.all(uploadPromises)
@@ -248,6 +247,7 @@ export default function MenuAddForm() {
         const menuId = await createMenu({
           tenant_id: tenantId,
           org_id: orgId,
+          plan_name: planName as SubscriptionPlanName,
           name: data.name,
           categories: data.categories,
           unit_price: data.unit_price ?? 0,

@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SubscriptionPlanName } from '@/convex/types'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
@@ -64,7 +65,9 @@ const createStaffAddSchema = (sendInviteEmail: boolean, t: ReturnType<typeof use
     name: z
       .string()
       .min(1, { message: t('staff.validation.nameRequired') })
-      .max(MAX_TEXT_LENGTH, { message: t('staff.validation.nameMaxLength', { max: MAX_TEXT_LENGTH }) }),
+      .max(MAX_TEXT_LENGTH, {
+        message: t('staff.validation.nameMaxLength', { max: MAX_TEXT_LENGTH }),
+      }),
 
     // メールアドレス：招待メール送信時は必須、通常作成時は任意
     email: sendInviteEmail
@@ -84,7 +87,10 @@ const createStaffAddSchema = (sendInviteEmail: boolean, t: ReturnType<typeof use
           return str === '' ? undefined : str
         },
         // undefined が渡れば optional でスキップ、文字列なら URL バリデーション
-        z.string().url({ message: t('staff.validation.urlInvalid') }).optional()
+        z
+          .string()
+          .url({ message: t('staff.validation.urlInvalid') })
+          .optional()
       )
       .nullable(), // null も許容したい場合のみ残します
 
@@ -98,7 +104,11 @@ const createStaffAddSchema = (sendInviteEmail: boolean, t: ReturnType<typeof use
         const num = Number(val)
         return isNaN(num) ? null : num
       },
-      z.number().max(99, { message: t('staff.validation.ageMax') }).nullable().optional()
+      z
+        .number()
+        .max(99, { message: t('staff.validation.ageMax') })
+        .nullable()
+        .optional()
     ),
 
     // 説明：招待メール送信時は任意、通常作成時は必須
@@ -162,7 +172,11 @@ const createStaffAddSchema = (sendInviteEmail: boolean, t: ReturnType<typeof use
         const num = Number(val)
         return isNaN(num) ? null : num
       },
-      z.number().max(999, { message: t('staff.validation.priorityMax') }).nullable().optional()
+      z
+        .number()
+        .max(999, { message: t('staff.validation.priorityMax') })
+        .nullable()
+        .optional()
     ),
 
     selected_menu_ids: z.array(z.string()).optional(),
@@ -261,13 +275,7 @@ function StaffAddPage() {
             try {
               setIsLoading(true)
               console.log('[画像アップロード] Staff招待: 署名付きURL方式を使用')
-              const result = await uploadImage(
-                selectedFile!,
-                orgId,
-                'staff',
-                'square',
-                'medium'
-              )
+              const result = await uploadImage(selectedFile!, orgId, 'staff', 'square', 'medium')
               // 新方式のレスポンス形式に合わせて修正
               newUploadedImageUrls = [
                 {
@@ -348,13 +356,7 @@ function StaffAddPage() {
           try {
             setIsLoading(true)
             console.log('[画像アップロード] Staff作成: 署名付きURL方式を使用')
-            const result = await uploadImage(
-              selectedFile!,
-              orgId,
-              'staff',
-              'square',
-              'medium'
-            )
+            const result = await uploadImage(selectedFile!, orgId, 'staff', 'square', 'medium')
             // 新方式のレスポンス形式に合わせて修正
             newUploadedImageUrls = [
               {
@@ -378,6 +380,7 @@ function StaffAddPage() {
             staffId = await staffAdd({
               tenant_id: tenantId, // テナントID
               org_id: orgId, // 店舗ID
+              plan_name: planName as SubscriptionPlanName,
               connect_clerk: false, // Clerk ユーザーID (true = clerk認証ユーザー, false = 未認証スタッフ)
               clerk_user_id: undefined, // Clerk ユーザーID ( null = 未認証スタッフ, INVITE=招待中, ${clerk_user_id}=受諾済み)
               name: data.name ?? '', // スタッフ名
