@@ -14,17 +14,17 @@ export type PlanLimits = {
 export const SUBSCRIPTION_PLAN_LIMITS: Record<SubscriptionPlanName, PlanLimits> = {
     'LITE': {
         maxStaffCount: 3,
-        maxMenuCount: 10,
-        maxOptionCount: 5,
-        maxCouponCount: 5,
-        monthlyReservationLimit: 200,
+        maxMenuCount: 20,
+        maxOptionCount: 10,
+        maxCouponCount: 10,
+        monthlyReservationLimit: 500,
     },
     'PRO': {
         maxStaffCount: 10,
-        maxMenuCount: 20,
-        maxOptionCount: 10,
-        maxCouponCount: 20,
-        monthlyReservationLimit: 500,
+        maxMenuCount: 60,
+        maxOptionCount: 20,
+        maxCouponCount: 30,
+        monthlyReservationLimit: 1000,
     },
     'UNKNOWN': {
         maxStaffCount: 0,
@@ -84,4 +84,4 @@ export const MAX_PRIORITY = 999;
 // アーカイブの最大秒数
 export const ARCHIVE_DURATION_SECONDS = 365 * 24 * 60 * 60; // 1年
 // 削除の最大秒数
-export const DELETE_DURATION_SECONDS = 365 * 24 * 60 * 60 * 3; // 3年
+export const DELETE_DURATION_SECONDS = 365 * 24 * 60 * 60 * 2; // 2年
