@@ -328,6 +328,9 @@ export async function findBestAvailableStaffForTimeSlot(
   extra_charge: number
 } | null> {
   
+  console.log('=== findBestAvailableStaffForTimeSlot デバッグ開始 ===')
+  console.log('引数:', args)
+  
   // 1. 全アクティブスタッフを取得
   const allStaff = await ctx.db
     .query('staff')
@@ -336,7 +339,11 @@ export async function findBestAvailableStaffForTimeSlot(
     )
     .collect()
 
+  console.log('1. 全アクティブスタッフ数:', allStaff.length)
+  console.log('スタッフリスト:', allStaff.map(s => ({ id: s._id, name: s.name })))
+
   if (allStaff.length === 0) {
+    console.log('アクティブスタッフが0人のため終了')
     return null
   }
 
@@ -358,7 +365,12 @@ export async function findBestAvailableStaffForTimeSlot(
   // 3. メニューに対応可能なスタッフのみフィルタリング
   const availableStaff = allStaff.filter((staff) => !excludedIds.has(staff._id))
 
+  console.log('2. 除外されたスタッフID:', Array.from(excludedIds))
+  console.log('3. メニュー対応可能スタッフ数:', availableStaff.length)
+  console.log('対応可能スタッフリスト:', availableStaff.map(s => ({ id: s._id, name: s.name })))
+
   if (availableStaff.length === 0) {
+    console.log('メニュー対応可能スタッフが0人のため終了')
     return null
   }
 
@@ -448,7 +460,11 @@ export async function findBestAvailableStaffForTimeSlot(
     filteredBySchedule.push(staff)
   }
 
+  console.log('4. スケジュール確認後のスタッフ数:', filteredBySchedule.length)
+  console.log('スケジュール確認後スタッフリスト:', filteredBySchedule.map(s => ({ id: s._id, name: s.name })))
+
   if (filteredBySchedule.length === 0) {
+    console.log('スケジュール確認後スタッフが0人のため終了')
     return null
   }
 
@@ -460,15 +476,18 @@ export async function findBestAvailableStaffForTimeSlot(
     .collect()
   const configMap = new Map(configs.map((config) => [config.staff_id, config]))
 
-  if(filteredBySchedule.length === 0) {
-    return null
-  }
+  console.log('5. スタッフ設定数:', configs.length)
+  console.log('設定があるスタッフID:', configs.map(c => c.staff_id))
 
   // 5. ダブルブッキングをチェックし、対応可能なスタッフを絞り込み
   const availableStaffWithConfigs = []
   for (const staff of filteredBySchedule) {
     const config = configMap.get(staff._id)
-    if (!config) continue
+    console.log(`スタッフ ${staff.name} (${staff._id}): 設定=${config ? 'あり' : 'なし'}`)
+    if (!config) {
+      console.log(`スタッフ ${staff.name} は設定がないため除外`)
+      continue
+    }
 
     // ダブルブッキングチェック（エラーを詳細にハンドリング）
     try {
@@ -482,27 +501,36 @@ export async function findBestAvailableStaffForTimeSlot(
       })
 
       if (!isDoubleBooked) {
+        console.log(`スタッフ ${staff.name}: ダブルブッキングなし、追加対象`)
         availableStaffWithConfigs.push({
           staff_id: staff._id,
           staff_name: staff.name || '',
-          priority: config.priority || 999, // 優先度が設定されていない場合は最低優先度
-          extra_charge: config.extra_charge || 0,
+          priority: config?.priority || 1, // 優先度が設定されていない場合はデフォルト優先度
+          extra_charge: config?.extra_charge || 0,
         })
+      } else {
+        console.log(`スタッフ ${staff.name}: ダブルブッキングあり、除外`)
       }
     } catch (error) {
       // ダブルブッキング、席数上限、その他のエラーの場合はスキップ
-      // 認証エラーは上位に伝播させず、このスタッフは利用不可として扱う
       console.warn(`スタッフ ${staff.name} (${staff._id}) の可用性チェックでエラー:`, error)
       continue
     }
   }
 
+  console.log('6. 最終利用可能スタッフ数:', availableStaffWithConfigs.length)
+  console.log('最終スタッフリスト:', availableStaffWithConfigs)
+
   if (availableStaffWithConfigs.length === 0) {
+    console.log('最終的に利用可能なスタッフが0人のため終了')
     return null
   }
 
   // 6. 優先度順でソート（数値が高いほど優先度が高い）
   availableStaffWithConfigs.sort((a, b) => b.priority - a.priority)
+
+  console.log('7. 選択されたスタッフ:', availableStaffWithConfigs[0])
+  console.log('=== findBestAvailableStaffForTimeSlot デバッグ終了 ===')
 
   // 7. 最優先スタッフを返す
   return availableStaffWithConfigs[0]
