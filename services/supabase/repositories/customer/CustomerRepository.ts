@@ -480,7 +480,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     customerUid: string,
     tenantId: string,
     orgId: string,
-    updateData: Partial<Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'phone' | 'line_id' | 'line_user_name' | 'last_reservation_date_unix' | 'total_reservation_count'>>
+    updateData: Partial<Pick<InsertType<'customer'>, 'email' | 'first_name' | 'last_name' | 'phone' | 'line_id' | 'line_user_name' | 'last_reservation_date_unix' | 'total_reservation_count' | 'customer_type'>>
   ): Promise<RowType<'customer'>> {
     console.log(`[CustomerRepository] updateCustomer: customerUid=${customerUid}, tenantId=${tenantId}, orgId=${orgId}, updateData=${JSON.stringify(updateData)}`);
     
@@ -501,6 +501,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       if (updateData.line_user_name !== undefined) params.p_line_user_name = updateData.line_user_name;
       if (updateData.last_reservation_date_unix !== undefined) params.p_last_reservation_date_unix = updateData.last_reservation_date_unix;
       if (updateData.total_reservation_count !== undefined) params.p_total_reservation_count = updateData.total_reservation_count;
+      if (updateData.customer_type !== undefined) params.p_customer_type = updateData.customer_type;
 
       console.log('[CustomerRepository] Calling update_customer_json RPC with params:', params);
 
@@ -514,7 +515,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
         console.error('[CustomerRepository] Error calling update_customer RPC:', error);
         throwSupabaseError({
           callFunc: 'CustomerRepository.updateCustomer',
-          message: error.message || '顧客の更新に失敗しました。',
+          message: '顧客の更新に失敗しました。',
           error: new Error(error.message),
           severity: 'high',
           details: { customerUid, tenantId, orgId, updateData }

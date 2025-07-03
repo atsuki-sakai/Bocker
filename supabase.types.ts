@@ -510,6 +510,7 @@ export type Database = {
           date: string
           end_time_unix: number
           is_archive: boolean
+          is_free_nomination: boolean | null
           org_id: string
           payment_status: string
           sort_key: string | null
@@ -531,6 +532,7 @@ export type Database = {
           date: string
           end_time_unix: number
           is_archive?: boolean
+          is_free_nomination?: boolean | null
           org_id: string
           payment_status: string
           sort_key?: string | null
@@ -552,6 +554,7 @@ export type Database = {
           date?: string
           end_time_unix?: number
           is_archive?: boolean
+          is_free_nomination?: boolean | null
           org_id?: string
           payment_status?: string
           sort_key?: string | null
