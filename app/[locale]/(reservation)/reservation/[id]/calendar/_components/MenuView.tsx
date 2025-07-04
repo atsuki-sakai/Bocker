@@ -703,7 +703,18 @@ export const MenuView = ({
                 ) &&
                   categoryMenus.length > 0 && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {categoryMenus.map((menu) => {
+                      {categoryMenus
+                        .sort((a, b) => {
+                          // オススメカテゴリの場合は、updated_atで新しいものを上に
+                          if (category === 'オススメ') {
+                            const aUpdated = a.updated_at || a._creationTime || 0;
+                            const bUpdated = b.updated_at || b._creationTime || 0;
+                            return bUpdated - aUpdated; // 降順（新しいものが上）
+                          }
+                          // その他のカテゴリは既存の順序を維持
+                          return 0;
+                        })
+                        .map((menu) => {
                         const isBlocked = menuBlocked(menu)
                         const isCurrentlySelected =
                           selectedMenuMap[
