@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import { SingleImageDrop, Loading } from '@/components/common'
+import { MultiImageDrop, Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Textarea } from '@/components/ui/textarea'
@@ -22,6 +22,8 @@ import { ZodTextField } from '@/components/common'
 import { Loader2 } from 'lucide-react'
 import { Mail, Phone, MapPin, Save, Upload, Building } from 'lucide-react'
 import Uploader from '@/components/common/Uploader'
+import { getPlanLimits } from '@/convex/utils/helpers'
+import { SubscriptionPlanName } from '@/convex/types'
 
 const createOrgAndConfigFormSchema = (t: (key: string) => string) =>
   z.object({
@@ -52,10 +54,11 @@ const createOrgAndConfigFormSchema = (t: (key: string) => string) =>
 
 export default function OrgConfigForm() {
   const router = useRouter()
-  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
+  const { tenantId, orgId, isLoaded, planName } = useTenantAndOrganization()
+  const limits = getPlanLimits(planName as SubscriptionPlanName)
   const { showErrorToast } = useErrorHandler()
   const t = useTranslations('settings')
-  const [currentFile, setCurrentFile] = useState<File | null>(null)
+  const [currentFiles, setCurrentFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
 
   const orgAndConfigFormSchema = createOrgAndConfigFormSchema(t)
@@ -103,7 +106,7 @@ export default function OrgConfigForm() {
   const handleSaveImg = useCallback(
     async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault()
-      if (!currentFile || !orgId) return
+      if (currentFiles.length === 0 || !orgId) return
 
       let newUploadedImageUrls: { original_url: string; thumbnail_url: string }[] = []
       try {
@@ -111,20 +114,16 @@ export default function OrgConfigForm() {
 
         // ▼ 署名付きURL方式でアップロード（高速・安定）
         console.log('[画像アップロード] 署名付きURL方式を使用')
-        const result = await uploadImage(
-          currentFile,
-          orgId,
-          'setting',
-          'landscape',
-          'high'
-        )
-        // result.original.publicUrl, result.thumbnail.publicUrl を使ってConvex等に登録
-        newUploadedImageUrls = [
-          {
-            original_url: result.originalUrl,
-            thumbnail_url: result.thumbnailUrl,
-          },
-        ]
+        // Promise.allを使って複数の画像を並列アップロード
+        const uploadPromises = currentFiles.map(async (file) => {
+          return uploadImage(file, orgId, 'setting', 'landscape', 'high')
+        })
+
+        const uploadResults = await Promise.all(uploadPromises)
+        newUploadedImageUrls = uploadResults.map((result) => ({
+          original_url: result.originalUrl,
+          thumbnail_url: result.thumbnailUrl,
+        }))
 
         // [ログ] 生成された画像URLリスト
         console.log('[画像アップロード] 生成URLリスト', newUploadedImageUrls)
@@ -154,25 +153,34 @@ export default function OrgConfigForm() {
             images: newUploadedImageUrls,
           })
         }
-        if (orgAndConfig?.config?.images[0]?.original_url) {
+        // 既存の画像を全て削除
+        if (orgAndConfig?.config?.images && orgAndConfig.config.images.length > 0) {
           // [ログ] 既存画像削除リクエスト
           console.log(
             '[画像アップロード] 既存画像削除リクエスト',
-            orgAndConfig?.config?.images[0]?.original_url
+            orgAndConfig.config.images
           )
-          await fetch('/api/storage', {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              originalUrl: orgAndConfig.config.images[0].original_url || '',
-              withThumbnail: true,
-            }),
+          
+          // 既存画像を全て削除
+          const deletePromises = orgAndConfig.config.images.map(async (image) => {
+            if (image.original_url) {
+              return fetch('/api/storage', {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  originalUrl: image.original_url,
+                  withThumbnail: true,
+                }),
+              })
+            }
           })
+          
+          await Promise.all(deletePromises)
         }
 
-        setCurrentFile(null)
+        setCurrentFiles([])
         router.push('/dashboard/setting')
         toast.success(t('messages.imageSaved'))
       } catch (error) {
@@ -185,7 +193,7 @@ export default function OrgConfigForm() {
         setIsUploading(false)
       }
     },
-    [currentFile, orgAndConfig, updateImages, orgId, showErrorToast, tenantId, router, t]
+    [currentFiles, orgAndConfig, updateImages, orgId, showErrorToast, tenantId, router, t]
   )
 
   // フォーム送信処理（useCallbackでメモ化）
@@ -312,27 +320,32 @@ export default function OrgConfigForm() {
         <div className="flex flex-col md:flex-row gap-6 items-start my-4 mt-12">
           <div className="w-full md:w-1/2 flex flex-col gap-4">
             <h4 className="text-2xl font-bold">{t('fields.storeImage')}</h4>
-            {orgAndConfig?.config?.images[0]?.original_url && (
-              <div className="relative w-full h-full aspect-[16/9] max-h-[350px]">
-                <Image
-                  src={orgAndConfig.config.images[0].original_url}
-                  alt={t('fields.storeImage')}
-                  fill
-                  className="w-full h-full object-cover rounded-md border border-border"
-                />
+            {orgAndConfig?.config?.images && orgAndConfig.config.images.length > 0 && (
+              <div className="grid grid-cols-2 gap-2">
+                {orgAndConfig.config.images.map((image, index) => (
+                  <div key={index} className="relative aspect-[16/9]">
+                    <Image
+                      src={image.thumbnail_url || image.original_url}
+                      alt={`${t('fields.storeImage')} ${index + 1}`}
+                      fill
+                      className="object-cover rounded-md border border-border"
+                    />
+                  </div>
+                ))}
               </div>
             )}
-            <SingleImageDrop
-              onFileSelect={(file) => {
-                setCurrentFile(file)
+            <MultiImageDrop
+              onFilesSelect={(files) => {
+                setCurrentFiles(files)
               }}
-              currentFile={currentFile}
+              currentFiles={currentFiles}
               placeholderText={t('placeholders.storeImage')}
-              aspectType="landscape"
+              limitFiles={limits.maxSalonImageCount}
+              hasSelected={currentFiles.length}
             />
             <Button
               onClick={handleSaveImg}
-              disabled={!currentFile || isUploading}
+              disabled={currentFiles.length === 0 || isUploading}
               className="w-full"
               variant="default"
             >

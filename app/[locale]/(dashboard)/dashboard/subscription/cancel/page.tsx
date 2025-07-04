@@ -63,7 +63,7 @@ export default function CancelSubscriptionPage() {
                 <div className="bg-background p-6 rounded-lg">
                   <div className="space-y-6">
                     <div className="flex flex-col sm:flex-row items-center gap-3 text-left">
-                      <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                      <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-info-foreground text-info">
                         <CreditCard className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
@@ -116,7 +116,7 @@ export default function CancelSubscriptionPage() {
           </CardContent>
 
           <CardFooter className="flex justify-center pb-8">
-            <Button asChild variant="default" className="mt-4 bg-blue-600 hover:bg-blue-700">
+            <Button asChild variant="default" className="mt-4 bg-primary hover:bg-primary/90">
               <Link href={`/dashboard`}>{t('cancel.backToDashboard')}</Link>
             </Button>
           </CardFooter>

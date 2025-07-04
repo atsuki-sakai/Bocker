@@ -1,5 +1,6 @@
 'use client'
 
+import ReferralCard from '@/components/common/ReferralCard'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useState } from 'react'
 import { withOwnerAccess } from '@/components/common'
@@ -10,6 +11,13 @@ import OrgReservationConfigForm from './_components/OrgReservationConfigForm'
 import OrgExceptionScheduleForm from './_components/OrgExceptionScheduleForm'
 import OrgStripeConnectStatus from './_components/OrgStripeConnectStatus'
 import OrgWeekHourSchedule from './_components/OrgWeekHourSchedule'
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion'
+import { LinkList } from '@/components/common/LinkList'
 
 function SettingPage() {
   const t = useTranslations('settings')
@@ -29,12 +37,25 @@ function SettingPage() {
       </div>
 
       <TabsContent value="basic">
+        <Accordion type="single" collapsible className="mb-4">
+          <AccordionItem value="referral">
+            <AccordionTrigger>
+              <p className="text-sm font-bold text-accent-2">
+                友達紹介で特典ゲット！最大2,4000円お得
+              </p>
+            </AccordionTrigger>
+            <AccordionContent>
+              <ReferralCard />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
         <OrgConfigForm />
       </TabsContent>
       <TabsContent value="api">
         <OrgApiConfigForm />
       </TabsContent>
       <TabsContent value="reservation-setting">
+        <LinkList />
         <OrgReservationConfigForm />
       </TabsContent>
       <TabsContent value="week-schedule">

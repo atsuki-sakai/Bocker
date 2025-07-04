@@ -64,10 +64,10 @@ const calculatePasswordStrength = (password: string) => {
 // パスワード強度のラベルを取得する関数
 const getStrengthLabel = (strength: number, t: ReturnType<typeof useTranslations>) => {
   if (strength < 30) return { label: t('passwordStrength.veryWeak'), color: 'bg-destructive' }
-  if (strength < 50) return { label: t('passwordStrength.weak'), color: 'bg-orange-500' }
-  if (strength < 70) return { label: t('passwordStrength.fair'), color: 'bg-yellow-500' }
-  if (strength < 90) return { label: t('passwordStrength.strong'), color: 'bg-emerald-500' }
-  return { label: t('passwordStrength.veryStrong'), color: 'bg-green-500' }
+  if (strength < 50) return { label: t('passwordStrength.weak'), color: 'bg-pop' }
+  if (strength < 70) return { label: t('passwordStrength.fair'), color: 'bg-warning' }
+  if (strength < 90) return { label: t('passwordStrength.strong'), color: 'bg-accent-2' }
+  return { label: t('passwordStrength.veryStrong'), color: 'bg-success' }
 }
 
 // 目のアイコンボタンのコンポーネント（パフォーマンス向上のためmemo化）

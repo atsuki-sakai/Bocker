@@ -128,9 +128,6 @@ const ApiSettingsCard = () => {
         <div className="flex flex-col gap-2 mt-1 text-sm text-muted-foreground">
           <p>{t('description')}</p>
           <p>{t('lineIntegrationNote')}</p>
-          <p className="mt-2 bg-link p-2 rounded-md border border-link-foreground w-fit">
-            <span className="text-link-foreground font-semibold">{t('lineIntegrationNote2')}</span>
-          </p>
         </div>
       </div>
 
@@ -143,11 +140,6 @@ const ApiSettingsCard = () => {
           <AccordionContent className="space-y-4">
             <div>
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-active-foreground rounded-full flex items-center justify-center">
-                    <span className="text-active-foreground text-xl">🔧</span>
-                  </div>
-                </div>
                 <div className="flex-1">
                   <div className="bg-background border border-primary/20 rounded-md p-4 mb-4">
                     <div className="flex items-center gap-2 mb-2">

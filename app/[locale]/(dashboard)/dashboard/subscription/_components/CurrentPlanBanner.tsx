@@ -66,7 +66,7 @@ export default function CurrentPlanBanner({
           {buttonContent}
         </Button>
       </div>
-      <p className=" text-sm text-slate-500 dark:text-slate-400 mt-3">{t('subscriptionActive')}</p>
+      <p className=" text-sm text-muted-foreground mt-3">{t('subscriptionActive')}</p>
     </div>
   )
 }

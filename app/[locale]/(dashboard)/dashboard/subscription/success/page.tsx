@@ -47,13 +47,13 @@ export default function SuccessSubscriptionPage() {
             >
               <motion.div
                 variants={itemVariants}
-                className="inline-flex p-4 rounded-full bg-green-100 dark:bg-green-900/30"
+                className="inline-flex p-4 rounded-full bg-success-foreground"
               >
-                <CheckCircle className="w-16 h-16 text-green-500 dark:text-green-400" />
+                <CheckCircle className="w-16 h-16 text-success" />
               </motion.div>
 
               <motion.div variants={itemVariants}>
-                <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl bg-gradient-to-r from-success to-accent-2 bg-clip-text text-transparent">
                   {t('success.title')}
                 </h2>
               </motion.div>
@@ -62,7 +62,7 @@ export default function SuccessSubscriptionPage() {
 
               <motion.p
                 variants={itemVariants}
-                className="text-base font-medium text-pretty text-gray-600 dark:text-gray-300"
+                className="text-base font-medium text-pretty text-muted-foreground"
               >
                 {t('success.congratulations')}
                 <br />
@@ -88,12 +88,12 @@ export default function SuccessSubscriptionPage() {
 
               <motion.div
                 variants={itemVariants}
-                className="mt-8 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg"
+                className="mt-8 bg-muted p-4 rounded-lg"
               >
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   {t('success.billingInfo')}
                   <Link
-                    className="text-blue-500 hover:text-blue-600 underline mx-1 font-medium"
+                    className="text-link-foreground hover:text-primary underline mx-1 font-medium"
                     href={`/dashboard/subscription`}
                   >
                     {t('success.subscriptionPageLink')}
