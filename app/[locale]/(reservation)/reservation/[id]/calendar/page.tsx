@@ -9,13 +9,22 @@ import { useMutation } from 'convex/react'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
 import { Label } from '@/components/ui/label'
-import { MenuView, StaffView, OptionView, DateView, PaymentView, ConfirmView } from './_components'
+
+import {
+  MenuView,
+  StaffView,
+  OptionView,
+  DateView,
+  PaymentView,
+  ConfirmView,
+  CouponView,
+} from './_components'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { reservationFlexMessageTemplate } from '@/services/line/message_template/reservation_flex'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import Image from 'next/image'
-import { ReservationPaymentStatus } from '@/convex/types'
+import { ReservationPaymentStatus, ActiveCustomerType } from '@/convex/types'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { formatDateToYYYYMMDD } from '@/lib/formatDate'
 import { BASE_URL } from '@/lib/constants'
@@ -32,6 +41,7 @@ import {
   CheckCircle,
   ChevronRight,
   Loader2,
+  Ticket,
 } from 'lucide-react'
 import type { StaffDisplay } from '@/lib/types'
 
@@ -81,10 +91,11 @@ type SessionPayload = {
   // LINE特有のフィールドはオプショナル
   lineUserId?: string
   name?: string
+  target_type?: ActiveCustomerType
 }
 
 // 予約ステップの定義
-type ReservationStep = 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'confirm'
+type ReservationStep = 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'coupon' | 'confirm'
 
 // アニメーションバリアント
 const pageVariants = {
@@ -221,6 +232,7 @@ export default function CalendarPage() {
   const [appliedDiscount, setAppliedDiscount] = useState<{
     discount: number
     couponId: Id<'coupon'> | null
+    couponName?: string
   }>({ discount: 0, couponId: null })
   const [usePoints, setUsePoints] = useState<number>(0)
   const [availablePoints, setAvailablePoints] = useState<number>(0)
@@ -289,6 +301,9 @@ export default function CalendarPage() {
         setCurrentStep('payment')
         break
       case 'payment':
+        setCurrentStep('coupon')
+        break
+      case 'coupon':
         setCurrentStep('confirm')
         break
       case 'confirm':
@@ -328,8 +343,11 @@ export default function CalendarPage() {
         setCurrentStep('date')
         setSelectedPaymentMethod(null)
         break
-      case 'confirm':
+      case 'coupon':
         setCurrentStep('payment')
+        break
+      case 'confirm':
+        setCurrentStep('coupon')
         // ポイント使用をクリア
         setUsePoints(0)
         break
@@ -1120,6 +1138,12 @@ export default function CalendarPage() {
         color: 'bg-chart-5 text-background',
       },
       {
+        key: 'coupon',
+        label: 'クーポン',
+        icon: Ticket,
+        color: 'bg-neon text-background',
+      },
+      {
         key: 'confirm',
         label: '確認',
         icon: CheckCircle,
@@ -1130,7 +1154,7 @@ export default function CalendarPage() {
     return (
       <div className="relative mb-4 w-full max-w-3xl mx-auto">
         {/* ② ステップ丸要素群 */}
-        <div className="relative grid grid-cols-6 gap-2">
+        <div className="relative grid grid-cols-7 gap-2">
           {steps.map((step, index) => {
             const isActive = currentStep === step.key
             const isCompleted = index < steps.findIndex((s) => s.key === currentStep)
@@ -1182,23 +1206,6 @@ export default function CalendarPage() {
               case 'menu':
                 return (
                   <div>
-                    <motion.h2
-                      className="text-lg font-bold"
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      メニューを選択
-                    </motion.h2>
-                    <motion.p
-                      className="text-muted-foreground mb-2 text-xs"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      予約したいメニューを選択してください。複数選択可能です。
-                    </motion.p>
-
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1209,6 +1216,7 @@ export default function CalendarPage() {
                         orgId={organizationComplete.organization._id as Id<'organization'>}
                         selectedMenuIds={selectedMenus.map((menu) => menu._id)}
                         onChangeMenusAction={(menus) => setSelectedMenus(menus)}
+                        targetType={sessionCustomer?.target_type as ActiveCustomerType}
                       />
                     </motion.div>
 
@@ -1450,6 +1458,45 @@ export default function CalendarPage() {
                     </motion.div>
                   </motion.div>
                 )
+              case 'coupon':
+                return (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <CouponView
+                      tenantId={organizationComplete.organization.tenant_id as Id<'tenant'>}
+                      orgId={organizationComplete.organization._id as Id<'organization'>}
+                      selectedMenus={selectedMenus}
+                      sessionCustomerType={sessionCustomer?.target_type as ActiveCustomerType}
+                      onSelectCoupon={(coupon, discountAmount) => {
+                        if (coupon) {
+                          setAppliedDiscount({
+                            discount: discountAmount,
+                            couponId: coupon._id,
+                            couponName: coupon.name,
+                          })
+                        } else {
+                          setAppliedDiscount({ discount: 0, couponId: null })
+                        }
+                      }}
+                      selectedCoupon={appliedDiscount?.couponId as Id<'coupon'> | null}
+                    />
+                    <motion.div
+                      className="mt-10 flex justify-center"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <Button onClick={goToNextStep} className="relative overflow-hidden w-full">
+                        <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          次へ進む
+                        </motion.span>
+                      </Button>
+                    </motion.div>
+                  </motion.div>
+                )
               case 'confirm':
                 return (
                   <motion.div
@@ -1478,6 +1525,7 @@ export default function CalendarPage() {
                       onApplyCoupon={(discount: number, couponId: Id<'coupon'>) =>
                         setAppliedDiscount({ discount, couponId })
                       }
+                      appliedCouponInfo={appliedDiscount.couponId ? appliedDiscount : null}
                     />
                     <Separator className="my-6" />
                     <div className="flex flex-col gap-2 my-4">
