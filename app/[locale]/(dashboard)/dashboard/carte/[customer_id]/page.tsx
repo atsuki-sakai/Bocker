@@ -302,6 +302,14 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                     </p>
                   </div>
                 )}
+                {customerCarteData?.ltv_price && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">LTV(累計利用金額)</span>
+                    <p className="font-medium text-lg">
+                      {formatPrice(customerCarteData.ltv_price)}
+                    </p>
+                  </div>
+                )}
 
                 {customerData.customer?.tags && customerData.customer.tags.length > 0 && (
                   <div>
@@ -402,7 +410,9 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                               <div className="flex items-center gap-2 mt-1">
                                 <User className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm">
-                                  {tCarte('detail.assignedStaff', { staffName: item.staffName || '指名フリー' })}
+                                  {tCarte('detail.assignedStaff', {
+                                    staffName: item.staffName || '指名フリー',
+                                  })}
                                 </span>
                               </div>
                             </div>

@@ -301,6 +301,7 @@ export const MENU_CATEGORY_VALUES = [
   'ヘアセット',
   'ヘッドスパ',
   'フェイスケア',
+  'シャンプー',
   'その他',
 ] as const
 export const menuCategoryType = v.union(

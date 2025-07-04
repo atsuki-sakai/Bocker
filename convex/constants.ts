@@ -7,6 +7,8 @@ export type PlanLimits = {
     maxMenuCount: number;
     maxOptionCount: number;
     maxCouponCount: number;
+    maxMenuImageCount: number;
+    maxSalonImageCount: number;
     monthlyReservationLimit: number;
 };
 
@@ -17,6 +19,8 @@ export const SUBSCRIPTION_PLAN_LIMITS: Record<SubscriptionPlanName, PlanLimits> 
         maxMenuCount: 20,
         maxOptionCount: 10,
         maxCouponCount: 10,
+        maxMenuImageCount: 1,
+        maxSalonImageCount: 1,
         monthlyReservationLimit: 500,
     },
     'PRO': {
@@ -24,6 +28,8 @@ export const SUBSCRIPTION_PLAN_LIMITS: Record<SubscriptionPlanName, PlanLimits> 
         maxMenuCount: 60,
         maxOptionCount: 20,
         maxCouponCount: 30,
+        maxMenuImageCount: 2,
+        maxSalonImageCount: 5,
         monthlyReservationLimit: 1000,
     },
     'UNKNOWN': {
@@ -31,6 +37,8 @@ export const SUBSCRIPTION_PLAN_LIMITS: Record<SubscriptionPlanName, PlanLimits> 
         maxMenuCount: 0,
         maxOptionCount: 0,
         maxCouponCount: 0,
+        maxMenuImageCount: 0,
+        maxSalonImageCount: 0,
         monthlyReservationLimit: 0,
     },
 };

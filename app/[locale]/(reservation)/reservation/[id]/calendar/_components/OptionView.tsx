@@ -275,7 +275,7 @@ export const OptionView = ({
         })}
       </div>
       <Dialog open={showOptionDetail} onOpenChange={setShowOptionDetail}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {selectedOption?.images &&
           selectedOption?.images.length > 0 &&
           selectedOption?.images[0].original_url ? (

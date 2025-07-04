@@ -403,13 +403,13 @@ function CustomerDetailPage() {
                             <div className="flex items-center gap-2">
                               {transaction.points && transaction.points > 0 ? (
                                 <>
-                                  <TrendingUp className="h-4 w-4 text-green-600" />
-                                  <span className="text-green-600">{t('earned')}</span>
+                                  <TrendingUp className="h-4 w-4 text-success" />
+                                  <span className="text-success">{t('earned')}</span>
                                 </>
                               ) : (
                                 <>
-                                  <TrendingDown className="h-4 w-4 text-red-600" />
-                                  <span className="text-red-600">
+                                  <TrendingDown className="h-4 w-4 text-destructive" />
+                                  <span className="text-destructive">
                                     {transaction.transaction_type === 'manual_subtract'
                                       ? t('manualSubtract')
                                       : t('used')}
@@ -423,9 +423,9 @@ function CustomerDetailPage() {
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {transaction.points && transaction.points > 0 ? (
-                              <span className="text-green-600">+{transaction.points}</span>
+                              <span className="text-success">+{transaction.points}</span>
                             ) : (
-                              <span className="text-red-600">{transaction.points}</span>
+                              <span className="text-destructive">{transaction.points}</span>
                             )}
                           </TableCell>
                         </TableRow>

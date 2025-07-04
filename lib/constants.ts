@@ -154,7 +154,7 @@ export const SUBSCRIPTION_PLANS = {
   PRO: {
     id: 'pro',
     name: 'Pro',
-    features: ['features.pro.1', 'features.pro.2', 'features.pro.3'],
+    features: ['features.pro.1', 'features.pro.2', 'features.pro.3', 'features.pro.4'],
     monthly: {
       priceId: getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID'),  // Set dynamically in runtime
       price: PLAN_MONTHLY_PRICES.PRO,
@@ -224,17 +224,10 @@ export const NAV_ITEMS: NavItem[] = [
     minPlan: 'LITE',
   },
   {
-    name: 'reservationTimeline',
+    name: 'reservationList',
     href: `/dashboard/reservation`,
     icon: CalendarIcon,
     minRole: 'staff',
-    minPlan: 'LITE',
-  },
-  {
-    name: 'reservationCollection',
-    href: `/dashboard/reservation/collection`,
-    icon: CalendarIcon,
-    minRole: 'manager',
     minPlan: 'LITE',
   },
   {
