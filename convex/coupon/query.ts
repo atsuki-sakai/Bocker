@@ -11,13 +11,22 @@ export const list = query({
     org_id: v.id('organization'),
     paginationOpts: paginationOptsValidator,
     include_archive: v.optional(v.boolean()),
+    active_only: v.optional(v.boolean()),
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
-    return await ctx.db.query('coupon').withIndex('by_tenant_org_archive', (q) =>
+    
+    let query = ctx.db.query('coupon').withIndex('by_tenant_org_archive', (q) =>
       q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
-    ).paginate(args.paginationOpts);
+    );
+
+    // active_onlyフラグが指定されている場合は有効なクーポンのみ取得
+    if (args.active_only) {
+      query = query.filter((q) => q.eq(q.field('is_active'), true));
+    }
+
+    return await query.paginate(args.paginationOpts);
   },
 });
 
