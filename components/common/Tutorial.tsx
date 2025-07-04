@@ -4,27 +4,25 @@ import { useState, useEffect, useMemo } from 'react'
 import { usePaginatedQuery, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Loading } from '@/components/common'
 import { AlertTitle } from '@/components/ui/alert'
+
 import {
   CheckCircle2,
-  Circle,
   Clock,
   Store,
   Calendar,
   Menu,
   Users,
-  Copy,
   ExternalLink,
   AlertCircle,
   ChevronRight,
 } from 'lucide-react'
-import { toast } from 'sonner'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Link } from '@/i18n/navigation'
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 
 interface TutorialStep {
   id: number
@@ -40,7 +38,6 @@ export const Tutorial = () => {
   const { tenantId, orgId, ready, subscription } = useTenantAndOrganization()
   const t = useTranslations('common.tutorial')
 
-  const locale = useLocale()
   // 翻訳キーのみを保持するチュートリアル手順をメモ化して無限再レンダリングを防止
   const tutorialSteps: TutorialStep[] = useMemo(
     () => [
@@ -265,23 +262,6 @@ export const Tutorial = () => {
 
   const progress = (completedSteps.length / tutorialSteps.length) * 100
 
-  const getOrganizationUrl = (type: 'reservation' | 'customer') => {
-    if (!org?.org._id) return ''
-    if (type === 'reservation') {
-      return `${window.location.origin}/${locale}/reservation/${org.org._id}`
-    } else if (type === 'customer') {
-      return `${window.location.origin}/${locale}/customer/${org.org._id}/auth/login`
-    } else {
-      return ''
-    }
-  }
-
-  const copyOrganizationUrl = (type: 'reservation' | 'customer') => {
-    const url = getOrganizationUrl(type)
-    navigator.clipboard.writeText(url)
-    toast.success(t('urlCopied'))
-  }
-
   // Check if all data is loaded
   const isDataLoading =
     !ready ||
@@ -402,146 +382,6 @@ export const Tutorial = () => {
             )}
           </div>
         </>
-      )}
-
-      {/* Completion Section */}
-      {isAllRequiredStepsCompleted() && (
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="text-accent-2">{t('completion.title')}</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              {t('completion.description')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-background rounded-lg border border-border">
-              <label className="text-sm font-medium">{t('completion.reservationUrlLabel')}</label>
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  value={getOrganizationUrl('reservation')}
-                  readOnly
-                  className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm font-mono focus:outline-none"
-                />
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={() => copyOrganizationUrl('reservation')}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="outline" asChild>
-                  <a
-                    href={getOrganizationUrl('reservation')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-            </div>
-            <div className="p-4 bg-background rounded-lg border border-border">
-              <label className="text-sm font-medium">{t('completion.customerUrlLabel')}</label>
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  value={getOrganizationUrl('customer')}
-                  readOnly
-                  className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm font-mono focus:outline-none"
-                />
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={() => copyOrganizationUrl('customer')}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="outline" asChild>
-                  <a
-                    href={getOrganizationUrl('customer')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="border border-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">{t('nextSteps.title')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-accent-2 mt-0.5" />
-                      <span>
-                        <Link href="/dashboard/setting" className="text-accent-2 hover:underline">
-                          {t('nextSteps.items.closedDays')}
-                        </Link>
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-accent-2 mt-0.5" />
-                      <span>
-                        <Link href="/dashboard/option" className="text-accent-2 hover:underline">
-                          {t('nextSteps.items.optionMenu')}
-                        </Link>
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-accent-2 mt-0.5" />
-                      <span>
-                        <Link href="/dashboard/point" className="text-accent-2 hover:underline">
-                          {t('nextSteps.items.pointFeature')}
-                        </Link>
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-accent-2 mt-0.5" />
-                      <span>
-                        <Link href="/dashboard/coupon" className="text-accent-2 hover:underline">
-                          {t('nextSteps.items.couponFeature')}
-                        </Link>
-                      </span>
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-
-              <Card className="border border-link-foreground bg-link">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base text-link-foreground">
-                    {t('customerGuidance.title')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2">
-                      <Circle className="h-4 w-4 text-link-foreground mt-0.5" />
-                      <span className="text-link-foreground">
-                        {t('customerGuidance.items.website')}
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="h-4 w-4 text-link-foreground mt-0.5" />
-                      <span className="text-link-foreground">
-                        {t('customerGuidance.items.sns')}
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="h-4 w-4 text-link-foreground mt-0.5" />
-                      <span className="text-link-foreground">
-                        {t('customerGuidance.items.qrCode')}
-                      </span>
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </div>
-          </CardContent>
-        </Card>
       )}
     </div>
   )

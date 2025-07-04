@@ -179,3 +179,44 @@ body {
   }
 
 }
+
+@layer components {
+  /* 予約カレンダーのカスタムスタイル */
+  .rdp-day_selected:not(.rdp-day_disabled) {
+    @apply bg-primary text-primary-foreground;
+  }
+  
+  .rdp-day_today:not(.rdp-day_selected) {
+    @apply bg-warning text-warning-foreground font-bold;
+  }
+  
+  /* 予約がある日のマーカー表示 */
+  .has-reservation:not(.rdp-day_selected) {
+    @apply relative;
+  }
+  
+  .has-reservation:not(.rdp-day_selected)::after {
+    content: '';
+    @apply absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full;
+  }
+}
+
+@layer utilities {
+  /* スクロールバーのカスタマイズ */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/30;
+  }
+}

@@ -78,6 +78,17 @@ export default {
           '4': 'var(--chart-4)',
           '5': 'var(--chart-5)',
         },
+        info: {
+          DEFAULT: 'var(--info)',
+          foreground: 'var(--info-foreground)',
+        },
+        success: {
+          DEFAULT: 'var(--success)',
+          foreground: 'var(--success-foreground)',
+        },
+        heroGradient1: 'var(--hero-gradient-1)',
+        heroGradient2: 'var(--hero-gradient-2)',
+        heroGradient3: 'var(--hero-gradient-3)',
         palette: {
           '1': 'var(--palette-1)',
           '1-foreground': 'var(--palette-1-foreground)',

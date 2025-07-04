@@ -8,7 +8,7 @@ import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Link } from '@/i18n/navigation'
 import { Button } from '@/components/ui/button'
-import { CopyIcon } from 'lucide-react'
+import { CopyIcon, ExternalLinkIcon } from 'lucide-react'
 import { BASE_URL } from '@/lib/constants'
 import {
   Select,
@@ -23,6 +23,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { Card, CardContent } from '@/components/ui/card'
 import { TRACKING_CODE_VALUES, TrackingCode } from '@/convex/types'
 
 export default function ReservationLink() {
@@ -46,13 +47,13 @@ export default function ReservationLink() {
       apiConfig?.liff_id &&
       apiConfig?.line_channel_secret &&
       apiConfig?.line_access_token ? (
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
             <Select
               value={selectedTrackingType}
               onValueChange={(value) => setSelectedTrackingType(value as TrackingCode)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="min-w-32">
                 <SelectValue placeholder={t('selectLinkDestination')} />
               </SelectTrigger>
               <SelectContent>
@@ -65,54 +66,67 @@ export default function ReservationLink() {
             </Select>
             <Button
               size="icon"
+              variant="outline"
               onClick={() => {
                 navigator.clipboard.writeText(
                   `${BASE_URL}/reservation/${orgId}/?code=${selectedTrackingType}`
                 )
               }}
+              title="URLをコピー"
             >
               <CopyIcon className="h-4 w-4" />
             </Button>
+            <Button size="icon" variant="outline" asChild title="外部ページで開く">
+              <a
+                href={`${BASE_URL}/reservation/${orgId}/?code=${selectedTrackingType}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLinkIcon className="h-4 w-4" />
+              </a>
+            </Button>
           </div>
 
-          <a
-            className="text-sm text-link-foreground truncate"
-            href={`${BASE_URL}/reservation/${orgId}/?code=${selectedTrackingType}`}
-          >{`${BASE_URL}/reservation/${orgId}/?code=${selectedTrackingType}`}</a>
+          <Card>
+            <CardContent className="p-4">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">生成されたURL</p>
+                <div className="p-2 bg-muted rounded-md font-mono text-sm break-all">
+                  {`${BASE_URL}/reservation/${orgId}/?code=${selectedTrackingType}`}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Accordion type="single" collapsible>
             <AccordionItem value="item-1">
               <AccordionTrigger>
-                <p className="text-primary">{t('aboutReservationLink')}</p>
+                <p className="text-sm font-medium">{t('aboutReservationLink')}</p>
               </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground text-sm tracking-normal leading-7 bg-muted rounded-md p-2">
-                <p className="mb-2">{t('trackingDescription')}</p>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li>
-                    <strong>LINE</strong>:{t('lineDescription')}
-                  </li>
-                  <li>
-                    <strong>Web</strong>:{t('webDescription')}
-                  </li>
-                  <li>
-                    <strong>Instagram</strong>:{t('instagramDescription')}
-                  </li>
-                  <li>
-                    <strong>X (Twitter)</strong>:{t('twitterDescription')}
-                  </li>
-                  <li>
-                    <strong>Facebook</strong>:{t('facebookDescription')}
-                  </li>
-                  <li>
-                    <strong>YouTube</strong>:{t('youtubeDescription')}
-                  </li>
-                  <li>
-                    <strong>Tiktok</strong>:{t('tiktokDescription')}
-                  </li>
-                  <li>
-                    <strong>GoogleMap</strong>:{t('googleMapDescription')}
-                  </li>
-                </ul>
-                <p className="mt-2">{t('copyInstruction')}</p>
+              <AccordionContent>
+                <Card>
+                  <CardContent className="p-4 space-y-3 text-sm">
+                    <p>{t('trackingDescription')}</p>
+                    <div className="grid gap-2">
+                      {[
+                        { key: 'LINE', desc: t('lineDescription') },
+                        { key: 'Web', desc: t('webDescription') },
+                        { key: 'Instagram', desc: t('instagramDescription') },
+                        { key: 'X (Twitter)', desc: t('twitterDescription') },
+                        { key: 'Facebook', desc: t('facebookDescription') },
+                        { key: 'YouTube', desc: t('youtubeDescription') },
+                        { key: 'TikTok', desc: t('tiktokDescription') },
+                        { key: 'GoogleMap', desc: t('googleMapDescription') },
+                      ].map(({ key, desc }) => (
+                        <div key={key} className="flex gap-2">
+                          <span className="font-medium min-w-fit">{key}:</span>
+                          <span className="text-muted-foreground">{desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-accent-foreground">{t('copyInstruction')}</p>
+                  </CardContent>
+                </Card>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
