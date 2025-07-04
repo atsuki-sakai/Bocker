@@ -343,7 +343,7 @@ export default function StaffEditForm() {
         }
 
         toast.success(t('staff.messages.staffUpdated'), {
-          icon: <Check className="h-4 w-4 text-green-500" />,
+          icon: <Check className="h-4 w-4 text-success" />,
         })
         router.push('/dashboard/staff')
       } catch (configAuthError) {
@@ -477,7 +477,7 @@ export default function StaffEditForm() {
       } catch (error) {
         console.error('フォーム初期化中にエラーが発生しました:', error)
         toast.error(t('staff.messages.formInitializationError'), {
-          icon: <X className="h-4 w-4 text-red-500" />,
+          icon: <X className="h-4 w-4 text-destructive" />,
         })
       }
     }
@@ -931,7 +931,7 @@ export default function StaffEditForm() {
       </Dialog>
       <div>
         {Object.keys(errors).length > 0 && (
-          <ul className="text-red-500 bg-red-50 p-2 rounded-md space-y-1 text-xs mt-2 list-disc pl-5">
+          <ul className="text-destructive bg-destructive-foreground p-2 rounded-md space-y-1 text-xs mt-2 list-disc pl-5">
             {Object.values(errors).map((error, index) => (
               <li key={index}>{error.message}</li>
             ))}

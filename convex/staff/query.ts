@@ -13,7 +13,6 @@ export const getById = query({
     id: v.id('staff'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx)
     const staff = await ctx.db.get(args.id)
     if (!staff) {
       throw new ConvexError({

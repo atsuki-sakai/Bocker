@@ -156,7 +156,7 @@ export default function StaffList() {
                     ))
                   ) : (
                     <tr className="h-24 text-center">
-                      <td colSpan={12} className="text-sm text-gray-500">
+                      <td colSpan={12} className="text-sm text-muted-foreground">
                         {t('list.noStaff')}
                       </td>
                     </tr>

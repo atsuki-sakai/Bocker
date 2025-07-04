@@ -340,7 +340,7 @@ export default function StaffSchedulePage() {
 
         slots.push(
           <div key={`hour-${i}`}>
-            <div className="sticky bg-background rounded-md left-0 z-10 -mt-2.5 -ml-14 w-14 pr-2 text-right text-xs/5 text-gray-400 text-nowrap">
+            <div className="sticky bg-background rounded-md left-0 z-10 -mt-2.5 -ml-14 w-14 pr-2 text-right text-xs/5 text-muted-foreground text-nowrap">
               {ampm}
               {hour12}
               {t('oclock')}

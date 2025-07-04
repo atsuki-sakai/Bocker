@@ -245,7 +245,7 @@ export default function StaffDetails() {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          <Instagram className="h-6 w-6 mr-5 text-pink-500" />
+                          <Instagram className="h-6 w-6 mr-5 text-pop" />
                         </Link>
                       </div>
                     )}
