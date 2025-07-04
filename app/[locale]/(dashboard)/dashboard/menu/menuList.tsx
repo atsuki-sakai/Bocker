@@ -68,7 +68,7 @@ interface MenuItemProps {
 }
 
 const MenuItem = memo(function MenuItem({ menu, onEdit, onDelete }: MenuItemProps) {
-  const t = useTranslations('menus')
+  const t = useTranslations('menu')
 
   const tCommon = useTranslations('common')
 
@@ -147,18 +147,17 @@ const MenuItem = memo(function MenuItem({ menu, onEdit, onDelete }: MenuItemProp
                 {menu.sale_price ? (
                   <div className="flex items-center gap-2">
                     <span className="line-through text-xs">
-                      {menu.unit_price}
-                      {tCommon('currencySymbol')}
+                      {tCommon('currencySymbol')} {menu.unit_price.toLocaleString()}
                     </span>
                     <span className="font-bold text-primary">
-                      {menu.sale_price}
-                      {tCommon('currencySymbol')}
+                      {tCommon('currencySymbol')} {''}
+                      {menu.sale_price.toLocaleString()}
                     </span>
                   </div>
                 ) : (
                   <span className="font-medium">
-                    {menu.unit_price}
-                    {tCommon('currencySymbol')}
+                    {tCommon('currencySymbol')} {''}
+                    {menu.unit_price.toLocaleString()}
                   </span>
                 )}
               </div>

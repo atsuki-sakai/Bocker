@@ -286,12 +286,12 @@ function OptionAddForm() {
   return (
     <>
       <div className="mb-6">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div className="bg-info-foreground border border-info rounded-lg p-4 mb-4">
           <div className="flex items-start gap-3">
-            <Info size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
+            <Info size={20} className="text-info mt-0.5 flex-shrink-0" />
             <div className="space-y-2">
-              <h3 className="font-semibold text-blue-900 text-sm">オプション機能について</h3>
-              <div className="text-sm text-blue-800 space-y-1">
+              <h3 className="font-semibold text-info text-sm">オプション機能について</h3>
+              <div className="text-sm text-info space-y-1">
                 <p>
                   • <strong>物販対応：</strong>{' '}
                   在庫数を設定することで、シャンプーやトリートメントなどの商品販売が可能です

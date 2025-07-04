@@ -7,16 +7,18 @@ import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslations } from 'next-intl'
 import {
+  FileText,
   CreditCard,
+  PiggyBank,
   Clock,
   Tag,
   Users,
-  Repeat,
   Edit,
   ChevronDown,
   ChevronUp,
   Trash,
   Info,
+  Crosshair,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -362,7 +364,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* 料金情報 */}
                   <div className="flex items-start p-3 rounded-lg  border border-border">
-                    <CreditCard className="w-5 h-5 mt-1 mr-3 text-primary" />
+                    <PiggyBank className="w-5 h-5 mt-1 mr-3 text-primary" />
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">
                         {t('fields.price')}
@@ -418,7 +420,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
 
                   {/* ターゲット */}
                   <div className="flex items-start p-3 rounded-lg border border-border">
-                    <Repeat className="w-5 h-5 mt-1 mr-3" />
+                    <Crosshair className="w-5 h-5 mt-1 mr-3" />
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">
                         {t('fields.targetType')}
@@ -448,7 +450,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                 {/* 説明文 */}
                 <div className="space-y-2">
                   <h3 className="text-md font-medium text-muted-foreground flex items-center">
-                    <Info className="w-4 h-4 mr-2 text-primary" />
+                    <FileText className="w-4 h-4 mr-2 text-primary" />
                     {t('fields.description')}
                   </h3>
                   <div className="bg-muted p-4 rounded-lg border border-border">

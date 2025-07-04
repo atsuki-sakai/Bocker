@@ -183,7 +183,7 @@ export default function OptionList() {
                       <td className="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-primary sm:pl-6">
                         {option.name}
                       </td>
-                      <td className="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
+                      <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                         {option.sale_price ? (
                           <span className="line-through text-muted-foreground text-xs">
                             ¥{option.unit_price?.toLocaleString()}

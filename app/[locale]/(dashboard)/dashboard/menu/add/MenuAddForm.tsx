@@ -332,7 +332,7 @@ export default function MenuAddForm() {
                 setCurrentFiles(newFiles as File[])
               }}
               maxSizeMB={6}
-              limitFiles={3}
+              limitFiles={limits.maxMenuImageCount}
               hasSelected={currentFiles.length}
             />
           </div>
@@ -342,7 +342,7 @@ export default function MenuAddForm() {
               <ZodTextField
                 name="name"
                 label={t('menuName')}
-                icon={<Tag className="text-gray-500" />}
+                icon={<Tag className="text-muted-foreground" />}
                 placeholder={t('placeholder.menuName')}
                 register={register}
                 errors={errors}

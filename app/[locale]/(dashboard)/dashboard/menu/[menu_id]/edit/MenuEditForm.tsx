@@ -18,21 +18,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import {
-  ImageIcon,
-  DollarSign,
-  Tag,
-  Clock,
-  Users,
-  Repeat,
-  CreditCard,
-  Wallet,
-  ShoppingBag,
-  AlertCircle,
-  Info,
-  Save,
-  X,
-} from 'lucide-react'
+import { ImageIcon, DollarSign, Clock, Users, Wallet, AlertCircle, Save, X } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -43,6 +29,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
+import { getPlanLimits } from '@/convex/utils/helpers'
 import { CardHeader, CardTitle } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
@@ -61,7 +48,16 @@ import {
 } from '@/convex/types'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command'
-import { Check, ChevronDown } from 'lucide-react'
+import {
+  Scissors,
+  Check,
+  ChevronDown,
+  Component as ComponentIcon,
+  PiggyBank,
+  FileText,
+  Crosshair,
+  CreditCard,
+} from 'lucide-react'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { MAX_NUM, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
@@ -185,8 +181,9 @@ export default function MenuEditForm() {
   const params = useParams()
   const menuId = params.menu_id as Id<'menu'>
   const t = useTranslations('menus')
-  const { orgId, tenantId, stripeConnectStatus } = useTenantAndOrganization()
+  const { orgId, tenantId, stripeConnectStatus, planName } = useTenantAndOrganization()
   const menuData = useQuery(api.menu.query.findById, { menu_id: menuId })
+  const limits = getPlanLimits(planName)
 
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false)
   const { showErrorToast } = useErrorHandler()
@@ -272,13 +269,7 @@ export default function MenuEditForm() {
         try {
           // Promise.allを使って複数の画像を並列アップロード
           const uploadPromises = newFiles.map(async (file) => {
-            return uploadImage(
-              file,
-              orgId,
-              'menu',
-              'mobile',
-              'medium'
-            )
+            return uploadImage(file, orgId, 'menu', 'mobile', 'medium')
           })
           console.log('アップロード開始 - ファイル数:', newFiles.length)
 
@@ -463,7 +454,7 @@ export default function MenuEditForm() {
                   // この値は使用しないので、空配列を設定して変更のみをトリガーする
                   setValue('images', [], { shouldValidate: true, shouldDirty: true })
                 }}
-                limitFiles={3}
+                limitFiles={limits.maxMenuImageCount}
                 hasSelected={existingImages.length}
               />
             </div>
@@ -474,7 +465,7 @@ export default function MenuEditForm() {
               <ZodTextField
                 name="name"
                 label={t('form.menuName')}
-                icon={<Tag className="text-muted-foreground" />}
+                icon={<Scissors className="text-muted-foreground" />}
                 placeholder={t('form.menuNamePlaceholder')}
                 register={register}
                 errors={errors}
@@ -483,6 +474,7 @@ export default function MenuEditForm() {
               />
               <div>
                 <div className="text-sm flex items-start gap-2 mb-2">
+                  <ComponentIcon size={16} className="text-muted-foreground" />
                   <Label className="text-sm flex items-center gap-2">{t('form.category')}</Label>
                   <span className="text-destructive">*</span>
                 </div>
@@ -563,7 +555,7 @@ export default function MenuEditForm() {
               <ZodTextField
                 name="unit_price"
                 label={t('form.price')}
-                icon={<DollarSign className="text-muted-foreground" />}
+                icon={<PiggyBank className="text-muted-foreground" />}
                 type="number"
                 placeholder={t('form.pricePlaceholder')}
                 register={register}
@@ -576,7 +568,7 @@ export default function MenuEditForm() {
                 name="sale_price"
                 label={t('form.salePrice')}
                 type="number"
-                icon={<ShoppingBag className="text-muted-foreground" />}
+                icon={<DollarSign className="text-muted-foreground" />}
                 placeholder={t('form.salePricePlaceholder')}
                 register={register}
                 errors={errors}
@@ -586,7 +578,7 @@ export default function MenuEditForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="max-w-full">
-                <Label className="text-sm flex items-center gap-2">
+                <Label className="text-sm flex items-center gap-2 mb-2">
                   <Clock size={16} className="text-muted-foreground" />
                   {t('form.duration')} <span className="text-destructive ml-1">*</span>
                 </Label>
@@ -626,7 +618,7 @@ export default function MenuEditForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="flex items-center gap-2 text-sm">
-                  <Repeat size={16} className="text-muted-foreground" />
+                  <Crosshair size={16} className="text-muted-foreground" />
                   {t('form.target')}
                 </Label>
                 <span className="text-xs text-muted-foreground">{t('form.targetHelp')}</span>
@@ -757,7 +749,7 @@ export default function MenuEditForm() {
         <Separator className="my-8" />
 
         <Label className="flex items-center gap-2 text-sm mb-2 mt-4">
-          <Info size={16} className="text-muted-foreground" />
+          <FileText size={16} className="text-muted-foreground" />
           {t('form.description')} <span className="text-destructive ml-1">*</span>
         </Label>
         <Textarea
@@ -816,40 +808,6 @@ export default function MenuEditForm() {
           </div>
         </div>
       </form>
-      {/* <Accordion type="multiple" className="mt-8 space-y-2">
-        <AccordionItem value="line-access-token">
-          <AccordionTrigger>
-            実際の稼働時間と待機時間を含めたトータルの施術時間の違いについて
-          </AccordionTrigger>
-          <AccordionContent className="space-y-2 text-sm text-muted-foreground">
-            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
-              <li>
-                <strong>実際の稼働時間 :</strong>
-                スタッフが手を動かして施術に集中している正味の作業時間を指します。
-                <br />
-                例）パーマの薬剤塗布・カット・シャンプーなど。
-              </li>
-              <li>
-                <strong>待機時間を含めたトータルの施術時間 :</strong>
-                施術席を専有する必要はあるものの、スタッフが別の作業に移れる待機時間を指します。
-                <br />
-                例）薬剤の放置時間・髪の乾燥時間など。
-              </li>
-              <li>
-                予約枠のアルゴリズムは <strong>実際の稼働時間</strong> を基準に空き時間を算出し、
-                <strong>待機時間を含めたトータルの施術時間</strong>{' '}
-                を待機時間として扱うことで、同じ席を効率よく回転させられます。
-              </li>
-            </ol>
-
-            <p className="text-xs text-muted-foreground space-y-1">
-              * 両時間とも必須入力です。
-              <br />* <strong>入力例：</strong> パーマ 90 分（実際の稼働 45 分 ＋ 確保 45
-              分）の場合、スタッフは途中 45 分間ほかの顧客を担当できます。
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion> */}
     </div>
   )
 }
