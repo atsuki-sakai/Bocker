@@ -681,8 +681,8 @@ async function handleStatusSideEffects(
         const updateData: Record<string, any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
           // 4. total_reservation_countを1増やす
           total_reservation_count: (customer.total_reservation_count || 0) + 1,
-          // 6. last_reservation_date_unixを現在時刻で更新
-          last_reservation_date_unix: Date.now(),
+          // 6. last_reservation_date_unixを現在時刻で更新（秒単位）
+          last_reservation_date_unix: Math.floor(Date.now() / 1000),
         };
         
         // 5. 初回顧客の場合はcustomer_typeを"repeat"に変更
@@ -706,7 +706,7 @@ async function handleStatusSideEffects(
             reservation.tenant_id,
             reservation.org_id,
             newTotalPoints,
-            Date.now(),
+            Math.floor(Date.now() / 1000),
           );
         }
 
