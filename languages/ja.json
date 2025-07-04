@@ -2347,11 +2347,11 @@
     "exclusionMenu": {
       "title": "除外するメニュー",
       "noSelection": "選択なし",
-      "selectAll": "すべて選択",
+      "selectAll": "表示中のメニューを全て選択",
       "selectedCount": "{count}件選択",
       "noMenus": "登録されているメニューがありません。",
-      "clearAll": "全て解除",
-      "selectAllButton": "全て選択",
+      "clearAll": "選択中のメニューを全て解除",
+      "selectAllButton": "表示中のメニューを全て選択",
       "searchPlaceholder": "メニューを検索...",
       "loadMore": "さらに読み込む"
     },

@@ -1,7 +1,7 @@
 // Stripe types
 import { Role, SubscriptionPlanName } from "@/convex/types";
 import { Id } from "@/convex/_generated/dataModel";
-import { Gender, ImageType } from "@/convex/types";
+import { Gender, ImageType, ActiveCustomerType } from "@/convex/types";
 
 
 export type SessionPayload = {
@@ -9,6 +9,7 @@ export type SessionPayload = {
   email: string;
   tenantId: string;
   orgId: string;
+  target_type?: ActiveCustomerType | null | undefined;
 }
 
 export type StaffDisplay = {

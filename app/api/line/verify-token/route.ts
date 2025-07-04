@@ -356,6 +356,7 @@ export async function POST(req: NextRequest) {
       orgId: orgId, // 予約フローのためにorgIdもセッションに含める
       name: lineUserName,
       email: email,
+      target_type: 'first_time',
       // 他にセッションに含めたい情報
     }
 

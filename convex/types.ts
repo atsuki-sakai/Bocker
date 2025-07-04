@@ -178,7 +178,7 @@ export const activeCustomerType = v.union(
 )
 export type ActiveCustomerType = Infer<typeof activeCustomerType>
 export const convertActiveCustomerType = (activeCustomerType: ActiveCustomerType): string => {
-  switch (activeCustomerType) {
+  switch (activeCustomerType.trim().toLowerCase()) {
     case 'all':
       return '全員'
     case 'first_time':

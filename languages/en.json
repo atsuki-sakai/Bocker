@@ -481,11 +481,11 @@
     "exclusionMenu": {
       "title": "Excluded menus",
       "noSelection": "No selection",
-      "selectAll": "Select all",
+      "selectAll": "Select all in view",
       "selectedCount": "{count} selected",
       "noMenus": "No registered menus.",
-      "clearAll": "Clear all",
-      "selectAllButton": "Select all",
+      "clearAll": "Clear all selected",
+      "selectAllButton": "Select all menus in view",
       "searchPlaceholder": "Search menus...",
       "loadMore": "Load more"
     },

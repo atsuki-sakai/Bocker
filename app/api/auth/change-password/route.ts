@@ -8,6 +8,7 @@ import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { LOGIN_SESSION_KEY } from '@/services/line/constants';
 import { PasswordChangedEmail } from '@/components/emails/PasswordChangedEmail';
 import { getEnv } from '@/lib/env-config';
+import { ActiveCustomerType } from '@/convex/types';
 
 export const runtime = 'nodejs';
 
@@ -24,6 +25,7 @@ interface SessionPayload {
   email: string;
   tenantId: string;
   orgId: string;
+  target_type?: ActiveCustomerType | null | undefined;
 }
 
 const resend = new Resend(getEnv('RESEND_API_KEY'));

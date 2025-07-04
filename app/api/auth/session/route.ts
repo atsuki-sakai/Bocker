@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
       email: customer.email || '',
       tenantId: validatedData.tenantId,
       orgId: validatedData.orgId,
+      target_type: customer.customer_type as SessionPayload['target_type'],
     };
 
     // JWTトークンを生成
