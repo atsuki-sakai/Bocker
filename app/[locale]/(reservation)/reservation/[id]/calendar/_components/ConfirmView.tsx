@@ -46,6 +46,12 @@ type ConfirmViewProps = {
   selectedTime: TimeRange | null
   // クーポン関連のpropsを追加
   onApplyCoupon?: (discount: number, couponId: Id<'coupon'>) => void
+  // 選択済みクーポン情報を追加
+  appliedCouponInfo?: {
+    discount: number
+    couponId: Id<'coupon'> | null
+    couponName?: string
+  } | null
 }
 
 export const ConfirmView = ({
@@ -60,6 +66,7 @@ export const ConfirmView = ({
   selectedDate,
   selectedTime,
   onApplyCoupon,
+  appliedCouponInfo,
 }: ConfirmViewProps) => {
   const menuTotalPrice = selectedMenus.reduce((total: number, menu: Doc<'menu'>) => {
     return total + (menu.sale_price ? menu.sale_price : menu.unit_price || 0)
@@ -192,7 +199,7 @@ export const ConfirmView = ({
 
       console.log('割引額:', discountAmount)
       console.log('合計金額:', totalAmount + extraCharge)
-      
+
       // 割引額が合計金額を超えていないかチェック
       if (discountAmount > totalAmount + extraCharge) {
         setCouponError('割引金額が合計金額を超えています。')
@@ -202,7 +209,7 @@ export const ConfirmView = ({
 
       setAppliedCoupon({
         code: couponCode,
-        discount: discountAmount,  // 割引額を設定
+        discount: discountAmount, // 割引額を設定
         name: coupon.name + formattedDiscount,
       })
       if (onApplyCoupon) {
@@ -226,7 +233,7 @@ export const ConfirmView = ({
   }
 
   // 合計金額から割引を計算（ポイントとクーポン）
-  const totalDiscount = usePoints + (appliedCoupon?.discount || 0)
+  const totalDiscount = usePoints + (appliedCouponInfo?.discount || appliedCoupon?.discount || 0)
   const finalAmount = totalAmount + extraCharge - totalDiscount
 
   // オプションを選択数でグループ化
@@ -300,7 +307,9 @@ export const ConfirmView = ({
               <div>
                 <p className="text-base font-bold mb-3 text-primary">スタッフ</p>
                 <div className="text-sm md:text-base pl-4 flex justify-between items-start text-muted-foreground">
-                  <span className="flex-grow mr-2">{selectedStaff === 'free' ? '指名フリー' : selectedStaff.name}</span>
+                  <span className="flex-grow mr-2">
+                    {selectedStaff === 'free' ? '指名フリー' : selectedStaff.name}
+                  </span>
                   {extraCharge > 0 ? (
                     <span className="text-muted-foreground text-nowrap text-right">
                       指名料 / ¥{extraCharge.toLocaleString()}
@@ -343,41 +352,63 @@ export const ConfirmView = ({
         </div>
 
         <div className="space-y-2 border-t pt-4">
-          <div>
-            <p className="font-bold mb-2">クーポンコードを使用する</p>
-            <div className="flex space-x-2">
-              <Input
-                placeholder="クーポンコード"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                disabled={!!appliedCoupon || isValidatingCoupon}
-                className={couponError ? 'border-destructive' : ''}
-              />
-              {!appliedCoupon ? (
-                <Button
-                  onClick={handleApplyCoupon}
-                  disabled={!couponCode.trim() || isValidatingCoupon}
-                  className="whitespace-nowrap"
-                >
-                  {isValidatingCoupon ? '確認中...' : '適用する'}
-                </Button>
-              ) : (
-                <Button variant="outline" onClick={handleResetCoupon} className="whitespace-nowrap">
-                  リセット
-                </Button>
+          {/* 選択済みクーポンがない場合のみクーポン入力欄を表示 */}
+          {!appliedCouponInfo?.couponId && (
+            <div>
+              <p className="font-bold mb-2">クーポンコードを使用する</p>
+              <div className="flex space-x-2">
+                <Input
+                  placeholder="クーポンコード"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  disabled={!!appliedCoupon || isValidatingCoupon}
+                  className={couponError ? 'border-destructive' : ''}
+                />
+                {!appliedCoupon ? (
+                  <Button
+                    onClick={handleApplyCoupon}
+                    disabled={!couponCode.trim() || isValidatingCoupon}
+                    className="whitespace-nowrap"
+                  >
+                    {isValidatingCoupon ? '確認中...' : '適用する'}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={handleResetCoupon}
+                    className="whitespace-nowrap"
+                  >
+                    リセット
+                  </Button>
+                )}
+              </div>
+              {couponError && <p className="text-destructive text-sm mt-1">{couponError}</p>}
+              {appliedCoupon && (
+                <div className="mt-2 p-2 bg-accent-2-foreground border border-accent-2 rounded-md">
+                  <p className="text-accent-2 text-sm flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    クーポン「{appliedCoupon.name}」が適用されました（
+                    {appliedCoupon.discount.toLocaleString()}円割引）
+                  </p>
+                </div>
               )}
             </div>
-            {couponError && <p className="text-destructive text-sm mt-1">{couponError}</p>}
-            {appliedCoupon && (
+          )}
+
+          {/* 選択済みクーポンがある場合の表示 */}
+          {appliedCouponInfo?.couponId && (
+            <div>
+              <p className="font-bold mb-2">適用済みクーポン</p>
               <div className="mt-2 p-2 bg-accent-2-foreground border border-accent-2 rounded-md">
                 <p className="text-accent-2 text-sm flex items-center">
                   <CheckCircle className="h-4 w-4 mr-1" />
-                  クーポン「{appliedCoupon.name}」が適用されました（
-                  {appliedCoupon.discount.toLocaleString()}円割引）
+                  クーポン「{appliedCouponInfo.couponName || 'クーポン'}」が適用されました（
+                  {appliedCouponInfo.discount.toLocaleString()}円割引）
                 </p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
           <div className="space-y-2 pt-6">
             <div className="flex justify-between">
               <p>商品金額</p>
@@ -393,10 +424,13 @@ export const ConfirmView = ({
               <p>ポイント割引</p>
               <p>-¥{usePoints.toLocaleString()}</p>
             </div>
-            {appliedCoupon && (
+            {/* 選択済みクーポンまたは手動入力クーポンの割引を表示 */}
+            {(appliedCouponInfo?.discount || appliedCoupon?.discount) && (
               <div className="flex justify-between text-accent-2">
                 <p>クーポン割引</p>
-                <p>-¥{appliedCoupon.discount.toLocaleString()}</p>
+                <p>
+                  -¥{(appliedCouponInfo?.discount || appliedCoupon?.discount || 0).toLocaleString()}
+                </p>
               </div>
             )}
             <div className="flex justify-between text-lg text-muted-foreground">
