@@ -488,11 +488,15 @@ export default function ReservationTimeLine() {
   })
 
   // ■ 今日から2週間後までの予約件数を取得
-  const today = new Date()
-  today.setHours(0, 0, 0, 0) // 時刻をリセット
-  const twoWeeksLater = addDays(today, 13) // 今日を含めて14日間
-  const startDateStr = format(today, 'yyyy-MM-dd')
-  const endDateStr = format(twoWeeksLater, 'yyyy-MM-dd')
+  const today = useMemo(() => {
+    const date = new Date()
+    date.setHours(0, 0, 0, 0) // 時刻をリセット
+    return date
+  }, []) // 空の依存配列でコンポーネントマウント時のみ実行
+  
+  const twoWeeksLater = useMemo(() => addDays(today, 13), [today]) // 今日を含めて14日間
+  const startDateStr = useMemo(() => format(today, 'yyyy-MM-dd'), [today])
+  const endDateStr = useMemo(() => format(twoWeeksLater, 'yyyy-MM-dd'), [twoWeeksLater])
 
   const reservationCountsData = useQuery(
     api.reservation.query.getReservationCountsByDateRange,
