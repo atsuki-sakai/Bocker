@@ -1766,3 +1766,60 @@ export const getBestAvailableStaffForTimeSlot = query({
     return await findBestAvailableStaffForTimeSlot(ctx, args)
   },
 })
+
+/**
+ * 指定期間内の日毎の予約件数を取得
+ * - タイムライン画面での予約件数表示とカレンダー表示用
+ * - confirmed ステータスのみを対象
+ * - 日付ごとの件数を軽量に返す
+ */
+export const getReservationCountsByDateRange = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    start_date: v.string(), // YYYY-MM-DD
+    end_date: v.string(),   // YYYY-MM-DD
+  },
+  returns: v.array(v.object({
+    date: v.string(),
+    count: v.number(),
+  })),
+  handler: async (ctx, args) => {
+    checkAuth(ctx)
+    validateDateStrFormat(args.start_date, 'start_date')
+    validateDateStrFormat(args.end_date, 'end_date')
+    
+    // 指定期間の予約を一度に取得（最小限のフィールドのみ）
+    const reservations = await ctx.db
+      .query('reservation')
+      .withIndex('by_tenant_org_date_status_archive', (q) =>
+        q
+          .eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .gte('date', args.start_date)
+          .lte('date', args.end_date)
+      )
+      .filter((q) => 
+        q.and(
+          q.eq(q.field('is_archive'), false),
+          q.eq(q.field('status'), 'confirmed')
+        )
+      )
+      .collect()
+    
+    // 日付ごとに集計（Map使用でO(n)で処理）
+    const dateCounts = new Map<string, number>()
+    
+    reservations.forEach(reservation => {
+      const date = reservation.date
+      dateCounts.set(date, (dateCounts.get(date) || 0) + 1)
+    })
+    
+    // 結果を配列形式に変換してソート
+    const result = Array.from(dateCounts.entries())
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+    
+    return result
+  },
+})

@@ -9,11 +9,10 @@ import { z } from 'zod'
 import { useDebounce } from 'use-debounce'
 import Image from 'next/image'
 import { ja } from 'date-fns/locale'
-import { TagInput, DatePicker } from '@/components/common'
+import { DatePicker } from '@/components/common'
 import { Textarea } from '@/components/ui/textarea'
 import { getDayOfWeek, formatTimestamp } from '@/lib/schedules'
 import { convertGender, ReservationMenu, ReservationOption } from '@/convex/types'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { useTranslations } from 'next-intl'
@@ -46,25 +45,41 @@ import type { TimeRange } from '@/lib/types'
 
 import * as React from 'react'
 import { format } from 'date-fns'
-import { CalendarIcon } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Command, CommandList, CommandItem } from '@/components/ui/command'
+import { CommandItem } from '@/components/ui/command'
 import { Label } from '@/components/ui/label'
-import { Loader2, X, Plus, Minus } from 'lucide-react'
+import {
+  Loader2,
+  Plus,
+  Minus,
+  ChevronRight,
+  Check,
+  User,
+  Clock,
+  ShoppingBag,
+  CreditCard,
+  Filter,
+} from 'lucide-react'
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useZodForm } from '@/hooks/useZodForm'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { ZodTextField } from '@/components/common'
 import { Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { usePriceCalculation } from '@/hooks/usePriceCalculation'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Progress } from '@/components/ui/progress'
+import { Badge } from '@/components/ui/badge'
 
-import { RESERVATION_STATUS_VALUES, PAYMENT_METHOD_VALUES, GENDER_VALUES } from '@/convex/types'
+import {
+  RESERVATION_STATUS_VALUES,
+  PAYMENT_METHOD_VALUES,
+  GENDER_VALUES,
+  MENU_CATEGORY_VALUES,
+  MenuCategory,
+} from '@/convex/types'
 const schemaReservation = z
   .object({
     customer_id: z.string().optional(), // 顧客ID
@@ -127,6 +142,21 @@ const schemaReservation = z
     {
       message: 'newCustomerValidation', // 新規顧客の場合、姓・名・電話番号は必須です
       path: ['customer_first_name'], // エラー表示位置（必要に応じて他も追加可）
+    }
+  )
+  .refine(
+    (data) => {
+      // 既存顧客の場合、顧客IDまたは選択された顧客が必要
+      // 新規顧客の場合、必要な情報が入力されている必要
+      if (data.is_existing_customer) {
+        return !!data.customer_id
+      } else {
+        return !!data.customer_first_name && !!data.customer_last_name && !!data.customer_phone
+      }
+    },
+    {
+      message: 'customerRequired', // 顧客の選択または新規顧客情報の入力が必要です
+      path: ['customer_id'],
     }
   )
 
@@ -217,16 +247,65 @@ const MenuSelectionItem = React.memo(
 )
 MenuSelectionItem.displayName = 'MenuSelectionItem'
 
+// ─────────────────────────────────────────────
+// 顧客情報を表示用にフォーマットするユーティリティ関数
+// ─────────────────────────────────────────────
+const formatCustomerDisplay = (customer: RowType<'customer'>): string => {
+  const parts: string[] = []
+  // 姓・名（"未登録" は除外）
+  if (customer.last_name && customer.last_name !== '未登録') {
+    parts.push(customer.last_name)
+  }
+  if (customer.first_name && customer.first_name !== '未登録') {
+    parts.push(customer.first_name)
+  }
+
+  // 名前が取得できない場合は LINE 名またはメールアドレスを使用
+  if (parts.length === 0) {
+    if (customer.line_user_name && customer.line_user_name !== '未登録') {
+      parts.push(customer.line_user_name)
+    } else if (customer.email) {
+      parts.push(customer.email)
+    }
+  }
+
+  // 電話番号を追加
+  if (customer.phone) {
+    parts.push(`tel:${customer.phone}`)
+  }
+
+  // 半角スペース区切りで連結
+  return parts.join(' ')
+}
+
+// ステップの定義
+const STEPS = {
+  MENU: 1,
+  STAFF: 2,
+  DATETIME: 3,
+  CUSTOMER: 4,
+} as const
+
+type StepType = (typeof STEPS)[keyof typeof STEPS]
+
+const stepConfig = [
+  { id: STEPS.MENU, title: 'メニュー選択', icon: ShoppingBag },
+  { id: STEPS.STAFF, title: 'スタッフ選択', icon: User },
+  { id: STEPS.DATETIME, title: '日時選択', icon: Clock },
+  { id: STEPS.CUSTOMER, title: 'お客様情報', icon: CreditCard },
+]
+
 export default function ReservationForm() {
   const { tenantId, orgId } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const router = useRouter()
   const t = useTranslations('reservations')
   const tCommon = useTranslations('common')
+  const [currentStep, setCurrentStep] = useState<StepType>(STEPS.MENU)
   const [isExistingCustomer, setIsExistingCustomer] = useState<boolean>(true)
   // 複数選択に対応するためにstateを配列に変更
   const [selectedMenus, setSelectedMenus] = useState<ReservationMenu[]>([])
-  const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null)
+  const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | 'free' | null>(null)
   const [selectdate, setSelectDate] = useState<Date | null>(null)
   const [selectTime, setSelectTime] = useState<{
     startTimeUnix: number | undefined
@@ -235,11 +314,8 @@ export default function ReservationForm() {
   const [searchName, setSearchName] = useState<string>('')
   const [debouncedSearchName] = useDebounce(searchName, 1000)
   const [selectedOptions, setSelectedOptions] = useState<ReservationOption[]>([])
-  const [calendarOpen, setCalendarOpen] = useState(false)
-  // メニュー & オプションのポップオーバー
-  const [menuPopoverOpen, setMenuPopoverOpen] = useState(false)
-  const [optionPopoverOpen, setOptionPopoverOpen] = useState(false)
-  const [customerPopoverOpen, setCustomerPopoverOpen] = useState(false)
+  // カテゴリーフィルター用のstate
+  const [selectedCategories, setSelectedCategories] = useState<MenuCategory[]>([])
   // メニュー選択の上限（数量合計）
   const MAX_MENU_ITEMS = 5
   // オプション選択の上限（ユニーク件数）
@@ -262,6 +338,18 @@ export default function ReservationForm() {
         }
       : 'skip'
   )
+
+  // フィルタリングされたメニューを計算
+  const filteredMenus = useMemo(() => {
+    if (!initialFormData?.menus) return []
+    if (selectedCategories.length === 0) return initialFormData.menus
+
+    return initialFormData.menus.filter(
+      (menu) =>
+        menu.categories &&
+        menu.categories.some((category) => selectedCategories.includes(category as MenuCategory))
+    )
+  }, [initialFormData?.menus, selectedCategories])
 
   // スタッフデータ取得（メニュー選択後）
   const staffFormData = useQuery(
@@ -289,7 +377,7 @@ export default function ReservationForm() {
   // useQuery が 'skip' を返すケースに備えて配列でラップし、予期せぬ型エラーを防ぐ
   const staffWeekSchedulesRaw = useQuery(
     api.staff.week_schedule.query.getByTenantOrgStaff,
-    tenantId && orgId && selectedStaffId
+    tenantId && orgId && selectedStaffId && selectedStaffId !== 'free'
       ? {
           tenant_id: tenantId,
           org_id: orgId,
@@ -330,7 +418,7 @@ export default function ReservationForm() {
 
   // 選択中のスタッフが利用可能なスタッフリストに含まれているかチェック
   useEffect(() => {
-    if (selectedStaffId && availableStaff.length > 0) {
+    if (selectedStaffId && selectedStaffId !== 'free' && availableStaff.length > 0) {
       const isStaffAvailable = availableStaff.some((staff) => staff._id === selectedStaffId)
       if (!isStaffAvailable) {
         // 選択中のスタッフが新しいメニューセットに対応できない場合のみリセット
@@ -344,7 +432,7 @@ export default function ReservationForm() {
   // 時間スロットの状態を追加
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeRange[]>([])
   // 選択した日付を "yyyy-MM-dd" 形式で保持
-  const formattedDate = selectdate ? format(selectdate, 'yyyy-MM-dd') : ''
+  const formattedDate = selectdate ? format(selectdate!, 'yyyy-MM-dd') : ''
 
   // 顧客検索の最適化されたコールバック
   const searchCustomers = useCallback(async () => {
@@ -433,7 +521,7 @@ export default function ReservationForm() {
     selectedOptions,
     menus,
     options,
-    selectedStaffId,
+    selectedStaffId: selectedStaffId === 'free' ? null : selectedStaffId,
     availableStaff,
   })
 
@@ -451,28 +539,59 @@ export default function ReservationForm() {
 
     try {
       // 日付をYYYY-MM-DD形式に変換
-      const formattedDate = format(selectdate, 'yyyy-MM-dd')
+      const formattedDate = format(selectdate!, 'yyyy-MM-dd')
 
-      // 空き時間スロットを取得
-      const result = await fetchQuery(api.reservation.query.calculateReservationTime, {
-        tenant_id: tenantId,
-        org_id: orgId,
-        staff_id: selectedStaffId,
-        date: formattedDate,
-        duration_min: totalTimeMinutes,
-      })
+      if (selectedStaffId === 'free') {
+        // 指名フリーの場合は統合空き時間を取得
+        const result = await fetchQuery(api.reservation.query.calculateIntegratedAvailableTimes, {
+          tenant_id: tenantId,
+          org_id: orgId,
+          menu_ids: selectedMenus.map((m) => m.id),
+          option_ids: selectedOptions.map((o) => o.id),
+          date: formattedDate,
+        })
 
-      // 結果が配列で返され、選択したスタッフのスロットを含む場合
-      if (Array.isArray(result) && result.length > 0) {
-        setAvailableTimeSlots(result)
+        if (result.available && result.timeSlots) {
+          // 統合スロットをTimeRange形式に変換
+          const timeRanges = result.timeSlots.map((slot) => ({
+            startHour: slot.start,
+            endHour: slot.end,
+          }))
+          setAvailableTimeSlots(timeRanges)
+        } else {
+          setAvailableTimeSlots([])
+        }
       } else {
-        setAvailableTimeSlots([])
+        // 通常のスタッフ指名の場合
+        const result = await fetchQuery(api.reservation.query.calculateReservationTime, {
+          tenant_id: tenantId,
+          org_id: orgId,
+          staff_id: selectedStaffId,
+          date: formattedDate,
+          duration_min: totalTimeMinutes,
+        })
+
+        // 結果が配列で返され、選択したスタッフのスロットを含む場合
+        if (Array.isArray(result) && result.length > 0) {
+          setAvailableTimeSlots(result)
+        } else {
+          setAvailableTimeSlots([])
+        }
       }
     } catch (error) {
       showErrorToast(error)
       setAvailableTimeSlots([])
     }
-  }, [selectedStaffId, tenantId, orgId, selectdate, totalTimeMinutes, showErrorToast])
+  }, [
+    selectedStaffId,
+    tenantId,
+    orgId,
+    selectdate,
+    totalTimeMinutes,
+    selectedMenus,
+    selectedOptions,
+    showErrorToast,
+  ])
 
   // 時間スロット取得の実行
   useEffect(() => {
@@ -488,10 +607,6 @@ export default function ReservationForm() {
   )
 
   // 選択中メニュー ID を一意にした配列
-  const uniqMenuIds = React.useMemo(
-    () => Array.from(new Set(selectedMenus.map((m) => m.id))),
-    [selectedMenus]
-  )
 
   const calcMenuSubTotal = React.useCallback(
     (ids: Id<'menu'>[]) =>
@@ -545,16 +660,6 @@ export default function ReservationForm() {
   )
 
   // 指定メニュー ID をすべて取り除く
-  const removeMenuAll = (menuId: Id<'menu'>) => {
-    const newMenus = selectedMenus.filter((m) => m.id !== menuId)
-    setSelectedMenus(newMenus)
-    setValue('menus', newMenus)
-    setValue('unit_price', calcMenuSubTotal(newMenus.map((m) => m.id)))
-    if (newMenus.length === 0) {
-      setSelectedStaffId(null)
-      setValue('staff_id', '')
-    }
-  }
 
   const getOptionCount = React.useCallback(
     (id: Id<'option'>) => selectedOptions.find((o) => o.id === id)?.quantity ?? 0,
@@ -588,6 +693,44 @@ export default function ReservationForm() {
     setSelectedOptions(newOpts)
     setValue('options', newOpts)
   }
+
+  // ステップナビゲーション関数
+  const canProceedToNextStep = useCallback(() => {
+    switch (currentStep) {
+      case STEPS.MENU:
+        return selectedMenus.length > 0
+      case STEPS.STAFF:
+        return selectedStaffId !== null
+      case STEPS.DATETIME:
+        return selectdate !== null && selectTime !== null
+      case STEPS.CUSTOMER:
+        return isExistingCustomer
+          ? selectedCustomer !== null
+          : watch('customer_first_name') && watch('customer_last_name') && watch('customer_phone')
+      default:
+        return false
+    }
+  }, [
+    currentStep,
+    selectedMenus,
+    selectedStaffId,
+    selectdate,
+    selectTime,
+    isExistingCustomer,
+    selectedCustomer,
+    watch,
+  ])
+
+  const goToNextStep = useCallback(() => {
+    if (canProceedToNextStep()) {
+      setCurrentStep((prev) => Math.min(prev + 1, STEPS.CUSTOMER) as StepType)
+    }
+  }, [canProceedToNextStep])
+
+  const goToPreviousStep = useCallback(() => {
+    setCurrentStep((prev) => Math.max(prev - 1, STEPS.MENU) as StepType)
+  }, [])
+
   const onSubmit = async (data: z.infer<typeof schemaReservation>) => {
     if (!tenantId || !orgId) return
     try {
@@ -641,16 +784,56 @@ export default function ReservationForm() {
         trimmedCustomerName === ''
           ? (selectedCustomer?.email ?? selectedCustomer?.line_user_name)
           : customerName
+
+      // 指名フリーの場合のスタッフ取得
+      let finalStaffId = selectedStaffId
+      let assignedStaffName = selectStaff?.name ?? ''
+
+      if (selectedStaffId === 'free') {
+        try {
+          const bestStaff = await fetchQuery(
+            api.reservation.query.getBestAvailableStaffForTimeSlot,
+            {
+              tenant_id: tenantId,
+              org_id: orgId,
+              menu_ids: selectedMenus.map((m) => m.id),
+              date: format(selectdate as Date, 'yyyy-MM-dd'),
+              start_time_unix: data.start_time_unix as number,
+              end_time_unix: data.end_time_unix as number,
+            }
+          )
+          finalStaffId = bestStaff?.staff_id || (availableStaff[0]?._id as Id<'staff'>)
+
+          // 割り当てられたスタッフの詳細情報を取得してスタッフ名を設定
+          try {
+            const assignedStaff = await fetchQuery(api.staff.query.getById, {
+              id: finalStaffId as Id<'staff'>,
+            })
+            assignedStaffName = assignedStaff?.name ?? '指名フリー'
+          } catch (staffError) {
+            console.error('Failed to get assigned staff details:', staffError)
+            // フォールバック: 利用可能スタッフリストから名前を取得
+            const fallbackStaff = availableStaff.find((staff) => staff._id === finalStaffId)
+            assignedStaffName = fallbackStaff?.name ?? '指名フリー'
+          }
+        } catch (error) {
+          console.error('Failed to get best staff:', error)
+          finalStaffId = availableStaff[0]?._id as Id<'staff'>
+          // フォールバック時のスタッフ名も設定
+          assignedStaffName = availableStaff[0]?.name ?? '指名フリー'
+        }
+      }
+
       await fetchMutation(api.reservation.manage.handleReservationManage, {
         mode: 'create',
         payload: {
           tenant_id: tenantId,
           org_id: orgId,
           customer_id: isExistingCustomer ? (selectedCustomer?.uid ?? '') : (customerUid ?? ''),
-          staff_id: selectedStaffId as Id<'staff'>,
+          staff_id: finalStaffId as Id<'staff'>,
           customer_name: finalCustomerName ?? selectedCustomer?.phone ?? '不明',
-          staff_name: selectStaff?.name ?? '',
-          is_free_nomination: false,
+          staff_name: assignedStaffName,
+          is_free_nomination: selectedStaffId === 'free',
           status: 'confirmed',
           date: format(selectdate as Date, 'yyyy-MM-dd'),
           start_time_unix: data.start_time_unix as number,
@@ -679,7 +862,10 @@ export default function ReservationForm() {
     }
   }
 
-  const selectStaff = availableStaff.find((staff) => staff._id === selectedStaffId)
+  const selectStaff =
+    selectedStaffId === 'free'
+      ? null
+      : availableStaff.find((staff) => staff._id === selectedStaffId)
 
   const toDate = reservationConfig?.reservation_limit_days
     ? new Date(
@@ -690,7 +876,50 @@ export default function ReservationForm() {
   if (!tenantId || !orgId) return <Loading />
 
   return (
-    <div className="container mx-auto relative">
+    <div className="container mx-auto relative max-w-4xl">
+      {/* プログレスバー */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          {stepConfig.map((step, index) => (
+            <div key={step.id} className="flex items-center flex-1">
+              <div className="flex items-center">
+                <motion.div
+                  initial={{ scale: 0.8 }}
+                  animate={{
+                    scale: currentStep >= step.id ? 1 : 0.8,
+                    backgroundColor:
+                      currentStep >= step.id ? 'rgb(var(--accent-2))' : 'rgb(var(--muted))',
+                  }}
+                  className={cn(
+                    'w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300',
+                    currentStep >= step.id ? 'text-accent-2-foreground' : 'text-muted-foreground'
+                  )}
+                >
+                  {currentStep > step.id ? (
+                    <Check className="w-5 h-5" />
+                  ) : (
+                    <step.icon className="w-5 h-5" />
+                  )}
+                </motion.div>
+                <span
+                  className={cn(
+                    'ml-3 text-sm font-medium hidden sm:block',
+                    currentStep >= step.id ? 'text-accent-2' : 'text-muted-foreground'
+                  )}
+                >
+                  {step.title}
+                </span>
+              </div>
+              {index < stepConfig.length - 1 && (
+                <div className="flex-1 mx-4">
+                  <Progress value={currentStep > step.id ? 100 : 0} className="h-1" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       <form
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={(e) => {
@@ -699,822 +928,739 @@ export default function ReservationForm() {
           }
         }}
       >
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col items-start gap-2 mt-4">
-              <p className="text-muted-foreground text-sm font-bold">{t('customerType')}</p>
-              <ToggleGroup
-                type="single"
-                className="w-fit"
-                value={isExistingCustomer ? 'existing' : 'new'}
-                onValueChange={(value) => {
-                  const isExisting = value === 'existing'
-                  setIsExistingCustomer(isExisting)
-                  setValue('is_existing_customer', isExisting)
-                  // 新規顧客から既存顧客に切り替えた場合、新規顧客フィールドをクリア
-                  if (isExisting) {
-                    setValue('customer_first_name', undefined)
-                    setValue('customer_last_name', undefined)
-                    setValue('customer_phone', undefined)
-                    setValue('customer_gender', undefined)
-                    setValue('customer_birthday', undefined)
-                    setValue('customer_tags', undefined)
-                    setValue('customer_notes', undefined)
-                  }
-                }}
-              >
-                <ToggleGroupItem className="border border-border" value="existing">
-                  {t('existingCustomer')}
-                </ToggleGroupItem>
-                <ToggleGroupItem className="border border-border" value="new">
-                  {t('newCustomer')}
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </div>
-            {isExistingCustomer ? (
-              <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
-                <div className="flex flex-col items-start gap-2">
-                  <div className="flex flex-col items-start gap-2">
-                    <div className="flex items-center text-xl gap-2">
-                      <p className="text-primary font-bold">{t('customerSearch')}</p>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="min-h-[500px]"
+          >
+            {/* ステップ1: メニュー選択 */}
+            {currentStep === STEPS.MENU && (
+              <div className="space-y-6">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+                  <h2 className="text-2xl font-bold mb-2">{t('reservationMenus')}</h2>
+                  <p className="text-muted-foreground mb-6">{t('menuSelectionLimit')}</p>
+
+                  {/* カテゴリーフィルター */}
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Filter className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">カテゴリーで絞り込み</span>
                     </div>
-                    <p className="text-muted-foreground text-xs">{t('customerOptional')}</p>
-                  </div>
-                  <Input
-                    className="w-full my-3"
-                    placeholder={t('searchCustomer')}
-                    value={searchName}
-                    onChange={(e) => setSearchName(e.target.value)}
-                  />
-                </div>
-                {isLoadingCustomers ? (
-                  <div className="flex items-center justify-center p-4 rounded-md">
-                    <Loader2 className="h-5 w-5 animate-spin mr-2 text-accent-2" />
-                    <span className="text-accent-2 text-sm">{t('searching')}</span>
-                  </div>
-                ) : customers && customers.length > 0 ? (
-                  <div>
-                    <p className="text-primary text-sm font-bold mb-1">{t('searchResults')}</p>
-                    <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <p className="text-primary text-sm mb-1 border border-border p-2 rounded-md bg-input">
-                          {t('selectMatchingCustomer')}
-                        </p>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-full p-2 overflow-y-auto h-fit"
-                        onOpenAutoFocus={(event) => event.preventDefault()}
-                      >
-                        <Command>
-                          <div className="flex items-center justify-between border-b">
-                            <p className="text-muted-foreground text-sm">{t('searchResults')}</p>
-                            <button
-                              type="button"
-                              onClick={() => setCustomerPopoverOpen(false)}
-                              className="p-2 text-muted-foreground "
-                            >
-                              <X className="w-4 h-4" aria-hidden="true" />
-                              <span className="sr-only">{tCommon('close')}</span>
-                            </button>
-                          </div>
-                          <CommandList className="max-h-[300px] py-2 overflow-y-auto">
-                            {customers.map((customer) => {
-                              return (
-                                <CommandItem
-                                  key={customer.uid}
-                                  className="flex items-center justify-between cursor-pointer"
-                                  onSelect={() => {
-                                    setSelectedCustomer(customer)
-                                    setCustomerPopoverOpen(false)
-                                  }}
-                                >
-                                  <div className="flex items-start gap-1 text-xs">
-                                    {customer.last_name && customer.last_name !== '未登録'
-                                      ? customer.last_name + ' '
-                                      : ''}
-                                    {customer.first_name && customer.first_name !== '未登録'
-                                      ? customer.first_name + ' '
-                                      : ''}
-                                    {customer.line_user_name && customer.line_user_name !== '未登録'
-                                      ? customer.line_user_name + '　'
-                                      : ''}
-                                    {customer.phone ? 'tel:' + customer.phone : ''}
-                                  </div>
-                                </CommandItem>
-                              )
-                            })}
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                ) : searchName.length > 0 ? (
-                  <p className="text-warning-foreground text-sm text-center bg-warning border border-warning-foreground p-4 rounded-md">
-                    {t('noCustomersFound')}
-                  </p>
-                ) : (
-                  <p className="text-muted-foreground text-sm text-center bg-muted border border-border p-4 rounded-md">
-                    {t('searchCustomerPlaceholder')}
-                  </p>
-                )}
-                {selectedCustomer && (
-                  <div className="flex flex-col gap-2 mt-2 bg-accent-2-foreground border border-accent-2 p-3 rounded-md">
-                    <p className="text-accent-2 text-sm font-bold">{t('reservationCustomer')}</p>
-                    <p className="text-accent-2 text-sm">
-                      {selectedCustomer.last_name ? selectedCustomer.last_name + ' ' : null}
-                      {selectedCustomer.first_name ? selectedCustomer.first_name + ' ' : null}
-                      {selectedCustomer.line_user_name
-                        ? selectedCustomer.line_user_name + '　'
-                        : null}
-                      {selectedCustomer.phone ? 'tel:' + selectedCustomer.phone : null}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
-                <h4 className="text-primary text-xl font-bold">{t('customerInfo')}</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <ZodTextField
-                    register={register}
-                    name="customer_last_name"
-                    placeholder={t('lastName')}
-                    className="w-full"
-                    errors={errors}
-                    label={t('lastName')}
-                  />
-                  <ZodTextField
-                    register={register}
-                    name="customer_first_name"
-                    placeholder={t('firstName')}
-                    className="w-full"
-                    errors={errors}
-                    label={t('firstName')}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <ZodTextField
-                    register={register}
-                    type="tel"
-                    name="customer_phone"
-                    placeholder={t('tel')}
-                    className="w-full"
-                    errors={errors}
-                    label={t('tel')}
-                  />
-                  <div className="flex flex-col">
-                    <Label className="text-sm ml-2">{tCommon('gender')}</Label>
-                    <Select
-                      value={watch('customer_gender') ?? ''}
-                      onValueChange={(value: string) => {
-                        setValue('customer_gender', value as Gender)
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={tCommon('gender')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GENDER_VALUES.map((gender) => (
-                          <SelectItem key={gender} value={gender}>
-                            {convertGender(gender, true)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-sm ml-2">{tCommon('birthday')}</Label>
-                  <DatePicker
-                    value={
-                      watch('customer_birthday') ? new Date(watch('customer_birthday')!) : undefined
-                    }
-                    onChange={(date) =>
-                      setValue('customer_birthday', date ? format(date, 'yyyy-MM-dd') : '')
-                    }
-                    placeholder={tCommon('birthdayPlaceholder')}
-                    toDate={new Date()} // 未来の日付は選択不可
-                  />
-                </div>
-                <TagInput
-                  tags={watch('customer_tags') ?? []}
-                  setTagsAction={(value: string[]) => setValue('customer_tags', value)}
-                />
-                <Textarea
-                  placeholder={tCommon('notes')}
-                  rows={8}
-                  value={watch('customer_notes') ?? ''}
-                  onChange={(e) => setValue('customer_notes', e.target.value)}
-                />
-              </div>
-            )}
-            <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
-              <div className="flex items-center gap-2">
-                <p className="text-primary font-bold text-xl">{t('reservationMenus')}</p>
-              </div>
-              <span className="text-muted-foreground text-xs">{t('menuSelectionLimit')}</span>
-              <Popover open={menuPopoverOpen} onOpenChange={setMenuPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="mt-2 w-full justify-start h-fit border border-border"
-                  >
-                    {selectedMenus.length > 0 ? (
-                      <span className="flex flex-wrap gap-1">
-                        {uniqMenuIds.map((id) => {
-                          const m = menus?.find((m) => m._id === id)
-                          return m ? (
-                            <Badge key={id} className="py-1 px-2">
-                              {m.name}
-                            </Badge>
-                          ) : null
-                        })}
-                      </span>
-                    ) : (
-                      t('selectMenus')
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-full max-w-[calc(100vw-60px)] py-2 px-4 overflow-y-auto h-full "
-                  onOpenAutoFocus={(event) => event.preventDefault()}
-                >
-                  <Command>
-                    <div className="flex items-center justify-between border-b">
-                      <button
-                        type="button"
-                        onClick={() => setMenuPopoverOpen(false)}
-                        className="p-2"
-                      >
-                        <X className="w-4 h-4" aria-hidden="true" />
-                        <span className="sr-only">{tCommon('close')}</span>
-                      </button>
-                    </div>
-                    <CommandList className=" py-8 overflow-y-auto">
-                      {menus?.map((menu) => {
-                        const count = getMenuCount(menu._id)
+                    <div className="flex flex-wrap gap-2">
+                      {MENU_CATEGORY_VALUES.map((category) => {
+                        const isSelected = selectedCategories.includes(category)
                         return (
-                          <MenuSelectionItem
-                            key={menu._id}
-                            menu={menu}
-                            count={count}
-                            onAdd={() =>
-                              addMenu({
-                                id: menu._id,
-                                name: menu.name,
-                                price: menu.sale_price ?? menu.unit_price,
-                                quantity: 1,
-                              })
-                            }
-                            onRemove={() => removeMenu(menu._id)}
-                            disabled={selectedMenus.length >= MAX_MENU_ITEMS}
-                          />
+                          <Badge
+                            key={category}
+                            variant={isSelected ? 'default' : 'outline'}
+                            className={cn(
+                              'cursor-pointer transition-all',
+                              isSelected ? 'bg-accent-2 hover:bg-accent-2/90' : 'hover:bg-muted'
+                            )}
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedCategories((prev) => prev.filter((c) => c !== category))
+                              } else {
+                                setSelectedCategories((prev) => [...prev, category])
+                              }
+                            }}
+                          >
+                            {category}
+                            {isSelected && <Check className="w-3 h-3 ml-1" />}
+                          </Badge>
                         )
                       })}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              {errors.menus && <p className="text-destructive text-sm">{errors.menus.message}</p>}
-              {selectedMenus.length > 0 && (
-                <div className="mt-2 bg-accent-2-foreground p-3 rounded-md border border-accent-2">
-                  <Label className=" block text-accent-2 font-bold mb-2">
-                    {t('selectedMenus')}
-                  </Label>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {uniqMenuIds.map((menuId) => {
-                      const menu = menus?.find((m) => m._id === menuId)
-                      return menu ? (
-                        <div
-                          key={menuId}
-                          className="bg-background px-3 py-1 rounded-md flex items-center gap-2 border border-border"
+                      {selectedCategories.length > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className="cursor-pointer"
+                          onClick={() => setSelectedCategories([])}
                         >
-                          <span className="text-xs">
-                            {menu.name}
-                            {(() => {
-                              const c = getMenuCount(menuId)
-                              return c > 1 ? ` ×${c}` : ''
-                            })()}
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={() => removeMenuAll(menuId)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <X className="h-4 w-4 text-destructive" />
-                          </button>
-                        </div>
-                      ) : null
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          {selectedMenus.length > 0 && availableStaff.length > 0 && (
-            <div className="flex flex-col gap-2 mb-4 p-3 rounded-md border border-border">
-              {staffFormData === undefined && selectedMenus.length > 0 ? (
-                <div className="flex items-center justify-center p-4 rounded-md">
-                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-accent-2" />
-                  <span className="text-accent-2 text-sm">{t('searchingStaff')}</span>
-                </div>
-              ) : selectedMenus.length > 0 && availableStaff.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-primary text-xl font-bold">
-                      {t('staffForTreatment')}
-                    </Label>
-                  </div>
-                  <Select
-                    value={watch('staff_id') ?? ''}
-                    onValueChange={(value: string) => {
-                      setValue('staff_id', value)
-                      setSelectedStaffId(value as Id<'staff'>)
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('selectStaff')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableStaff.map((staff) => (
-                        <SelectItem key={staff._id} value={staff._id}>
-                          <span>{staff.name}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.staff_id && (
-                    <p className="text-destructive text-sm">{errors.staff_id.message}</p>
-                  )}
-                  {selectedStaffId && (
-                    <div className="flex flex-col bg-accent-2-foreground p-3 rounded-md border border-accent-2 mt-3">
-                      <p className="text-accent-2 text-sm font-bold mb-2">{t('selectedStaff')}</p>
-                      <div className="flex items-center gap-2">
-                        {selectStaff?.images?.[0]?.original_url ? (
-                          <Image
-                            src={selectStaff.images[0].original_url}
-                            alt={selectStaff?.name ?? ''}
-                            className="w-10 h-10 rounded-full object-cover"
-                            width={40}
-                            height={40}
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                            {selectStaff?.name?.slice(0, 1) ?? '?'}
-                          </div>
-                        )}
-                        <div className="flex flex-col">
-                          <p className="text-accent-2 font-bold text-sm">{selectStaff?.name}</p>
-                          <p className="text-accent-2 text-sm">
-                            {t('designationFee')} / ¥
-                            {selectStaff?.extra_charge
-                              ? selectStaff?.extra_charge.toLocaleString()
-                              : '0'}
-                          </p>
-                        </div>
-                      </div>
+                          すべてクリア
+                        </Badge>
+                      )}
                     </div>
-                  )}
-                </div>
-              ) : (
-                selectedMenus.length > 0 && (
-                  <div className="flex flex-col bg-destructive-foreground w-fit p-3 rounded-md border border-destructive">
-                    <p className="text-destructive text-sm">{t('noAvailableStaff')}</p>
                   </div>
-                )
-              )}
-            </div>
-          )}
-          {selectedMenus.length > 0 && (
-            <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
-              {selectedMenus.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-primary text-xl font-bold">{t('optionsOptional')}</Label>
-                  </div>
-                  <Popover open={optionPopoverOpen} onOpenChange={setOptionPopoverOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="mt-2 w-full justify-start h-fit border border-border"
-                      >
-                        {selectedOptions.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {selectedOptions.map((selectedOption) => {
-                              const option = options?.find((o) => o._id === selectedOption.id)
-                              return option ? (
-                                <Badge key={option._id} className="py-1 px-2">
-                                  {option?.name}
-                                </Badge>
-                              ) : null
-                            })}
-                          </div>
-                        ) : (
-                          t('selectOptions')
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-full max-w-[calc(100vw-60px)] p-2"
-                      onOpenAutoFocus={(event) => event.preventDefault()}
-                    >
-                      <Command>
-                        <div className="flex justify-between items-center w-full border-b">
-                          <button
-                            type="button"
-                            onClick={() => setOptionPopoverOpen(false)}
-                            className="p-2 text-muted-foreground hover:text-muted-foreground"
-                          >
-                            <X className="w-4 h-4" aria-hidden="true" />
-                            <span className="sr-only">{tCommon('close')}</span>
-                          </button>
-                        </div>
-                        <CommandList className="overflow-y-auto py-8">
-                          {options?.map((option) => {
-                            const count = getOptionCount(option._id)
-                            return (
-                              <CommandItem
-                                key={option._id}
-                                className="flex items-center justify-between w-full min-w-[250px]"
-                              >
-                                <div className="flex flex-col items-start gap-1 text-xs w-3/5">
-                                  <p className="text-sm text-wrap overflow-hidden whitespace-nowrap">
-                                    {option.name}
-                                  </p>
-                                  {option.duration_min && option.duration_min > 0 ? (
-                                    <p className="text-xs text-muted-foreground">
-                                      {option.duration_min}分
-                                    </p>
-                                  ) : null}
-                                </div>
-                                <div className="flex items-center gap-1 w-2/5">
-                                  <Button
-                                    size="icon"
-                                    variant="outline"
-                                    onClick={() => removeOption(option._id)}
-                                    disabled={count === 0}
-                                    className="p-1  border border-destructive hover:bg-destructive-foreground"
-                                  >
-                                    <Minus className="w-4 h-4 text-destructive" />
-                                  </Button>
-                                  <span className="w-5 text-center text-sm">{count}</span>
-                                  <Button
-                                    size="icon"
-                                    variant="outline"
-                                    onClick={() =>
-                                      addOption({
-                                        id: option._id,
-                                        name: option.name,
-                                        price:
-                                          option.unit_price ??
-                                          option.sale_price ??
-                                          option.unit_price,
-                                        quantity: 1,
-                                      })
-                                    }
-                                    disabled={
-                                      count === 0 && selectedOptions.length >= MAX_OPTION_ITEMS
-                                    }
-                                    className="border border-accent-2 hover:bg-accent-2-foreground"
-                                  >
-                                    <Plus className="w-4 h-4 text-accent-2" />
-                                  </Button>
-                                </div>
-                              </CommandItem>
-                            )
-                          })}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  {errors.options && (
-                    <p className="text-destructive text-sm">{errors.options.message}</p>
-                  )}
-                </div>
-              )}
-              {selectedOptions.length > 0 && (
-                <div className="bg-accent-2-foreground p-3 rounded-md border border-accent-2 mt-2">
-                  <Label className="mb-2 block text-accent-2 font-bold">
-                    {t('selectedOptions')}
-                  </Label>
-                  <div className="flex flex-wrap gap-2 pt-1 ">
-                    {selectedOptions.map((selectedOption) => {
-                      const option = options?.find((o) => o._id === selectedOption.id)
-                      return option ? (
-                        <div
-                          key={selectedOption.id}
-                          className="bg-background px-3 py-1 rounded-md flex items-center gap-2 border border-border"
+
+                  {/* メニューリスト */}
+                  <div className="grid gap-4">
+                    {filteredMenus?.map((menu) => {
+                      const count = getMenuCount(menu._id)
+                      const isSelected = count > 0
+                      return (
+                        <motion.div
+                          key={menu._id}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className={cn(
+                            'p-4 rounded-xl border-2 transition-all cursor-pointer',
+                            isSelected
+                              ? 'border-accent-2 bg-accent-2/5'
+                              : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'
+                          )}
                         >
-                          <span className="text-xs">
-                            {option.name}
-                            {(() => {
-                              const c = getOptionCount(option._id)
-                              return c > 1 ? ` ×${c}` : ''
-                            })()}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => removeOption(option._id)}
-                            className="text-muted-foreground hover:text-muted-foreground"
-                          >
-                            <X className="h-4 w-4 text-destructive" />
-                          </button>
-                        </div>
-                      ) : null
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              {menu.images && menu.images[0]?.original_url ? (
+                                <Image
+                                  src={menu.images[0].original_url}
+                                  alt={menu.name ?? ''}
+                                  className="w-16 h-16 rounded-lg object-cover"
+                                  width={64}
+                                  height={64}
+                                />
+                              ) : (
+                                <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
+                                  <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div>
+                                <h3 className="font-semibold text-lg">{menu.name}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {menu.duration_min}分
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  {menu.sale_price && menu.sale_price > 0 ? (
+                                    <>
+                                      <span className="line-through text-muted-foreground text-sm">
+                                        ￥{menu.unit_price?.toLocaleString()}
+                                      </span>
+                                      <span className="font-bold text-accent-2">
+                                        ￥{menu.sale_price.toLocaleString()}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span className="font-bold">
+                                      ￥{menu.unit_price?.toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                onClick={() => removeMenu(menu._id)}
+                                disabled={count === 0}
+                                className={cn(
+                                  'h-10 w-10 rounded-full transition-all',
+                                  count === 0 && 'opacity-50'
+                                )}
+                              >
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                              <span className="w-8 text-center font-semibold text-lg">{count}</span>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                onClick={() =>
+                                  addMenu({
+                                    id: menu._id,
+                                    name: menu.name,
+                                    price: menu.sale_price ?? menu.unit_price,
+                                    quantity: 1,
+                                  })
+                                }
+                                disabled={selectedMenus.length >= MAX_MENU_ITEMS}
+                                className={cn(
+                                  'h-10 w-10 rounded-full transition-all',
+                                  selectedMenus.length >= MAX_MENU_ITEMS && 'opacity-50'
+                                )}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )
                     })}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-          {selectedMenus.length > 0 && (
-            <div className="flex flex-col gap-2 mb-4 bg-background p-3 rounded-md border border-border">
-              {selectedMenus.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-primary text-xl font-bold">{t('reservationDate')}</Label>
+
+                {/* オプション選択（メニュー選択時のみ表示） */}
+                {selectedMenus.length > 0 && (
+                  <div className="bg-background  rounded-2xl shadow-sm border border-border p-6">
+                    <h3 className="text-lg font-semibold mb-4">{t('optionsOptional')}</h3>
+                    <div className="grid gap-3">
+                      {options?.map((option) => {
+                        const count = getOptionCount(option._id)
+                        const isSelected = count > 0
+                        return (
+                          <div
+                            key={option._id}
+                            className={cn(
+                              'p-4 rounded-lg border transition-all',
+                              isSelected
+                                ? 'border-accent-2 bg-accent-2-foreground'
+                                : 'border-border'
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">{option.name}</p>
+                                {option.duration_min &&
+                                option.duration_min > 0 &&
+                                option.duration_min !== 0 ? (
+                                  <p className="text-sm text-muted-foreground">
+                                    {option.duration_min}分
+                                  </p>
+                                ) : null}
+                                {option.in_stock ? (
+                                  <p className="text-sm text-muted-foreground">
+                                    在庫あり 残り{option.in_stock}個
+                                  </p>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">在庫なし</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium mr-4">
+                                  ￥{(option.sale_price ?? option.unit_price)?.toLocaleString()}
+                                </span>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => removeOption(option._id)}
+                                  disabled={count === 0}
+                                  className="h-8 w-8"
+                                >
+                                  <Minus className="w-4 h-4" />
+                                </Button>
+                                <span className="w-6 text-center">{count}</span>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    addOption({
+                                      id: option._id,
+                                      name: option.name,
+                                      price: option.sale_price ?? option.unit_price,
+                                      quantity: 1,
+                                    })
+                                  }
+                                  disabled={
+                                    count === 0 && selectedOptions.length >= MAX_OPTION_ITEMS
+                                  }
+                                  className="h-8 w-8"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={'outline'}
+                )}
+              </div>
+            )}
+
+            {/* ステップ2: スタッフ選択 */}
+            {currentStep === STEPS.STAFF && (
+              <div className="space-y-6">
+                <div className="bg-background  rounded-2xl shadow-sm border border-border p-6">
+                  <h2 className="text-2xl font-bold mb-2">{t('staffForTreatment')}</h2>
+                  <p className="text-muted-foreground mb-6">
+                    施術を担当するスタッフを選択してください
+                  </p>
+
+                  {staffFormData === undefined && selectedMenus.length > 0 ? (
+                    <div className="flex items-center justify-center p-8">
+                      <Loader2 className="h-6 w-6 animate-spin mr-3 text-accent-2" />
+                      <span className="text-accent-2">{t('searchingStaff')}</span>
+                    </div>
+                  ) : availableStaff.length > 0 ? (
+                    <div className="grid gap-4">
+                      {/* 指名フリーオプション */}
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          setSelectedStaffId('free')
+                          setValue('staff_id', 'free')
+                        }}
                         className={cn(
-                          'w-[300px] justify-start text-left font-normal border border-border',
-                          !selectdate && 'text-muted-foreground'
+                          'p-4 rounded-xl border-2 transition-all cursor-pointer',
+                          selectedStaffId === 'free'
+                            ? 'border-accent-2 bg-accent-2-foreground'
+                            : 'border-border hover:border-accent-2'
                         )}
                       >
-                        <CalendarIcon />
-                        {selectdate ? (
-                          format(selectdate, 'yyyy/MM/dd')
-                        ) : (
-                          <span>{t('selectReservationDate')}</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        fromDate={new Date()}
-                        toDate={toDate}
-                        disabled={[
-                          ...(orgExceptionSchedules.results.map((day) => new Date(day.date)) ?? []),
-                          // サロンの営業曜日外を除外
-                          (date: Date) => {
-                            const dayKey = getDayOfWeek(date)
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-accent-2/20 to-accent-2/40 flex items-center justify-center">
+                              <span className="text-xl font-bold text-accent-2">FREE</span>
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-lg">指名フリー</h3>
+                              <p className="text-sm text-muted-foreground">
+                                最適なスタッフを自動で割り当て
+                              </p>
+                              <p className="text-sm font-medium text-accent-2 mt-1">指名料無料</p>
+                            </div>
+                          </div>
+                          {selectedStaffId === 'free' && (
+                            <Check className="w-6 h-6 text-accent-2" />
+                          )}
+                        </div>
+                      </motion.div>
 
-                            const orgWeekSchedule = orgWeekSchedules?.find(
-                              (s) => s.day_of_week === dayKey
-                            )
-                            const staffWeekSchedule = staffWeekSchedules?.find(
-                              (s) => s.day_of_week === dayKey
-                            )
-
-                            // 営業スケジュールがあれば isOpen が false の日を無効化。見つからなければ無効化しない。
-                            return (
-                              (orgWeekSchedule ? !orgWeekSchedule.is_open : false) ||
-                              (staffWeekSchedule ? !staffWeekSchedule.is_open : false)
-                            )
-                          },
-                        ]}
-                        className="rounded-md"
-                        mode="single"
-                        locale={ja}
-                        selected={selectdate ?? undefined}
-                        onSelect={(day) => {
-                          setSelectDate(day as Date)
-                          setCalendarOpen(false)
-                        }}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              )}
-              {selectdate && selectedStaffId && selectedMenus.length > 0 && (
-                <div className="mt-4">
-                  <Label className="mb-2 block text-primary font-bold">
-                    {t('availableTimeSlots')}
-                    <span className="ml-3 text-muted-foreground text-sm font-bold">
-                      {selectdate.toLocaleDateString('ja-JP', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </span>
-                  </Label>
-
-                  {availableTimeSlots.length > 0 ? (
-                    <div className="grid grid-cols-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1 mt-2">
-                      {availableTimeSlots.map((slot, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          className={`flex items-center justify-center py-2 px-4 text-sm font-medium rounded-md border ${
-                            watch('start_time_unix') ===
-                            convertHourToTimestamp(slot.startHour, formattedDate)
-                              ? 'bg-accent-2-foreground text-accent-2 border-accent-2'
-                              : 'border-border bg-background hover:bg-muted hover:text-muted-foreground'
-                          }`}
+                      {/* スタッフリスト */}
+                      {availableStaff.map((staff) => (
+                        <motion.div
+                          key={staff._id}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           onClick={() => {
-                            // 日付込みでタイムスタンプ生成
-                            const timestampStart = convertHourToTimestamp(
-                              slot.startHour,
-                              formattedDate
-                            )!
-                            const timestampEnd = convertHourToTimestamp(
-                              slot.endHour,
-                              formattedDate
-                            )!
-                            setValue('start_time_unix', timestampStart)
-                            setValue('end_time_unix', timestampEnd)
-                            setSelectTime({
-                              startTimeUnix: timestampStart,
-                              endTimeUnix: timestampEnd,
-                            })
+                            setSelectedStaffId(staff._id)
+                            setValue('staff_id', staff._id)
                           }}
+                          className={cn(
+                            'p-4 rounded-xl border-2 transition-all cursor-pointer',
+                            selectedStaffId === staff._id
+                              ? 'border-accent-2 bg-accent-2-foreground'
+                              : 'border-border hover:border-accent-2'
+                          )}
                         >
-                          <p className="text-xs text-balance">
-                            {slot.startHour && <span>{slot.startHour}</span>}
-                            {slot.endHour && <span> 〜 {slot.endHour}</span>}
-                          </p>
-                        </button>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              {staff.images?.[0]?.original_url ? (
+                                <Image
+                                  src={staff.images[0].original_url}
+                                  alt={staff.name}
+                                  className="w-16 h-16 rounded-full object-cover"
+                                  width={64}
+                                  height={64}
+                                />
+                              ) : (
+                                <Avatar className="w-16 h-16">
+                                  <AvatarFallback className="text-lg">
+                                    {staff.name.slice(0, 1)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                              <div>
+                                <h3 className="font-semibold text-lg">{staff.name}</h3>
+                                {staff.extra_charge && staff.extra_charge > 0 && (
+                                  <p className="text-sm font-medium text-muted-foreground">
+                                    指名料 ￥{staff.extra_charge.toLocaleString()}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {selectedStaffId === staff._id && (
+                              <Check className="w-6 h-6 text-accent-2" />
+                            )}
+                          </div>
+                        </motion.div>
                       ))}
                     </div>
                   ) : (
-                    <div className="bg-background p-4 rounded-md mt-2 text-center">
-                      <p className="text-muted-foreground">{t('noAvailableSlots')}</p>
+                    <div className="text-center p-8">
+                      <p className="text-destructive">{t('noAvailableStaff')}</p>
                     </div>
                   )}
                 </div>
-              )}
-              <ZodTextField
-                ghost
-                register={register}
-                errors={errors}
-                name="startTimeUnix"
-                type="number"
-                label="開始時間 UNIXタイム"
-              />
-              <ZodTextField
-                ghost
-                register={register}
-                errors={errors}
-                name="endTimeUnix"
-                type="number"
-                label="終了時間 UNIXタイム"
-              />
-            </div>
-          )}
-          <Textarea
-            {...register('notes')}
-            placeholder={t('notesPlaceholder')}
-            className="resize-none mt-4"
-            rows={8}
-          />
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2 mt-12">
-          <div>
-            <p className="mb-2 text-xs font-medium text-muted-foreground">{t('selectedMenus')}</p>
-            <div className="flex flex-col">
-              {uniqMenuIds.length > 0 ? (
-                uniqMenuIds.map((menuId) => {
-                  const menu = menus?.find((m) => m._id === menuId)
-                  const price =
-                    menu?.sale_price && menu?.sale_price > 0
-                      ? menu?.sale_price
-                      : (menu?.unit_price ?? 0)
-                  return (
-                    menu && (
-                      <div
-                        key={menuId}
-                        className="w-full flex items-center justify-between gap-2 p-2 text-xs bg-background  border-b border-border"
-                      >
-                        <p className="text-primary font-bold text-sm">{menu.name}</p>
-                        <p className="text-primary font-bold text-sm"> ¥{price.toLocaleString()}</p>
-                      </div>
-                    )
-                  )
-                })
-              ) : (
-                <p className="text-muted-foreground text-sm">{t('selectMenusFirst')}</p>
-              )}
-            </div>
-          </div>
-          <div>
-            <p className="mb-2 text-xs font-medium text-muted-foreground">{t('selectedOptions')}</p>
-            <div className="flex flex-col">
-              {selectedOptions.length > 0 ? (
-                selectedOptions.map((selectedOption) => {
-                  const option = options?.find((o) => o._id === selectedOption.id)
-                  return (
-                    option && (
-                      <div
-                        key={selectedOption.id}
-                        className="w-full flex items-center justify-between gap-2 p-2 text-xs bg-background  border-b border-border"
-                      >
-                        <p className="text-primary font-bold text-sm">{option.name}</p>
-                        <p className="text-primary font-bold text-sm">
-                          {' '}
-                          {option.sale_price
-                            ? `¥${option.sale_price.toLocaleString()}`
-                            : `¥${option.unit_price?.toLocaleString()}`}
-                        </p>
-                      </div>
-                    )
-                  )
-                })
-              ) : (
-                <p className="text-muted-foreground text-sm">{t('noOptionsSelected')}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 mb-4">
-            <p className="text-muted-foreground text-xs text-nowrap">{t('assignedStaff')}</p>
-            <div className="flex items-center gap-2 bg-background p-2 border-b border-border">
-              {selectStaff?.images?.[0]?.thumbnail_url ? (
-                <Avatar className="w-8 h-8">
-                  <AvatarImage
-                    className="object-cover"
-                    src={selectStaff.images[0].thumbnail_url}
-                    alt={selectStaff.name}
-                  />
-                </Avatar>
-              ) : (
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback>{selectStaff?.name.slice(0, 1)}</AvatarFallback>
-                </Avatar>
-              )}
-              <div className="flex items-center justify-between gap-2 w-full">
-                <p className="text-sm font-bold text-primary">{selectStaff?.name ?? '—'}</p>
-                <p className="text-sm text-primary font-bold">
-                  <span className="text-primary font-light text-xs">{t('designationFee')}</span> ¥
-                  {selectStaff?.extra_charge ? selectStaff?.extra_charge.toLocaleString() : '0'}
-                </p>
               </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex justify-end w-full">
-          <Button
-            className="w-fit mb-8"
-            type="submit"
-            disabled={
-              isSubmitting ||
-              selectedMenus.length === 0 ||
-              !selectedStaffId ||
-              !selectdate ||
-              !watch('start_time_unix') ||
-              !watch('end_time_unix')
-            }
-          >
-            {isSubmitting ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {t('creating')}
-              </span>
-            ) : (
-              t('createReservationButton')
             )}
+
+            {/* ステップ3: 日時選択 */}
+            {currentStep === STEPS.DATETIME && (
+              <div className="space-y-6">
+                <div className="flex flex-col items-center justify-center bg-background  rounded-2xl shadow-sm border border-border p-6">
+                  <h2 className="text-2xl font-bold mb-2">{t('reservationDate')}</h2>
+                  <p className="text-muted-foreground mb-6">ご希望の日時を選択してください</p>
+
+                  {/* カレンダー */}
+                  <div className="mb-6">
+                    <Calendar
+                      fromDate={new Date()}
+                      toDate={toDate}
+                      disabled={[
+                        ...(orgExceptionSchedules.results.map((day) => new Date(day.date)) ?? []),
+                        (date: Date) => {
+                          const dayKey = getDayOfWeek(date)
+                          const orgWeekSchedule = orgWeekSchedules?.find(
+                            (s) => s.day_of_week === dayKey
+                          )
+                          const staffWeekSchedule = staffWeekSchedules?.find(
+                            (s) => s.day_of_week === dayKey
+                          )
+                          return (
+                            (orgWeekSchedule ? !orgWeekSchedule.is_open : false) ||
+                            (staffWeekSchedule ? !staffWeekSchedule.is_open : false)
+                          )
+                        },
+                      ]}
+                      className="rounded-xl border-2"
+                      mode="single"
+                      locale={ja}
+                      selected={selectdate ?? undefined}
+                      onSelect={(day) => {
+                        setSelectDate(day as Date)
+                        setSelectTime(null)
+                      }}
+                    />
+                  </div>
+
+                  {/* 時間スロット */}
+                  {selectdate && (
+                    <div>
+                      <h3 className="font-semibold mb-4">
+                        {selectdate.toLocaleDateString('ja-JP', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                        の空き時間
+                      </h3>
+                      {availableTimeSlots.length > 0 ? (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                          {availableTimeSlots.map((slot, index) => (
+                            <motion.button
+                              key={index}
+                              type="button"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              className={cn(
+                                'p-3 rounded-lg font-medium transition-all',
+                                watch('start_time_unix') ===
+                                  convertHourToTimestamp(slot.startHour, formattedDate)
+                                  ? 'bg-accent-2 text-white'
+                                  : 'bg-background hover:bg-accent-2-foreground'
+                              )}
+                              onClick={() => {
+                                const timestampStart = convertHourToTimestamp(
+                                  slot.startHour,
+                                  formattedDate
+                                )!
+                                const timestampEnd = convertHourToTimestamp(
+                                  slot.endHour,
+                                  formattedDate
+                                )!
+                                setValue('start_time_unix', timestampStart)
+                                setValue('end_time_unix', timestampEnd)
+                                setSelectTime({
+                                  startTimeUnix: timestampStart,
+                                  endTimeUnix: timestampEnd,
+                                })
+                              }}
+                            >
+                              <p className="text-sm">{slot.startHour}</p>
+                            </motion.button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center p-8 bg-background  rounded-lg">
+                          <p className="text-muted-foreground">{t('noAvailableSlots')}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ステップ4: 顧客情報 */}
+            {currentStep === STEPS.CUSTOMER && (
+              <div className="space-y-6">
+                <div className="bg-background  rounded-2xl shadow-sm border border-border p-6">
+                  <h2 className="text-2xl font-bold mb-6">{t('customerInfo')}</h2>
+
+                  {/* 顧客タイプ選択 */}
+                  <div className="mb-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          setIsExistingCustomer(true)
+                          setValue('is_existing_customer', true)
+                        }}
+                        className={cn(
+                          'p-4 rounded-xl border-2 transition-all',
+                          isExistingCustomer
+                            ? 'border-accent-2 bg-accent-2/5'
+                            : 'border-gray-200 dark:border-gray-800'
+                        )}
+                      >
+                        <User className="w-6 h-6 mb-2 mx-auto" />
+                        <p className="font-medium">{t('existingCustomer')}</p>
+                      </motion.button>
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          setIsExistingCustomer(false)
+                          setValue('is_existing_customer', false)
+                        }}
+                        className={cn(
+                          'p-4 rounded-xl border-2 transition-all',
+                          !isExistingCustomer
+                            ? 'border-accent-2 bg-accent-2-foreground'
+                            : 'border-border'
+                        )}
+                      >
+                        <Plus className="w-6 h-6 mb-2 mx-auto" />
+                        <p className="font-medium">{t('newCustomer')}</p>
+                      </motion.button>
+                    </div>
+                  </div>
+
+                  {/* 既存顧客検索 */}
+                  {isExistingCustomer ? (
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">
+                        {t('customerSearch')}
+                      </Label>
+                      <Input
+                        className="mb-4"
+                        placeholder={t('searchCustomer')}
+                        value={searchName}
+                        onChange={(e) => setSearchName(e.target.value)}
+                      />
+
+                      {isLoadingCustomers ? (
+                        <div className="flex items-center justify-center p-8">
+                          <Loader2 className="h-5 w-5 animate-spin mr-2 text-accent-2" />
+                          <span className="text-accent-2">{t('searching')}</span>
+                        </div>
+                      ) : customers.length > 0 ? (
+                        <div className="grid gap-3">
+                          {customers.map((customer) => (
+                            <motion.div
+                              key={customer.uid}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => {
+                                setSelectedCustomer(customer)
+                                setValue('customer_id', customer.uid)
+                              }}
+                              className={cn(
+                                'p-4 rounded-lg border-2 transition-all cursor-pointer',
+                                selectedCustomer?.uid === customer.uid
+                                  ? 'border-accent-2 bg-accent-2-foreground'
+                                  : 'border-border'
+                              )}
+                            >
+                              <p className="font-medium">{formatCustomerDisplay(customer)}</p>
+                            </motion.div>
+                          ))}
+                        </div>
+                      ) : searchName.length > 0 ? (
+                        <div className="text-center p-8 bg-warning rounded-lg">
+                          <p className="text-warning-foreground">{t('noCustomersFound')}</p>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    /* 新規顧客フォーム */
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>{t('lastName')}</Label>
+                          <Input
+                            {...register('customer_last_name')}
+                            placeholder={t('lastName')}
+                            className="mt-1"
+                          />
+                          {errors.customer_last_name && (
+                            <p className="text-destructive text-sm mt-1">
+                              {errors.customer_last_name.message}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <Label>{t('firstName')}</Label>
+                          <Input
+                            {...register('customer_first_name')}
+                            placeholder={t('firstName')}
+                            className="mt-1"
+                          />
+                          {errors.customer_first_name && (
+                            <p className="text-destructive text-sm mt-1">
+                              {errors.customer_first_name.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label>{t('tel')}</Label>
+                        <Input
+                          {...register('customer_phone')}
+                          type="tel"
+                          placeholder={t('tel')}
+                          className="mt-1"
+                        />
+                        {errors.customer_phone && (
+                          <p className="text-destructive text-sm mt-1">
+                            {errors.customer_phone.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>{tCommon('gender')}</Label>
+                          <Select
+                            value={watch('customer_gender') ?? ''}
+                            onValueChange={(value: string) => {
+                              setValue('customer_gender', value as Gender)
+                            }}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder={tCommon('gender')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {GENDER_VALUES.map((gender) => (
+                                <SelectItem key={gender} value={gender}>
+                                  {convertGender(gender, true)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>{tCommon('birthday')}</Label>
+                          <DatePicker
+                            value={
+                              watch('customer_birthday')
+                                ? new Date(watch('customer_birthday')!)
+                                : undefined
+                            }
+                            onChange={(date) =>
+                              setValue('customer_birthday', date ? format(date, 'yyyy-MM-dd') : '')
+                            }
+                            placeholder={tCommon('birthdayPlaceholder')}
+                            toDate={new Date()}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 備考 */}
+                <div className="bg-background  rounded-2xl shadow-sm border border-border p-6">
+                  <Label className="text-lg font-semibold mb-3 block">{t('notes')}</Label>
+                  <Textarea
+                    {...register('notes')}
+                    placeholder={t('notesPlaceholder')}
+                    className="resize-none"
+                    rows={4}
+                  />
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* ナビゲーションボタン */}
+        <div className="flex justify-between items-center mt-8 pb-24">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={goToPreviousStep}
+            disabled={currentStep === STEPS.MENU}
+            className={cn(
+              'px-6 py-3 rounded-xl transition-all',
+              currentStep === STEPS.MENU && 'opacity-50'
+            )}
+          >
+            <ChevronRight className="w-5 h-5 mr-2 rotate-180" />
+            前へ
           </Button>
+
+          {currentStep < STEPS.CUSTOMER ? (
+            <Button
+              type="button"
+              onClick={goToNextStep}
+              disabled={!canProceedToNextStep()}
+              className={cn(
+                'px-6 py-3 rounded-xl bg-accent-2 text-foreground transition-all',
+                !canProceedToNextStep() && 'opacity-50'
+              )}
+            >
+              次へ
+              <ChevronRight className="w-5 h-5 ml-2" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              disabled={isSubmitting || !canProceedToNextStep()}
+              className={cn(
+                'px-8 py-3 rounded-xl bg-accent-2 text-foreground transition-all',
+                (isSubmitting || !canProceedToNextStep()) && 'opacity-50'
+              )}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  {t('creating')}
+                </>
+              ) : (
+                <>
+                  {t('createReservationButton')}
+                  <Check className="w-5 h-5 ml-2" />
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </form>
-      <div className="sticky bottom-0 left-0 right-0 z-10 bg-background text-primary flex flex-col md:flex-row items-start md:items-center justify-between gap-4 px-6 py-4 backdrop-blur rounded-md border">
-        <div className="relative flex flex-col md:flex-row w-full items-start md:items-center justify-between gap-4">
-          <div className="flex flex-col md:flex-row justify-between w-full">
-            <div className="w-full md:w-1/3 flex flex-col items-start justify-between gap-2">
-              <div>
-                {selectdate && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground md:ml-auto whitespace-nowrap">
-                    <span className="font-semibold">{format(selectdate, 'yyyy年MM月dd日')}</span>
-                    {selectTime && (
-                      <span>
-                        {formatTimestamp(watch('start_time_unix')!, {
-                          useJST: true,
-                        })}{' '}
-                        ~{' '}
-                        {formatTimestamp(watch('end_time_unix')!, {
-                          useJST: true,
-                        })}
-                      </span>
-                    )}
-                  </div>
+
+      {/* 新しいボトムバー */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background  border-t border-border px-4 py-4 z-50">
+        <div className="container mx-auto max-w-4xl">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              {selectdate && selectTime && (
+                <p className="text-sm text-muted-foreground">
+                  {format(selectdate!, 'yyyy年MM月dd日')}{' '}
+                  {formatTimestamp(selectTime.startTimeUnix!, { useJST: true })} 〜{' '}
+                  {formatTimestamp(selectTime.endTimeUnix!, { useJST: true })}
+                </p>
+              )}
+              <p className="text-sm font-medium">
+                {totalTimeMinutes > 0 && (
+                  <span className="text-muted-foreground mr-3">施術時間: {totalTimeMinutes}分</span>
                 )}
-              </div>
-              <div className="flex items-center justify-end gap-2">
-                <Label className="text-xs">{t('totalAmount')}</Label>
-                <p className="text-lg font-bold ml-2 md:ml-0">
-                  ¥{totalPriceCalculated.toLocaleString()}
-                </p>
-              </div>
+                <span className="text-xl font-bold text-accent-2">
+                  ￥{totalPriceCalculated.toLocaleString()}
+                </span>
+              </p>
             </div>
-            <div className="flex flex-wrap justify-between md:justify-end gap-2 md:gap-4 text-xs mt-2 md:mt-0 w-full md:w-2/3">
-              <div className="border bg-background border-accent-2 p-1.5 rounded-md text-accent-2 flex  md:flex-row items-center w-fit sm:w-auto">
-                <Label className="text-xs text-accent-2">{t('totalTreatmentTime')} / </Label>{' '}
-                <p className=" font-bold">
-                  {totalTimeMinutes} {tCommon('minutes')}
-                </p>
-              </div>
+
+            {/* 選択内容サマリー */}
+            <div className="flex items-center gap-4">
+              {selectedMenus.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{selectedMenus.length}個</span>
+                </div>
+              )}
+              {selectedStaffId && (
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    {selectedStaffId === 'free' ? '指名フリー' : selectStaff?.name}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1522,3 +1668,4 @@ export default function ReservationForm() {
     </div>
   )
 }
+

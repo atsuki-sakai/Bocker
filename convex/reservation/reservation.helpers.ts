@@ -154,6 +154,54 @@ export async function checkReservationDoubleBooking(
   return !!overlapping
 }
 
+/**
+ * スタッフの同一時間帯に重複する予約を取得する関数
+ * 指名フリー同士の入れ替え機能で使用
+ * 
+ * @param ctx クエリまたはミューテーションコンテキスト
+ * @param args チェックパラメータ
+ * @returns 重複している予約（なければnull）
+ */
+export async function getConflictingReservation(
+  ctx: QueryCtx | MutationCtx,
+  args: {
+    tenant_id: Id<'tenant'>
+    org_id: Id<'organization'>
+    staff_id: Id<'staff'>
+    date: string
+    start_time_unix: number
+    end_time_unix: number
+    excludeReservationId?: Id<'reservation'>
+  }
+): Promise<Doc<'reservation'> | null> {
+  // 指定された条件に合致する予約を検索し、
+  // 時間帯が重複している予約を取得
+  const query = ctx.db
+    .query('reservation')
+    .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
+      q
+        .eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('staff_id', args.staff_id)
+        .eq('date', args.date)
+        .eq('status', 'confirmed')
+        .eq('is_archive', false)
+    )
+    .filter((q) =>
+      q.and(
+        // 時間の重複をチェック（開始時間が相手の終了時間前、終了時間が相手の開始時間後）
+        q.lt(q.field('start_time_unix'), args.end_time_unix),
+        q.gt(q.field('end_time_unix'), args.start_time_unix),
+        // 除外IDがあればそれを除外、なければ常にtrueの条件
+        args.excludeReservationId
+          ? q.neq(q.field('_id'), args.excludeReservationId)
+          : q.eq(q.field('_id'), q.field('_id')) // 常にtrueになる条件
+      )
+    )
+
+  return await query.first()
+}
+
 export async function createReservationWithDetails(
   ctx: MutationCtx,
   args: {

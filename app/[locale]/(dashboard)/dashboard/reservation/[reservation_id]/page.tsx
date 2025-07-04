@@ -263,13 +263,21 @@ export default function ReservationPage() {
 
     try {
       setIsChangingStaff(true)
-      await changeStaff({
+      const result = await changeStaff({
         reservation_id: reservationData.reservation._id,
         new_staff_id: selectedNewStaffId,
         changed_by: 'admin', // 管理画面からの変更
       })
 
-      toast.success('スタッフを変更しました')
+      // 入れ替えが発生した場合の特別なメッセージ
+      if (result.wasSwapped && result.swappedReservation) {
+        toast.success(
+          `スタッフを変更しました。同時間帯の指名フリー予約も「${result.swappedReservation.newStaffName}」に変更されました。`
+        )
+      } else {
+        toast.success('スタッフを変更しました')
+      }
+
       setIsStaffChangeModalOpen(false)
       // ページをリロードして最新データを取得
       router.refresh()
@@ -285,42 +293,14 @@ export default function ReservationPage() {
   return (
     <DashboardSection
       title={t('title')}
-      backLink="/dashboard/reservation"
-      backLinkTitle={t('backToList')}
+      backLink="/dashboard"
+      backLinkTitle={t('backToDashboard')}
+      infoBtn={{
+        text: '予約一覧へ',
+        link: `/dashboard/reservation`,
+      }}
     >
       <div className="flex flex-col gap-4 bg-background">
-        <div className="rounded-lg bg-blue-50 p-4 border border-blue-200 mb-4">
-          <div className="flex items-start gap-3">
-            <div className="text-blue-600 mt-0.5">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-blue-800 mb-1">重要なお知らせ</p>
-              <p className="text-sm text-gray-700">
-                施術が終了したら、必ず予約ステータスを
-                <span className="font-bold text-blue-800">「完了」</span>に変更してください。
-              </p>
-              <div className="mt-2 text-xs text-gray-600">
-                <p className="mb-1">ステータスを完了にしないと：</p>
-                <ul className="list-disc list-inside space-y-0.5 ml-2">
-                  <li>お客様にポイントが付与されません</li>
-                  <li>タイムラインに表示されたままになります</li>
-                </ul>
-                <p className="mt-2 text-xs text-gray-600 font-bold">
-                  その他様々な処理に影響が出るので、必ず適切にステータスを変更してください
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="border-b pb-4">
           <div
             className={`flex justify-end w-full ${
@@ -685,9 +665,11 @@ export default function ReservationPage() {
           <DialogHeader>
             <DialogTitle>{t('changeStatusDialog.title')}</DialogTitle>
           </DialogHeader>
-          <div className="rounded-lg bg-orange-50 p-3 border border-orange-200">
-            <p className="text-sm font-medium text-orange-800 mb-1">⚠️ ステータス変更の制限</p>
-            <p className="text-sm text-gray-700">
+          <div className="rounded-lg bg-warning p-3 border border-warning">
+            <p className="text-sm font-medium text-warning-foreground mb-1">
+              ⚠️ ステータス変更の制限
+            </p>
+            <p className="text-sm text-muted-foreground">
               <strong>完了・キャンセル・返金済み</strong>の予約は、ステータスを変更できません。
               再予約が必要な場合は、新規で予約を作成してください。
             </p>
@@ -695,20 +677,20 @@ export default function ReservationPage() {
 
           <div className="space-y-2">
             <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-yellow-500 mt-1.5 flex-shrink-0"></div>
+              <div className="w-2 h-2 rounded-full bg-warning-foreground mt-1.5 flex-shrink-0"></div>
               <div>
                 <p className="text-sm font-medium">保留中</p>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   予約枠に含まれません。他のお客様がこの時間帯を予約できます。ステータスを変更できます。
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
+              <div className="w-2 h-2 rounded-full bg-success mt-1.5 flex-shrink-0"></div>
               <div>
                 <p className="text-sm font-medium">予約受付済み</p>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   予約枠に含まれます。この時間帯は他の予約を受け付けません。ステータスを変更できます。
                 </p>
               </div>
