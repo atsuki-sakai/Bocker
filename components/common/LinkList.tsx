@@ -37,7 +37,6 @@ export const LinkList = () => {
     <div className="my-4 space-y-2">
       <p className="text-sm font-medium text-accent-2">
         以下のリンクをお客様に共有して予約の受付を開始してください
-        <div className=""></div>
       </p>
       <div className="p-2 bg-background rounded-lg border border-border ">
         <label className="text-sm font-medium">{t('completion.reservationUrlLabel')}</label>

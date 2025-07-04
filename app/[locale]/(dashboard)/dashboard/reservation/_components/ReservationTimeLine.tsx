@@ -531,7 +531,7 @@ export default function ReservationTimeLine() {
     }
 
     setReservationCounts(allDates)
-  }, [reservationCountsData])
+  }, [reservationCountsData, today])
 
   // 表示用は30分単位
   const halfHourSlots = useMemo(

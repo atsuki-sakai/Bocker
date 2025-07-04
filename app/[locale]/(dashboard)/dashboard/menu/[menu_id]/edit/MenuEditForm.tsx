@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Loading, ZodTextField } from '@/components/common'
 import { Loader2 } from 'lucide-react'
-import { MENU_CATEGORY_VALUES } from '@/convex/types'
+import { MENU_CATEGORY_VALUES, SubscriptionPlanName } from '@/convex/types'
 import { SortableImageGrid } from '@/components/common'
 import { z } from 'zod'
 import { useZodForm } from '@/hooks/useZodForm'
@@ -183,7 +183,7 @@ export default function MenuEditForm() {
   const t = useTranslations('menus')
   const { orgId, tenantId, stripeConnectStatus, planName } = useTenantAndOrganization()
   const menuData = useQuery(api.menu.query.findById, { menu_id: menuId })
-  const limits = getPlanLimits(planName)
+  const limits = getPlanLimits(planName as SubscriptionPlanName)
 
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false)
   const { showErrorToast } = useErrorHandler()
