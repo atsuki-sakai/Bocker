@@ -600,7 +600,10 @@
       "cancelled": "キャンセル",
       "completed": "完了",
       "noShow": "無断キャンセル"
-    }
+    },
+    "open": "営業",
+    "closed": "休業",
+    "noScheduleAvailable": "スケジュールが設定されていません"
   },
   "customers": {
     "title": "顧客管理",
