@@ -747,6 +747,7 @@
     "duration": "所要時間",
     "durationMinutes": "施術時間",
     "description": "説明",
+    "warningMessage": "注意事項メッセージ",
     "menuDescription": "メニュー説明",
     "shortDescription": "簡単な説明",
     "detailedDescription": "詳細な説明",
@@ -802,11 +803,12 @@
       "unitPrice": "例: 5000",
       "salePrice": "例: 4000",
       "selectDuration": "施術時間を選択",
+      "warningMessage": "例：このメニューはロングヘアの方の料金になります。",
       "menuDescription": "メニューの詳細説明を入力してください",
       "tags": "例: デジタルパーマ、夏にしたい髪型、面長に合う"
     },
     "help": {
-      "multipleCategories": "複数のカテゴリを選択した場合、自動的にセットメニューとして扱われます。",
+      "multipleCategories": "複数のカテゴリを選択した場合、自動的にセットメニューとして扱われます。人気メニューは予約メニューのトップに表示されます。",
       "durationTotal": "メニューのトータルの施術時間を設定します。",
       "targetCustomer": "メニューを主に利用する顧客属性を選択できます。",
       "targetGender": "メニュー対象の性別を選択してください",
@@ -838,6 +840,7 @@
       "descriptionInvalid": "説明は文字列で入力してください",
       "descriptionMaxLength": "説明は{max}文字以内で入力してください",
       "genderRequired": "性別は必須です",
+      "tagMaxLength": "タグは{max}文字以内で入力してください",
       "targetTypeRequired": "対象タイプは必須です",
       "tagsMaxLength": "タグは{max}文字以内で入力してください",
       "tagsMaxCount": "タグは最大5つまでです",
@@ -1496,7 +1499,9 @@
       "save": "保存",
       "saving": "保存中...",
       "saveImage": "画像を保存",
-      "uploading": "アップロード中..."
+      "uploading": "アップロード中...",
+      "searching": "検索中...",
+      "searchAddress": "住所を検索"
     },
     "validation": {
       "salonNameMax": "サロン名は120文字以内で入力してください",
@@ -1510,7 +1515,9 @@
     "messages": {
       "settingsSaved": "設定を保存しました",
       "imageUploadFailed": "画像のアップロードに失敗しました",
-      "imageSaved": "画像を保存しました"
+      "imageSaved": "画像を保存しました",
+      "enterPostalCode": "郵便番号を入力してください",
+      "addressFound": "住所を検索しました"
     },
     "changeEmail": {
       "title": "メールアドレス変更",
@@ -1628,9 +1635,11 @@
       "availableSeatsHelp": "同一時間帯に予約可能な席数を設定",
       "shortestReservationTime": "最短の予約開始時間を選択",
       "shortestReservationTimeHelp": "当日予約で空き枠がある場合、現在時刻から何分後の予約を受付可能にするかを設定",
+      "isMultipleSelectCategory": "同一カテゴリのメニューの複数選択を許可する",
+      "isMultipleSelectCategoryHelp": "カットとカットのように、同一カテゴリのメニューを複数選択できるようにするかどうかを設定します。OFFにすると、同一カテゴリのメニューは1つしか選択できません。",
       "saving": "保存中...",
       "save": "予約受付設定を保存",
-      "saved": "スケジュール設定を保存しました",
+      "saved": "予約受付設定を保存しました",
       "daysUnit": "日",
       "minutesUnit": "分",
       "seatsUnit": "席"
@@ -2579,6 +2588,7 @@
         "targetType": "ターゲット",
         "paymentMethod": "支払い方法",
         "description": "説明",
+        "warningMessage": "注意事項",
         "tags": "タグ",
         "systemInfo": "システム情報",
         "createdAt": "作成日時",
@@ -2653,6 +2663,8 @@
       "paymentFeeDetail": "オンライン決済手数料: 4% + 40円/件",
       "description": "メニュー説明",
       "descriptionPlaceholder": "メニューの詳細説明を入力してください",
+      "warningMessage": "注意事項メッセージ",
+      "warningMessagePlaceholder": "例：このメニューはロングヘアの方の料金になります。",
       "publish": "メニューを公開する",
       "publishHelp": "オフにすると、このメニューはお客様に表示されません",
       "back": "戻る",
@@ -2672,6 +2684,7 @@
       "descriptionRequired": "説明は必須です",
       "descriptionMax": "説明は{max}文字以内で入力してください",
       "genderRequired": "性別は必須です",
+      "tagMaxLength": "タグは{max}文字以内で入力してください",
       "targetTypeRequired": "対象タイプは必須です",
       "tagsMax": "タグは最大5つまでです",
       "tagsLengthMax": "タグは{max}文字以内で入力してください",
