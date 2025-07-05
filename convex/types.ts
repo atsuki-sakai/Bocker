@@ -293,10 +293,13 @@ export type StaffWithInvitationStatus = {
 // FIXME: カテゴリを各組織毎に作成できる様にする
 // メニューカテゴリの型定義
 export const MENU_CATEGORY_VALUES = [
-  'オススメ',
+  '人気メニュー',
   'カット',
   'カラー',
   'パーマ',
+  'ショートヘア',
+  'ミディアムヘア',
+  'ロングヘア',
   'トリートメント',
   'エクステ',
   'ヘアセット',
