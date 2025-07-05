@@ -12,8 +12,10 @@ import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
 import { PointTaskQueueRepository } from '@/services/supabase/repositories/point';
 import { CustomerRepository } from '@/services/supabase/repositories/customer';
-import { getAppUrl } from '@/lib/env-config';
 import { cancelForCompletedReservation } from './reservation.helpers';
+import { CouponTransactionRepository } from '@/services/supabase/repositories/coupon';
+import { fetchMutation } from 'convex/nextjs';
+import { api } from '@/convex/_generated/api';
 
 /**
  * 予約IDに紐づくポイントタスクを削除する
@@ -712,16 +714,35 @@ async function handleStatusSideEffects(
 
         // 7. クーポン利用時はトランザクションを作成
         if(reservation.detail.coupon_discount && reservation.detail.coupon_discount > 0 && reservation.detail.coupon_id) {
-          await fetch(`${getAppUrl()}/api/coupon/create-transaction`, {
-            method: 'POST',
-            body: JSON.stringify({
-              tenant_id: reservation.tenant_id,
-              org_id: reservation.org_id,
-              customer_id: reservation.customer_id,
-              reservation_id: reservation._id,
-              discount_amount: reservation.detail.coupon_discount,
-            }),
-          });
+           // Supabaseクライアントの作成（サーバーサイドでのみService Role Keyを使用）
+    const supabase = createClient(
+      getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+      getEnv('SUPABASE_SERVICE_ROLE_KEY')
+    )
+    const supabaseService = new SupabaseService(supabase)
+    const couponTransactionRepo = new CouponTransactionRepository(supabaseService)
+
+    // クーポントランザクションの作成
+    const couponTransaction = await couponTransactionRepo.create({
+      tenant_id: reservation.tenant_id,
+      org_id: reservation.org_id,
+      coupon_id: reservation.detail.coupon_id,
+      customer_id: reservation.customer_id,
+      reservation_id: reservation._id,
+      transaction_date_unix: Math.floor(Date.now() / 1000),
+      discount_amount: reservation.detail.coupon_discount,
+    })
+
+    await fetchMutation(api.coupon.config.mutation.updateNumberOfUse, {
+      type: 'increment',
+      tenant_id: reservation.tenant_id as Id<'tenant'>,
+      org_id: reservation.org_id as Id<'organization'>,
+      coupon_id: reservation.detail.coupon_id as Id<'coupon'>,
+    })
+
+    console.log(
+      `[API] Created coupon transaction: ${couponTransaction.id} for reservation: ${reservation._id}`
+    )
         }
       }
       
