@@ -48,9 +48,9 @@ const SLOT_WIDTH = 32
 const TimelineHeader = memo(({ timeSlots }: { timeSlots: TimeSlot[] }) => {
   const t = useTranslations('reservations')
   return (
-    <div className="flex sticky top-0 z-20 bg-background shadow-sm border-b border-border">
+    <div className="flex sticky top-0 z-30 bg-background shadow-sm border-b border-border">
       {/* スタッフ名カラムのヘッダー */}
-      <div className="sticky left-0 z-30 bg-background border-r border-border w-20 md:w-40 p-3 flex items-center justify-center font-bold text-muted-foreground">
+      <div className="sticky left-0 z-40 bg-background border-r border-border w-20 md:w-40 p-3 flex items-center justify-center font-bold text-muted-foreground">
         <User className="w-4 h-4 mr-2" />
         <span className="hidden md:block text-sm">{t('staff')}</span>
       </div>
@@ -192,7 +192,7 @@ const StaffTimelineRow = memo(
         )}
       >
         {/* スタッフ名（左端固定） */}
-        <div className="sticky left-0 z-10 bg-background border-r border-border w-20 md:w-40 p-2 md:p-4 flex h-full items-center">
+        <div className="sticky left-0 z-20 bg-background border-r border-border w-20 md:w-40 p-2 md:p-4 flex h-full items-center">
           <div className="flex flex-col md:flex-row items-center gap-3 w-full">
             <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center shadow-sm">
               {staffData.staff.images && staffData.staff.images.length > 0 ? (
@@ -221,7 +221,7 @@ const StaffTimelineRow = memo(
         </div>
 
         {/* タイムライン部分 */}
-        <div className="relative flex-1 bg-background">
+        <div className="relative flex-1 bg-background z-10">
           {/* 時間グリッド */}
           <div className="flex h-full">
             {timeSlots.map((slot) => {
@@ -395,24 +395,24 @@ const ReservationList = memo(
           const getBorderColor = () => {
             if (reservation.is_free_nomination) {
               return enhancedColor.includes('purple')
-                ? '#9333ea'
+                ? 'palette-5'
                 : enhancedColor.includes('orange')
-                  ? '#ea580c'
+                  ? 'palette-4'
                   : enhancedColor.includes('emerald')
-                    ? '#059669'
-                    : '#7c3aed'
+                    ? 'palette-2'
+                    : 'palette-5'
             }
             return enhancedColor.includes('emerald')
-              ? '#008724FF'
+              ? 'palette-2'
               : enhancedColor.includes('amber')
-                ? '#f59e0b'
-                : '#6b7280'
+                ? 'palette-4'
+                : 'palette-5'
           }
 
           return (
             <Card
               key={reservation._id}
-              className="cursor-pointer  border-l-4"
+              className="cursor-pointer   border-l-4"
               style={{
                 borderLeftColor: getBorderColor(),
               }}
@@ -423,13 +423,13 @@ const ReservationList = memo(
                   <div className="space-y-2 flex-1">
                     <div className="font-semibold text-primary flex flex-wrap items-center gap-2">
                       {reservation.is_free_nomination ? (
-                        <Shuffle className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                        <Shuffle className="w-4 h-4 text-palette-5 flex-shrink-0" />
                       ) : (
                         <User className="w-4 h-4 flex-shrink-0" />
                       )}
                       <span className="break-all">{reservation.customer_name}</span>
                       {reservation.is_free_nomination && (
-                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                        <span className="text-xs bg-palette-5-foreground text-palette-5 px-2 py-1 rounded-full font-medium whitespace-nowrap">
                           指名フリー
                         </span>
                       )}
@@ -447,7 +447,9 @@ const ReservationList = memo(
                     </div>
                   </div>
                   <div className="self-start sm:self-center">
-                    <Badge className={cn('px-3 py-1 rounded-full whitespace-nowrap', enhancedColor)}>
+                    <Badge
+                      className={cn('px-3 py-1 rounded-full whitespace-nowrap', enhancedColor)}
+                    >
                       {t(`statuses.${reservation.status}`)}
                     </Badge>
                   </div>
@@ -493,7 +495,7 @@ export default function ReservationTimeLine() {
     date.setHours(0, 0, 0, 0) // 時刻をリセット
     return date
   }, []) // 空の依存配列でコンポーネントマウント時のみ実行
-  
+
   const twoWeeksLater = useMemo(() => addDays(today, 13), [today]) // 今日を含めて14日間
   const startDateStr = useMemo(() => format(today, 'yyyy-MM-dd'), [today])
   const endDateStr = useMemo(() => format(twoWeeksLater, 'yyyy-MM-dd'), [twoWeeksLater])
@@ -574,7 +576,7 @@ export default function ReservationTimeLine() {
   return (
     <div className="h-fit bg-background w-full py-2">
       {/* ヘッダー部分 */}
-      <div className="sticky top-0 z-30 w-full bg-background backdrop-blur-sm border-b-2 border-border space-y-4 shadow-sm">
+      <div className="w-full bg-background backdrop-blur-sm border-b-2 border-border space-y-4 shadow-sm">
         {/* 日付選択とビュー切り替え */}
         {/* 今日から2週間後までの予約件数を表示 */}
         <div className="px-4 pt-4">
@@ -582,7 +584,7 @@ export default function ReservationTimeLine() {
             <h3 className="text-sm font-medium text-muted-foreground">予約状況（2週間）</h3>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                <div className="w-2 h-2 bg-neon rounded-full" />
                 <span>予約あり</span>
               </div>
             </div>
@@ -611,9 +613,7 @@ export default function ReservationTimeLine() {
                   <span className="text-[10px] opacity-70">{dayOfWeek}</span>
                   <span className="text-sm font-medium">{format(date, 'd')}</span>
                   <div className="flex items-center justify-center gap-1">
-                    {item.count > 0 && (
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-0.5" />
-                    )}
+                    {item.count > 0 && <div className="w-1.5 h-1.5 bg-neon rounded-full mt-0.5" />}
                     <span
                       className={cn(
                         'text-xs',
@@ -676,7 +676,7 @@ export default function ReservationTimeLine() {
         <Tabs value={viewMode} className="w-full">
           <TabsContent value="timeline" className="m-0">
             <div className="overflow-auto  bg-background">
-              <div className="min-w-max">
+              <div className="relative max-h-[calc(100vh-200px)] min-w-max">
                 {/* タイムラインヘッダー */}
                 <TimelineHeader timeSlots={halfHourSlots} />
 
