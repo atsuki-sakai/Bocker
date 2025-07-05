@@ -16,6 +16,7 @@ export const create = mutation({
     reservation_interval_minutes: reservationIntervalMinutesType, // 予約時間間隔(分)
     available_sheet: v.number(), // 予約可能席数
     today_first_later_minutes: v.number(), // 本日の場合、何分後から予約可能か？
+    is_multiple_select_category: v.boolean(), // カテゴリ複数選択を許可するか
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)
@@ -37,6 +38,7 @@ export const update = mutation({
     reservation_interval_minutes: v.optional(reservationIntervalMinutesType) || 0, // 予約時間間隔(分)
     available_sheet: v.optional(v.number()), // 予約可能席数
     today_first_later_minutes: v.optional(v.number()), // 本日の場合、何分後から予約可能か？
+    is_multiple_select_category: v.optional(v.boolean()), // カテゴリ複数選択を許可するか
   },
   handler: async (ctx, args) => {
    
@@ -70,7 +72,6 @@ export const update = mutation({
   },
 })
 
-
 export const upsert = mutation({
   args: {
     tenant_id: v.id('tenant'),
@@ -80,6 +81,7 @@ export const upsert = mutation({
     reservation_interval_minutes: reservationIntervalMinutesType, // 予約時間間隔(分)
     available_sheet: v.number(), // 予約可能席数
     today_first_later_minutes: v.number(), // 本日の場合、何分後から予約可能か？
+    is_multiple_select_category: v.boolean(), // カテゴリ複数選択を許可するか
   },
   handler: async (ctx, args) => {
     validateNumberLength(args.reservation_limit_days, 'reservation_limit_days');
@@ -97,9 +99,12 @@ export const upsert = mutation({
         reservation_interval_minutes: args.reservation_interval_minutes,
         available_sheet: args.available_sheet,
         today_first_later_minutes: args.today_first_later_minutes,
+        is_multiple_select_category: args.is_multiple_select_category ?? true,
       })
     }else{
-      return await createRecord(ctx, 'reservation_config', args)
+      return await createRecord(ctx, 'reservation_config', {
+        ...args
+      })
     }
   }
 })
