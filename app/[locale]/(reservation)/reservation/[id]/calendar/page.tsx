@@ -1217,6 +1217,9 @@ export default function CalendarPage() {
                         selectedMenuIds={selectedMenus.map((menu) => menu._id)}
                         onChangeMenusAction={(menus) => setSelectedMenus(menus)}
                         targetType={sessionCustomer?.target_type as ActiveCustomerType}
+                        isMultipleSelection={
+                          organizationComplete.reservationConfig?.is_multiple_select_category
+                        }
                       />
                     </motion.div>
 
