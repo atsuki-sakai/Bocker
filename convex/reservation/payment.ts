@@ -3,7 +3,7 @@ import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { updateRecord } from '@/convex/utils/helpers';
-import { api, internal } from '@/convex/_generated/api';
+import { api } from '@/convex/_generated/api';
 
 /**
  * 決済成功時の予約受付処理
@@ -42,48 +42,6 @@ export const confirmPayment = mutation({
       stripe_payment_intent_id: stripe_payment_intent_id || reservation.stripe_payment_intent_id,
     });
 
-    // ポイント使用処理
-    const reservationDetail = await ctx.db.query('reservation_detail').withIndex('by_reservation_archive', (q) =>
-      q.eq('reservation_id', reservation_id).eq('is_archive', false)
-    ).first();
-    if (reservationDetail && reservationDetail.use_points && reservationDetail.use_points > 0) {
-      // ポイント使用処理はSupabase側で行う（API経由）
-      // ここではフラグ管理のみ
-      const detail = await ctx.db
-        .query('reservation_detail')
-        .withIndex('by_reservation_archive', (q) =>
-          q.eq('reservation_id', reservation_id).eq('is_archive', false)
-        )
-        .first();
-      
-      if (detail) {
-        await updateRecord(ctx, detail._id, {
-          use_points: reservationDetail.use_points,
-        });
-      }
-    }
-
-    // クーポン使用回数のインクリメント
-    const detail = await ctx.db
-      .query('reservation_detail')
-      .withIndex('by_reservation_archive', (q) =>
-        q.eq('reservation_id', reservation_id).eq('is_archive', false)
-      )
-      .first();
-    
-    if (detail && detail.coupon_id) {
-      try {
-        await ctx.runMutation(internal.coupon.mutation.incrementUsageCount, {
-          couponId: detail.coupon_id,
-        });
-      } catch (error) {
-        // クーポン使用回数の更新に失敗しても、予約受付は成功とする
-        console.error('Failed to increment coupon usage count:', error);
-      }
-    }
-
-    // 楽観的アプローチでは、在庫は予約作成時に既に減算済みのため、ここでは何もしない
-
     return true;
   },
 });
@@ -110,7 +68,8 @@ export const cleanupExpiredPendingReservations = internalMutation({
       .filter((q) =>
         q.and(
           q.eq(q.field('is_archive'), false),
-          q.lte(q.field('pending_expiry'), now)
+          q.lte(q.field('pending_expiry'), now),
+          q.eq(q.field('status'), 'pending')
         )
       )
       .take(100); // バッチサイズ制限
