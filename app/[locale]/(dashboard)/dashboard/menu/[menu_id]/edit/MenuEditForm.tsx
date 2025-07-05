@@ -135,23 +135,27 @@ const createMenuSchema = (t: TranslationFunction) =>
       target_type: z
         .enum(ACTIVE_CUSTOMER_TYPE_VALUES, { message: t('validation.targetTypeRequired') })
         .optional(),
-      tags: z.preprocess(
-        (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
-        z
-          .string()
-          .max(MAX_TAG_LENGTH, { message: t('validation.tagsLengthMax', { max: MAX_TAG_LENGTH }) })
-          .transform((val) =>
-            val
-              ? val
-                  .replace(/[,、]/g, ',')
-                  .split(',')
-                  .map((tag) => tag.trim())
-                  .filter((tag) => tag !== '')
-              : []
-          )
-          .refine((val) => val.length <= 5, { message: t('validation.tagsMax') })
-          .optional()
-      ),
+      tags: z
+        .any()
+        .optional()
+        .transform((val) => {
+          if (!val) return []
+          if (Array.isArray(val)) return val
+          if (typeof val === 'string') {
+            return val
+              .replace(/[,、]/g, ',')
+              .split(',')
+              .map((tag) => tag.trim())
+              .filter((tag) => tag !== '')
+          }
+          return []
+        })
+        .refine((tags) => tags.length <= 5, {
+          message: t('validation.tagsMax'),
+        })
+        .refine((tags) => tags.every((tag: string) => tag.length <= MAX_TAG_LENGTH), {
+          message: t('validation.tagsLengthMax', { max: MAX_TAG_LENGTH }),
+        }),
       payment_method: z
         .enum(MENU_PAYMENT_METHOD_VALUES, { message: t('validation.paymentMethodRequired') })
         .optional(),
@@ -174,7 +178,7 @@ const createMenuSchema = (t: TranslationFunction) =>
 // Error message component
 const ErrorMessage = ({ message }: { message: string | undefined }) => (
   <motion.p
-    className="text-destructive-foreground text-sm mt-1 flex items-center gap-1"
+    className="text-destructive text-sm mt-1 flex items-center gap-1"
     initial={{ opacity: 0, height: 0 }}
     animate={{ opacity: 1, height: 'auto' }}
     exit={{ opacity: 0, height: 0 }}
@@ -238,6 +242,7 @@ export default function MenuEditForm() {
 
       setTargetGender(targetGenderValue)
       setTargetType(targetTypeValue)
+      setValue('images', menuData.images ?? [])
       setPaymentMethod(paymentMethodValue)
       setValue('warning_message', warningMessageValue)
 
@@ -436,7 +441,11 @@ export default function MenuEditForm() {
   return (
     <div>
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={(e) => {
+          handleSubmit(onSubmit, (validationErrors) => {
+            console.error('❌ Zod validation errors:', validationErrors)
+          })(e)
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
             e.preventDefault()
@@ -700,8 +709,9 @@ export default function MenuEditForm() {
                 setCurrentTags(tags)
                 setValue('tags', tags, { shouldValidate: true, shouldDirty: true })
               }}
+              register={register}
+              errors={errors}
             />
-
             <div className="flex flex-col w-full gap-2">
               <Label className="flex items-center gap-2 text-sm mb-3 mt-4">
                 <CreditCard size={16} className="text-muted-foreground" />
@@ -711,7 +721,7 @@ export default function MenuEditForm() {
                 <ToggleGroup
                   type="single"
                   className="w-full flex flex-wrap justify-start items-center gap-3"
-                  value={paymentMethod}
+                  value={paymentMethod || 'cash'}
                   onValueChange={(value) => {
                     if (value) {
                       const typedValue = value as MenuPaymentMethod
@@ -803,9 +813,9 @@ export default function MenuEditForm() {
           </div>
           <Switch
             id="isActive"
-            checked={watch('is_active') ?? true}
+            checked={watch('is_active') || false}
             onCheckedChange={(checked) =>
-              setValue('is_active', checked ?? true, { shouldValidate: true, shouldDirty: true })
+              setValue('is_active', checked, { shouldValidate: true, shouldDirty: true })
             }
           />
         </div>
@@ -823,7 +833,17 @@ export default function MenuEditForm() {
 
             <Button
               type="submit"
-              disabled={isSubmitting || isUploading || (!isDirty && newFiles.length === 0)}
+              disabled={isSubmitting || isUploading}
+              onClick={() => {
+                console.log('Button clicked - Debug info:', {
+                  isSubmitting,
+                  isUploading,
+                  isDirty,
+                  newFilesLength: newFiles.length,
+                  formErrors: errors,
+                  formValues: watch(),
+                })
+              }}
             >
               {isSubmitting || isUploading ? (
                 <>
