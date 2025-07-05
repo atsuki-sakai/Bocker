@@ -19,7 +19,7 @@ import { usePaginatedQuery } from 'convex/react'
 import { convertPaymentMethod, MENU_CATEGORY_VALUES, MenuCategory } from '@/convex/types'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
-import { Clock, X, Info } from 'lucide-react'
+import { Clock, X } from 'lucide-react'
 import {
   convertGender,
   convertActiveCustomerType,
@@ -47,6 +47,7 @@ interface MenuViewProps {
   selectedMenuIds: Id<'menu'>[] | null
   onChangeMenusAction: (menus: Doc<'menu'>[]) => void
   targetType?: ActiveCustomerType | null | undefined
+  isMultipleSelection?: boolean
 }
 
 type MenuCategoryWithSet = MenuCategory | 'セットメニュー'
@@ -57,14 +58,13 @@ export const MenuView = ({
   selectedMenuIds,
   onChangeMenusAction,
   targetType,
+  isMultipleSelection,
 }: MenuViewProps) => {
   // STATES
   const [currentCategory, setCurrentCategory] = useState<MenuCategoryWithSet | null>(null)
   const [showMenuDetails, setShowMenuDetails] = useState<boolean>(false)
   const [selectedMenu, setSelectedMenu] = useState<Doc<'menu'> | null>(null)
-  const [selectedMenuMap, setSelectedMenuMap] = useState<
-    Partial<Record<MenuCategoryWithSet, Doc<'menu'>>>
-  >({})
+  const [selectedMenuMap, setSelectedMenuMap] = useState<Record<string, Doc<'menu'>>>({})
   const [selectedCategories, setSelectedCategories] = useState<MenuCategoryWithSet[]>([])
   const [showPopover, setShowPopover] = useState<boolean>(false)
   const [blockedCategories, setBlockedCategories] = useState<MenuCategoryWithSet[]>([])
@@ -76,7 +76,7 @@ export const MenuView = ({
   const [mainCarouselApi, setMainCarouselApi] = useState<CarouselApi>()
   const [currentMainImageIndex, setCurrentMainImageIndex] = useState(0)
 
-  // オススメメニューCarousel用のState
+  // 人気メニューCarousel用のState
   const [recommendedCarouselApi, setRecommendedCarouselApi] = useState<CarouselApi>()
   const [currentRecommendedIndex, setCurrentRecommendedIndex] = useState(0)
 
@@ -101,7 +101,7 @@ export const MenuView = ({
   }, [mainCarouselApi])
   // ADDED END: Effect to sync main carousel's current image index
 
-  // オススメメニューCarousel用のEffect
+  // 人気メニューCarousel用のEffect
   useEffect(() => {
     if (!recommendedCarouselApi) {
       return
@@ -200,64 +200,85 @@ export const MenuView = ({
     [menus, isSetMenu]
   )
 
-  // メニュー選択時の処理
-  const handleMenuSelect = (menu: Doc<'menu'>) => {
-    const isMenuSet = isSetMenu(menu)
-    const menuCategories = menu.categories || []
-    const newSelectedMenuMap = { ...selectedMenuMap }
+  // メニューが選択済みかどうかを判定するユーティリティ
+  const isMenuSelected = useCallback(
+    (checkMenu: Doc<'menu'>) => {
+      return Object.values(selectedMenuMap).some((m) => m._id === checkMenu._id)
+    },
+    [selectedMenuMap]
+  )
 
-    // メニューが既に選択されている場合（選択解除のケース）
-    if (
-      (isMenuSet && selectedMenuMap['セットメニュー']?._id === menu._id) ||
-      (!isMenuSet &&
-        menuCategories.length > 0 &&
-        selectedMenuMap[menuCategories[0]]?._id === menu._id) ||
-      (!menuCategories.length && selectedMenuMap['その他']?._id === menu._id)
-    ) {
-      if (isMenuSet) {
-        delete newSelectedMenuMap['セットメニュー']
-        // セットメニュー解除時、ブロックされたカテゴリをクリア
-        setBlockedCategories([])
-      } else {
-        const category = menuCategories.length > 0 ? menuCategories[0] : 'その他'
-        delete newSelectedMenuMap[category]
+  // メニュー選択時の処理
+  const handleMenuSelect = (menu: Doc<'menu'>, allowMultipleSelection: boolean = true) => {
+    const isSet = isSetMenu(menu)
+    const menuCategories = menu.categories || []
+    const newSelectedMenuMap: Record<string, Doc<'menu'>> = { ...selectedMenuMap }
+
+    // すでに選択済みかどうかをチェック
+    const existingKey = Object.keys(newSelectedMenuMap).find(
+      (k) => newSelectedMenuMap[k]._id === menu._id
+    )
+
+    // --- 解除処理 ------------------------------
+    if (existingKey) {
+      delete newSelectedMenuMap[existingKey]
+
+      // セットメニュー解除時はブロックを再計算
+      if (isSet) {
+        const remainingSetMenus = Object.values(newSelectedMenuMap).filter(isSetMenu)
+        if (remainingSetMenus.length === 0) {
+          setBlockedCategories([])
+        } else {
+          const newBlocked = new Set<MenuCategoryWithSet>()
+          remainingSetMenus.forEach((m) => m.categories?.forEach((c) => newBlocked.add(c)))
+          setBlockedCategories(Array.from(newBlocked))
+        }
       }
-    }
-    // 新しいメニュー選択のケース
-    else {
-      // 選択しようとしているカテゴリがブロックされているかチェック
-      const categoryIsBlocked = isMenuSet
-        ? false // セットメニューは常に選択可能
+    } else {
+      // --- 追加処理 ------------------------------
+
+      // ブロックされているカテゴリか判定（セットメニューは常に選択可）
+      const categoryIsBlocked = isSet
+        ? false
         : menuCategories.some((cat) => blockedCategories.includes(cat))
 
       if (categoryIsBlocked) {
-        // ブロックされているカテゴリなら選択させない
         alert('このメニューは現在選択できません。セットメニューと競合しています。')
         return
       }
 
-      if (isMenuSet) {
-        // セットメニュー選択時、既存の競合するカテゴリの選択を解除
-        menuCategories.forEach((cat) => {
-          if (newSelectedMenuMap[cat]) {
-            delete newSelectedMenuMap[cat]
+      // allowMultipleSelection が false の場合、同一カテゴリの既存メニューを除外
+      if (!allowMultipleSelection) {
+        Object.keys(newSelectedMenuMap).forEach((k) => {
+          const m = newSelectedMenuMap[k]
+          const mPrimaryCat = isSetMenu(m)
+            ? 'セットメニュー'
+            : m.categories && m.categories.length > 0
+              ? m.categories[0]
+              : 'その他'
+          const thisPrimaryCat = isSet ? 'セットメニュー' : menuCategories[0] || 'その他'
+          if (mPrimaryCat === thisPrimaryCat) {
+            delete newSelectedMenuMap[k]
           }
         })
-
-        // セットメニューをマップに追加
-        newSelectedMenuMap['セットメニュー'] = menu
-
-        // ブロックするカテゴリを設定
-        setBlockedCategories(menuCategories)
-      } else {
-        // 通常メニュー選択
-        const category = menuCategories.length > 0 ? menuCategories[0] : 'その他'
-        newSelectedMenuMap[category] = menu
       }
+
+      // セットメニュー選択時は関連カテゴリのメニューを解除
+      if (isSet) {
+        Object.keys(newSelectedMenuMap).forEach((k) => {
+          const m = newSelectedMenuMap[k]
+          if (!isSetMenu(m) && m.categories?.some((cat) => menuCategories.includes(cat))) {
+            delete newSelectedMenuMap[k]
+          }
+        })
+        setBlockedCategories(menuCategories)
+      }
+
+      // メニューをマップに追加（キーは menu._id で一意に）
+      newSelectedMenuMap[menu._id] = menu
     }
 
     setSelectedMenuMap(newSelectedMenuMap)
-    // 選択されたメニューの配列を親コンポーネントに渡す
     onChangeMenusAction(Object.values(newSelectedMenuMap))
   }
 
@@ -271,22 +292,17 @@ export const MenuView = ({
   useEffect(() => {
     if (selectedMenuIds && selectedMenuIds.length > 0 && menus) {
       // IDからメニューオブジェクトを取得
-      const menuMap: Partial<Record<MenuCategoryWithSet, Doc<'menu'>>> = {}
+      const menuMap: Record<string, Doc<'menu'>> = {}
       const blockedCats: MenuCategoryWithSet[] = []
 
       selectedMenuIds.forEach((menuId) => {
         const menu = menus.find((m) => m._id === menuId)
         if (menu) {
-          if (isSetMenu(menu)) {
-            menuMap['セットメニュー'] = menu
-            // ブロックするカテゴリを追加
-            if (menu.categories) {
-              blockedCats.push(...menu.categories)
-            }
-          } else {
-            const category =
-              menu.categories && menu.categories.length > 0 ? menu.categories[0] : 'その他'
-            menuMap[category] = menu
+          menuMap[menu._id] = menu
+
+          // セットメニューの場合はブロックカテゴリを設定
+          if (isSetMenu(menu) && menu.categories) {
+            blockedCats.push(...menu.categories)
           }
         }
       })
@@ -335,13 +351,13 @@ export const MenuView = ({
     mainCarouselApi?.scrollTo(index)
   }
 
-  // オススメメニューを取得する関数
+  // 人気メニューを取得する関数
   const getRecommendedMenus = useMemo(() => {
     if (!menus) return []
 
-    // 「オススメ」カテゴリのメニューを取得
+    // 「人気メニュー」カテゴリのメニューを取得
     const recommendedMenus = menus.filter((menu) => {
-      return menu.categories?.includes('オススメ' as MenuCategory)
+      return menu.categories?.includes('人気メニュー' as MenuCategory)
     })
 
     // 性別・顧客タイプでフィルタリング
@@ -480,11 +496,11 @@ export const MenuView = ({
 
   return (
     <div className="w-full relative">
-      {/* オススメメニューCarousel */}
+      {/* 人気メニューCarousel */}
       {getRecommendedMenus.length > 0 && (
-        <div className="mb-6 border-b border-border pb-6">
+        <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-primary">オススメメニュー</h2>
+            <h2 className="text-xl font-bold text-primary">人気メニュー</h2>
             <div className="text-sm text-muted-foreground">
               {currentRecommendedIndex + 1} / {getRecommendedMenus.length}
             </div>
@@ -499,21 +515,14 @@ export const MenuView = ({
             }}
           >
             <CarouselContent className="-ml-2 md:-ml-4">
-              {getRecommendedMenus.map((menu) => {
+              {getRecommendedMenus.map((menu: Doc<'menu'>) => {
                 const isBlocked = menuBlocked(menu)
-                const isCurrentlySelected =
-                  selectedMenuMap[
-                    isSetMenu(menu)
-                      ? 'セットメニュー'
-                      : menu.categories && menu.categories.length > 0
-                        ? menu.categories[0]
-                        : 'その他'
-                  ]?._id === menu._id
+                const isCurrentlySelected = isMenuSelected(menu)
 
                 return (
                   <CarouselItem
                     key={menu._id}
-                    className="pl-2 md:pl-4 basis-full md:basis-1/2 lg:basis-1/2"
+                    className="pl-2 md:pl-4 basis-full md:basis-1/2 lg:basis-1/2 mb-4 "
                   >
                     <Card
                       className={`transition-all p-2 h-full ${
@@ -523,18 +532,23 @@ export const MenuView = ({
                             ? 'opacity-50 border-2 border-transparent'
                             : 'hover:shadow-md border-2 border-transparent cursor-pointer'
                       }`}
-                      onClick={() => !isBlocked && handleMenuSelect(menu)}
+                      onClick={() => !isBlocked && handleMenuSelect(menu, isMultipleSelection)}
                     >
-                      <div className="px-2 pt-2 flex justify-between items-center">
+                      <div className=" px-2 pt-6 flex justify-between items-center relative ">
+                        <div className="absolute -top-2 -right-2 z-10">
+                          {menu.categories?.includes('人気メニュー' as MenuCategory) && (
+                            <span className="bg-neon-foreground border border-dashed border-neon text-neon text-[10px] font-bold px-2 py-1 rounded-full">
+                              人気メニュー
+                            </span>
+                          )}
+                        </div>
+
                         <div className="flex flex-wrap gap-1 divide-x divide-border text-xs text-muted-foreground text-nowrap">
-                          <p className="">
-                            {convertActiveCustomerType(menu.target_type as ActiveCustomerType)}
-                          </p>
                           <p className="pl-1">{convertGender(menu.target_gender as Gender)}</p>
                         </div>
                         {menu.tags && menu.tags.length > 0 && (
                           <div className="flex justify-end flex-wrap gap-0.5 scale-95">
-                            {menu.tags.slice(0, 2).map((tag, idx) => (
+                            {menu.tags.slice(0, 2).map((tag: string, idx: number) => (
                               <p
                                 key={idx}
                                 className="text-xs px-2 py-0.5 bg-muted border border-border text-muted-foreground rounded-full"
@@ -631,189 +645,193 @@ export const MenuView = ({
           </Carousel>
         </div>
       )}
-
-      {/* フィルター表示・操作エリア */}
-      <p className="text-xs text-muted-foreground mb-2">
-        予約したいメニューを絞り込めます。カテゴリまたは性別を選択してください。
-      </p>
-      <div className="space-y-4">
-        <div className="flex gap-2 justify-between">
-          {/* 性別フィルター */}
-          <Popover open={showGenderPopover} onOpenChange={setShowGenderPopover}>
-            <div className="flex flex-col justify-between items-start mb-2">
-              <div className="flex justify-between items-end">
-                {selectedGenders.length > 0 ? (
-                  <p className="text-base font-bold text-muted-foreground rounded-md">
-                    <span className="mr-0.5">{selectedGenders.length}</span>
-                    <span className="text-xs">性別選択中</span>
-                  </p>
-                ) : (
-                  <p className="text-xs px-3 py-1 bg-secondary font-bold border border-border text-muted-foreground rounded-md">
-                    全性別を表示中
-                  </p>
-                )}
-              </div>
-
-              <div className="flex justify-end items-center gap-4">
-                <PopoverTrigger asChild>
-                  <Button size="sm" onClick={() => setShowGenderPopover(true)}>
-                    {'性別で絞り込む'}
-                  </Button>
-                </PopoverTrigger>
-              </div>
-            </div>
-            <PopoverContent
-              className="w-[240px] p-2"
-              onOpenAutoFocus={(event) => event.preventDefault()}
-            >
-              <Command>
-                <div className="flex justify-between items-center">
-                  <CommandInput placeholder="性別を検索…" />
-                  <Button size="sm" variant="ghost" onClick={() => setShowGenderPopover(false)}>
-                    <X className="w-4 h-4" />
-                  </Button>
+      <Card className="p-4 border-border">
+        <p className="text-xs text-muted-foreground mb-2 border-b border-border pb-2">
+          予約したいメニューを絞り込めます。カテゴリまたは性別を選択してください。
+        </p>
+        <div className="space-y-4">
+          <div className="flex gap-2 justify-between">
+            {/* 性別フィルター */}
+            <Popover open={showGenderPopover} onOpenChange={setShowGenderPopover}>
+              <div className="flex flex-col justify-between items-start mb-2">
+                <div className="flex justify-between items-end">
+                  {selectedGenders.length > 0 ? (
+                    <p className="text-base font-bold text-muted-foreground rounded-md">
+                      <span className="mr-0.5">{selectedGenders.length}</span>
+                      <span className="text-xs">性別選択中</span>
+                    </p>
+                  ) : (
+                    <p className="text-xs px-3 py-1 bg-secondary font-bold border border-border text-muted-foreground rounded-md">
+                      全性別を表示中
+                    </p>
+                  )}
                 </div>
-                <CommandList className="max-h-[400px] overflow-y-auto">
-                  {GENDER_VALUES.filter((gender) => gender !== 'unselected').map((gender) => (
-                    <CommandItem
-                      key={gender}
-                      className="cursor-pointer"
-                      onSelect={() => toggleGender(gender)}
-                    >
-                      <div className="flex justify-between items-center w-full">
-                        <span className={`${selectedGenders.includes(gender) ? 'font-bold' : ''}`}>
-                          {convertGender(gender)}
-                        </span>
-                        {selectedGenders.includes(gender) && (
-                          <Check className="w-4 h-4 font-bold text-accent-2" />
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
 
-          {/* カテゴリフィルター */}
-          <Popover open={showPopover} onOpenChange={setShowPopover}>
-            <div className="flex flex-col justify-between items-start mb-2">
-              <div className="flex justify-between items-end mb-2">
-                {selectedCategories.length > 0 ? (
-                  <p className="text-base font-bold text-muted-foreground rounded-md">
-                    <span className="mr-0.5">{selectedCategories.length}</span>
-                    <span className="text-xs">件選択中</span>
-                  </p>
-                ) : (
-                  <p className="text-xs px-3 py-1 bg-secondary font-bold border border-border text-muted-foreground rounded-md">
-                    全カテゴリを表示中
-                  </p>
-                )}
-              </div>
-
-              <div className="flex justify-end items-center gap-4">
-                <PopoverTrigger asChild>
-                  <Button size="sm" onClick={() => setShowPopover(true)}>
-                    {'カテゴリを絞り込む'}
-                  </Button>
-                </PopoverTrigger>
-              </div>
-            </div>
-            <PopoverContent
-              className="w-[240px] p-2"
-              onOpenAutoFocus={(event) => event.preventDefault()}
-            >
-              <Command>
-                <div className="flex justify-between items-center">
-                  <CommandInput placeholder="カテゴリを検索…" />
-                  <Button size="sm" variant="ghost" onClick={() => setShowPopover(false)}>
-                    <X className="w-4 h-4" />
-                  </Button>
+                <div className="flex justify-end items-center gap-4">
+                  <PopoverTrigger asChild>
+                    <Button size="sm" onClick={() => setShowGenderPopover(true)}>
+                      {'性別で絞り込む'}
+                    </Button>
+                  </PopoverTrigger>
                 </div>
-                <CommandList className="max-h-[400px] overflow-y-auto">
-                  {uniqueCategories.map((category) => (
-                    <CommandItem
-                      key={category}
-                      className="cursor-pointer"
-                      onSelect={() => toggleCategory(category as MenuCategory)}
-                    >
-                      <div className="flex justify-between items-center w-full">
-                        <span
-                          className={`${
-                            selectedCategories.includes(category as MenuCategory) ? 'font-bold' : ''
-                          }`}
-                        >
-                          {category}
-                        </span>
-                        {selectedCategories.includes(category as MenuCategory) && (
-                          <Check className="w-4 h-4 font-bold text-accent-2" />
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {/* 選択されたフィルターのタグ表示 */}
-        {(selectedCategories.length > 0 || selectedGenders.length > 0 || targetType) && (
-          <div className="flex items-center gap-2">
-            {selectedCategories.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">カテゴリ:</p>
-                <div className="flex flex-wrap gap-1 bg-muted p-2 rounded-md">
-                  {selectedCategories.map((category, index) => {
-                    return (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center gap-1 px-2 py-0.5 bg-background border border-border text-muted-foreground rounded-md"
+              </div>
+              <PopoverContent
+                className="w-[240px] p-2"
+                onOpenAutoFocus={(event) => event.preventDefault()}
+              >
+                <Command>
+                  <div className="flex justify-between items-center">
+                    <CommandInput placeholder="性別を検索…" />
+                    <Button size="sm" variant="ghost" onClick={() => setShowGenderPopover(false)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <CommandList className="max-h-[400px] overflow-y-auto">
+                    {GENDER_VALUES.filter((gender) => gender !== 'unselected').map((gender) => (
+                      <CommandItem
+                        key={gender}
+                        className="cursor-pointer"
+                        onSelect={() => toggleGender(gender)}
                       >
-                        <span className="text-xs text-nowrap">{category}</span>
-                        <button
-                          onClick={() => {
-                            setSelectedCategories(selectedCategories.filter((_, i) => i !== index))
-                          }}
-                        >
-                          <X className="w-4 h-4 ml-1 text-destructive bg-destructive-foreground rounded-full p-0.5" />
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+                        <div className="flex justify-between items-center w-full">
+                          <span
+                            className={`${selectedGenders.includes(gender) ? 'font-bold' : ''}`}
+                          >
+                            {convertGender(gender)}
+                          </span>
+                          {selectedGenders.includes(gender) && (
+                            <Check className="w-4 h-4 font-bold text-accent-2" />
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
 
-            {selectedGenders.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">性別:</p>
-                <div className="flex flex-wrap gap-1 bg-muted p-2 rounded-md">
-                  {selectedGenders.map((gender, index) => {
-                    return (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center gap-1 px-2 py-0.5 bg-background border border-border text-muted-foreground rounded-md"
-                      >
-                        <span className="text-xs text-nowrap">{convertGender(gender)}</span>
-                        <button
-                          onClick={() => {
-                            setSelectedGenders(selectedGenders.filter((_, i) => i !== index))
-                          }}
-                        >
-                          <X className="w-4 h-4 ml-1 text-destructive bg-destructive-foreground rounded-full p-0.5" />
-                        </button>
-                      </div>
-                    )
-                  })}
+            {/* カテゴリフィルター */}
+            <Popover open={showPopover} onOpenChange={setShowPopover}>
+              <div className="flex flex-col justify-between items-start mb-2">
+                <div className="flex justify-between items-end mb-2">
+                  {selectedCategories.length > 0 ? (
+                    <p className="text-base font-bold text-muted-foreground rounded-md">
+                      <span className="mr-0.5">{selectedCategories.length}</span>
+                      <span className="text-xs">件選択中</span>
+                    </p>
+                  ) : (
+                    <p className="text-xs px-3 py-1 bg-secondary font-bold border border-border text-muted-foreground rounded-md">
+                      全カテゴリを表示中
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex justify-end items-center gap-4">
+                  <PopoverTrigger asChild>
+                    <Button size="sm" onClick={() => setShowPopover(true)}>
+                      {'カテゴリを絞り込む'}
+                    </Button>
+                  </PopoverTrigger>
                 </div>
               </div>
-            )}
+              <PopoverContent
+                className="w-[240px] p-2"
+                onOpenAutoFocus={(event) => event.preventDefault()}
+              >
+                <Command>
+                  <div className="flex justify-between items-center">
+                    <CommandInput placeholder="カテゴリを検索…" />
+                    <Button size="sm" variant="ghost" onClick={() => setShowPopover(false)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <CommandList className="max-h-[400px] overflow-y-auto">
+                    {uniqueCategories.map((category) => (
+                      <CommandItem
+                        key={category}
+                        className="cursor-pointer"
+                        onSelect={() => toggleCategory(category as MenuCategory)}
+                      >
+                        <div className="flex justify-between items-center w-full">
+                          <span
+                            className={`${
+                              selectedCategories.includes(category as MenuCategory)
+                                ? 'font-bold'
+                                : ''
+                            }`}
+                          >
+                            {category}
+                          </span>
+                          {selectedCategories.includes(category as MenuCategory) && (
+                            <Check className="w-4 h-4 font-bold text-accent-2" />
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
-        )}
-      </div>
 
-      {/* メニュー詳細ダイアログ */}
+          {/* 選択されたフィルターのタグ表示 */}
+          {(selectedCategories.length > 0 || selectedGenders.length > 0 || targetType) && (
+            <div className="flex items-center gap-2">
+              {selectedCategories.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">カテゴリ:</p>
+                  <div className="flex flex-wrap gap-1 bg-muted p-2 rounded-md">
+                    {selectedCategories.map((category, index) => {
+                      return (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center gap-1 px-2 py-0.5 bg-background border border-border text-muted-foreground rounded-md"
+                        >
+                          <span className="text-xs text-nowrap">{category}</span>
+                          <button
+                            onClick={() => {
+                              setSelectedCategories(
+                                selectedCategories.filter((_, i) => i !== index)
+                              )
+                            }}
+                          >
+                            <X className="w-4 h-4 ml-1 text-destructive bg-destructive-foreground rounded-full p-0.5" />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {selectedGenders.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">性別:</p>
+                  <div className="flex flex-wrap gap-1 bg-muted p-2 rounded-md">
+                    {selectedGenders.map((gender, index) => {
+                      return (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center gap-1 px-2 py-0.5 bg-background border border-border text-muted-foreground rounded-md"
+                        >
+                          <span className="text-xs text-nowrap">{convertGender(gender)}</span>
+                          <button
+                            onClick={() => {
+                              setSelectedGenders(selectedGenders.filter((_, i) => i !== index))
+                            }}
+                          >
+                            <X className="w-4 h-4 ml-1 text-destructive bg-destructive-foreground rounded-full p-0.5" />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
       <Dialog
         open={showMenuDetails}
         onOpenChange={(open) => {
@@ -896,12 +914,7 @@ export const MenuView = ({
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center w-full aspect-[4/3] sm:aspect-[3/4] bg-muted text-muted-foreground rounded-lg">
-                      <Info className="w-8 h-8 mr-2 opacity-30" />
-                      <span>画像がありません</span>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="flex justify-between items-center">
@@ -967,25 +980,17 @@ export const MenuView = ({
                 </DialogClose>
                 <Button
                   onClick={() => {
-                    handleMenuSelect(selectedMenu)
+                    handleMenuSelect(selectedMenu, isMultipleSelection)
                     setShowMenuDetails(false)
                   }}
                 >
-                  {selectedMenuMap[
-                    selectedMenu.categories && selectedMenu.categories.length > 0
-                      ? selectedMenu.categories[0]
-                      : 'その他'
-                  ]?._id === selectedMenu._id
-                    ? 'メニューを解除'
-                    : 'メニューを選択'}
+                  {isMenuSelected(selectedMenu) ? 'メニューを解除' : 'メニューを選択'}
                 </Button>
               </DialogFooter>
             </>
           )}
         </DialogContent>
       </Dialog>
-
-      {/* メニュー表示部分（カテゴリ別セクション） */}
       <div className="mt-4 space-y-8">
         {Object.entries(filteredMenusToDisplay)
           .sort(([catA], [catB]) => {
@@ -1029,15 +1034,15 @@ export const MenuView = ({
 
             return (
               <section key={category}>
-                <div className="flex flex-col justify-between items-start w-full mb-2">
+                <div className="flex flex-col justify-between items-start w-full mb-4">
                   <h3 className="text-lg font-semibold">{category}</h3>
                   {category === 'セットメニュー' ? (
                     <span className="text-xs text-muted-foreground">
                       複数のカテゴリを含むメニューです。選択すると含まれるカテゴリは個別に選択できなくなります。
                     </span>
-                  ) : (
+                  ) : isMultipleSelection ? null : (
                     <span className="text-xs text-muted-foreground">
-                      同じカテゴリのメニューは一つまで選択可
+                      同一カテゴリは一つまで選択可能です。
                     </span>
                   )}
                 </div>
@@ -1051,8 +1056,8 @@ export const MenuView = ({
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {categoryMenus
                         .sort((a, b) => {
-                          // オススメカテゴリの場合は、updated_atで新しいものを上に
-                          if (category === 'オススメ') {
+                          //  人気メニューカテゴリの場合は、updated_atで新しいものを上に
+                          if (category === '人気メニュー') {
                             const aUpdated = a.updated_at || a._creationTime || 0
                             const bUpdated = b.updated_at || b._creationTime || 0
                             return bUpdated - aUpdated // 降順（新しいものが上）
@@ -1062,27 +1067,30 @@ export const MenuView = ({
                         })
                         .map((menu) => {
                           const isBlocked = menuBlocked(menu)
-                          const isCurrentlySelected =
-                            selectedMenuMap[
-                              isSetMenu(menu)
-                                ? 'セットメニュー'
-                                : menu.categories && menu.categories.length > 0
-                                  ? menu.categories[0]
-                                  : 'その他'
-                            ]?._id === menu._id
+                          const isCurrentlySelected = isMenuSelected(menu)
 
                           return (
                             <Card
                               key={menu._id}
-                              className={`transition-all p-2 ${
+                              className={`relative transition-all p-2 h-full ${
                                 isCurrentlySelected
                                   ? 'border-2 border-accent-2 shadow-md cursor-pointer'
                                   : isBlocked
                                     ? 'opacity-50 border-2 border-transparent'
                                     : 'hover:shadow-md border-2 border-transparent cursor-pointer'
                               }`}
-                              onClick={() => !isBlocked && handleMenuSelect(menu)}
+                              onClick={() =>
+                                !isBlocked && handleMenuSelect(menu, isMultipleSelection)
+                              }
                             >
+                              <div className="absolute -top-4 -right-4 z-10">
+                                {menu.categories?.includes('人気メニュー' as MenuCategory) && (
+                                  <span className="bg-neon-foreground border border-dashed border-neon text-neon text-[10px] font-bold px-2 py-1 rounded-full">
+                                    人気メニュー
+                                  </span>
+                                )}
+                              </div>
+
                               <div className="px-2 pt-2 flex justify-between items-center">
                                 <div className="flex flex-wrap gap-1 divide-x divide-border text-xs text-muted-foreground text-nowrap">
                                   <p className="">
@@ -1131,7 +1139,7 @@ export const MenuView = ({
                                         {convertPaymentMethod(menu.payment_method as PaymentMethod)}
                                       </p>
                                       {isSetMenu(menu) && (
-                                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                                        <span className="text-xs px-2 py-0.5 bg-link text-link-foreground rounded-full">
                                           セット
                                         </span>
                                       )}
@@ -1193,7 +1201,6 @@ export const MenuView = ({
             )
           })}
       </div>
-
       {/* 選択済みメニュー表示 */}
       {selectedMenus.length > 0 && (
         <div className="my-8">
@@ -1232,7 +1239,7 @@ export const MenuView = ({
                     variant="ghost"
                     size="sm"
                     className="text-destructive-foreground border-destructive-foreground bg-destructive h-8 w-8 p-0"
-                    onClick={() => handleMenuSelect(menu)}
+                    onClick={() => handleMenuSelect(menu, isMultipleSelection)}
                   >
                     ×
                   </Button>
