@@ -335,7 +335,7 @@ async function createReservationCore(ctx: MutationCtx, p: CreatePayload) {
   const pending_expiry = p.payment_method === "credit_card" 
     ? Date.now() + 30 * 60 * 1000 
     : undefined;
-
+  
   // 4. 予約作成
   const { reservationId } = await createReservationWithDetails(ctx, {
     tenant_id: p.tenant_id,
