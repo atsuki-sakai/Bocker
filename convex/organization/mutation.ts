@@ -6,7 +6,6 @@ import { createRecord, updateRecord, killRecord } from "@/convex/utils/helpers";
 import { ConvexError } from "convex/values";
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from "@/lib/errors/constants";
 import { stripeConnectStatusType } from "@/convex/types";
-import { imageType } from "@/convex/types";
 import { MAX_NOTES_LENGTH, MAX_PHONE_LENGTH, MAX_POSTAL_CODE_LENGTH, MAX_ADDRESS_LENGTH } from "@/convex/constants";
 
 export const create = mutation({
