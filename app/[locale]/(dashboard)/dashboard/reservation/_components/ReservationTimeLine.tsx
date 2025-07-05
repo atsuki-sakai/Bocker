@@ -574,14 +574,14 @@ export default function ReservationTimeLine() {
   const isWeekendDate = isWeekend(selectedDate)
 
   return (
-    <div className="h-fit bg-background w-full py-2">
+    <div className="h-fit bg-background w-full">
       {/* ヘッダー部分 */}
       <div className="w-full bg-background backdrop-blur-sm border-b-2 border-border space-y-4 shadow-sm">
         {/* 日付選択とビュー切り替え */}
         {/* 今日から2週間後までの予約件数を表示 */}
-        <div className="px-4 pt-4">
+        <div className="px-4">
           <div className="flex items-center justify-start gap-2 mb-2">
-            <h3 className="text-sm font-medium text-muted-foreground">予約状況（2週間）</h3>
+            <h3 className="text-sm font-bold">予約状況（直近14日間）</h3>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-neon rounded-full" />
@@ -602,9 +602,9 @@ export default function ReservationTimeLine() {
                   key={item.date}
                   onClick={() => setSelectedDate(date)}
                   className={cn(
-                    'flex flex-col items-center justify-center p-2 rounded-lg transition-all min-w-[52px]',
+                    'flex flex-col items-center justify-center p-2 rounded-lg transition-all min-w-[52px] w-full ',
                     'border hover:border-primary/50 hover:shadow-sm',
-                    isSelected && 'bg-primary text-primary-foreground border-primary shadow-md',
+                    isSelected && 'bg-link-foreground text-link border-link shadow-md',
                     isToday && !isSelected && 'border-primary font-semibold',
                     item.count > 0 && !isSelected && 'bg-neon-foreground border-neon',
                     isWeekend && !isSelected && 'text-destructive'
@@ -617,7 +617,9 @@ export default function ReservationTimeLine() {
                     <span
                       className={cn(
                         'text-xs',
-                        item.count > 0 ? 'font-bold' : 'text-muted-foreground opacity-50'
+                        item.count > 0
+                          ? 'font-bold'
+                          : `text-muted-foreground opacity-50 ${isSelected ? 'text-muted' : ''}`
                       )}
                     >
                       {item.count}
@@ -675,7 +677,7 @@ export default function ReservationTimeLine() {
       <div className="overflow-hidden">
         <Tabs value={viewMode} className="w-full">
           <TabsContent value="timeline" className="m-0">
-            <div className="overflow-auto  bg-background">
+            <div className="overflow-auto  bg-background pb-4">
               <div className="relative max-h-[calc(100vh-200px)] min-w-max">
                 {/* タイムラインヘッダー */}
                 <TimelineHeader timeSlots={halfHourSlots} />
