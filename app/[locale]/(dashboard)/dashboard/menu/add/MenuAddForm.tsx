@@ -23,21 +23,13 @@ import { useTranslations } from 'next-intl'
 import { getPlanLimits } from '@/convex/utils/helpers'
 import { SubscriptionPlanName } from '@/convex/types'
 import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from '@/components/ui/accordion'
-import {
   ImageIcon,
   DollarSign,
-  Tag,
-  Clock,
-  Users,
-  Repeat,
-  CreditCard,
+  PiggyBank,
+  Scissors,
+  Component as ComponentIcon,
+  CrosshairIcon,
   Wallet,
-  ShoppingBag,
   AlertCircle,
   Info,
   Save,
@@ -69,8 +61,8 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command'
-import { Check, ChevronDown } from 'lucide-react'
-import { MAX_NOTES_LENGTH, MAX_NUM, MAX_TAG_LENGTH } from '@/convex/constants'
+import { Check, ChevronDown, Clock, Users, CreditCard } from 'lucide-react'
+import { MAX_NOTES_LENGTH, MAX_NUM } from '@/convex/constants'
 import Uploader from '@/components/common/Uploader'
 import { zNumberFieldOptional } from '@/lib/validations/common'
 
@@ -137,6 +129,7 @@ export default function MenuAddForm() {
         .refine((val) => val !== 0 && val !== null && val !== undefined, {
           message: t('validation.durationRequired'),
         }),
+      warning_message: z.string().optional(),
       description: z
         .string({
           required_error: t('validation.descriptionRequired'),
@@ -154,7 +147,6 @@ export default function MenuAddForm() {
         (val) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(',') : ''),
         z
           .string()
-          .max(MAX_TAG_LENGTH, { message: t('validation.tagsMaxLength', { max: MAX_TAG_LENGTH }) })
           .transform((val) =>
             val
               ? val
@@ -165,6 +157,9 @@ export default function MenuAddForm() {
               : []
           )
           .refine((val) => val.length <= 5, { message: t('validation.tagsMaxCount') })
+          .refine((val) => val.every((tag) => tag.length <= 20), {
+            message: t('validation.tagMaxLength', { max: 20 }),
+          })
       ),
       payment_method: z.enum(MENU_PAYMENT_METHOD_VALUES, {
         message: t('validation.paymentMethodRequired'),
@@ -254,6 +249,7 @@ export default function MenuAddForm() {
           sale_price: data.sale_price ?? undefined,
           duration_min: data.duration_min,
           images: newUploadedImageUrls,
+          warning_message: data.warning_message,
           description: data.description,
           target_gender: data.target_gender,
           target_type: data.target_type,
@@ -290,6 +286,7 @@ export default function MenuAddForm() {
         unit_price: undefined as unknown as number,
         sale_price: undefined as unknown as number,
         duration_min: undefined as unknown as number,
+        warning_message: undefined as unknown as string,
         description: undefined as unknown as string,
         target_gender: 'unselected',
         target_type: 'all',
@@ -342,7 +339,7 @@ export default function MenuAddForm() {
               <ZodTextField
                 name="name"
                 label={t('menuName')}
-                icon={<Tag className="text-muted-foreground" />}
+                icon={<Scissors className="text-muted-foreground" />}
                 placeholder={t('placeholder.menuName')}
                 register={register}
                 errors={errors}
@@ -351,6 +348,7 @@ export default function MenuAddForm() {
               />
               <div>
                 <div className="text-sm flex items-start gap-2 mb-2">
+                  <ComponentIcon size={16} className="text-muted-foreground" />
                   <Label className="text-sm flex items-center gap-2">{t('categories')}</Label>
                   <span className="text-destructive">*</span>
                 </div>
@@ -440,7 +438,7 @@ export default function MenuAddForm() {
               <ZodTextField
                 name="unit_price"
                 label={t('unitPrice')}
-                icon={<DollarSign className="text-muted-foreground" />}
+                icon={<PiggyBank className="text-muted-foreground" />}
                 type="number"
                 placeholder={t('placeholder.unitPrice')}
                 register={register}
@@ -453,7 +451,7 @@ export default function MenuAddForm() {
                 name="sale_price"
                 label={t('salePrice')}
                 type="number"
-                icon={<ShoppingBag className="text-muted-foreground" />}
+                icon={<DollarSign className="text-muted-foreground" />}
                 placeholder={t('placeholder.salePrice')}
                 register={register}
                 errors={errors}
@@ -491,7 +489,7 @@ export default function MenuAddForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="flex items-center gap-2 text-sm">
-                  <Repeat size={16} className="text-muted-foreground" />
+                  <CrosshairIcon size={16} className="text-muted-foreground" />
                   {t('target')}
                 </Label>
 
@@ -609,7 +607,6 @@ export default function MenuAddForm() {
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-
         <Label className="flex items-center gap-2 text-sm mb-2 mt-6">
           <Info size={16} className="text-muted-foreground" />
           {t('menuDescription')} <span className="text-destructive ml-1">*</span>
@@ -623,6 +620,20 @@ export default function MenuAddForm() {
           className="border-border focus-visible:ring-border resize-none"
         />
         {errors.description && <ErrorMessage message={errors.description?.message} />}
+
+        <Label className="flex items-center gap-2 text-sm mb-2 mt-6">
+          <Info size={16} className="text-muted-foreground" />
+          {t('warningMessage')} <span className="text-destructive ml-1">*</span>
+        </Label>
+        <Textarea
+          id="warning_message"
+          placeholder={t('placeholder.warningMessage')}
+          {...register('warning_message')}
+          onChange={(e) => setValue('warning_message', e.target.value, { shouldValidate: true })}
+          rows={4}
+          className="border-border focus-visible:ring-border resize-none"
+        />
+        {errors.warning_message && <ErrorMessage message={errors.warning_message?.message} />}
 
         <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-4">
           <div>
@@ -664,34 +675,6 @@ export default function MenuAddForm() {
           </div>
         </div>
       </form>
-      <Accordion type="multiple" className="mt-8 space-y-2">
-        <AccordionItem value="line-access-token">
-          <AccordionTrigger>{t('help.durationInfo')}</AccordionTrigger>
-          <AccordionContent className="space-y-2 text-sm text-muted-foreground">
-            <ol className="list-decimal list-inside space-y-1 bg-muted p-4 rounded-md">
-              <li>
-                <strong>{t('help.actualWorkTime')} :</strong>
-                {t('help.actualWorkTimeDesc')}
-                <br />
-                {t('help.actualWorkTimeExample')}
-              </li>
-              <li>
-                <strong>{t('help.totalDuration')} :</strong>
-                {t('help.totalDurationDesc')}
-                <br />
-                {t('help.totalDurationExample')}
-              </li>
-              <li>{t('help.algorithmExplanation')}</li>
-            </ol>
-
-            <p className="text-xs text-muted-foreground space-y-1">
-              {t('help.requiredNote')}
-              <br />
-              {t('help.inputExample')}
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
     </div>
   )
 }
