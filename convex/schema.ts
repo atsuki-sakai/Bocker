@@ -781,6 +781,29 @@ const reservation_detail = defineTable({
 
 /**
  * =========================
+ * 予約の通知
+ * =========================
+ * 予約が作成された時に通知を送信するためのテーブル
+ */
+const reservation_notification = defineTable({
+  tenant_id: v.id('tenant'), // テナントID
+  org_id: v.id('organization'), // 店舗ID
+  reservation_id: v.id('reservation'), // 予約ID
+  notification_sent: v.optional(v.boolean()), // 通知送信済みフラグ
+  notification_sent_at: v.optional(v.number()), // 通知送信日時（Unix timestamp）
+  date: v.string(), // 予約日 YYYY-MM-DD
+  start_time_unix: v.number(), // 予約開始時間
+  end_time_unix: v.number(), // 予約終了時間
+  customer_name: v.string(), // 顧客名
+  staff_name: v.optional(v.string()), // スタッフ名
+  status: reservationStatusType, // 予約ステータス
+  payment_status: reservationPaymentStatusType, // 支払ステータス
+  ...CommonFields,
+})
+.index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive'])
+
+/**
+ * =========================
  * POINT PROGRAM
  * =========================
  * 一つの組織につき一つ作成する。
@@ -846,6 +869,7 @@ export default defineSchema({
   coupon_config,
   reservation,
   reservation_detail,
+  reservation_notification,
   point_config,
   webhook_events,
 });
