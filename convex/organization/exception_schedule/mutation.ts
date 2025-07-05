@@ -9,7 +9,7 @@ import {
   validateDateStrFormat,
 } from '@/convex/utils/validations';
 import { checkAuth } from '@/convex/utils/auth';
-import { exceptionScheduleType, dayOfWeekType } from '@/convex/types';
+import { exceptionScheduleType } from '@/convex/types';
 import { MAX_NOTES_LENGTH } from '@/convex/constants';
 import { excludeFields } from '@/convex/utils/helpers';
 
@@ -122,7 +122,7 @@ export const upsert = mutation({
     validateDateStrFormat(args.date, 'date');
     validateStringLength(args.notes, 'notes', MAX_NOTES_LENGTH)
     // まずテナントと組織IDのクエリを作成
-    let query = ctx.db
+    const query = ctx.db
       .query('exception_schedule')
       .withIndex('by_tenant_org_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false));
 
