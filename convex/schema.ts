@@ -381,7 +381,7 @@ const config = defineTable({
   postal_code: v.optional(v.string()), // 郵便番号
   address: v.optional(v.string()), // 住所
   reservation_rules: v.optional(v.string()), // 予約ルール
-  images: v.array(imageType), // 画像
+  images: v.optional(v.array(imageType)), // 画像 (任意)
   description: v.optional(v.string()), // 店舗説明
   ...CommonFields,
 })
@@ -592,7 +592,7 @@ const menu = defineTable({
   unit_price: v.number(), // 単価
   sale_price: v.optional(v.number()), // セール価格
   duration_min: v.number(), // 施術時間
-  images: v.array(imageType), // 画像
+  images: v.optional(v.array(imageType)), // 画像 (任意)
   warning_message: v.optional(v.string()), // 注意事項メッセージ
   description: v.optional(v.string()), // 説明
   target_gender: v.optional(genderType), // 対象性別
