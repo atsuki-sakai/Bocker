@@ -8,6 +8,7 @@ import { Toaster } from 'sonner'
 import { ThemeProvider } from 'next-themes'
 import { useTheme } from 'next-themes'
 import { dark } from '@clerk/themes'
+import GoogleAnalytics from '@/components/common/GoogleAnalytics'
 
 export default function RootLayout({
   children,
@@ -30,6 +31,7 @@ export default function RootLayout({
     >
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <ConvexClientProvider>
+          <GoogleAnalytics />
           <div className="pb-12 md:pb-20">{children}</div>
           <Toaster position="bottom-right" richColors />
         </ConvexClientProvider>
