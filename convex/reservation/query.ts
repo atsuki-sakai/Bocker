@@ -3,7 +3,7 @@
  *   - 効率的な予約データ取得（複合インデックス最適利用）
  *   - is_archive考慮で論理削除レコードを自動除外
  *   - フロント・管理画面用途に応じた柔軟なフィルタ/ソート/ページネーション
- * 
+ *
  * ■ 非責任範囲
  *   - 同時間帯重複排除
  *   - 同時利用席数チェック
@@ -31,7 +31,7 @@ import {
 import { TimeRange, IntegratedAvailabilityInfo } from '@/lib/types';
 import { validateDateStrToDate } from '@/convex/utils/validations';
 import { ConvexError } from 'convex/values';
-import { getReservationWithDetail, checkReservationDoubleBooking, findBestAvailableStaffForTimeSlot } from './reservation.helpers';
+import { getReservationWithDetail, checkReservationDoubleBooking } from './reservation.helpers';
 import { internalQuery } from '@/convex/_generated/server';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { IntegratedTimeSlot, integratedTimeSlotType, DayOfWeek } from '@/convex/types';
@@ -1762,8 +1762,284 @@ export const getBestAvailableStaffForTimeSlot = query({
     v.null()
   ),
   handler: async (ctx, args) => {
-    // 顧客予約フローからの呼び出しのため認証チェックは不要
-    return await findBestAvailableStaffForTimeSlot(ctx, args)
+    console.log('=== findBestAvailableStaffForTimeSlot デバッグ開始 ===')
+    console.log('引数:', {
+      ...args,
+      start_time_str: new Date(args.start_time_unix).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+      end_time_str: new Date(args.end_time_unix).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+    })
+
+    // 1. 全アクティブスタッフを取得
+    const allStaff = await ctx.db
+      .query('staff')
+      .withIndex('by_tenant_org_active_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', true).eq('is_archive', false)
+      )
+      .collect()
+
+    console.log('1. 全アクティブスタッフ数:', allStaff.length)
+    console.log('スタッフリスト:', allStaff.map(s => ({ id: s._id, name: s.name })))
+
+    if (allStaff.length === 0) {
+      console.log('アクティブスタッフが0人のため終了')
+      return null
+    }
+
+    // 2. 各メニューに対応しないスタッフ（除外スタッフ）を取得
+    const excludedIds = new Set<string>()
+    const exclusionsPromises = args.menu_ids.map(async menu_id => {
+      const exclusions = await ctx.db
+        .query('menu_exclusion_staff')
+        .withIndex('by_tenant_org_menu_archive', (q) =>
+          q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('menu_id', menu_id).eq('is_archive', false)
+        )
+        .collect()
+      console.log(`メニュー ${menu_id} の除外スタッフ:`, exclusions)
+      return exclusions
+    })
+    const allExclusions = await Promise.all(exclusionsPromises)
+    allExclusions.forEach(exclusions => {
+      exclusions.forEach((ex) => excludedIds.add(ex.staff_id))
+    })
+
+    // 3. メニューに対応可能なスタッフのみフィルタリング
+    const availableStaff = allStaff.filter((staff) => !excludedIds.has(staff._id))
+
+    console.log('2. 除外されたスタッフID:', Array.from(excludedIds))
+    console.log('3. メニュー対応可能スタッフ数:', availableStaff.length)
+    console.log('対応可能スタッフリスト:', availableStaff.map(s => ({ id: s._id, name: s.name })))
+
+    if (availableStaff.length === 0) {
+      console.log('メニュー対応可能スタッフが0人のため終了')
+      return null
+    }
+
+    // 対象日の曜日を取得
+    const targetDate = new Date(args.date)
+    const dayOfWeek = getDayOfWeek(targetDate)
+    console.log('対象日:', args.date, '曜日:', dayOfWeek)
+
+    const filteredBySchedule: typeof availableStaff = []
+
+    // 4. スケジュール・週間勤務時間チェックで更にスタッフを絞り込み
+    for (const staff of availableStaff) {
+      console.log(`\n=== スタッフ ${staff.name} のスケジュールチェック開始 ===`)
+      let skip = false
+
+      // 4.1 当日の例外スケジュール取得
+      const staffSchedules = await ctx.db
+        .query('staff_exception_schedule')
+        .withIndex('by_tenant_org_staff_date_archive', (q) =>
+          q
+            .eq('tenant_id', args.tenant_id)
+            .eq('org_id', args.org_id)
+            .eq('staff_id', staff._id)
+            .eq('date', args.date)
+            .eq('is_archive', false)
+        )
+        .collect()
+
+      console.log('例外スケジュール数:', staffSchedules.length)
+      
+      // 例外スケジュールチェック
+      for (const sch of staffSchedules) {
+        console.log('例外スケジュール:', {
+          is_all_day: sch.is_all_day,
+          start: sch.start_time_unix ? new Date(sch.start_time_unix).toLocaleString('ja-JP') : undefined,
+          end: sch.end_time_unix ? new Date(sch.end_time_unix).toLocaleString('ja-JP') : undefined
+        })
+
+        if (sch.is_all_day) {
+          console.log('→ 終日スケジュールあり、スキップ')
+          skip = true
+          break
+        }
+        if (
+          !sch.is_all_day &&
+          sch.start_time_unix !== undefined &&
+          sch.end_time_unix !== undefined &&
+          args.start_time_unix < sch.end_time_unix &&
+          args.end_time_unix > sch.start_time_unix
+        ) {
+          console.log('→ 時間帯重複あり、スキップ')
+          skip = true
+          break
+        }
+      }
+
+      if (skip) {
+        console.log('例外スケジュールにより除外')
+        continue
+      }
+
+      // 4.2 週間スケジュール取得（クエリ実行前のログ）
+      console.log(`週間スケジュール検索条件:`, {
+        tenant_id: args.tenant_id,
+        org_id: args.org_id,
+        staff_id: staff._id,
+        day_of_week: dayOfWeek,
+        is_open: true,
+        is_archive: false
+      })
+
+      // 4.2 週間スケジュール取得
+      const weekSchedule = await ctx.db
+        .query('staff_week_schedule')
+        .withIndex('by_tenant_org_staff_week_open_archive', (q) =>
+          q
+            .eq('tenant_id', args.tenant_id)
+            .eq('org_id', args.org_id)
+            .eq('staff_id', staff._id)
+            .eq('day_of_week', dayOfWeek as DayOfWeek)
+            .eq('is_open', true)
+            .eq('is_archive', false)
+        )
+        .first()
+
+      // 週間スケジュールの詳細ログ
+      if (weekSchedule) {
+        console.log('週間スケジュール取得結果:', {
+          day_of_week: weekSchedule.day_of_week,
+          is_open: weekSchedule.is_open,
+          start_hour: weekSchedule.start_hour,
+          end_hour: weekSchedule.end_hour,
+          _id: weekSchedule._id
+        })
+      } else {
+        // is_open条件を外して再度確認（デバッグ用）
+        const allSchedules = await ctx.db
+          .query('staff_week_schedule')
+          .withIndex('by_tenant_org_staff_week_open_archive', (q) =>
+            q
+              .eq('tenant_id', args.tenant_id)
+              .eq('org_id', args.org_id)
+              .eq('staff_id', staff._id)
+              .eq('day_of_week', dayOfWeek as DayOfWeek)
+              .eq('is_open', true)
+              .eq('is_archive', false)
+          )
+          .collect()
+        
+        console.log('週間スケジュール未取得。全件確認:', allSchedules.map(s => ({
+          _id: s._id,
+          is_open: s.is_open,
+          start_hour: s.start_hour,
+          end_hour: s.end_hour
+        })))
+      }
+
+      if (!weekSchedule) {
+        console.log('→ 週間スケジュールなし or is_open=false、スキップ')
+        continue
+      }
+
+      // 勤務時間内判定
+      const workStart = weekSchedule.start_hour
+        ? convertHourToTimestamp(weekSchedule.start_hour, args.date) ?? Number.MIN_SAFE_INTEGER
+        : Number.MIN_SAFE_INTEGER
+      const workEnd = weekSchedule.end_hour
+        ? convertHourToTimestamp(weekSchedule.end_hour, args.date) ?? Number.MAX_SAFE_INTEGER
+        : Number.MAX_SAFE_INTEGER
+
+      console.log('勤務時間チェック:', {
+        workStart: new Date(workStart).toLocaleString('ja-JP'),
+        workEnd: new Date(workEnd).toLocaleString('ja-JP'),
+        reservationStart: new Date(args.start_time_unix).toLocaleString('ja-JP'),
+        reservationEnd: new Date(args.end_time_unix).toLocaleString('ja-JP'),
+        workStartHour: weekSchedule.start_hour,
+        workEndHour: weekSchedule.end_hour
+      })
+
+      if (args.start_time_unix < workStart || args.end_time_unix > workEnd) {
+        console.log('→ 勤務時間外、スキップ')
+        continue
+      }
+
+      console.log('→ スケジュールOK、追加')
+      filteredBySchedule.push(staff)
+    }
+
+    console.log('\n4. スケジュール確認後のスタッフ数:', filteredBySchedule.length)
+    console.log('スケジュール確認後スタッフリスト:', filteredBySchedule.map(s => ({ id: s._id, name: s.name })))
+
+    if (filteredBySchedule.length === 0) {
+      console.log('スケジュール確認後スタッフが0人のため終了')
+      return null
+    }
+
+    // 5. スタッフ設定（優先度、指名料）を取得
+    const configs = await ctx.db
+      .query('staff_config')
+      .withIndex('by_tenant_org_staff_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id))
+      .filter((q) => q.eq(q.field('is_archive'), false))
+      .collect()
+    const configMap = new Map(configs.map((config) => [config.staff_id, config]))
+
+    console.log('5. スタッフ設定数:', configs.length)
+    console.log('設定があるスタッフID:', configs.map(c => ({ 
+      staff_id: c.staff_id, 
+      priority: c.priority,
+      extra_charge: c.extra_charge 
+    })))
+
+    // 6. ダブルブッキングをチェックし、対応可能なスタッフを絞り込み
+    const availableStaffWithConfigs = []
+    for (const staff of filteredBySchedule) {
+      console.log(`\nスタッフ ${staff.name} のダブルブッキングチェック開始 ===`)
+      const config = configMap.get(staff._id)
+      console.log(`スタッフ設定:`, config ? {
+        priority: config.priority,
+        extra_charge: config.extra_charge
+      } : 'なし')
+
+      if (!config) {
+        console.log(`→ 設定がないため除外`)
+        continue
+      }
+
+      try {
+        const isDoubleBooked = await checkReservationDoubleBooking(ctx, {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+          staff_id: staff._id,
+          date: args.date,
+          start_time_unix: args.start_time_unix,
+          end_time_unix: args.end_time_unix,
+        })
+
+        if (!isDoubleBooked) {
+          console.log(`→ ダブルブッキングなし、追加対象`)
+          availableStaffWithConfigs.push({
+            staff_id: staff._id,
+            staff_name: staff.name || '',
+            priority: config?.priority || 1,
+            extra_charge: config?.extra_charge || 0,
+          })
+        } else {
+          console.log(`→ ダブルブッキングあり、除外`)
+        }
+      } catch (error) {
+        console.warn(`→ 可用性チェックでエラー:`, error)
+        continue
+      }
+    }
+
+    console.log('\n6. 最終利用可能スタッフ数:', availableStaffWithConfigs.length)
+    console.log('最終スタッフリスト:', availableStaffWithConfigs)
+
+    if (availableStaffWithConfigs.length === 0) {
+      console.log('最終的に利用可能なスタッフが0人のため終了')
+      return null
+    }
+
+    // 7. 優先度順でソート（数値が高いほど優先度が高い）
+    availableStaffWithConfigs.sort((a, b) => b.priority - a.priority)
+
+    console.log('7. 選択されたスタッフ:', availableStaffWithConfigs[0])
+    console.log('=== findBestAvailableStaffForTimeSlot デバッグ終了 ===')
+
+    // 8. 最優先スタッフを返す
+    return availableStaffWithConfigs[0]
   },
 })
 
