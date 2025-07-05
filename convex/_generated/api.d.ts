@@ -51,6 +51,8 @@ import type * as point_query from "../point/query.js";
 import type * as reservation_action from "../reservation/action.js";
 import type * as reservation_manage from "../reservation/manage.js";
 import type * as reservation_mutation from "../reservation/mutation.js";
+import type * as reservation_notification_mutation from "../reservation/notification/mutation.js";
+import type * as reservation_notification_query from "../reservation/notification/query.js";
 import type * as reservation_payment from "../reservation/payment.js";
 import type * as reservation_query from "../reservation/query.js";
 import type * as staff_action from "../staff/action.js";
@@ -128,6 +130,8 @@ declare const fullApi: ApiFromModules<{
   "reservation/action": typeof reservation_action;
   "reservation/manage": typeof reservation_manage;
   "reservation/mutation": typeof reservation_mutation;
+  "reservation/notification/mutation": typeof reservation_notification_mutation;
+  "reservation/notification/query": typeof reservation_notification_query;
   "reservation/payment": typeof reservation_payment;
   "reservation/query": typeof reservation_query;
   "staff/action": typeof staff_action;
