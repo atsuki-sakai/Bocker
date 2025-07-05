@@ -235,6 +235,7 @@ export async function handleUserCreated(
             reservation_limit_days: 30,
             available_cancel_days: 3,
             today_first_later_minutes: 30,
+            is_multiple_select_category: true,
           })
         );
        }catch(error){
@@ -291,7 +292,7 @@ export async function handleUserUpdated(
   // プライマリーメールアドレスを取得
   let email = 'no-email';
   if (primary_email_address_id && email_addresses.length > 0) {
-    const primaryEmail = email_addresses.find((e: any) => e.id === primary_email_address_id);
+    const primaryEmail = email_addresses.find((e) => e.id === primary_email_address_id);
     email = primaryEmail?.email_address || email_addresses[0]?.email_address || 'no-email';
   } else {
     email = email_addresses[0]?.email_address || 'no-email';
