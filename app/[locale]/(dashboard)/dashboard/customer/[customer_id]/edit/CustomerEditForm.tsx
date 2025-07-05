@@ -438,11 +438,9 @@ export default function CustomerEditForm() {
               setValue('tags', tags, { shouldDirty: true })
             }}
             title={t('tags')}
-            exampleText={t('tagExample')}
+            register={register}
+            errors={errors}
           />
-          {errors.tags && (
-            <p className="text-sm font-medium text-destructive mt-1">{errors.tags.message}</p>
-          )}
         </div>
 
         <div>
