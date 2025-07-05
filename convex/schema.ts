@@ -447,6 +447,7 @@ const reservation_config = defineTable({
   available_cancel_days: v.number(),   // 何日前までキャンセル可
   today_first_later_minutes: v.number(), // 当日の最短予約時の開始時間を何分後にするか
   reservation_interval_minutes: reservationIntervalMinutesType, // 予約間隔
+  is_multiple_select_category: v.optional(v.boolean()), // カテゴリ複数選択を許可するか
   ...CommonFields,
 })
 .index('by_tenant_org_archive', ['tenant_id', 'org_id', 'is_archive']); // org_id で取得
@@ -592,6 +593,7 @@ const menu = defineTable({
   sale_price: v.optional(v.number()), // セール価格
   duration_min: v.number(), // 施術時間
   images: v.array(imageType), // 画像
+  warning_message: v.optional(v.string()), // 注意事項メッセージ
   description: v.optional(v.string()), // 説明
   target_gender: v.optional(genderType), // 対象性別
   target_type: v.optional(activeCustomerType), // 対象タイプ

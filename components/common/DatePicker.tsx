@@ -88,6 +88,9 @@ export function DatePicker({
   const [isOpen, setIsOpen] = useState(false)
   const [displayMonth, setDisplayMonth] = useState<Date>(value || new Date())
 
+  // 年のリスト生成用の基準年（固定値として現在の年を使用）
+  const baseYear = new Date().getFullYear()
+
   // 現在のロケールに基づいてdate-fnsロケールを動的に読み込み
   useEffect(() => {
     const loadLocale = async () => {
@@ -108,14 +111,14 @@ export function DatePicker({
     setIsOpen(false)
   }
 
-  // カスタムカレンダーナビゲーション用の年月選択
+  // カスタムカレンダーナビゲーション用の年月選択（表示用）
   const currentYear = displayMonth.getFullYear()
   const currentMonth = displayMonth.getMonth()
 
-  // 年のリスト生成（用途に応じて範囲を変更）
+  // 年のリスト生成（固定の基準年を使用して範囲が変動しないようにする）
   const years = isBirthday
-    ? Array.from({ length: 121 }, (_, i) => currentYear - i) // 誕生日用：現在の年から120年前まで
-    : Array.from({ length: 101 }, (_, i) => currentYear + i) // 予約日等用：現在の年から100年先まで
+    ? Array.from({ length: 121 }, (_, i) => baseYear - i) // 誕生日用：現在の年から120年前まで
+    : Array.from({ length: 101 }, (_, i) => baseYear + i) // 予約日等用：現在の年から100年先まで
 
   // 月のリスト（0-11）
   const months =

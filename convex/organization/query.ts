@@ -1,4 +1,4 @@
-import { get } from './week_schedule/query'
+
 import { query } from "@/convex/_generated/server";
 import { checkAuth } from "@/convex/utils/auth";
 import { v } from "convex/values";

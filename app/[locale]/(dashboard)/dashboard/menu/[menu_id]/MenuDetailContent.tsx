@@ -59,6 +59,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   const router = useRouter()
   const t = useTranslations('menus.detail')
   const [showFullDescription, setShowFullDescription] = useState(false)
+  const [showFullWarningMessage, setShowFullWarningMessage] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const deleteMenu = useMutation(api.menu.mutation.kill)
   const { showErrorToast } = useErrorHandler()
@@ -139,8 +140,18 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
     return `${menu.description.substring(0, 150)}...`
   }, [menu, showFullDescription])
 
+  const shortenedWarningMessage = useMemo(() => {
+    if (!menu?.warning_message) return ''
+    if (menu.warning_message.length <= 150 || showFullWarningMessage) return menu.warning_message
+    return `${menu.warning_message.substring(0, 150)}...`
+  }, [menu, showFullWarningMessage])
+
   const toggleDescription = () => {
     setShowFullDescription(!showFullDescription)
+  }
+
+  const toggleWarningMessage = () => {
+    setShowFullWarningMessage(!showFullWarningMessage)
   }
 
   const handleDeleteMenu = async () => {
@@ -474,6 +485,44 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                         onClick={toggleDescription}
                       >
                         {showFullDescription ? (
+                          <>
+                            <ChevronUp className="w-4 h-4 mr-1" /> {t('showLess')}
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-4 h-4 mr-1" /> {t('showMore')}
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-md font-medium text-muted-foreground flex items-center">
+                    <FileText className="w-4 h-4 mr-2 text-primary" />
+                    {t('fields.warningMessage')}
+                  </h3>
+                  <div className="bg-muted p-4 rounded-lg border border-border">
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={showFullWarningMessage ? 'full' : 'short'}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="text-primary leading-relaxed"
+                      >
+                        {shortenedWarningMessage}
+                      </motion.p>
+                    </AnimatePresence>
+
+                    {menu.warning_message && menu.warning_message.length > 150 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 text-link-foreground "
+                        onClick={toggleWarningMessage}
+                      >
+                        {showFullWarningMessage ? (
                           <>
                             <ChevronUp className="w-4 h-4 mr-1" /> {t('showLess')}
                           </>

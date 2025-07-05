@@ -1268,6 +1268,8 @@
       "paymentFeeDetail": "Online payment fee: 4% + 40 yen/transaction",
       "description": "Menu Description",
       "descriptionPlaceholder": "Enter detailed menu description",
+      "warningMessage": "Warning Message",
+      "warningMessagePlaceholder": "e.g. This menu is for long hair",
       "publish": "Publish menu",
       "publishHelp": "When turned off, this menu will not be visible to customers",
       "back": "Back",
@@ -1287,6 +1289,7 @@
       "descriptionRequired": "Description is required",
       "descriptionMax": "Description must be within {max} characters",
       "genderRequired": "Gender is required",
+      "tagMaxLength": "Tag must be {max} characters or less",
       "targetTypeRequired": "Target type is required",
       "tagsMax": "Maximum 5 tags allowed",
       "tagsLengthMax": "Tags must be within {max} characters",
@@ -1324,6 +1327,7 @@
     "duration": "Duration",
     "durationMinutes": "Treatment Time",
     "description": "Description",
+    "warningMessage": "Warning Message",
     "menuDescription": "Menu Description",
     "shortDescription": "Short Description",
     "detailedDescription": "Detailed Description",
@@ -1379,11 +1383,12 @@
       "unitPrice": "e.g. 5000",
       "salePrice": "e.g. 4000",
       "selectDuration": "Select treatment time",
+      "warningMessage": "e.g. This menu is for long hair",
       "menuDescription": "Enter detailed menu description",
       "tags": "e.g. Digital perm, Summer style, For long faces"
     },
     "help": {
-      "multipleCategories": "If you select multiple categories, it will be treated as a set menu.",
+      "multipleCategories": "If you select multiple categories, it will be treated as a set menu. Popular menus are displayed at the top of the reservation menu.",
       "durationTotal": "Set the total treatment time for the menu.",
       "targetCustomer": "You can select the main customer attributes for this menu.",
       "targetGender": "Select the target gender for this menu",
@@ -2202,7 +2207,9 @@
       "save": "Save",
       "saving": "Saving...",
       "saveImage": "Save Image",
-      "uploading": "Uploading..."
+      "uploading": "Uploading...",
+      "searching": "Searching...",
+      "searchAddress": "Search Address"
     },
     "validation": {
       "salonNameMax": "Salon name must be 120 characters or less",
@@ -2216,7 +2223,9 @@
     "messages": {
       "settingsSaved": "Settings saved",
       "imageUploadFailed": "Image upload failed",
-      "imageSaved": "Image saved"
+      "imageSaved": "Image saved",
+      "enterPostalCode": "Please enter a postal code",
+      "addressFound": "Address found"
     },
     "changeEmail": {
       "title": "Change Email Address",
@@ -2334,9 +2343,11 @@
       "availableSeatsHelp": "Set the number of seats available for the same time slot",
       "shortestReservationTime": "Select shortest reservation start time",
       "shortestReservationTimeHelp": "Set how many minutes after the current time reservations can be accepted on the same day if there are available slots",
+      "isMultipleSelectCategory": "Allow multiple menu selections in the same category",
+      "isMultipleSelectCategoryHelp": "Set whether to allow multiple menu selections in the same category. If OFF, only one menu in the same category can be selected.",
       "saving": "Saving...",
       "save": "Save Reservation Acceptance Settings",
-      "saved": "Schedule settings saved",
+      "saved": "Reservation acceptance settings saved",
       "daysUnit": "days",
       "minutesUnit": "minutes",
       "seatsUnit": "seats"
@@ -2713,6 +2724,7 @@
         "targetType": "Target Type",
         "paymentMethod": "Payment Method",
         "description": "Description",
+        "warningMessage": "Warning Message",
         "tags": "Tags",
         "systemInfo": "System Info",
         "createdAt": "Created At",
@@ -2807,6 +2819,7 @@
       "descriptionRequired": "Description is required",
       "descriptionMax": "Description must be {max} characters or less",
       "genderRequired": "Gender is required",
+      "tagMaxLength": "Tag must be {max} characters or less",
       "targetTypeRequired": "Target type is required",
       "tagsMax": "Maximum of 5 tags",
       "tagsLengthMax": "Tags must be {max} characters or less",

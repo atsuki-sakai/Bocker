@@ -57,6 +57,7 @@ import {
   FileText,
   Crosshair,
   CreditCard,
+  Info,
 } from 'lucide-react'
 import { getMinuteMultiples } from '@/lib/schedules'
 import { MAX_NUM, MAX_NOTES_LENGTH, MAX_TAG_LENGTH } from '@/convex/constants'
@@ -116,6 +117,12 @@ const createMenuSchema = (t: TranslationFunction) =>
             thumbnail_url: z.string(),
           })
         )
+        .optional(),
+      warning_message: z
+        .string()
+        .max(MAX_NOTES_LENGTH, {
+          message: t('validation.descriptionMax', { max: MAX_NOTES_LENGTH }),
+        })
         .optional(),
       description: z
         .string()
@@ -218,6 +225,7 @@ export default function MenuEditForm() {
       const targetGenderValue = menuData.target_gender || 'unselected'
       const targetTypeValue = menuData.target_type || 'all'
       const paymentMethodValue = menuData.payment_method || 'cash'
+      const warningMessageValue = menuData.warning_message || ''
 
       // ステート変数を設定
       setExistingImages(
@@ -231,6 +239,7 @@ export default function MenuEditForm() {
       setTargetGender(targetGenderValue)
       setTargetType(targetTypeValue)
       setPaymentMethod(paymentMethodValue)
+      setValue('warning_message', warningMessageValue)
 
       // フォームを初期化
       reset({
@@ -239,6 +248,7 @@ export default function MenuEditForm() {
         unit_price: menuData.unit_price ?? undefined,
         sale_price: menuData.sale_price ?? undefined,
         duration_min: durationMinValue ?? undefined,
+        warning_message: menuData.warning_message,
         description: menuData.description,
         target_gender: targetGenderValue,
         target_type: targetTypeValue,
@@ -255,7 +265,9 @@ export default function MenuEditForm() {
 
   // フォーム送信処理
   const onSubmit = async (data: z.infer<typeof schemaMenu>) => {
+    console.log('onSubmit: ', data)
     try {
+      console.log('data: ', data)
       if (!orgId || !tenantId || !menuData) {
         toast.error(t('messages.salonNotFound'))
         return
@@ -389,6 +401,7 @@ export default function MenuEditForm() {
         sale_price: data.sale_price ?? undefined,
         duration_min: data.duration_min,
         images: imagesToSave,
+        warning_message: data.warning_message,
         description: data.description,
         target_gender: data.target_gender,
         target_type: data.target_type,
@@ -428,6 +441,9 @@ export default function MenuEditForm() {
           if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
             e.preventDefault()
           }
+        }}
+        onError={(e) => {
+          console.log('onError: ', e)
         }}
       >
         <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
@@ -763,6 +779,22 @@ export default function MenuEditForm() {
           className="border-border focus-visible:ring-border resize-none"
         />
         {errors.description && <ErrorMessage message={errors.description?.message} />}
+
+        <Label className="flex items-center gap-2 text-sm mb-2 mt-6">
+          <Info size={16} className="text-muted-foreground" />
+          {t('form.warningMessage')} <span className="text-destructive ml-1">*</span>
+        </Label>
+        <Textarea
+          id="warning_message"
+          placeholder={t('form.warningMessagePlaceholder')}
+          {...register('warning_message')}
+          onChange={(e) =>
+            setValue('warning_message', e.target.value, { shouldValidate: true, shouldDirty: true })
+          }
+          rows={4}
+          className="border-border focus-visible:ring-border resize-none"
+        />
+        {errors.warning_message && <ErrorMessage message={errors.warning_message?.message} />}
 
         <div className="flex items-center justify-between p-4 bg-muted rounded-md mb-6 mt-4">
           <div>

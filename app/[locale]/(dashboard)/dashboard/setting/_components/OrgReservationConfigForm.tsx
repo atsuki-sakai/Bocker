@@ -14,6 +14,7 @@ import { RESERVATION_CANCEL_LIMIT_DAYS, RESERVATION_LIMIT_DAYS } from '@/lib/con
 import { RESERVATION_INTERVAL_MINUTES_VALUES } from '@/convex/types'
 import type { ReservationIntervalMinutes } from '@/convex/types'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -54,6 +55,7 @@ const orgReservationConfigFormSchema = z.object({
     .string()
     .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
     .optional(),
+  is_multiple_select_category: z.boolean().optional().default(true),
 })
 
 // フォーム値の変更を監視
@@ -63,6 +65,7 @@ const defaultReservationConfig = {
   reservation_interval_minutes: '30',
   available_sheet: '1',
   today_first_later_minutes: '30',
+  is_multiple_select_category: true,
 }
 
 export default function OrgReservationConfigForm() {
@@ -89,7 +92,7 @@ export default function OrgReservationConfigForm() {
   const reservationIntervalMinutesValue = watch('reservation_interval_minutes')
   const availableSheetValue = watch('available_sheet')
   const todayFirstLaterMinutesValue = watch('today_first_later_minutes')
-
+  const isMultipleSelectCategoryValue = watch('is_multiple_select_category')
   // スケジュール設定が変更されたらフォームをリセット
   useEffect(() => {
     if (reservationConfig) {
@@ -99,6 +102,7 @@ export default function OrgReservationConfigForm() {
       const scheduleIntervalMinutes = reservationConfig.reservation_interval_minutes
       const scheduleAvailableSheet = reservationConfig.available_sheet
       const scheduleTodayFirstLaterMinutes = reservationConfig.today_first_later_minutes
+      const scheduleIsMultipleSelectCategory = reservationConfig.is_multiple_select_category
       // データ型の整合性を確保するために明示的に文字列型に変換
       const limitDays =
         scheduleLimitDays !== undefined && scheduleLimitDays !== null
@@ -125,6 +129,11 @@ export default function OrgReservationConfigForm() {
           ? String(scheduleTodayFirstLaterMinutes)
           : defaultReservationConfig.today_first_later_minutes
 
+      const isMultipleSelectCategory =
+        scheduleIsMultipleSelectCategory !== undefined && scheduleIsMultipleSelectCategory !== null
+          ? scheduleIsMultipleSelectCategory
+          : defaultReservationConfig.is_multiple_select_category
+
       // フォーム値をクリアしてから新しい値を設定
       reset({}, { keepValues: false })
 
@@ -137,6 +146,7 @@ export default function OrgReservationConfigForm() {
         setValue('reservation_interval_minutes', intervalMinutes)
         setValue('available_sheet', availableSheet)
         setValue('today_first_later_minutes', todayFirstLaterMinutes)
+        setValue('is_multiple_select_category', isMultipleSelectCategory)
       }, 0)
     } else {
       // 初期値設定
@@ -158,7 +168,7 @@ export default function OrgReservationConfigForm() {
     }
   }, [reservationConfig, reset, setValue, orgId, tenantId])
 
-  // フォーム送信処理å
+  // フォーム送信処理
   const onSubmit = useCallback(
     async (data: z.infer<typeof orgReservationConfigFormSchema>) => {
       if (!orgId) return
@@ -180,6 +190,7 @@ export default function OrgReservationConfigForm() {
         const todayFirstLaterMinutes = Number(
           data.today_first_later_minutes || defaultReservationConfig.today_first_later_minutes
         )
+        const isMultipleSelectCategory = data.is_multiple_select_category ?? true
         await upsertReservationConfig({
           tenant_id: tenantId!,
           org_id: orgId!,
@@ -188,6 +199,7 @@ export default function OrgReservationConfigForm() {
           reservation_interval_minutes: intervalMinutes,
           available_sheet: availableSheet,
           today_first_later_minutes: todayFirstLaterMinutes,
+          is_multiple_select_category: isMultipleSelectCategory,
         })
 
         toast.success(t('saved'))
@@ -369,6 +381,23 @@ export default function OrgReservationConfigForm() {
               {errors.today_first_later_minutes && (
                 <p className="text-xs text-destructive mt-1">
                   {errors.today_first_later_minutes.message}
+                </p>
+              )}
+            </div>
+            <div className="w-full md:w-1/2">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-bold">{t('isMultipleSelectCategory')}</h4>
+                <Switch
+                  checked={isMultipleSelectCategoryValue}
+                  onCheckedChange={(checked) => {
+                    setValue('is_multiple_select_category', checked, { shouldDirty: true })
+                  }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">{t('isMultipleSelectCategoryHelp')}</p>
+              {errors.is_multiple_select_category && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.is_multiple_select_category.message}
                 </p>
               )}
             </div>
