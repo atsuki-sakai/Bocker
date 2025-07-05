@@ -7,29 +7,19 @@ import { Tag, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { AlertCircle } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { UseFormRegister, FieldErrors } from 'react-hook-form'
+import { z } from 'zod'
+import { Input } from '@/components/ui/input'
 
-// エラーメッセージコンポーネント
-const ErrorMessage = ({ message }: { message: string | undefined }) => (
-  <motion.p
-    className="text-destructive text-sm mt-1 flex items-center gap-1"
-    initial={{ opacity: 0, height: 0 }}
-    animate={{ opacity: 1, height: 'auto' }}
-    exit={{ opacity: 0, height: 0 }}
-  >
-    <AlertCircle size={14} /> {message ?? 'NULL'}
-  </motion.p>
-)
-
-type TagInputProps = {
+type TagInputProps<TSchema extends z.ZodTypeAny> = {
   tags: string[]
   setTagsAction: (tags: string[]) => void
-  error?: string
+  register: UseFormRegister<z.infer<TSchema>>
+  errors: FieldErrors<z.infer<TSchema>>
   title?: string
-  exampleText?: string
 }
 
-const TagInput: React.FC<TagInputProps> = ({ tags, setTagsAction, error, exampleText, title }) => {
+const TagInput = ({ tags, setTagsAction, register, errors, title }: TagInputProps<z.ZodType>) => {
   const [input, setInput] = useState('')
   const t = useTranslations('common.tagInput')
 
@@ -82,7 +72,9 @@ const TagInput: React.FC<TagInputProps> = ({ tags, setTagsAction, error, example
       </div>
 
       <div className="flex flex-wrap gap-2 w-full">
-        <input
+        <Input
+          id="tags"
+          {...register('tags')}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -100,11 +92,12 @@ const TagInput: React.FC<TagInputProps> = ({ tags, setTagsAction, error, example
           {t('addButton')}
         </Button>
       </div>
-
-      {error && <ErrorMessage message={error} />}
-      <p className="text-xs text-muted-foreground mt-1">
-        {t('example')}: {exampleText ?? t('defaultExample')}
-      </p>
+      {errors.tags && (
+        <p className="mt-1 text-sm text-destructive flex items-center gap-1">
+          <AlertCircle size={14} />
+          {errors.tags.message as string}
+        </p>
+      )}
     </div>
   )
 }
