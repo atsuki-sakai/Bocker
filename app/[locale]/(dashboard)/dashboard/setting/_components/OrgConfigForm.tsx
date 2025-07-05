@@ -20,7 +20,7 @@ import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { ZodTextField } from '@/components/common'
 import { Loader2 } from 'lucide-react'
-import { Mail, Phone, MapPin, Save, Upload, Building } from 'lucide-react'
+import { Mail, Phone, MapPin, Save, Upload, Building, Search } from 'lucide-react'
 import Uploader from '@/components/common/Uploader'
 import { getPlanLimits } from '@/convex/utils/helpers'
 import { SubscriptionPlanName } from '@/convex/types'
@@ -60,6 +60,7 @@ export default function OrgConfigForm() {
   const t = useTranslations('settings')
   const [currentFiles, setCurrentFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false)
 
   const orgAndConfigFormSchema = createOrgAndConfigFormSchema(t)
 
@@ -77,10 +78,21 @@ export default function OrgConfigForm() {
     reset,
     setValue,
     watch,
-    formState: { errors, isSubmitting, isDirty },
+    formState: { errors, isSubmitting, isDirty, dirtyFields },
   } = useZodForm(orgAndConfigFormSchema)
 
   const postalCode = watch('postal_code')
+  const address = watch('address')
+
+  // デバッグ用：フォームの状態を監視
+  useEffect(() => {
+    console.log('Form state:', {
+      isDirty,
+      dirtyFields,
+      address,
+      postalCode,
+    })
+  }, [isDirty, dirtyFields, address, postalCode])
 
   // 郵便番号から住所を取得する関数（useCallbackでメモ化）
   const fetchAddress = useCallback(
@@ -95,12 +107,23 @@ export default function OrgConfigForm() {
     [setValue, showErrorToast]
   )
 
-  // 郵便番号が7桁になったら自動的に住所を検索する
-  useEffect(() => {
-    if (postalCode && postalCode.length === 7) {
-      fetchAddress(postalCode)
+  // 住所検索ボタンクリックハンドラー
+  const handleSearchAddress = useCallback(async () => {
+    if (!postalCode || postalCode.length < 7) {
+      toast.error(t('messages.enterPostalCode'))
+      return
     }
-  }, [postalCode, fetchAddress])
+
+    setIsSearchingAddress(true)
+    try {
+      await fetchAddress(postalCode)
+      toast.success(t('messages.addressFound'))
+    } catch (error) {
+      showErrorToast(error)
+    } finally {
+      setIsSearchingAddress(false)
+    }
+  }, [postalCode, fetchAddress, t, showErrorToast])
 
   // 画像アップロード処理（useCallbackでメモ化）
   const handleSaveImg = useCallback(
@@ -156,11 +179,8 @@ export default function OrgConfigForm() {
         // 既存の画像を全て削除
         if (orgAndConfig?.config?.images && orgAndConfig.config.images.length > 0) {
           // [ログ] 既存画像削除リクエスト
-          console.log(
-            '[画像アップロード] 既存画像削除リクエスト',
-            orgAndConfig.config.images
-          )
-          
+          console.log('[画像アップロード] 既存画像削除リクエスト', orgAndConfig.config.images)
+
           // 既存画像を全て削除
           const deletePromises = orgAndConfig.config.images.map(async (image) => {
             if (image.original_url) {
@@ -176,7 +196,7 @@ export default function OrgConfigForm() {
               })
             }
           })
-          
+
           await Promise.all(deletePromises)
         }
 
@@ -226,13 +246,13 @@ export default function OrgConfigForm() {
   useEffect(() => {
     if (orgAndConfig) {
       reset({
-        org_name: orgAndConfig.organization.org_name,
-        org_email: orgAndConfig.organization.org_email,
-        phone: orgAndConfig.config?.phone,
-        postal_code: orgAndConfig.config?.postal_code,
-        address: orgAndConfig.config?.address,
-        reservation_rules: orgAndConfig.config?.reservation_rules,
-        description: orgAndConfig.config?.description,
+        org_name: orgAndConfig.organization.org_name || '',
+        org_email: orgAndConfig.organization.org_email || '',
+        phone: orgAndConfig.config?.phone || '',
+        postal_code: orgAndConfig.config?.postal_code || '',
+        address: orgAndConfig.config?.address || '',
+        reservation_rules: orgAndConfig.config?.reservation_rules || '',
+        description: orgAndConfig.config?.description || '',
       })
     }
   }, [orgAndConfig, reset])
@@ -292,7 +312,7 @@ export default function OrgConfigForm() {
               errors={errors}
             />
             <div className="flex flex-col md:flex-row gap-4">
-              <div className="w-full md:w-1/3">
+              <div className="flex items-end gap-2 w-full md:w-1/3 space-y-2">
                 <ZodTextField
                   name="postal_code"
                   register={register}
@@ -301,6 +321,23 @@ export default function OrgConfigForm() {
                   icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
                   errors={errors}
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleSearchAddress}
+                  disabled={isSearchingAddress || !postalCode || postalCode.length < 7}
+                >
+                  {isSearchingAddress ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    </>
+                  ) : (
+                    <>
+                      <Search className="mr-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
               </div>
 
               <div className="w-full md:w-2/3">
