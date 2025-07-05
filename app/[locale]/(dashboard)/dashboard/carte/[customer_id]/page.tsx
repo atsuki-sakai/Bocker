@@ -372,7 +372,12 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
             <div className="grid grid-cols-1 gap-4">
               {reservations.length > 0 ? (
                 reservations
-                  .filter((item) => item.status !== 'cancelled')
+                  .filter(
+                    (item) =>
+                      item.status !== 'cancelled' &&
+                      item.status !== 'pending' &&
+                      item.status !== 'refunded'
+                  )
                   .map((item) => (
                     <Link
                       href={`/dashboard/carte/${customerId}/reservation/${item.id}`}
