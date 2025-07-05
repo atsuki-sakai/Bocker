@@ -593,6 +593,7 @@ const menu = defineTable({
   sale_price: v.optional(v.number()), // セール価格
   duration_min: v.number(), // 施術時間
   images: v.array(imageType), // 画像
+  warning_message: v.optional(v.string()), // 注意事項メッセージ
   description: v.optional(v.string()), // 説明
   target_gender: v.optional(genderType), // 対象性別
   target_type: v.optional(activeCustomerType), // 対象タイプ
