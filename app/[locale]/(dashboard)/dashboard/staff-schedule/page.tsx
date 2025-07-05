@@ -10,6 +10,7 @@ import { api } from '@/convex/_generated/api'
 import { Link } from '@/i18n/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRef, useState, useEffect, useMemo } from 'react'
+import type { DayOfWeek } from '@/convex/types'
 import {
   startOfWeek as startOfWeekFns,
   endOfWeek as endOfWeekFns,
@@ -17,6 +18,7 @@ import {
   isSameDay,
   isToday,
 } from 'date-fns'
+import { useQuery } from 'convex/react'
 import { formatDate } from '@/lib/formatDate'
 import type { SupportedLocale } from '@/lib/dateLocale'
 import { Id, Doc } from '@/convex/_generated/dataModel'
@@ -31,11 +33,22 @@ import { usePaginatedQuery } from 'convex/react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { convertReservationStatus } from '@/convex/types'
+import { convertDayOfWeekToJa } from '@/lib/schedules'
 
 // 10分刻みのグリッド単位を定数として定義
 const GRID_UNIT_MIN = 10 // 1行 = 10分
 const ROWS_PER_HOUR = 60 / GRID_UNIT_MIN // 1時間 = 6行
 const TOTAL_ROWS_PER_DAY = 24 * ROWS_PER_HOUR // 1日 = 144行
+
+const DAY_OF_WEEK_VALUES = [
+  { key: 'monday', value: 1 },
+  { key: 'tuesday', value: 2 },
+  { key: 'wednesday', value: 3 },
+  { key: 'thursday', value: 4 },
+  { key: 'friday', value: 5 },
+  { key: 'saturday', value: 6 },
+  { key: 'sunday', value: 7 },
+] as const
 
 export default function StaffSchedulePage() {
   const { tenantId, orgId } = useTenantAndOrganization()
@@ -68,6 +81,17 @@ export default function StaffSchedulePage() {
   const [weekStartFormatted, setWeekStartFormatted] = useState('')
   const [weekEndFormatted, setWeekEndFormatted] = useState('')
   const [selectedDateFormatted, setSelectedDateFormatted] = useState('')
+
+  const staffWeekSchedules = useQuery(
+    api.staff.week_schedule.query.getByTenantOrgStaff,
+    tenantId && orgId && selectedStaffId
+      ? {
+          tenant_id: tenantId,
+          org_id: orgId,
+          staff_id: selectedStaffId,
+        }
+      : 'skip'
+  )
 
   // FIXME: 100件ずつ取得しているので、100件以上の予約がある場合は、ページネーションを実装する
   const { results: reservations, isLoading: isReservationsLoading } = useStablePaginatedQuery(
@@ -143,21 +167,6 @@ export default function StaffSchedulePage() {
 
   // SP 週表示時は横スクロール出来る様に最小幅を確保し、PC では自動調整
   const timelineContainerWidthClass = viewMode === 'week' ? 'min-w-[720px] md:min-w-0' : 'w-full'
-
-  // 現在の週の日付を計算
-  const getDaysOfWeek = (): Date[] => {
-    const days: Date[] = []
-    const day = new Date(startOfWeekFns(currentDate, { weekStartsOn: 1 }))
-
-    for (let i = 0; i < 7; i++) {
-      days.push(new Date(day))
-      day.setDate(day.getDate() + 1)
-    }
-
-    return days
-  }
-
-  const daysOfWeek = getDaysOfWeek()
 
   // 予約のある日を特定する関数
   const datesWithReservations = useMemo(() => {
@@ -603,6 +612,56 @@ export default function StaffSchedulePage() {
             </div>
           </header>
         </div>
+        <div className="mt-4 b-4">
+          <p className="text-sm font-medium mb-2">出勤表</p>
+          {staffWeekSchedules && staffWeekSchedules.length > 0 ? (
+            <div className="flex gap-2 w-full overflow-x-auto pb-4">
+              {staffWeekSchedules
+                .sort((a, b) => {
+                  const aValue = DAY_OF_WEEK_VALUES.find((d) => d.key === a.day_of_week)?.value ?? 0
+                  const bValue = DAY_OF_WEEK_VALUES.find((d) => d.key === b.day_of_week)?.value ?? 0
+                  return aValue - bValue
+                })
+                .map((schedule) => (
+                  <div
+                    key={schedule._id}
+                    className={`flex flex-col p-3 rounded-lg border w-full text-nowrap ${
+                      schedule.is_open
+                        ? 'bg-palette-3 border-palette-3-foreground'
+                        : 'bg-palette-1 border-palette-1-foreground'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center mb-2">
+                      <span className="text-sm font-medium">
+                        {weekDays[Number(schedule.day_of_week) - 1]}
+                      </span>
+                      <span className="text-xs text-nowrap px-2 py-0.5 rounded-full">
+                        {convertDayOfWeekToJa(schedule.day_of_week as DayOfWeek)}
+                      </span>
+                      <span
+                        className={`text-xs text-nowrap px-2 py-0.5 rounded-full ${
+                          schedule.is_open
+                            ? 'bg-palette-3 text-palette-3-foreground'
+                            : 'bg-palette-1 text-palette-1-foreground'
+                        }`}
+                      >
+                        {schedule.is_open ? '出勤' : '休み'}
+                      </span>
+                    </div>
+                    {schedule.is_open && (
+                      <div className="text-xs text-muted-foreground text-nowrap text-center tracking-wider font-medium">
+                        {schedule.start_hour} - {schedule.end_hour}
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">{t('noScheduleAvailable')}</p>
+            </div>
+          )}
+        </div>
         {reservations && reservations.length > 0 ? (
           <div className="flex h-full flex-col">
             <ScrollArea className="relative h-[calc(100vh)]">
@@ -619,21 +678,28 @@ export default function StaffSchedulePage() {
                     aria-label={t('weekdayHeader')}
                   >
                     <div className="min-w-[56px]"></div>
-                    {daysOfWeek.map((date, index) => {
-                      const dateIsToday = isToday(date)
-                      const isSelected = date.toDateString() === selectedDate.toDateString()
-                      const hasReservations = hasReservationsOnDate(date)
+                    {DAY_OF_WEEK_VALUES.filter((day) =>
+                      staffWeekSchedules?.some((schedule) => schedule.day_of_week === day.key)
+                    ).map((day) => {
+                      const currentDate = new Date()
+                      const dayOffset = day.value - currentDate.getDay()
+                      const targetDate = new Date(currentDate)
+                      targetDate.setDate(currentDate.getDate() + dayOffset)
+
+                      const dateIsToday = isToday(targetDate)
+                      const isSelected = targetDate.toDateString() === selectedDate.toDateString()
+                      const hasReservations = hasReservationsOnDate(targetDate)
                       return (
                         <button
-                          key={index}
+                          key={day.key}
                           type="button"
                           className="flex flex-col text-xs items-center pt-2 bg-background"
                           onClick={() => {
-                            handleDateChange(date)
+                            handleDateChange(targetDate)
                           }}
                         >
                           <div className="flex items-center justify-center">
-                            {weekDays[index]}{' '}
+                            {weekDays[day.value - 1]}{' '}
                             {hasReservations && (
                               <span className="ml-1 w-1.5 h-1.5 bg-accent-2 text-accent-2-foreground rounded-full" />
                             )}
@@ -649,7 +715,7 @@ export default function StaffSchedulePage() {
                                     : 'font-semibold text-accent-2'
                             }`}
                           >
-                            {date.getDate()}
+                            {targetDate.getDate()}
                           </span>
                         </button>
                       )

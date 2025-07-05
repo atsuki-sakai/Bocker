@@ -890,7 +890,7 @@ export default function ReservationForm() {
   if (!tenantId || !orgId) return <Loading />
 
   return (
-    <div className="container mx-auto relative max-w-4xl">
+    <div className="">
       {/* プログレスバー */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -911,7 +911,7 @@ export default function ReservationForm() {
                 </div>
                 <span
                   className={cn(
-                    'mr-3 text-xs font-medium',
+                    'mr-3 text-xs md:text-sm font-medium',
                     currentStep >= step.id ? 'text-accent-2' : 'text-muted-foreground'
                   )}
                 >

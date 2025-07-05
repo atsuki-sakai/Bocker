@@ -11,6 +11,7 @@ import Image from 'next/image'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { format } from 'date-fns'
 import type { Gender } from '@/convex/types'
+import { Separator } from '@/components/ui/separator'
 import {
   convertReservationStatus,
   ReservationStatus,
@@ -43,13 +44,22 @@ import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import { useTranslations } from 'next-intl'
 import { Loader2 } from 'lucide-react'
 import { fetchMutation } from 'convex/nextjs'
+import { Link } from '@/i18n/navigation'
 
 const statusColorMap = {
-  confirmed: 'bg-palette-2 border border-palette-2-foreground text-palette-2-foreground',
-  cancelled: 'bg-palette-4 border border-palette-4-foreground text-palette-4-foreground',
-  pending: 'bg-warning border border-warning-foreground text-warning-foreground',
-  completed: 'bg-palette-5 border border-palette-5-foreground text-palette-5-foreground',
-  refunded: 'bg-palette-3 border border-palette-3-foreground text-palette-3-foreground',
+  confirmed: 'bg-palette-2 border-2 border-palette-2-foreground text-palette-2-foreground',
+  cancelled: 'bg-palette-4 border-2 border-palette-4-foreground text-palette-4-foreground',
+  pending: 'bg-warning border-2 border-warning-foreground text-warning-foreground',
+  completed: 'bg-palette-5 border-2 border-palette-5-foreground text-palette-5-foreground',
+  refunded: 'bg-palette-3 border-2 border-palette-3-foreground text-palette-3-foreground',
+}
+
+const paymentStatusColorMap = {
+  paid: 'bg-neon-foreground !text-neon border-2 border-neon',
+  pending: 'bg-warning !text-warning-foreground border-2 border-warning-foreground',
+  refunded: 'bg-muted-foreground !text-muted-foreground border-2 border-muted-foreground',
+  cancelled: 'bg-destructive !text-destructive-foreground border-2 border-destructive',
+  completed: 'bg-neon-foreground !text-neon border-2 border-neon',
 }
 
 export default function ReservationPage() {
@@ -302,45 +312,11 @@ export default function ReservationPage() {
     >
       <div className="flex flex-col gap-4 bg-background">
         <div className="border-b pb-4">
-          <div
-            className={`flex justify-end w-full ${
-              reservationData.reservation.status === 'completed' ||
-              reservationData.reservation.status === 'cancelled' ||
-              reservationData.reservation.status === 'refunded'
-                ? 'hidden'
-                : ''
-            }`}
-          >
-            <div className="flex gap-4">
-              <Select
-                value={status}
-                onValueChange={(value) => setStatus(value as ReservationStatus)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('selectStatus')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {RESERVATION_STATUS_VALUES.map((status, index) => (
-                    <SelectItem key={index} value={status}>
-                      {convertReservationStatus(status as ReservationStatus)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="default"
-                disabled={reservationData.reservation.status === status}
-                onClick={(e) => handleShowUpdateStatusModal(e)}
-              >
-                {t('changeStatus')}
-              </Button>
-            </div>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
                 <p
-                  className={`w-fit px-4 py-1 my-2 rounded-md font-medium text-sm ${statusColorMap[reservationData.reservation.status as ReservationStatus]}`}
+                  className={`w-fit px-3 py-1 my-2 rounded-md font-bold text-xs ${statusColorMap[reservationData.reservation.status as ReservationStatus]}`}
                 >
                   {convertReservationStatus(
                     reservationData.reservation.status as ReservationStatus
@@ -348,44 +324,113 @@ export default function ReservationPage() {
                 </p>
               </div>
 
-              <div className="border border-primary rounded-md px-4 py-1 w-fit">
-                <p className="text-primary text-sm font-medium">
-                  {convertPaymentStatus(reservationData.reservation.payment_status)}
-                </p>
+              <div
+                className={`text-primary text-xs font-bold px-3 py-1 rounded-md ${
+                  paymentStatusColorMap[
+                    reservationData.reservation.payment_status as keyof typeof paymentStatusColorMap
+                  ]
+                }`}
+              >
+                {convertPaymentStatus(reservationData.reservation.payment_status)}
               </div>
             </div>
             {reservationData.reservation.is_free_nomination && (
-              <div className="mb-4 px-2 py-1.5 bg-palette-5 border border-palette-5-foreground rounded-md w-fit">
-                <p className="text-xs font-medium text-palette-5-foreground">🎯 指名フリー予約</p>
+              <div className="mb-4 px-2 py-1.5 bg-palette-5-foreground rounded-md w-fit">
+                <p className="text-xs font-medium text-palette-5">🎯 指名フリー予約</p>
               </div>
             )}
+
             <div>
-              <p className="text-muted-foreground">{t('dateTime')}:</p>
-              <p className="font-medium text-lg">
+              <p className="text-muted-foreground text-sm">{t('dateTime')}:</p>
+              <p className="font-medium text-base">
                 {formatUnixTimestamp(reservationData.reservation.start_time_unix ?? 0)} -{' '}
                 {format(new Date(reservationData.reservation.end_time_unix ?? 0), 'HH:mm')}
               </p>
+              <Separator className="my-6 mx-auto w-1/2" />
+              <div
+                className={`flex flex-col justify-start bg-neon-foreground border border-neon rounded-md shadow-sm my-3 p-5 w-full ${
+                  reservationData.reservation.status === 'completed' ||
+                  reservationData.reservation.status === 'cancelled' ||
+                  reservationData.reservation.status === 'refunded'
+                    ? 'hidden'
+                    : ''
+                }`}
+              >
+                <p className=" text-xs font-bold text-neon mb-2">予約ステータスを更新する</p>
+                <div className="flex gap-4">
+                  <Select
+                    value={status}
+                    onValueChange={(value) => setStatus(value as ReservationStatus)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('selectStatus')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RESERVATION_STATUS_VALUES.map((status, index) => (
+                        <SelectItem key={index} value={status}>
+                          {convertReservationStatus(status as ReservationStatus)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="default"
+                    disabled={reservationData.reservation.status === status}
+                    onClick={(e) => handleShowUpdateStatusModal(e)}
+                  >
+                    {t('changeStatus')}
+                  </Button>
+                </div>
+              </div>
             </div>
             <div>
               <div className="flex flex-col gap-2">
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-xs">
                   <span className="font-medium mr-2">メニュー</span> ¥
                   {reservationData.reservationDetail?.menus
                     ?.reduce((acc, menu) => acc + menu.quantity * (menu.price ?? 0), 0)
                     .toLocaleString()}{' '}
                 </p>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-xs">
                   <span className="font-medium mr-2">オプション</span> ¥
                   {reservationData.reservationDetail?.options
                     .reduce((acc, option) => acc + option.quantity * (option.price ?? 0), 0)
                     .toLocaleString()}
                 </p>
-                <p className="text-muted-foreground text-sm">
-                  <span className="font-medium mr-2">指名料</span> ¥
+                <p className="text-muted-foreground text-xs">
+                  <span className="font-medium mr-2">指名料</span>
                   {reservationData.reservation.is_free_nomination
-                    ? '0'
-                    : (reservationData.reservationDetail?.extra_charge?.toLocaleString() ?? 0)}
+                    ? ' フリー指名(無料)'
+                    : ` ¥${reservationData.reservationDetail?.extra_charge?.toLocaleString() ?? 0}`}
                 </p>
+                <p className="font-bold  text-sm">
+                  <span className=" mr-2">小計</span> ¥
+                  {reservationData.reservationDetail?.menus &&
+                  reservationData.reservationDetail?.options &&
+                  reservationData.reservationDetail?.extra_charge
+                    ? reservationData.reservationDetail?.menus?.reduce(
+                        (acc, menu) => acc + menu.quantity * (menu.price ?? 0),
+                        0
+                      ) +
+                      reservationData.reservationDetail?.options?.reduce(
+                        (acc, option) => acc + option.quantity * (option.price ?? 0),
+                        0
+                      ) +
+                      (reservationData.reservation.is_free_nomination
+                        ? 0
+                        : (reservationData.reservationDetail?.extra_charge ?? 0))
+                    : 0}
+                </p>
+                <Separator className="my-2 mx-end w-1/2" />
+                <p className="text-muted-foreground text-xs">
+                  <span className="font-medium mr-2">クーポン利用</span>- ¥
+                  {reservationData.reservationDetail?.coupon_discount?.toLocaleString() ?? 0}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  <span className="font-medium mr-2">ポイント利用</span>- ¥
+                  {reservationData.reservationDetail?.use_points ?? 0}
+                </p>
+                <Separator className="my-2 mx-end w-1/2" />
                 <div className="flex items-center mt-3">
                   <p className="text-primary text-base font-bold">
                     <span className="font-medium mr-2">{t('totalAmount')}</span> ¥
@@ -395,8 +440,8 @@ export default function ReservationPage() {
               </div>
             </div>
             <div>
-              <p className="text-muted-foreground">{t('paymentMethod')}:</p>
-              <p className="font-medium text-lg">
+              <p className="text-muted-foreground text-sm">{t('paymentMethod')}:</p>
+              <p className="font-medium text-base">
                 {convertPaymentMethod(
                   reservationData.reservationDetail?.payment_method as PaymentMethod
                 )}
@@ -420,16 +465,18 @@ export default function ReservationPage() {
 
               {customerData && !customerLoading && (
                 <div className="space-y-3">
-                  <div>
-                    <p className="text-muted-foreground">{t('customerName')}:</p>
-                    <p className="font-medium text-lg">
-                      {customerData.customer?.line_user_name
-                        ? customerData.customer?.line_user_name
-                        : customerData.customer?.last_name && customerData.customer?.first_name
-                          ? `${customerData.customer?.last_name} ${customerData.customer?.first_name}`
-                          : t('notSet')}
-                    </p>
-                  </div>
+                  <Link href={`/dashboard/customer/${customerData.customer?.uid}`}>
+                    <div>
+                      <p className="text-muted-foreground">{t('customerName')}:</p>
+                      <p className="font-medium text-lg underline hover:text-primary cursor-pointer">
+                        {customerData.customer?.line_user_name
+                          ? customerData.customer?.line_user_name
+                          : customerData.customer?.last_name && customerData.customer?.first_name
+                            ? `${customerData.customer?.last_name} ${customerData.customer?.first_name}`
+                            : t('notSet')}
+                      </p>
+                    </div>
+                  </Link>
                   {customerData.customer?.phone && (
                     <div>
                       <p className="text-muted-foreground">{t('phoneNumber')}:</p>
@@ -474,16 +521,16 @@ export default function ReservationPage() {
           <h2 className="text-xl font-semibold mb-3">{t('assignedStaff')}</h2>
 
           {staff || assignedStaff ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-start gap-4">
               {((staff || assignedStaff)?.images?.length ?? 0) > 0 &&
                 (staff || assignedStaff)?.images[0].thumbnail_url && (
-                  <div className="relative h-auto border border-border shadow-sm rounded-md overflow-hidden flex items-center justify-center">
+                  <div className="relative h-auto min-w-16 border border-border shadow-sm rounded-md overflow-hidden flex items-center justify-center">
                     <Image
                       src={(staff || assignedStaff)!.images[0].thumbnail_url!}
                       alt={(staff || assignedStaff)?.name ?? ''}
                       width={150}
                       height={150}
-                      className=""
+                      className="object-cover"
                     />
                   </div>
                 )}

@@ -275,7 +275,7 @@ export const OptionView = ({
         })}
       </div>
       <Dialog open={showOptionDetail} onOpenChange={setShowOptionDetail}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh]  overflow-y-auto">
           {selectedOption?.images &&
           selectedOption?.images.length > 0 &&
           selectedOption?.images[0].original_url ? (
@@ -284,7 +284,7 @@ export const OptionView = ({
               alt={selectedOption.name}
               width={1000}
               height={1000}
-              className="rounded-lg aspect-square object-cover w-full h-full"
+              className="rounded-lg aspect-square object-cover max-h-96 max-w-96 mx-auto"
             />
           ) : null}
           <DialogHeader>

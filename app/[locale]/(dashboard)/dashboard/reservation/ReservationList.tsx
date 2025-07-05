@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -32,11 +31,12 @@ import type { DateRange } from 'react-day-picker'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Shuffle } from 'lucide-react'
+import { Loading } from '@/components/common'
 
 // 予約ステータスの表示設定
 const statusConfig = {
   confirmed: { label: '予約受付済み', color: 'bg-info' },
-  pending: { label: '保留中', color: 'bg-warning' },
+  pending: { label: '保留中', color: 'bg-warning-foreground' },
   completed: { label: '完了', color: 'bg-success' },
   cancelled: { label: 'キャンセル', color: 'bg-destructive' },
   refunded: { label: '返金済み', color: 'bg-muted' },
@@ -44,11 +44,11 @@ const statusConfig = {
 
 // 支払いステータスの表示設定
 const paymentStatusConfig = {
-  pending: { label: '未払い', color: 'bg-warning' },
-  completed: { label: '支払済み', color: 'bg-success' },
-  paid: { label: '支払済み', color: 'bg-success' },
-  failed: { label: '失敗', color: 'bg-destructive' },
-  refunded: { label: '返金済み', color: 'bg-muted' },
+  pending: { label: '未払い', color: 'bg-warning-foreground text-warning' },
+  completed: { label: '支払済み', color: 'bg-success text-success-foreground' },
+  paid: { label: '支払済み', color: 'bg-success text-success-foreground' },
+  failed: { label: '失敗', color: 'bg-destructive text-destructive-foreground' },
+  refunded: { label: '返金済み', color: 'bg-muted text-muted-foreground' },
 } as const
 
 export default function ReservationList() {
@@ -165,11 +165,9 @@ export default function ReservationList() {
   if (isLoading && reservations.length === 0) {
     return (
       <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">予約一覧（全体）</h1>
+        <h1 className="text-3xl font-bold mb-6">予約一覧</h1>
         <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-48 w-full" />
-          ))}
+          <Loading />
         </div>
       </div>
     )
@@ -353,7 +351,14 @@ export default function ReservationList() {
                   {/* 支払いステータス */}
                   <TableCell className="px-4">
                     {reservation.paymentStatus ? (
-                      <Badge variant="outline" className="border-2">
+                      <Badge
+                        variant="outline"
+                        className={`${
+                          paymentStatusConfig[
+                            reservation.paymentStatus as keyof typeof paymentStatusConfig
+                          ]?.color || 'bg-muted-foreground'
+                        }`}
+                      >
                         {paymentStatusConfig[
                           reservation.paymentStatus as keyof typeof paymentStatusConfig
                         ]?.label || reservation.paymentStatus}

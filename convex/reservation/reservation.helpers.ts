@@ -273,7 +273,22 @@ export async function createReservationWithDetails(
     notes: args.notes,
   });
 
-  return { reservationId, reservationDetailId };
+  const notificationId = await createRecord(ctx, 'reservation_notification', {
+    tenant_id: args.tenant_id,
+    org_id: args.org_id,
+    reservation_id: reservationId,
+    notification_sent: false,
+    notification_sent_at: new Date().getTime(),
+    date: args.date,
+    start_time_unix: args.start_time_unix,
+    end_time_unix: args.end_time_unix,
+    customer_name: args.customer_name,
+    staff_name: args.staff_name,
+    status: args.status,
+    payment_status: args.payment_status,
+  });
+
+  return { reservationId, reservationDetailId, notificationId };
 }
 
 /**

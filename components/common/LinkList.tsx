@@ -35,10 +35,10 @@ export const LinkList = () => {
 
   return (
     <div className="my-4 space-y-2 ">
-      <p className="text-sm font-medium text-accent-2">
+      <p className="text-sm font-medium text-neon">
         以下のリンクをお客様に共有して予約の受付を開始してください
       </p>
-      <div className="p-2 bg-accent-2 rounded-lg border border-border ">
+      <div className="p-2 bg-neon rounded-lg border border-border ">
         <label className="text-sm font-medium text-background">
           {t('completion.reservationUrlLabel')}
         </label>
@@ -49,21 +49,21 @@ export const LinkList = () => {
             className="flex h-9 w-full rounded-md border bg-background text-foreground px-3 py-1 text-sm font-mono focus:outline-none"
           />
           <Button
-            className="bg-accent-2"
+            className="bg-neon"
             size="icon"
             variant="outline"
             onClick={() => copyOrganizationUrl('reservation')}
           >
             <Copy className="h-4 w-4 text-background hover:text-foreground" />
           </Button>
-          <Button className="bg-accent-2" size="icon" variant="outline" asChild>
+          <Button className="bg-neon" size="icon" variant="outline" asChild>
             <a href={getOrganizationUrl('reservation')} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4 text-background hover:text-foreground" />
             </a>
           </Button>
         </div>
       </div>
-      <div className="p-2 bg-accent-2 rounded-lg border border-border">
+      <div className="p-2 bg-neon rounded-lg border border-border">
         <label className="text-sm font-medium text-background">
           {t('completion.customerUrlLabel')}
         </label>
@@ -74,14 +74,14 @@ export const LinkList = () => {
             className="flex h-9 w-full rounded-md border bg-background text-foreground px-3 py-1 text-sm font-mono focus:outline-none"
           />
           <Button
-            className="bg-accent-2"
+            className="bg-neon"
             size="icon"
             variant="outline"
             onClick={() => copyOrganizationUrl('customer')}
           >
             <Copy className="h-4 w-4 text-background" />
           </Button>
-          <Button className="bg-accent-2" size="icon" variant="outline" asChild>
+          <Button className="bg-neon" size="icon" variant="outline" asChild>
             <a href={getOrganizationUrl('customer')} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4 text-background hover:text-foreground" />
             </a>
