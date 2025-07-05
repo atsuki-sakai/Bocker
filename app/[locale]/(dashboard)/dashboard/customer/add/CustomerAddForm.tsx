@@ -312,9 +312,9 @@ export default function CustomerAddForm() {
         <TagInput
           tags={currentTags}
           setTagsAction={setCurrentTags}
-          error={errors.tags?.message}
+          register={register}
+          errors={errors}
           title={t('tags')}
-          exampleText={t('tagExample')}
         />
 
         <div>

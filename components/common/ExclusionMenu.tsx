@@ -84,11 +84,44 @@ export default function ExclusionMenu({
     if (!menus) return []
     if (!searchTerm.trim()) return menus
 
-    return menus.filter(
-      (menu: Doc<'menu'>) =>
-        (menu.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (menu.unit_price?.toString() || '').includes(searchTerm)
-    )
+    // デバッグログ：検索の詳細を確認
+    console.log('検索実行:', {
+      searchTerm,
+      menusCount: menus.length,
+      searchTermTrimmed: searchTerm.trim(),
+      firstMenuName: menus[0]?.name,
+      firstMenuPrice: menus[0]?.unit_price,
+    })
+
+    const filtered = menus.filter((menu: Doc<'menu'>) => {
+      // 各メニューの検索条件を詳細にログ出力
+      const nameMatch = (menu.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+      const priceMatch = (menu.unit_price?.toString() || '').includes(searchTerm)
+      const matches = nameMatch || priceMatch
+
+      // 最初の数件だけログ出力
+      if (menus.indexOf(menu) < 3) {
+        console.log(`メニュー "${menu.name}" の検索結果:`, {
+          name: menu.name,
+          unitPrice: menu.unit_price,
+          searchTerm,
+          nameMatch,
+          priceMatch,
+          matches,
+        })
+      }
+
+      return matches
+    })
+
+    console.log('フィルタリング結果:', {
+      originalCount: menus.length,
+      filteredCount: filtered.length,
+      searchTerm,
+      sampleFilteredMenu: filtered[0]?.name,
+    })
+
+    return filtered
   }, [menus, searchTerm])
 
   const selectedMenusCount = localSelectedIds.length
@@ -104,14 +137,21 @@ export default function ExclusionMenu({
   const allVisibleSelected =
     filteredMenus.length > 0 && filteredMenus.every((menu) => localSelectedIds.includes(menu._id))
 
-  if (filteredMenus === undefined || isLoading) return <Loading />
+  // レンダリング時の状態をデバッグログに出力
+  console.log('レンダリング時の状態:', {
+    filteredMenus,
+    filteredMenusLength: filteredMenus?.length,
+    filteredMenusType: typeof filteredMenus,
+    isLoading,
+    searchTerm,
+    menus: menus?.length,
+    menusType: typeof menus,
+  })
 
-  if (filteredMenus.length === 0)
-    return (
-      <div className="text-center py-12 bg-muted text-muted-foreground rounded-md border">
-        {t('noMenus')}
-      </div>
-    )
+  // メニューリストがゼロの場合でも、検索ボックスなどの UI を表示し続ける
+  const noMenus = filteredMenus.length === 0
+
+  if (filteredMenus === undefined || isLoading) return <Loading />
 
   return (
     <Card className="w-full bg-background">
@@ -155,56 +195,61 @@ export default function ExclusionMenu({
 
           {/* メニューリスト */}
           <ScrollArea className="max-h-full rounded-md border p-2 bg-background">
-            <div className="space-y-1">
-              {filteredMenus.map((menu: Doc<'menu'>) => (
-                <div
-                  key={menu._id}
-                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted"
-                >
-                  <Checkbox
-                    id={menu._id}
-                    checked={localSelectedIds.includes(menu._id)}
-                    onCheckedChange={() => handleToggleMenu(menu._id)}
-                  />
-                  <Label
-                    htmlFor={menu._id}
-                    className="flex flex-1 justify-between items-center cursor-pointer text-sm  py-1"
+            {/* メニューがゼロの場合はメッセージを表示 */}
+            {noMenus ? (
+              <div className="text-center py-12 text-muted-foreground">{t('noMenus')}</div>
+            ) : (
+              <div className="space-y-1">
+                {filteredMenus.map((menu: Doc<'menu'>) => (
+                  <div
+                    key={menu._id}
+                    className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted"
                   >
-                    <span className="font-medium">{menu.name}</span>
-                    <div className="flex items-center gap-1">
-                      {/* セール価格が数値として 0 より大きいときだけ元の価格を打ち消し線 */}
-                      {typeof menu.sale_price === 'number' && menu.sale_price > 0 && (
-                        <span className="line-through text-gray-400">
-                          ¥{menu.unit_price?.toLocaleString()}
+                    <Checkbox
+                      id={menu._id}
+                      checked={localSelectedIds.includes(menu._id)}
+                      onCheckedChange={() => handleToggleMenu(menu._id)}
+                    />
+                    <Label
+                      htmlFor={menu._id}
+                      className="flex flex-1 justify-between items-center cursor-pointer text-sm  py-1"
+                    >
+                      <span className="font-medium">{menu.name}</span>
+                      <div className="flex items-center gap-1">
+                        {/* セール価格が数値として 0 より大きいときだけ元の価格を打ち消し線 */}
+                        {typeof menu.sale_price === 'number' && menu.sale_price > 0 && (
+                          <span className="line-through text-gray-400">
+                            ¥{menu.unit_price?.toLocaleString()}
+                          </span>
+                        )}
+
+                        {/* 表示する価格 */}
+                        <span className="text-accent-2">
+                          ¥
+                          {(typeof menu.sale_price === 'number' && menu.sale_price > 0
+                            ? menu.sale_price
+                            : menu.unit_price
+                          )?.toLocaleString()}
                         </span>
-                      )}
+                      </div>
+                    </Label>
+                  </div>
+                ))}
 
-                      {/* 表示する価格 */}
-                      <span className="text-accent-2">
-                        ¥
-                        {(typeof menu.sale_price === 'number' && menu.sale_price > 0
-                          ? menu.sale_price
-                          : menu.unit_price
-                        )?.toLocaleString()}
-                      </span>
-                    </div>
-                  </Label>
-                </div>
-              ))}
-
-              {menus && menus.length >= numberOfMenus && status === 'CanLoadMore' && (
-                <div className="flex justify-center pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => loadMore(numberOfMenus)}
-                    type="button"
-                  >
-                    {t('loadMore')}
-                  </Button>
-                </div>
-              )}
-            </div>
+                {menus && menus.length >= numberOfMenus && status === 'CanLoadMore' && (
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => loadMore(numberOfMenus)}
+                      type="button"
+                    >
+                      {t('loadMore')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </ScrollArea>
         </div>
       </CardContent>

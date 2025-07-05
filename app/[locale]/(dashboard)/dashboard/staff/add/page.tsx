@@ -735,9 +735,9 @@ function StaffAddPage() {
 
                             setValue('tags', tags, { shouldValidate: true })
                           }}
-                          error={errors.tags?.message}
+                          register={register}
+                          errors={errors}
                           title={t('staff.add.tagsTitle')}
-                          exampleText={t('staff.add.tagsExample')}
                         />
 
                         <div className="flex items-center space-x-2 pt-1">

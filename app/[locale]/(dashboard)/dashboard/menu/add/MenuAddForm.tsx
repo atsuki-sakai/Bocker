@@ -555,8 +555,8 @@ export default function MenuAddForm() {
             setCurrentTags(tags)
             setValue('tags', tags.join('、') as unknown as string[], { shouldValidate: true })
           }}
-          error={errors.tags?.message}
-          exampleText={t('placeholder.tags')}
+          register={register}
+          errors={errors}
         />
 
         <Label className="flex items-center gap-2 text-sm mb-3 mt-8">

@@ -4,6 +4,7 @@ import { Role } from '@/convex/types';
 
 // 🎨 ClerkのWebhookイベントデータに対する型ガード関数
 // dataオブジェクトがUserJSON型であるかを安全にチェックする。
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isUserEvent = (data: any): data is UserJSON => {
     return data && typeof data.id === 'string' && Array.isArray(data.email_addresses);
   };

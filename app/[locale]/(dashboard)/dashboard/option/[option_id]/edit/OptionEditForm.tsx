@@ -563,6 +563,8 @@ export default function OptionEditForm() {
                   setCurrentTags(tags)
                   setValue('tags', tags, { shouldValidate: true, shouldDirty: true })
                 }}
+                register={register}
+                errors={errors}
               />
             </div>
           </div>
