@@ -1372,7 +1372,11 @@ export default function CalendarPage() {
                                   org_id: organizationComplete.organization
                                     ._id as Id<'organization'>,
                                   menu_ids: selectedMenus.map((menu) => menu._id),
-                                  date: selectedDate.toISOString().split('T')[0], // YYYY-MM-DD形式
+                                  date: selectedDate.toLocaleDateString('ja-JP', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                  }), // YYYY-MM-DD形式
                                   start_time_unix: startDateTime.getTime(),
                                   end_time_unix: endDateTime.getTime(),
                                 }
