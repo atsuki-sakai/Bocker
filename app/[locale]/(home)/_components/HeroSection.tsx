@@ -215,7 +215,6 @@ export function HeroSection() {
                         duration: 4.6,
                         ease: 'easeInOut',
                         repeat: Infinity,
-                        repeatType: 'loop' as const,
                       },
                     }}
                   >
