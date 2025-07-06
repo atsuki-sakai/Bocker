@@ -1,9 +1,9 @@
+'use client'
+
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Instagram } from 'lucide-react'
-
-
 
 export const TeamSection = () => {
   const t = useTranslations('aboutPage')
@@ -11,8 +11,7 @@ export const TeamSection = () => {
     {
       name: 'Fujimoto Kyohei / 藤本恭平',
       role: t('team.role'),
-      imageUrl:
-        '/assets/images/kyohei_fujimoto.jpg',
+      imageUrl: '/assets/images/kyohei_fujimoto.jpg',
       bio: t('team.bio'),
       xUrl: 'https://www.instagram.com/bocker_fujimoto',
       linkedinUrl: '#',
