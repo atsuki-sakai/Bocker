@@ -58,13 +58,23 @@ export function FeatureSection() {
           >
             {t('title')}
           </motion.p>
-          <motion.p className="mt-6 text-base md:text-lg text-muted-foreground">
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.6 }}
+            className="mt-6 text-base md:text-lg text-muted-foreground"
+          >
             {t('subtitle')}
           </motion.p>
         </div>
       </div>
       <div className="relative overflow-hidden pt-16">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: 'easeOut', delay: 0.8 }}
+          className="mx-auto max-w-7xl px-6 lg:px-8"
+        >
           <Image
             alt="App screenshot"
             src="/assets/mockup/pc/dashboard.png"
@@ -76,12 +86,18 @@ export function FeatureSection() {
           <div aria-hidden="true" className="relative">
             <div className="absolute -inset-x-20 bottom-0 bg-linear-to-t from-background pt-[7%]" />
           </div>
-        </div>
+        </motion.div>
       </div>
       <div className="mx-auto mt-16 max-w-7xl px-6 sm:mt-20 md:mt-24 lg:px-8">
         <dl className="mx-auto grid max-w-2xl grid-cols-1 gap-x-6 gap-y-10 text-base text-muted-foreground sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-x-8 lg:gap-y-16">
-          {features.map((feature) => (
-            <div key={feature.name} className="relative pl-9">
+          {features.map((feature, index) => (
+            <motion.div
+              key={feature.name}
+              initial={{ opacity: 0, y: 0, x: -30 }}
+              whileInView={{ opacity: 1, y: 0, x: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: index * 0.2 }}
+              className="relative pl-9"
+            >
               <dt className="inline font-semibold text-foreground">
                 <feature.icon
                   aria-hidden="true"
@@ -90,8 +106,8 @@ export function FeatureSection() {
                 {feature.name}
               </dt>
               <br />
-              <dd className="inline">{feature.description}</dd>
-            </div>
+              <dd className="inline text-sm">{feature.description}</dd>
+            </motion.div>
           ))}
         </dl>
       </div>
