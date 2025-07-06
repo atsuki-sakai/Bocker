@@ -150,7 +150,7 @@ export function Pricing() {
                 <div className="p-8 lg:pt-12 xl:p-10 xl:pt-14">
                   <h3
                     id={`tier-${tier.id}`}
-                    className="text-base/6 font-semibold text-background group-data-featured/tier:text-muted-foreground"
+                    className="text-base/6 font-semibold text-neon-foreground group-data-featured/tier:text-muted-foreground"
                   >
                     {tier.name}
                   </h3>
@@ -184,7 +184,7 @@ export function Pricing() {
                   <div className="mt-8 flow-root sm:mt-10">
                     <ul
                       role="list"
-                      className="-my-2 divide-y divide-border border-t border-border text-xs text-primary-foreground group-data-featured/tier:divide-border group-data-featured/tier:border-border group-data-featured/tier:text-muted-foreground lg:border-t-0"
+                      className="-my-2 divide-y divide-border border-t border-border text-sm text-primary-foreground group-data-featured/tier:divide-border group-data-featured/tier:border-border group-data-featured/tier:text-muted-foreground lg:border-t-0"
                     >
                       {tier.highlights.map((mainFeature: string) => (
                         <li key={mainFeature} className="flex gap-x-3 py-2">

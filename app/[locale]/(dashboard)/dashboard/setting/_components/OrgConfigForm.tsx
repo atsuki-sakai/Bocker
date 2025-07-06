@@ -362,7 +362,7 @@ export default function OrgConfigForm() {
                 {orgAndConfig.config.images.map((image, index) => (
                   <div key={index} className="relative aspect-[16/9]">
                     <Image
-                      src={image.thumbnail_url || image.original_url}
+                      src={image.original_url}
                       alt={`${t('fields.storeImage')} ${index + 1}`}
                       fill
                       className="object-cover rounded-md border border-border"

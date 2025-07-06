@@ -317,7 +317,7 @@ export function ContactPageClient({ translations }: { translations: TranslationT
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="mb-4">{translations.faq.cta}</CardDescription>
-                    <Link href="/#faq">
+                    <Link href="/faq">
                       <Button variant="outline">FAQ</Button>
                     </Link>
                   </CardContent>

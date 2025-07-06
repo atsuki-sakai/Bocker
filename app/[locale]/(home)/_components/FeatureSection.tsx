@@ -7,10 +7,9 @@ import {
     ScissorsIcon
   } from '@heroicons/react/20/solid'
   import Image from 'next/image'
-  
+  import { motion } from 'framer-motion'
   import { useTranslations } from 'next-intl'
 
-  
   export function FeatureSection() {
     const t = useTranslations('landing.features')
     const features = [
@@ -49,10 +48,17 @@ import {
       <div className="bg-background py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl sm:text-center">
-            <p className="mt-2 text-4xl font-semibold tracking-tight text-pretty text-foreground sm:text-5xl sm:text-balance">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+              className="mt-2 text-4xl font-semibold tracking-tight text-pretty text-foreground sm:text-5xl sm:text-balance"
+            >
               {t('title')}
-            </p>
-            <p className="mt-6 text-base md:text-lg text-muted-foreground">{t('subtitle')}</p>
+            </motion.p>
+            <motion.p className="mt-6 text-base md:text-lg text-muted-foreground">
+              {t('subtitle')}
+            </motion.p>
           </div>
         </div>
         <div className="relative overflow-hidden pt-16">
