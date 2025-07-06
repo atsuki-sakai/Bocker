@@ -47,12 +47,17 @@ export function HeaderSection() {
       </div>
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl lg:mx-0">
-          <h2 className="text-5xl font-semibold tracking-tight text-primary sm:text-5xl text-nowrap">{t('title')}</h2>
-          <p className="mt-8 text-lg font-medium text-pretty text-primary sm:text-lg">
+          <h2 className="text-2xl font-bold tracking-tight text-primary sm:text-5xl text-nowrap">
+            {t('title')}
+          </h2>
+          <p className="mt-8 text-sm md:text-base font-medium text-pretty text-primary sm:text-lg">
             {t('description')}
           </p>
           <div className="mt-8">
-            <Link href="/contact" className="rounded-md bg-background border border-neon px-3.5 py-2.5 text-sm font-semibold text-neon shadow-xs hover:bg-neon-foreground/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link-foreground">
+            <Link
+              href="/contact"
+              className="rounded-md bg-background border border-neon px-8 py-2 text-sm font-semibold text-neon shadow-xs hover:bg-neon-foreground/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link-foreground"
+            >
               {t('cards.contact.title')}
             </Link>
           </div>
@@ -65,8 +70,10 @@ export function HeaderSection() {
             >
               <card.icon aria-hidden="true" className="h-7 w-5 flex-none text-neon" />
               <div className="text-base/7">
-                <h3 className="font-semibold">{card.name}</h3>
-                <p className="mt-2 text-muted-foreground">{card.description}</p>
+                <h3 className="font-semibold text-sm md:text-base">{card.name}</h3>
+                <p className="mt-2 text-muted-foreground text-sm md:text-base">
+                  {card.description}
+                </p>
               </div>
             </div>
           ))}
