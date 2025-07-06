@@ -358,7 +358,7 @@ export default function OrgConfigForm() {
           <div className="w-full md:w-1/2 flex flex-col gap-4">
             <h4 className="text-2xl font-bold">{t('fields.storeImage')}</h4>
             {orgAndConfig?.config?.images && orgAndConfig.config.images.length > 0 && (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 {orgAndConfig.config.images.map((image, index) => (
                   <div key={index} className="relative aspect-[16/9]">
                     <Image
@@ -377,7 +377,7 @@ export default function OrgConfigForm() {
               }}
               currentFiles={currentFiles}
               placeholderText={t('placeholders.storeImage')}
-              limitFiles={limits.maxSalonImageCount}
+              limitFiles={1 || limits.maxSalonImageCount}
               hasSelected={currentFiles.length}
             />
             <Button
