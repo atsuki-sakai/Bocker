@@ -34,6 +34,14 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'placehold.jp',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'tailwindcss.com',
+      },
       // CDNドメインのサポート（環境変数から動的に設定）
       ...((() => {
         const cdnDomain = getEnv('NEXT_PUBLIC_CDN_DOMAIN');
