@@ -1,3 +1,5 @@
+'use client'
+
 import { LifebuoyIcon, PhoneIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
@@ -14,9 +16,8 @@ export function HeaderSection() {
       name: t('cards.support.title'),
       description: t('cards.support.description'),
       icon: LifebuoyIcon,
-    }
+    },
   ]
-  
 
   return (
     <div className="relative isolate overflow-hidden bg-background py-24 sm:py-32">
