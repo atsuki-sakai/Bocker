@@ -2845,7 +2845,8 @@
       "faq": "FAQ",
       "demo": "Demo",
       "signUp": "Create Account",
-      "startFreeTrial": "Start 30-Day Free Trial"
+      "startFreeTrial": "Start 30-Day Free Trial",
+      "login": "Login"
     },
     "hero": {
       "badge": "From ¥8,000/month",
