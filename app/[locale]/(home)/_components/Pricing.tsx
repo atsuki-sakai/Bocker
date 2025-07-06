@@ -4,6 +4,7 @@ import { Switch } from '@/components/ui/switch'
 import { CheckIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { motion } from 'framer-motion'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function classNames(...classes: any[]) {
@@ -19,7 +20,10 @@ export function Pricing() {
       id: 'lite',
       name: t('subscription.lite.title'),
       description: t('subscription.lite.description'),
-      price: { monthly: t('subscription.lite.price.monthly'), annually: t('subscription.lite.price.annually') },
+      price: {
+        monthly: t('subscription.lite.price.monthly'),
+        annually: t('subscription.lite.price.annually'),
+      },
       highlights: [
         t('subscription.lite.features.1'),
         t('subscription.lite.features.2'),
@@ -37,7 +41,10 @@ export function Pricing() {
       id: 'pro',
       name: t('subscription.pro.title'),
       description: t('subscription.pro.description'),
-      price: { monthly: t('subscription.pro.price.monthly'), annually: t('subscription.pro.price.annually') },
+      price: {
+        monthly: t('subscription.pro.price.monthly'),
+        annually: t('subscription.pro.price.annually'),
+      },
       highlights: [
         t('subscription.pro.features.1'),
         t('subscription.pro.features.2'),
@@ -45,33 +52,93 @@ export function Pricing() {
         t('subscription.pro.features.4'),
       ],
       featured: true,
-    }
+    },
   ]
 
   const sections = [
     {
       name: t('section.basic.title'),
       features: [
-        { name: t('section.basic.features.0.name'), tiers: { LITE: t('section.basic.features.0.tiers.LITE'), PRO: t('section.basic.features.0.tiers.PRO') } },
-        { name: t('section.basic.features.1.name'), tiers: { LITE: t('section.basic.features.1.tiers.LITE'), PRO: t('section.basic.features.1.tiers.PRO') } },
-        { name: t('section.basic.features.2.name'), tiers: { LITE: t('section.basic.features.2.tiers.LITE'), PRO: t('section.basic.features.2.tiers.PRO') } },
-        { name: t('section.basic.features.3.name'), tiers: { LITE: t('section.basic.features.3.tiers.LITE'), PRO: t('section.basic.features.3.tiers.PRO') } },
-        { name: t('section.basic.features.4.name'), tiers: { LITE: t('section.basic.features.4.tiers.LITE'), PRO: t('section.basic.features.4.tiers.PRO') } },
-        { name: t('section.basic.features.5.name'), tiers: { LITE: t('section.basic.features.5.tiers.LITE'), PRO: t('section.basic.features.5.tiers.PRO') } },
-        { name: t('section.basic.features.6.name'), tiers: { LITE: t('section.basic.features.6.tiers.LITE'), PRO: t('section.basic.features.6.tiers.PRO') } }
+        {
+          name: t('section.basic.features.0.name'),
+          tiers: {
+            LITE: t('section.basic.features.0.tiers.LITE'),
+            PRO: t('section.basic.features.0.tiers.PRO'),
+          },
+        },
+        {
+          name: t('section.basic.features.1.name'),
+          tiers: {
+            LITE: t('section.basic.features.1.tiers.LITE'),
+            PRO: t('section.basic.features.1.tiers.PRO'),
+          },
+        },
+        {
+          name: t('section.basic.features.2.name'),
+          tiers: {
+            LITE: t('section.basic.features.2.tiers.LITE'),
+            PRO: t('section.basic.features.2.tiers.PRO'),
+          },
+        },
+        {
+          name: t('section.basic.features.3.name'),
+          tiers: {
+            LITE: t('section.basic.features.3.tiers.LITE'),
+            PRO: t('section.basic.features.3.tiers.PRO'),
+          },
+        },
+        {
+          name: t('section.basic.features.4.name'),
+          tiers: {
+            LITE: t('section.basic.features.4.tiers.LITE'),
+            PRO: t('section.basic.features.4.tiers.PRO'),
+          },
+        },
+        {
+          name: t('section.basic.features.5.name'),
+          tiers: {
+            LITE: t('section.basic.features.5.tiers.LITE'),
+            PRO: t('section.basic.features.5.tiers.PRO'),
+          },
+        },
+        {
+          name: t('section.basic.features.6.name'),
+          tiers: {
+            LITE: t('section.basic.features.6.tiers.LITE'),
+            PRO: t('section.basic.features.6.tiers.PRO'),
+          },
+        },
       ],
     },
     {
       name: t('section.customer.title'),
       features: [
-        { name: t('section.customer.features.0.name'), tiers: { LITE: t('section.customer.features.0.tiers.LITE'), PRO: t('section.customer.features.0.tiers.PRO') } },
-        { name: t('section.customer.features.1.name'), tiers: { LITE: t('section.customer.features.1.tiers.LITE'), PRO: t('section.customer.features.1.tiers.PRO') } },
+        {
+          name: t('section.customer.features.0.name'),
+          tiers: {
+            LITE: t('section.customer.features.0.tiers.LITE'),
+            PRO: t('section.customer.features.0.tiers.PRO'),
+          },
+        },
+        {
+          name: t('section.customer.features.1.name'),
+          tiers: {
+            LITE: t('section.customer.features.1.tiers.LITE'),
+            PRO: t('section.customer.features.1.tiers.PRO'),
+          },
+        },
       ],
     },
     {
       name: t('section.support.title'),
       features: [
-        { name: t('section.support.features.0.name'), tiers: { LITE: t('section.support.features.0.tiers.LITE'), PRO: t('section.support.features.0.tiers.PRO') } },
+        {
+          name: t('section.support.features.0.name'),
+          tiers: {
+            LITE: t('section.support.features.0.tiers.LITE'),
+            PRO: t('section.support.features.0.tiers.PRO'),
+          },
+        },
       ],
     },
   ]
@@ -88,17 +155,37 @@ export function Pricing() {
       <div className="flow-root bg-background pt-24 pb-16 sm:pt-32 lg:pb-0">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="relative z-10">
-            <h2 className="mx-auto max-w-4xl text-center text-5xl font-semibold tracking-tight text-balance text-primary sm:text-5xl">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+              className="mx-auto max-w-4xl text-center text-5xl font-semibold tracking-tight text-balance text-primary sm:text-5xl"
+            >
               {t('title')}
-            </h2>
-            <p className="mx-auto mt-6 max-w-2xl text-center text-lg font-medium text-pretty  sm:text-xl/8">
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.6 }}
+              className="mx-auto mt-6 max-w-2xl text-center text-lg font-medium text-pretty  sm:text-xl/8"
+            >
               {t('subtitle')}
-            </p>
-            <p className="mx-auto mt-6 max-w-2xl text-center text-base font-medium text-pretty text-muted-foreground sm:text-base">
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.8 }}
+              className="mx-auto mt-6 max-w-2xl text-center text-base font-medium text-pretty text-muted-foreground sm:text-base"
+            >
               {t('disclaimer')}
-            </p>
+            </motion.p>
 
-            <div className="mt-16 flex justify-end">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 1 }}
+              className="mt-16 flex justify-end"
+            >
               <fieldset aria-label="Payment frequency" className="transition-all duration-300">
                 <div className="flex items-center gap-8">
                   <span
@@ -129,17 +216,21 @@ export function Pricing() {
                   </span>
                 </div>
               </fieldset>
-            </div>
+            </motion.div>
           </div>
           <div className="relative mx-auto mt-10 grid max-w-md grid-cols-1 gap-y-8 lg:mx-0 lg:-mb-14 lg:max-w-none lg:grid-cols-2">
             <div
               aria-hidden="true"
               className="hidden lg:absolute lg:inset-x-px lg:top-4 lg:bottom-0 lg:block lg:rounded-t-2xl lg:bg-neon lg:ring-1 lg:ring-border"
             />
-            {tiers.map((tier) => (
-              <div
+            {tiers.map((tier, idx) => (
+              <motion.div
                 key={tier.id}
                 data-featured={tier.featured ? 'true' : undefined}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: 'easeOut', delay: 0.2 + idx * 0.2 }}
+                viewport={{ once: true, amount: 0.3 }}
                 className={classNames(
                   tier.featured
                     ? 'z-10 bg-foreground shadow-xl ring-1 ring-accent'
@@ -198,7 +289,7 @@ export function Pricing() {
                     </ul>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -212,8 +303,14 @@ export function Pricing() {
             </h2>
 
             <div className="mx-auto max-w-2xl space-y-16">
-              {tiers.map((tier) => (
-                <div key={tier.id} className="border-t border-border">
+              {tiers.map((tier, index) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 + index * 0.2 }}
+                  key={tier.id}
+                  className="border-t border-border"
+                >
                   <div
                     className={classNames(
                       tier.featured ? 'border-primary' : 'border-transparent',
@@ -314,13 +411,19 @@ export function Pricing() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </section>
 
           {/* Feature comparison (lg+) */}
-          <section aria-labelledby="comparison-heading" className="hidden lg:block">
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+            aria-labelledby="comparison-heading"
+            className="hidden lg:block"
+          >
             <h2 id="comparison-heading" className="sr-only">
               Feature comparison
             </h2>
@@ -457,7 +560,7 @@ export function Pricing() {
                 </div>
               ))}
             </div>
-          </section>
+          </motion.section>
         </div>
       </div>
     </form>
