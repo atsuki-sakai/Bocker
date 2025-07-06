@@ -1,13 +1,7 @@
-'use server'
-
 import { getTranslations } from 'next-intl/server'
 import { TermsPageClient } from './TermsPageClient'
 
-export default async function TermsPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
+export default async function TermsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'termsPage' })
 
