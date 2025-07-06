@@ -14,7 +14,7 @@ export function ContentSection() {
               <h1 className="mt-2 text-4xl font-semibold tracking-tight text-pretty text-foreground sm:text-5xl">
                 {t('title')}
               </h1>
-              <p className="mt-6 text-xl/8 text-muted-foreground">
+              <p className="mt-6 text-base md:text-lg text-muted-foreground">
                 {t('mainDescription')}
               </p>
             </div>
@@ -32,36 +32,44 @@ export function ContentSection() {
         <div className="lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
           <div className="lg:pr-4">
             <div className="max-w-xl text-base/7 text-foreground lg:max-w-lg">
-              <p>
-                {t('industryProblem')}
-              </p>
+              <p>{t('industryProblem')}</p>
               <ul role="list" className="mt-8 space-y-8 text-foreground">
                 <li className="flex gap-x-3">
-                  <CloudArrowUpIcon aria-hidden="true" className="mt-1 size-5 flex-none text-link-foreground" />
+                  <CloudArrowUpIcon
+                    aria-hidden="true"
+                    className="mt-1 size-5 flex-none text-link-foreground"
+                  />
                   <span className="text-primary">
-                    <strong className="font-semibold ">{t('benefits.sales.title')}</strong> {t('benefits.sales.description')}
+                    <strong className="font-semibold ">{t('benefits.sales.title')}</strong>{' '}
+                    {t('benefits.sales.description')}
                   </span>
                 </li>
                 <li className="flex gap-x-3">
-                  <LockClosedIcon aria-hidden="true" className="mt-1 size-5 flex-none text-link-foreground" />
+                  <LockClosedIcon
+                    aria-hidden="true"
+                    className="mt-1 size-5 flex-none text-link-foreground"
+                  />
                   <span className="text-primary">
-                    <strong className="font-semibold ">{t('benefits.mistakes.title')}</strong> {t('benefits.mistakes.description')}
+                    <strong className="font-semibold ">{t('benefits.mistakes.title')}</strong>{' '}
+                    {t('benefits.mistakes.description')}
                   </span>
                 </li>
                 <li className="flex gap-x-3">
-                  <ServerIcon aria-hidden="true" className="mt-1 size-5 flex-none text-link-foreground" />
+                  <ServerIcon
+                    aria-hidden="true"
+                    className="mt-1 size-5 flex-none text-link-foreground"
+                  />
                   <span className="text-primary">
-                    <strong className="font-semibold ">{t('benefits.efficiency.title')}</strong> {t('benefits.efficiency.description')}
+                    <strong className="font-semibold ">{t('benefits.efficiency.title')}</strong>{' '}
+                    {t('benefits.efficiency.description')}
                   </span>
                 </li>
               </ul>
-              <p className="mt-8 text-muted-foreground">
-                {t('averageResults')}
-              </p>
-              <h2 className="mt-16 text-2xl font-bold tracking-tight text-primary">{t('roi.title')}</h2>
-              <p className="mt-6 text-muted-foreground">
-                {t('roi.description')}
-              </p>
+              <p className="mt-8 text-muted-foreground">{t('averageResults')}</p>
+              <h2 className="mt-16 text-2xl font-bold tracking-tight text-primary">
+                {t('roi.title')}
+              </h2>
+              <p className="mt-6 text-muted-foreground">{t('roi.description')}</p>
             </div>
           </div>
         </div>
