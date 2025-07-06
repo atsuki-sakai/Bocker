@@ -2860,7 +2860,6 @@
       "tagline": "Simple and convenient salon reservations"
     },
     "features": {
-      "badge": "Key Features",
       "title": "All Reservation Management Features in One",
       "subtitle": "We provide all the features necessary for salon management, from reservations, customers, sales, menu management, customer analysis to marketing.",
       "items": {
@@ -2923,11 +2922,154 @@
     "pricing": {
       "title": "Simple Pricing Plans",
       "subtitle": "No hidden fees, all features unlimited",
-      "disclaimer": "Cancel anytime · 30-day free trial"
+      "disclaimer": "Cancel anytime · 30-day free trial",
+      "type": {
+        "monthly": "Monthly",
+        "annually": "Annually"
+      },
+      "subscription": {
+        "title": "Subscription",
+        "lite": {
+          "title": "LITE",
+          "description": "Everything you need to get started.",
+          "price": {
+            "monthly": "¥8,000",
+            "annually": "¥80,000"
+          },
+          "features": {
+            "1": "Reservation Management (timeline, staff scheduling, confirmation/cancellation, 24/7 online booking)",
+            "2": "Customer Management (basic info, booking/purchase history, points, customer portal)",
+            "3": "Customer Records (automatic treatment details, allergies, hair quality management)",
+            "4": "Staff Management (account creation, login, permissions, basic scheduling) ※Up to 3 staff",
+            "5": "Menu Settings (one image, menu registration, pricing/duration) ※Up to 20 items",
+            "6": "Options & Retail (add options, option selection) ※Up to 15 items",
+            "7": "Points & Coupons (customizable point system, coupon management)",
+            "8": "Automatic Reminders & Notifications (LINE)",
+            "9": "Staff (3), Menus (30), Options (15), Coupons (10), Reservations (300/month)"
+          }
+        },
+        "pro": {
+          "title": "PRO",
+          "description": "Added flexibility at scale.",
+          "price": {
+            "monthly": "¥12,000",
+            "annually": "¥120,000"
+          },
+          "features": {
+            "1": "All LITE plan features",
+            "2": "Customer Records (4 image attachments, voice input available)",
+            "3": "Menu Settings (2 images) ※Up to 60 items",
+            "4": "Staff (10), Menus (60), Options (30), Coupons (30), Reservations (1000/month)"
+          }
+        }
+      },
+      "section": {
+        "basic": {
+          "title": "Basic Features",
+          "features": [
+            {
+              "name": "Max Reservations/Month",
+              "tiers": {
+                "LITE": "500",
+                "PRO": "Unlimited"
+              }
+            },
+            {
+              "name": "Max Customer Registration",
+              "tiers": {
+                "LITE": "500",
+                "PRO": "Unlimited"
+              }
+            },
+            {
+              "name": "Staff Management",
+              "tiers": {
+                "LITE": "3 people",
+                "PRO": "12 people"
+              }
+            },
+            {
+              "name": "Menu Settings",
+              "tiers": {
+                "LITE": "20 items",
+                "PRO": "60 items"
+              }
+            },
+            {
+              "name": "Options & Retail",
+              "tiers": {
+                "LITE": "15 items",
+                "PRO": "30 items"
+              }
+            },
+            {
+              "name": "Points & Coupons",
+              "tiers": {
+                "LITE": "10 items",
+                "PRO": "30 items"
+              }
+            },
+            {
+              "name": "Automatic Reminders & Notifications",
+              "tiers": {
+                "LITE": "true",
+                "PRO": "true"
+              }
+            }
+          ]
+        },
+        "customer": {
+          "title": "Customer Management & Records",
+          "features": [
+            {
+              "name": "Customer Records Feature",
+              "tiers": {
+                "LITE": "true",
+                "PRO": "true"
+              }
+            },
+            {
+              "name": "Advanced Records (Images & Voice)",
+              "tiers": {
+                "LITE": "false",
+                "PRO": "4 images (voice input PC only)"
+              }
+            }
+          ]
+        },
+        "support": {
+          "title": "Support & Other",
+          "features": [
+            {
+              "name": "Chat Support (bottom right chat button)",
+              "tiers": {
+                "LITE": "true",
+                "PRO": "true"
+              }
+            }
+          ]
+        }
+      }
     },
-    "testimonials": {
-      "title": "Customer Testimonials",
-      "subtitle": "Trusted by many beauty salon and spa owners"
+    "content": {
+      "title": "Increase Revenue & Reduce Costs",
+      "subtitle": "Save ¥1.2M in Annual Labor Costs",
+      "description": "With an investment starting at ¥8,000/month, achieve ¥100,000 monthly labor cost savings. Automated reservation management lets your staff focus on treatments, simultaneously achieving increased sales and cost reduction.",
+      "industryProblem": "79.9% of beauty salons struggle with declining customer numbers. Bocker solves this with 24/7 online booking and automated systems for improving repeat rates."
+    },
+    "headerSection": {
+      "title": "Bocker Support Center",
+      "description": "Bocker is a SaaS platform designed to support salon operations. If you have any questions or concerns, please feel free to contact us at any time.",
+      "cards": {
+        "contact": {
+          "title": "Contact",
+          "description": "For service-related questions or inquiries, please feel free to contact us at any time. Our dedicated staff will respond to you with care."
+        },
+        "support": {
+          "title": "Support",
+          "description": "We provide detailed support for any issues or questions you may have during your use. You can also refer to our frequently asked questions for quick answers."
+        }
+      }
     },
     "cta": {
       "title": "Ready to transform",
@@ -2935,6 +3077,11 @@
       "subtitle": "Free yourself from reservation management worries for just ¥8,000/month!",
       "button": "Start 30-Day Free Trial",
       "disclaimer": "Easy registration with credit card only · Cancel anytime"
+    },
+    "popupBar": {
+      "title": "Campaign",
+      "description": "Get up to ¥2,400 off with the referral bonus!",
+      "discount": "Up to ¥2,400"
     },
     "footer": {
       "tagline": "Salon Management System for Beauty Services",
@@ -2955,6 +3102,62 @@
         "termsOfUse": "Terms of Use"
       },
       "copyright": "© 2025 Bocker. All rights reserved."
+    },
+    "faq": {
+      "cta": "Contact Us",
+      "title": "Frequently Asked Questions",
+      "subtitle": "Trusted by many beauty salon and spa owners",
+      "items": {
+        "0": {
+          "question": "What kind of salons is Bocker designed for?",
+          "answer": "Bocker is a SaaS platform designed for appointment-based service businesses such as beauty salons, nail salons, and aesthetic salons. We accommodate salons of all sizes, from small (3 staff or less) to large (8+ staff)."
+        },
+        "1": {
+          "question": "What features are included?",
+          "answer": "Key features include reservation management (24/7 online booking), customer management (customer database), staff management, client records (Pro plan and above), points & coupon features (Pro plan and above), and payment management - all essential salon operations can be completed within the Bocker platform."
+        },
+        "2": {
+          "question": "What makes Bocker different from other booking systems?",
+          "answer": "Our key differentiators include intuitive modern UI/UX design, flexible pricing based on staff count, all-in-one functionality from booking to payment, real-time synchronization, fully Japanese-optimized domestic SaaS, and AI-powered booking optimization algorithms specifically for the beauty industry."
+        },
+        "3": {
+          "question": "How will Bocker benefit my salon business?",
+          "answer": "Reduce phone reservation time from 30 hours to 5 hours per month. Increase booking conversion rate by 15% on average with online reservations. Improve customer repeat rate by 20% on average with points and coupon strategies. Make data-driven marketing and business decisions."
+        },
+        "4": {
+          "question": "Is there a free trial?",
+          "answer": "Yes, all plans include a 30-day free trial period. During the trial, you can test all Bocker features and cancel or change plans anytime."
+        },
+        "5": {
+          "question": "I'm not tech-savvy. Is it difficult to use?",
+          "answer": "Bocker is designed with simple, modern UI/UX that's intuitive even for beauty professionals who are not familiar with IT. We provide comprehensive onboarding support, user manuals, video tutorials, and 'companion support' to guide you every step of the way."
+        }
+      }
+    },
+    "content": {
+      "tagline": "Increase Revenue & Reduce Costs",
+      "title": "Save ¥1.2M in Annual Labor Costs",
+      "mainDescription": "With an investment starting at ¥8,000/month, achieve ¥100,000 monthly labor cost savings. Automated reservation management lets your staff focus on treatments, simultaneously achieving increased sales and cost reduction.",
+      "industryProblem": "79.9% of beauty salons struggle with declining customer numbers. Bocker solves this with 24/7 online booking and automated systems for improving repeat rates.",
+      "benefits": {
+        "sales": {
+          "title": "15% Revenue Increase",
+          "description": "Achieve higher booking conversion rates through online reservations and 20% improvement in customer repeat rates with points and coupon systems."
+        },
+        "mistakes": {
+          "title": "Zero Booking Mistakes",
+          "description": "Eliminate lost opportunities from double bookings and missed reservations. Maintain customer trust and achieve stable management."
+        },
+        "efficiency": {
+          "title": "Save 30 Hours Monthly",
+          "description": "Reduce reservation phone time to 5 hours monthly. Staff can focus on treatments, significantly improving customer satisfaction."
+        }
+      },
+      "averageResults": "Average results from implemented businesses: 8% increase in customer spending, 40% decrease in no-shows, improved staff retention. Differentiate from competitors and achieve sustainable growth.",
+      "roi": {
+        "title": "Immediate Return on Investment",
+        "description": "¥8,000 monthly investment yields ¥100,000 in monthly savings. ROI achieved within the first month. Experience the benefits with a 30-day free trial before committing. No cancellation fees, cancel anytime."
+      }
     }
   },
   "features": {
@@ -3104,42 +3307,32 @@
       ]
     },
     "team": {
-      "title": "Our Team",
-      "description": "Beauty industry and IT experts come together, passionately solving field challenges. Members with diverse backgrounds including salon managers, beauticians, engineers, and designers work together to create the best product."
-    },
-    "achievements": {
-      "title": "Achievements",
-      "items": [
-        {
-          "value": "3,000+",
-          "label": "Salons Using Bocker"
-        },
-        {
-          "value": "99.9%",
-          "label": "System Uptime"
-        },
-        {
-          "value": "50%",
-          "label": "Efficiency Improvement"
-        },
-        {
-          "value": "95%",
-          "label": "Customer Satisfaction"
-        }
-      ]
+      "title": "About Bocker",
+      "description": "Bocker is a SaaS platform designed for appointment-based service businesses such as beauty salons, nail salons, and aesthetic salons. We accommodate salons of all sizes, from small (3 staff or less) to large (8+ staff).",
+      "bio": "Hello, I'm the representative of Bocker. We are a team of beauty industry and IT experts who are passionate about solving problems in the field. We have members with diverse backgrounds including salon managers, beauticians, engineers, and designers. We work together to create a truly useful service. We hope to continue to grow together as a partner in the beauty industry. Please feel free to contact us.",
+      "role": "Representative Director / Co-Founder"
     },
     "story": {
+      "subtitle": "To solve problems in the beauty industry, we developed Bocker.",
       "title": "Our Story",
       "content": [
-        "Bocker was born from challenges we experienced in beauty salon operations. We've seen many salons overwhelmed by phone reservations, unable to focus on their core services. There were numerous issues: double bookings with paper appointment books, scattered customer information, and inability to conduct effective marketing.",
-        "Believing these challenges could be solved with technology, we started developing Bocker. We listened to beauticians and salon owners, implementing truly necessary features one by one. We paid attention to every detail, including simple UI for those unfamiliar with IT and feature design aligned with field workflows.",
-        "Today, over 3,000 salons use our service, and we receive many positive reviews saying 'operations have become more efficient,' 'staff can now focus on core services,' and 'sales have improved.' We will continue to lead digital transformation in the beauty industry and create the future of salon operations."
+        {
+          "title": "It all started from voices on the salon floor",
+          "description": "Bocker was born from the real challenges faced by beauty salons. We witnessed countless cases where staff were overwhelmed with phone reservations, unable to focus on their clients. Issues like double bookings on paper calendars, scattered customer data, and ineffective marketing efforts were common across the industry."
+        },
+        {
+          "title": "Solving real problems with practical technology",
+          "description": "We believed technology could solve these challenges at their root — and that belief led to the start of Bocker. We listened closely to salon owners and stylists, implementing only the features they truly needed. With a simple, intuitive UI and functionality tailored to real salon workflows, we built a product even non-tech-savvy users can easily adopt."
+        },
+        {
+          "title": "Trusted by over 3,000 salons nationwide",
+          "description": "Today, more than 3,000 salons across Japan use Bocker. We are proud to receive messages like: 'Our operations are more efficient,' 'Sales have improved,' and 'Our staff can focus more on providing great service.' These voices drive us forward."
+        },
+        {
+          "title": "Growing together with the beauty industry",
+          "description": "At Bocker, we aim to be more than just a tool — we strive to be a true partner to the beauty industry. By staying close to the realities of the salon floor and constantly evolving with the times, we’re committed to shaping the future of salon operations together."
+        }
       ]
-    },
-    "cta": {
-      "title": "Let's Create the Future of the Beauty Industry Together",
-      "subtitle": "Try Bocker free for 30 days",
-      "button": "Start Free Trial"
     }
   },
   "contactPage": {
