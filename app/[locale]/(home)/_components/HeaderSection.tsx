@@ -2,6 +2,7 @@
 
 import { LifebuoyIcon, PhoneIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
+import { motion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 export function HeaderSection() {
@@ -20,7 +21,12 @@ export function HeaderSection() {
   ]
 
   return (
-    <div className="relative isolate overflow-hidden bg-background py-24 sm:py-32">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+      className="relative isolate overflow-hidden bg-background py-24 sm:py-32"
+    >
       <Image
         alt=""
         width={1920}
@@ -48,25 +54,43 @@ export function HeaderSection() {
       </div>
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl lg:mx-0">
-          <h2 className="text-2xl font-bold tracking-tight text-primary sm:text-5xl text-nowrap">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+            className="text-2xl font-bold tracking-tight text-primary sm:text-5xl text-nowrap"
+          >
             {t('title')}
-          </h2>
-          <p className="mt-8 text-sm md:text-base font-medium text-pretty text-primary sm:text-lg">
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.6 }}
+            className="mt-8 text-sm md:text-base font-medium text-pretty text-primary sm:text-lg"
+          >
             {t('description')}
-          </p>
-          <div className="mt-8">
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.8 }}
+            className="mt-8"
+          >
             <Link
               href="/contact"
               className="rounded-md bg-background border border-neon px-8 py-2 text-sm font-semibold text-neon shadow-xs hover:bg-neon-foreground/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link-foreground"
             >
               {t('cards.contact.title')}
             </Link>
-          </div>
+          </motion.div>
         </div>
         <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-6 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-8">
-          {cards.map((card) => (
-            <div
+          {cards.map((card, index) => (
+            <motion.div
               key={card.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 + index * 0.1 }}
               className="flex gap-x-4 rounded-xl bg-background p-6 inset-ring inset-ring-white/5 backdrop-blur-sm"
             >
               <card.icon aria-hidden="true" className="h-7 w-5 flex-none text-neon" />
@@ -76,10 +100,10 @@ export function HeaderSection() {
                   {card.description}
                 </p>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
