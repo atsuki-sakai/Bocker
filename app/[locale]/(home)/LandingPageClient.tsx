@@ -5,10 +5,10 @@ import {
   HeroSection,
   FeatureSection,
   Pricing,
-  PopupBar,
   HeaderSection,
   ContentSection,
   CTASection,
+  TeamSection,
   FAQ,
 } from './_components'
 export function LandingPageClient({ locale }: { locale: string }) {
@@ -24,11 +24,11 @@ export function LandingPageClient({ locale }: { locale: string }) {
       <HeroSection />
       <FeatureSection />
       <Pricing />
+      <TeamSection />
       <ContentSection />
       <CTASection />
       <FAQ locale={locale} />
       <HeaderSection />
-      <PopupBar />
     </main>
   )
 }
