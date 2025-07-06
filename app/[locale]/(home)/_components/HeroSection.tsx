@@ -96,7 +96,6 @@ export function HeroSection() {
                 <div className="ml-auto w-44 flex-none space-y-8 pt-32 sm:ml-0 sm:pt-80 lg:order-last lg:pt-36 xl:order-0 xl:pt-80">
                   <motion.div
                     className="relative"
-                    initial={{ opacity: 0, scale: 0.9 }}
                     animate={{
                       opacity: 1,
                       scale: 1,
@@ -124,18 +123,16 @@ export function HeroSection() {
                 <div className="mr-auto w-44 flex-none space-y-8 sm:mr-0 sm:pt-52 lg:pt-36">
                   <motion.div
                     className="relative"
-                    initial={{ opacity: 0, scale: 0.9 }}
                     animate={{
                       opacity: 1,
                       scale: 1,
                       y: [0, -20, 0],
                       rotate: [0, -5, 0],
                       transition: {
-                        delay: 1.2,
+                        delay: 0.2,
                         duration: 4.5,
                         ease: 'easeInOut',
                         repeat: Infinity,
-                        repeatType: 'loop' as const,
                       },
                     }}
                   >
@@ -150,14 +147,13 @@ export function HeroSection() {
                   </motion.div>
                   <motion.div
                     className="relative"
-                    initial={{ opacity: 0, scale: 0.9 }}
                     animate={{
                       opacity: 1,
                       scale: 1,
                       y: [0, -10, 0],
                       rotate: [0, 8, 0],
                       transition: {
-                        delay: 1.4,
+                        delay: 0.4,
                         duration: 4.2,
                         ease: 'easeInOut',
                         repeat: Infinity,
@@ -178,14 +174,13 @@ export function HeroSection() {
                 <div className="w-44 flex-none space-y-8 pt-32 sm:pt-0">
                   <motion.div
                     className="relative"
-                    initial={{ opacity: 0, scale: 0.9 }}
                     animate={{
                       opacity: 1,
                       scale: 1,
                       y: [0, -18, 0],
                       rotate: [0, -7, 0],
                       transition: {
-                        delay: 1.6,
+                        delay: 0.8,
                         duration: 4.8,
                         ease: 'easeInOut',
                         repeat: Infinity,
@@ -204,14 +199,13 @@ export function HeroSection() {
                   </motion.div>
                   <motion.div
                     className="relative"
-                    initial={{ opacity: 0, scale: 0.9 }}
                     animate={{
                       opacity: 1,
                       scale: 1,
                       y: [0, -12, 0],
                       rotate: [0, 6, 0],
                       transition: {
-                        delay: 1.8,
+                        delay: 1,
                         duration: 4.6,
                         ease: 'easeInOut',
                         repeat: Infinity,
