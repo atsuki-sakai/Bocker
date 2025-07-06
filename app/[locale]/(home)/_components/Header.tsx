@@ -23,7 +23,7 @@ export function Header() {
     }, [])
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background">
         <div className="container mx-auto px-4 md:px-6 flex h-16 items-center justify-between">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -61,25 +61,25 @@ export function Header() {
             className="hidden md:flex items-center gap-6"
           >
             <Link
-              href="#features"
+              href="/features"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               {t('nav.features')}
             </Link>
             <Link
-              href="#pricing"
+              href="/pricing"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               {t('nav.pricing')}
             </Link>
             <Link
-              href="#testimonials"
+              href="/about"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
-              {t('nav.testimonials')}
+              {t('nav.about')}
             </Link>
             <Link
-              href="#faq"
+              href="/faq"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               {t('nav.faq')}
@@ -88,6 +88,9 @@ export function Header() {
             <ModeToggle />
             <Link href="/sign-up">
               <Button size="sm">{t('nav.signUp')}</Button>
+            </Link>
+            <Link href="/sign-up">
+              <Button size="sm">{t('nav.login')}</Button>
             </Link>
           </motion.nav>
 
@@ -134,14 +137,14 @@ export function Header() {
                   {t('nav.pricing')}
                 </Link>
                 <Link
-                  href="#testimonials"
+                  href="/about"
                   className="block text-sm font-medium text-muted-foreground hover:text-primary"
                   onClick={() => setMenuOpen(false)}
                 >
-                  {t('nav.testimonials')}
+                  {t('nav.about')}
                 </Link>
                 <Link
-                  href="#faq"
+                  href="/faq"
                   className="block text-sm font-medium text-muted-foreground hover:text-primary"
                   onClick={() => setMenuOpen(false)}
                 >
@@ -154,6 +157,15 @@ export function Header() {
                 >
                   <Button className="w-full" size="sm">
                     {t('nav.startFreeTrial')}
+                  </Button>
+                </Link>
+                <Link
+                  className="inline-block w-full mt-4"
+                  href="/sign-up"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <Button className="w-full" size="sm">
+                    {t('nav.login')}
                   </Button>
                 </Link>
               </nav>
