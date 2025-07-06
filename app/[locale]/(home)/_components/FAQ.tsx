@@ -1,6 +1,7 @@
 'use client'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
+import { motion } from 'framer-motion'
 const getFaqData = (locale: string) => {
   const faqData = {
     ja: [
@@ -78,10 +79,20 @@ export function FAQ({ locale }: { locale: string }) {
     <div className="bg-background">
       <div className="mx-auto max-w-7xl px-6 py-16 sm:py-24 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+            className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
+          >
             {t('title')}
-          </h2>
-          <p className="mt-6 text-base/7 text-muted-foreground">
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+            className="mt-6 text-base/7 text-muted-foreground"
+          >
             {t('subtitle')}
             <Link
               href="/contact"
@@ -89,14 +100,28 @@ export function FAQ({ locale }: { locale: string }) {
             >
               {t('cta')}
             </Link>
-          </p>
+          </motion.p>
         </div>
         <div className="mt-20">
           <dl className="space-y-16 sm:grid sm:grid-cols-2 sm:space-y-0 sm:gap-x-6 sm:gap-y-16 lg:gap-x-10">
             {faqs.map((faq, index) => (
               <div key={index}>
-                <dt className="text-base/7 font-semibold text-foreground">{faq.question}</dt>
-                <dd className="mt-2 text-base/7 text-muted-foreground">{faq.answer}</dd>
+                <motion.dt
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 + index * 0.1 }}
+                  className="text-base/7 font-semibold text-foreground"
+                >
+                  {faq.question}
+                </motion.dt>
+                <motion.dd
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.6 + index * 0.1 }}
+                  className="mt-2 text-base/7 text-muted-foreground"
+                >
+                  {faq.answer}
+                </motion.dd>
               </div>
             ))}
           </dl>
