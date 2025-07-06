@@ -49,13 +49,10 @@ import {
       <div className="bg-background py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl sm:text-center">
-            
             <p className="mt-2 text-4xl font-semibold tracking-tight text-pretty text-foreground sm:text-5xl sm:text-balance">
               {t('title')}
             </p>
-            <p className="mt-6 text-lg/8 text-muted-foreground">
-              {t('subtitle')}
-            </p>
+            <p className="mt-6 text-base md:text-lg text-muted-foreground">{t('subtitle')}</p>
           </div>
         </div>
         <div className="relative overflow-hidden pt-16">
@@ -67,18 +64,21 @@ import {
               height={1442}
               className="mb-[-12%] rounded-xl shadow-2xl ring-1 ring-border"
             />
-  
+
             <div aria-hidden="true" className="relative">
               <div className="absolute -inset-x-20 bottom-0 bg-linear-to-t from-background pt-[7%]" />
             </div>
           </div>
         </div>
         <div className="mx-auto mt-16 max-w-7xl px-6 sm:mt-20 md:mt-24 lg:px-8">
-          <dl className="mx-auto grid max-w-2xl grid-cols-1 gap-x-6 gap-y-10 text-base/7 text-muted-foreground sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-x-8 lg:gap-y-16">
+          <dl className="mx-auto grid max-w-2xl grid-cols-1 gap-x-6 gap-y-10 text-base text-muted-foreground sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-x-8 lg:gap-y-16">
             {features.map((feature) => (
               <div key={feature.name} className="relative pl-9">
                 <dt className="inline font-semibold text-foreground">
-                  <feature.icon aria-hidden="true" className="absolute top-1 left-1 size-5 text-primary" />
+                  <feature.icon
+                    aria-hidden="true"
+                    className="absolute top-1 left-1 size-5 text-primary"
+                  />
                   {feature.name}
                 </dt>
                 <br />
