@@ -1825,11 +1825,12 @@
     "nav": {
       "features": "機能",
       "pricing": "料金",
-      "testimonials": "お客様の声",
+      "about": "わたし達について",
       "faq": "よくある質問",
       "demo": "デモ",
       "signUp": "アカウントを作成",
-      "startFreeTrial": "30日間無料トライアル"
+      "startFreeTrial": "30日間無料トライアル",
+      "login": "ログイン"
     },
     "hero": {
       "badge": "月額 ¥8,000〜",
