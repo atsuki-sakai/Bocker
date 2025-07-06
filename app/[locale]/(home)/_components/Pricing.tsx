@@ -92,25 +92,41 @@ export function Pricing() {
               {t('title')}
             </h2>
             <p className="mx-auto mt-6 max-w-2xl text-center text-lg font-medium text-pretty  sm:text-xl/8">
-              {t('subtitle')} 
+              {t('subtitle')}
             </p>
-            <p className="mx-auto mt-6 max-w-2xl text-center text-sm font-medium text-pretty text-muted-foreground sm:text-base">
+            <p className="mx-auto mt-6 max-w-2xl text-center text-base font-medium text-pretty text-muted-foreground sm:text-base">
               {t('disclaimer')}
             </p>
-      
+
             <div className="mt-16 flex justify-end">
               <fieldset aria-label="Payment frequency" className="transition-all duration-300">
-              <div className="flex items-center gap-8">
-                    <span className={!isAnnual ? "font-bold text-sm text-primary border-b-2 border-primary" : "text-muted-foreground"}>{t('type.monthly')}</span>
-                    <Switch
+                <div className="flex items-center gap-8">
+                  <span
+                    className={
+                      !isAnnual
+                        ? 'font-bold text-base text-primary border-b-2 border-primary'
+                        : 'text-muted-foreground'
+                    }
+                  >
+                    {t('type.monthly')}
+                  </span>
+                  <Switch
                     id="frequency"
                     name="frequency"
                     value="monthly"
                     checked={isAnnual}
                     className="data-[state=checked]:bg-foreground data-[state=unchecked]:bg-accent scale-110"
                     onCheckedChange={setIsAnnual}
-                    />
-                    <span className={isAnnual ? "font-bold text-sm text-primary border-b-2 border-primary" : "text-muted-foreground"}>{t('type.annually')}</span>
+                  />
+                  <span
+                    className={
+                      isAnnual
+                        ? 'font-bold text-base text-primary border-b-2 border-primary'
+                        : 'text-muted-foreground'
+                    }
+                  >
+                    {t('type.annually')}
+                  </span>
                 </div>
               </fieldset>
             </div>
@@ -128,33 +144,32 @@ export function Pricing() {
                   tier.featured
                     ? 'z-10 bg-foreground shadow-xl ring-1 ring-accent'
                     : 'bg-accent ring-1 ring-accent lg:bg-transparent lg:pb-14 lg:ring-0',
-                  'group/tier relative rounded-2xl',
+                  'group/tier relative rounded-2xl'
                 )}
               >
                 <div className="p-8 lg:pt-12 xl:p-10 xl:pt-14">
                   <h3
                     id={`tier-${tier.id}`}
-                    className="text-sm/6 font-semibold text-background group-data-featured/tier:text-muted-foreground"
+                    className="text-base/6 font-semibold text-background group-data-featured/tier:text-muted-foreground"
                   >
                     {tier.name}
                   </h3>
                   <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between lg:flex-col lg:items-stretch ">
                     <div className="mt-2 flex items-center gap-x-4">
-                        {
-                            isAnnual ? (
-                                <p className="text-4xl font-semibold tracking-tight text-background group-not-has-[[name=frequency][value=monthly]:checked]/tiers:hidden group-data-featured/tier:text-foreground">
-                                    {tier.price.annually}
-                                </p>
-                            ) : (
-                                <p className="text-4xl font-semibold tracking-tight text-background group-not-has-[[name=frequency][value=annually]:checked]/tiers:hidden group-data-featured/tier:text-foreground">
-                                    {tier.price.monthly}
-                                </p>
-                            )
-                            }
-                      <div className="text-sm">
-                        <p className="text-primary-foreground group-data-featured/tier:text-foreground">{t('subscription.title')}</p>
-                      {
-                        isAnnual ? (
+                      {isAnnual ? (
+                        <p className="text-4xl font-semibold tracking-tight text-background group-not-has-[[name=frequency][value=monthly]:checked]/tiers:hidden group-data-featured/tier:text-foreground">
+                          {tier.price.annually}
+                        </p>
+                      ) : (
+                        <p className="text-4xl font-semibold tracking-tight text-background group-not-has-[[name=frequency][value=annually]:checked]/tiers:hidden group-data-featured/tier:text-foreground">
+                          {tier.price.monthly}
+                        </p>
+                      )}
+                      <div className="text-base">
+                        <p className="text-primary-foreground group-data-featured/tier:text-foreground">
+                          {t('subscription.title')}
+                        </p>
+                        {isAnnual ? (
                           <p className="text-muted font-bold group-not-has-[[name=frequency][value=monthly]:checked]/tiers:hidden group-data-featured/tier:text-muted-foreground">
                             {t('type.annually')}
                           </p>
@@ -162,11 +177,9 @@ export function Pricing() {
                           <p className="text-muted font-bold group-not-has-[[name=frequency][value=annually]:checked]/tiers:hidden group-data-featured/tier:text-muted-foreground">
                             {t('type.monthly')}
                           </p>
-                        )
-                      }
+                        )}
                       </div>
                     </div>
-                    
                   </div>
                   <div className="mt-8 flow-root sm:mt-10">
                     <ul
@@ -204,24 +217,26 @@ export function Pricing() {
                   <div
                     className={classNames(
                       tier.featured ? 'border-primary' : 'border-transparent',
-                      '-mt-px w-72 border-t-2 pt-10 md:w-80',
+                      '-mt-px w-72 border-t-2 pt-10 md:w-80'
                     )}
                   >
                     <h3
                       className={classNames(
                         tier.featured ? 'text-primary' : 'text-foreground',
-                        'text-sm/6 font-semibold',
+                        'text-base/6 font-semibold'
                       )}
                     >
                       {tier.name}
                     </h3>
-                    <p className="mt-1 text-sm/6 text-muted-foreground">{tier.description}</p>
+                    <p className="mt-1 text-base/6 text-muted-foreground">{tier.description}</p>
                   </div>
 
                   <div className="mt-10 space-y-10">
                     {sections.map((section) => (
                       <div key={section.name}>
-                        <h4 className="text-sm/6 font-semibold text-foreground">{section.name}</h4>
+                        <h4 className="text-base/6 font-semibold text-foreground">
+                          {section.name}
+                        </h4>
                         <div className="relative mt-6">
                           {/* Fake card background */}
                           <div
@@ -232,10 +247,10 @@ export function Pricing() {
                           <div
                             className={classNames(
                               tier.featured ? 'ring-2 ring-primary' : 'ring-1 ring-border',
-                              'relative rounded-lg bg-card shadow-xs sm:rounded-none sm:bg-transparent sm:shadow-none sm:ring-0',
+                              'relative rounded-lg bg-card shadow-xs sm:rounded-none sm:bg-transparent sm:shadow-none sm:ring-0'
                             )}
                           >
-                            <dl className=" divide-y divide-border text-sm/6">
+                            <dl className=" divide-y divide-border text-base/6">
                               {section.features.map((feature) => (
                                 <div
                                   key={feature.name}
@@ -244,13 +259,18 @@ export function Pricing() {
                                   <dt className="pr-4 text-muted-foreground">{feature.name}</dt>
                                   <dd className="flex items-center justify-end sm:justify-center sm:px-4">
                                     {(() => {
-                                      const tierValue = feature.tiers[tier.name as keyof typeof feature.tiers]
+                                      const tierValue =
+                                        feature.tiers[tier.name as keyof typeof feature.tiers]
                                       const evaluatedValue = evaluateTierValue(tierValue)
-                                      
+
                                       if (typeof evaluatedValue === 'string') {
                                         return (
                                           <span
-                                            className={tier.featured ? 'font-semibold text-primary' : 'text-foreground'}
+                                            className={
+                                              tier.featured
+                                                ? 'font-semibold text-primary'
+                                                : 'text-foreground'
+                                            }
                                           >
                                             {evaluatedValue}
                                           </span>
@@ -259,9 +279,15 @@ export function Pricing() {
                                         return (
                                           <>
                                             {evaluatedValue === true ? (
-                                              <CheckIcon aria-hidden="true" className="mx-auto size-5 text-primary" />
+                                              <CheckIcon
+                                                aria-hidden="true"
+                                                className="mx-auto size-5 text-primary"
+                                              />
                                             ) : (
-                                              <XMarkIcon aria-hidden="true" className="mx-auto size-5 text-muted-foreground" />
+                                              <XMarkIcon
+                                                aria-hidden="true"
+                                                className="mx-auto size-5 text-muted-foreground"
+                                              />
                                             )}
                                             <span className="sr-only">
                                               {evaluatedValue === true ? 'Yes' : 'No'}
@@ -281,7 +307,7 @@ export function Pricing() {
                             aria-hidden="true"
                             className={classNames(
                               tier.featured ? 'ring-2 ring-primary' : 'ring-1 ring-border',
-                              'pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 rounded-lg sm:block',
+                              'pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 rounded-lg sm:block'
                             )}
                           />
                         </div>
@@ -305,18 +331,18 @@ export function Pricing() {
                   <div
                     className={classNames(
                       tier.featured ? 'border-primary' : 'border-transparent',
-                      'border-t-2 pt-10',
+                      'border-t-2 pt-10'
                     )}
                   >
                     <p
                       className={classNames(
                         tier.featured ? 'text-primary' : 'text-foreground',
-                        'text-sm/6 font-semibold',
+                        'text-base/6 font-semibold'
                       )}
                     >
                       {tier.name}
                     </p>
-                    <p className="mt-1 text-sm/6 text-muted-foreground">{tier.description}</p>
+                    <p className="mt-1 text-base/6 text-muted-foreground">{tier.description}</p>
                   </div>
                 </div>
               ))}
@@ -325,7 +351,7 @@ export function Pricing() {
             <div className="-mt-6 space-y-16">
               {sections.map((section) => (
                 <div key={section.name}>
-                  <h3 className="text-sm/6 font-semibold text-foreground">{section.name}</h3>
+                  <h3 className="text-base/6 font-semibold text-foreground">{section.name}</h3>
                   <div className="relative -mx-8 mt-10 w-full">
                     {/* Fake card backgrounds */}
                     <div
@@ -353,7 +379,10 @@ export function Pricing() {
                       <tbody>
                         {section.features.map((feature, featureIdx) => (
                           <tr key={feature.name}>
-                            <th scope="row" className="py-3 pr-4 text-left text-sm/6 font-normal text-foreground">
+                            <th
+                              scope="row"
+                              className="py-3 pr-4 text-left text-base/6 font-normal text-foreground"
+                            >
                               {feature.name}
                               {featureIdx !== section.features.length - 1 ? (
                                 <div className="absolute inset-x-8 mt-3 h-px bg-border" />
@@ -363,15 +392,18 @@ export function Pricing() {
                               <td key={tier.id} className="relative w-1/3 px-4 py-0 text-center">
                                 <span className="relative size-full py-3">
                                   {(() => {
-                                    const tierValue = feature.tiers[tier.name as keyof typeof feature.tiers]
+                                    const tierValue =
+                                      feature.tiers[tier.name as keyof typeof feature.tiers]
                                     const evaluatedValue = evaluateTierValue(tierValue)
-                                    
+
                                     if (typeof evaluatedValue === 'string') {
                                       return (
                                         <span
                                           className={classNames(
-                                            tier.featured ? 'font-semibold text-primary' : 'text-foreground',
-                                            'text-sm/6',
+                                            tier.featured
+                                              ? 'font-semibold text-primary'
+                                              : 'text-foreground',
+                                            'text-base/6'
                                           )}
                                         >
                                           {evaluatedValue}
@@ -381,9 +413,15 @@ export function Pricing() {
                                       return (
                                         <>
                                           {evaluatedValue === true ? (
-                                            <CheckIcon aria-hidden="true" className="mx-auto size-5 text-neon" />
+                                            <CheckIcon
+                                              aria-hidden="true"
+                                              className="mx-auto size-5 text-neon"
+                                            />
                                           ) : (
-                                           <XMarkIcon aria-hidden="true" className="mx-auto size-5 text-muted-foreground" />
+                                            <XMarkIcon
+                                              aria-hidden="true"
+                                              className="mx-auto size-5 text-muted-foreground"
+                                            />
                                           )}
                                           <span className="sr-only">
                                             {evaluatedValue === true ? 'Yes' : 'No'}
@@ -410,7 +448,7 @@ export function Pricing() {
                           key={tier.id}
                           className={classNames(
                             tier.featured ? 'ring-2 ring-primary' : 'ring-1 ring-border',
-                            'rounded-lg',
+                            'rounded-lg'
                           )}
                         />
                       ))}
