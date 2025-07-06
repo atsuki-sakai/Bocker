@@ -581,7 +581,6 @@ export default function ReservationTimeLine() {
         {/* 今日から2週間後までの予約件数を表示 */}
         <div className="px-4">
           <div className="flex items-center justify-start gap-2 mb-2">
-            <h3 className="text-sm font-bold">予約状況（直近14日間）</h3>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-neon rounded-full" />
