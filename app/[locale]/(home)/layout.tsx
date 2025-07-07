@@ -1,5 +1,5 @@
 import { ChannelTalkLoader } from '@/components/common/ChannelTalkLoader'
-import { Header, Footer } from './_components'
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -8,9 +8,8 @@ export default function RootLayout({
   return (
     <>
       <ChannelTalkLoader />
-      <Header />
+
       {children}
-      <Footer />
     </>
   )
 }
