@@ -332,7 +332,6 @@ export function Pricing() {
                     </h3>
                     <p className="mt-1 text-base/6 text-muted-foreground">{tier.description}</p>
                   </div>
-
                   <div className="mt-10 space-y-10">
                     {sections.map((section) => (
                       <div key={section.name}>

@@ -21,9 +21,7 @@ export function ContentSection() {
         <div className="lg:col-span-2 lg:col-start-1 lg:row-start-1 lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
           <div className="lg:pr-4">
             <div className="lg:max-w-lg">
-              <p className="text-base/7 font-semibold text-link">
-                {t('tagline')}
-              </p>
+              <p className="text-base/7 font-semibold text-link-foreground">{t('tagline')}</p>
               <motion.h1
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -97,9 +95,7 @@ export function ContentSection() {
                   </span>
                 </li>
               </motion.ul>
-              <p className="mt-8 text-muted-foreground">
-                {t('averageResults')}
-              </p>
+              <p className="mt-8 text-muted-foreground">{t('averageResults')}</p>
               <motion.h2
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -109,9 +105,7 @@ export function ContentSection() {
               >
                 {t('roi.title')}
               </motion.h2>
-              <p className="mt-6 text-muted-foreground">
-                {t('roi.description')}
-              </p>
+              <p className="mt-6 text-muted-foreground">{t('roi.description')}</p>
             </div>
           </div>
         </div>

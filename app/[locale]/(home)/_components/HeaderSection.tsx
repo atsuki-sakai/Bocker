@@ -33,7 +33,7 @@ export function HeaderSection() {
         width={1920}
         height={1080}
         src="/assets/images/salon-bg.jpg"
-        className="absolute inset-0 blur-md opacity-50 -z-10 size-full object-cover object-right md:object-center"
+        className="absolute inset-0 blur-md opacity-80 -z-10 size-full object-cover object-right md:object-center"
       />
       <div className="hidden sm:absolute sm:-top-10 sm:right-1/2 sm:-z-10 sm:mr-10 sm:block sm:transform-gpu sm:blur-3xl">
         <div
