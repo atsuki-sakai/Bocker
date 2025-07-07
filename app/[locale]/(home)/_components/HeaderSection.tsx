@@ -22,9 +22,10 @@ export function HeaderSection() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+      transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
+      viewport={{ once: true, amount: 0.2 }}
       className="relative isolate overflow-hidden bg-background py-24 sm:py-32"
     >
       <Image
@@ -55,25 +56,28 @@ export function HeaderSection() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl lg:mx-0">
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
+            viewport={{ once: true, amount: 0.2 }}
             className="text-2xl font-bold tracking-tight text-primary sm:text-5xl text-nowrap"
           >
             {t('title')}
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.6 }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
+            viewport={{ once: true, amount: 0.2 }}
             className="mt-8 text-sm md:text-base font-medium text-pretty text-primary sm:text-lg"
           >
             {t('description')}
           </motion.p>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.8 }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
+            viewport={{ once: true, amount: 0.2 }}
             className="mt-8"
           >
             <Link
@@ -88,9 +92,10 @@ export function HeaderSection() {
           {cards.map((card, index) => (
             <motion.div
               key={card.name}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 + index * 0.1 }}
+              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 + index * 0.1 }}
+              viewport={{ once: true, amount: 0.2 }}
               className="flex gap-x-4 rounded-xl bg-background p-6 inset-ring inset-ring-white/5 backdrop-blur-sm"
             >
               <card.icon aria-hidden="true" className="h-7 w-5 flex-none text-neon" />

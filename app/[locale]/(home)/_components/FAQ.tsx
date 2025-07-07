@@ -80,17 +80,19 @@ export function FAQ({ locale }: { locale: string }) {
       <div className="mx-auto max-w-7xl px-6 py-16 sm:py-24 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
+            viewport={{ once: true, amount: 0.2 }}
             className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
           >
             {t('title')}
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
+            viewport={{ once: true, amount: 0.2 }}
             className="mt-6 text-base/7 text-muted-foreground"
           >
             {t('subtitle')}
@@ -107,17 +109,19 @@ export function FAQ({ locale }: { locale: string }) {
             {faqs.map((faq, index) => (
               <div key={index}>
                 <motion.dt
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 + index * 0.1 }}
+                  transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 + index * 0.1 }}
+                  viewport={{ once: true, amount: 0.2 }}
                   className="text-base/7 font-semibold text-foreground"
                 >
                   {faq.question}
                 </motion.dt>
                 <motion.dd
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.6 + index * 0.1 }}
+                  transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 + index * 0.1 }}
+                  viewport={{ once: true, amount: 0.2 }}
                   className="mt-2 text-base/7 text-muted-foreground"
                 >
                   {faq.answer}

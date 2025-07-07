@@ -5,16 +5,18 @@ import { motion } from 'framer-motion'
 export function CTASection() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+      transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
+      viewport={{ once: true, amount: 0.2 }}
       className="bg-neon-foreground"
     >
       <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:flex lg:items-center lg:justify-between lg:px-8">
         <motion.h2
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
+          viewport={{ once: true, amount: 0.2 }}
           className="max-w-2xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
         >
           ご利用を開始する
@@ -22,9 +24,10 @@ export function CTASection() {
           今すぐ無料トライアルを開始
         </motion.h2>
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
+          viewport={{ once: true, amount: 0.2 }}
           className="mt-10 flex items-center gap-x-6 lg:mt-0 lg:shrink-0"
         >
           <Link

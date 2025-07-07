@@ -156,34 +156,38 @@ export function Pricing() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="relative z-10">
             <motion.h2
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
+              viewport={{ once: true, amount: 0.2 }}
               className="mx-auto max-w-4xl text-center text-5xl font-semibold tracking-tight text-balance text-primary sm:text-5xl"
             >
               {t('title')}
             </motion.h2>
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.6 }}
+              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
+              viewport={{ once: true, amount: 0.2 }}
               className="mx-auto mt-6 max-w-2xl text-center text-lg font-medium text-pretty  sm:text-xl/8"
             >
               {t('subtitle')}
             </motion.p>
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.8 }}
+              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
+              viewport={{ once: true, amount: 0.2 }}
               className="mx-auto mt-6 max-w-2xl text-center text-base font-medium text-pretty text-muted-foreground sm:text-base"
             >
               {t('disclaimer')}
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut', delay: 1 }}
+              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
+              viewport={{ once: true, amount: 0.2 }}
               className="mt-16 flex justify-end"
             >
               <fieldset aria-label="Payment frequency" className="transition-all duration-300">
@@ -227,10 +231,10 @@ export function Pricing() {
               <motion.div
                 key={tier.id}
                 data-featured={tier.featured ? 'true' : undefined}
-                initial={{ opacity: 0, y: 40 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, ease: 'easeOut', delay: 0.2 + idx * 0.2 }}
-                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.7, ease: 'easeOut', delay: 0.6 + idx * 0.15 }}
+                viewport={{ once: true, amount: 0.2 }}
                 className={classNames(
                   tier.featured
                     ? 'z-10 bg-foreground shadow-xl ring-1 ring-accent'
@@ -305,9 +309,10 @@ export function Pricing() {
             <div className="mx-auto max-w-2xl space-y-16">
               {tiers.map((tier, index) => (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 + index * 0.2 }}
+                  transition={{ duration: 0.6, ease: 'easeOut', delay: 0.6 + index * 0.15 }}
+                  viewport={{ once: true, amount: 0.2 }}
                   key={tier.id}
                   className="border-t border-border"
                 >
@@ -418,9 +423,10 @@ export function Pricing() {
 
           {/* Feature comparison (lg+) */}
           <motion.section
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
+            viewport={{ once: true, amount: 0.2 }}
             aria-labelledby="comparison-heading"
             className="hidden lg:block"
           >

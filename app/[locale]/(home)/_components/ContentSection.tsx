@@ -5,88 +5,46 @@ import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.2, when: 'beforeChildren' },
-  },
-}
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.5, ease: 'easeOut' },
-  },
-}
-
-const imageVariants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.8, ease: 'easeOut' },
-  },
-}
+// Optimized for selective animation - only key elements are animated
 
 export function ContentSection() {
   const t = useTranslations('landing.content')
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
       viewport={{ once: true, amount: 0.2 }}
-      variants={containerVariants}
       className="relative isolate overflow-hidden bg-background px-6 py-24 sm:py-32 lg:overflow-visible lg:px-0"
     >
       <div className="mx-auto grid max-w-2xl grid-cols-1 gap-x-8 gap-y-16 lg:mx-0 lg:max-w-none lg:grid-cols-2 lg:items-start lg:gap-y-10">
         <div className="lg:col-span-2 lg:col-start-1 lg:row-start-1 lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
           <div className="lg:pr-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-              className="lg:max-w-lg"
-              variants={containerVariants}
-            >
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-                className="text-base/7 font-semibold text-link"
-              >
+            <div className="lg:max-w-lg">
+              <p className="text-base/7 font-semibold text-link">
                 {t('tagline')}
-              </motion.p>
+              </p>
               <motion.h1
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+                transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
+                viewport={{ once: true, amount: 0.2 }}
                 className="mt-2 text-4xl font-semibold tracking-tight text-pretty text-foreground sm:text-5xl"
-                variants={itemVariants}
               >
                 {t('title')}
               </motion.h1>
-              <motion.p
-                className="mt-6 text-base md:text-lg text-muted-foreground"
-                whileInView={{ opacity: 1, y: 0 }}
-                initial={{ opacity: 0, y: 20 }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-                variants={itemVariants}
-              >
+              <p className="mt-6 text-base md:text-lg text-muted-foreground">
                 {t('mainDescription')}
-              </motion.p>
-            </motion.div>
+              </p>
+            </div>
           </div>
         </div>
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.7, ease: 'easeOut', delay: 0.2 }}
+          viewport={{ once: true, amount: 0.2 }}
           className="-mt-12 -ml-12 p-12 lg:sticky lg:top-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:overflow-hidden"
-          variants={imageVariants}
         >
           <Image
             alt=""
@@ -98,33 +56,17 @@ export function ContentSection() {
         </motion.div>
         <div className="lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
           <div className="lg:pr-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-              className="max-w-xl text-base/7 text-foreground lg:max-w-lg"
-              variants={containerVariants}
-            >
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-                variants={itemVariants}
-              >
-                {t('industryProblem')}
-              </motion.p>
+            <div className="max-w-xl text-base/7 text-foreground lg:max-w-lg">
+              <p>{t('industryProblem')}</p>
               <motion.ul
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
+                viewport={{ once: true, amount: 0.2 }}
                 role="list"
                 className="mt-8 space-y-8 text-foreground"
-                variants={containerVariants}
               >
-                <motion.li
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-                  className="flex gap-x-3"
-                  variants={itemVariants}
-                >
+                <li className="flex gap-x-3">
                   <CloudArrowUpIcon
                     aria-hidden="true"
                     className="mt-1 size-5 flex-none text-link-foreground"
@@ -133,14 +75,8 @@ export function ContentSection() {
                     <strong className="font-semibold ">{t('benefits.sales.title')}</strong>{' '}
                     {t('benefits.sales.description')}
                   </span>
-                </motion.li>
-                <motion.li
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-                  className="flex gap-x-3"
-                  variants={itemVariants}
-                >
+                </li>
+                <li className="flex gap-x-3">
                   <LockClosedIcon
                     aria-hidden="true"
                     className="mt-1 size-5 flex-none text-link-foreground"
@@ -149,14 +85,8 @@ export function ContentSection() {
                     <strong className="font-semibold ">{t('benefits.mistakes.title')}</strong>{' '}
                     {t('benefits.mistakes.description')}
                   </span>
-                </motion.li>
-                <motion.li
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-                  className="flex gap-x-3"
-                  variants={itemVariants}
-                >
+                </li>
+                <li className="flex gap-x-3">
                   <ServerIcon
                     aria-hidden="true"
                     className="mt-1 size-5 flex-none text-link-foreground"
@@ -165,36 +95,24 @@ export function ContentSection() {
                     <strong className="font-semibold ">{t('benefits.efficiency.title')}</strong>{' '}
                     {t('benefits.efficiency.description')}
                   </span>
-                </motion.li>
+                </li>
               </motion.ul>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.8 }}
-                className="mt-8 text-muted-foreground"
-                variants={itemVariants}
-              >
+              <p className="mt-8 text-muted-foreground">
                 {t('averageResults')}
-              </motion.p>
+              </p>
               <motion.h2
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.8 }}
+                transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
+                viewport={{ once: true, amount: 0.2 }}
                 className="mt-16 text-2xl font-bold tracking-tight text-primary"
-                variants={itemVariants}
               >
                 {t('roi.title')}
               </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.8 }}
-                className="mt-6 text-muted-foreground"
-                variants={itemVariants}
-              >
+              <p className="mt-6 text-muted-foreground">
                 {t('roi.description')}
-              </motion.p>
-            </motion.div>
+              </p>
+            </div>
           </div>
         </div>
       </div>

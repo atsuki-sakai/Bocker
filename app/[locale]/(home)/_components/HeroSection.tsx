@@ -57,24 +57,27 @@ export function HeroSection() {
             <div className="mx-auto max-w-2xl gap-x-14 lg:mx-0 lg:flex lg:max-w-none lg:items-center">
               <div className="relative w-full lg:max-w-xl lg:shrink-0 xl:max-w-2xl">
                 <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
                   transition={{ duration: 0.8, ease: 'easeOut' }}
                   className="text-5xl font-semibold tracking-tight  text-links-foreground sm:text-7xl"
                 >
                   {t('title')}
                 </motion.h1>
                 <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
                   transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
                   className="mt-8 text- text-pretty text-muted-foreground sm:max-w-md sm:text-xl/8 lg:max-w-none"
                 >
                   {t('subtitle')}
                 </motion.p>
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
                   transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
                   className="mt-10 flex items-center gap-x-6"
                 >
@@ -92,22 +95,25 @@ export function HeroSection() {
                   </Link>
                 </motion.div>
               </div>
-              <div className="mt-14 flex justify-end gap-8 sm:-mt-44 sm:justify-start sm:pl-20 lg:mt-0 lg:pl-0">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 1, ease: 'easeOut', delay: 0.6 }}
+                className="mt-14 flex justify-end gap-8 sm:-mt-44 sm:justify-start sm:pl-20 lg:mt-0 lg:pl-0"
+              >
                 <div className="ml-auto w-44 flex-none space-y-8 pt-32 sm:ml-0 sm:pt-80 lg:order-last lg:pt-36 xl:order-0 xl:pt-80">
                   <motion.div
                     className="relative"
                     animate={{
-                      opacity: 1,
-                      scale: 1,
-                      y: [0, -15, 0],
-                      rotate: [0, 5, 0],
-                      transition: {
-                        delay: 1,
-                        duration: 4,
-                        ease: 'easeInOut',
-                        repeat: Infinity,
-                        repeatType: 'loop' as const,
-                      },
+                      y: [0, -8, 0],
+                      rotate: [0, 2, 0],
+                    }}
+                    transition={{
+                      duration: 6,
+                      ease: 'easeInOut',
+                      repeat: Infinity,
+                      repeatType: 'loop' as const,
                     }}
                   >
                     <Image
@@ -124,16 +130,14 @@ export function HeroSection() {
                   <motion.div
                     className="relative"
                     animate={{
-                      opacity: 1,
-                      scale: 1,
-                      y: [0, -20, 0],
-                      rotate: [0, -5, 0],
-                      transition: {
-                        delay: 0.2,
-                        duration: 4.5,
-                        ease: 'easeInOut',
-                        repeat: Infinity,
-                      },
+                      y: [0, -10, 0],
+                      rotate: [0, -2, 0],
+                    }}
+                    transition={{
+                      duration: 7,
+                      ease: 'easeInOut',
+                      repeat: Infinity,
+                      delay: 0.5,
                     }}
                   >
                     <Image
@@ -148,17 +152,14 @@ export function HeroSection() {
                   <motion.div
                     className="relative"
                     animate={{
-                      opacity: 1,
-                      scale: 1,
-                      y: [0, -10, 0],
-                      rotate: [0, 8, 0],
-                      transition: {
-                        delay: 0.4,
-                        duration: 4.2,
-                        ease: 'easeInOut',
-                        repeat: Infinity,
-                        repeatType: 'loop' as const,
-                      },
+                      y: [0, -6, 0],
+                      rotate: [0, 3, 0],
+                    }}
+                    transition={{
+                      duration: 8,
+                      ease: 'easeInOut',
+                      repeat: Infinity,
+                      delay: 1,
                     }}
                   >
                     <Image
@@ -175,17 +176,14 @@ export function HeroSection() {
                   <motion.div
                     className="relative"
                     animate={{
-                      opacity: 1,
-                      scale: 1,
-                      y: [0, -18, 0],
-                      rotate: [0, -7, 0],
-                      transition: {
-                        delay: 0.8,
-                        duration: 4.8,
-                        ease: 'easeInOut',
-                        repeat: Infinity,
-                        repeatType: 'loop' as const,
-                      },
+                      y: [0, -12, 0],
+                      rotate: [0, -3, 0],
+                    }}
+                    transition={{
+                      duration: 9,
+                      ease: 'easeInOut',
+                      repeat: Infinity,
+                      delay: 1.5,
                     }}
                   >
                     <Image
@@ -200,17 +198,14 @@ export function HeroSection() {
                   <motion.div
                     className="relative"
                     animate={{
-                      opacity: 1,
-                      scale: 1,
-                      y: [0, -12, 0],
-                      rotate: [0, 6, 0],
-                      transition: {
-                        delay: 1,
-                        duration: 4.6,
-                        ease: 'easeInOut',
-                        repeat: Infinity,
-                        repeatType: 'loop' as const,
-                      },
+                      y: [0, -7, 0],
+                      rotate: [0, 2, 0],
+                    }}
+                    transition={{
+                      duration: 10,
+                      ease: 'easeInOut',
+                      repeat: Infinity,
+                      delay: 2,
                     }}
                   >
                     <Image
@@ -223,7 +218,7 @@ export function HeroSection() {
                     <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-border ring-inset" />
                   </motion.div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </div>

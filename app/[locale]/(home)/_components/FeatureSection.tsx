@@ -51,17 +51,19 @@ export function FeatureSection() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl sm:text-center">
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
             className="mt-2 text-4xl font-semibold tracking-tight text-pretty text-foreground sm:text-5xl sm:text-balance"
           >
             {t('title')}
           </motion.p>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.6 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
             className="mt-6 text-base md:text-lg text-muted-foreground"
           >
             {t('subtitle')}
@@ -70,9 +72,10 @@ export function FeatureSection() {
       </div>
       <div className="relative overflow-hidden pt-16">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut', delay: 0.8 }}
+          initial={{ opacity: 0, y: 40, scale: 0.95 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
           className="mx-auto max-w-7xl px-6 lg:px-8"
         >
           <Image
@@ -93,9 +96,10 @@ export function FeatureSection() {
           {features.map((feature, index) => (
             <motion.div
               key={feature.name}
-              initial={{ opacity: 0, y: 0, x: -30 }}
+              initial={{ opacity: 0, y: 20, x: -20 }}
               whileInView={{ opacity: 1, y: 0, x: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut', delay: index * 0.2 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 + index * 0.1 }}
               className="relative pl-9"
             >
               <dt className="inline font-semibold text-foreground">
