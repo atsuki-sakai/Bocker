@@ -361,6 +361,9 @@
         "allergy": "アレルギー",
         "medicalHistory": "病歴",
         "none": "なし",
+        "birthday": "誕生日 / 年齢",
+        "ltv": "LTV(累計利用金額)",
+        "staffFree": "指名フリー",
         "totalReservations": "総予約数",
         "totalSales": "総売上",
         "reservationHistory": "施術履歴",
@@ -603,7 +606,27 @@
     },
     "open": "営業",
     "closed": "休業",
-    "noScheduleAvailable": "スケジュールが設定されていません"
+    "noScheduleAvailable": "スケジュールが設定されていません",
+    "error": {
+      "missingInfo": "予約に必要な情報が不足しています",
+      "timeSlotTaken": "申し訳ございません。選択された時間帯は既に予約済みです",
+      "maxBookingReached": "この時間帯の最大同時予約数は上限です"
+    },
+    "steps": {
+      "menu": "メニュー",
+      "staff": "スタッフ",
+      "option": "オプション",
+      "datetime": "日時",
+      "payment": "決済",
+      "coupon": "クーポン",
+      "confirm": "確認"
+    },
+    "selectDateTime": "日時を選択",
+    "selectDateTimeDescription": "ご希望の日付と時間を選択してください",
+    "dateLabel": "日付",
+    "timeLabel": "時間",
+    "loadingAvailableTimes": "予約可能時間を取得中...",
+    "noAvailableTimes": "この日は予約可能な時間がありません"
   },
   "customers": {
     "title": "顧客管理",
@@ -2988,6 +3011,7 @@
       "createSuccess": "オプションを作成しました",
       "updateSuccess": "オプションを更新しました",
       "deleteSuccess": "オプションを削除しました",
+      "imageDeleted": "画像を削除しました",
       "notFound": "オプションが見つかりません"
     },
     "form": {

@@ -278,7 +278,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
               <div className="space-y-3">
                 {customerData.customerDetail?.birthday && (
                   <div>
-                    <span className="text-sm text-muted-foreground">誕生日 / 年齢</span>
+                    <span className="text-sm text-muted-foreground">{tCarte('detail.birthday')}</span>
                     <p className="font-medium">
                       {format(new Date(customerData.customerDetail.birthday), 'yyyy年MM月dd日')}
                       <span className="text-sm text-muted-foreground ml-2">
@@ -304,7 +304,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                 )}
                 {customerCarteData?.ltv_price && (
                   <div>
-                    <span className="text-sm text-muted-foreground">LTV(累計利用金額)</span>
+                    <span className="text-sm text-muted-foreground">{tCarte('detail.ltv')}</span>
                     <p className="font-medium text-lg">
                       {formatPrice(customerCarteData.ltv_price)}
                     </p>
@@ -416,7 +416,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                                 <User className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm">
                                   {tCarte('detail.assignedStaff', {
-                                    staffName: item.staffName || '指名フリー',
+                                    staffName: item.staffName || tCarte('detail.staffFree'),
                                   })}
                                 </span>
                               </div>

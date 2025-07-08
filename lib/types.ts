@@ -87,8 +87,9 @@ export const ROLE_LEVEL: Record<Role, number> = {
 
 export const PLAN_LEVEL: Record<SubscriptionPlanName, number> = {
   UNKNOWN: 0,
-  LITE: 1,
-  PRO: 2,
+  MICRO: 1,
+  LITE: 2,
+  PRO: 3,
 };
 
 // スタッフ選択の状態管理用の型

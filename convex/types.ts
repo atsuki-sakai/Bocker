@@ -410,7 +410,7 @@ export const webhookEventProcessingResultType = v.union(
 )
 export type WebhookEventProcessingResult = Infer<typeof webhookEventProcessingResultType>
 
-export const SUBSCRIPTION_PLAN_NAME_VALUES = ['LITE', 'PRO', 'UNKNOWN'] as const
+export const SUBSCRIPTION_PLAN_NAME_VALUES = ['MICRO', 'LITE', 'PRO', 'UNKNOWN'] as const
 export const subscriptionPlanNameType = v.union(...SUBSCRIPTION_PLAN_NAME_VALUES.map((name) => v.literal(name)))
 export type SubscriptionPlanName = Infer<typeof subscriptionPlanNameType>
 
