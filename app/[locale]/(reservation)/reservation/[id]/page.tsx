@@ -54,11 +54,14 @@ export default function ReservePage() {
       : 'skip'
   )
 
+  const development = process.env.NODE_ENV === 'development'
+
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
+    setValue,
   } = useZodForm(emailLoginSchema)
 
   // 現在のメール入力値を監視
@@ -161,6 +164,21 @@ export default function ReservePage() {
   )
 
   useEffect(() => {
+    console.log('development', development)
+    // 組織情報を取得して、テナントIDを設定
+    fetchQuery(api.organization.query.findByOrgId, {
+      org_id: orgId,
+    }).then((res) => {
+      if (res) {
+        setTenantId(res.tenant_id)
+      }
+    })
+    if (development) {
+      console.log('development')
+      setValue('email', 'bocker.help@gmail.com')
+      setValue('password', 'Bocker_123')
+      return
+    }
     // サーバーAPI経由でセッション有無を判定
     fetch('/api/auth/session', { credentials: 'include' })
       .then((res) => {
@@ -182,15 +200,6 @@ export default function ReservePage() {
         // ネットワークエラーなど、本当のエラーのみログ出力
         console.error('Session check failed:', error)
       })
-
-    // 組織情報を取得して、テナントIDを設定
-    fetchQuery(api.organization.query.findByOrgId, {
-      org_id: orgId,
-    }).then((res) => {
-      if (res) {
-        setTenantId(res.tenant_id)
-      }
-    })
   }, [router, orgId, tenantId])
 
   if (!organization || !tenantId) {
