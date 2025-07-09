@@ -26,7 +26,7 @@ export function ReservationPageClient({
   const { reservations, isLoading, loadMore, hasMore } = useIntegratedReservations({
     tenantId,
     orgId: sessionOrgId,
-    customerId: customerUid,
+    customerUid,
     status: 'all',
     pageSize: 10,
   })

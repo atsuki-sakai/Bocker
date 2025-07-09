@@ -24,7 +24,7 @@ export const lineFlexMessageRequestSchema = z.object({
     time: z.string(),
     staffName: z.string(),
     shopName: z.string(),
-    customerId: z.string(),
+    customerUid: z.string(),
     organizationId: z.string(),
   }),
   accessToken: z.string().min(1),

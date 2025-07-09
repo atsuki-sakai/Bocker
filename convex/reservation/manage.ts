@@ -18,7 +18,7 @@ import { reservationMenuType, reservationOptionType, imageType, paymentMethodTyp
 type CreatePayload = {
   tenant_id: Id<'tenant'>;
   org_id: Id<'organization'>;
-  customer_id?: string;
+  customer_uid?: string;
   staff_id?: Id<'staff'>;
   customer_name: string;
   staff_name?: string;
@@ -86,7 +86,7 @@ export const handleReservationManage = mutation({
       v.object({
         tenant_id: v.id('tenant'),
         org_id: v.id('organization'),
-        customer_id: v.optional(v.string()),
+        customer_uid: v.optional(v.string()),
         staff_id: v.optional(v.id('staff')),
         customer_name: v.string(),
         staff_name: v.optional(v.string()),
@@ -340,7 +340,7 @@ async function createReservationCore(ctx: MutationCtx, p: CreatePayload) {
   const { reservationId } = await createReservationWithDetails(ctx, {
     tenant_id: p.tenant_id,
     org_id: p.org_id,
-    customer_id: p.customer_id,
+    customer_uid: p.customer_uid,
     staff_id: p.staff_id,
     customer_name: p.customer_name,
     staff_name: p.staff_name,

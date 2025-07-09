@@ -79,7 +79,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
   const SKIN_TYPE_MAP = useMemo(() => getSkinTypeMap(tCarte), [tCarte])
   const HAIR_TYPE_MAP = useMemo(() => getHairTypeMap(tCarte), [tCarte])
 
-  const [customerId, setCustomerId] = useState<string | null>(null)
+  const [customerUid, setCustomerUid] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<CustomerWithDetails | null>(null)
   const [customerCarteData, setCustomerCarteData] = useState<CustomerCarteData | null>(null)
   const [isLoadingCustomer, setIsLoadingCustomer] = useState(true)
@@ -90,23 +90,23 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
   // paramsの解決
   useEffect(() => {
     paramsPromise.then((params) => {
-      setCustomerId(params.customer_id)
+      setCustomerUid(params.customer_id)
     })
   }, [paramsPromise])
 
   // 顧客情報の取得
   const fetchCustomerData = useCallback(async () => {
-    if (!tenantId || !orgId || !customerId || !isLoaded) return
+    if (!tenantId || !orgId || !customerUid || !isLoaded) return
 
     setIsLoadingCustomer(true)
     try {
-      const completeData = await customerRepo.getCompleteCustomerData(customerId, tenantId, orgId)
+      const completeData = await customerRepo.getCompleteCustomerData(customerUid, tenantId, orgId)
 
       if (completeData.customer) {
         setCustomerData(completeData)
 
         // カルテ情報の取得
-        const carte = await carteRepo.findByCustomer(tenantId, orgId, customerId)
+        const carte = await carteRepo.findByCustomer(tenantId, orgId, customerUid)
         if (carte) {
           setCustomerCarteData({
             skin_type: carte.skin_type,
@@ -125,23 +125,23 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
     } finally {
       setIsLoadingCustomer(false)
     }
-  }, [tenantId, orgId, customerId, isLoaded, customerRepo, carteRepo, tCarte])
+  }, [tenantId, orgId, customerUid, isLoaded, customerRepo, carteRepo, tCarte])
 
   // 統合予約データの取得
   const { reservations, loadMore, hasMore } = useIntegratedReservations({
     tenantId: tenantId || '',
     orgId: orgId || '',
-    customerId: customerId || '',
+    customerUid: customerUid || '',
     status: 'all',
     pageSize: 10,
   })
 
   // 初回データ取得
   useEffect(() => {
-    if (customerId && tenantId && orgId && isLoaded) {
+    if (customerUid && tenantId && orgId && isLoaded) {
       fetchCustomerData()
     }
-  }, [customerId, tenantId, orgId, isLoaded, fetchCustomerData])
+  }, [customerUid, tenantId, orgId, isLoaded, fetchCustomerData])
 
   // 日付フォーマット
   const formatDate = (timestamp: number | null) => {
@@ -240,7 +240,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
               {tCarte('detail.customerInfo')}
             </CardTitle>
             <Button variant="default" size="sm" asChild>
-              <Link href={`/dashboard/carte/${customerId}/edit`}>
+              <Link href={`/dashboard/carte/${customerUid}/edit`}>
                 {tCarte('detail.edit')}
                 <Pencil className="w-4 h-4 ml-2" />
               </Link>
@@ -278,7 +278,9 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
               <div className="space-y-3">
                 {customerData.customerDetail?.birthday && (
                   <div>
-                    <span className="text-sm text-muted-foreground">{tCarte('detail.birthday')}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {tCarte('detail.birthday')}
+                    </span>
                     <p className="font-medium">
                       {format(new Date(customerData.customerDetail.birthday), 'yyyy年MM月dd日')}
                       <span className="text-sm text-muted-foreground ml-2">
@@ -380,7 +382,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                   )
                   .map((item) => (
                     <Link
-                      href={`/dashboard/carte/${customerId}/reservation/${item.id}`}
+                      href={`/dashboard/carte/${customerUid}/reservation/${item.id}`}
                       key={item.id}
                     >
                       <Card

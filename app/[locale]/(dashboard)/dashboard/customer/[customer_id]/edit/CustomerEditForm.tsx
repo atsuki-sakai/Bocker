@@ -142,7 +142,7 @@ export default function CustomerEditForm() {
   const params = useParams()
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const router = useRouter()
-  const customerUid = params.customer_id as string
+  const customerUid = params.customer_uid as string
   const t = useTranslations('customers')
 
   // 状態管理

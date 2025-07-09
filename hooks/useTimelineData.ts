@@ -23,7 +23,7 @@ interface ReservationWithDetails {
   staff_id: Id<'staff'> | null
   assigned_staff_id?: Id<'staff'>  // フリー指名の場合に使用
   is_free_nomination?: boolean     // フリー指名フラグ
-  customer_id?: string  // Supabase側のcustomer.uid (UUID) - オプショナルフィールド
+  customer_uid?: string  // Supabase側のcustomer.uid (UUID) - オプショナルフィールド
   staff_name: string
   customer_name: string
   start_time_unix: number

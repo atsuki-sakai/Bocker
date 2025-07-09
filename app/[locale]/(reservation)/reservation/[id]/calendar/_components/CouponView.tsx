@@ -188,7 +188,7 @@ export const CouponView = ({
                 <p className="text-sm text-neon">
                   {selectCoupon.discount_type === 'percentage'
                     ? `¥ ${calculateDiscount(selectCoupon, menuTotalPrice).toLocaleString()} - OFF`
-                    : `¥ ${selectCoupon.fixed_discount_value?.toLocaleString()} - OFF`}
+                    : `¥ ${(selectCoupon.fixed_discount_value ?? 0).toLocaleString()} - OFF`}
                 </p>
               </div>
             </CardContent>

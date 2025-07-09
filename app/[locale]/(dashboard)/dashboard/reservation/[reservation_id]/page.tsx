@@ -153,7 +153,7 @@ export default function ReservationPage() {
 
   useEffect(() => {
     async function fetchCustomerData() {
-      if (!reservationData?.reservation?.customer_id) {
+      if (!reservationData?.reservation?.customer_uid) {
         return
       }
 
@@ -163,7 +163,7 @@ export default function ReservationPage() {
       try {
         const customerRepository = new CustomerRepository()
         const data = await customerRepository.getCompleteCustomerData(
-          reservationData.reservation.customer_id,
+          reservationData.reservation.customer_uid,
           reservationData.reservation.tenant_id,
           reservationData.reservation.org_id
         )
@@ -178,7 +178,7 @@ export default function ReservationPage() {
 
     fetchCustomerData()
   }, [
-    reservationData?.reservation?.customer_id,
+    reservationData?.reservation?.customer_uid,
     reservationData?.reservation?.tenant_id,
     reservationData?.reservation?.org_id,
     t,
@@ -452,7 +452,7 @@ export default function ReservationPage() {
 
         <div className="border-b pb-4">
           <h2 className="text-xl font-semibold mb-3">{t('customerInfo')}</h2>
-          {reservationData?.reservation?.customer_id ? (
+          {reservationData?.reservation?.customer_uid ? (
             <>
               {customerLoading && (
                 <div className="flex items-center gap-2">

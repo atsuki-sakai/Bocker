@@ -10,6 +10,7 @@ interface ReservationEmailProps {
   totalPrice: number
   reservationId: string
   pinCode?: string
+  cancelUrl: string;
 }
 
 interface EmailContent {
@@ -36,6 +37,7 @@ interface SendReservationConfirmationEmailProps {
   options: Array<{ name: string; price: number; quantity: number }>;
   totalPrice: number;
   paymentMethod: 'cash' | 'credit_card';
+  cancelUrl: string;
 }
 
 interface SendReservationCancellationEmailProps {
@@ -179,7 +181,8 @@ export async function sendReservationConfirmationEmail(props: SendReservationCon
     staffName, 
     menus,
     options,
-    totalPrice
+    totalPrice,
+    cancelUrl
   } = props;
 
   const menuItems = [
@@ -198,6 +201,7 @@ export async function sendReservationConfirmationEmail(props: SendReservationCon
     menus: menuItems,
     totalPrice,
     reservationId: new Date().getTime().toString(),
+    cancelUrl
   });
 
   try {
@@ -231,7 +235,8 @@ export const generateReservationEmail = (props: ReservationEmailProps): EmailCon
     reservationTime,
     menus,
     totalPrice,
-    reservationId
+    reservationId,
+    cancelUrl
   } = props
 
   const subject = `【${orgName}】ご予約内容の確認`
@@ -329,9 +334,10 @@ export const generateReservationEmail = (props: ReservationEmailProps): EmailCon
   
         <div class="notes">
           <strong>ご予約に関する注意事項</strong><br>
-          ・予約時間の10分前にはご来店ください。<br>
-          ・キャンセルは予約日の2日前までにご連絡ください。
+          ・予約時間の10分前にはご来店ください。
         </div>
+        <br />
+        <a href="${cancelUrl}" class="cancel-button">キャンセルはこちら</a>
   
         <p>ご不明な点がございましたら、お電話にてお問い合わせください。</p>
       </div>

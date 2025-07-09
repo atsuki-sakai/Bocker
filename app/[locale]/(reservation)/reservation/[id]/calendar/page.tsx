@@ -417,7 +417,7 @@ export default function CalendarPage() {
       const reservationData = {
         tenant_id: sessionCustomer.tenantId,
         org_id: organizationComplete.organization._id as Id<'organization'>,
-        customer_id: sessionCustomer.customerUid,
+        customer_uid: sessionCustomer.customerUid,
         ...staffData,
         customer_name: sessionCustomer.email
           ? sessionCustomer.email
@@ -704,7 +704,7 @@ export default function CalendarPage() {
       const reservationBaseData = {
         org_id: organizationComplete.organization._id as Id<'organization'>,
         tenant_id: sessionCustomer.tenantId,
-        customer_id: sessionCustomer.customerUid,
+        customer_uid: sessionCustomer.customerUid,
         ...staffData,
         customer_name: sessionCustomer.email
           ? sessionCustomer.email

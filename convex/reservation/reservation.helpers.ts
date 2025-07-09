@@ -207,7 +207,7 @@ export async function createReservationWithDetails(
   args: {
     tenant_id: Id<'tenant'>;
     org_id: Id<'organization'>;
-    customer_id?: string;
+    customer_uid?: string;
     staff_id?: Id<'staff'>;
     customer_name: string;
     staff_name?: string;
@@ -238,7 +238,7 @@ export async function createReservationWithDetails(
   const reservationId = await createRecord(ctx, 'reservation', {
     tenant_id: args.tenant_id,
     org_id: args.org_id,
-    customer_id: args.customer_id,
+    customer_uid: args.customer_uid,
     staff_id: args.staff_id,
     customer_name: args.customer_name,
     staff_name: args.staff_name,
@@ -639,14 +639,14 @@ export async function cancelNotification(
         };
       }
   
-      // 顧客にキャンセル通知を送信（customer_idがある場合のみ）
-      if (args.reservation.customer_id && apiConfig.line_access_token) {
+      // 顧客にキャンセル通知を送信（customer_uidがある場合のみ）
+      if (args.reservation.customer_uid && apiConfig.line_access_token) {
         try {
           // 顧客向けキャンセル通知のデータを準備
           const customerNotificationData = {
             tenantId: args.reservation.tenant_id,
             organizationId: args.reservation.org_id,
-            customerUid: args.reservation.customer_id,
+            customerUid: args.reservation.customer_uid,
             cancelData: {
               reservationId: args.reservation._id,
               date: args.reservation.date,
@@ -741,7 +741,7 @@ export async function cancelForCompletedReservation(
   }
 ) { 
 
-  if(reservation.status === "completed" && reservation.customer_id) {
+  if(reservation.status === "completed" && reservation.customer_uid) {
     const { PointTaskQueueRepository } = await import('@/services/supabase/repositories/point');
     const { CustomerRepository } = await import('@/services/supabase/repositories/customer');
     const { CarteRepository } = await import('@/services/supabase/repositories/carte');
@@ -754,7 +754,7 @@ export async function cancelForCompletedReservation(
    const carte = await carteRepo.findOrCreateByCustomer(
     reservation.tenant_id,
     reservation.org_id,
-    reservation.customer_id,
+    reservation.customer_uid,
     {
       ltv_price: 0, // 初期値
     }
@@ -771,7 +771,7 @@ export async function cancelForCompletedReservation(
     await pointTransactionRepo.create({
       tenant_id: reservation.tenant_id,
       org_id: reservation.org_id,
-      customer_id: reservation.customer_id,
+      customer_uid: reservation.customer_uid,
       reservation_id: reservation._id,
       points: reservation.detail.use_points, // プラスで返還
       transaction_type: 'refunded',
@@ -782,13 +782,13 @@ export async function cancelForCompletedReservation(
     
     // 顧客ポイント更新
     const { customer, customerPoints } = await customerRepo.getCompleteCustomerData(
-      reservation.customer_id,
+      reservation.customer_uid,
       reservation.tenant_id,
       reservation.org_id
     );
     if (customer) {
       await customerRepo.updateCustomerWithDetailsAndPoints(
-        reservation.customer_id,
+        reservation.customer_uid,
         reservation.tenant_id,
         reservation.org_id,
         {},
@@ -812,7 +812,7 @@ export async function cancelForCompletedReservation(
   }
   // 3. 顧客情報を取得・更新
   const { customer, customerPoints } = await customerRepo.getCompleteCustomerData(
-    reservation.customer_id,
+    reservation.customer_uid,
     reservation.tenant_id,
     reservation.org_id
   );
@@ -825,7 +825,7 @@ export async function cancelForCompletedReservation(
     };
     
     await customerRepo.updateCustomerWithDetailsAndPoints(
-      reservation.customer_id,
+      reservation.customer_uid,
       reservation.tenant_id,
       reservation.org_id,
       updateData,

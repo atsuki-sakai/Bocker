@@ -33,14 +33,14 @@ export const findByUserId = query({
   },
 });
 
-export const findByStripeCustomerId = query({
+export const findByStripeCustomerUid = query({
   args: {
     stripe_customer_id: v.string(),
   },
   handler: async (ctx, args) => {
     validateStringLength(args.stripe_customer_id,'stripe_customer_id');
     return await ctx.db.query('tenant')
-      .withIndex('by_stripe_customer_archive', q => 
+      .withIndex('by_stripe_customer_archive', q =>
         q.eq('stripe_customer_id', args.stripe_customer_id)
         .eq('is_archive', false)
       )

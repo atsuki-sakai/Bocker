@@ -143,7 +143,7 @@ export const create = mutation({
   args: {
     tenant_id: v.id('tenant'), // テナントID
     org_id: v.id('organization'), // 組織ID
-    customer_id: v.optional(v.string()), // Supabase 側の customer.id
+    customer_uid: v.optional(v.string()), // Supabase 側の customer.id
     staff_id: v.optional(v.id('staff')), // スタッフID（指名フリーの場合はundefined）
     customer_name: v.string(), // 顧客名
     staff_name: v.optional(v.string()), // スタッフ名（指名フリーの場合はundefined）
@@ -344,7 +344,7 @@ export const update = mutation({
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
     reservation_id: v.id('reservation'),
-    customer_id: v.string(),
+    customer_uid: v.string(),
     customer_name: v.string(),
     staff_id: v.id('staff'),
     staff_name: v.string(),
@@ -372,7 +372,7 @@ export const update = mutation({
     validateDateStrToDate(args.date, 'date')
     validateRequiredNumber(args.start_time_unix, 'start_time_unix')
     validateRequiredNumber(args.end_time_unix, 'end_time_unix')
-    validateRequired(args.customer_id, 'customer_id')
+    validateRequired(args.customer_uid, 'customer_uid')
     validateRequired(args.org_id, 'org_id')
 
     // 対象予約が存在し、アーカイブされていないことを確認

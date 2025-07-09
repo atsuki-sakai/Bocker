@@ -12,7 +12,7 @@ import { createClient } from '@supabase/supabase-js';
 import { LineService } from '@/services/line/LineService';
 import { SupabaseService } from '@/services/supabase/SupabaseService';
 import { sendReservationConfirmationEmail } from '@/lib/email_templates/reservation_email';
-import { getEnv } from '@/lib/env-config';
+import { getAppUrl, getEnv } from '@/lib/env-config';
 
 /**
  * Stripe Checkout Session完了時のWebhookイベントを処理
@@ -103,8 +103,8 @@ export async function handleCheckoutSessionCompleted(
     const supabaseService = new SupabaseService(supabase);
     const customerRepo = new CustomerRepository(supabaseService);
     
-    // 予約情報から顧客IDを取得（予約にはcustomer_idが保存されている）
-    const customerUid = reservation.customer_id;
+    // 予約情報から顧客IDを取得（予約にはcustomer_uidが保存されている）
+    const customerUid = reservation.customer_uid;
     if (!customerUid) {
       throw new Error(`予約に顧客IDが設定されていません: ${reservationId}`);
     }
@@ -126,7 +126,7 @@ export async function handleCheckoutSessionCompleted(
         tenant_id: tenantId,
         org_id: orgId,
         reservation_id: reservationId,
-        customer_id: customerUid,
+        customer_uid: customerUid,
         points: -reservationDetail.use_points, // マイナス値で使用を表現
         transaction_type: 'used',
         transaction_date_unix: Date.now(),
@@ -177,7 +177,7 @@ export async function handleCheckoutSessionCompleted(
           tenant_id: tenantId,
           org_id: orgId,
           coupon_id: reservationDetail.coupon_id,
-          customer_id: customerUid,
+          customer_uid: customerUid,
           reservation_id: reservationId,
           transaction_date_unix: Date.now(),
           discount_amount: reservationDetail.coupon_discount,
@@ -197,6 +197,7 @@ export async function handleCheckoutSessionCompleted(
     }
     
     // 6. 通知送信（並列処理）
+    const cancelUrl = getAppUrl() + `/customer/reservation/${orgId}/${customerUid}/reservation/${reservationId}`;
     const notificationResults = await Promise.allSettled([
       // メール送信（LINE IDがない場合のみ）
       !customer.line_id && customer.email ? sendReservationConfirmationEmail({
@@ -215,6 +216,7 @@ export async function handleCheckoutSessionCompleted(
         options: reservationDetail.options || [],
         totalPrice: reservationDetail.total_price || 0,
         paymentMethod: 'credit_card',
+        cancelUrl: cancelUrl,
       }) : Promise.resolve(),
       
       // LINE送信（LINE IDがある場合のみ）
@@ -330,7 +332,7 @@ export async function handleCheckoutSessionCompleted(
       metadata: {
         action: 'checkout_session_completed',
         reservationId: reservationId,
-        customerId: customerUid,
+        customerUid: customerUid,
         sessionId: session.id,
       }
     };

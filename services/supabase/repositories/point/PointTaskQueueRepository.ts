@@ -19,11 +19,11 @@ export class PointTaskQueueRepository extends BaseRepository<'point_task_queue'>
 
   /**
    * 新しいポイント付与タスクを作成します。
-   * @param taskData - タスクデータ (tenant_id, org_id, customer_id, points, scheduled_for_unix)
+   * @param taskData - タスクデータ (tenant_id, org_id, customer_uid, points, scheduled_for_unix)
    * @returns 作成されたタスク情報
    */
   async createPointTask(
-    taskData: Pick<InsertType<'point_task_queue'>, 'tenant_id' | 'org_id' | 'customer_id' | 'points' | 'scheduled_for_unix' | 'reservation_id'>
+    taskData: Pick<InsertType<'point_task_queue'>, 'tenant_id' | 'org_id' | 'customer_uid' | 'points' | 'scheduled_for_unix' | 'reservation_id'>
   ): Promise<RowType<'point_task_queue'>> {
     console.log(`[PointTaskQueueRepository] createPointTask: data=${JSON.stringify(taskData)}`);
     
@@ -53,23 +53,23 @@ export class PointTaskQueueRepository extends BaseRepository<'point_task_queue'>
    * テナント・組織・顧客IDでポイントタスクを検索します。
    * @param tenantId - テナントID
    * @param orgId - 組織ID
-   * @param customerId - 顧客ID
+   * @param customerUid - 顧客ID
    * @param options - リスト取得オプション
    * @returns ポイントタスクの配列と合計件数
    */
   async findByTenantOrgCustomer(
     tenantId: string,
     orgId: string,
-    customerId: string,
+    customerUid: string,
     options?: ListOptions<'point_task_queue'>
   ): Promise<{ data: RowType<'point_task_queue'>[]; count: number | null }> {
-    console.log(`[PointTaskQueueRepository] findByTenantOrgCustomer: tenantId=${tenantId}, orgId=${orgId}, customerId=${customerId}`);
+    console.log(`[PointTaskQueueRepository] findByTenantOrgCustomer: tenantId=${tenantId}, orgId=${orgId}, customerUid=${customerUid}`);
     
     const filters = { 
       ...(options?.filters || {}), 
       tenant_id: tenantId,
       org_id: orgId,
-      customer_id: customerId 
+      customer_uid: customerUid 
     } as Partial<RowType<'point_task_queue'>>;
     
     return this.list({ ...options, filters });

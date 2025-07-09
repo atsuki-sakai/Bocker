@@ -73,7 +73,7 @@ export type IntegratedReservation = {
   source: 'convex' | 'supabase';
   tenantId: string;
   orgId: string;
-  customerId: string;
+  customerUid: string;
   staffId: string | undefined;
   customerName: string;
   staffName: string | undefined;
@@ -249,7 +249,7 @@ export function useOrganizationReservations({
         source: 'convex' as const,
         tenantId: res.tenant_id,
         orgId: res.org_id,
-        customerId: res.customer_id || '',
+        customerUid: res.customer_uid || '',
         staffId: res.staff_id,
         customerName: res.customer_name,
         staffName: res.staff_name,
@@ -353,7 +353,7 @@ export function useOrganizationReservations({
           source: 'supabase' as const,
           tenantId: item.reservation.tenant_id,
           orgId: item.reservation.org_id,
-          customerId: item.reservation.customer_id || '',
+          customerUid: item.reservation.customer_uid || '',
           staffId: item.reservation.staff_id,
           customerName: item.reservation.customer_name,
           staffName: item.reservation.staff_name,

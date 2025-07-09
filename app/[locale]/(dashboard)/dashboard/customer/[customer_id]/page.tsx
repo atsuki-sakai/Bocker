@@ -56,7 +56,7 @@ type PointTransaction = RowType<'point_transaction'>
 function CustomerDetailPage() {
   const params = useParams()
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
-  const customerUid = params.customer_id as string
+  const customerUid = params.customer_uid as string
   const t = useTranslations('customers')
   const locale = useLocale() as SupportedLocale
 

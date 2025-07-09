@@ -332,9 +332,11 @@ const ReservationDetailDialog = memo(
                 <Link href={`/dashboard/reservation/${reservation._id}`}>{t('moreDetail')}</Link>
               </Button>
               {/* 顧客IDが存在する場合のみカルテリンクを表示 */}
-              {reservation.customer_id && (
+              {reservation.customer_uid && (
                 <Button asChild>
-                  <Link href={`/dashboard/carte/${reservation.customer_id}`}>カルテを確認する</Link>
+                  <Link href={`/dashboard/carte/${reservation.customer_uid}`}>
+                    カルテを確認する
+                  </Link>
                 </Button>
               )}
             </div>
@@ -470,7 +472,7 @@ export default function ReservationTimeLine() {
   const t = useTranslations('reservations')
   const locale = useLocale()
   // ■ ステート管理
-  const { tenantId, orgId, ready } = useTenantAndOrganization()
+  const { tenantId, orgId, ready, subscription } = useTenantAndOrganization()
   const [selectedDate, setSelectedDate] = useState(() => new Date())
   const [selectedReservation, setSelectedReservation] = useState<ReservationWithDetails | null>(
     null
@@ -566,6 +568,10 @@ export default function ReservationTimeLine() {
     setSelectedReservation(null)
   }, [])
 
+  if (subscription === undefined) {
+    return <Loading />
+  }
+
   // ■ レンダリング
   if (!ready || isLoading) {
     return <Loading />
@@ -580,14 +586,6 @@ export default function ReservationTimeLine() {
         {/* 日付選択とビュー切り替え */}
         {/* 今日から2週間後までの予約件数を表示 */}
         <div className="px-4">
-          <div className="flex items-center justify-start gap-2 mb-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-neon rounded-full" />
-                <span>予約あり</span>
-              </div>
-            </div>
-          </div>
           <div className="flex gap-1 overflow-x-auto pb-2">
             {reservationCounts.map((item) => {
               const date = new Date(item.date)

@@ -102,7 +102,7 @@ export function ReservationDetailPageClient({
         }
 
         // 顧客IDの確認
-        if (convexData.reservation.customer_id !== customerUid) {
+        if (convexData.reservation.customer_uid !== customerUid) {
           toast.error('この予約にアクセスする権限がありません')
           router.push(`/customer/${orgId}/${customerUid}/reservation`)
           return
@@ -116,7 +116,7 @@ export function ReservationDetailPageClient({
           source: 'convex',
           tenantId: res.tenant_id,
           orgId: res.org_id,
-          customerId: res.customer_id || '',
+          customerUid: res.customer_uid || '',
           staffId: res.staff_id || '',
           customerName: res.customer_name,
           staffName: res.staff_name || '',
@@ -161,7 +161,7 @@ export function ReservationDetailPageClient({
           }
 
           // 顧客IDの確認
-          if (reservation.customer_id !== customerUid) {
+          if (reservation.customer_uid !== customerUid) {
             toast.error('この予約にアクセスする権限がありません')
             router.push(`/customer/${orgId}/${customerUid}/reservation`)
             return
@@ -183,7 +183,7 @@ export function ReservationDetailPageClient({
             source: 'supabase',
             tenantId: reservation.tenant_id,
             orgId: reservation.org_id,
-            customerId: reservation.customer_id || '',
+            customerUid: reservation.customer_uid || '',
             staffId: reservation.staff_id,
             customerName: reservation.customer_name,
             staffName: reservation.staff_name,

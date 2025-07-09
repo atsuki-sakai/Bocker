@@ -5,7 +5,7 @@ interface CouponTransactionData {
   tenant_id: string;
   org_id: string;
   coupon_id: string;
-  customer_id: string;
+  customer_uid: string;
   reservation_id: string;
   transaction_date_unix: number;
   discount_amount: number;
@@ -55,12 +55,12 @@ export class CouponTransactionRepository extends BaseRepository<'coupon_transact
    * 顧客IDによるクーポン取引履歴の取得
    */
   async findByCustomer(
-    customer_id: string,
+    customer_uid: string,
     limit: number = 100
   ) {
     const data = await this.list({
       filters: {
-        customer_id,
+        customer_uid,
         is_archive: false,
       },
       orderBy: { column: 'transaction_date_unix', ascending: false },

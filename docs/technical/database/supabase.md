@@ -1,7 +1,7 @@
 # Supabase データベース仕様書
 
-**最終更新**: 2025年7月1日  
-**ドキュメントバージョン**: 3.0
+**最終更新**: 2025年7月8日  
+**ドキュメントバージョン**: 3.1
 
 このドキュメントは、BockerプロジェクトのSupabaseデータベースの最新仕様を記載しています。
 データベースは顧客管理、予約管理、ポイント管理、カルテ管理、トラッキングの各機能をサポートしています。
@@ -475,14 +475,14 @@
 
 | 子テーブル | 子カラム | 親テーブル | 親カラム | 削除時の動作 | 制約名 |
 |-----------|---------|-----------|---------|-------------|--------|
-| customer_detail | customer_uid | customer | uid | RESTRICT | customer_detail_customer_uid_fkey |
-| customer_points | customer_uid | customer | uid | RESTRICT | customer_points_customer_uid_fkey |
-| point_transaction | customer_id | customer | uid | RESTRICT | point_transaction_customer_id_fkey |
-| point_task_queue | customer_id | customer | uid | RESTRICT | point_task_queue_customer_id_fkey |
-| coupon_transaction | customer_id | customer | uid | RESTRICT | coupon_transaction_customer_id_fkey |
-| carte | customer_id | customer | uid | CASCADE | carte_customer_id_fkey |
+| customer_detail | customer_uid | customer | uid | CASCADE | customer_detail_customer_uid_fkey |
+| customer_points | customer_uid | customer | uid | CASCADE | customer_points_customer_uid_fkey |
+| point_transaction | customer_uid | customer | uid | CASCADE | point_transaction_customer_uid_fkey |
+| point_task_queue | customer_uid | customer | uid | CASCADE | point_task_queue_customer_uid_fkey |
+| coupon_transaction | customer_uid | customer | uid | CASCADE | coupon_transaction_customer_uid_fkey |
+| carte | customer_uid | customer | uid | CASCADE | carte_customer_uid_fkey |
 | carte_detail | carte_id | carte | id | CASCADE | carte_detail_carte_id_fkey |
-| reservation | customer_id | customer | uid | RESTRICT | reservation_customer_id_fkey |
+| reservation | customer_uid | customer | uid | CASCADE | reservation_customer_uid_fkey |
 | reservation_detail | _convex_reservation_id | reservation | _convex_id | CASCADE | reservation_detail__convex_reservation_id_fkey |
 
 **注意**: 以下のカラムは外部キー制約がありません（Convex参照のため）
@@ -592,6 +592,20 @@ CREATE INDEX idx_point_transaction_deleted_at ON point_transaction(deleted_at) W
 6. **自動アーカイブ処理の実装**（deleted_atを利用した定期バッチ）
 
 ## 変更履歴
+
+### 2025年7月8日の主な変更（v3.1）
+1. **外部キー制約の統一**：
+   - 全ての `customer` テーブルを参照する外部キー制約を `ON DELETE CASCADE` に変更
+   - `customer_id` カラムを `customer_uid` に統一
+   - 顧客削除時のエラー（RESTRICT制約違反）を解消
+
+2. **CustomerRepositoryの修正**：
+   - `deleteWithRelatedData` メソッドを RPC関数 `delete_customer_and_related_data` 使用に変更
+   - CASCADE制約に依存しない確実な削除処理を実装
+
+3. **マイグレーション統合スクリプトの作成**：
+   - `manual_migration_cascade_constraints.sql` を作成
+   - 本番・開発環境での手動実行用SQLを提供
 
 ### 2025年7月1日の主な変更（v3.0）
 1. **フリー指名機能に対応したreservationテーブルの拡張**：

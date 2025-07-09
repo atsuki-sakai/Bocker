@@ -37,7 +37,7 @@ export class ReservationRepository extends BaseRepository<'reservation'> {
       ...(options?.filters || {}), 
       tenant_id: tenantId,
       org_id: orgId,
-      customer_id: customerUid,
+      customer_uid: customerUid,
       is_archive: false
     } as Partial<RowType<'reservation'>>;
     
@@ -81,7 +81,7 @@ export class ReservationRepository extends BaseRepository<'reservation'> {
       const filters: Partial<RowType<'reservation'>> = {
         tenant_id: tenantId,
         org_id: orgId,
-        customer_id: customerUid,
+        customer_uid: customerUid,
         is_archive: false
       };
 
@@ -233,7 +233,7 @@ export class ReservationRepository extends BaseRepository<'reservation'> {
         filters: {
           tenant_id: tenantId,
           org_id: orgId,
-          customer_id: customerUid,
+          customer_uid: customerUid,
           is_archive: false
         }
       });

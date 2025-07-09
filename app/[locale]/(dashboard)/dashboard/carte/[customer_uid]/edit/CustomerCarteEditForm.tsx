@@ -78,7 +78,7 @@ const getHairTypeOptions = (t: ReturnType<typeof useTranslations>) => [
 
 export default function CustomerCarteEditForm() {
   const router = useRouter()
-  const { customer_id } = useParams()
+  const { customer_uid } = useParams()
   const tCarte = useTranslations('dashboard.carte')
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
 
@@ -106,8 +106,8 @@ export default function CustomerCarteEditForm() {
 
   // 顧客データとカルテデータの取得
   const fetchData = useCallback(async () => {
-    console.log('fetchData called:', { tenantId, orgId, customer_id })
-    if (!tenantId || !orgId || !customer_id) {
+    console.log('fetchData called:', { tenantId, orgId, customer_uid })
+    if (!tenantId || !orgId || !customer_uid) {
       console.log('fetchData early return - missing required data')
       return
     }
@@ -116,7 +116,7 @@ export default function CustomerCarteEditForm() {
     try {
       // 顧客情報の取得
       const completeData = await customerRepo.getCompleteCustomerData(
-        customer_id as string,
+        customer_uid as string,
         tenantId,
         orgId
       )
@@ -130,7 +130,7 @@ export default function CustomerCarteEditForm() {
       setCustomerData(completeData)
 
       // カルテ情報の取得
-      const carte = await carteRepo.findByCustomer(tenantId, orgId, customer_id as string)
+      const carte = await carteRepo.findByCustomer(tenantId, orgId, customer_uid as string)
 
       if (carte) {
         // 既存のカルテがある場合
@@ -157,20 +157,20 @@ export default function CustomerCarteEditForm() {
     } finally {
       setIsLoadingData(false)
     }
-  }, [tenantId, orgId, customer_id, customerRepo, carteRepo, reset, router, tCarte])
+  }, [tenantId, orgId, customer_uid, customerRepo, carteRepo, reset, router, tCarte])
 
   // 初回データ取得
   useEffect(() => {
-    console.log('useEffect conditions:', { isLoaded, customer_id, tenantId, orgId })
-    if (isLoaded && customer_id && tenantId && orgId) {
+    console.log('useEffect conditions:', { isLoaded, customer_uid, tenantId, orgId })
+    if (isLoaded && customer_uid && tenantId && orgId) {
       fetchData()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, customer_id, tenantId, orgId])
+  }, [isLoaded, customer_uid, tenantId, orgId])
 
   // フォーム送信処理
   const onSubmit = async (data: CarteEditFormData) => {
-    if (!tenantId || !orgId || !customer_id) return
+    if (!tenantId || !orgId || !customer_uid) return
 
     setIsSubmitting(true)
     try {
@@ -188,7 +188,7 @@ export default function CustomerCarteEditForm() {
         await carteRepo.createCarte({
           tenant_id: tenantId,
           org_id: orgId,
-          customer_id: customer_id as string,
+          customer_uid: customer_uid as string,
           skin_type: data.skin_type || null,
           hair_type: data.hair_type || null,
           allergy_history: data.allergy_history || null,
@@ -197,7 +197,7 @@ export default function CustomerCarteEditForm() {
         toast.success(tCarte('edit.createSuccess'))
       }
 
-      router.push(`/dashboard/carte/${customer_id}`)
+      router.push(`/dashboard/carte/${customer_uid}`)
     } catch (error) {
       console.error('Failed to save carte:', error)
       toast.error(tCarte('edit.saveError'))
@@ -374,7 +374,7 @@ export default function CustomerCarteEditForm() {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push(`/dashboard/carte/${customer_id}`)}
+          onClick={() => router.push(`/dashboard/carte/${customer_uid}`)}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />

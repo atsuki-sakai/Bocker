@@ -99,12 +99,21 @@ export const PLAN_DURATION_MONTHS = {
 }
 
 export const PLAN_MONTHLY_PRICES = {
+  MICRO: 3980,
   LITE: 8000,
   PRO: 12000,
 }
 
 // --- 年額プラン定義 ---
 export const PLAN_YEARLY_PRICES = {
+  MICRO: {
+    price: PLAN_MONTHLY_PRICES.MICRO * PLAN_DURATION_MONTHS.YEARLY,
+    savingPercent:
+      (((PLAN_MONTHLY_PRICES.MICRO * 12 -
+        PLAN_MONTHLY_PRICES.MICRO * PLAN_DURATION_MONTHS.YEARLY) /
+        (PLAN_MONTHLY_PRICES.MICRO * 12)) *
+      100).toFixed(0),
+  },
   LITE: {
     // 実際に請求する月数分を掛ける
     price: PLAN_MONTHLY_PRICES.LITE * PLAN_DURATION_MONTHS.YEARLY,
@@ -127,6 +136,11 @@ export const PLAN_YEARLY_PRICES = {
 
 // Stripe Subscription Plans based on the provided HTML content
 export const SUBSCRIPTION_PLANS = {
+  MICRO: {
+    id: 'micro',
+    name: 'Micro',
+    features: ['features.micro.1', 'features.micro.2', 'features.micro.3', 'features.micro.4'],
+  },
   LITE: {
     id: 'lite',
     name: 'Lite', // HTMLの表示は'LITE'ですが、例の形式に合わせて'Lite'とします

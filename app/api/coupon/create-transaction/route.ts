@@ -14,7 +14,7 @@ const createCouponTransactionSchema = z.object({
   tenant_id: z.string(),
   org_id: z.string(),
   coupon_id: z.string(),
-  customer_id: z.string().uuid(),
+  customer_uid: z.string().uuid(),
   reservation_id: z.string(),
   discount_amount: z.number().int().positive(),
 })
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       tenant_id: data.tenant_id,
       org_id: data.org_id,
       coupon_id: data.coupon_id,
-      customer_id: data.customer_id,
+      customer_uid: data.customer_uid,
       reservation_id: data.reservation_id,
       transaction_date_unix: Date.now(),
       discount_amount: data.discount_amount,

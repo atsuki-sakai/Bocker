@@ -6,6 +6,7 @@ import { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import { createClient } from "@supabase/supabase-js";
 import { MigrationPerformanceTracker } from "./monitoring";
+import { ImageType, ReservationMenu, ReservationOption } from "../types";
   
 // Supabaseクライアントの取得（Node.js環境用）
 const getSupabaseClient = () => {
@@ -221,7 +222,7 @@ async function migrateToSupabase(
     _creationTime: number;
     tenant_id: Id<'tenant'>;
     org_id: Id<'organization'>;
-    customer_id?: string;
+    customer_uid?: string;
     staff_id?: Id<'staff'>;
     customer_name: string;
     staff_name?: string;
@@ -256,14 +257,14 @@ async function migrateToSupabase(
     coupon_id?: Id<'coupon'>;
     total_price?: number;
     payment_method: string;
-    menus: any[];
-    options: any[];
+    menus: ReservationMenu[];
+    options: ReservationOption[];
     extra_charge?: number;
     use_points?: number;
     coupon_discount?: number;
-    featured_hair_images: any[];
+    featured_hair_images: ImageType[];
     notes?: string;
-    cancellation_info?: any;
+    cancellation_info?: any; 
     is_archive?: boolean;
     updated_at?: number;
     deleted_at?: number;
@@ -283,7 +284,7 @@ async function migrateToSupabase(
     const reservationPayloads = reservations.map(reservation => ({
       tenant_id: reservation.tenant_id,
       org_id: reservation.org_id,
-      customer_id: reservation.customer_id || null,
+      customer_uid: reservation.customer_uid || null,
       staff_id: reservation.staff_id,
       customer_name: reservation.customer_name,
       staff_name: reservation.staff_name || null,

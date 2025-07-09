@@ -1806,6 +1806,7 @@
       "title": "Add Staff",
       "sendInviteEmail": "Send invitation email to create staff account",
       "sendInviteEmailDesc": "By creating a staff account, staff can log in and edit schedules and records. After sending the invitation, staff can log in after authentication.",
+      "sendInviteEmailDesc2": "If you register an admin as a staff, they can already log in, so no invitation email is needed.",
       "invitePermissionSettings": "Invitation & Permission Settings",
       "inviteEmail": "Invitation Email Address",
       "inviteEmailPlaceholder": "Enter email address",
@@ -2395,6 +2396,17 @@
     "customerLimit": "Customer Limit",
     "storageLimit": "Storage Limit",
     "features": {
+      "micro": {
+        "1": "Reservation management (reservation timeline, staff schedule settings, confirmation/cancellation, 24/365 online booking)",
+        "2": "Customer management (basic info, reservation and purchase history, points)",
+        "3": "Customer record cards (automatic treatment details, allergies, hair quality management)",
+        "4": "Staff management (account creation, basic reservation & shift management) — up to 1 staff",
+        "5": "Menu settings (service registration, price and duration settings) — up to 30 items",
+        "6": "Option selling function (add options, select options) — up to 15 items",
+        "7": "Point & coupon function (customizable point grant system, coupon management)",
+        "8": "Automatic reminders & notifications (email & LINE)",
+        "9": "Limits: Staff (1), Menus (30), Options (15), Coupons (15), Reservations (100/month)"
+      },
       "lite": {
         "1": "Reservation management (reservation timeline, staff schedule settings, reservation confirmation/cancellations, 24/365 online booking)",
         "2": "Customer management (basic info, reservation and purchase history, points)",
@@ -2431,6 +2443,8 @@
     "monthlyPayment": "Monthly Payment",
     "yearlyPayment": "Yearly Payment",
     "yearlyDiscount": "{percent}% off",
+    "microPlan": "MICRO",
+    "microPlanDescription": "Basic plan for one-person owner",
     "litePlan": "LITE",
     "litePlanDescription": "Basic plan for small salons",
     "proPlan": "PRO",
@@ -2934,6 +2948,25 @@
       },
       "subscription": {
         "title": "Subscription",
+        "micro": {
+          "title": "MICRO",
+          "description": "One-person owner plan",
+          "price": {
+            "monthly": "¥3,980",
+            "annually": "¥39,800"
+          },
+          "features": {
+            "1": "Reservation Management (timeline, staff scheduling, confirmation/cancellation, 24/7 online booking)",
+            "2": "Customer Management (basic info, booking/purchase history, points, customer portal)",
+            "3": "Customer Records (automatic treatment details, allergies, hair quality management)",
+            "4": "Staff Management (account creation, basic scheduling) ※Up to 1 staff",
+            "5": "Menu Settings (one image, menu registration, pricing/duration) ※Up to 30 items",
+            "6": "Options & Retail (add options, option selection) ※Up to 15 items",
+            "7": "Points & Coupons (customizable point system, coupon management)",
+            "8": "Automatic Reminders & Notifications (LINE)",
+            "9": "Staff (1), Menus (30), Options (15), Coupons (15), Reservations (100/month)"
+          }
+        },
         "lite": {
           "title": "LITE",
           "description": "Everything you need to get started.",
@@ -2975,6 +3008,7 @@
             {
               "name": "Max Reservations/Month",
               "tiers": {
+                "MICRO": "100",
                 "LITE": "500",
                 "PRO": "Unlimited"
               }
@@ -2982,41 +3016,47 @@
             {
               "name": "Max Customer Registration",
               "tiers": {
-                "LITE": "500",
+                "MICRO": "500",
+                "LITE": "1000",
                 "PRO": "Unlimited"
               }
             },
             {
               "name": "Staff Management",
               "tiers": {
-                "LITE": "3 people",
-                "PRO": "12 people"
+                "MICRO": "1 person",
+                "LITE": "5 people",
+                "PRO": "15 people"
               }
             },
             {
               "name": "Menu Settings",
               "tiers": {
-                "LITE": "20 items",
-                "PRO": "60 items"
+                "MICRO": "30 items",
+                "LITE": "50 items",
+                "PRO": "100 items"
               }
             },
             {
               "name": "Options & Retail",
               "tiers": {
-                "LITE": "15 items",
-                "PRO": "30 items"
+                "MICRO": "15 items",
+                "LITE": "25 items",
+                "PRO": "50 items"
               }
             },
             {
               "name": "Points & Coupons",
               "tiers": {
-                "LITE": "10 items",
-                "PRO": "30 items"
+                "MICRO": "15 items",
+                "LITE": "25 items",
+                "PRO": "100 items"
               }
             },
             {
               "name": "Automatic Reminders & Notifications",
               "tiers": {
+                "MICRO": "true",
                 "LITE": "true",
                 "PRO": "true"
               }
@@ -3029,6 +3069,7 @@
             {
               "name": "Customer Records Feature",
               "tiers": {
+                "MICRO": "true",
                 "LITE": "true",
                 "PRO": "true"
               }
@@ -3036,6 +3077,7 @@
             {
               "name": "Advanced Records (Images & Voice)",
               "tiers": {
+                "MICRO": "false",
                 "LITE": "false",
                 "PRO": "4 images (voice input PC only)"
               }
@@ -3048,6 +3090,7 @@
             {
               "name": "Chat Support (bottom right chat button)",
               "tiers": {
+                "MICRO": "true",
                 "LITE": "true",
                 "PRO": "true"
               }

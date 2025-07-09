@@ -109,12 +109,12 @@ export class CouponTransactionRepository extends BaseRepository<'coupon_transact
   async findByCustomer(
     tenantId: string,
     orgId: string,
-    customerId: string
+    customerUid: string
   ): Promise<RowType<'coupon_transaction'>[]> {
     return this.findMany({
       tenant_id: tenantId,
       org_id: orgId,
-      customer_id: customerId,
+      customer_id: customerUid,
     })
   }
 }

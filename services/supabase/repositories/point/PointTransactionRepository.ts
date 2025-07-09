@@ -23,7 +23,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
    * @returns 作成された取引情報
    */
   async createTransaction(
-    transactionData: Pick<InsertType<'point_transaction'>, 'tenant_id' | 'org_id' | 'customer_id' | 'points' | 'transaction_type' | 'transaction_date_unix' | 'description' | 'reservation_id'>
+    transactionData: Pick<InsertType<'point_transaction'>, 'tenant_id' | 'org_id' | 'customer_uid' | 'points' | 'transaction_type' | 'transaction_date_unix' | 'description' | 'reservation_id'>
   ): Promise<RowType<'point_transaction'>> {
     console.log(`[PointTransactionRepository] createTransaction: data=${JSON.stringify(transactionData)}`);
     
@@ -52,7 +52,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
    * ポイント付与取引を記録します。
    * @param tenantId - テナントID
    * @param orgId - 組織ID
-   * @param customerId - 顧客ID
+   * @param customerUid - 顧客ID
    * @param points - 付与ポイント数 (正の値)
    * @param description - 取引説明
    * @param reservationId - 関連する予約ID (オプション)
@@ -61,12 +61,12 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
   async recordPointsEarned(
     tenantId: string,
     orgId: string,
-    customerId: string,
+    customerUid: string,
     points: number,
     description: string,
     reservationId?: string
   ): Promise<RowType<'point_transaction'>> {
-    console.log(`[PointTransactionRepository] recordPointsEarned: customerId=${customerId}, points=${points}`);
+    console.log(`[PointTransactionRepository] recordPointsEarned: customerUid=${customerUid}, points=${points}`);
     
     if (points <= 0) {
       throw new Error('Points earned must be a positive number');
@@ -75,7 +75,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
     return this.createTransaction({
       tenant_id: tenantId,
       org_id: orgId,
-      customer_id: customerId,
+      customer_uid: customerUid,
       points: points,
       transaction_type: 'earned',
       transaction_date_unix: Math.floor(Date.now() / 1000),
@@ -88,7 +88,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
    * ポイント利用取引を記録します。
    * @param tenantId - テナントID
    * @param orgId - 組織ID
-   * @param customerId - 顧客ID
+   * @param customerUid - 顧客ID
    * @param points - 利用ポイント数 (正の値で指定、記録時は負の値になります)
    * @param description - 取引説明
    * @param reservationId - 関連する予約ID (オプション)
@@ -97,12 +97,12 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
   async recordPointsUsed(
     tenantId: string,
     orgId: string,
-    customerId: string,
+    customerUid: string,
     points: number,
     description: string,
     reservationId?: string
   ): Promise<RowType<'point_transaction'>> {
-    console.log(`[PointTransactionRepository] recordPointsUsed: customerId=${customerId}, points=${points}`);
+    console.log(`[PointTransactionRepository] recordPointsUsed: customerUid=${customerUid}, points=${points}`);
     
     if (points <= 0) {
       throw new Error('Points used must be a positive number');
@@ -111,7 +111,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
     return this.createTransaction({
       tenant_id: tenantId,
       org_id: orgId,
-      customer_id: customerId,
+      customer_uid: customerUid,
       points: -points, // 利用は負の値で記録
       transaction_type: 'used',
       transaction_date_unix: Math.floor(Date.now() / 1000),
@@ -124,23 +124,23 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
    * 顧客のポイント取引履歴を取得します。
    * @param tenantId - テナントID
    * @param orgId - 組織ID
-   * @param customerId - 顧客ID
+   * @param customerUid - 顧客ID
    * @param options - リスト取得オプション
    * @returns 取引履歴の配列と合計件数
    */
   async findByCustomer(
     tenantId: string,
     orgId: string,
-    customerId: string,
+    customerUid: string,
     options?: ListOptions<'point_transaction'>
   ): Promise<{ data: RowType<'point_transaction'>[]; count: number | null }> {
-    console.log(`[PointTransactionRepository] findByCustomer: tenantId=${tenantId}, orgId=${orgId}, customerId=${customerId}`);
+    console.log(`[PointTransactionRepository] findByCustomer: tenantId=${tenantId}, orgId=${orgId}, customerUid=${customerUid}`);
     
     const filters = { 
       ...(options?.filters || {}), 
       tenant_id: tenantId,
       org_id: orgId,
-      customer_id: customerId 
+      customer_uid: customerUid 
     } as Partial<RowType<'point_transaction'>>;
     
     return this.list({ ...options, filters });
@@ -237,18 +237,18 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
    * 本番環境では customer_points テーブルの total_points を使用することを推奨します。
    * @param tenantId - テナントID
    * @param orgId - 組織ID
-   * @param customerId - 顧客ID
+   * @param customerUid - 顧客ID
    * @returns 計算されたポイント残高
    */
   async calculatePointBalance(
     tenantId: string,
     orgId: string,
-    customerId: string
+    customerUid: string
   ): Promise<number> {
-    console.log(`[PointTransactionRepository] calculatePointBalance: customerId=${customerId}`);
+    console.log(`[PointTransactionRepository] calculatePointBalance: customerUid=${customerUid}`);
     console.warn('This method calculates points from transaction history and may be inefficient for large datasets. Consider using customer_points.total_points in production.');
     
-    const { data: transactions } = await this.findByCustomer(tenantId, orgId, customerId, {
+    const { data: transactions } = await this.findByCustomer(tenantId, orgId, customerUid, {
       select: 'points', // ポイント数のみ取得
     });
     
@@ -264,22 +264,22 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
    * 顧客の取引統計を取得します。
    * @param tenantId - テナントID
    * @param orgId - 組織ID
-   * @param customerId - 顧客ID
+   * @param customerUid - 顧客ID
    * @returns 取引統計情報
    */
   async getCustomerTransactionStats(
     tenantId: string,
     orgId: string,
-    customerId: string
+    customerUid: string
   ): Promise<{
     totalEarned: number;
     totalUsed: number;
     transactionCount: number;
     lastTransactionDate: number | null;
   }> {
-    console.log(`[PointTransactionRepository] getCustomerTransactionStats: customerId=${customerId}`);
+    console.log(`[PointTransactionRepository] getCustomerTransactionStats: customerUid=${customerUid}`);
     
-    const { data: transactions } = await this.findByCustomer(tenantId, orgId, customerId);
+    const { data: transactions } = await this.findByCustomer(tenantId, orgId, customerUid);
     
     let totalEarned = 0;
     let totalUsed = 0;
@@ -313,7 +313,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
    * @returns 成功/失敗の結果
    */
   async refundPointsForCancellation(params: {
-    customerId: string;
+    customerUid: string;
     reservationId: string;
     refundPoints: number;
     tenantId: string;
@@ -321,7 +321,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
   }): Promise<void> {
     console.log(`[PointTransactionRepository] refundPointsForCancellation: params=${JSON.stringify(params)}`);
     
-    const { customerId, reservationId, refundPoints, tenantId, orgId } = params;
+    const { customerUid, reservationId, refundPoints, tenantId, orgId } = params;
     
     if (refundPoints <= 0) {
       console.log(`[PointTransactionRepository] No points to refund: ${refundPoints}`);
@@ -333,7 +333,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
       await this.createTransaction({
         tenant_id: tenantId,
         org_id: orgId,
-        customer_id: customerId,
+        customer_uid: customerUid,
         reservation_id: reservationId,
         points: refundPoints, // 返還は正の値
         transaction_type: 'refund',
@@ -344,7 +344,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
       // ポイント残高を原子的に更新
       const { error: updateError } = await this.supabaseServiceInstance
         .rpc('update_customer_points_atomic', {
-          p_customer_uid: customerId,
+          p_customer_uid: customerUid,
           p_points_delta: refundPoints,
         });
       
@@ -352,7 +352,7 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
         throw updateError;
       }
       
-      console.log(`[PointTransactionRepository] Successfully refunded ${refundPoints} points to customer ${customerId}`);
+      console.log(`[PointTransactionRepository] Successfully refunded ${refundPoints} points to customer ${customerUid}`);
     } catch (error) {
       throwSupabaseError({
         callFunc: 'PointTransactionRepository.refundPointsForCancellation',

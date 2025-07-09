@@ -7,13 +7,44 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       carte: {
         Row: {
           allergy_history: string | null
           created_at: string
-          customer_id: string
+          customer_uid: string
+          deleted_at: string | null
           hair_type: string | null
           id: string
           is_archive: boolean
@@ -28,7 +59,8 @@ export type Database = {
         Insert: {
           allergy_history?: string | null
           created_at?: string
-          customer_id: string
+          customer_uid: string
+          deleted_at?: string | null
           hair_type?: string | null
           id?: string
           is_archive?: boolean
@@ -43,7 +75,8 @@ export type Database = {
         Update: {
           allergy_history?: string | null
           created_at?: string
-          customer_id?: string
+          customer_uid?: string
+          deleted_at?: string | null
           hair_type?: string | null
           id?: string
           is_archive?: boolean
@@ -57,8 +90,8 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "carte_customer_id_fkey"
-            columns: ["customer_id"]
+            foreignKeyName: "carte_customer_uid_fkey"
+            columns: ["customer_uid"]
             isOneToOne: false
             referencedRelation: "customer"
             referencedColumns: ["uid"]
@@ -71,6 +104,7 @@ export type Database = {
           carte_id: string
           created_at: string
           customer_requests: string | null
+          deleted_at: string | null
           id: string
           is_archive: boolean
           menu_details: Json | null
@@ -91,6 +125,7 @@ export type Database = {
           carte_id: string
           created_at?: string
           customer_requests?: string | null
+          deleted_at?: string | null
           id?: string
           is_archive?: boolean
           menu_details?: Json | null
@@ -111,6 +146,7 @@ export type Database = {
           carte_id?: string
           created_at?: string
           customer_requests?: string | null
+          deleted_at?: string | null
           id?: string
           is_archive?: boolean
           menu_details?: Json | null
@@ -140,7 +176,8 @@ export type Database = {
         Row: {
           coupon_id: string
           created_at: string
-          customer_id: string
+          customer_uid: string
+          deleted_at: string | null
           discount_amount: number | null
           id: string
           is_archive: boolean
@@ -154,7 +191,8 @@ export type Database = {
         Insert: {
           coupon_id: string
           created_at?: string
-          customer_id: string
+          customer_uid: string
+          deleted_at?: string | null
           discount_amount?: number | null
           id?: string
           is_archive?: boolean
@@ -168,7 +206,8 @@ export type Database = {
         Update: {
           coupon_id?: string
           created_at?: string
-          customer_id?: string
+          customer_uid?: string
+          deleted_at?: string | null
           discount_amount?: number | null
           id?: string
           is_archive?: boolean
@@ -181,8 +220,8 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "coupon_transaction_customer_id_fkey"
-            columns: ["customer_id"]
+            foreignKeyName: "coupon_transaction_customer_uid_fkey"
+            columns: ["customer_uid"]
             isOneToOne: false
             referencedRelation: "customer"
             referencedColumns: ["uid"]
@@ -194,6 +233,7 @@ export type Database = {
           _creation_time: string | null
           created_at: string
           customer_type: string | null
+          deleted_at: string | null
           email: string | null
           first_name: string | null
           initial_tracking: Json | null
@@ -220,6 +260,7 @@ export type Database = {
           _creation_time?: string | null
           created_at?: string
           customer_type?: string | null
+          deleted_at?: string | null
           email?: string | null
           first_name?: string | null
           initial_tracking?: Json | null
@@ -246,6 +287,7 @@ export type Database = {
           _creation_time?: string | null
           created_at?: string
           customer_type?: string | null
+          deleted_at?: string | null
           email?: string | null
           first_name?: string | null
           initial_tracking?: Json | null
@@ -276,8 +318,8 @@ export type Database = {
           age: number | null
           birthday: string | null
           created_at: string
-          customer_id: string | null
           customer_uid: string
+          deleted_at: string | null
           email: string | null
           gender: string | null
           is_archive: boolean | null
@@ -294,8 +336,8 @@ export type Database = {
           age?: number | null
           birthday?: string | null
           created_at?: string
-          customer_id?: string | null
           customer_uid: string
+          deleted_at?: string | null
           email?: string | null
           gender?: string | null
           is_archive?: boolean | null
@@ -312,8 +354,8 @@ export type Database = {
           age?: number | null
           birthday?: string | null
           created_at?: string
-          customer_id?: string | null
           customer_uid?: string
+          deleted_at?: string | null
           email?: string | null
           gender?: string | null
           is_archive?: boolean | null
@@ -339,8 +381,8 @@ export type Database = {
         Row: {
           _creation_time: string | null
           created_at: string
-          customer_id: string | null
           customer_uid: string
+          deleted_at: string | null
           is_archive: boolean | null
           last_transaction_date_unix: number | null
           org_id: string
@@ -354,8 +396,8 @@ export type Database = {
         Insert: {
           _creation_time?: string | null
           created_at?: string
-          customer_id?: string | null
           customer_uid: string
+          deleted_at?: string | null
           is_archive?: boolean | null
           last_transaction_date_unix?: number | null
           org_id?: string
@@ -369,8 +411,8 @@ export type Database = {
         Update: {
           _creation_time?: string | null
           created_at?: string
-          customer_id?: string | null
           customer_uid?: string
+          deleted_at?: string | null
           is_archive?: boolean | null
           last_transaction_date_unix?: number | null
           org_id?: string
@@ -394,7 +436,8 @@ export type Database = {
       point_task_queue: {
         Row: {
           created_at: string
-          customer_id: string
+          customer_uid: string
+          deleted_at: string | null
           id: string
           is_archive: boolean
           org_id: string
@@ -408,7 +451,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          customer_id: string
+          customer_uid: string
+          deleted_at?: string | null
           id?: string
           is_archive?: boolean
           org_id: string
@@ -422,7 +466,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          customer_id?: string
+          customer_uid?: string
+          deleted_at?: string | null
           id?: string
           is_archive?: boolean
           org_id?: string
@@ -436,8 +481,8 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_point_task_queue_customer"
-            columns: ["customer_id"]
+            foreignKeyName: "point_task_queue_customer_uid_fkey"
+            columns: ["customer_uid"]
             isOneToOne: false
             referencedRelation: "customer"
             referencedColumns: ["uid"]
@@ -447,7 +492,8 @@ export type Database = {
       point_transaction: {
         Row: {
           created_at: string
-          customer_id: string
+          customer_uid: string
+          deleted_at: string | null
           description: string | null
           id: string
           is_archive: boolean
@@ -462,7 +508,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          customer_id: string
+          customer_uid: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_archive?: boolean
@@ -477,7 +524,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          customer_id?: string
+          customer_uid?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_archive?: boolean
@@ -492,8 +540,8 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_point_transaction_customer"
-            columns: ["customer_id"]
+            foreignKeyName: "point_transaction_customer_uid_fkey"
+            columns: ["customer_uid"]
             isOneToOne: false
             referencedRelation: "customer"
             referencedColumns: ["uid"]
@@ -504,21 +552,33 @@ export type Database = {
         Row: {
           _convex_id: string
           _creation_time: number | null
+          assigned_staff_id: string | null
+          assigned_staff_name: string | null
+          assignment_timestamp: number | null
+          cancel_reason: string | null
+          cancelled_at: number | null
+          cancelled_by: string | null
           created_at: string
-          customer_id: string | null
           customer_name: string
+          customer_uid: string | null
           date: string
+          deleted_at: string | null
           end_time_unix: number
           is_archive: boolean
           is_free_nomination: boolean | null
+          last_staff_change: Json | null
           org_id: string
           payment_status: string
+          pending_expiry: number | null
+          reminder_sent: boolean | null
+          reminder_sent_at: number | null
           sort_key: string | null
           staff_id: string
           staff_name: string
           start_time_unix: number
           status: string
           stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
           tenant_id: string
           uid: string
           updated_at: string
@@ -526,21 +586,33 @@ export type Database = {
         Insert: {
           _convex_id: string
           _creation_time?: number | null
+          assigned_staff_id?: string | null
+          assigned_staff_name?: string | null
+          assignment_timestamp?: number | null
+          cancel_reason?: string | null
+          cancelled_at?: number | null
+          cancelled_by?: string | null
           created_at?: string
-          customer_id?: string | null
           customer_name: string
+          customer_uid?: string | null
           date: string
+          deleted_at?: string | null
           end_time_unix: number
           is_archive?: boolean
           is_free_nomination?: boolean | null
+          last_staff_change?: Json | null
           org_id: string
           payment_status: string
+          pending_expiry?: number | null
+          reminder_sent?: boolean | null
+          reminder_sent_at?: number | null
           sort_key?: string | null
           staff_id: string
           staff_name: string
           start_time_unix: number
           status: string
           stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
           tenant_id: string
           uid?: string
           updated_at?: string
@@ -548,29 +620,41 @@ export type Database = {
         Update: {
           _convex_id?: string
           _creation_time?: number | null
+          assigned_staff_id?: string | null
+          assigned_staff_name?: string | null
+          assignment_timestamp?: number | null
+          cancel_reason?: string | null
+          cancelled_at?: number | null
+          cancelled_by?: string | null
           created_at?: string
-          customer_id?: string | null
           customer_name?: string
+          customer_uid?: string | null
           date?: string
+          deleted_at?: string | null
           end_time_unix?: number
           is_archive?: boolean
           is_free_nomination?: boolean | null
+          last_staff_change?: Json | null
           org_id?: string
           payment_status?: string
+          pending_expiry?: number | null
+          reminder_sent?: boolean | null
+          reminder_sent_at?: number | null
           sort_key?: string | null
           staff_id?: string
           staff_name?: string
           start_time_unix?: number
           status?: string
           stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
           tenant_id?: string
           uid?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "fk_reservation_customer"
-            columns: ["customer_id"]
+            foreignKeyName: "reservation_customer_uid_fkey"
+            columns: ["customer_uid"]
             isOneToOne: false
             referencedRelation: "customer"
             referencedColumns: ["uid"]
@@ -582,9 +666,11 @@ export type Database = {
           _convex_id: string
           _convex_reservation_id: string
           _creation_time: number | null
+          cancellation_info: Json | null
           coupon_discount: number | null
           coupon_id: string | null
           created_at: string
+          deleted_at: string | null
           extra_charge: number | null
           featured_hair_images: Json | null
           is_archive: boolean
@@ -605,9 +691,11 @@ export type Database = {
           _convex_id: string
           _convex_reservation_id: string
           _creation_time?: number | null
+          cancellation_info?: Json | null
           coupon_discount?: number | null
           coupon_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           extra_charge?: number | null
           featured_hair_images?: Json | null
           is_archive?: boolean
@@ -628,9 +716,11 @@ export type Database = {
           _convex_id?: string
           _convex_reservation_id?: string
           _creation_time?: number | null
+          cancellation_info?: Json | null
           coupon_discount?: number | null
           coupon_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           extra_charge?: number | null
           featured_hair_images?: Json | null
           is_archive?: boolean
@@ -661,6 +751,7 @@ export type Database = {
         Row: {
           created_at: string
           custom_data_json: Json | null
+          deleted_at: string | null
           event_source: string
           event_timestamp_unix: number
           event_type: string
@@ -683,6 +774,7 @@ export type Database = {
         Insert: {
           created_at?: string
           custom_data_json?: Json | null
+          deleted_at?: string | null
           event_source: string
           event_timestamp_unix: number
           event_type: string
@@ -705,6 +797,7 @@ export type Database = {
         Update: {
           created_at?: string
           custom_data_json?: Json | null
+          deleted_at?: string | null
           event_source?: string
           event_timestamp_unix?: number
           event_type?: string
@@ -730,6 +823,7 @@ export type Database = {
         Row: {
           conversion_count: number | null
           created_at: string
+          deleted_at: string | null
           dimension_type: string
           dimension_value: string
           id: string
@@ -745,6 +839,7 @@ export type Database = {
         Insert: {
           conversion_count?: number | null
           created_at?: string
+          deleted_at?: string | null
           dimension_type: string
           dimension_value: string
           id?: string
@@ -760,6 +855,7 @@ export type Database = {
         Update: {
           conversion_count?: number | null
           created_at?: string
+          deleted_at?: string | null
           dimension_type?: string
           dimension_value?: string
           id?: string
@@ -779,9 +875,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      batch_update_customer_points: {
+        Args: { p_updates: Json[] }
+        Returns: {
+          customer_uid: string
+          new_total_points: number
+          success: boolean
+          error_message: string
+        }[]
+      }
       bulk_update_point_task_status: {
         Args: { p_task_ids: string[]; p_status: string }
         Returns: number
+      }
+      convert_text_to_uuid: {
+        Args: { input_text: string }
+        Returns: string
       }
       create_customer_with_details_and_points: {
         Args: {
@@ -806,6 +915,7 @@ export type Database = {
           _creation_time: string | null
           created_at: string
           customer_type: string | null
+          deleted_at: string | null
           email: string | null
           first_name: string | null
           initial_tracking: Json | null
@@ -838,6 +948,47 @@ export type Database = {
         Returns: {
           expired_count: number
           total_expired_points: number
+        }[]
+      }
+      find_customer_by_text_uuid: {
+        Args: { p_customer_uid: string; p_tenant_id: string; p_org_id: string }
+        Returns: {
+          uid: string
+          tenant_id: string
+          org_id: string
+          line_id: string
+          line_user_name: string
+          phone: string
+          email: string
+          password: string
+          password_hash: string
+          first_name: string
+          last_name: string
+          searchable_text: string
+          use_count: number
+          last_reservation_date_unix: number
+          initial_tracking: Json
+          tags: string[]
+          total_reservation_count: number
+          customer_type: string
+          sort_key: string
+          _creation_time: string
+          is_archive: boolean
+          updated_time: string
+          created_at: string
+          updated_at: string
+          deleted_at: string
+        }[]
+      }
+      get_customer_stats_optimized: {
+        Args: { p_tenant_id: string; p_org_id: string; p_customer_uid: string }
+        Returns: {
+          total_points: number
+          total_earned_points: number
+          total_used_points: number
+          total_reservations: number
+          last_reservation_date: string
+          lifetime_value: number
         }[]
       }
       gtrgm_compress: {
@@ -886,9 +1037,11 @@ export type Database = {
           line_user_name: string
           tenant_id: string
           org_id: string
-          _creation_time: string
-          updated_time: string
+          created_at: string
+          updated_at: string
           similarity_score: number
+          total_reservation_count: number
+          last_reservation_date_unix: number
         }[]
       }
       set_limit: {
@@ -921,6 +1074,7 @@ export type Database = {
           _creation_time: string | null
           created_at: string
           customer_type: string | null
+          deleted_at: string | null
           email: string | null
           first_name: string | null
           initial_tracking: Json | null
@@ -950,6 +1104,7 @@ export type Database = {
           _creation_time: string | null
           created_at: string
           customer_type: string | null
+          deleted_at: string | null
           email: string | null
           first_name: string | null
           initial_tracking: Json | null
@@ -1006,11 +1161,15 @@ export type Database = {
           p_tags: string[]
           p_tenant_id: string
           p_total_points: number
+          p_customer_type?: string
+          p_total_reservation_count?: number
+          p_last_reservation_date_unix?: number
         }
         Returns: {
           _creation_time: string | null
           created_at: string
           customer_type: string | null
+          deleted_at: string | null
           email: string | null
           first_name: string | null
           initial_tracking: Json | null
@@ -1044,21 +1203,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -1076,14 +1239,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -1099,14 +1264,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -1122,14 +1289,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -1137,19 +1306,24 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

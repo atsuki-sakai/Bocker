@@ -149,7 +149,7 @@ export const sendHourlyReminders = internalAction({
           try {
             // 顧客情報を取得
             const { customer } = await customerRepo.getCompleteCustomerData(
-              reminder.reservation.customer_id!,
+              reminder.reservation.customer_uid!,
               reminder.reservation.tenant_id,
               reminder.reservation.org_id
             );
@@ -309,7 +309,7 @@ async function sendEmailReminder(orgName: string, reservation: Doc<"reservation"
 type CreatePayload = {
   tenant_id: Id<'tenant'>;
   org_id: Id<'organization'>;
-  customer_id?: string;
+  customer_uid?: string;
   staff_id: Id<'staff'>;
   staff_name: string;
   start_time_unix: number;
@@ -461,7 +461,7 @@ async function handleCreateSideEffects(
   payload: {
     tenant_id: string;
     org_id: string;
-    customer_id?: string;
+    customer_uid?: string;
     staff_id: string;
     staff_name: string;
     start_time_unix: number;
@@ -481,12 +481,12 @@ async function handleCreateSideEffects(
   
 
   // カルテ作成（現金決済の場合のみ）
-  if (payload.payment_method === "cash" && payload.customer_id) {
+  if (payload.payment_method === "cash" && payload.customer_uid) {
     // カルテを取得または作成
     const carte = await carteRepo.findOrCreateByCustomer(
       payload.tenant_id,
       payload.org_id,
-      payload.customer_id,
+      payload.customer_uid,
       {
         ltv_price: 0, // 作成時はLTVに加算しない
       }
@@ -532,12 +532,12 @@ async function handleConfirmSideEffects(
     const { CarteRepository } = await import('@/services/supabase/repositories/carte');
   
     // クレジットカード決済の場合のみカルテ作成
-    if(payload.reservation?.detail?.payment_method === "credit_card" && payload.reservation?.customer_id && payload.reservation?.org_id) {
+    if(payload.reservation?.detail?.payment_method === "credit_card" && payload.reservation?.customer_uid && payload.reservation?.org_id) {
       const carteRepo = new CarteRepository(supabaseService);
       const carte = await carteRepo.findOrCreateByCustomer(
           payload.reservation.tenant_id,
           payload.reservation.org_id,
-          payload.reservation.customer_id,
+          payload.reservation.customer_uid,
         {
           ltv_price: 0, // 作成時はLTVに加算しない
         }
@@ -583,7 +583,7 @@ async function handleCancelSideEffects(
   // 予約詳細はpayloadから取得
   const reservation = payload.reservation;
   
-  if (!reservation || !reservation.customer_id) return;
+  if (!reservation || !reservation.customer_uid) return;
   
   const { CarteDetailRepository } = await import('@/services/supabase/repositories/carte');
   const carteDetailRepo = new CarteDetailRepository(supabaseService);
@@ -599,7 +599,7 @@ async function handleCancelSideEffects(
       await carteDetailRepo.deleteRecord('id', carteDetail.id);
       console.log(`[handleCancelSideEffects] Deleted carte_detail record: ${carteDetail.id}`);
     }
-    if(reservation.status === "completed" && reservation.customer_id) {
+    if(reservation.status === "completed" && reservation.customer_uid) {
       await cancelForCompletedReservation(supabaseService, reservation);
     }
   } catch (error) {
@@ -627,7 +627,7 @@ async function handleStatusSideEffects(
   }
 
   // completed ステータスへの変更時の処理
-  if (payload.status === 'completed' && reservation.customer_id) {
+  if (payload.status === 'completed' && reservation.customer_uid) {
     const { PointTaskQueueRepository } = await import('@/services/supabase/repositories/point');
     const { CustomerRepository } = await import('@/services/supabase/repositories/customer');
     const { CarteRepository } = await import('@/services/supabase/repositories/carte');
@@ -640,7 +640,7 @@ async function handleStatusSideEffects(
       const carte = await carteRepo.findOrCreateByCustomer(
         reservation.tenant_id,
         reservation.org_id,
-        reservation.customer_id,
+        reservation.customer_uid,
         {
           ltv_price: 0, // 初期値
         }
@@ -660,7 +660,7 @@ async function handleStatusSideEffects(
           await pointTaskQueueRepo.create({
             tenant_id: reservation.tenant_id,
             org_id: reservation.org_id,
-            customer_id: reservation.customer_id,
+            customer_uid: reservation.customer_uid,
             reservation_id: reservation._id,
             points: earnPoints,
             scheduled_for_unix: reservation.start_time_unix + (30 * 24 * 60 * 60 * 1000), // 30日後
@@ -673,7 +673,7 @@ async function handleStatusSideEffects(
       
       // 3. 顧客情報を取得・更新
       const { customer, customerPoints } = await customerRepo.getCompleteCustomerData(
-        reservation.customer_id,
+        reservation.customer_uid,
         reservation.tenant_id,
         reservation.org_id
       );
@@ -694,7 +694,7 @@ async function handleStatusSideEffects(
         
         // 顧客基本情報を RPC 経由で更新
         await customerRepo.updateCustomer(
-          reservation.customer_id,
+          reservation.customer_uid,
           reservation.tenant_id,
           reservation.org_id,
           updateData,
@@ -704,7 +704,7 @@ async function handleStatusSideEffects(
         if (reservation.detail.use_points) {
           const newTotalPoints = (customerPoints?.total_points || 0) - (reservation.detail.use_points || 0);
           await customerRepo.updateCustomerPoints(
-            reservation.customer_id,
+            reservation.customer_uid,
             reservation.tenant_id,
             reservation.org_id,
             newTotalPoints,
@@ -727,7 +727,7 @@ async function handleStatusSideEffects(
       tenant_id: reservation.tenant_id,
       org_id: reservation.org_id,
       coupon_id: reservation.detail.coupon_id,
-      customer_id: reservation.customer_id,
+      customer_uid: reservation.customer_uid,
       reservation_id: reservation._id,
       transaction_date_unix: Math.floor(Date.now() / 1000),
       discount_amount: reservation.detail.coupon_discount,
@@ -751,7 +751,7 @@ async function handleStatusSideEffects(
       console.error('[handleStatusSideEffects] Error in completed status side effects:', error);
       throw error;
     }
-  } else if ((payload.status === 'cancelled' || payload.status === 'refunded') && reservation.customer_id) {
+  } else if ((payload.status === 'cancelled' || payload.status === 'refunded') && reservation.customer_uid) {
     console.log('[handleStatusSideEffects] Cancelled status side effects');
 
     const { CarteDetailRepository } = await import('@/services/supabase/repositories/carte');
@@ -759,7 +759,7 @@ async function handleStatusSideEffects(
     console.log('handleCancelSideEffects', coreResult);
     // 予約詳細はpayloadから取得
     const reservation = payload.reservation;
-    if (!reservation || !reservation.customer_id) return;
+    if (!reservation || !reservation.customer_uid) return;
     try {
       // 1. カルテ詳細レコードを削除
       const carteDetail = await carteDetailRepo.findByReservation(
@@ -772,16 +772,16 @@ async function handleStatusSideEffects(
         console.log(`[handleCancelSideEffects] Deleted carte_detail record: ${carteDetail.id}`);
       }
 
-      if(reservation.status === "completed" && reservation.customer_id) {
+      if(reservation.status === "completed" && reservation.customer_uid) {
         await cancelForCompletedReservation(supabaseService, reservation);
       }
     } catch (error) {
       console.error("Cancel side effects error:", error);
       throw error;
     }
-  } else if (payload.status === 'confirmed' && reservation.customer_id) {
+  } else if (payload.status === 'confirmed' && reservation.customer_uid) {
     console.log('[handleStatusSideEffects] Confirmed status side effects');
-  } else if (payload.status === 'pending' && reservation.customer_id) {
+  } else if (payload.status === 'pending' && reservation.customer_uid) {
     console.log('[handleStatusSideEffects] Pending status side effects');
   }
 }

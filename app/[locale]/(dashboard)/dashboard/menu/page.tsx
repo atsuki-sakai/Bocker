@@ -1,7 +1,7 @@
 'use client';
 
-import MenuListContent from './menuList';
-import { DashboardSection, withManagerAccess } from '@/components/common';
+import { MenuList } from './menuList'
+import { DashboardSection, withManagerAccess } from '@/components/common'
 import { useTranslations } from 'next-intl'
 
 function MenuPage() {
@@ -18,7 +18,7 @@ function MenuPage() {
         link: '/dashboard/menu/add',
       }}
     >
-      <MenuListContent />
+      <MenuList />
     </DashboardSection>
   )
 }

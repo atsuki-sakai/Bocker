@@ -230,16 +230,16 @@ export const listOrganizationAllStatus = query({
  * - バリデーション/競合判定はmutationで担保
  * データ取得専用でバリデーションはmutationで担保
  */
-export const listByCustomerId = query({
+export const listByCustomerUid = query({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    customer_id: v.string(),
+    customer_uid: v.string(),
     paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc')))
   },
   handler: async (ctx, args) => {
-    validateStringLength(args.customer_id, 'customer_id');
+    validateStringLength(args.customer_uid, 'customer_uid');
     validateStringLength(args.org_id, 'org_id');
 
     const reservationQuery = await ctx.db
@@ -248,7 +248,7 @@ export const listByCustomerId = query({
         q
           .eq('tenant_id', args.tenant_id)
           .eq('org_id', args.org_id)
-          .eq('customer_id', args.customer_id)
+          .eq('customer_uid', args.customer_uid)
       )
       .filter((q) => q.eq(q.field('is_archive'), false))
 
@@ -264,16 +264,16 @@ export const listByCustomerId = query({
  * - 予約詳細も同時に取得
  * データ取得専用でバリデーションはmutationで担保
  */
-export const listByCustomerIdWithDetails = query({
+export const listByCustomerUidWithDetails = query({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    customer_id: v.string(),
+    customer_uid: v.string(),
     paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc')))
   },
   handler: async (ctx, args) => {
-    validateStringLength(args.customer_id, 'customer_id');
+    validateStringLength(args.customer_uid, 'customer_uid');
     validateStringLength(args.org_id, 'org_id');
 
     const reservationQuery = ctx.db
@@ -282,7 +282,7 @@ export const listByCustomerIdWithDetails = query({
         q
           .eq('tenant_id', args.tenant_id)
           .eq('org_id', args.org_id)
-          .eq('customer_id', args.customer_id)
+          .eq('customer_uid', args.customer_uid)
       )
       .filter((q) => q.eq(q.field('is_archive'), false))
       .order(args.sort || 'desc');
@@ -455,7 +455,7 @@ export const findByCustomerAndDate = query({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    customer_id: v.string(),
+    customer_uid: v.string(),
     date: v.string(),
     paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
@@ -463,7 +463,7 @@ export const findByCustomerAndDate = query({
   },
   handler: async (ctx, args) => {
     checkAuth(ctx)
-    validateStringLength(args.customer_id, 'customer_id');
+    validateStringLength(args.customer_uid, 'customer_uid');
     validateStringLength(args.org_id, 'org_id');
     validateDateStrFormat(args.date, 'date');
     return await ctx.db
@@ -472,7 +472,7 @@ export const findByCustomerAndDate = query({
         q
           .eq('tenant_id', args.tenant_id)
           .eq('org_id', args.org_id)
-          .eq('customer_id', args.customer_id)
+          .eq('customer_uid', args.customer_uid)
           .eq('date', args.date)
           .eq('is_archive', false)
       )

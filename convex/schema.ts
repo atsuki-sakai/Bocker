@@ -113,7 +113,7 @@ CREATE TABLE public.customer (
 CREATE TABLE public.customer_detail (
   tenant_id     TEXT        NOT NULL,
   org_id        TEXT        NOT NULL,
-  customer_id   UUID        NOT NULL REFERENCES public.customer(id),
+  customer_uid   UUID        NOT NULL REFERENCES public.customer(id),
   email         TEXT,
   age           INTEGER,
   birthday      DATE,
@@ -129,7 +129,7 @@ CREATE TABLE public.customer_detail (
 CREATE TABLE public.customer_points (
   tenant_id                  TEXT        NOT NULL,
   org_id                     TEXT        NOT NULL,
-  customer_id                UUID        NOT NULL REFERENCES public.customer(id),
+  customer_uid                UUID        NOT NULL REFERENCES public.customer(id),
   total_points               INTEGER,
   last_transaction_date_unix BIGINT,
   created_at                 TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -143,7 +143,7 @@ CREATE TABLE public.point_task_queue (
   tenant_id           TEXT        NOT NULL,
   org_id              TEXT        NOT NULL,
   reservation_id      UUID        REFERENCES public.reservation(id),
-  customer_id         UUID        NOT NULL REFERENCES public.customer(id),
+  customer_uid         UUID        NOT NULL REFERENCES public.customer(id),
   points              INTEGER,
   scheduled_for_unix  BIGINT,
   status              TEXT,
@@ -158,7 +158,7 @@ CREATE TABLE public.point_transaction (
   tenant_id            TEXT        NOT NULL,
   org_id               TEXT        NOT NULL,
   reservation_id       UUID        REFERENCES public.reservation(id),
-  customer_id          UUID        NOT NULL REFERENCES public.customer(id),
+  customer_uid          UUID        NOT NULL REFERENCES public.customer(id),
   points               INTEGER     NOT NULL,
   transaction_type     TEXT,
   transaction_date_unix BIGINT    NOT NULL,
@@ -174,7 +174,7 @@ CREATE TABLE public.coupon_transaction (
   tenant_id            TEXT        NOT NULL,
   org_id               TEXT        NOT NULL,
   coupon_id            UUID        NOT NULL REFERENCES public.coupon(id),
-  customer_id          UUID        NOT NULL REFERENCES public.customer(id),
+  customer_uid          UUID        NOT NULL REFERENCES public.customer(id),
   reservation_id       UUID        NOT NULL REFERENCES public.reservation(id),
   transaction_date_unix BIGINT    NOT NULL,
   discount_amount      INTEGER,
@@ -188,7 +188,7 @@ CREATE TABLE public.coupon_transaction (
 CREATE TABLE public.carte (
   tenant_id      TEXT        NOT NULL,
   org_id         TEXT        NOT NULL,
-  customer_id    UUID        NOT NULL REFERENCES public.customer(id),
+  customer_uid    UUID        NOT NULL REFERENCES public.customer(id),
   skin_type      TEXT,
   hair_type      TEXT,
   allergy_history TEXT,
@@ -603,7 +603,10 @@ const menu = defineTable({
   is_active: v.boolean(), // 有効/無効
   ...CommonFields,
 })
+.index('by_tenant_org_target_type_active_archive', ['tenant_id', 'org_id', 'target_gender', 'target_type', 'is_active', 'is_archive'])
 .index('by_tenant_org_active_archive', ['tenant_id', 'org_id', 'is_active', 'is_archive'])
+.index('by_tenant_org_type_active_archive', ['tenant_id', 'org_id', 'target_type', 'is_active', 'is_archive'])
+.index('by_tenant_org_gender_active_archive', ['tenant_id', 'org_id', 'target_gender', 'is_active', 'is_archive'])
 
 /**
  * =========================
@@ -690,7 +693,7 @@ const coupon_config = defineTable({
 const reservation = defineTable({
   tenant_id: v.id('tenant'), // テナントID
   org_id: v.id('organization'), // 店舗ID
-  customer_id: v.optional(v.string()), // Supabase 側の customer.uid (UUID)
+  customer_uid: v.optional(v.string()), // Supabase 側の customer.uid (UUID)
   staff_id: v.optional(v.id('staff')), // スタッフID（指名フリーの場合は任意）
   customer_name: v.string(), // 顧客名
   staff_name: v.optional(v.string()), // スタッフ名（指名フリーの場合は任意）
@@ -738,7 +741,7 @@ const reservation = defineTable({
   // ④ 顧客＋日付（顧客別履歴）
   .index(
     'by_tenant_org_customer_date_archive',
-    ['tenant_id', 'org_id','customer_id','date','is_archive']
+    ['tenant_id', 'org_id','customer_uid','date','is_archive']
   )
    // ⑤ スタッフ＋日付（スタッフ別履歴）
    .index(

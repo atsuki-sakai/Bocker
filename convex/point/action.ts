@@ -57,7 +57,7 @@ export const cronApplyPointAward = internalAction({
             
             // 2.2 アトミックポイント付与実行（Supabase）
             await customerRepo.updatePointsAtomic(
-              task.customer_id,
+              task.customer_uid,
               task.tenant_id,
               task.org_id,
               task.points || 0,
@@ -70,7 +70,7 @@ export const cronApplyPointAward = internalAction({
             await taskQueueRepo.updateTaskStatus(task.id, 'completed');
             
             processed++;
-            console.log(`Successfully awarded ${task.points || 0} points to customer ${task.customer_id}`);
+            console.log(`Successfully awarded ${task.points || 0} points to customer ${task.customer_uid}`);
             
           } catch (error) {
             console.error(`Error processing task ${task.id}:`, error);

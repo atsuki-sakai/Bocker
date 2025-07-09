@@ -73,7 +73,7 @@ export type IntegratedReservation = {
   source: 'convex' | 'supabase';
   tenantId: string;
   orgId: string;
-  customerId: string;
+  customerUid: string;
   staffId: string | undefined;
   customerName: string;
   staffName: string | undefined;
@@ -108,7 +108,7 @@ export type IntegratedReservation = {
 type UseIntegratedReservationsOptions = {
   tenantId: string;
   orgId: string;
-  customerId: string;
+  customerUid: string;
   status?: string;
   pageSize?: number;
 };
@@ -136,7 +136,7 @@ type UseIntegratedReservationsReturn = {
 export function useIntegratedReservations({
   tenantId,
   orgId,
-  customerId,
+  customerUid,
   status,
   pageSize = 10,
 }: UseIntegratedReservationsOptions): UseIntegratedReservationsReturn {
@@ -152,20 +152,20 @@ export function useIntegratedReservations({
   // Convexからリアルタイムデータを取得（confirmed, pending, cancelledを含む）
   const shouldFetchFromConvex = !status || status === 'confirmed' || status === 'pending' || status === 'cancelled' || status === 'all';
   
-  // tenantId、orgId、customerIdが揃っていることを確認
-  const canFetchConvex = shouldFetchFromConvex && tenantId && orgId && customerId;
+  // tenantId、orgId、customerUidが揃っていることを確認
+  const canFetchConvex = shouldFetchFromConvex && tenantId && orgId && customerUid;
   
   const {
     results: convexResults,
     status: convexStatus,
     loadMore: convexLoadMore,
   } = usePaginatedQuery(
-    api.reservation.query.listByCustomerIdWithDetails,
+    api.reservation.query.listByCustomerUidWithDetails,
     canFetchConvex
       ? {
           tenant_id: tenantId as Id<'tenant'>,
           org_id: orgId as Id<'organization'>,
-          customer_id: customerId,
+          customer_uid: customerUid,
           sort: 'desc',
         }
       : 'skip',
@@ -196,7 +196,7 @@ export function useIntegratedReservations({
           source: 'convex' as const,
           tenantId: res.tenant_id,
           orgId: res.org_id,
-          customerId: res.customer_id || '',
+          customerUid: res.customer_uid || '',
           staffId: res.staff_id,
           customerName: res.customer_name,
           staffName: res.staff_name,
@@ -224,9 +224,9 @@ export function useIntegratedReservations({
   
   // Supabaseから履歴データを取得（completed, cancelledのみ）
   const fetchSupabaseReservations = useCallback(async (page: number, reset: boolean = false) => {
-    console.log('[useIntegratedReservations] fetchSupabaseReservations called:', { tenantId, orgId, customerId, status, page, reset });
+    console.log('[useIntegratedReservations] fetchSupabaseReservations called:', { tenantId, orgId, customerUid, status, page, reset });
     
-    if (!tenantId || !orgId || !customerId) {
+    if (!tenantId || !orgId || !customerUid) {
       console.log('[useIntegratedReservations] Missing required IDs, returning early');
       return;
     }
@@ -247,7 +247,7 @@ export function useIntegratedReservations({
         const statsData = await reservationRepo.getCustomerReservationStats(
           tenantId,
           orgId,
-          customerId
+          customerUid
         );
         setStats(statsData);
       }
@@ -256,7 +256,7 @@ export function useIntegratedReservations({
       const { data, count } = await reservationRepo.findByCustomerWithDetails(
         tenantId,
         orgId,
-        customerId,
+        customerUid,
         {
           page,
           pageSize,
@@ -275,7 +275,7 @@ export function useIntegratedReservations({
           source: 'supabase' as const,
           tenantId: item.reservation.tenant_id,
           orgId: item.reservation.org_id,
-          customerId: item.reservation.customer_id || '',
+          customerUid: item.reservation.customer_uid || '',
           staffId: item.reservation.staff_id,
           customerName: item.reservation.customer_name,
           staffName: item.reservation.staff_name,
@@ -313,15 +313,15 @@ export function useIntegratedReservations({
       console.log('[useIntegratedReservations] Setting supabaseLoading to false');
       setSupabaseLoading(false);
     }
-  }, [tenantId, orgId, customerId, status, pageSize, reservationRepo, stats]);
+  }, [tenantId, orgId, customerUid, status, pageSize, reservationRepo, stats]);
   
   // 初回読み込み
   useEffect(() => {
-    if (tenantId && orgId && customerId) {
+    if (tenantId && orgId && customerUid) {
       setSupabasePage(1);
       fetchSupabaseReservations(1, true);
     }
-  }, [tenantId, orgId, customerId, status, fetchSupabaseReservations]);
+  }, [tenantId, orgId, customerUid, status, fetchSupabaseReservations]);
   
   // データの統合とソート
   const integratedReservations = useMemo(() => {

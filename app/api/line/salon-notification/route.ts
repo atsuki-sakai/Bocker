@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     // 顧客情報を取得（可能な場合）
     let customer: { phone?: string; email?: string; line_id?: string } | undefined = undefined
-    if (reservation.customer_id) {
+    if (reservation.customer_uid) {
       try {
         // Supabaseから顧客情報を取得する場合
         // 今回は簡易的にreservationのデータを使用

@@ -23,7 +23,7 @@ export class CarteRepository extends BaseRepository<'carte'> {
    * @returns 作成されたカルテ情報
    */
   async createCarte(
-    carteData: Pick<InsertType<'carte'>, 'tenant_id' | 'org_id' | 'customer_id' | 'skin_type' | 'hair_type' | 'allergy_history' | 'medical_history' | 'ltv_price'>
+    carteData: Pick<InsertType<'carte'>, 'tenant_id' | 'org_id' | 'customer_uid' | 'skin_type' | 'hair_type' | 'allergy_history' | 'medical_history' | 'ltv_price'>
   ): Promise<RowType<'carte'>> {
     console.log(`[CarteRepository] createCarte: data=${JSON.stringify(carteData)}`);
     
@@ -53,22 +53,22 @@ export class CarteRepository extends BaseRepository<'carte'> {
    * 通常、顧客ごとにカルテは1つです。
    * @param tenantId - テナントID
    * @param orgId - 組織ID
-   * @param customerId - 顧客ID
+   * @param customerUid - 顧客ID
    * @param options - 取得オプション
    * @returns カルテ情報、または null
    */
   async findByCustomer(
     tenantId: string,
     orgId: string,
-    customerId: string,
+    customerUid: string,
     options?: BaseRepositoryOptions<'carte'>
   ): Promise<RowType<'carte'> | null> {
-    console.log(`[CarteRepository] findByCustomer: tenantId=${tenantId}, orgId=${orgId}, customerId=${customerId}`);
+    console.log(`[CarteRepository] findByCustomer: tenantId=${tenantId}, orgId=${orgId}, customerUid=${customerUid}`);
     
     return this.findOne({ 
       tenant_id: tenantId,
       org_id: orgId,
-      customer_id: customerId 
+      customer_uid: customerUid 
     } as Partial<RowType<'carte'>>, options);
   }
 
@@ -77,32 +77,32 @@ export class CarteRepository extends BaseRepository<'carte'> {
    * カルテが存在しない場合は新しく作成します。
    * @param tenantId - テナントID
    * @param orgId - 組織ID
-   * @param customerId - 顧客ID
+   * @param customerUid - 顧客ID
    * @param initialData - カルテが存在しない場合の初期データ
    * @returns カルテ情報
    */
   async findOrCreateByCustomer(
     tenantId: string,
     orgId: string,
-    customerId: string,
+    customerUid: string,
     initialData?: Partial<Pick<InsertType<'carte'>, 'skin_type' | 'hair_type' | 'allergy_history' | 'medical_history' | 'ltv_price'>>
   ): Promise<RowType<'carte'>> {
-    console.log(`[CarteRepository] findOrCreateByCustomer: tenantId=${tenantId}, orgId=${orgId}, customerId=${customerId}`);
+    console.log(`[CarteRepository] findOrCreateByCustomer: tenantId=${tenantId}, orgId=${orgId}, customerUid=${customerUid}`);
     
-    let carte = await this.findByCustomer(tenantId, orgId, customerId);
+    let carte = await this.findByCustomer(tenantId, orgId, customerUid);
     
     if (!carte) {
       carte = await this.createCarte({
         tenant_id: tenantId,
         org_id: orgId,
-        customer_id: customerId,
+        customer_uid: customerUid,
         skin_type: initialData?.skin_type || null,
         hair_type: initialData?.hair_type || null,
         allergy_history: initialData?.allergy_history || null,
         medical_history: initialData?.medical_history || null,
         ltv_price: initialData?.ltv_price || 0,
       });
-      console.log(`[CarteRepository] Created new carte for customer ${customerId}`);
+      console.log(`[CarteRepository] Created new carte for customer ${customerUid}`);
     }
     
     return carte;

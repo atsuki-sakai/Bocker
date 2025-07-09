@@ -37,7 +37,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
    * 注意: このメソッドはアトミックなトランザクションを保証しません。
    *       本番環境では、データの整合性を保つためにSupabaseのRPC (データベース関数) の使用を強く推奨します。
    * @param customerCoreData - 顧客のコア情報 (email, first_name など)
-   * @param detailData - 顧客詳細情報 (メモ、カスタムフィールドなど、_idやcustomer_id以外)
+   * @param detailData - 顧客詳細情報 (メモ、カスタムフィールドなど、_idやcustomer_uid以外)
    * @param initialPoints - 初期ポイント数 (デフォルトは0)
    * @returns 作成された顧客、詳細、ポイントの情報を含むオブジェクト。エラー時はnullまたはエラーをスロー。
    */
@@ -172,11 +172,28 @@ export class CustomerRepository extends BaseRepository<'customer'> {
 
 
   async deleteWithRelatedData(customerUid: string): Promise<void> {
-    const { error } = await this.supabaseServiceInstance
-      .rpc('delete_customer_and_related_data', { p_customer_uid: customerUid });
-    if (error) {
+    try {
+      // Use the proper RPC function that handles deletion order correctly
+      // This ensures all related data is deleted in the correct order regardless of foreign key constraint settings
+      const { error } = await this.supabaseServiceInstance.rpc(
+        'delete_customer_and_related_data',
+        { p_customer_uid: customerUid }
+      );
+      
+      if (error) {
+        console.error(`[CustomerRepository] RPC delete_customer_and_related_data error for uid=${customerUid}:`, error);
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.deleteWithRelatedData',
+          message: `顧客とその関連データの削除に失敗しました: ${error.message}`,
+          error: new Error(error.message),
+          severity: 'high',
+          details: { customerUid }
+        });
+      }
+      
+      console.log(`Successfully deleted customer ${customerUid} and all related data via RPC function`);
+    } catch (error) {
       console.error('Error deleting customer and related data:', error);
-      // 適切なエラーハンドリングを行う
       throw error;
     }
   }
@@ -302,7 +319,7 @@ export class CustomerRepository extends BaseRepository<'customer'> {
       } catch (error) {
         // UUID形式エラーの場合、TEXT型からUUID型への変換を試行
         if (error instanceof Error && error.message.includes('invalid input syntax for type uuid')) {
-          console.log(`[CustomerRepository] Attempting UUID cast for customer_id: ${customerUid}`);
+          console.log(`[CustomerRepository] Attempting UUID cast for customer_uid: ${customerUid}`);
           
           // Supabaseの専用関数を使用してTEXT型UUIDを変換
           const { data: customerData, error: rpcError } = await this.supabaseServiceInstance.rpc<RowType<'customer'>>(

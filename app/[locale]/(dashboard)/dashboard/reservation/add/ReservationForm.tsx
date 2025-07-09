@@ -81,7 +81,7 @@ import {
 } from '@/convex/types'
 const schemaReservation = z
   .object({
-    customer_id: z.string().optional(), // 顧客ID
+    customer_uid: z.string().optional(), // 顧客ID
     staff_id: z.string().optional(), // スタッフID
     staff_name: z.string().optional(), // スタッフ名
     customer_last_name: z.string().optional(), // 顧客名（姓）
@@ -148,14 +148,14 @@ const schemaReservation = z
       // 既存顧客の場合、顧客IDまたは選択された顧客が必要
       // 新規顧客の場合、必要な情報が入力されている必要
       if (data.is_existing_customer) {
-        return !!data.customer_id
+        return !!data.customer_uid
       } else {
         return !!data.customer_first_name && !!data.customer_last_name && !!data.customer_phone
       }
     },
     {
       message: 'customerRequired', // 顧客の選択または新規顧客情報の入力が必要です
-      path: ['customer_id'],
+      path: ['customer_uid'],
     }
   )
 
@@ -488,7 +488,7 @@ export default function ReservationForm() {
   useEffect(() => {
     if (!tenantId || !orgId) return
     reset({
-      customer_id: undefined, // 顧客ID
+      customer_uid: undefined, // 顧客ID
       staff_id: undefined, // スタッフID
       staff_name: undefined, // スタッフ名
       menus: [], // メニューID（複数）
@@ -843,7 +843,7 @@ export default function ReservationForm() {
         payload: {
           tenant_id: tenantId,
           org_id: orgId,
-          customer_id: isExistingCustomer ? (selectedCustomer?.uid ?? '') : (customerUid ?? ''),
+          customer_uid: isExistingCustomer ? (selectedCustomer?.uid ?? '') : (customerUid ?? ''),
           staff_id: finalStaffId as Id<'staff'>,
           customer_name: finalCustomerName ?? selectedCustomer?.phone ?? '不明',
           staff_name: assignedStaffName,
@@ -1419,7 +1419,7 @@ export default function ReservationForm() {
                             key={customer.uid}
                             onClick={() => {
                               setSelectedCustomer(customer)
-                              setValue('customer_id', customer.uid)
+                              setValue('customer_uid', customer.uid)
                             }}
                             className={cn(
                               'p-4 rounded-lg border-2 transition-all cursor-pointer',

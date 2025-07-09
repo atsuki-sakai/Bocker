@@ -106,7 +106,7 @@ export const getEmailsByReferralCount = query({
     );
     checkAuth(ctx, true);
     const batchSize = 100; // Process in smaller batches
-    let allTenantEmails: string[] = [];
+    const allTenantEmails: string[] = [];
     let cursor = null;
     let hasMore = true;
 

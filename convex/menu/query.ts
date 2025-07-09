@@ -96,12 +96,14 @@ export const listByType = query({
     checkAuth(ctx);
     return await ctx.db
       .query('menu')
-      .withIndex('by_tenant_org_active_archive', (q) =>
+      .withIndex('by_tenant_org_type_active_archive', (q) =>
         q
           .eq('tenant_id', args.tenant_id)
           .eq('org_id', args.org_id)
-          .eq('is_active', args.active_only || false)
-      ).filter((q) => q.eq('target_type', args.target_type))
+          .eq('target_type', args.target_type)
+          .eq('is_active', args.active_only ?? true)
+          .eq('is_archive', false)
+      )
       .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
@@ -121,12 +123,14 @@ export const listByGender = query({
     checkAuth(ctx);
     return await ctx.db
       .query('menu')
-      .withIndex('by_tenant_org_active_archive', (q) =>
+      .withIndex('by_tenant_org_gender_active_archive', (q) =>
         q
           .eq('tenant_id', args.tenant_id)
           .eq('org_id', args.org_id)
-          .eq('is_active', args.active_only || false)
-      ).filter((q) => q.eq('target_gender', args.target_gender))
+          .eq('target_gender', args.target_gender)
+          .eq('is_active', args.active_only ?? true)
+          .eq('is_archive', false)
+      )
       .order(args.sort || 'desc')
       .paginate(args.paginationOpts);
   },
@@ -137,25 +141,42 @@ export const getMenusByCategories = query({
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
     categories: v.array(menuCategoryType),
+    target_type: v.optional(activeCustomerType),
+    target_gender: v.optional(genderType),
   },
   handler: async (ctx, args) => {
-    // サロンIDでフィルタリングしたメニューをすべて取得
-    const allMenus = await ctx.db
+    // target_type / target_gender が指定されている場合はそれぞれインデックスで先に絞り込み、
+    // そうでない場合は汎用インデックスで取得し、後段でfilterします。
+
+    const baseQuery = ctx.db
       .query('menu')
-      .withIndex('by_tenant_org_active_archive', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id))
-      .collect()
-  
+      .withIndex('by_tenant_org_active_archive', (q) =>
+        q
+          .eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('is_active', true)
+          .eq('is_archive', false)
+      );
+
+    const allMenus = await baseQuery.collect();
+
     console.log('allMenus', allMenus)
     console.log('args.categories', args.categories)
-    if(args.categories.length === 0) {
-      return allMenus
-    }else{
-      return allMenus.filter((menu) => {
-        if (!menu.categories) return false
-        return args.categories.some(
-          (category) => menu.categories && menu.categories.includes(category as MenuCategory)
-        )
-      })
-    }
+    return allMenus.filter((menu) => {
+      // target_type フィルタ
+      const typeMatch = args.target_type ? menu.target_type === args.target_type : true;
+
+      // target_gender フィルタ
+      const genderMatch = args.target_gender ? menu.target_gender === args.target_gender : true;
+
+      // カテゴリフィルタ（指定が無い場合は全て許容）
+      const categoryMatch = args.categories.length === 0
+        ? true
+        : (menu.categories ?? []).some((category) =>
+            args.categories.includes(category as MenuCategory)
+          );
+
+      return typeMatch && genderMatch && categoryMatch;
+    });
   },
 })

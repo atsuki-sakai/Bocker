@@ -51,7 +51,7 @@ import { VoiceInputButton } from '@/components/common/VoiceInputButton'
 
 type CarteDetailPageProps = {
   params: Promise<{
-    customer_id: string
+    customer_uid: string
     reservation_id: string
   }>
 }
@@ -91,7 +91,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { tenantId, orgId, isLoaded, subscription } = useTenantAndOrganization()
 
-  const [customerId, setCustomerId] = useState<string | null>(null)
+  const [customerUid, setCustomerUid] = useState<string | null>(null)
   const [reservationId, setReservationId] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<CustomerWithDetails | null>(null)
   const [carteData, setCarteData] = useState<CarteData | null>(null)
@@ -147,19 +147,19 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
   // paramsの解決
   useEffect(() => {
     paramsPromise.then((params) => {
-      setCustomerId(params.customer_id)
+      setCustomerUid(params.customer_uid)
       setReservationId(params.reservation_id)
     })
   }, [paramsPromise])
 
   // データの取得
   const fetchData = useCallback(async () => {
-    if (!tenantId || !orgId || !customerId || !reservationId || !isLoaded) return
+    if (!tenantId || !orgId || !customerUid || !reservationId || !isLoaded) return
 
     setIsLoadingData(true)
     try {
       // 顧客情報の取得
-      const completeData = await customerRepo.getCompleteCustomerData(customerId, tenantId, orgId)
+      const completeData = await customerRepo.getCompleteCustomerData(customerUid, tenantId, orgId)
 
       if (!completeData.customer) {
         toast.error('顧客情報が見つかりません')
@@ -169,7 +169,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
       setCustomerData(completeData)
 
       // カルテ情報の取得
-      const carte = await carteRepo.findByCustomer(tenantId, orgId, customerId)
+      const carte = await carteRepo.findByCustomer(tenantId, orgId, customerUid)
 
       // カルテ詳細の取得
       const carteDetail = await carteDetailRepo.findByReservation(tenantId, orgId, reservationId)
@@ -207,7 +207,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
   }, [
     tenantId,
     orgId,
-    customerId,
+    customerUid,
     reservationId,
     isLoaded,
     customerRepo,
@@ -348,10 +348,10 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
 
   // 初回データ取得
   useEffect(() => {
-    if (customerId && reservationId && tenantId && orgId && isLoaded) {
+    if (customerUid && reservationId && tenantId && orgId && isLoaded) {
       fetchData()
     }
-  }, [customerId, reservationId, tenantId, orgId, isLoaded, fetchData])
+  }, [customerUid, reservationId, tenantId, orgId, isLoaded, fetchData])
 
   // 金額フォーマット
   const formatPrice = (price: number | null) => {
@@ -421,7 +421,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
     return (
       <DashboardSection
         title="カルテ詳細"
-        backLink={`/dashboard/carte/${customerId}`}
+        backLink={`/dashboard/carte/${customerUid}`}
         backLinkTitle="カルテに戻る"
       >
         <div className="text-center py-8 text-muted-foreground">データが見つかりません</div>
@@ -443,7 +443,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
   return (
     <DashboardSection
       title="カルテ詳細"
-      backLink={`/dashboard/carte/${customerId}`}
+      backLink={`/dashboard/carte/${customerUid}`}
       backLinkTitle="カルテに戻る"
     >
       <div className="space-y-3 md:space-y-6">
@@ -771,7 +771,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
         {/* 保存ボタン */}
         <div className="flex justify-end space-x-4">
           <Button variant="outline" asChild>
-            <Link href={`/dashboard/carte/${customerId}`}>
+            <Link href={`/dashboard/carte/${customerUid}`}>
               <ChevronLeft className="w-4 h-4 mr-2" />
               戻る
             </Link>

@@ -12,9 +12,9 @@ export class CustomerPointsRepository extends BaseRepository<'customer_points'> 
   }
 
   /**
-   * 顧客ID (customer_id) で顧客ポイント情報を検索します。
+   * 顧客UID (customer_uid) で顧客ポイント情報を検索します。
    * 通常、顧客ごとにポイントレコードは1つです。
-   * @param customerId - 検索する顧客ID
+   * @param customerUid - 検索する顧客UID
    * @param options - 取得オプション
    * @returns 顧客ポイント情報、または null
    */
@@ -26,7 +26,7 @@ export class CustomerPointsRepository extends BaseRepository<'customer_points'> 
   /**
    * 顧客のポイントを初期化または作成します。
    * 既に存在する場合は取得し、存在しない場合は新しいポイントレコードを作成します。
-   * @param customerId - 顧客ID
+   * @param customerUid - 顧客UID
    * @param salonId - サロンID
    * @param initialPoints - 初期ポイント数 (デフォルト0)
    * @returns 顧客ポイント情報
@@ -34,15 +34,15 @@ export class CustomerPointsRepository extends BaseRepository<'customer_points'> 
   async initializePointsForCustomer(
     tenantId: string,
     orgId: string,
-    customerId: string, 
+    customerUid: string, 
     initialPoints: number = 0
   ): Promise<RowType<'customer_points'>> {
-    console.log(`[CustomerPointsRepository] initializePointsForCustomer: tenantId=${tenantId}, orgId=${orgId}, customerId=${customerId}, initialPoints=${initialPoints}`);
-    let pointsRecord = await this.findByTenantAndOrgAndCustomerUid(tenantId, orgId, customerId);
+    console.log(`[CustomerPointsRepository] initializePointsForCustomer: tenantId=${tenantId}, orgId=${orgId}, customerUid=${customerUid}, initialPoints=${initialPoints}`);
+    let pointsRecord = await this.findByTenantAndOrgAndCustomerUid(tenantId, orgId, customerUid);
     if (!pointsRecord) {
       const newPointsData: InsertType<'customer_points'> = {
         uid: generateUUID(),
-        customer_uid: customerId,
+        customer_uid: customerUid,
         tenant_id: tenantId,
         org_id: orgId,
         total_points: initialPoints,

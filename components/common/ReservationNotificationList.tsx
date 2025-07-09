@@ -14,7 +14,7 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { Loading } from '@/components/common'
 
 export default function ReservationNotificationList() {
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, subscription } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const notifications = useQuery(
     api.reservation.notification.query.list,
@@ -47,9 +47,6 @@ export default function ReservationNotificationList() {
       killAllNotifications({
         tenant_id: tenantId as Id<'tenant'>,
         org_id: orgId as Id<'organization'>,
-        reservation_ids:
-          notifications?.map((notification) => notification.reservation_id as Id<'reservation'>) ||
-          [],
       })
       toast.success('通知を全て削除しました。')
     } catch (error) {
@@ -57,7 +54,7 @@ export default function ReservationNotificationList() {
     }
   }
 
-  if (notifications === undefined) {
+  if (subscription === undefined || notifications === undefined) {
     return <Loading />
   }
 

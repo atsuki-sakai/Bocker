@@ -192,7 +192,7 @@ function StaffAddPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [currentTags, setCurrentTags] = useState<string[]>([])
-  const [sendInviteEmail, setSendInviteEmail] = useState(true)
+  const [sendInviteEmail, setSendInviteEmail] = useState(false)
 
   const staffAdd = useMutation(api.staff.mutation.create)
   const staffConfigAdd = useMutation(api.staff.config.mutation.create)
@@ -535,21 +535,26 @@ function StaffAddPage() {
                 <CardContent className="space-y-8 pt-6 overflow-x-hidden">
                   {/* 基本情報セクション */}
                   <div>
-                    <div className="flex flex-col items-start justify-between space-y-2 mb-4 bg-accent-2-foreground text-accent-2 border border-accent-2 rounded-md p-4">
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="send_invite_email"
-                          checked={sendInviteEmail}
-                          onCheckedChange={(checked) => setSendInviteEmail(checked)}
-                        />
-                        <Label htmlFor="send_invite_email" className="text-sm cursor-pointer">
-                          {t('staff.add.sendInviteEmail')}
-                        </Label>
+                    {planName !== 'MICRO' ? (
+                      <div className="flex flex-col items-start justify-between space-y-2 mb-4 bg-accent-2-foreground text-accent-2 border border-accent-2 rounded-md p-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="send_invite_email"
+                            checked={sendInviteEmail}
+                            onCheckedChange={(checked) => setSendInviteEmail(checked)}
+                          />
+                          <Label htmlFor="send_invite_email" className="text-sm cursor-pointer">
+                            {t('staff.add.sendInviteEmail')}
+                          </Label>
+                        </div>
+                        <p className="text-xs text-warning-foreground bg-warning rounded-md px-3 py-1 w-fit">
+                          {t('staff.add.sendInviteEmailDesc2')}
+                        </p>
+                        <p className="text-xs text-muted-foreground w-fit">
+                          {t('staff.add.sendInviteEmailDesc')}
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground w-fit">
-                        {t('staff.add.sendInviteEmailDesc')}
-                      </p>
-                    </div>
+                    ) : null}
                     {/* 権限設定セクション */}
                     {sendInviteEmail && (
                       <div>
@@ -796,11 +801,9 @@ function StaffAddPage() {
                       )}
                     </div>
                   </div>
-
                   <Separator />
-
                   {/* 詳細設定セクション */}
-
+                  fdsa
                   <div>
                     <div className="flex items-center mb-4">
                       <Sparkles className="h-5 w-5 mr-2 text-muted-foreground" />
