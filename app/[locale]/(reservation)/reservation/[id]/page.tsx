@@ -54,8 +54,6 @@ export default function ReservePage() {
       : 'skip'
   )
 
-  const development = process.env.NODE_ENV === 'development'
-
   const {
     register,
     handleSubmit,
@@ -67,6 +65,26 @@ export default function ReservePage() {
   // 現在のメール入力値を監視
   const watchedEmail = watch('email')
 
+  const setDemoLogin = useCallback(async () => {
+    if (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === 'bocker-project.vercel.app' ||
+      window.location.hostname === 'bocker-project.vercel.app/ja' ||
+      window.location.hostname === 'bocker-project.vercel.app/en'
+    ) {
+      console.log('development')
+      setValue('email', 'bocker.demo@gmail.com')
+      setValue('password', 'Bocker_demo')
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const loginButton: HTMLButtonElement | null = document.querySelector(
+        'button[type="submit"]'
+      ) as HTMLButtonElement | null
+      if (loginButton) {
+        loginButton.click()
+      }
+      return
+    }
+  }, [setValue])
   const onSubmit = useCallback(
     async (data: z.infer<typeof emailLoginSchema>) => {
       setIsFirstLogin(true)
@@ -164,7 +182,7 @@ export default function ReservePage() {
   )
 
   useEffect(() => {
-    console.log('development', development)
+    console.log('window.location.hostname', window.location.hostname)
     // 組織情報を取得して、テナントIDを設定
     fetchQuery(api.organization.query.findByOrgId, {
       org_id: orgId,
@@ -173,12 +191,7 @@ export default function ReservePage() {
         setTenantId(res.tenant_id)
       }
     })
-    if (development) {
-      console.log('development')
-      setValue('email', 'bocker.help@gmail.com')
-      setValue('password', 'Bocker_123')
-      return
-    }
+    setDemoLogin()
     // サーバーAPI経由でセッション有無を判定
     fetch('/api/auth/session', { credentials: 'include' })
       .then((res) => {
@@ -200,7 +213,7 @@ export default function ReservePage() {
         // ネットワークエラーなど、本当のエラーのみログ出力
         console.error('Session check failed:', error)
       })
-  }, [router, orgId, tenantId])
+  }, [router, orgId, tenantId, setDemoLogin])
 
   if (!organization || !tenantId) {
     return <Loading />
