@@ -18,6 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Header } from '../_components/Header'
+import { Footer } from '../_components/Footer'
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -165,183 +167,187 @@ export function ContactPageClient({ translations }: { translations: TranslationT
   ]
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <section className="py-20 border-b bg-gradient-to-b from-accent-foreground to-neon-foreground">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={fadeIn}
-            className="text-center space-y-4 max-w-3xl mx-auto"
-          >
-            <h1 className="text-2xl md:text-3xl font-bold">{translations.title}</h1>
-            <p className="text-sm md:text-base">{translations.subtitle}</p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Contact Form & Info */}
-      <section className="py-20">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
-            {/* Contact Form */}
+    <>
+      <Header />
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <section className="py-20 border-b bg-gradient-to-b from-accent-foreground to-neon-foreground">
+          <div className="container mx-auto px-4 md:px-6">
             <motion.div
               initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
+              animate="visible"
               variants={fadeIn}
+              className="text-center space-y-4 max-w-3xl mx-auto"
             >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-2xl">{translations.form.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">{translations.form.fields.name}</Label>
-                        <Input
-                          id="name"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          placeholder={translations.form.placeholders.name}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">{translations.form.fields.email}</Label>
-                        <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          placeholder={translations.form.placeholders.email}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="company">{translations.form.fields.company}</Label>
-                        <Input
-                          id="company"
-                          name="company"
-                          value={formData.company}
-                          onChange={handleChange}
-                          placeholder={translations.form.placeholders.company}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">{translations.form.fields.phone}</Label>
-                        <Input
-                          id="phone"
-                          name="phone"
-                          type="tel"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          placeholder={translations.form.placeholders.phone}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="subject">{translations.form.fields.subject}</Label>
-                      <Select
-                        value={formData.subject}
-                        onValueChange={(value) => setFormData({ ...formData, subject: value })}
-                        required
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={translations.form.placeholders.subject} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="general">資料請求</SelectItem>
-                          <SelectItem value="support">導入サポート</SelectItem>
-                          <SelectItem value="other">その他</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="message">{translations.form.fields.message}</Label>
-                      <Textarea
-                        id="message"
-                        name="message"
-                        value={formData.message}
-                        onChange={handleChange}
-                        placeholder={translations.form.placeholders.message}
-                        rows={6}
-                        required
-                      />
-                    </div>
-
-                    <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                          {translations.form.submitting}
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          {translations.form.submit}
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
+              <h1 className="text-2xl md:text-3xl font-bold">{translations.title}</h1>
+              <p className="text-sm md:text-base">{translations.subtitle}</p>
             </motion.div>
+          </div>
+        </section>
 
-            {/* Contact Information */}
-            <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="space-y-8"
-            >
-              <motion.div variants={fadeIn}>
-                <h2 className="text-2xl font-bold mb-6">{translations.info.title}</h2>
-                <div className="space-y-6">
-                  {infoItems.map((item, index) => (
-                    <motion.div key={index} variants={fadeIn} className="flex items-start gap-4">
-                      <div className="p-3 rounded-lg bg-primary/10">
-                        <item.icon className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{item.label}</p>
-                        <p className="text-muted-foreground">{item.value}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-
-              {/* FAQ CTA */}
-              <motion.div variants={fadeIn}>
-                <Card className="bg-muted/50">
+        {/* Contact Form & Info */}
+        <section className="py-20">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+              {/* Contact Form */}
+              <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeIn}
+              >
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-xl">{translations.faq.title}</CardTitle>
+                    <CardTitle className="text-2xl">{translations.form.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription className="mb-4">{translations.faq.cta}</CardDescription>
-                    <Link href="/faq">
-                      <Button size="sm" className="text-sm">
-                        FAQ
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">{translations.form.fields.name}</Label>
+                          <Input
+                            id="name"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            placeholder={translations.form.placeholders.name}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">{translations.form.fields.email}</Label>
+                          <Input
+                            id="email"
+                            name="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder={translations.form.placeholders.email}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="company">{translations.form.fields.company}</Label>
+                          <Input
+                            id="company"
+                            name="company"
+                            value={formData.company}
+                            onChange={handleChange}
+                            placeholder={translations.form.placeholders.company}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">{translations.form.fields.phone}</Label>
+                          <Input
+                            id="phone"
+                            name="phone"
+                            type="tel"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            placeholder={translations.form.placeholders.phone}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="subject">{translations.form.fields.subject}</Label>
+                        <Select
+                          value={formData.subject}
+                          onValueChange={(value) => setFormData({ ...formData, subject: value })}
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={translations.form.placeholders.subject} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="general">資料請求</SelectItem>
+                            <SelectItem value="support">導入サポート</SelectItem>
+                            <SelectItem value="other">その他</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="message">{translations.form.fields.message}</Label>
+                        <Textarea
+                          id="message"
+                          name="message"
+                          value={formData.message}
+                          onChange={handleChange}
+                          placeholder={translations.form.placeholders.message}
+                          rows={6}
+                          required
+                        />
+                      </div>
+
+                      <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                            {translations.form.submitting}
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            {translations.form.submit}
+                          </>
+                        )}
                       </Button>
-                    </Link>
+                    </form>
                   </CardContent>
                 </Card>
               </motion.div>
-            </motion.div>
+
+              {/* Contact Information */}
+              <motion.div
+                variants={staggerContainer}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                className="space-y-8"
+              >
+                <motion.div variants={fadeIn}>
+                  <h2 className="text-2xl font-bold mb-6">{translations.info.title}</h2>
+                  <div className="space-y-6">
+                    {infoItems.map((item, index) => (
+                      <motion.div key={index} variants={fadeIn} className="flex items-start gap-4">
+                        <div className="p-3 rounded-lg bg-primary/10">
+                          <item.icon className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{item.label}</p>
+                          <p className="text-muted-foreground">{item.value}</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* FAQ CTA */}
+                <motion.div variants={fadeIn}>
+                  <Card className="bg-muted/50">
+                    <CardHeader>
+                      <CardTitle className="text-xl">{translations.faq.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="mb-4">{translations.faq.cta}</CardDescription>
+                      <Link href="/faq">
+                        <Button size="sm" className="text-sm">
+                          FAQ
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </motion.div>
+            </div>
           </div>
-        </div>
-      </section>
-    </div>
+        </section>
+      </div>
+      <Footer />
+    </>
   )
 }
