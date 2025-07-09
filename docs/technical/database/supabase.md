@@ -10,7 +10,7 @@
 
 ### 本番環境
 - **本番URL**: https://bocker.jp
-- **MCPツール名**: supabase:prod
+- **MCPツール名**: supabase-prod
 - **プロジェクト名**: Bocker
 - **プロジェクトID**: fxpdfqrnaifxokumgrht
 - **リージョン**: ap-northeast-1
@@ -19,7 +19,7 @@
 
 ### 開発環境
 - **開発URL**: https://bocker-project.vercel.app
-- **MCPツール名**: supabase:dev
+- **MCPツール名**: supabase-dev
 - **プロジェクト名**: DEV_Bocker
 - **プロジェクトID**: kafcgxiddgxbuimeitrm
 - **リージョン**: ap-northeast-1
