@@ -89,7 +89,7 @@ export function HeroSection() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full text-lg font-bold text-accent"
+                      className="w-full text-base font-bold py-2 text-link-foreground border-link-foreground border bg-link"
                     >
                       {t('cta.demo')}
                     </Button>
@@ -109,11 +109,7 @@ export function HeroSection() {
                   className="mt-5 flex items-center gap-x-6 w-full"
                 >
                   <Link href="/contact" className="w-full">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="w-full text-lg font-bold text-background bg-gradient-to-b from-accent to-neon hover:opacity-80 hover:text-background"
-                    >
+                    <Button size="lg" className="py-2 w-full text-base font-bold">
                       {t('cta.requestMaterial')}
                     </Button>
                   </Link>
