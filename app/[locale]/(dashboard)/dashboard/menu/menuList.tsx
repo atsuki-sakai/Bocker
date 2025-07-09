@@ -9,6 +9,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { CardContent } from '@/components/ui/card'
+import Image from 'next/image'
+import Link from 'next/link'
+import { Clock, CreditCard, Eye, Pencil } from 'lucide-react'
 import {
   Command,
   CommandEmpty,
@@ -16,7 +20,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { ChevronDown, X, Grid, List, Check } from 'lucide-react'
+import { ChevronDown, X, Check } from 'lucide-react'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import type { MenuCategory } from '@/convex/types'
 import { MENU_CATEGORY_VALUES } from '@/convex/types'
@@ -37,8 +41,6 @@ export const MenuList = memo(() => {
   const [selectedType, setSelectedType] = useState<TargetType | null>(null)
   const [openGenderPopover, setOpenGenderPopover] = useState(false)
   const [openTypePopover, setOpenTypePopover] = useState(false)
-
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
 
   // === 1. すべてのメニュー取得 ===
   const allMenusQuery = useQuery(
@@ -138,41 +140,113 @@ export const MenuList = memo(() => {
       )
     }
 
-    if (viewMode === 'grid') {
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {menusToDisplay.map((menu: Doc<'menu'>) => (
-            <div key={menu._id} className="p-4 border rounded-lg">
-              <h3 className="font-semibold">{menu.name}</h3>
-              <p className="text-sm text-muted-foreground">¥{menu.unit_price}</p>
-            </div>
-          ))}
-        </div>
-      )
-    }
-
     return (
-      <div className="space-y-2">
+      <div className="space-y-4">
         {menusToDisplay.map((menu: Doc<'menu'>) => (
-          <div key={menu._id} className="p-4 border rounded-lg flex justify-between items-center">
-            <div>
-              <h3 className="font-semibold">{menu.name}</h3>
-              <p className="text-sm text-muted-foreground">¥{menu.unit_price}</p>
+          <CardContent key={menu._id} className="p-4">
+            <div className="flex items-start gap-4">
+              <div className="relative h-16 w-16 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
+                {menu.images && menu.images.length > 0 && menu.images[0]?.thumbnail_url ? (
+                  <Image
+                    src={menu.images[0]?.thumbnail_url || ''}
+                    alt={menu.name || ''}
+                    fill
+                    className="object-cover"
+                    loading="lazy"
+                    sizes="64px"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center">
+                    <p className="text-muted-foreground text-lg font-bold uppercase">
+                      {menu.name?.slice(0, 1)}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex flex-wrap gap-1">
+                  {menu.categories?.map((category) => (
+                    <Badge key={category} variant="outline" className="text-xs px-2 py-0.5">
+                      {category}
+                    </Badge>
+                  ))}
+                </div>
+                <h3 className="font-semibold text-lg truncate text-foreground">{menu.name}</h3>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                  <div className="flex items-center font-medium">
+                    {menu.sale_price ? (
+                      <div className="flex items-center gap-2">
+                        <span className="line-through text-muted-foreground">
+                          ¥{menu.unit_price}
+                        </span>
+                        <span className="font-bold text-primary text-base">¥{menu.sale_price}</span>
+                      </div>
+                    ) : (
+                      <span className="font-semibold text-base">¥{menu.unit_price}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center text-muted-foreground">
+                    <Clock className="h-4 w-4 mr-1.5" />
+                    <span>{menu.duration_min}分</span>
+                  </div>
+                  {menu.payment_method && (
+                    <div className="flex items-center text-muted-foreground">
+                      <CreditCard className="h-4 w-4 mr-1.5" />
+                      <span className="text-xs">
+                        {menu.payment_method === 'all'
+                          ? 'オンライン・店頭'
+                          : menu.payment_method === 'credit_card'
+                            ? 'オンライン決済'
+                            : '店頭決済'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {menu.tags && menu.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {menu.tags.map((tag: string, idx: number) => (
+                      <Badge key={idx} variant="secondary" className="text-xs px-2 py-0.5">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Link href={`/dashboard/menu/${menu._id}`}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 bg-link text-link-foreground hover:opacity-80"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href={`/dashboard/menu/${menu._id}/edit`}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 bg-neon text-neon-foreground hover:opacity-80"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
+          </CardContent>
         ))}
       </div>
     )
-  }, [menusToDisplay, viewMode, t])
+  }, [menusToDisplay, t])
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex-1 space-y-2">
           {/* カテゴリフィルター */}
-          <div className="grid grid-cols-3 gap-4 items-center">
+          <div className="grid grid-cols-2 gap-4 items-start">
             <div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 mb-2">
                 <span className="text-xs font-medium">{t('messages.filterByCategory')}</span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -249,150 +323,139 @@ export const MenuList = memo(() => {
               )}
             </div>
             {/* 性別フィルター */}
-            <div>
-              <div className="flex items-center gap-1 mt-4">
-                <span className="text-xs font-medium">性別で絞り込み</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Popover open={openGenderPopover} onOpenChange={setOpenGenderPopover}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={'secondary'}
-                      size="sm"
-                      className="border-dashed flex justify-between"
-                    >
-                      <span className="text-sm">
-                        {selectedGender
-                          ? selectedGender === 'male'
-                            ? '男性'
-                            : selectedGender === 'female'
-                              ? '女性'
-                              : '指定なし'
-                          : '性別を選択'}
-                      </span>
-                      <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="relative p-0 w-40" align="start">
-                    <div className="absolute top-0 right-0 flex items-center justify-end gap-2 p-2 z-10">
+            <div className="flex flex-col sm:flex-row gap-2 items-end md:items-start">
+              <div className="flex flex-col gap-2 items-start">
+                <div className="flex items-start gap-1">
+                  <span className="text-xs font-medium">性別で絞り込み</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Popover open={openGenderPopover} onOpenChange={setOpenGenderPopover}>
+                    <PopoverTrigger asChild>
                       <Button
-                        onClick={() => setOpenGenderPopover(false)}
-                        variant="outline"
-                        size="icon"
+                        variant={'secondary'}
+                        size="sm"
+                        className="border-dashed flex justify-between"
                       >
-                        <X className="h-4 w-4" />
+                        <span className="text-sm">
+                          {selectedGender
+                            ? selectedGender === 'male'
+                              ? '男性'
+                              : selectedGender === 'female'
+                                ? '女性'
+                                : '指定なし'
+                            : '性別を選択'}
+                        </span>
+                        <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
                       </Button>
-                    </div>
-                    <Command>
-                      <CommandList>
-                        <CommandGroup>
-                          {(['male', 'female', 'unselected'] as TargetGender[]).map((gender) => (
-                            <CommandItem
-                              key={gender}
-                              value={gender}
-                              onSelect={() => {
-                                toggleGender(gender)
-                                setOpenGenderPopover(false)
-                              }}
-                            >
-                              {selectedGender === gender && (
-                                <Check className="h-4 w-4 mr-2 text-primary" />
-                              )}
-                              <span>
-                                {gender === 'male'
-                                  ? '男性'
-                                  : gender === 'female'
-                                    ? '女性'
-                                    : '指定なし'}
-                              </span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-
-                {selectedGender && (
-                  <Button size="sm" className="h-9 px-2" onClick={() => setSelectedGender(null)}>
-                    <X className="h-4 w-4 mr-1" />
-                    クリア
-                  </Button>
-                )}
+                    </PopoverTrigger>
+                    <PopoverContent className="relative p-0 w-40" align="start">
+                      <div className="absolute top-0 right-0 flex items-center justify-end gap-2 p-2 z-10">
+                        <Button
+                          onClick={() => setOpenGenderPopover(false)}
+                          variant="outline"
+                          size="icon"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <Command>
+                        <CommandList>
+                          <CommandGroup>
+                            {(['male', 'female', 'unselected'] as TargetGender[]).map((gender) => (
+                              <CommandItem
+                                key={gender}
+                                value={gender}
+                                onSelect={() => {
+                                  toggleGender(gender)
+                                  setOpenGenderPopover(false)
+                                }}
+                              >
+                                {selectedGender === gender && (
+                                  <Check className="h-4 w-4 mr-2 text-primary" />
+                                )}
+                                <span>
+                                  {gender === 'male'
+                                    ? '男性'
+                                    : gender === 'female'
+                                      ? '女性'
+                                      : '指定なし'}
+                                </span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
-            </div>
-
-            <div>
-              {/* タイプフィルター */}
-              <div className="flex items-center gap-1 mt-4">
-                <span className="text-xs font-medium">タイプで絞り込み</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Popover open={openTypePopover} onOpenChange={setOpenTypePopover}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={'secondary'}
-                      size="sm"
-                      className="border-dashed flex justify-between"
-                    >
-                      <span className="text-sm">
-                        {selectedType
-                          ? selectedType === 'all'
-                            ? '全て'
-                            : selectedType === 'first_time'
-                              ? '初回'
-                              : 'リピーター'
-                          : 'タイプを選択'}
-                      </span>
-                      <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="relative p-0 w-40" align="start">
-                    <div className="absolute top-0 right-0 flex items-center justify-end gap-2 p-2 z-10">
-                      <Button
-                        onClick={() => setOpenTypePopover(false)}
-                        variant="outline"
-                        size="icon"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Command>
-                      <CommandList>
-                        <CommandGroup>
-                          {(['all', 'first_time', 'repeat'] as TargetType[]).map((type) => (
-                            <CommandItem
-                              key={type}
-                              value={type}
-                              onSelect={() => {
-                                toggleType(type)
-                                setOpenTypePopover(false)
-                              }}
-                            >
-                              {selectedType === type && (
-                                <Check className="h-4 w-4 mr-2 text-primary" />
-                              )}
-                              <span>
-                                {type === 'all'
-                                  ? '全て'
-                                  : type === 'first_time'
-                                    ? '初回'
-                                    : 'リピーター'}
-                              </span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-
-                {selectedType && (
-                  <Button size="sm" className="h-9 px-2" onClick={() => setSelectedType(null)}>
-                    <X className="h-4 w-4 mr-1" />
-                    クリア
-                  </Button>
-                )}
+              <div className="flex gap-2 items-end">
+                <div className="flex flex-col gap-2 items-start">
+                  {/* タイプフィルター */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-medium">タイプで絞り込み</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Popover open={openTypePopover} onOpenChange={setOpenTypePopover}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={'secondary'}
+                          size="sm"
+                          className="border-dashed flex justify-between"
+                        >
+                          <span className="text-sm">
+                            {selectedType
+                              ? selectedType === 'all'
+                                ? '全て'
+                                : selectedType === 'first_time'
+                                  ? '初回'
+                                  : 'リピーター'
+                              : 'タイプを選択'}
+                          </span>
+                          <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="relative p-0 w-40" align="start">
+                        <div className="absolute top-0 right-0 flex items-center justify-end gap-2 p-2 z-10">
+                          <Button
+                            onClick={() => setOpenTypePopover(false)}
+                            variant="outline"
+                            size="icon"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <Command>
+                          <CommandList>
+                            <CommandGroup>
+                              {(['all', 'first_time', 'repeat'] as TargetType[]).map((type) => (
+                                <CommandItem
+                                  key={type}
+                                  value={type}
+                                  onSelect={() => {
+                                    toggleType(type)
+                                    setOpenTypePopover(false)
+                                  }}
+                                >
+                                  {selectedType === type && (
+                                    <Check className="h-4 w-4 mr-2 text-primary" />
+                                  )}
+                                  <span>
+                                    {type === 'all'
+                                      ? '全て'
+                                      : type === 'first_time'
+                                        ? '初回'
+                                        : 'リピーター'}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -407,45 +470,10 @@ export const MenuList = memo(() => {
             </div>
           )}
         </div>
-
-        <div className="flex flex-col items-center gap-2">
-          <span className="text-xs font-medium">{t('messages.viewMode')}</span>
-          <div className="bg-muted rounded-md p-1 flex items-center">
-            <Button
-              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => setViewMode('grid')}
-            >
-              <Grid className="h-4 w-4" />
-              <span className="sr-only">{t('messages.gridView')}</span>
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => setViewMode('list')}
-            >
-              <List className="h-4 w-4" />
-              <span className="sr-only">{t('messages.listView')}</span>
-            </Button>
-          </div>
-        </div>
       </div>
 
       <div>
-        {' '}
-        {isLoadingData ? (
-          viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {renderSkeletons()}
-            </div>
-          ) : (
-            <div className="space-y-2">{renderSkeletons()}</div>
-          )
-        ) : (
-          renderMenus()
-        )}
+        {isLoadingData ? <div className="space-y-2">{renderSkeletons()}</div> : renderMenus()}
         {allMenus &&
           !selectedCategories.length &&
           !selectedGender &&
