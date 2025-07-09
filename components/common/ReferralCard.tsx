@@ -98,7 +98,7 @@ export default function ReferralCard() {
           >
             <CardContent className="p-5">
               <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row justify-between items-center">
                   <div className="flex flex-col">
                     <p className="text-xs text-muted-foreground mb-1">{t('yourReferralCode')}</p>
                     <div className="flex items-center gap-2">

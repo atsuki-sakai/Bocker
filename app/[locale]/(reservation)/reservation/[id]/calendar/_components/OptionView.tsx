@@ -284,7 +284,7 @@ export const OptionView = ({
               alt={selectedOption.name}
               width={1000}
               height={1000}
-              className="rounded-lg aspect-square object-cover max-h-96 max-w-96 mx-auto"
+              className="rounded-lg aspect-square object-cover mx-auto"
             />
           ) : null}
           <DialogHeader>
