@@ -68,10 +68,9 @@ export default function ReservationNotificationList() {
       ) : (
         <Accordion type="single" collapsible className="w-full overflow-x-auto">
           <AccordionItem value="notifications">
-            <div className="flex items-center gap-2 w-full">
+            <div className="flex justify-between items-center gap-2 w-full">
               <AccordionTrigger className="py-2 px-3 rounded-lg transition-colors hover:no-underline flex-1">
                 <div className="flex flex-col md:flex-row items-start md:items-center md:gap-2 w-full">
-                  <span className="text-sm font-medium">新規予約通知</span>
                   {notifications && notifications.length > 0 && (
                     <span className="px-2 py-0.5 rounded-full text-xs">
                       <strong className="text-base text-accent-2"> {notifications.length}</strong>{' '}
@@ -108,22 +107,24 @@ export default function ReservationNotificationList() {
                       </Button>
                     </div>
                     <div className="flex flex-col gap-1 w-full text-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs px-2 py-0.5 bg-accent-2-foreground text-accent-2 border border-accent-2 rounded-md">
-                          {convertReservationStatus(notification.status)}
-                        </span>
-                        <div className="text-sm text-muted-foreground">
-                          <span className="font-bold text-accent-2">
-                            {format(notification.start_time_unix, 'yyyy年MM月dd日 HH:mm')} ~{' '}
-                            {format(notification.end_time_unix, 'HH:mm')}
+                      <div className="flex flex-col md:flex-row  items-start md:items-center gap-2">
+                        <div className="flex gap-4 items-center">
+                          <span className="text-xs px-2 py-0.5 bg-accent-2-foreground text-accent-2 border border-accent-2 rounded-md">
+                            {convertReservationStatus(notification.status)}
+                          </span>
+                          <div className="text-sm text-muted-foreground">
+                            <span className="font-bold text-accent-2">
+                              {format(notification.start_time_unix, 'yyyy年MM月dd日 HH:mm')} ~{' '}
+                              {format(notification.end_time_unix, 'HH:mm')}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-muted-foreground mx-2">
+                            担当 - {notification.staff_name} / 顧客名 - {notification.customer_name}{' '}
+                            様
                           </span>
                         </div>
-                        <span className="text-sm font-medium text-muted-foreground mx-2">
-                          担当 - {notification.staff_name} /
-                        </span>
-                        <span className="text-sm font-medium">
-                          顧客名 - {notification.customer_name} 様
-                        </span>
                       </div>
                     </div>
                   </div>

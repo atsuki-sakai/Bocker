@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
 
 export function HeroSection() {
   const t = useTranslations('landing.hero')
@@ -79,23 +80,46 @@ export function HeroSection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.3 }}
                   transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
-                  className="mt-10 flex items-center gap-x-6"
+                  className="mt-10 flex items-center gap-x-6 w-full"
                 >
                   <Link
-                    href="#"
-                    className="rounded-md bg-accent-foreground border border-accent px-3.5 py-2.5 text-sm font-semibold text-accent shadow-xs hover:bg-link-foreground/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link-foreground"
+                    href="https://bocker-project.vercel.app/ja/reservation/v5799kb53q14k5tyf4y0kj636d7jhz8p"
+                    className="w-2/3"
                   >
-                    {t('cta.demo')}
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full text-lg font-bold text-accent"
+                    >
+                      {t('cta.demo')}
+                    </Button>
                   </Link>
                   <Link
-                    href="#"
+                    href="/sign-up"
                     className="text-sm/6 font-semibold text-foreground underline underline-offset-4 tracking-wide"
                   >
                     {t('cta.trial')} <span aria-hidden="true">→</span>
                   </Link>
                 </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.6 }}
+                  className="mt-5 flex items-center gap-x-6 w-full"
+                >
+                  <Link href="/contact" className="w-full">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full text-lg font-bold text-background bg-gradient-to-b from-accent to-neon hover:opacity-80 hover:text-background"
+                    >
+                      {t('cta.requestMaterial')}
+                    </Button>
+                  </Link>
+                </motion.div>
               </div>
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true, amount: 0.2 }}

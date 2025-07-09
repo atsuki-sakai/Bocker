@@ -17,7 +17,7 @@ export function Footer() {
     }, [])
 
     return (
-        <footer className="py-12 bg-background border-t">
+      <footer className="py-12 bg-background border-t">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-3">
@@ -58,7 +58,10 @@ export function Footer() {
                 </li>
                 <li>
                   {/* FIXME: デモページを作成する */}
-                  <Link href="/#" className="text-sm text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="https://bocker-project.vercel.app/ja/reservation/v5799kb53q14k5tyf4y0kj636d7jhz8p"
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                  >
                     {t('links.demo')}
                   </Link>
                 </li>
@@ -125,7 +128,7 @@ export function Footer() {
                 className="text-muted-foreground hover:text-foreground"
                 aria-label="Instagram"
               >
-               <Instagram className="size-5 text-pink-500" />
+                <Instagram className="size-5 text-pink-500" />
               </Link>
             </div>
           </div>

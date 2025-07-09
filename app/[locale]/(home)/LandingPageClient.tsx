@@ -10,8 +10,6 @@ import {
   CTASection,
   FAQ,
   SplashScreen,
-  Header,
-  Footer,
 } from './_components'
 
 export function LandingPageClient({ locale }: { locale: string }) {
@@ -26,7 +24,7 @@ export function LandingPageClient({ locale }: { locale: string }) {
     const lastShown = localStorage.getItem('bockerLastSplash')
     const now = Date.now()
     const oneHour = 60 * 60 * 1000
-    
+
     if (!lastShown || now - parseInt(lastShown) > oneHour) {
       setShowSplash(true)
       localStorage.setItem('bockerLastSplash', now.toString())
@@ -69,7 +67,6 @@ export function LandingPageClient({ locale }: { locale: string }) {
           visibility: showSplash ? 'hidden' : 'visible',
         }}
       >
-        <Header />
         <main className="flex flex-col min-h-screen bg-background text-foreground">
           <HeroSection />
           <FeatureSection />
@@ -79,7 +76,6 @@ export function LandingPageClient({ locale }: { locale: string }) {
           <FAQ locale={locale} />
           <HeaderSection />
         </main>
-        <Footer />
       </div>
     </>
   )

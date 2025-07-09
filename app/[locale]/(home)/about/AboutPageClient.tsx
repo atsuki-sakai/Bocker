@@ -4,9 +4,46 @@ import { useTranslations } from 'next-intl'
 import { CTASection } from '../_components/CTASection'
 import Image from 'next/image'
 import { TeamSection } from '../_components/TeamSection'
+import { motion } from 'framer-motion'
 
 export function AboutPageClient() {
   const t = useTranslations('aboutPage')
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.3,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: 'easeOut',
+      },
+    },
+  }
+
+  const imageVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.8,
+        ease: 'easeOut',
+        delay: 0.4,
+      },
+    },
+  }
 
   const story = [
     {
@@ -35,39 +72,56 @@ export function AboutPageClient() {
         <div className="bg-background py-24 sm:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-none">
-              <p className="text-base/7 font-semibold text-link-foreground">{t('subtitle')}</p>
-              <h1 className="mt-2 text-4xl font-semibold tracking-tight text-pretty text-primary sm:text-5xl">
+              <motion.p
+                variants={itemVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                className="text-base/7 font-semibold text-link-foreground"
+              >
+                {t('subtitle')}
+              </motion.p>
+              <motion.h1
+                variants={itemVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                className="mt-2 text-4xl font-semibold tracking-tight text-pretty text-primary sm:text-5xl"
+              >
                 {t('story.title')}
-              </h1>
-              <div className="mt-10 grid max-w-xl grid-cols-1 gap-8 text-base/7 text-primary lg:max-w-none lg:grid-cols-2">
-                <div>
-                  <p className="text-2xl font-bold">{story[0].title}</p>
-                  <p className="mt-8 text-sm text-muted-foreground">{story[0].description}</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{story[1].title}</p>
-                  <p className="mt-8 text-sm text-muted-foreground">{story[1].description}</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{story[2].title}</p>
-                  <p className="mt-8 text-sm text-muted-foreground">{story[2].description}</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{story[3].title}</p>
-                  <p className="mt-8 text-sm text-muted-foreground">{story[3].description}</p>
-                </div>
-              </div>
+              </motion.h1>
+              <motion.div
+                className="mt-10 grid max-w-xl grid-cols-1 gap-8 text-base/7 text-primary lg:max-w-none lg:grid-cols-2"
+                variants={containerVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+              >
+                {story.map((item, index) => (
+                  <motion.div key={index} variants={itemVariants}>
+                    <p className="text-2xl font-bold">{item.title}</p>
+                    <p className="mt-8 text-sm text-muted-foreground">{item.description}</p>
+                  </motion.div>
+                ))}
+              </motion.div>
             </div>
           </div>
           <div className="relative overflow-hidden pt-16 lg:pt-20">
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
-              <Image
-                width={1000}
-                height={1000}
-                alt=""
-                src="/assets/mockup/pc/dashboard.png"
-                className="mb-[-12%] rounded-xl shadow-2xl ring-1 ring-border"
-              />
+              <motion.div
+                variants={imageVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+              >
+                <Image
+                  width={1000}
+                  height={1000}
+                  alt=""
+                  src="/assets/mockup/pc/dashboard.png"
+                  className="mb-[-12%] rounded-xl shadow-2xl ring-1 ring-border"
+                />
+              </motion.div>
               <div aria-hidden="true" className="relative">
                 <div className="absolute -inset-x-20 bottom-0 bg-linear-to-t from-background pt-[7%]" />
               </div>

@@ -9,7 +9,7 @@ export function CTASection() {
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
       viewport={{ once: true, amount: 0.2 }}
-      className="bg-neon-foreground"
+      className="bg-gradient-to-b from-accent-foreground to-neon-foreground"
     >
       <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:flex lg:items-center lg:justify-between lg:px-8">
         <motion.h2

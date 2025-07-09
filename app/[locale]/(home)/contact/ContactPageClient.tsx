@@ -11,6 +11,13 @@ import { motion } from 'framer-motion'
 import { Mail, Clock, MessageCircle, Send, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -160,7 +167,7 @@ export function ContactPageClient({ translations }: { translations: TranslationT
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <section className="py-20 border-b">
+      <section className="py-20 border-b bg-gradient-to-b from-accent-foreground to-neon-foreground">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
             initial="hidden"
@@ -169,7 +176,7 @@ export function ContactPageClient({ translations }: { translations: TranslationT
             className="text-center space-y-4 max-w-3xl mx-auto"
           >
             <h1 className="text-2xl md:text-3xl font-bold">{translations.title}</h1>
-            <p className="text-base md:text-lg text-muted-foreground">{translations.subtitle}</p>
+            <p className="text-sm md:text-base">{translations.subtitle}</p>
           </motion.div>
         </div>
       </section>
@@ -243,14 +250,20 @@ export function ContactPageClient({ translations }: { translations: TranslationT
 
                     <div className="space-y-2">
                       <Label htmlFor="subject">{translations.form.fields.subject}</Label>
-                      <Input
-                        id="subject"
-                        name="subject"
+                      <Select
                         value={formData.subject}
-                        onChange={handleChange}
-                        placeholder={translations.form.placeholders.subject}
+                        onValueChange={(value) => setFormData({ ...formData, subject: value })}
                         required
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={translations.form.placeholders.subject} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="general">資料請求</SelectItem>
+                          <SelectItem value="support">導入サポート</SelectItem>
+                          <SelectItem value="other">その他</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-2">
@@ -318,7 +331,9 @@ export function ContactPageClient({ translations }: { translations: TranslationT
                   <CardContent>
                     <CardDescription className="mb-4">{translations.faq.cta}</CardDescription>
                     <Link href="/faq">
-                      <Button variant="outline">FAQ</Button>
+                      <Button size="sm" className="text-sm">
+                        FAQ
+                      </Button>
                     </Link>
                   </CardContent>
                 </Card>

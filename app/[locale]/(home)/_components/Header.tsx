@@ -84,6 +84,12 @@ export function Header() {
             >
               {t('nav.faq')}
             </Link>
+            <Link
+              href="/contact"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+            >
+              {t('nav.contact')}
+            </Link>
             <LanguageSwitcher />
             <ModeToggle />
             <Link href="/sign-up">
@@ -123,14 +129,14 @@ export function Header() {
               </div>
               <nav className="container py-4 px-4 space-y-3">
                 <Link
-                  href="#features"
+                  href="/features"
                   className="block text-sm font-medium text-muted-foreground hover:text-primary"
                   onClick={() => setMenuOpen(false)}
                 >
                   {t('nav.features')}
                 </Link>
                 <Link
-                  href="#pricing"
+                  href="/pricing"
                   className="block text-sm font-medium text-muted-foreground hover:text-primary"
                   onClick={() => setMenuOpen(false)}
                 >
