@@ -10,6 +10,7 @@ import { api } from '@/convex/_generated/api'
 import { ActiveCustomerType } from '@/convex/types'
 import { convertActiveCustomerType } from '@/convex/types'
 import { fetchQuery } from 'convex/nextjs'
+import { CouponErrorBoundary } from './CouponErrorBoundary'
 
 type CouponViewProps = {
   tenantId: Id<'tenant'>
@@ -20,7 +21,7 @@ type CouponViewProps = {
   selectedCoupon: Id<'coupon'> | null
 }
 
-export const CouponView = ({
+const CouponViewInner = ({
   tenantId,
   orgId,
   selectedMenus,
@@ -48,7 +49,6 @@ export const CouponView = ({
     active_only: true,
   })
 
-  console.log('couponsData', couponsData)
 
   useEffect(() => {
     const filterCoupons = async () => {
@@ -59,53 +59,59 @@ export const CouponView = ({
 
       setLoading(true)
 
-      // 並列でクーポン設定と除外メニューを取得
-      const couponChecks = await Promise.all(
-        couponsData.page.map(async (coupon) => {
-          // active_only=trueで取得しているので、is_activeチェックは不要
+      try {
+        // 並列でクーポン設定と除外メニューを取得
+        const couponChecks = await Promise.all(
+          couponsData.page.map(async (coupon) => {
+            // active_only=trueで取得しているので、is_activeチェックは不要
 
-          try {
-            // 除外メニューとクーポン設定を並列で取得
-            const [exclusionMenus, couponConfigData] = await Promise.all([
-              fetchQuery(api.coupon.exclusion_menu.query.list, {
-                tenant_id: tenantId,
-                org_id: orgId,
-                coupon_id: coupon._id,
-              }),
-              fetchQuery(api.coupon.config.query.findByCouponId, {
-                tenant_id: tenantId,
-                org_id: orgId,
-                coupon_id: coupon._id,
-              }),
-            ])
+            try {
+              // 除外メニューとクーポン設定を並列で取得
+              const [exclusionMenus, couponConfigData] = await Promise.all([
+                fetchQuery(api.coupon.exclusion_menu.query.list, {
+                  tenant_id: tenantId,
+                  org_id: orgId,
+                  coupon_id: coupon._id,
+                }),
+                fetchQuery(api.coupon.config.query.findByCouponId, {
+                  tenant_id: tenantId,
+                  org_id: orgId,
+                  coupon_id: coupon._id,
+                }),
+              ])
 
-            // 選択中のメニューが除外対象に含まれているかチェック
-            const hasExcludedMenu = selectedMenus.some((menu) =>
-              exclusionMenus.some((exclusion) => exclusion.menu_id === menu._id)
-            )
+              // 選択中のメニューが除外対象に含まれているかチェック
+              const hasExcludedMenu = selectedMenus.some((menu) =>
+                exclusionMenus.some((exclusion) => exclusion.menu_id === menu._id)
+              )
 
-            if (hasExcludedMenu) return { coupon, isValid: false }
+              if (hasExcludedMenu) return { coupon, isValid: false }
 
-            if (!couponConfigData) return { coupon, isValid: false }
+              if (!couponConfigData) return { coupon, isValid: false }
 
-            // 顧客タイプによるフィルタリング
-            const activeCustomerType = couponConfigData.active_customer_type
-            const isValidCustomerType =
-              activeCustomerType === 'all' || activeCustomerType === sessionCustomerType
+              // 顧客タイプによるフィルタリング
+              const activeCustomerType = couponConfigData.active_customer_type
+              const isValidCustomerType =
+                activeCustomerType === 'all' || activeCustomerType === sessionCustomerType
 
-            return { coupon, isValid: isValidCustomerType }
-          } catch (error) {
-            console.error('クーポンフィルタリングエラー:', error)
-            return { coupon, isValid: false }
-          }
-        })
-      )
+              return { coupon, isValid: isValidCustomerType }
+            } catch (error) {
+              console.error('クーポンフィルタリングエラー:', error)
+              return { coupon, isValid: false }
+            }
+          })
+        )
 
-      // 有効なクーポンのみフィルタ
-      const validCoupons = couponChecks.filter(({ isValid }) => isValid).map(({ coupon }) => coupon)
+        // 有効なクーポンのみフィルタ
+        const validCoupons = couponChecks.filter(({ isValid }) => isValid).map(({ coupon }) => coupon)
 
-      setAvailableCoupons(validCoupons)
-      setLoading(false)
+        setAvailableCoupons(validCoupons)
+      } catch (error) {
+        console.error('クーポン一覧の取得でエラーが発生しました:', error)
+        setAvailableCoupons([])
+      } finally {
+        setLoading(false)
+      }
     }
 
     filterCoupons()
@@ -113,25 +119,44 @@ export const CouponView = ({
 
   // 割引額を計算する関数
   const calculateDiscount = (coupon: Doc<'coupon'>, totalAmount: number) => {
-    if (coupon.discount_type === 'percentage') {
-      return Math.floor((totalAmount * (coupon.percentage_discount_value || 0)) / 100)
-    } else {
-      return coupon.fixed_discount_value || 0
+    try {
+      if (coupon.discount_type === 'percentage') {
+        const percentage = coupon.percentage_discount_value ?? 0
+        return Math.floor((totalAmount * percentage) / 100)
+      } else {
+        return coupon.fixed_discount_value ?? 0
+      }
+    } catch (error) {
+      console.error('割引額の計算でエラーが発生しました:', error)
+      return 0
     }
   }
 
   // メニュー合計金額
   const menuTotalPrice = selectedMenus.reduce((total: number, menu: Doc<'menu'>) => {
-    return total + (menu.sale_price ? menu.sale_price : menu.unit_price || 0)
+    try {
+      return total + (menu.sale_price ?? menu.unit_price ?? 0)
+    } catch (error) {
+      console.error('メニュー価格の計算でエラーが発生しました:', error, menu)
+      return total
+    }
   }, 0)
 
   const handleCouponSelect = (coupon: Doc<'coupon'>) => {
-    const discountAmount = calculateDiscount(coupon, menuTotalPrice)
-    onSelectCoupon(coupon, discountAmount)
+    try {
+      const discountAmount = calculateDiscount(coupon, menuTotalPrice)
+      onSelectCoupon(coupon, discountAmount)
+    } catch (error) {
+      console.error('クーポン選択でエラーが発生しました:', error)
+    }
   }
 
   const handleCouponDeselect = () => {
-    onSelectCoupon(null, 0)
+    try {
+      onSelectCoupon(null, 0)
+    } catch (error) {
+      console.error('クーポン選択解除でエラーが発生しました:', error)
+    }
   }
 
   if (loading) {
@@ -230,7 +255,7 @@ export const CouponView = ({
                             <Tag className="h-4 w-4 mr-1" />
                             {coupon.discount_type === 'percentage'
                               ? `${coupon.percentage_discount_value}%割引`
-                              : `¥${coupon.fixed_discount_value?.toLocaleString()}割引`}
+                              : `¥${(coupon.fixed_discount_value ?? 0).toLocaleString()}割引`}
                           </span>
                         </div>
                         <p className="text-sm text-primary font-medium mt-2">
@@ -251,5 +276,13 @@ export const CouponView = ({
         )}
       </div>
     </div>
+  )
+}
+
+export const CouponView = (props: CouponViewProps) => {
+  return (
+    <CouponErrorBoundary>
+      <CouponViewInner {...props} />
+    </CouponErrorBoundary>
   )
 }
