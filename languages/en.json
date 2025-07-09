@@ -2860,6 +2860,7 @@
       "pricing": "Pricing",
       "testimonials": "Testimonials",
       "faq": "FAQ",
+      "contact": "Contact",
       "about": "About",
       "demo": "Demo",
       "signUp": "Create Account",
@@ -2874,6 +2875,7 @@
       "cta": {
         "demo": "View Demo",
         "trial": "30-Day Free Trial",
+        "requestMaterial": "Request Materials",
         "disclaimer": "No cancellation fees, cancel anytime"
       },
       "tagline": "Simple and convenient salon reservations"
@@ -3373,8 +3375,8 @@
           "description": "We believed technology could solve these challenges at their root — and that belief led to the start of Bocker. We listened closely to salon owners and stylists, implementing only the features they truly needed. With a simple, intuitive UI and functionality tailored to real salon workflows, we built a product even non-tech-savvy users can easily adopt."
         },
         {
-          "title": "Trusted by over 3,000 salons nationwide",
-          "description": "Today, more than 3,000 salons across Japan use Bocker. We are proud to receive messages like: 'Our operations are more efficient,' 'Sales have improved,' and 'Our staff can focus more on providing great service.' These voices drive us forward."
+          "title": "Innovative technology for salon operations",
+          "description": "Bocker provides an innovative solution to streamline salon operations. Features like simplified reservation management, centralized customer data, and reduced staff workload address real salon needs."
         },
         {
           "title": "Growing together with the beauty industry",
