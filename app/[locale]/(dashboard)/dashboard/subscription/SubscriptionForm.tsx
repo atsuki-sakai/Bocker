@@ -247,6 +247,10 @@ export default function SubscriptionForm({
     }
   }, [createBillingPortal, tenant?.stripe_customer_id, tenantId, orgId, t])
 
+  // const handleMicroSubscribe = useCallback(() => {
+  //   handleSubscribe('MICRO', billingPeriod)
+  // }, [handleSubscribe, billingPeriod])
+
   // 各プラン用のサブスクリプションハンドラをメモ化
   const handleLiteSubscribe = useCallback(() => {
     handleSubscribe('LITE', billingPeriod)
@@ -298,6 +302,32 @@ export default function SubscriptionForm({
 
       {/* プラン一覧 */}
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Micro プラン */}
+        {/* <PlanCard
+          title={t('microPlan')}
+          description={t('microPlanDescription')}
+          price={
+            billingPeriod === 'month'
+              ? (SUBSCRIPTION_PLANS.MICRO.monthly.price ?? 0)
+              : (SUBSCRIPTION_PLANS.MICRO.yearly.price ?? 0)
+          }
+          savingPercent={
+            billingPeriod === 'year'
+              ? (Number(SUBSCRIPTION_PLANS.MICRO.yearly.savingPercent) ?? 0)
+              : undefined
+          }
+          features={SUBSCRIPTION_PLANS.MICRO.features}
+          currentPlanName={currentPlanName}
+          planName="MICRO"
+          billingPeriod={billingPeriod}
+          currentBillingPeriod={subscription?.billing_period as BillingPeriod | undefined}
+          isActive={isActive}
+          onSubscribeAction={handleMicroSubscribe}
+          onPortalAction={handleBillingPortal}
+          isSubmitting={isSubmitting}
+          highlightColor="from-palette-2-foreground to-palette-2-foreground"
+        /> */}
+
         {/* Lite プラン */}
         <PlanCard
           title={t('litePlan')}

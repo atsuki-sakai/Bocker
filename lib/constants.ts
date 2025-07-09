@@ -140,6 +140,15 @@ export const SUBSCRIPTION_PLANS = {
     id: 'micro',
     name: 'Micro',
     features: ['features.micro.1', 'features.micro.2', 'features.micro.3', 'features.micro.4'],
+    monthly: {
+      priceId: getEnv('NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID'),  // Set dynamically in runtime
+      price: PLAN_MONTHLY_PRICES.MICRO,
+    },
+    yearly: {
+      priceId: getEnv('NEXT_PUBLIC_MICRO_YEARLY_PRC_ID'),  // Set dynamically in runtime
+      price: PLAN_YEARLY_PRICES.MICRO.price,
+      savingPercent: PLAN_YEARLY_PRICES.MICRO.savingPercent,
+    },
   },
   LITE: {
     id: 'lite',
@@ -156,11 +165,11 @@ export const SUBSCRIPTION_PLANS = {
       'features.lite.9',
     ],
     monthly: {
-      priceId: '',  // Set dynamically in runtime
+      priceId: getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID'),  // Set dynamically in runtime
       price: PLAN_MONTHLY_PRICES.LITE,
     },
     yearly: {
-      priceId: '',  // Set dynamically in runtime
+      priceId: getEnv('NEXT_PUBLIC_LITE_YEARLY_PRC_ID'),  // Set dynamically in runtime
       price: PLAN_YEARLY_PRICES.LITE.price,
       savingPercent: PLAN_YEARLY_PRICES.LITE.savingPercent,
     },
