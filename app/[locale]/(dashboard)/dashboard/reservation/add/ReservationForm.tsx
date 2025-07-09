@@ -1001,8 +1001,8 @@ export default function ReservationForm() {
                             : 'border-border hover:border-accent-2'
                         )}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex flex-col justify-start items-start gap-4">
+                        <div className="flex flex-col md:flex-row items-start justify-start">
+                          <div className="flex mdflex-col justify-start items-start gap-4">
                             {menu.images && menu.images[0]?.original_url ? (
                               <Image
                                 src={menu.images[0].original_url}
@@ -1037,7 +1037,7 @@ export default function ReservationForm() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 min-w-18">
+                          <div className="flex items-center justify-end w-full gap-2 min-w-18">
                             <Button
                               type="button"
                               size="icon"
