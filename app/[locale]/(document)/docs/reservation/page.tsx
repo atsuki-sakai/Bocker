@@ -86,8 +86,8 @@ export default function ReservationManualPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-muted rounded-lg">
-            <Calendar className="h-6 w-6 text-primary" />
+          <div className="p-2 bg-neon-foreground rounded-lg">
+            <Calendar className="h-6 w-6 text-neon" />
           </div>
           <div>
             <h1 className="text-xl md:text-3xl font-bold text-foreground">予約管理機能</h1>

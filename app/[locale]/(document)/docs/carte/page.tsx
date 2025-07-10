@@ -1,17 +1,88 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  FileText, 
-  Camera, 
-  Mic, 
-  Search, 
-  Edit3,
-  Star,
-  Info,
-  Eye,
-} from 'lucide-react';
-import { Support, FaqCard, ScenarioCard } from '@/app/[locale]/(document)/_components'
+import { FileText, Camera, Mic, Search, Edit3, Star, Info, Eye, LineChart } from 'lucide-react'
+import {
+  Support,
+  FaqCard,
+  ScenarioCard,
+  ErrorWarningInfoCard,
+} from '@/app/[locale]/(document)/_components'
+
+const scenarioItems = [
+  {
+    title: 'シナリオA: 新規顧客の初回施術',
+    description:
+      '予約受付時に顧客情報を登録 → 来店時にカルテ基本情報を作成 → 施術後、カルテ詳細を記録',
+    helpText:
+      'カウンセリングで肌質・髪質を確認し、アレルギーの有無を聞き取り。施術後、ビフォーアフター写真を撮影（お客様の許可を得て）し、使用した薬剤や施術内容をメモに記録。',
+  },
+  {
+    title: 'シナリオB: リピーター顧客の施術',
+    description: '来店前に過去のカルテを確認 → 施術中に気づいた点をメモ → 施術後の状態を写真で記録',
+    helpText:
+      '前回の施術内容・要望を把握し、アレルギー情報を再確認。音声入力で手が塞がっていても記録可能。前回との比較が可能な写真記録。',
+  },
+  {
+    title: 'シナリオC: スタッフ間の情報共有',
+    description:
+      '担当変更時に過去のカルテを確認 → 重要な注意事項を把握 → 顧客の好みや要望を引き継ぎ',
+    helpText: 'アレルギー等の重要な注意事項を把握し、顧客の好みや要望を新しい担当者に引き継ぎ。',
+  },
+]
+
+const errorItems = [
+  {
+    title: '写真のアップロードに失敗しました',
+    description: 'ファイルサイズが大きすぎるか、対応していない形式です',
+  },
+  {
+    title: '音声入力が認識されません',
+    description: 'マイクの権限を確認し、静かな環境で再度お試しください',
+  },
+  {
+    title: '保存に失敗しました',
+    description: 'ネットワーク接続を確認し、再度保存してください',
+  },
+]
+
+const warningItems = [
+  {
+    title: 'アレルギー情報は慎重に記録してください',
+    description: '重要な安全情報のため、必ず確認してから記録してください',
+  },
+  {
+    title: '複数スタッフでの同時編集にご注意',
+    description: '最後に保存した内容で上書きされます',
+  },
+  {
+    title: '写真は自動的に圧縮されます',
+    description: '元画像は高画質で撮影してください',
+  },
+]
+
+const faqs = [
+  {
+    question: 'LITEプランでもカルテ機能は使えますか？',
+    answer:
+      '基本的なカルテ機能（肌質・髪質・アレルギー・病歴・テキストメモ）は全プランで利用可能です。写真アップロードと音声入力はPROプラン以上で利用できます。',
+  },
+  {
+    question: '過去のカルテを一括でダウンロードできますか？',
+    answer:
+      '現在、一括ダウンロード機能は提供していません。個別の施術記録は画面から確認・印刷可能です。',
+  },
+  {
+    question: '複数スタッフで同時編集できますか？',
+    answer:
+      '同じカルテを複数人で同時編集すると、最後に保存した内容で上書きされます。編集時は他スタッフと調整してください。',
+  },
+  {
+    question: '写真の画質が悪くなることがあります',
+    answer:
+      'アップロード時に自動的に圧縮処理が行われます。元画像は高画質で撮影し、重要な部分が見えるようにしてください。',
+  },
+]
 
 export default function CarteManualPage() {
   return (
@@ -19,8 +90,8 @@ export default function CarteManualPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-muted rounded-lg">
-            <FileText className="h-6 w-6 text-primary" />
+          <div className="p-2 bg-neon-foreground rounded-lg">
+            <FileText className="h-6 w-6 text-neon" />
           </div>
           <div>
             <h1 className="text-xl md:text-3xl font-bold text-foreground">カルテ管理機能</h1>
@@ -38,15 +109,10 @@ export default function CarteManualPage() {
       </div>
 
       {/* 機能概要 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Info className="h-5 w-5 text-primary" />
-            <span>機能概要</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-foreground/90">
+      <div>
+        <h2 className="text-xl md:text-3xl font-bold text-foreground mb-2">機能概要</h2>
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
             カルテ機能は、美容サロンで顧客の施術履歴や体質情報を一元管理するための機能です。
             顧客一人ひとりの肌質・髪質・アレルギー情報などの基本情報と、各施術時の詳細記録（写真・メモ・要望）を管理できます。
           </p>
@@ -84,17 +150,15 @@ export default function CarteManualPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 bg-link rounded-lg p-4">
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
             <Star className="h-4 w-4 text-link-foreground" />
-            <div className="text-xs md:text-sm text-link-foreground">
-              <strong>LITEプラン:</strong>{' '}
-              基本的なカルテ機能（肌質・髪質・アレルギー・病歴・テキストメモ）
-              <br />
-              <strong>PROプラン:</strong> 写真アップロード・音声入力機能も利用可能
-            </div>
+            <p className="text-link-foreground text-xs md:text-sm">
+              主要機能:
+              基本的なカルテ機能（肌質・髪質・アレルギー・病歴・テキストメモ）、写真アップロード・音声入力機能（PROプラン以上）
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* 画面構成 */}
       <Card>
@@ -102,9 +166,9 @@ export default function CarteManualPage() {
           <CardTitle>画面構成と導線</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <h4 className="font-semibold text-foreground mb-3">カルテ機能の画面一覧</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold text-foreground mb-3">カルテ機能の画面一覧</h4>
               <div className="space-y-3">
                 <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
                   <Search className="h-5 w-5 text-link-foreground" />
@@ -120,8 +184,6 @@ export default function CarteManualPage() {
                     <p className="text-xs text-link-foreground">/dashboard/carte/[customer_id]</p>
                   </div>
                 </div>
-              </div>
-              <div className="space-y-3">
                 <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
                   <Edit3 className="h-5 w-5 text-link-foreground" />
                   <div>
@@ -131,13 +193,39 @@ export default function CarteManualPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3 p-3 bg-link rounded-lg w-full overflow-hidden">
+                <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
                   <FileText className="h-5 w-5 text-link-foreground" />
                   <div>
                     <p className="font-semibold text-link-foreground">施術カルテ詳細画面</p>
-                    <p className="w-full block text-xs text-link-foreground truncate">
+                    <p className="text-xs text-link-foreground">
                       /dashboard/carte/[customer_id]/reservation/[reservation_id]
                     </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground mb-3">カルテ機能の特徴</h4>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3 p-3 bg-neon-foreground rounded-lg">
+                  <Camera className="h-5 w-5 text-neon" />
+                  <div>
+                    <p className="font-semibold text-neon">写真記録機能</p>
+                    <p className="text-xs md:text-sm text-neon">施術前後の写真を最大4枚まで保存</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-neon-foreground rounded-lg">
+                  <Mic className="h-5 w-5 text-neon" />
+                  <div>
+                    <p className="font-semibold text-neon">音声入力機能</p>
+                    <p className="text-xs md:text-sm text-neon">施術中でも音声でメモを記録</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-neon-foreground rounded-lg">
+                  <LineChart className="h-5 w-5 text-neon" />
+                  <div>
+                    <p className="font-semibold text-neon">履歴管理</p>
+                    <p className="text-xs md:text-sm text-neon">過去の施術履歴を一元管理</p>
                   </div>
                 </div>
               </div>
@@ -243,6 +331,13 @@ export default function CarteManualPage() {
               </div>
             </div>
           </div>
+
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 ">
+            <Info className="h-6 w-6 text-link-foreground" />
+            <p className="text-xs md:text-sm text-link-foreground">
+              基本情報は一度作成すると、全ての施術で参照できます。アレルギー情報は特に重要ですので、正確に記録してください。
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -326,58 +421,17 @@ export default function CarteManualPage() {
       </Card>
 
       {/* 利用シナリオ */}
-      <ScenarioCard
-        scenarioItems={[
-          {
-            title: 'シナリオA: 新規顧客の初回施術',
-            description:
-              '予約受付時に顧客情報を登録 → 来店時にカルテ基本情報を作成 → 施術後、カルテ詳細を記録',
-            helpText:
-              'カウンセリングで肌質・髪質を確認し、アレルギーの有無を聞き取り。施術後、ビフォーアフター写真を撮影（お客様の許可を得て）し、使用した薬剤や施術内容をメモに記録。',
-          },
-          {
-            title: 'シナリオB: リピーター顧客の施術',
-            description:
-              '来店前に過去のカルテを確認 → 施術中に気づいた点をメモ → 施術後の状態を写真で記録',
-            helpText:
-              '前回の施術内容・要望を把握し、アレルギー情報を再確認。音声入力で手が塞がっていても記録可能。前回との比較が可能な写真記録。',
-          },
-          {
-            title: 'シナリオC: スタッフ間の情報共有',
-            description:
-              '担当変更時に過去のカルテを確認 → 重要な注意事項を把握 → 顧客の好みや要望を引き継ぎ',
-            helpText:
-              'アレルギー等の重要な注意事項を把握し、顧客の好みや要望を新しい担当者に引き継ぎ。',
-          },
-        ]}
+      <ScenarioCard scenarioItems={scenarioItems} />
+
+      {/* エラー・注意事項 */}
+      <ErrorWarningInfoCard
+        mainTitle="エラー・注意事項"
+        errorItems={errorItems}
+        warningItems={warningItems}
       />
 
-      {/* よくある質問 */}
-      <FaqCard
-        title="よくある質問"
-        faqs={[
-          {
-            question: 'Q: LITEプランでもカルテ機能は使えますか？',
-            answer:
-              'A: 基本的なカルテ機能（肌質・髪質・アレルギー・病歴・テキストメモ）は全プランで利用可能です。写真アップロードと音声入力はPROプラン以上で利用できます。',
-          },
-          {
-            question: 'Q: 過去のカルテを一括でダウンロードできますか？',
-            answer:
-              'A: 現在、一括ダウンロード機能は提供していません。個別の施術記録は画面から確認・印刷可能です。',
-          },
-          {
-            question: 'Q: 複数スタッフで同時編集できますか？',
-            answer:
-              'A: 同じカルテを複数人で同時編集すると、最後に保存した内容で上書きされます。編集時は他スタッフと調整してください。',
-          },
-          {
-            question: 'Q: 写真の画質が悪くなることがあります',
-            answer:
-              'A: アップロード時に自動的に圧縮処理が行われます。元画像は高画質で撮影し、重要な部分が見えるようにしてください。',
-          },
-        ]}
-      />
+      {/* FAQ */}
+      <FaqCard title="よくある質問" faqs={faqs} />
 
       {/* サポート情報 */}
       <Support />

@@ -31,8 +31,8 @@ export default function SettingManualPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-muted rounded-lg">
-            <Settings className="h-6 w-6 text-primary" />
+          <div className="p-2 bg-neon-foreground rounded-lg">
+            <Settings className="h-6 w-6 text-neon" />
           </div>
           <div>
             <h1 className="text-xl md:text-3xl font-bold text-foreground">店舗設定機能</h1>
@@ -50,14 +50,9 @@ export default function SettingManualPage() {
       </div>
 
       {/* 機能概要 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Info className="h-5 w-5 text-primary" />
-            <span>機能概要</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div>
+        <h2 className="text-xl md:text-3xl font-bold text-foreground mb-2">機能概要</h2>
+        <div className="space-y-4">
           <p className="text-muted-foreground">
             店舗の基本設定機能は、Bocker（ブッカー）でサロン運営に必要な基本情報、営業時間、予約ルール、LINE連携、決済設定などを一元管理するための中核機能です。
             この設定が適切に行われることで、お客様への適切な予約サービスの提供が可能になります。
@@ -95,8 +90,16 @@ export default function SettingManualPage() {
               </ul>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+            <Settings className="h-4 w-4 text-link-foreground" />
+            <p className="text-link-foreground text-xs md:text-sm">
+              主要機能:
+              6つのタブ構成（基本設定、API設定、予約設定、営業時間、休業日設定、決済設定）
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* 設定タブ構成 */}
       <Card>
@@ -492,68 +495,68 @@ export default function SettingManualPage() {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+              <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
                 1
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">初回連携</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   「Stripeと連携する」ボタンをクリックして、Stripeのオンボーディング画面へ遷移
                 </p>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+              <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
                 2
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">必要情報の入力</h4>
                 <div className="mt-2 space-y-2">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm flex items-center space-x-2">
-                      <Building className="h-4 w-4 text-primary" />
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground flex items-center space-x-2">
+                      <Building className="h-4 w-4 text-link-foreground" />
                       <span>ビジネス情報</span>
                     </p>
-                    <p className="text-sm text-muted-foreground">店舗名、所在地、業種</p>
+                    <p className="text-xs md:text-sm text-link-foreground">店舗名、所在地、業種</p>
                   </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm flex items-center space-x-2">
-                      <Shield className="h-4 w-4 text-primary" />
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground flex items-center space-x-2">
+                      <Shield className="h-4 w-4 text-link-foreground" />
                       <span>運営責任者情報</span>
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs md:text-sm text-link-foreground">
                       本人確認書類（鮮明な画像を用意）
                     </p>
                   </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm flex items-center space-x-2">
-                      <DollarSign className="h-4 w-4 text-primary" />
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground flex items-center space-x-2">
+                      <DollarSign className="h-4 w-4 text-link-foreground" />
                       <span>振込先銀行口座情報</span>
                     </p>
-                    <p className="text-sm text-muted-foreground">売上金の振込先口座</p>
+                    <p className="text-xs md:text-sm text-link-foreground">売上金の振込先口座</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+              <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
                 3
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">審査と有効化</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   情報送信後、Stripeの審査（通常数分〜数時間）を経て、承認後に自動的にカード決済が利用可能になります
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="p-4 bg-success/10 rounded-lg">
-            <h4 className="font-semibold text-foreground mb-2">決済手数料</h4>
-            <p className="text-sm text-muted-foreground">
-              <strong>売上の4% + 40円/件</strong>（振込手数料と月額固定費は無料）
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+            <CreditCard className="h-4 w-4 text-link-foreground" />
+            <p className="text-link-foreground text-xs md:text-sm">
+              決済手数料: 売上の4% + 40円/件（振込手数料と月額固定費は無料）
             </p>
           </div>
 

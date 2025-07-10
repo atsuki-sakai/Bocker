@@ -1,17 +1,21 @@
 
 
-import { ReactNode } from 'react';
-import { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+'use client'
+
+import { ReactNode } from 'react'
+import { Inter } from 'next/font/google'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   Users,
   Calendar,
+  BookIcon,
   FileText,
   Gift,
   Ticket,
@@ -19,14 +23,10 @@ import {
   ShoppingCart,
   Menu as MenuIcon,
   type LucideIcon,
+  Home,
 } from 'lucide-react'
 
 const inter = Inter({ subsets: ['latin'] })
-
-export const metadata: Metadata = {
-  title: 'Bocker操作ガイド',
-  description: 'Bocker（ブッカー）美容サロン向け予約管理システムの操作ガイド',
-}
 
 interface DocSection {
   title: string
@@ -37,6 +37,12 @@ interface DocSection {
 }
 
 const docSections: DocSection[] = [
+  {
+    title: 'ドキュメント',
+    href: '/docs',
+    icon: BookIcon,
+    description: 'Bockerの操作ドキュメント',
+  },
   {
     title: '予約管理',
     href: '/docs/reservation',
@@ -102,30 +108,45 @@ const docSections: DocSection[] = [
   },
 ]
 
-const SidebarContent = () => (
-  <div className="sticky top-24">
-    <nav className="space-y-2">
-      <h2 className="text-lg font-semibold text-foreground mb-4">機能別ガイド</h2>
-      {docSections.map((section) => (
-        <a
-          key={section.href}
-          href={section.href}
-          className="group flex items-center justify-between p-3 rounded-lg text-sm text-muted-foreground hover:text-accent-foreground hover:bg-accent transition-colors"
-        >
-          <div className="flex items-center space-x-3">
-            <section.icon className="h-5 w-5" />
-            <span className="font-medium">{section.title}</span>
-          </div>
-          {section.badge && (
-            <Badge variant="secondary" className="text-xs border-border border">
-              {section.badge}
-            </Badge>
-          )}
-        </a>
-      ))}
-    </nav>
-  </div>
-)
+const SidebarContent = () => {
+  const pathname = usePathname()
+
+  console.log(pathname)
+
+  return (
+    <div className="sticky top-24">
+      <nav className="space-y-2">
+        <h2 className="text-lg font-semibold text-foreground mb-4">機能別ガイド</h2>
+        {docSections.map((section) => {
+          const currentPath = pathname.split('/')[3]
+          const isActive = currentPath === section.href.split('/')[2]
+          return (
+            <Link
+              key={section.href}
+              href={section.href}
+              className={cn(
+                'group flex items-center justify-between p-3 rounded-lg text-sm transition-colors',
+                isActive
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:opacity-80'
+              )}
+            >
+              <div className="flex items-center space-x-3">
+                <section.icon className={cn('h-5 w-5', isActive && 'text-accent-foreground')} />
+                <span className="font-medium">{section.title}</span>
+              </div>
+              {section.badge && (
+                <Badge variant="secondary" className="text-xs border-border border">
+                  {section.badge}
+                </Badge>
+              )}
+            </Link>
+          )
+        })}
+      </nav>
+    </div>
+  )
+}
 
 interface DocsLayoutProps {
   children: ReactNode
@@ -146,9 +167,11 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
                 </h1>
               </div>
             </div>
-            <div className="hidden md:flex items-center space-x-4 text-sm text-muted-foreground">
-              <span>美容サロン向け予約管理システム</span>
-            </div>
+            <Button variant="outline" size="icon">
+              <Link href="/sign-in">
+                <Home className="h-6 w-6" />
+              </Link>
+            </Button>
             <div className="lg:hidden">
               <Sheet>
                 <SheetTrigger asChild>
@@ -194,8 +217,11 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
             <p>© 2025 Bocker. All rights reserved.</p>
             <p className="mt-2">
               お困りの際は{' '}
-              <a href="mailto:support@bocker.jp" className="text-primary hover:text-primary/90">
-                support@bocker.jp
+              <a
+                href="mailto:bocker.help@gmail.com"
+                className="text-link-foreground hover:opacity-80 font-semibold underline"
+              >
+                bocker.help@gmail.com
               </a>{' '}
               までお問い合わせください
             </p>

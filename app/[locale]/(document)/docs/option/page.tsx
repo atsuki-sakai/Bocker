@@ -1,6 +1,8 @@
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+'use client'
+
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
 import {
   ShoppingCart,
   Plus,
@@ -10,7 +12,6 @@ import {
   Image as ImageIcon,
   Star,
   Info,
-  AlertTriangle,
   Tag,
   Edit3,
   TrendingUp,
@@ -28,8 +29,8 @@ export default function OptionManualPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-muted rounded-lg">
-            <ShoppingCart className="h-6 w-6 text-primary" />
+          <div className="p-2 bg-neon-foreground rounded-lg">
+            <ShoppingCart className="h-6 w-6 text-neon" />
           </div>
           <div>
             <h1 className="text-xl md:text-3xl font-bold text-foreground">オプション管理機能</h1>
@@ -47,15 +48,10 @@ export default function OptionManualPage() {
       </div>
 
       {/* 機能概要 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Info className="h-5 w-5 text-primary" />
-            <span>機能概要</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-foreground/90">
+      <div>
+        <h2 className="text-xl md:text-3xl font-bold text-foreground mb-2">機能概要</h2>
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
             オプション機能は、美容サロンがメインメニューに追加できる「オプションサービス」や「物販商品」を管理する機能です。
             施術時間を設定することで追加施術サービスとして、施術時間を0分に設定すると物販商品として利用できる柔軟な機能です。
           </p>
@@ -99,8 +95,8 @@ export default function OptionManualPage() {
               プラン別上限: LITEプラン: 最大5個 / PROプラン: 最大10個
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* 画面構成 */}
       <Card>
@@ -116,14 +112,26 @@ export default function OptionManualPage() {
                   <ShoppingCart className="h-5 w-5 text-link-foreground" />
                   <div>
                     <p className="font-semibold text-link-foreground">オプション一覧画面</p>
-                    <p className="text-xs text-link-foreground">/dashboard/option</p>
+                    <Link
+                      target="_blank"
+                      href="/dashboard/option"
+                      className="text-xs text-link-foreground underline"
+                    >
+                      /dashboard/option
+                    </Link>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
                   <Plus className="h-5 w-5 text-link-foreground" />
                   <div>
                     <p className="font-semibold text-link-foreground">オプション追加画面</p>
-                    <p className="text-xs text-link-foreground">/dashboard/option/add</p>
+                    <Link
+                      target="_blank"
+                      href="/dashboard/option/add"
+                      className="text-xs text-link-foreground underline"
+                    >
+                      /dashboard/option/add
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -178,12 +186,12 @@ export default function OptionManualPage() {
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">画像のアップロード（任意）</h4>
                 <div className="mt-2 space-y-2">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm flex items-center space-x-2">
-                      <ImageIcon className="h-4 w-4 text-primary" />
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground flex items-center space-x-2">
+                      <ImageIcon className="h-4 w-4 text-link-foreground" />
                       <span>推奨サイズ：正方形（1:1）の画像</span>
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs md:text-sm text-link-foreground">
                       対応形式：JPEG、PNG、WebP（自動圧縮・最適化）
                     </p>
                   </div>
@@ -234,16 +242,16 @@ export default function OptionManualPage() {
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">価格設定</h4>
                 <div className="mt-2 space-y-2">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm flex items-center space-x-2">
-                      <DollarSign className="h-4 w-4 text-primary" />
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground flex items-center space-x-2">
+                      <DollarSign className="h-4 w-4 text-link-foreground" />
                       <span>通常価格（必須）</span>
                     </p>
-                    <p className="text-sm text-muted-foreground">例：3000円</p>
+                    <p className="text-xs md:text-sm text-link-foreground">例：3000円</p>
                   </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm">セール価格（任意）</p>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground">セール価格（任意）</p>
+                    <p className="text-xs md:text-sm text-link-foreground">
                       通常価格より低い金額を設定（空欄可）
                     </p>
                   </div>
@@ -258,12 +266,12 @@ export default function OptionManualPage() {
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">施術時間の設定</h4>
                 <div className="mt-2 space-y-2">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-primary" />
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground flex items-center space-x-2">
+                      <Clock className="h-4 w-4 text-link-foreground" />
                       <span>スタッフが稼働する施術時間（必須）</span>
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs md:text-sm text-link-foreground">
                       物販：0分 / 施術サービス：5分刻みで最大360分
                     </p>
                   </div>
@@ -278,22 +286,26 @@ export default function OptionManualPage() {
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">タグ設定・説明文・公開設定</h4>
                 <div className="mt-2 space-y-2">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm flex items-center space-x-2">
-                      <Tag className="h-4 w-4 text-primary" />
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground flex items-center space-x-2">
+                      <Tag className="h-4 w-4 text-link-foreground" />
                       <span>タグ（任意、最大5つ）</span>
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs md:text-sm text-link-foreground">
                       例：「人気」「期間限定」「新商品」
                     </p>
                   </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm">説明文（必須、最大1000文字）</p>
-                    <p className="text-sm text-muted-foreground">効果や特徴、使用方法などを記載</p>
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground">
+                      説明文（必須、最大1000文字）
+                    </p>
+                    <p className="text-xs md:text-sm text-link-foreground">
+                      効果や特徴、使用方法などを記載
+                    </p>
                   </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm">公開設定</p>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground">公開設定</p>
+                    <p className="text-xs md:text-sm text-link-foreground">
                       ON: 予約画面に表示 / OFF: 非表示
                     </p>
                   </div>
@@ -316,13 +328,12 @@ export default function OptionManualPage() {
             </div>
           </div>
 
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>重要:</strong>{' '}
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4">
+            <Info className="h-6 w-6 text-link-foreground" />
+            <p className="text-xs md:text-sm text-link-foreground">
               在庫が0になると自動的に選択不可になります。物販商品は実際の在庫数を正確に設定してください。
-            </AlertDescription>
-          </Alert>
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -389,7 +400,9 @@ export default function OptionManualPage() {
         ]}
       />
 
+      {/* エラー・注意事項 */}
       <ErrorWarningInfoCard
+        mainTitle="エラー・注意事項"
         errorItems={[
           {
             title: '「セール価格は通常価格より低く設定してください」',
@@ -407,15 +420,19 @@ export default function OptionManualPage() {
         warningItems={[
           {
             title: '物販商品は定期的に在庫数を更新しましょう',
+            description: '在庫数の正確な管理は売上機会の最大化に繋がります',
           },
           {
             title: '施術時間の設定ミスは予約システムに影響します',
+            description: '0分は物販商品、それ以外は施術サービスとして認識されます',
           },
           {
             title: '価格設定は保存前に必ず再確認',
+            description: 'セール価格は通常価格より低く設定してください',
           },
           {
             title: '高品質な画像で商品・サービスの魅力を伝えましょう',
+            description: '正方形（1:1）の画像が推奨されます',
           },
         ]}
       />
