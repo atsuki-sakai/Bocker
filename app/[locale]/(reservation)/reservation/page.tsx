@@ -8,7 +8,6 @@ import { useLineAuthHandler } from '@/hooks/useLineAuthHandler'
 import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
 import { Card, CardContent } from '@/components/ui/card'
-import { Processing } from '@/components/common/Processing'
 import { Button } from '@/components/ui/button'
 import { Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
@@ -64,6 +63,8 @@ export default function ReserveRedirectPage() {
           if (stateData?.orgId && stateData?.tenantId) {
             setOrgId(stateData.orgId)
             setTenantId(stateData.tenantId)
+            // 組織IDが取得できた場合、直接calendarページに遷移
+            router.push(`/${locale}/reservation/${stateData.orgId}/calendar`)
             return
           }
         }
@@ -83,6 +84,8 @@ export default function ReserveRedirectPage() {
           if (existOrg) {
             setOrgId(pathOrgId as Id<'organization'>)
             setTenantId(existOrg.tenant_id)
+            // 組織IDが取得できた場合、直接calendarページに遷移
+            router.push(`/${locale}/reservation/${pathOrgId}/calendar`)
           }
         }
       } catch (error) {
@@ -92,7 +95,7 @@ export default function ReserveRedirectPage() {
     }
 
     getOrgInfo()
-  }, [showErrorToast])
+  }, [showErrorToast, router, locale])
 
   if (!orgId || !tenantId || isProcessingLineCallback) {
     return <Loading />
@@ -141,5 +144,5 @@ export default function ReserveRedirectPage() {
     )
   }
 
-  return <Processing />
+  return <Loading />
 }

@@ -54,6 +54,16 @@ export default function ReservePage() {
       : 'skip'
   )
 
+  const apiConfig = useQuery(
+    api.organization.api_config.query.findByTenantAndOrg,
+    tenantId
+      ? {
+          tenant_id: tenantId,
+          org_id: orgId,
+        }
+      : 'skip'
+  )
+
   const {
     register,
     handleSubmit,
@@ -65,9 +75,19 @@ export default function ReservePage() {
   // 現在のメール入力値を監視
   const watchedEmail = watch('email')
 
+  // LINE APIが完全に設定されているかを判定
+  const isLineApiConfigured = useMemo(() => {
+    if (!apiConfig) return false
+    return !!(
+      apiConfig.liff_id &&
+      apiConfig.line_access_token &&
+      apiConfig.line_channel_id &&
+      apiConfig.line_channel_secret
+    )
+  }, [apiConfig])
+
   const setDemoLogin = useCallback(async () => {
     if (
-      window.location.hostname === 'localhost' ||
       window.location.hostname === 'bocker-project.vercel.app' ||
       window.location.hostname === 'bocker-project.vercel.app/ja' ||
       window.location.hostname === 'bocker-project.vercel.app/en'
@@ -215,7 +235,7 @@ export default function ReservePage() {
       })
   }, [router, orgId, tenantId, setDemoLogin])
 
-  if (!organization || !tenantId) {
+  if (!organization || !tenantId || apiConfig === undefined) {
     return <Loading />
   }
 
@@ -334,19 +354,23 @@ export default function ReservePage() {
             )}
           </CardContent>
 
-          <Separator className="mb-5 w-1/3 mx-auto" />
-          <CardFooter className="flex justify-center pb-6">
-            <div className="w-full">
-              <OptimizedLineLoginButton
-                tenantId={tenantId}
-                orgId={orgId}
-                isCustomerLogin={false}
-                onSuccess={() => {
-                  router.push(`/reservation/${orgId}/calendar`)
-                }}
-              />
-            </div>
-          </CardFooter>
+          {isLineApiConfigured && (
+            <>
+              <Separator className="mb-5 w-1/3 mx-auto" />
+              <CardFooter className="flex justify-center pb-6">
+                <div className="w-full">
+                  <OptimizedLineLoginButton
+                    tenantId={tenantId}
+                    orgId={orgId}
+                    isCustomerLogin={false}
+                    onSuccess={() => {
+                      router.push(`/reservation/${orgId}/calendar`)
+                    }}
+                  />
+                </div>
+              </CardFooter>
+            </>
+          )}
           <p className="text-xs text-center text-muted-foreground mb-4 px-8">
             ログインすることで、当サービスの
             <Link
