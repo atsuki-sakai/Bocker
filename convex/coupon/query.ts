@@ -50,7 +50,6 @@ export const findById = query({
     coupon_id: v.id('coupon'),
   },
   handler: async (ctx, args) => {
-    checkAuth(ctx);
     return await ctx.db.get(args.coupon_id);
   },
 });
