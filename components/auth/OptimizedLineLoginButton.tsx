@@ -4,6 +4,7 @@ import React, { memo, useCallback, useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronRight, Loader2 } from 'lucide-react'
 import { useLineAuthHandler } from '@/hooks/useLineAuthHandler'
+import { useLiff } from '@/hooks/useLiff'
 import { toast } from 'sonner'
 import { Id } from '@/convex/_generated/dataModel'
 import { cleanupLineAuthState } from '@/lib/auth/lineAuthCleanup'
@@ -39,6 +40,9 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
   const [retryCount, setRetryCount] = useState(0)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // LINE APIが設定されているかチェック
+  const { liff } = useLiff()
+  
   const { handleLineAuth, isProcessing, isLiffLoading } = useLineAuthHandler({
     onSuccess: (data) => {
       console.log('[OptimizedLineLoginButton] Login successful:', data)
@@ -168,6 +172,11 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       hasTenantId: !!tenantId,
       retryCount
     })
+  }
+
+  // LINE APIが設定されていない場合は何も表示しない
+  if (!liff) {
+    return null
   }
 
   return (
