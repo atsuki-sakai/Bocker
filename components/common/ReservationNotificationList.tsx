@@ -54,12 +54,12 @@ export default function ReservationNotificationList() {
     }
   }
 
-  if (subscription === undefined || notifications === undefined) {
+  if (notifications === undefined) {
     return <Loading />
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className={`relative h-full w-full ${subscription === null ? 'hidden' : ''}`}>
       {notifications?.length === 0 ? (
         <div className="absolute -top-3 right-0 flex items-center justify-center gap-2 z-10">
           <CheckCircle2 className="w-4 h-4 text-accent-2" />

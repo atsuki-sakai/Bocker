@@ -98,7 +98,7 @@ const SidebarNavigation = memo(
     const tNav = useTranslations('navigation')
     return (
       <nav className="flex flex-1 flex-col">
-        {!isSubscriptionActive && !isMobile && (
+        {!isSubscriptionActive && (
           <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
             <p className="text-xs text-muted-foreground">
               <span className="inline-block font-bold mb-2">{t('subscriptionRequired')}</span>

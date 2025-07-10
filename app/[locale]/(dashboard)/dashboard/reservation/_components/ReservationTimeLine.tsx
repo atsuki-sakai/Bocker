@@ -568,10 +568,6 @@ export default function ReservationTimeLine() {
     setSelectedReservation(null)
   }, [])
 
-  if (subscription === undefined) {
-    return <Loading />
-  }
-
   // ■ レンダリング
   if (!ready || isLoading) {
     return <Loading />
@@ -580,7 +576,7 @@ export default function ReservationTimeLine() {
   const isWeekendDate = isWeekend(selectedDate)
 
   return (
-    <div className="h-fit bg-background w-full">
+    <div className={`h-fit bg-background w-full ${subscription === null ? 'hidden' : ''}`}>
       {/* ヘッダー部分 */}
       <div className="w-full bg-background backdrop-blur-sm border-b-2 border-border space-y-4 shadow-sm">
         {/* 日付選択とビュー切り替え */}
