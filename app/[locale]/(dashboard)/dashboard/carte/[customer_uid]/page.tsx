@@ -33,7 +33,7 @@ import type { SupportedLocale } from '@/lib/dateLocale'
 
 type CartePageProps = {
   params: Promise<{
-    customer_id: string
+    customer_uid: string
   }>
 }
 
@@ -90,7 +90,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
   // paramsの解決
   useEffect(() => {
     paramsPromise.then((params) => {
-      setCustomerUid(params.customer_id)
+      setCustomerUid(params.customer_uid)
     })
   }, [paramsPromise])
 
@@ -98,6 +98,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
   const fetchCustomerData = useCallback(async () => {
     if (!tenantId || !orgId || !customerUid || !isLoaded) return
 
+    console.log('fetchCustomerData')
     setIsLoadingCustomer(true)
     try {
       const completeData = await customerRepo.getCompleteCustomerData(customerUid, tenantId, orgId)
@@ -138,7 +139,13 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
 
   // 初回データ取得
   useEffect(() => {
+    console.log('useEffect')
+    console.log('customerUid', customerUid)
+    console.log('tenantId', tenantId)
+    console.log('orgId', orgId)
+    console.log('isLoaded', isLoaded)
     if (customerUid && tenantId && orgId && isLoaded) {
+      console.log('fetchCustomerData')
       fetchCustomerData()
     }
   }, [customerUid, tenantId, orgId, isLoaded, fetchCustomerData])
