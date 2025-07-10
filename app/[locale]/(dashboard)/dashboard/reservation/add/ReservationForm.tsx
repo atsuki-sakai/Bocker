@@ -71,6 +71,12 @@ import { toast } from 'sonner'
 import { usePriceCalculation } from '@/hooks/usePriceCalculation'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from '@/components/ui/accordion'
 
 import {
   RESERVATION_STATUS_VALUES,
@@ -315,6 +321,9 @@ export default function ReservationForm() {
   const [selectedOptions, setSelectedOptions] = useState<ReservationOption[]>([])
   // カテゴリーフィルター用のstate
   const [selectedCategories, setSelectedCategories] = useState<MenuCategory[]>([])
+  // 性別とタイプの絞り込み用state
+  const [selectedGender, setSelectedGender] = useState<'male' | 'female' | 'unselected' | null>(null)
+  const [selectedType, setSelectedType] = useState<'all' | 'first_time' | 'repeat' | null>(null)
   // メニュー選択の上限（数量合計）
   const MAX_MENU_ITEMS = 10
   // オプション選択の上限（ユニーク件数）
@@ -341,14 +350,21 @@ export default function ReservationForm() {
   // フィルタリングされたメニューを計算
   const filteredMenus = useMemo(() => {
     if (!initialFormData?.menus) return []
-    if (selectedCategories.length === 0) return initialFormData.menus
-
-    return initialFormData.menus.filter(
-      (menu) =>
-        menu.categories &&
-        menu.categories.some((category) => selectedCategories.includes(category as MenuCategory))
-    )
-  }, [initialFormData?.menus, selectedCategories])
+    
+    return initialFormData.menus.filter((menu) => {
+      // カテゴリフィルター
+      const categoryMatch = selectedCategories.length === 0 || 
+        (menu.categories && menu.categories.some((category) => selectedCategories.includes(category as MenuCategory)))
+      
+      // 性別フィルター
+      const genderMatch = !selectedGender || menu.target_gender === selectedGender
+      
+      // タイプフィルター
+      const typeMatch = !selectedType || menu.target_type === selectedType
+      
+      return categoryMatch && genderMatch && typeMatch
+    })
+  }, [initialFormData?.menus, selectedCategories, selectedGender, selectedType])
 
   // スタッフデータ取得（メニュー選択後）
   const staffFormData = useQuery(
@@ -948,46 +964,139 @@ export default function ReservationForm() {
                 <h2 className="text-2xl font-bold mb-2">{t('reservationMenus')}</h2>
                 <p className="text-muted-foreground mb-6 text-sm">{t('menuSelectionLimit')}</p>
 
-                {/* カテゴリーフィルター */}
+                {/* フィルタリングセクション */}
                 <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Filter className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">カテゴリーで絞り込み</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {MENU_CATEGORY_VALUES.map((category) => {
-                      const isSelected = selectedCategories.includes(category)
-                      return (
-                        <Badge
-                          key={category}
-                          variant={isSelected ? 'default' : 'outline'}
-                          className={cn(
-                            'cursor-pointer transition-all',
-                            isSelected ? 'bg-accent-2 hover:bg-accent-2/90' : 'hover:bg-muted'
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="filters">
+                      <AccordionTrigger>
+                        <div className="flex items-center gap-2">
+                          <Filter className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">メニューを絞り込み</span>
+                          {(selectedCategories.length > 0 || selectedGender || selectedType) && (
+                            <Badge variant="outline" className="ml-2">
+                              {selectedCategories.length + (selectedGender ? 1 : 0) + (selectedType ? 1 : 0)}
+                            </Badge>
                           )}
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedCategories((prev) => prev.filter((c) => c !== category))
-                            } else {
-                              setSelectedCategories((prev) => [...prev, category])
-                            }
-                          }}
-                        >
-                          {category}
-                          {isSelected && <Check className="w-3 h-3 ml-1" />}
-                        </Badge>
-                      )
-                    })}
-                    {selectedCategories.length > 0 && (
-                      <Badge
-                        variant="secondary"
-                        className="cursor-pointer"
-                        onClick={() => setSelectedCategories([])}
-                      >
-                        すべてクリア
-                      </Badge>
-                    )}
-                  </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        {/* カテゴリーフィルター */}
+                        <div className="mb-4">
+                          <div className="text-xs font-medium text-muted-foreground mb-2">カテゴリー</div>
+                          <div className="flex flex-wrap gap-2">
+                            {MENU_CATEGORY_VALUES.map((category) => {
+                              const isSelected = selectedCategories.includes(category)
+                              return (
+                                <Badge
+                                  key={category}
+                                  variant={isSelected ? 'default' : 'outline'}
+                                  className={cn(
+                                    'cursor-pointer transition-all',
+                                    isSelected ? 'bg-accent-2 hover:bg-accent-2/90' : 'hover:bg-muted'
+                                  )}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setSelectedCategories((prev) => prev.filter((c) => c !== category))
+                                    } else {
+                                      setSelectedCategories((prev) => [...prev, category])
+                                    }
+                                  }}
+                                >
+                                  {category}
+                                  {isSelected && <Check className="w-3 h-3 ml-1" />}
+                                </Badge>
+                              )
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 性別フィルター */}
+                        <div className="mb-4">
+                          <div className="text-xs font-medium text-muted-foreground mb-2">性別</div>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { value: 'male', label: '男性' },
+                              { value: 'female', label: '女性' },
+                              { value: 'unselected', label: '指定なし' }
+                            ].map((gender) => {
+                              const isSelected = selectedGender === gender.value
+                              return (
+                                <Badge
+                                  key={gender.value}
+                                  variant={isSelected ? 'default' : 'outline'}
+                                  className={cn(
+                                    'cursor-pointer transition-all',
+                                    isSelected ? 'bg-accent-2 hover:bg-accent-2/90' : 'hover:bg-muted'
+                                  )}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setSelectedGender(null)
+                                    } else {
+                                      setSelectedGender(gender.value as 'male' | 'female' | 'unselected')
+                                    }
+                                  }}
+                                >
+                                  {gender.label}
+                                  {isSelected && <Check className="w-3 h-3 ml-1" />}
+                                </Badge>
+                              )
+                            })}
+                          </div>
+                        </div>
+
+                        {/* タイプフィルター */}
+                        <div className="mb-4">
+                          <div className="text-xs font-medium text-muted-foreground mb-2">タイプ</div>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { value: 'all', label: '全て' },
+                              { value: 'first_time', label: '初回' },
+                              { value: 'repeat', label: 'リピーター' }
+                            ].map((type) => {
+                              const isSelected = selectedType === type.value
+                              return (
+                                <Badge
+                                  key={type.value}
+                                  variant={isSelected ? 'default' : 'outline'}
+                                  className={cn(
+                                    'cursor-pointer transition-all',
+                                    isSelected ? 'bg-accent-2 hover:bg-accent-2/90' : 'hover:bg-muted'
+                                  )}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setSelectedType(null)
+                                    } else {
+                                      setSelectedType(type.value as 'all' | 'first_time' | 'repeat')
+                                    }
+                                  }}
+                                >
+                                  {type.label}
+                                  {isSelected && <Check className="w-3 h-3 ml-1" />}
+                                </Badge>
+                              )
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 全フィルタークリア */}
+                        {(selectedCategories.length > 0 || selectedGender || selectedType) && (
+                          <div className="flex justify-end">
+                            <Badge
+                              variant="secondary"
+                              className="cursor-pointer"
+                              onClick={() => {
+                                setSelectedCategories([])
+                                setSelectedGender(null)
+                                setSelectedType(null)
+                              }}
+                            >
+                              全てクリア
+                            </Badge>
+                          </div>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </div>
 
                 {/* メニューリスト */}
