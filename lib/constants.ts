@@ -317,4 +317,11 @@ export const NAV_ITEMS: NavItem[] = [
     minRole: 'owner',
     minPlan: 'LITE',
   },
+  {
+    name: 'document',
+    href: `/docs`,
+    icon: BookIcon,
+    minRole: 'staff',
+    minPlan: 'LITE',
+  },
 ]
