@@ -252,13 +252,7 @@ export default function StaffEditForm() {
       if (selectedFile) {
         try {
           setIsLoading(true)
-          const result = await uploadImage(
-            selectedFile!,
-            orgId,
-            'staff',
-            'square',
-            'medium'
-          )
+          const result = await uploadImage(selectedFile!, orgId, 'staff', 'square', 'medium')
 
           newUploadedImages = [
             {
@@ -320,8 +314,8 @@ export default function StaffEditForm() {
           tags: data.tags ?? [], // タグ
           role: data.role, // ロール
           featured_hair_images: [], // フィーチャー画像
-          extra_charge: data.extra_charge ?? undefined, // 追加料金
-          priority: data.priority ?? undefined, // 優先度
+          extra_charge: data.extra_charge ?? 0, // 追加料金
+          priority: data.priority ?? 0, // 優先度
         })
 
         // 除外メニューを更新
@@ -468,7 +462,7 @@ export default function StaffEditForm() {
         // 既存画像URLを設定
         if (staffAllData.images && staffAllData.images.length > 0) {
           setExistingImageUrl(
-            staffAllData.images[0].thumbnail_url || staffAllData.images[0].original_url
+            staffAllData.images[0].original_url || staffAllData.images[0].thumbnail_url
           )
           setShowExistingImage(true)
         } else {

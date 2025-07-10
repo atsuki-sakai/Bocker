@@ -497,44 +497,47 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                     )}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-md font-medium text-muted-foreground flex items-center">
-                    <FileText className="w-4 h-4 mr-2 text-primary" />
-                    {t('fields.warningMessage')}
-                  </h3>
-                  <div className="bg-muted p-4 rounded-lg border border-border">
-                    <AnimatePresence mode="wait">
-                      <motion.p
-                        key={showFullWarningMessage ? 'full' : 'short'}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="text-primary leading-relaxed"
-                      >
-                        {shortenedWarningMessage}
-                      </motion.p>
-                    </AnimatePresence>
 
-                    {menu.warning_message && menu.warning_message.length > 150 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-2 text-link-foreground "
-                        onClick={toggleWarningMessage}
-                      >
-                        {showFullWarningMessage ? (
-                          <>
-                            <ChevronUp className="w-4 h-4 mr-1" /> {t('showLess')}
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="w-4 h-4 mr-1" /> {t('showMore')}
-                          </>
-                        )}
-                      </Button>
-                    )}
+                {menu.warning_message && menu.warning_message.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-md font-medium text-warning-foreground flex items-center">
+                      <FileText className="w-4 h-4 mr-2 text-warning-foreground" />
+                      {t('fields.warningMessage')}
+                    </h3>
+                    <div className="bg-warning p-4 rounded-lg border border-border">
+                      <AnimatePresence mode="wait">
+                        <motion.p
+                          key={showFullWarningMessage ? 'full' : 'short'}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-warning-foreground leading-relaxed"
+                        >
+                          {shortenedWarningMessage}
+                        </motion.p>
+                      </AnimatePresence>
+
+                      {menu.warning_message && menu.warning_message.length > 150 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 text-link-foreground "
+                          onClick={toggleWarningMessage}
+                        >
+                          {showFullWarningMessage ? (
+                            <>
+                              <ChevronUp className="w-4 h-4 mr-1" /> {t('showLess')}
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-4 h-4 mr-1" /> {t('showMore')}
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* タグ */}
                 <div className="space-y-2">

@@ -16,6 +16,12 @@ import {
   Shield,
   Zap
 } from 'lucide-react';
+import {
+  Support,
+  FaqCard,
+  ErrorWarningInfoCard,
+  ScenarioCard,
+} from '@/app/[locale]/(document)/_components'
 
 export default function PointManualPage() {
   return (
@@ -23,12 +29,14 @@ export default function PointManualPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-accent rounded-lg">
+          <div className="p-2 bg-muted rounded-lg">
             <Ticket className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="text-xl md:text-3xl font-bold text-foreground">ポイント機能</h1>
-            <p className="text-muted-foreground text-sm md:text-base">リピート促進のためのポイント付与・利用システムの詳細操作方法</p>
+            <p className="text-muted-foreground text-sm md:text-base">
+              リピート促進のためのポイント付与・利用システムの詳細操作方法
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -52,7 +60,7 @@ export default function PointManualPage() {
             ポイント機能は、美容サロンの顧客に対して、施術利用金額に応じてポイントを自動付与し、
             次回以降の施術で「1ポイント = 1円」として利用できるリピート促進システムです。
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
               <h4 className="font-semibold text-foreground">対象ユーザー</h4>
@@ -97,7 +105,8 @@ export default function PointManualPage() {
           <Alert>
             <Star className="h-4 w-4" />
             <AlertDescription>
-              <strong>1ポイント = 1円:</strong> 施術料金の支払いに直接利用可能な実用的なポイントシステム
+              <strong>1ポイント = 1円:</strong>{' '}
+              施術料金の支払いに直接利用可能な実用的なポイントシステム
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -140,12 +149,18 @@ export default function PointManualPage() {
             </div>
           </div>
 
-          <div className="p-4 bg-accent rounded-lg">
+          <div className="p-4 bg-muted rounded-lg">
             <h4 className="font-semibold text-foreground mb-2">各画面へのアクセス方法</h4>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p><strong>オーナー:</strong> ダッシュボード → サイドバー「ポイント設定」</p>
-              <p><strong>スタッフ:</strong> ダッシュボード → 「予約作成」→「支払い方法選択」</p>
-              <p><strong>顧客:</strong> 顧客専用URL → ログイン → 「ポイント」</p>
+              <p>
+                <strong>オーナー:</strong> ダッシュボード → サイドバー「ポイント設定」
+              </p>
+              <p>
+                <strong>スタッフ:</strong> ダッシュボード → 「予約作成」→「支払い方法選択」
+              </p>
+              <p>
+                <strong>顧客:</strong> 顧客専用URL → ログイン → 「ポイント」
+              </p>
             </div>
           </div>
         </CardContent>
@@ -160,17 +175,21 @@ export default function PointManualPage() {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">1</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                1
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">ポイント設定画面へアクセス</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   ダッシュボード → 左側のサイドバー「ポイント設定」をクリック
                 </p>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">2</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                2
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">ポイント機能の有効化</h4>
                 <div className="mt-2 space-y-2">
@@ -191,7 +210,9 @@ export default function PointManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">3</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                3
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">ポイント付与タイプの選択</h4>
                 <div className="mt-2 space-y-2">
@@ -218,7 +239,9 @@ export default function PointManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">4</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                4
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">付与率・有効期限の設定</h4>
                 <div className="mt-2 space-y-2">
@@ -242,7 +265,9 @@ export default function PointManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">5</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                5
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">設定内容の確認と保存</h4>
                 <div className="mt-2 space-y-2">
@@ -263,10 +288,14 @@ export default function PointManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">6</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                6
+              </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground">「設定を保存」ボタンをクリックして完了</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <h4 className="font-semibold text-foreground">
+                  「設定を保存」ボタンをクリックして完了
+                </h4>
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   設定が保存され、ポイント機能が有効になります
                 </p>
               </div>
@@ -284,23 +313,29 @@ export default function PointManualPage() {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">1</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                1
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">通常通り予約作成を進める</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   顧客選択 → メニュー選択 → スタッフ選択 → 日時選択
                 </p>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">2</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                2
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">支払い方法選択画面でポイント使用</h4>
                 <div className="mt-2 space-y-2">
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">保有ポイント確認</p>
-                    <p className="text-sm text-muted-foreground">顧客の保有ポイントが自動表示される</p>
+                    <p className="text-sm text-muted-foreground">
+                      顧客の保有ポイントが自動表示される
+                    </p>
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">使用ポイント設定</p>
@@ -319,13 +354,17 @@ export default function PointManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">3</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                3
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">予約確定</h4>
                 <div className="mt-2 space-y-2">
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">支払い金額確認</p>
-                    <p className="text-sm text-muted-foreground">ポイント使用後の支払い金額を確認</p>
+                    <p className="text-sm text-muted-foreground">
+                      ポイント使用後の支払い金額を確認
+                    </p>
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">即座にポイント減算</p>
@@ -389,120 +428,80 @@ export default function PointManualPage() {
         </CardContent>
       </Card>
 
-      {/* 利用シナリオ */}
-      <Card>
-        <CardHeader>
-          <CardTitle>典型的な利用シナリオ</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-foreground mb-2">シナリオA: 新規顧客の初回来店からポイント付与まで</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                4月15日初回来店（カット+カラー 10,000円）→ 5%付与で500ポイント付与予定 → 5月15日自動付与 → 2回目来店時に500ポイント使用
-              </p>
-              <div className="text-xs text-muted-foreground/80">
-                施術完了から30日後の自動バッチ処理で500ポイント付与。顧客にLINE/メール通知。次回来店時に保有ポイント500ポイントを確認し、施術料金から差し引き。
-              </div>
-            </div>
+      <ScenarioCard
+        scenarioItems={[
+          {
+            title: 'シナリオA: 新規顧客の初回来店からポイント付与まで',
+            description:
+              '4月15日初回来店（カット+カラー 10,000円）→ 5%付与で500ポイント付与予定 → 5月15日自動付与 → 2回目来店時に500ポイント使用',
+            helpText:
+              '施術完了から30日後の自動バッチ処理で500ポイント付与。顧客にLINE/メール通知。次回来店時に保有ポイント500ポイントを確認し、施術料金から差し引き。',
+          },
+          {
+            title: 'シナリオB: 常連顧客のポイント活用パターン',
+            description:
+              '毎月5,000円の施術 → 5%付与で月250ポイント獲得 → 年間3,000ポイント蓄積 → 特別な施術時（15,000円）で3,000ポイント使用',
+            helpText:
+              '定期来店による安定したポイント蓄積。パーマ+トリートメント15,000円の施術で蓄積した3,000ポイントを使用し、実質12,000円で施術。',
+          },
+        ]}
+      />
 
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-foreground mb-2">シナリオB: 常連顧客のポイント活用パターン</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                毎月5,000円の施術 → 5%付与で月250ポイント獲得 → 年間3,000ポイント蓄積 → 特別な施術時（15,000円）で3,000ポイント使用
-              </p>
-              <div className="text-xs text-muted-foreground/80">
-                定期来店による安定したポイント蓄積。パーマ+トリートメント15,000円の施術で蓄積した3,000ポイントを使用し、実質12,000円で施術。
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <ErrorWarningInfoCard
+        errorItems={[
+          {
+            title: '「ポイント設定が見つかりません」',
+            description: 'オーナー権限でポイント設定画面から初期設定を行ってください',
+          },
+          {
+            title: '「ポイントが不足しています」',
+            description: '使用ポイント数を保有ポイント以下に調整してください',
+          },
+          {
+            title: '「ポイント処理でエラーが発生しました」',
+            description: '予約は正常に作成されるため、後日手動でポイント調整を行ってください',
+          },
+        ]}
+        warningItems={[
+          {
+            title: 'ポイント付与率の変更は即座に反映されるが、既存の付与予定ポイントには影響しない',
+          },
+          {
+            title: '有効期限は最後の利用日から起算される',
+          },
+          {
+            title: '設定変更は必ず「設定を保存」ボタンをクリック',
+          },
+          {
+            title: '期限切れポイントは自動的に失効する',
+          },
+        ]}
+      />
 
-      {/* エラー・注意事項 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>エラー・注意事項</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold text-foreground mb-3">よくあるエラーと対処法</h4>
-              <div className="space-y-3">
-                <div className="p-3 bg-destructive/10 rounded-lg">
-                  <p className="font-medium text-destructive text-sm">「ポイント設定が見つかりません」</p>
-                  <p className="text-destructive/90 text-xs mt-1">オーナー権限でポイント設定画面から初期設定を行ってください</p>
-                </div>
-                <div className="p-3 bg-warning/10 rounded-lg">
-                  <p className="font-medium text-warning text-sm">「ポイントが不足しています」</p>
-                  <p className="text-warning/90 text-xs mt-1">使用ポイント数を保有ポイント以下に調整してください</p>
-                </div>
-                <div className="p-3 bg-info/10 rounded-lg">
-                  <p className="font-medium text-info text-sm">「ポイント処理でエラーが発生しました」</p>
-                  <p className="text-info/90 text-xs mt-1">予約は正常に作成されるため、後日手動でポイント調整を行ってください</p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-foreground mb-3">操作時の注意点</h4>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>ポイント付与率の変更は即座に反映されるが、既存の付与予定ポイントには影響しない</span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>有効期限は最後の利用日から起算される</span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>設定変更は必ず「設定を保存」ボタンをクリック</span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>期限切れポイントは自動的に失効する</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* よくある質問 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>よくある質問</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold text-foreground">Q: ポイントはいつ付与されますか？</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                A: 施術完了から30日後に自動的に付与されます。これは顧客の満足度確認期間として設定されています。
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground">Q: ポイントの有効期限はどう計算されますか？</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                A: 最後にサロンを利用した日から、設定した期間（1年/2年/3年）後に失効します。新たに来店すると、全ポイントの有効期限が延長されます。
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground">Q: 他店舗でポイントは使えますか？</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                A: いいえ、ポイントは付与された店舗でのみ使用可能です。
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground">Q: 付与率を途中で変更したらどうなりますか？</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                A: 新規予約から新しい付与率が適用されます。既存の付与予定ポイントは変更されません。
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <FaqCard
+        title="よくある質問"
+        faqs={[
+          {
+            question: 'ポイントはいつ付与されますか？',
+            answer:
+              '施術完了から30日後に自動的に付与されます。これは顧客の満足度確認期間として設定されています。',
+          },
+          {
+            question: 'ポイントの有効期限はどう計算されますか？',
+            answer:
+              '最後にサロンを利用した日から、設定した期間（1年/2年/3年）後に失効します。新たに来店すると、全ポイントの有効期限が延長されます。',
+          },
+          {
+            question: '他店舗でポイントは使えますか？',
+            answer: 'いいえ、ポイントは付与された店舗でのみ使用可能です。',
+          },
+          {
+            question: '付与率を途中で変更したらどうなりますか？',
+            answer:
+              '新規予約から新しい付与率が適用されます。既存の付与予定ポイントは変更されません。',
+          },
+        ]}
+      />
 
       {/* キャンセル時の処理 */}
       <Card>
@@ -567,30 +566,7 @@ export default function PointManualPage() {
         </CardContent>
       </Card>
 
-      {/* サポート情報 */}
-      <Card className="bg-link border-border">
-        <CardHeader>
-          <CardTitle className="text-link-foreground">サポート情報</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-semibold text-link-foreground mb-2">技術サポート</h4>
-              <p className="text-sm text-link-foreground">
-                support@bocker.jp
-              </p>
-              <p className="text-xs text-link-foreground mt-1">営業時間: 平日 10:00-18:00</p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-link-foreground mb-2">トラブルシューティング</h4>
-              <p className="text-sm text-link-foreground">
-                問題発生時は、テナントID・エラーメッセージ・発生日時をご用意ください
-              </p>
-              <p className="text-xs text-link-foreground mt-1">詳細な情報により迅速な対応が可能です</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <Support />
     </div>
-  );
+  )
 }

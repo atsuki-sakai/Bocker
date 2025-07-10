@@ -22,19 +22,21 @@ export default function MenuManualPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-accent rounded-lg">
+          <div className="p-2 bg-muted rounded-lg">
             <Menu className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="text-xl md:text-3xl font-bold text-foreground">メニュー管理機能</h1>
-            <p className="text-muted-foreground text-sm md:text-base">サービスメニューの作成・編集・公開管理の詳細操作方法</p>
+            <p className="text-muted-foreground text-sm md:text-base">
+              サービスメニューの作成・編集・公開管理の詳細操作方法
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">基本機能</Badge>
-          <Badge variant="secondary">画像登録</Badge>
-          <Badge variant="secondary">カテゴリ分類</Badge>
-          <Badge variant="secondary">価格設定</Badge>
+          <Badge>基本機能</Badge>
+          <Badge>画像登録</Badge>
+          <Badge>カテゴリ分類</Badge>
+          <Badge>価格設定</Badge>
         </div>
       </div>
 
@@ -51,7 +53,7 @@ export default function MenuManualPage() {
             メニュー機能は、美容サロンで提供するサービスメニューを管理するための機能です。
             メニューの作成、編集、価格設定、カテゴリ分類、画像登録など、サービスメニューに関する全ての情報を一元管理できます。
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
               <h4 className="font-semibold text-foreground">対象ユーザー</h4>
@@ -96,7 +98,8 @@ export default function MenuManualPage() {
           <Alert>
             <Star className="h-4 w-4" />
             <AlertDescription>
-              <strong>プラン別上限:</strong> スタータープラン: 20個まで / スタンダードプラン: 50個まで / プレミアムプラン: 無制限
+              <strong>プラン別上限:</strong> スタータープラン: 20個まで / スタンダードプラン:
+              50個まで / プレミアムプラン: 無制限
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -167,9 +170,13 @@ export default function MenuManualPage() {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-5 h-5 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">1</div>
+              <div className="flex-shrink-0 w-5 h-5 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                1
+              </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground text-sm md:text-base">基本情報の入力</h4>
+                <h4 className="font-semibold text-foreground text-sm md:text-base">
+                  基本情報の入力
+                </h4>
                 <div className="mt-2 space-y-2">
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">メニュー名（必須）</p>
@@ -181,7 +188,9 @@ export default function MenuManualPage() {
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">価格・所要時間（必須）</p>
-                    <p className="text-sm text-muted-foreground">通常価格（1円〜999,999円）、所要時間（5分〜360分）</p>
+                    <p className="text-sm text-muted-foreground">
+                      通常価格（1円〜999,999円）、所要時間（5分〜360分）
+                    </p>
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">説明文（必須）</p>
@@ -192,7 +201,9 @@ export default function MenuManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">2</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                2
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">画像の登録（任意）</h4>
                 <div className="mt-2 space-y-2">
@@ -211,14 +222,18 @@ export default function MenuManualPage() {
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">推奨サイズ</p>
-                    <p className="text-sm text-muted-foreground">800×1200px（縦長）、最小サイズ：400×600px</p>
+                    <p className="text-sm text-muted-foreground">
+                      800×1200px（縦長）、最小サイズ：400×600px
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">3</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                3
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">詳細設定</h4>
                 <div className="mt-2 space-y-2">
@@ -231,40 +246,54 @@ export default function MenuManualPage() {
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">ターゲット設定</p>
-                    <p className="text-sm text-muted-foreground">対象顧客：全員/初回のみ/リピーターのみ、性別：全性別/男性のみ/女性のみ</p>
+                    <p className="text-sm text-muted-foreground">
+                      対象顧客：全員/初回のみ/リピーターのみ、性別：全性別/男性のみ/女性のみ
+                    </p>
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm flex items-center space-x-2">
                       <Tag className="h-4 w-4 text-primary" />
                       <span>タグ（任意）</span>
                     </p>
-                    <p className="text-sm text-muted-foreground">検索用キーワードを最大5つまで設定</p>
+                    <p className="text-sm text-muted-foreground">
+                      検索用キーワードを最大5つまで設定
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">4</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                4
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">支払い方法と公開設定</h4>
                 <div className="mt-2 space-y-2">
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">支払い方法</p>
-                    <p className="text-sm text-muted-foreground">店頭決済のみ/オンライン決済のみ/両方対応</p>
+                    <p className="text-sm text-muted-foreground">
+                      店頭決済のみ/オンライン決済のみ/両方対応
+                    </p>
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">公開設定</p>
-                    <p className="text-sm text-muted-foreground">「メニューを公開する」スイッチで公開/非公開を設定</p>
+                    <p className="text-sm text-muted-foreground">
+                      「メニューを公開する」スイッチで公開/非公開を設定
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">5</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                5
+              </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground">「メニューを追加」ボタンをクリックして保存</h4>
+                <h4 className="font-semibold text-foreground">
+                  「メニューを追加」ボタンをクリックして保存
+                </h4>
                 <p className="text-sm text-muted-foreground mt-1">
                   入力した情報が保存され、メニュー一覧画面に戻ります
                 </p>
@@ -282,33 +311,41 @@ export default function MenuManualPage() {
         <CardContent className="space-y-4">
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">1</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                1
+              </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground">メニュー一覧画面から編集したいメニューをクリック</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  メニュー詳細画面が表示されます
-                </p>
+                <h4 className="font-semibold text-foreground">
+                  メニュー一覧画面から編集したいメニューをクリック
+                </h4>
+                <p className="text-sm text-muted-foreground mt-1">メニュー詳細画面が表示されます</p>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">2</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                2
+              </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground">メニュー詳細画面で「編集」ボタンをクリック</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  編集画面に移動します
-                </p>
+                <h4 className="font-semibold text-foreground">
+                  メニュー詳細画面で「編集」ボタンをクリック
+                </h4>
+                <p className="text-sm text-muted-foreground mt-1">編集画面に移動します</p>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">3</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                3
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">編集画面で情報を修正</h4>
                 <div className="mt-2 space-y-2">
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">画像の変更</p>
-                    <p className="text-sm text-muted-foreground">既存画像の削除、新規画像の追加、順序変更が可能</p>
+                    <p className="text-sm text-muted-foreground">
+                      既存画像の削除、新規画像の追加、順序変更が可能
+                    </p>
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">価格変更</p>
@@ -323,7 +360,9 @@ export default function MenuManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">4</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                4
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">「更新」ボタンをクリックして保存</h4>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -357,7 +396,9 @@ export default function MenuManualPage() {
                   <Tag className="h-4 w-4 text-primary" />
                   <span className="text-sm text-muted-foreground">タグで検索</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">リアルタイムで結果が絞り込まれます</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  リアルタイムで結果が絞り込まれます
+                </p>
               </div>
             </div>
             <div>
@@ -405,9 +446,7 @@ export default function MenuManualPage() {
                 <p>3. 非表示のメニューは予約画面に表示されません</p>
                 <Alert>
                   <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    データは保持され、再度有効化可能です
-                  </AlertDescription>
+                  <AlertDescription>データは保持され、再度有効化可能です</AlertDescription>
                 </Alert>
               </div>
             </div>
@@ -423,9 +462,12 @@ export default function MenuManualPage() {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-foreground mb-2">シナリオA: 新メニューの追加から予約受付まで</h4>
+              <h4 className="font-semibold text-foreground mb-2">
+                シナリオA: 新メニューの追加から予約受付まで
+              </h4>
               <p className="text-sm text-muted-foreground mb-3">
-                新しいトリートメントメニューを作成 → 画像3枚を登録 → カテゴリ「トリートメント」を選択 → 公開設定をON
+                新しいトリートメントメニューを作成 → 画像3枚を登録 →
+                カテゴリ「トリートメント」を選択 → 公開設定をON
               </p>
               <div className="text-xs text-muted-foreground/80">
                 価格5,000円、所要時間60分を設定。「髪質改善」「ダメージケア」などのタグを追加。顧客が予約時にメニューを選択可能に。
@@ -433,7 +475,9 @@ export default function MenuManualPage() {
             </div>
 
             <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-foreground mb-2">シナリオB: セットメニューの作成</h4>
+              <h4 className="font-semibold text-foreground mb-2">
+                シナリオB: セットメニューの作成
+              </h4>
               <p className="text-sm text-muted-foreground mb-3">
                 「カット＋カラー」などの複合メニューを作成 → 複数のカテゴリを選択 → セット価格を設定
               </p>
@@ -443,7 +487,9 @@ export default function MenuManualPage() {
             </div>
 
             <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-foreground mb-2">シナリオC: 期間限定キャンペーンの設定</h4>
+              <h4 className="font-semibold text-foreground mb-2">
+                シナリオC: 期間限定キャンペーンの設定
+              </h4>
               <p className="text-sm text-muted-foreground mb-3">
                 既存メニューの編集画面を開く → セール価格を設定 → タグに「期間限定」を追加 → 更新
               </p>
@@ -466,15 +512,21 @@ export default function MenuManualPage() {
               <h4 className="font-semibold text-foreground mb-3">よくあるエラーと対処法</h4>
               <div className="space-y-3">
                 <div className="p-3 bg-destructive/10 rounded-lg">
-                  <p className="font-medium text-destructive text-sm">「画像のアップロードに失敗しました」</p>
-                  <p className="text-destructive/90 text-xs mt-1">画像を圧縮して6MB以下にしてから再度アップロード</p>
+                  <p className="font-medium text-destructive text-sm">
+                    「画像のアップロードに失敗しました」
+                  </p>
+                  <p className="text-destructive/90 text-xs mt-1">
+                    画像を圧縮して6MB以下にしてから再度アップロード
+                  </p>
                 </div>
                 <div className="p-3 bg-warning/10 rounded-lg">
                   <p className="font-medium text-warning text-sm">「メニュー名は必須です」</p>
                   <p className="text-warning/90 text-xs mt-1">メニュー名を入力してから保存</p>
                 </div>
                 <div className="p-3 bg-info/10 rounded-lg">
-                  <p className="font-medium text-info text-sm">「セール価格は通常価格より低く設定してください」</p>
+                  <p className="font-medium text-info text-sm">
+                    「セール価格は通常価格より低く設定してください」
+                  </p>
                   <p className="text-info/90 text-xs mt-1">セール価格を通常価格より低く設定</p>
                 </div>
               </div>
@@ -513,25 +565,34 @@ export default function MenuManualPage() {
         <CardContent className="space-y-4">
           <div className="space-y-4">
             <div>
-              <h4 className="font-semibold text-foreground">Q: メニューは何個まで作成できますか？</h4>
+              <h4 className="font-semibold text-foreground">
+                Q: メニューは何個まで作成できますか？
+              </h4>
               <p className="text-sm text-muted-foreground mt-1">
-                A: プランによって上限が異なります。スタータープラン：20個まで / スタンダードプラン：50個まで / プレミアムプラン：無制限
+                A: プランによって上限が異なります。スタータープラン：20個まで /
+                スタンダードプラン：50個まで / プレミアムプラン：無制限
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground">Q: 削除したメニューを復元できますか？</h4>
+              <h4 className="font-semibold text-foreground">
+                Q: 削除したメニューを復元できますか？
+              </h4>
               <p className="text-sm text-muted-foreground mt-1">
                 A: 削除したメニューは復元できません。非表示機能の利用をお勧めします。
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground">Q: 画像なしでメニューを作成できますか？</h4>
+              <h4 className="font-semibold text-foreground">
+                Q: 画像なしでメニューを作成できますか？
+              </h4>
               <p className="text-sm text-muted-foreground mt-1">
                 A: はい、画像は任意項目です。後から追加することも可能です。
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground">Q: セットメニューの価格は自動計算されますか？</h4>
+              <h4 className="font-semibold text-foreground">
+                Q: セットメニューの価格は自動計算されますか？
+              </h4>
               <p className="text-sm text-muted-foreground mt-1">
                 A: いいえ、セットメニューの価格は手動で設定する必要があります。
               </p>
@@ -550,8 +611,10 @@ export default function MenuManualPage() {
             <div className="p-4 bg-accent-2-foreground rounded-lg">
               <h4 className="font-semibold text-accent-2 mb-2">オンライン決済の設定方法</h4>
               <p className="text-sm text-accent-2">
-                1. ダッシュボード → 設定 → 決済設定<br />
-                2. Stripe Connectの設定を完了<br />
+                1. ダッシュボード → 設定 → 決済設定
+                <br />
+                2. Stripe Connectの設定を完了
+                <br />
                 3. メニューの支払い方法で「オンライン決済」を選択可能に
               </p>
             </div>
@@ -575,21 +638,17 @@ export default function MenuManualPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h4 className="font-semibold text-link-foreground mb-2">技術サポート</h4>
-              <p className="text-sm text-link-foreground">
-                support@bocker.jp
-              </p>
+              <p className="text-sm text-link-foreground">support@bocker.jp</p>
               <p className="text-xs text-link-foreground mt-1">営業時間: 平日 10:00-18:00</p>
             </div>
             <div>
               <h4 className="font-semibold text-link-foreground mb-2">推奨画像形式</h4>
-              <p className="text-sm text-link-foreground">
-                WebP推奨（自動変換されます）
-              </p>
+              <p className="text-sm text-link-foreground">WebP推奨（自動変換されます）</p>
               <p className="text-xs text-link-foreground mt-1">推奨サイズ：800×1200px（縦長）</p>
             </div>
           </div>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

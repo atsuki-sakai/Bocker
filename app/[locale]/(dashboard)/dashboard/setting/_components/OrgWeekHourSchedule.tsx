@@ -1,5 +1,5 @@
 'use client'
-
+import { useRouter } from 'next/navigation'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2 } from 'lucide-react'
@@ -126,6 +126,7 @@ export interface WeekScheduleData {
 const defaultScheduleHour = { startHour: '08:00', endHour: '19:00' }
 
 export default function OrgWeekHourSchedule() {
+  const router = useRouter()
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const t = useTranslations('settings.businessHours')
   const [isSaving, setIsSaving] = useState(false)
@@ -451,12 +452,13 @@ export default function OrgWeekHourSchedule() {
 
       // 成功メッセージ
       toast.success(t('settingsSaved'))
+      router.push(`/dashboard/setting`)
     } catch (err) {
       showErrorToast(err)
     } finally {
       setIsSaving(false)
     }
-  }, [weekScheduleData, orgId, tenantId, updateWeekSchedule, showErrorToast, t])
+  }, [weekScheduleData, orgId, tenantId, updateWeekSchedule, showErrorToast, t, router])
 
   // ローディング状態
   if (salonWeekSchedules === undefined) {

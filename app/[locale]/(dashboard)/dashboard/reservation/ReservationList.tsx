@@ -174,7 +174,7 @@ export default function ReservationList() {
   }
 
   return (
-    <div className="">
+    <div className="min-h-[100vh]">
       <div className="flex w-fit gap-2 items-end mb-4 ">
         <CardTitle className="text-sm font-medium">予約数</CardTitle>
         <div className="text-2xl font-bold text-accent-2 flex items-end gap-2">
@@ -212,7 +212,7 @@ export default function ReservationList() {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 " align="start">
                   <div className="p-3">
                     <Calendar
                       initialFocus
@@ -302,7 +302,7 @@ export default function ReservationList() {
               </TableRow>
             ) : (
               filteredReservations.map((reservation) => (
-                <TableRow key={reservation.id} className="hover:bg-muted/50">
+                <TableRow key={reservation.id} className="hover:bg-muted">
                   {/* 顧客名 */}
                   <TableCell className="font-medium px-4">
                     <span className="text-nowrap">{reservation.customerName}</span>
@@ -341,7 +341,7 @@ export default function ReservationList() {
                   {/* ステータス */}
                   <TableCell className="px-4">
                     <Badge
-                      className={`${statusConfig[reservation.status as keyof typeof statusConfig]?.color || 'bg-muted'} text-white`}
+                      className={`${statusConfig[reservation.status as keyof typeof statusConfig]?.color || 'bg-muted'} text-white text-nowrap`}
                     >
                       {statusConfig[reservation.status as keyof typeof statusConfig]?.label ||
                         reservation.status}
@@ -359,9 +359,12 @@ export default function ReservationList() {
                           ]?.color || 'bg-muted-foreground'
                         }`}
                       >
-                        {paymentStatusConfig[
-                          reservation.paymentStatus as keyof typeof paymentStatusConfig
-                        ]?.label || reservation.paymentStatus}
+                        <span className="text-nowrap px-2">
+                          {' '}
+                          {paymentStatusConfig[
+                            reservation.paymentStatus as keyof typeof paymentStatusConfig
+                          ]?.label || reservation.paymentStatus}
+                        </span>
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground text-sm">-</span>

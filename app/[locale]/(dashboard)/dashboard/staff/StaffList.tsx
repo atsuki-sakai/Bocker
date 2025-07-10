@@ -99,7 +99,7 @@ export default function StaffList() {
 
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                           {staff.images && staff.images.length > 0 ? (
-                            <div className="relative w-12 h-12 bg-muted flex items-center justify-center">
+                            <div className="relative w-12 h-12  flex items-center justify-center">
                               <Image
                                 src={staff.images[0].thumbnail_url}
                                 alt={staff.name ?? ''}

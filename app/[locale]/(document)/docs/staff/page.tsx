@@ -1,13 +1,13 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Users, 
-  Plus, 
-  UserCheck, 
-  Mail, 
-  Shield, 
-  Calendar, 
+import {
+  Users,
+  Plus,
+  UserCheck,
+  Mail,
+  Shield,
+  Calendar,
   Info,
   AlertTriangle,
   Edit3,
@@ -15,9 +15,8 @@ import {
   UserCog,
   Instagram,
   CheckCircle,
-  Image as ImageIcon
-} from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+  Image as ImageIcon,
+} from 'lucide-react'
 
 export default function StaffManualPage() {
   return (
@@ -30,14 +29,16 @@ export default function StaffManualPage() {
           </div>
           <div>
             <h1 className="text-xl md:text-3xl font-bold text-foreground">スタッフ管理機能</h1>
-            <p className="text-muted-foreground text-sm md:text-base">スタッフ情報・権限・勤務スケジュール管理の詳細操作方法</p>
+            <p className="text-muted-foreground text-sm md:text-base">
+              スタッフ情報・権限・勤務スケジュール管理の詳細操作方法
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">権限管理</Badge>
-          <Badge variant="secondary">メール招待</Badge>
-          <Badge variant="secondary">スケジュール管理</Badge>
-          <Badge variant="secondary">指名料設定</Badge>
+          <Badge>権限管理</Badge>
+          <Badge>メール招待</Badge>
+          <Badge>スケジュール管理</Badge>
+          <Badge>指名料設定</Badge>
         </div>
       </div>
 
@@ -54,7 +55,7 @@ export default function StaffManualPage() {
             スタッフ管理機能は、美容サロンで働くスタッフの情報管理、権限設定、勤務スケジュール管理を行うための総合的な機能です。
             スタッフの登録から招待、権限管理、予約との連携まで、サロン運営に必要なスタッフ管理を一元化します。
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
               <h4 className="font-semibold text-foreground">対象ユーザー</h4>
@@ -96,8 +97,11 @@ export default function StaffManualPage() {
             </div>
           </div>
 
-          <div className="text-sm text-accent-2 bg-accent-2-foreground p-3 rounded-lg">
-            <strong>プラン別上限:</strong> MICRO: 1名 / LITE: 5名 / PRO: 10名
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+            <Info className="h-4 w-4 text-link-foreground" />
+            <p className="text-link-foreground text-xs md:text-sm">
+              <strong>プラン別上限:</strong> MICRO: 1名 / LITE: 5名 / PRO: 10名
+            </p>
           </div>
         </div>
       </div>
@@ -119,61 +123,56 @@ export default function StaffManualPage() {
                   <Users className="h-5 w-5 text-link-foreground" />
                   <div>
                     <p className="font-semibold text-link-foreground">スタッフ一覧画面</p>
-                    <p className="text-xs text-muted-foreground">/dashboard/staff</p>
+                    <p className="text-xs text-link-foreground">/dashboard/staff</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
                   <Plus className="h-5 w-5 text-link-foreground" />
                   <div>
                     <p className="font-semibold text-link-foreground">スタッフ新規登録画面</p>
-                    <p className="text-xs text-muted-foreground">/dashboard/staff/add</p>
+                    <p className="text-xs text-link-foreground">/dashboard/staff/add</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
                   <Edit3 className="h-5 w-5 text-link-foreground" />
                   <div>
                     <p className="font-semibold text-link-foreground">スタッフ編集画面</p>
-                    <p className="text-xs text-muted-foreground">/dashboard/staff/[id]/edit</p>
+                    <p className="text-xs text-link-foreground">/dashboard/staff/[id]/edit</p>
                   </div>
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
                   <UserCheck className="h-5 w-5 text-link-foreground" />
-                    <div>
-                      <p className="font-semibold text-link-foreground">スタッフ詳細画面</p>
-                    <p className="text-xs text-muted-foreground">/dashboard/staff/[id]</p>
+                  <div>
+                    <p className="font-semibold text-link-foreground">スタッフ詳細画面</p>
+                    <p className="text-xs text-link-foreground">/dashboard/staff/[id]</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
                   <Calendar className="h-5 w-5 text-link-foreground" />
                   <div>
                     <p className="font-semibold text-link-foreground">勤務スケジュール管理</p>
-                    <p className="text-xs text-muted-foreground">/dashboard/staff/schedule</p>
+                    <p className="text-xs text-link-foreground">/dashboard/staff/schedule</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
                   <Mail className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="font-semibold text-link-foreground">招待受諾画面</p>
-                    <p className="text-xs text-muted-foreground">/staff/invite-accept</p>
+                    <p className="text-xs text-link-foreground">/staff/invite-accept</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="p-4 bg-muted rounded-lg text-sm">
-            <h4 className="font-semibold text-foreground mb-2">各画面への導線</h4>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>ダッシュボード → 「スタッフ管理」→ スタッフ一覧画面</p>
-              <Separator />
-              <p>スタッフ一覧画面 → 「スタッフを追加」ボタン → 新規登録画面</p>
-              <Separator />
-              <p>スタッフ一覧画面 → 各スタッフの「詳細」ボタン → 詳細画面</p>
-              <Separator />
-              <p>招待メール内のリンク → 招待受諾画面</p>
-            </div>
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+            <Info className="h-4 w-4 text-link-foreground" />
+            <p className="text-link-foreground text-xs md:text-sm">
+              導線: ダッシュボード → 「スタッフ管理」 / 一覧画面 → 「スタッフを追加」 /
+              招待メール内リンク → 招待受諾画面
+            </p>
           </div>
         </div>
       </div>
@@ -187,9 +186,13 @@ export default function StaffManualPage() {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-5 h-5 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">1</div>
+              <div className="flex-shrink-0 w-5 h-5 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                1
+              </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground text-sm md:text-base">スタッフ一覧画面を開く</h4>
+                <h4 className="font-semibold text-foreground text-sm md:text-base">
+                  スタッフ一覧画面を開く
+                </h4>
                 <p className="text-xs text-muted-foreground mt-1">
                   ダッシュボード → 「スタッフ管理」をクリック
                 </p>
@@ -197,9 +200,13 @@ export default function StaffManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-5 h-5 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">2</div>
+              <div className="flex-shrink-0 w-5 h-5 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                2
+              </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground text-sm md:text-base">新規登録画面へ移動</h4>
+                <h4 className="font-semibold text-foreground text-sm md:text-base">
+                  新規登録画面へ移動
+                </h4>
                 <p className="text-xs text-muted-foreground mt-1">
                   右上の「スタッフを追加」ボタンをクリック
                 </p>
@@ -207,16 +214,20 @@ export default function StaffManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-5 h-5 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">3</div>
+              <div className="flex-shrink-0 w-5 h-5 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                3
+              </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground text-sm md:text-base">招待メール送信モードを有効化</h4>
+                <h4 className="font-semibold text-foreground text-sm md:text-base">
+                  招待メール送信モードを有効化
+                </h4>
                 <div className="mt-2 space-y-2">
                   <div className="p-2 md:p-3 bg-link rounded-lg">
-                    <p className="font-semibold text-xs md:text-sm flex items-center space-x-2">
+                    <p className="font-semibold text-xs md:text-sm flex items-center space-x-2 text-link-foreground">
                       <Mail className="h-4 w-4 text-link-foreground" />
                       <span>「招待メールを送信」スイッチをON</span>
                     </p>
-                    <p className="text-xs md:text-sm text-muted-foreground">
+                    <p className="text-xs md:text-sm text-link-foreground">
                       このモードではメールアドレスが必須となります
                     </p>
                   </div>
@@ -225,16 +236,22 @@ export default function StaffManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-5 h-5 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">4</div>
+              <div className="flex-shrink-0 w-5 h-5 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                4
+              </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground text-sm md:text-base">必要情報を入力</h4>
+                <h4 className="font-semibold text-foreground text-sm md:text-base">
+                  必要情報を入力
+                </h4>
                 <div className="mt-2 space-y-2">
                   <div className="p-2 md:p-3 bg-link rounded-lg">
-                    <p className="font-semibold text-xs md:text-sm flex items-center space-x-2">
+                    <p className="font-semibold text-xs md:text-sm flex items-center space-x-2 text-link-foreground">
                       <Mail className="h-4 w-4 text-link-foreground" />
                       <span>メールアドレス（必須）</span>
                     </p>
-                    <p className="text-xs md:text-sm text-muted-foreground">招待を送るスタッフのメールアドレス</p>
+                    <p className="text-xs md:text-sm text-link-foreground">
+                      招待を送るスタッフのメールアドレス
+                    </p>
                   </div>
                   <div className="p-3 bg-link rounded-lg">
                     <p className="font-medium text-sm flex items-center space-x-2">
@@ -256,7 +273,9 @@ export default function StaffManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">5</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                5
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">保存して招待送信</h4>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -266,10 +285,14 @@ export default function StaffManualPage() {
             </div>
           </div>
 
-          <Alert variant="destructive" className=" flex items-center space-x-2 bg-destructive-foreground">
+          <Alert
+            variant="destructive"
+            className=" flex items-center space-x-2 bg-destructive-foreground"
+          >
             <AlertTriangle className="h-4 w-4 text-destructive" />
             <AlertDescription>
-              <strong>重要:</strong> 招待は30日で期限切れとなります。期限切れの場合は再送信が必要です。
+              <strong>重要:</strong>{' '}
+              招待は30日で期限切れとなります。期限切れの場合は再送信が必要です。
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -277,7 +300,7 @@ export default function StaffManualPage() {
 
       {/* 直接登録手順 */}
       <div>
-        <div className='mb-5'>
+        <div className="mb-5">
           <div className="flex items-center space-x-2">
             <Info className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-semibold text-foreground">招待なしでの直接登録</h3>
@@ -286,7 +309,9 @@ export default function StaffManualPage() {
         <div className="space-y-4">
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-sm font-bold">1</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                1
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">招待メール送信モードをOFF</h4>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -296,16 +321,20 @@ export default function StaffManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-sm font-bold">2</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                2
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">基本情報タブで入力</h4>
                 <div className="mt-2 space-y-2">
                   <div className="p-3 bg-link rounded-lg">
                     <p className="font-medium text-sm flex items-center space-x-2">
-                      <ImageIcon className="h-4 w-4 text-link-foreground"  />
+                      <ImageIcon className="h-4 w-4 text-link-foreground" />
                       <span>スタッフ画像</span>
                     </p>
-                    <p className="text-sm text-muted-foreground">正方形の画像を推奨（JPG/PNG/WebP、5MB以下）</p>
+                    <p className="text-sm text-muted-foreground">
+                      正方形の画像を推奨（JPG/PNG/WebP、5MB以下）
+                    </p>
                   </div>
                   <div className="p-3 bg-link rounded-lg">
                     <p className="font-medium text-sm">名前（必須）・性別・年齢</p>
@@ -313,7 +342,9 @@ export default function StaffManualPage() {
                   </div>
                   <div className="p-3 bg-link rounded-lg">
                     <p className="font-medium text-sm">タグ・有効/無効</p>
-                    <p className="text-sm text-muted-foreground">カンマ区切りで最大5個、予約受付可否の設定</p>
+                    <p className="text-sm text-muted-foreground">
+                      カンマ区切りで最大5個、予約受付可否の設定
+                    </p>
                   </div>
                   <div className="p-3 bg-link rounded-lg">
                     <p className="font-medium text-sm flex items-center space-x-2">
@@ -327,7 +358,9 @@ export default function StaffManualPage() {
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-sm font-bold">3</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                3
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">詳細設定の入力</h4>
                 <div className="mt-2 space-y-2">
@@ -337,14 +370,18 @@ export default function StaffManualPage() {
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="font-medium text-sm">優先度</p>
-                    <p className="text-sm text-muted-foreground">0-999の数値（大きいほど上位表示）</p>
+                    <p className="text-sm text-muted-foreground">
+                      0-999の数値（大きいほど上位表示）
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-sm font-bold">4</div>
+              <div className="flex-shrink-0 w-8 h-8 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                4
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">対応外メニュータブで設定</h4>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -378,11 +415,12 @@ export default function StaffManualPage() {
                 <p>1. 編集画面の「認証・権限設定」セクション</p>
                 <p>2. スタッフ/マネージャー/オーナーから選択</p>
                 <p>3. 「スタッフを更新」ボタンで確定</p>
-                <Alert variant="destructive" className="flex items-center space-x-2 bg-destructive-foreground">
+                <Alert
+                  variant="destructive"
+                  className="flex items-center space-x-2 bg-destructive-foreground"
+                >
                   <AlertTriangle className="h-4 w-4 text-destructive" />
-                  <AlertDescription>
-                    権限変更は慎重に行ってください
-                  </AlertDescription>
+                  <AlertDescription>権限変更は慎重に行ってください</AlertDescription>
                 </Alert>
               </div>
             </div>
@@ -400,7 +438,8 @@ export default function StaffManualPage() {
             <div className="p-4 bg-muted rounded-lg">
               <h4 className="font-semibold text-foreground mb-2">シナリオA: 新規スタッフの入社</h4>
               <p className="text-sm text-muted-foreground mb-3">
-                基本情報と権限を設定して招待メール送信 → スタッフがメール内リンクからアカウント作成 → 管理者が詳細設定（指名料・対応外メニュー・タグ付け） → 勤務スケジュール設定
+                基本情報と権限を設定して招待メール送信 → スタッフがメール内リンクからアカウント作成
+                → 管理者が詳細設定（指名料・対応外メニュー・タグ付け） → 勤務スケジュール設定
               </p>
               <div className="text-xs text-muted-foreground/80">
                 例：新人スタッフに「スタッフ」権限を付与し、対応外メニューにパーマやカラーを設定。タグに「新人」「カット専門」を追加。
@@ -410,7 +449,8 @@ export default function StaffManualPage() {
             <div className="p-4 bg-muted rounded-lg">
               <h4 className="font-semibold text-foreground mb-2">シナリオB: スタッフ情報の更新</h4>
               <p className="text-sm text-muted-foreground mb-3">
-                定期的なプロフィール写真・自己紹介文の更新 → スキル向上に伴う対応可能メニューの追加 → タグの更新（「新人」→「ベテラン」） → 権限昇格（スタッフ→マネージャー）
+                定期的なプロフィール写真・自己紹介文の更新 → スキル向上に伴う対応可能メニューの追加
+                → タグの更新（「新人」→「ベテラン」） → 権限昇格（スタッフ→マネージャー）
               </p>
               <div className="text-xs text-muted-foreground/80">
                 3ヶ月ごとの写真更新、半年ごとのスキル見直し、年1回の権限・指名料見直しを推奨。
@@ -431,16 +471,28 @@ export default function StaffManualPage() {
               <h4 className="font-semibold text-foreground mb-3">よくあるエラーと対処法</h4>
               <div className="space-y-3">
                 <div className="p-3 bg-destructive-foreground rounded-lg">
-                  <p className="font-medium text-destructive text-sm">「このメールアドレスは既に登録されています」</p>
-                  <p className="text-destructive text-xs mt-1">招待管理セクションで既存の招待を確認するか、別のメールアドレスを使用</p>
+                  <p className="font-medium text-destructive text-sm">
+                    「このメールアドレスは既に登録されています」
+                  </p>
+                  <p className="text-destructive text-xs mt-1">
+                    招待管理セクションで既存の招待を確認するか、別のメールアドレスを使用
+                  </p>
                 </div>
                 <div className="p-3 bg-warning rounded-lg">
-                  <p className="font-medium text-warning-foreground text-sm">「スタッフ作成上限に達しました」</p>
-                  <p className="text-warning-foreground text-xs mt-1">不要なスタッフを削除するか、プランのアップグレードを検討</p>
+                  <p className="font-medium text-warning-foreground text-sm">
+                    「スタッフ作成上限に達しました」
+                  </p>
+                  <p className="text-warning-foreground text-xs mt-1">
+                    不要なスタッフを削除するか、プランのアップグレードを検討
+                  </p>
                 </div>
                 <div className="p-3 bg-info-foreground rounded-lg">
-                  <p className="font-medium text-info text-sm">「画像アップロードに失敗しました」</p>
-                  <p className="text-info text-xs mt-1">画像を圧縮（2MB以下推奨）し、JPG/PNG/WebP形式を使用</p>
+                  <p className="font-medium text-info text-sm">
+                    「画像アップロードに失敗しました」
+                  </p>
+                  <p className="text-info text-xs mt-1">
+                    画像を圧縮（2MB以下推奨）し、JPG/PNG/WebP形式を使用
+                  </p>
                 </div>
               </div>
             </div>
@@ -515,27 +567,33 @@ export default function StaffManualPage() {
         <CardContent className="space-y-4">
           <div className="space-y-4">
             <div>
-              <h4 className="font-semibold text-foreground">Q: スタッフが招待メールを受信できない</h4>
+              <h4 className="font-semibold text-foreground">
+                Q: スタッフが招待メールを受信できない
+              </h4>
               <p className="text-sm text-muted-foreground mt-1">
-                A: メールアドレスが正しいか確認し、迷惑メールフォルダをチェック。招待管理セクションから再送信も可能です。
+                A:
+                メールアドレスが正しいか確認し、迷惑メールフォルダをチェック。招待管理セクションから再送信も可能です。
               </p>
             </div>
             <div>
               <h4 className="font-semibold text-foreground">Q: 権限の違いがわからない</h4>
               <p className="text-sm text-muted-foreground mt-1">
-                A: スタッフ（自分の予約・スケジュールのみ）、マネージャー（＋顧客管理・他スタッフ管理）、オーナー（＋設定・料金・全機能）
+                A:
+                スタッフ（自分の予約・スケジュールのみ）、マネージャー（＋顧客管理・他スタッフ管理）、オーナー（＋設定・料金・全機能）
               </p>
             </div>
             <div>
               <h4 className="font-semibold text-foreground">Q: 退職したスタッフの扱い方</h4>
               <p className="text-sm text-muted-foreground mt-1">
-                A: 完全削除（データも含めて削除、復元不可）または無効化（データは残して予約受付を停止、推奨）を選択できます。
+                A:
+                完全削除（データも含めて削除、復元不可）または無効化（データは残して予約受付を停止、推奨）を選択できます。
               </p>
             </div>
             <div>
               <h4 className="font-semibold text-foreground">Q: 優先度の使い方</h4>
               <p className="text-sm text-muted-foreground mt-1">
-                A: 数値が大きいほど予約画面で上位表示。同じ優先度の場合は指名料が安い順。ベテランスタッフを上位にする際に活用。
+                A:
+                数値が大きいほど予約画面で上位表示。同じ優先度の場合は指名料が安い順。ベテランスタッフを上位にする際に活用。
               </p>
             </div>
           </div>
@@ -559,8 +617,7 @@ export default function StaffManualPage() {
             <div className="p-4 bg-accent-2-foreground rounded-lg">
               <h4 className="font-semibold text-accent-2 mb-2">タグの活用例</h4>
               <p className="text-sm text-accent-2">
-                スキル：「カラー専門」「パーマ得意」、
-                経験：「新人」「ベテラン」「店長」、
+                スキル：「カラー専門」「パーマ得意」、 経験：「新人」「ベテラン」「店長」、
                 特徴：「メンズ対応」「キッズカット可」
               </p>
             </div>
@@ -577,9 +634,7 @@ export default function StaffManualPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h4 className="font-semibold text-link-foreground mb-2">技術サポート</h4>
-              <p className="text-sm text-link-foreground">
-                support@bocker.jp
-              </p>
+              <p className="text-sm text-link-foreground">support@bocker.jp</p>
               <p className="text-xs text-link-foreground mt-1">営業時間: 平日 10:00-18:00</p>
             </div>
             <div>
@@ -587,11 +642,13 @@ export default function StaffManualPage() {
               <p className="text-sm text-link-foreground">
                 入社前に招待メール送信 → 初日にアカウント作成サポート → 1週間以内に詳細設定完了
               </p>
-              <p className="text-xs text-link-foreground mt-1">スムーズな導入のために推奨される手順です</p>
+              <p className="text-xs text-link-foreground mt-1">
+                スムーズな導入のために推奨される手順です
+              </p>
             </div>
           </div>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

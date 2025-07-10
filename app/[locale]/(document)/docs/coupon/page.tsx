@@ -21,7 +21,7 @@ export default function CouponManualPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-accent rounded-lg">
+          <div className="p-2 bg-muted rounded-lg">
             <Gift className="h-6 w-6 text-primary" />
           </div>
           <div>
@@ -153,7 +153,7 @@ export default function CouponManualPage() {
               <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">1</div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">クーポン作成画面を開く</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   サイドメニューの「クーポン」→「クーポンを追加」ボタンをクリック
                 </p>
               </div>
@@ -245,7 +245,7 @@ export default function CouponManualPage() {
               <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">6</div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">「作成」ボタンをクリックして完了</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   作成したクーポンが一覧画面に表示されます
                 </p>
               </div>

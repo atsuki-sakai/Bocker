@@ -6,9 +6,9 @@ import { Inter } from 'next/font/google';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { cn } from '@/lib/utils';
-import Image from 'next/image';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { cn } from '@/lib/utils'
+import Image from 'next/image'
 import {
   Users,
   Calendar,
@@ -19,21 +19,21 @@ import {
   ShoppingCart,
   Menu as MenuIcon,
   type LucideIcon,
-} from 'lucide-react';
+} from 'lucide-react'
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Bocker操作ガイド',
   description: 'Bocker（ブッカー）美容サロン向け予約管理システムの操作ガイド',
-};
+}
 
 interface DocSection {
-  title: string;
-  href: string;
-  icon: LucideIcon;
-  description: string;
-  badge?: string;
+  title: string
+  href: string
+  icon: LucideIcon
+  description: string
+  badge?: string
 }
 
 const docSections: DocSection[] = [
@@ -100,7 +100,7 @@ const docSections: DocSection[] = [
     description: '基本設定・営業時間・決済設定',
     badge: '初期設定',
   },
-];
+]
 
 const SidebarContent = () => (
   <div className="sticky top-24">
@@ -117,7 +117,7 @@ const SidebarContent = () => (
             <span className="font-medium">{section.title}</span>
           </div>
           {section.badge && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs border-border border">
               {section.badge}
             </Badge>
           )}
@@ -125,10 +125,10 @@ const SidebarContent = () => (
       ))}
     </nav>
   </div>
-);
+)
 
 interface DocsLayoutProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 export default function DocsLayout({ children }: DocsLayoutProps) {
@@ -141,7 +141,9 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Image src="/assets/images/logo.png" alt="Bocker" width={32} height={32} />
-                <h1 className="text-base md:text-lg font-bold text-foreground">Bocker 操作ドキュメント</h1>
+                <h1 className="text-base md:text-lg font-bold text-foreground">
+                  Bocker 操作ドキュメント
+                </h1>
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-4 text-sm text-muted-foreground">
@@ -156,6 +158,7 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-full max-w-xs sm:max-w-sm">
+                  <SheetTitle className="sr-only">メニュー</SheetTitle>
                   <ScrollArea className="h-full pr-4">
                     <SidebarContent />
                   </ScrollArea>
@@ -200,5 +203,5 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
         </div>
       </footer>
     </div>
-  );
+  )
 }

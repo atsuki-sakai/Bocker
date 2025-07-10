@@ -144,73 +144,81 @@ export const MenuList = memo(() => {
       <div className="space-y-4">
         {menusToDisplay.map((menu: Doc<'menu'>) => (
           <CardContent key={menu._id} className="p-4">
-            <div className="flex items-start gap-4">
-              <div className="relative h-16 w-16 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
-                {menu.images && menu.images.length > 0 && menu.images[0]?.thumbnail_url ? (
-                  <Image
-                    src={menu.images[0]?.thumbnail_url || ''}
-                    alt={menu.name || ''}
-                    fill
-                    className="object-cover"
-                    loading="lazy"
-                    sizes="64px"
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center">
-                    <p className="text-muted-foreground text-lg font-bold uppercase">
-                      {menu.name?.slice(0, 1)}
-                    </p>
-                  </div>
-                )}
-              </div>
+            <div className="flex items-start gap-4 w-full">
               <div className="flex-1 min-w-0 space-y-2">
-                <div className="flex flex-wrap gap-1">
-                  {menu.categories?.map((category) => (
-                    <Badge key={category} variant="outline" className="text-xs px-2 py-0.5">
-                      {category}
-                    </Badge>
-                  ))}
-                </div>
-                <h3 className="font-semibold text-lg truncate text-foreground">{menu.name}</h3>
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                  <div className="flex items-center font-medium">
-                    {menu.sale_price ? (
-                      <div className="flex items-center gap-2">
-                        <span className="line-through text-muted-foreground">
-                          ¥{menu.unit_price}
-                        </span>
-                        <span className="font-bold text-primary text-base">¥{menu.sale_price}</span>
-                      </div>
-                    ) : (
-                      <span className="font-semibold text-base">¥{menu.unit_price}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center text-muted-foreground">
-                    <Clock className="h-4 w-4 mr-1.5" />
-                    <span>{menu.duration_min}分</span>
-                  </div>
-                  {menu.payment_method && (
-                    <div className="flex items-center text-muted-foreground">
-                      <CreditCard className="h-4 w-4 mr-1.5" />
-                      <span className="text-xs">
-                        {menu.payment_method === 'all'
-                          ? 'オンライン・店頭'
-                          : menu.payment_method === 'credit_card'
-                            ? 'オンライン決済'
-                            : '店頭決済'}
-                      </span>
+                <div className="relative h-16 w-16 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
+                  {menu.images && menu.images.length > 0 && menu.images[0]?.thumbnail_url ? (
+                    <Image
+                      src={menu.images[0]?.thumbnail_url || ''}
+                      alt={menu.name || ''}
+                      fill
+                      className="object-cover"
+                      loading="lazy"
+                      sizes="64px"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center">
+                      <p className="text-muted-foreground text-lg font-bold uppercase">
+                        {menu.name?.slice(0, 1)}
+                      </p>
                     </div>
                   )}
                 </div>
-                {menu.tags && menu.tags.length > 0 && (
+                <div className=" space-y-2 w-full">
                   <div className="flex flex-wrap gap-1">
-                    {menu.tags.map((tag: string, idx: number) => (
-                      <Badge key={idx} variant="secondary" className="text-xs px-2 py-0.5">
-                        {tag}
+                    {menu.categories?.map((category) => (
+                      <Badge key={category} variant="outline" className="text-xs px-2 py-0.5">
+                        {category}
                       </Badge>
                     ))}
                   </div>
-                )}
+                  <h3 className="font-semibold text-lg truncate text-foreground">{menu.name}</h3>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                    <div className="flex items-center font-medium">
+                      {menu.sale_price ? (
+                        <div className="flex items-center gap-2">
+                          <span className="line-through text-muted-foreground">
+                            ¥{menu.unit_price}
+                          </span>
+                          <span className="font-bold text-primary text-base">
+                            ¥{menu.sale_price}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="font-semibold text-base">¥{menu.unit_price}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center text-muted-foreground">
+                      <Clock className="h-4 w-4 mr-1.5" />
+                      <span>{menu.duration_min}分</span>
+                    </div>
+                    {menu.payment_method && (
+                      <div className="flex items-center text-muted-foreground">
+                        <CreditCard className="h-4 w-4 mr-1.5" />
+                        <span className="text-xs">
+                          {menu.payment_method === 'all'
+                            ? 'オンライン・店頭'
+                            : menu.payment_method === 'credit_card'
+                              ? 'オンライン決済'
+                              : '店頭決済'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {menu.tags &&
+                      menu.tags.length > 0 &&
+                      menu.tags.map((tag: string, idx: number) => (
+                        <div
+                          key={idx}
+                          className="px-2 py-1 bg-primary text-primary-foreground rounded-md"
+                        >
+                          <p className="text-xs font-semibold text-center">{tag}</p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Link href={`/dashboard/menu/${menu._id}`}>
@@ -323,7 +331,7 @@ export const MenuList = memo(() => {
               )}
             </div>
             {/* 性別フィルター */}
-            <div className="flex flex-col sm:flex-row gap-2 items-end md:items-start">
+            <div className="flex flex-col sm:flex-row gap-2 items-end justify-end">
               <div className="flex flex-col gap-2 items-start">
                 <div className="flex items-start gap-1">
                   <span className="text-xs font-medium">性別で絞り込み</span>

@@ -1,19 +1,84 @@
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Calendar, 
-  Clock, 
-  Users, 
-  CreditCard, 
-  AlertTriangle,
-  CheckCircle,
+'use client'
+
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
+import {
+  Calendar,
+  Clock,
+  Users,
+  CreditCard,
   Info,
   Star,
   Phone,
   Mail,
-  LineChart
-} from 'lucide-react';
+  LineChart,
+} from 'lucide-react'
+import {
+  Support,
+  FaqCard,
+  ErrorWarningInfoCard,
+  ScenarioCard,
+} from '@/app/[locale]/(document)/_components'
+
+const scenarioItems = [
+  {
+    title: '電話予約の受付',
+    description:
+      'お客様から電話で予約依頼 → メニューを選択 → スタッフ選択(指名フリー可能) → 計算された空き枠を選択 → 予約作成 → 確認メール送信',
+    helpText:
+      'タイムライン画面で空き時間を確認したり、新規予約作成画面で顧客情報を入力したり、2通りの方法があります。',
+  },
+]
+const errorItems = [
+  {
+    title: 'この時間帯の予約はすでにいっぱいです',
+    description: '別の時間帯またはスタッフを選択してください',
+  },
+  {
+    title: '在庫が不足しています',
+    description: 'オプションの数量を減らすか、別のオプションを選択してください',
+  },
+  {
+    title: '決済に失敗しました',
+    description: 'カード情報を確認し、再度決済を試みてください',
+  },
+]
+
+const warningItems = [
+  {
+    title: '営業時間外の予約は作成できません',
+    description: '営業時間内の予約のみ作成できます',
+  },
+  {
+    title: 'オプション在庫は即座に減算されるため慎重に選択',
+    description: 'オプションの在庫は予約作成時点で即座に減算されます。',
+  },
+  {
+    title: '保留中の予約は30分ごとに自動キャンセル',
+    description: '保留中の予約は30分ごとに自動キャンセルされます。',
+  },
+]
+
+const faqs = [
+  {
+    question: '予約の変更はできますか？',
+    answer:
+      '現在のシステムでは予約の直接変更はできません。一度キャンセルして新規作成してください。',
+  },
+  {
+    question: '予約確認メールが届かない場合',
+    answer: '顧客情報のメールアドレスが正しいか確認してください。迷惑メールフォルダも確認を。',
+  },
+  {
+    question: 'ダブルブッキングを防ぐには？',
+    answer: 'システムが自動的に重複チェックを行います。警告が出た場合は時間を調整してください。',
+  },
+  {
+    question: 'キャンセル料は取れますか？',
+    answer: '現在のシステムではキャンセル料の自動徴収機能はありません。別途対応が必要です。',
+  },
+]
 
 export default function ReservationManualPage() {
   return (
@@ -26,31 +91,28 @@ export default function ReservationManualPage() {
           </div>
           <div>
             <h1 className="text-xl md:text-3xl font-bold text-foreground">予約管理機能</h1>
-            <p className="text-muted-foreground text-sm md:text-base">予約の作成・管理・キャンセル機能の詳細操作方法</p>
+            <p className="text-muted-foreground text-sm md:text-base">
+              予約の作成・管理・キャンセル機能の詳細操作方法
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">基本機能</Badge>
-          <Badge variant="secondary">リアルタイム管理</Badge>
-          <Badge variant="secondary">決済連携</Badge>
-          <Badge variant="secondary">在庫管理</Badge>
+          <Badge>基本機能</Badge>
+          <Badge>リアルタイム管理</Badge>
+          <Badge>決済連携</Badge>
+          <Badge>在庫管理</Badge>
         </div>
       </div>
 
       {/* 機能概要 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Info className="h-5 w-5 text-primary" />
-            <span>機能概要</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-foreground/90">
+      <div>
+        <h2 className="text-xl md:text-3xl font-bold text-foreground mb-2">機能概要</h2>
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
             予約管理機能は、美容サロンにおける予約の作成・管理・キャンセルを効率的に行うための総合システムです。
             リアルタイムでの空き状況確認、自動在庫管理、決済連携など、予約に関わるあらゆる業務をサポートします。
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
               <h4 className="font-semibold text-foreground">サロンスタッフ向け</h4>
@@ -70,7 +132,7 @@ export default function ReservationManualPage() {
               </ul>
             </div>
             <div className="space-y-3">
-              <h4 className="font-semibold text-foreground">お客様向け</h4>
+              <h4 className="font-semibold text-foreground">お客様向け(マイページ)</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center space-x-2">
                   <div className="w-1.5 h-1.5 bg-primary rounded-full" />
@@ -88,14 +150,15 @@ export default function ReservationManualPage() {
             </div>
           </div>
 
-          <Alert>
-            <Star className="h-4 w-4" />
-            <AlertDescription>
-              <strong>主要機能:</strong> タイムライン表示、リスト表示、決済連携、クーポン・ポイント適用、メール・LINE通知、在庫管理
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+            <Star className="h-4 w-4 text-link-foreground" />
+            <p className="text-link-foreground text-xs md:text-sm">
+              主要機能:
+              タイムライン表示、リスト表示、決済連携、クーポン・ポイント適用、メール・LINE通知、在庫管理
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* 画面構成 */}
       <Card>
@@ -107,25 +170,50 @@ export default function ReservationManualPage() {
             <div>
               <h4 className="font-semibold text-foreground mb-3">サロンスタッフ向け管理画面</h4>
               <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                  <Calendar className="h-5 w-5 text-primary" />
+                <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
+                  <Calendar className="h-5 w-5 text-link-foreground" />
                   <div>
-                    <p className="font-medium">予約タイムライン画面</p>
-                    <p className="text-sm text-muted-foreground">/dashboard/reservation</p>
+                    <p className="font-semibold text-link-foreground">予約タイムライン画面</p>
+                    <Link
+                      target="_blank"
+                      href="/dashboard"
+                      className="text-xs text-link-foreground underline"
+                    >
+                      /dashboard
+                    </Link>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                  <Clock className="h-5 w-5 text-primary" />
+                <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
+                  <Calendar className="h-5 w-5 text-link-foreground" />
                   <div>
-                    <p className="font-medium">新規予約作成画面</p>
-                    <p className="text-sm text-muted-foreground">/dashboard/reservation/add</p>
+                    <p className="font-semibold text-link-foreground">予約一覧画面</p>
+                    <Link
+                      target="_blank"
+                      href="/dashboard/reservation"
+                      className="text-xs text-link-foreground underline"
+                    >
+                      /dashboard/reservation
+                    </Link>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                  <Users className="h-5 w-5 text-primary" />
+                <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
+                  <Clock className="h-5 w-5 text-link-foreground" />
                   <div>
-                    <p className="font-medium">予約詳細画面</p>
-                    <p className="text-sm text-muted-foreground">/dashboard/reservation/[予約ID]</p>
+                    <p className="font-semibold text-link-foreground">新規予約作成画面</p>
+                    <Link
+                      target="_blank"
+                      href="/dashboard/reservation/add"
+                      className="text-xs text-link-foreground underline"
+                    >
+                      /dashboard/reservation/add
+                    </Link>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-link rounded-lg">
+                  <Users className="h-5 w-5 text-link-foreground" />
+                  <div>
+                    <p className="font-semibold text-link-foreground">予約詳細画面</p>
+                    <p className="text-xs text-link-foreground">/dashboard/reservation/[予約ID]</p>
                   </div>
                 </div>
               </div>
@@ -133,25 +221,29 @@ export default function ReservationManualPage() {
             <div>
               <h4 className="font-semibold text-foreground mb-3">お客様向け画面</h4>
               <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                  <Mail className="h-5 w-5 text-success" />
+                <div className="flex items-center space-x-3 p-3 bg-neon-foreground rounded-lg">
+                  <Mail className="h-5 w-5 text-neon" />
                   <div>
-                    <p className="font-medium">予約完了メール</p>
-                    <p className="text-sm text-muted-foreground">確認リンク付き</p>
+                    <p className="font-semibold text-neon">予約完了 LINE・メール通知</p>
+                    <p className="text-xs md:text-sm text-neon">確認リンク付き</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                  <Phone className="h-5 w-5 text-success" />
+                <div className="flex items-center space-x-3 p-3 bg-neon-foreground rounded-lg">
+                  <Phone className="h-5 w-5 text-neon" />
                   <div>
-                    <p className="font-medium">LINE通知</p>
-                    <p className="text-sm text-muted-foreground">予約確認・リマインダー</p>
+                    <p className="font-semibold text-neon">自動予約確認</p>
+                    <p className="text-xs md:text-sm text-neon">
+                      当日の3時間前に予約確認LINE・メールを送信
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                  <LineChart className="h-5 w-5 text-success" />
+                <div className="flex items-center space-x-3 p-3 bg-neon-foreground rounded-lg">
+                  <LineChart className="h-5 w-5 text-neon" />
                   <div>
-                    <p className="font-medium">マイページ</p>
-                    <p className="text-sm text-muted-foreground">予約履歴・詳細確認</p>
+                    <p className="font-semibold text-neon">マイページ予約管理</p>
+                    <p className="text-xs md:text-sm text-neon">
+                      予約履歴・ポイント確認、予約キャンセル
+                    </p>
                   </div>
                 </div>
               </div>
@@ -169,79 +261,95 @@ export default function ReservationManualPage() {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">1</div>
+              <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                1
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">予約作成画面を開く</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   サイドメニューの「予約」→「予約を追加」をクリック、またはタイムライン画面右上の「新規予約」ボタンをクリック
                 </p>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">2</div>
+              <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                2
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">顧客情報の入力</h4>
                 <div className="mt-2 space-y-2">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm">既存顧客の場合</p>
-                    <p className="text-sm text-muted-foreground">「既存のお客様」を選択し、顧客検索ボックスで名前や電話番号を入力</p>
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground">既存顧客の場合</p>
+                    <p className="text-xs md:text-sm text-link-foreground">
+                      「既存のお客様」を選択し、顧客検索ボックスで名前や電話番号を入力
+                    </p>
                   </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-sm">新規顧客の場合</p>
-                    <p className="text-sm text-muted-foreground">「新規のお客様」を選択し、姓・名（必須）、電話番号（必須）を入力</p>
+                  <div className="p-3 bg-link rounded-lg">
+                    <p className="font-semibold text-link-foreground">新規顧客の場合</p>
+                    <p className="text-xs md:text-sm text-link-foreground">
+                      「新規のお客様」を選択し、姓・名（必須）、電話番号（必須）を入力
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">3</div>
+              <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                3
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">予約日時の選択</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   カレンダーから予約日を選択、開始時間をプルダウンから選択（終了時間は選択メニューから自動計算）
                 </p>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">4</div>
+              <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                4
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">スタッフ・メニューの選択</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   担当スタッフをプルダウンから選択（指名料がある場合は自動加算）、メニュー一覧から施術内容を選択
                 </p>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">5</div>
+              <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                5
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">料金計算と支払い方法</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   クーポン・ポイントの適用、支払い方法（現金・クレジットカード）を選択
                 </p>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">6</div>
+              <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                6
+              </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">予約の確定</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   「予約を作成」ボタンをクリック、確認画面で内容を最終確認後「確定」をクリック
                 </p>
               </div>
             </div>
           </div>
 
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              <strong>ヒント:</strong> 時間の重複チェックは自動で行われます。オプションの在庫は予約作成時点で即座に減算されます。
-            </AlertDescription>
-          </Alert>
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 ">
+            <Info className="h-6 w-6 text-link-foreground" />
+            <p className="text-xs md:text-sm text-link-foreground">
+              時間の重複チェックは自動で行われます。オプションの在庫は予約作成時点で即座に減算されます。
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -254,30 +362,53 @@ export default function ReservationManualPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h4 className="font-semibold text-foreground mb-3">タイムライン表示</h4>
+              <div className="bg-warning text-warning-foreground p-2 rounded-lg my-3">
+                <p className="text-xs md:text-sm">予約受付が完了した予約のみが表示されます。</p>
+              </div>
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">横軸: 5:00〜翌5:00の時間軸（30分刻み）</p>
-                <p className="text-sm text-muted-foreground">縦軸: スタッフ別の予約状況</p>
-                <p className="text-sm text-muted-foreground">予約ブロックをクリックで詳細表示</p>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  横軸: 5:00〜翌5:00の時間軸（30分刻み）
+                </p>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  縦軸: スタッフ別の予約状況
+                </p>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  予約ブロックをクリックで詳細表示
+                </p>
               </div>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground mb-3">ステータス表示</h4>
+              <h4 className="font-semibold text-foreground mb-3">予約一覧</h4>
+
+              <div className="space-y-2">
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  期間やステータス、スタッフによって予約を絞り込む事ができます。
+                </p>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  予約の詳細をクリックで詳細表示できます。
+                </p>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground mb-3">全予約ステータス表示</h4>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-primary rounded-full" />
-                  <span className="text-sm">予約受付済み（confirmed）</span>
+                  <div className="min-w-3 min-h-3 bg-link-foreground rounded-full" />
+                  <span className="text-sm">予約受付済み</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-warning rounded-full" />
-                  <span className="text-sm">保留中（pending）※決済待ち</span>
+                  <div className="min-w-3 min-h-3 bg-warning-foreground rounded-full" />
+                  <span className="text-sm">
+                    保留中　※オンライン決済待ち30分以内に決済が完了しない場合は自動でキャンセル
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-destructive rounded-full" />
-                  <span className="text-sm">キャンセル済み（cancelled）</span>
+                  <div className="min-w-3 min-h-3 bg-destructive rounded-full" />
+                  <span className="text-sm">返金・キャンセル済み</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-success rounded-full" />
-                  <span className="text-sm">完了（completed）</span>
+                  <div className="min-w-3 min-h-3 bg-success rounded-full" />
+                  <span className="text-sm">完了</span>
                 </div>
               </div>
             </div>
@@ -295,29 +426,38 @@ export default function ReservationManualPage() {
             <div>
               <h4 className="font-semibold text-foreground mb-3">スタッフによるキャンセル</h4>
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">1. 予約詳細画面を開く</p>
-                <p className="text-sm text-muted-foreground">2. 「予約をキャンセル」ボタンをクリック</p>
-                <p className="text-sm text-muted-foreground">3. キャンセル理由を入力</p>
-                <p className="text-sm text-muted-foreground">4. 在庫・ポイントが自動復元</p>
+                <p className="text-xs md:text-sm text-muted-foreground">1. 予約詳細画面を開く</p>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  2. 予約ステータスをキャンセルに変更して、ステータスを変更ボタンをクリック
+                </p>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  3. 在庫・ポイントが自動復元され、予約枠が再度予約受付可能となります。
+                </p>
               </div>
             </div>
             <div>
               <h4 className="font-semibold text-foreground mb-3">お客様によるキャンセル</h4>
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">1. メール・LINEのリンクからアクセス</p>
-                <p className="text-sm text-muted-foreground">2. キャンセル可能期限を確認</p>
-                <p className="text-sm text-muted-foreground">3. 「予約をキャンセル」ボタンをクリック</p>
-                <p className="text-sm text-muted-foreground">4. 確認画面で「キャンセルする」をクリック</p>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  1. メール・LINEのリンク、マイページからアクセス
+                </p>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  2.
+                  キャンセル可能期限ないの場合はキャンセルボタンをクリック(期限を過ぎた場合は電話でのキャンセルとなります)
+                </p>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  3. 在庫・ポイントが自動復元され、予約枠が再度予約受付可能となります。
+                </p>
               </div>
             </div>
           </div>
 
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>注意:</strong> キャンセル期限を過ぎるとお客様自身ではキャンセルできません。スタッフは期限に関係なくキャンセル可能です。
-            </AlertDescription>
-          </Alert>
+          <div className="bg-warning text-warning-foreground p-2 rounded-lg my-3 flex items-center space-x-2">
+            <Info className="min-h-6 min-w-6 text-warning-foreground" />
+            <p className="text-xs md:text-sm">
+              キャンセル期限を過ぎるとお客様自身ではキャンセルできません。スタッフは期限に関係なくキャンセル可能です。
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -328,24 +468,27 @@ export default function ReservationManualPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 bg-success/10 rounded-lg">
-              <h4 className="font-semibold text-foreground mb-3 flex items-center space-x-2">
+            <div className="">
+              <h4 className="font-semibold text-success mb-3 flex items-center space-x-2">
                 <CreditCard className="h-5 w-5 text-success" />
                 <span>現金決済</span>
               </h4>
-              <div className="space-y-2 text-sm text-muted-foreground">
+              <div className="space-y-2 text-xs md:text-sm text-muted-foreground">
                 <p>1. 予約作成時に「現金」を選択</p>
-                <p>2. 予約が即座に「確定」ステータスに</p>
-                <p>3. 来店時に現金で支払い</p>
-                <p>4. 30日後に自動的にポイント付与</p>
+                <p>2. 予約が即座に「予約受付済み」ステータスになります。</p>
+                <p>3. 来店時に現金で支払います。</p>
+                <p>4. 施術が完了したら、予約ステータスを「完了」に変更してください。</p>
+                <p>
+                  5. 30日後に自動的にポイント付与されます。(※ポイント付与は設定でON/OFF可能です)
+                </p>
               </div>
             </div>
-            <div className="p-4 bg-info/10 rounded-lg">
-              <h4 className="font-semibold text-foreground mb-3 flex items-center space-x-2">
-                <CreditCard className="h-5 w-5 text-primary" />
+            <div className="">
+              <h4 className="font-semibold text-info mb-3 flex items-center space-x-2">
+                <CreditCard className="h-5 w-5 text-info" />
                 <span>クレジットカード決済</span>
               </h4>
-              <div className="space-y-2 text-sm text-muted-foreground">
+              <div className="space-y-2 text-xs md:text-sm text-muted-foreground">
                 <p>1. 予約作成時に「クレジットカード」を選択</p>
                 <p>2. 予約が「保留」ステータスで作成</p>
                 <p>3. お客様がStripe決済ページで支払い</p>
@@ -357,154 +500,18 @@ export default function ReservationManualPage() {
       </Card>
 
       {/* 利用シナリオ */}
-      <Card>
-        <CardHeader>
-          <CardTitle>典型的な利用シナリオ</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-foreground mb-2">シナリオA: 電話予約の受付</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                お客様から電話で予約依頼 → 空き状況確認 → 予約作成 → 確認メール送信
-              </p>
-              <div className="text-xs text-muted-foreground/80">
-                タイムライン画面で空き時間を確認し、新規予約作成画面で顧客情報を入力。現金決済を選択して予約確定。
-              </div>
-            </div>
-
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-foreground mb-2">シナリオB: リピーター様の次回予約</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                施術終了後のお会計時 → 前回と同じメニューで予約 → ポイント使用の提案 → 予約カード発行
-              </p>
-              <div className="text-xs text-muted-foreground/80">
-                カルテ画面から「次回予約を作成」をクリック。前回の内容が自動入力されるため、日時のみ変更して予約作成。
-              </div>
-            </div>
-
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-foreground mb-2">シナリオC: 団体予約の受付</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                複数名の同時予約 → 時間調整 → グループ割引適用 → 合計金額計算
-              </p>
-              <div className="text-xs text-muted-foreground/80">
-                各人ごとに個別の予約を作成。開始時間をずらして効率的に配置し、クーポンを使用してグループ割引を適用。
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+      <ScenarioCard scenarioItems={scenarioItems} />
       {/* エラー・注意事項 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>エラー・注意事項</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold text-foreground mb-3">よくあるエラーと対処法</h4>
-              <div className="space-y-3">
-                <div className="p-3 bg-destructive/10 rounded-lg">
-                  <p className="font-medium text-destructive text-sm">「この時間帯の予約はすでにいっぱいです」</p>
-                  <p className="text-destructive/90 text-xs mt-1">別の時間帯またはスタッフを選択してください</p>
-                </div>
-                <div className="p-3 bg-warning/10 rounded-lg">
-                  <p className="font-medium text-warning text-sm">「在庫が不足しています」</p>
-                  <p className="text-warning/90 text-xs mt-1">オプションの数量を減らすか、別のオプションを選択してください</p>
-                </div>
-                <div className="p-3 bg-info/10 rounded-lg">
-                  <p className="font-medium text-info text-sm">「決済に失敗しました」</p>
-                  <p className="text-info/90 text-xs mt-1">カード情報を確認し、再度決済を試みてください</p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-foreground mb-3">操作時の注意点</h4>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>営業時間外の予約は作成できません</span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>オプション在庫は即座に減算されるため慎重に選択</span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>クーポンとポイントの併用可否を確認</span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>30分ごとの自動保存機能あり</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <ErrorWarningInfoCard
+        mainTitle="エラー・注意事項"
+        errorItems={errorItems}
+        warningItems={warningItems}
+      />
 
       {/* FAQ */}
-      <Card>
-        <CardHeader>
-          <CardTitle>よくある質問</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold text-foreground">Q: 予約の変更はできますか？</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                A: 現在のシステムでは予約の直接変更はできません。一度キャンセルして新規作成してください。
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground">Q: 予約確認メールが届かない場合</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                A: 顧客情報のメールアドレスが正しいか確認してください。迷惑メールフォルダも確認を。
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground">Q: ダブルブッキングを防ぐには？</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                A: システムが自動的に重複チェックを行います。警告が出た場合は時間を調整してください。
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground">Q: キャンセル料は取れますか？</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                A: 現在のシステムではキャンセル料の自動徴収機能はありません。別途対応が必要です。
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+      <FaqCard title="よくある質問" faqs={faqs} />
       {/* サポート情報 */}
-      <Card className="bg-link border-border">
-        <CardHeader>
-          <CardTitle className="text-link-foreground">サポート情報</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-semibold text-link-foreground mb-2">技術サポート</h4>
-              <p className="text-sm text-link-foreground">
-                support@bocker.jp
-              </p>
-              <p className="text-xs text-link-foreground mt-1">営業時間: 平日 10:00-18:00</p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-link-foreground mb-2">ヘルプセンター</h4>
-              <p className="text-sm text-link-foreground">
-                https://help.bocker.jp
-              </p>
-              <p className="text-xs text-link-foreground mt-1">よくある質問も掲載</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <Support />
     </div>
-  );
+  )
 }

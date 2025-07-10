@@ -7,7 +7,6 @@ import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
 import { DashboardSection } from '@/components/common'
-import Image from 'next/image'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { format } from 'date-fns'
 import type { Gender } from '@/convex/types'
@@ -465,7 +464,9 @@ export default function ReservationPage() {
 
               {customerData && !customerLoading && (
                 <div className="space-y-3">
-                  <Link href={`/dashboard/customer/${customerData.customer?.uid}`}>
+                  <Link
+                    href={`${customerData.customer ? `/dashboard/customer/${customerData.customer?.uid}` : '#'}`}
+                  >
                     <div>
                       <p className="text-muted-foreground">{t('customerName')}:</p>
                       <p className="font-medium text-lg underline hover:text-primary cursor-pointer">
@@ -522,18 +523,6 @@ export default function ReservationPage() {
 
           {staff || assignedStaff ? (
             <div className="flex items-start gap-4">
-              {((staff || assignedStaff)?.images?.length ?? 0) > 0 &&
-                (staff || assignedStaff)?.images[0].thumbnail_url && (
-                  <div className="relative h-auto min-w-16 border border-border shadow-sm rounded-md overflow-hidden flex items-center justify-center">
-                    <Image
-                      src={(staff || assignedStaff)!.images[0].thumbnail_url!}
-                      alt={(staff || assignedStaff)?.name ?? ''}
-                      width={150}
-                      height={150}
-                      className="object-cover"
-                    />
-                  </div>
-                )}
               <div>
                 <p className="font-medium text-lg">
                   {reservationData.reservation.is_free_nomination && assignedStaff

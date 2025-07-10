@@ -803,7 +803,7 @@ function StaffAddPage() {
                   </div>
                   <Separator />
                   {/* 詳細設定セクション */}
-                  fdsa
+
                   <div>
                     <div className="flex items-center mb-4">
                       <Sparkles className="h-5 w-5 mr-2 text-muted-foreground" />

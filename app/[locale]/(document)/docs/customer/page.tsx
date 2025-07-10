@@ -19,7 +19,7 @@ export default function CustomerManualPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-accent rounded-lg">
+          <div className="p-2 bg-muted rounded-lg">
             <Users className="h-6 w-6 text-primary" />
           </div>
           <div>
@@ -207,7 +207,7 @@ export default function CustomerManualPage() {
               <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">4</div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">マーケティング情報の入力</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   メールアドレス（メルマガ配信用）、性別、誕生日をカレンダーから選択
                 </p>
               </div>
@@ -217,7 +217,7 @@ export default function CustomerManualPage() {
               <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">5</div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">その他の情報</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   タグ（例：「常連」「カラー希望」「敏感肌」）、備考・メモ、初期ポイント
                 </p>
               </div>
@@ -227,7 +227,7 @@ export default function CustomerManualPage() {
               <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">6</div>
               <div className="flex-1">
                 <h4 className="font-semibold text-foreground">登録完了</h4>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   「顧客を追加」ボタンをクリック、正常に登録されると顧客一覧画面に戻る
                 </p>
               </div>

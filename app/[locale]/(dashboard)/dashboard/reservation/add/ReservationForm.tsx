@@ -895,34 +895,38 @@ export default function ReservationForm() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           {stepConfig.map((step, index) => (
-            <div key={step.id} className="flex items-center flex-1">
-              <div className="flex items-center">
-                <div
-                  className={cn(
-                    'w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300',
-                    currentStep >= step.id ? 'text-accent-2-foreground' : 'text-muted-foreground'
-                  )}
-                >
-                  {currentStep > step.id ? (
-                    <Check className="w-5 h-5" />
-                  ) : (
-                    <step.icon className="w-5 h-5" />
-                  )}
+            <div key={step.id} className="flex items-center justify-center w-full">
+              <div key={step.id} className="flex items-center w-full">
+                <div className="flex flex-col md:flex-row items-center">
+                  <div
+                    className={cn(
+                      'w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300',
+                      currentStep >= step.id ? 'text-accent-2' : 'text-muted-foreground'
+                    )}
+                  >
+                    {currentStep > step.id ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      <step.icon className="w-5 h-5" />
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      'text-xs md:text-sm font-medium text-center text-balance',
+                      currentStep >= step.id ? 'text-accent-2' : 'text-muted-foreground'
+                    )}
+                  >
+                    {step.title}
+                  </span>
                 </div>
-                <span
-                  className={cn(
-                    'mr-3 text-xs md:text-sm font-medium',
-                    currentStep >= step.id ? 'text-accent-2' : 'text-muted-foreground'
-                  )}
-                >
-                  {step.title}
-                </span>
               </div>
-              {index < stepConfig.length - 1 && (
-                <div className="flex-1 mx-4">
-                  <Progress value={currentStep > step.id ? 100 : 0} className="h-1" />
-                </div>
-              )}
+              <div className="flex items-center justify-center w-full mx-2 md:mx-4">
+                {index < stepConfig.length - 1 && (
+                  <div className="flex-1 min-w-10">
+                    <Progress value={currentStep > step.id ? 100 : 0} className="h-1" />
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -942,7 +946,7 @@ export default function ReservationForm() {
             <div className="space-y-6">
               <div className="bg-background rounded-2xl shadow-sm border border-border p-6">
                 <h2 className="text-2xl font-bold mb-2">{t('reservationMenus')}</h2>
-                <p className="text-muted-foreground mb-6">{t('menuSelectionLimit')}</p>
+                <p className="text-muted-foreground mb-6 text-sm">{t('menuSelectionLimit')}</p>
 
                 {/* カテゴリーフィルター */}
                 <div className="mb-6">
@@ -1236,9 +1240,13 @@ export default function ReservationForm() {
                             )}
                             <div>
                               <h3 className="font-semibold text-lg">{staff.name}</h3>
-                              {staff.extra_charge && staff.extra_charge > 0 && (
+                              {staff.extra_charge && staff.extra_charge > 0 ? (
                                 <p className="text-sm font-medium text-muted-foreground">
                                   指名料 ￥{staff.extra_charge.toLocaleString()}
+                                </p>
+                              ) : (
+                                <p className="text-sm font-medium text-muted-foreground">
+                                  指名料 無料
                                 </p>
                               )}
                             </div>
@@ -1375,7 +1383,7 @@ export default function ReservationForm() {
                       )}
                     >
                       <User className="w-6 h-6 mb-2 mx-auto" />
-                      <p className="font-medium">{t('existingCustomer')}</p>
+                      <p className="font-medium text-sm md:text-base">{t('existingCustomer')}</p>
                     </button>
                     <button
                       type="button"
@@ -1391,7 +1399,7 @@ export default function ReservationForm() {
                       )}
                     >
                       <Plus className="w-6 h-6 mb-2 mx-auto" />
-                      <p className="font-medium">{t('newCustomer')}</p>
+                      <p className="font-medium text-sm md:text-base">{t('newCustomer')}</p>
                     </button>
                   </div>
                 </div>
@@ -1519,7 +1527,7 @@ export default function ReservationForm() {
                           }
                           placeholder={tCommon('birthdayPlaceholder')}
                           toDate={new Date()}
-                          className="mt-1"
+                          className="mt-1 overflow-hidden"
                         />
                       </div>
                     </div>
@@ -1600,7 +1608,7 @@ export default function ReservationForm() {
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               {selectdate && selectTime && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground text-nowrap">
                   {format(selectdate!, 'yyyy年MM月dd日')}{' '}
                   {formatTimestamp(selectTime.startTimeUnix!, { useJST: true })} 〜{' '}
                   {formatTimestamp(selectTime.endTimeUnix!, { useJST: true })}
@@ -1614,24 +1622,23 @@ export default function ReservationForm() {
                   ￥{totalPriceCalculated.toLocaleString()}
                 </span>
               </p>
-            </div>
-
-            {/* 選択内容サマリー */}
-            <div className="flex items-center gap-4">
-              {selectedMenus.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{selectedMenus.length}個</span>
-                </div>
-              )}
-              {selectedStaffId && (
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {selectedStaffId === 'free' ? '指名フリー' : selectStaff?.name}
-                  </span>
-                </div>
-              )}
+              {/* 選択内容サマリー */}
+              <div className="flex items-center gap-4">
+                {selectedMenus.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{selectedMenus.length}個</span>
+                  </div>
+                )}
+                {selectedStaffId && (
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {selectedStaffId === 'free' ? '指名フリー' : selectStaff?.name}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
