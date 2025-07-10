@@ -329,30 +329,23 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
     }
 
     try {
-      // ポイント返還トランザクション作成
-      await this.createTransaction({
-        tenant_id: tenantId,
-        org_id: orgId,
-        customer_uid: customerUid,
-        reservation_id: reservationId,
-        points: refundPoints, // 返還は正の値
-        transaction_type: 'refund',
-        transaction_date_unix: Math.floor(Date.now() / 1000),
-        description: `予約キャンセルによるポイント返還 (予約ID: ${reservationId})`,
-      });
-
-      // ポイント残高を原子的に更新
-      const { error: updateError } = await this.supabaseServiceInstance
+      // ポイント残高を原子的に更新（取引履歴も同時に作成される）
+      const { data, error: updateError } = await this.supabaseServiceInstance
         .rpc('update_customer_points_atomic', {
           p_customer_uid: customerUid,
+          p_tenant_id: tenantId,
+          p_org_id: orgId,
           p_points_delta: refundPoints,
+          p_transaction_type: 'refund',
+          p_description: `予約キャンセルによるポイント返還 (予約ID: ${reservationId})`,
+          p_reservation_id: reservationId,
         });
       
       if (updateError) {
         throw updateError;
       }
       
-      console.log(`[PointTransactionRepository] Successfully refunded ${refundPoints} points to customer ${customerUid}`);
+      console.log(`[PointTransactionRepository] Successfully refunded ${refundPoints} points to customer ${customerUid}. Transaction ID: ${data?.[0]?.transaction_id || 'N/A'}`);
     } catch (error) {
       throwSupabaseError({
         callFunc: 'PointTransactionRepository.refundPointsForCancellation',
