@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react'
 import { useQuery, useConvex } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { LiffProvider } from '@/components/providers/LiffProvider'
-import { Loading } from '@/components/common'
 import { Id } from '@/convex/_generated/dataModel'
 
 // ストレージキー（組織IDごとに異なるキーを生成）
@@ -63,6 +62,10 @@ export function DynamicLiffProvider({ children, tenantId, orgId }: DynamicLiffPr
     orgId && tenantId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
   )
 
+  if (dbLiffId === null) {
+    console.log('dbLiff: ', dbLiffId)
+  }
+
   // デバッグログ: クエリの状態を確認
   useEffect(() => {
     console.log('[DynamicLiffProvider] Debug info:', {
@@ -72,7 +75,7 @@ export function DynamicLiffProvider({ children, tenantId, orgId }: DynamicLiffPr
       retryCount,
       liffId,
       showError,
-      errorMessage
+      errorMessage,
     })
   }, [tenantId, orgId, dbLiffId, retryCount, liffId, showError, errorMessage])
 
@@ -147,11 +150,12 @@ export function DynamicLiffProvider({ children, tenantId, orgId }: DynamicLiffPr
   }
 
   // ローディング表示
-  if (!liffId) {
-    return <Loading />
-  }
 
-  return <LiffProvider liffId={liffId}>{children}</LiffProvider>
+  // LIFF IDが設定されている場合はLiffProviderでラップ
+  if (liffId && liffId !== null) {
+    return <LiffProvider liffId={liffId}>{children}</LiffProvider>
+  }
+  return <>{children}</>
 }
 
 // Suspenseを使用したラッパーコンポーネント
