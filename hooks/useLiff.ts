@@ -4,7 +4,16 @@ import { LiffContext } from '@/components/providers/LiffProvider'
 export const useLiff = () => {
   const context = useContext(LiffContext)
   if (!context) {
-    throw new Error('useLiff must be used within a LiffProvider')
+    // LINE APIが設定されていない場合のデフォルト値を返す
+    return {
+      liff: null,
+      isLoggedIn: false,
+      isLoading: false,
+      isInitialized: false,
+      isError: false,
+      errorMessage: null,
+      profile: null,
+    }
   }
   return context
 }
