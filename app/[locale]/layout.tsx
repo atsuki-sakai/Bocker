@@ -22,24 +22,24 @@ export const metadata: Metadata = {
 
 type Props = {
   children: React.ReactNode
-  // Next.js v15 では params は Promise になる
-  params: Promise<{ locale: string }>
+  params: {
+    locale: Languages
+  }
 }
 
 export default async function LocaleLayout({ children, params }: Props) {
-  // params は Promise となるため非同期で展開する
-  const { locale } = await params
+  const { locale } = params
 
   // Ensure that the incoming `locale` is valid
-  if (!routing.locales.includes(locale as Languages)) {
+  if (!routing.locales.includes(locale)) {
     notFound()
   }
 
   // Providing all messages to the client side
-  const messages = await getMessages()
+  const messages = await getMessages({ locale })
 
   return (
-    <NextIntlClientProvider messages={messages} locale={locale}>
+    <NextIntlClientProvider messages={messages} locale={locale} timeZone="Asia/Tokyo">
       <ClientLayout>{children}</ClientLayout>
       {/* <Analytics /> */}
     </NextIntlClientProvider>
