@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useLiff } from '@/hooks/useLiff'
 import { toast } from 'sonner'
-import { Processing } from '@/components/common/Processing'
+import { Loading } from '@/components/common'
 import { isLineTokenValid } from '@/lib/auth/lineAuthCleanup'
 import type { Liff } from '@line/liff'
 import { Id } from '@/convex/_generated/dataModel'
@@ -230,5 +230,5 @@ export default function AuthCallbackPage() {
     )
   }
 
-  return <Processing />
+  return <Loading />
 }

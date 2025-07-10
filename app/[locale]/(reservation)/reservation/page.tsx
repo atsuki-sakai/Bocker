@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Processing } from '@/components/common/Processing'
 import { Button } from '@/components/ui/button'
 import { Id } from '@/convex/_generated/dataModel'
+import { Loading } from '@/components/common'
 
 export default function ReserveRedirectPage() {
   const router = useRouter()
@@ -94,7 +95,7 @@ export default function ReserveRedirectPage() {
   }, [showErrorToast])
 
   if (!orgId || !tenantId || isProcessingLineCallback) {
-    return <Processing />
+    return <Loading />
   }
 
   // Show error state for LINE callback errors
