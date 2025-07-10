@@ -370,7 +370,8 @@
     "tutorial": {
       "setupGuide": {
         "title": "Initial Setup Guide",
-        "subtitle": "Complete the initial setup to start accepting reservations 🚀"
+        "subtitle": "Complete the initial setup to start accepting reservations 🚀",
+        "subtitle2": "It takes about 10 minutes to start accepting reservations. Please share the reservation link with your customers by sharing the reservation page URL under \"Settings\" → \"Reservation Settings\"."
       },
       "completed": "completed",
       "stepCompleted": "STEP {step} / Completed",
@@ -634,6 +635,7 @@
     "coupons": "Coupon Management",
     "pointSettings": "Point Settings",
     "settings": "Settings",
+    "document": "Document",
     "subscription": "Subscription",
     "myPage": "My Page",
     "signOut": "Sign Out",
@@ -2532,6 +2534,7 @@
     "couponCode": "Coupon Code",
     "discountType": "Discount Type",
     "discountValue": "Discount Amount",
+    "usedCount": "Used Count",
     "percentage": "Discount Rate",
     "fixed": "Fixed Discount",
     "percentageDiscount": "Discount Rate",

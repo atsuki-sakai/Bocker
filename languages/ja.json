@@ -299,6 +299,7 @@
     "coupons": "クーポン管理",
     "pointSettings": "ポイント設定",
     "settings": "設定",
+    "document": "操作ガイド",
     "subscription": "サブスクリプション",
     "myPage": "マイページ",
     "signOut": "ログアウト",
@@ -2262,6 +2263,7 @@
     "couponCode": "クーポンコード",
     "discountType": "割引タイプ",
     "discountValue": "割引額",
+    "usedCount": "利用回数",
     "percentage": "割引率",
     "fixed": "固定割引",
     "percentageDiscount": "割引率",
@@ -2531,7 +2533,8 @@
     "tutorial": {
       "setupGuide": {
         "title": "初期設定ガイド",
-        "subtitle": "予約受付を開始するための初期設定を完了させましょう🚀"
+        "subtitle": "予約受付を開始するための初期設定を完了させましょう🚀",
+        "subtitle2": "大体10分ほどでWeb予約の受付が開始できます。予約リンクは「設定」→「予約設定」の予約ページURLをお客様に共有してください。"
       },
       "completed": "完了",
       "stepCompleted": "STEP {step} / 完了",
