@@ -16,7 +16,6 @@ import {
   Calendar,
   Menu,
   Users,
-  ExternalLink,
   AlertCircle,
   ChevronRight,
 } from 'lucide-react'
@@ -70,15 +69,6 @@ export const Tutorial = () => {
       },
       {
         id: 4,
-        titleKey: 'steps.lineIntegration.title',
-        descriptionKey: 'steps.lineIntegration.description',
-        icon: ExternalLink,
-        required: true,
-        href: '/dashboard/setting',
-        checkLabelKey: 'steps.lineIntegration.checkLabel',
-      },
-      {
-        id: 5,
         titleKey: 'steps.menuRegistration.title',
         descriptionKey: 'steps.menuRegistration.description',
         icon: Menu,
@@ -87,7 +77,7 @@ export const Tutorial = () => {
         checkLabelKey: 'steps.menuRegistration.checkLabel',
       },
       {
-        id: 6,
+        id: 5,
         titleKey: 'steps.staffRegistration.title',
         descriptionKey: 'steps.staffRegistration.description',
         icon: Users,
@@ -96,7 +86,7 @@ export const Tutorial = () => {
         checkLabelKey: 'steps.staffRegistration.checkLabel',
       },
       {
-        id: 7,
+        id: 6,
         titleKey: 'steps.staffSchedule.title',
         descriptionKey: 'steps.staffSchedule.description',
         icon: Calendar,
@@ -214,32 +204,25 @@ export const Tutorial = () => {
       missing.push(t(tutorialSteps[2].checkLabelKey))
     }
 
-    // Step 4: LINE連携
-    if (apiConfig?.liff_id && apiConfig?.line_channel_secret && apiConfig?.line_access_token) {
+    // Step 4: メニュー
+    if (menus && menus.results.length > 0) {
       completed.push(4)
     } else {
       missing.push(t(tutorialSteps[3].checkLabelKey))
     }
 
-    // Step 5: メニュー
-    if (menus && menus.results.length > 0) {
+    // Step 6: スタッフ
+    if (staffList && staffList.results.length > 0) {
       completed.push(5)
     } else {
       missing.push(t(tutorialSteps[4].checkLabelKey))
     }
 
-    // Step 6: スタッフ
-    if (staffList && staffList.results.length > 0) {
+    // Step 7: スタッフ勤務スケジュール（一人でもスケジュールが設定されていればOK）
+    if (hasAnyStaffSchedule === true) {
       completed.push(6)
     } else {
       missing.push(t(tutorialSteps[5].checkLabelKey))
-    }
-
-    // Step 7: スタッフ勤務スケジュール（一人でもスケジュールが設定されていればOK）
-    if (hasAnyStaffSchedule === true) {
-      completed.push(7)
-    } else {
-      missing.push(t(tutorialSteps[6].checkLabelKey))
     }
 
     setCompletedSteps(completed)
@@ -287,6 +270,11 @@ export const Tutorial = () => {
               <div>
                 <h1 className="text-2xl font-bold mb-2 text-neon">{t('setupGuide.title')}</h1>
                 <p className="text-muted-foreground text-sm">{t('setupGuide.subtitle')}</p>
+                <div className="p-2 rounded-md bg-accent-2-foreground text-accent-2  mt-2">
+                  <span className="font-semibold text-xs md:text-sm tracking-wide">
+                    {t('setupGuide.subtitle2')}
+                  </span>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2 mb-2">
@@ -299,7 +287,7 @@ export const Tutorial = () => {
               </span>
             </div>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3  xl:grid-cols-6 gap-2 md:gap-4">
             {/* Step Cards */}
             {tutorialSteps.map((step, index) => {
               const Icon = step.icon
@@ -331,9 +319,9 @@ export const Tutorial = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-start justify-center">
+                    <div className="flex items-start justify-center h-full">
                       <div className="flex items-center justify-center gap-2">
-                        <div>
+                        <div className="h-full">
                           <div className="text-sm font-bold mt-2 flex items-center gap-1">
                             <Icon className="min-h-4 min-w-4 max-h-4 max-w-4 text-accent" />
                             {t(step.titleKey)}
