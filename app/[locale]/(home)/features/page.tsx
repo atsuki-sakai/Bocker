@@ -1,5 +1,11 @@
-import { FeatureSection } from "../_components";
+import { FeatureSection, Header, Footer } from '@/app/[locale]/(home)/_components'
 
 export default function FeaturePage() {
-    return <FeatureSection />
+  return (
+    <>
+      <Header />
+      <FeatureSection />
+      <Footer />
+    </>
+  )
 }

@@ -119,8 +119,9 @@ export function DynamicLiffProvider({ children, tenantId, orgId }: DynamicLiffPr
     }
     // nullが明示的に返された場合（サロンIDは正しいがLIFF IDが設定されていない）
     else if (dbLiffId === null) {
-      setErrorMessage('このサロンにはLINE連携が設定されていません。管理者にお問い合わせください。')
-      setShowError(true)
+      // TODO: メールだけでも動作する様に変更
+      // setErrorMessage('このサロンにはLINE連携が設定されていません。管理者にお問い合わせください。')
+      // setShowError(true)
     }
     return
   }, [dbLiffId, retryCount, orgId])
