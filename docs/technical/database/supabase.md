@@ -157,7 +157,7 @@
 | tenant_id | text | NO | - | テナントID |
 | org_id | text | NO | - | 組織ID |
 | reservation_id | text | YES | - | 予約ID（Convex形式） |
-| customer_id | uuid | NO | - | 顧客ID（外部キー） |
+| customer_uid | uuid | NO | - | 顧客UID（外部キー） |
 | points | integer | NO | - | ポイント数 |
 | transaction_type | text | YES | - | 取引タイプ |
 | transaction_date_unix | bigint | NO | - | 取引日時（Unix時間） |
@@ -170,7 +170,7 @@
 
 **制約**:
 - PRIMARY KEY (id)
-- FOREIGN KEY (customer_id) REFERENCES customer(uid) [fk_point_transaction_customer]
+- FOREIGN KEY (customer_uid) REFERENCES customer(uid) [fk_point_transaction_customer_uid]
 
 ### 5. point_task_queue（ポイントタスクキュー）
 
@@ -182,7 +182,7 @@
 | tenant_id | text | NO | - | テナントID |
 | org_id | text | NO | - | 組織ID |
 | reservation_id | text | YES | - | 予約ID（Convex形式） |
-| customer_id | uuid | NO | - | 顧客ID（外部キー） |
+| customer_uid | uuid | NO | - | 顧客UID（外部キー） |
 | points | integer | YES | - | ポイント数 |
 | scheduled_for_unix | bigint | YES | - | 実行予定日時（Unix時間） |
 | status | text | YES | - | ステータス |
@@ -194,7 +194,7 @@
 
 **制約**:
 - PRIMARY KEY (id)
-- FOREIGN KEY (customer_id) REFERENCES customer(uid) [fk_point_task_queue_customer]
+- FOREIGN KEY (customer_uid) REFERENCES customer(uid) [fk_point_task_queue_customer_uid]
 
 ### 6. coupon_transaction（クーポン取引）
 
@@ -206,7 +206,7 @@
 | tenant_id | text | NO | - | テナントID |
 | org_id | text | NO | - | 組織ID |
 | coupon_id | text | NO | - | クーポンID（Convex形式・TEXT型） |
-| customer_id | uuid | NO | - | 顧客ID（外部キー） |
+| customer_uid | uuid | NO | - | 顧客UID（外部キー） |
 | reservation_id | text | NO | - | 予約ID（Convex形式） |
 | transaction_date_unix | bigint | NO | - | 取引日時（Unix時間） |
 | discount_amount | integer | YES | - | 割引額 |
@@ -218,7 +218,7 @@
 
 **制約**:
 - PRIMARY KEY (id)
-- FOREIGN KEY (customer_id) REFERENCES customer(uid)
+- FOREIGN KEY (customer_uid) REFERENCES customer(uid)
 
 ### 7. carte（カルテ）
 
@@ -229,7 +229,7 @@
 | id | uuid | NO | gen_random_uuid() | 主キー |
 | tenant_id | text | NO | - | テナントID |
 | org_id | text | NO | - | 組織ID |
-| customer_id | uuid | NO | - | 顧客ID（外部キー） |
+| customer_uid | uuid | NO | - | 顧客UID（外部キー） |
 | skin_type | text | YES | - | 肌タイプ |
 | hair_type | text | YES | - | 髪タイプ |
 | allergy_history | text | YES | - | アレルギー歴 |
@@ -243,7 +243,7 @@
 
 **制約**:
 - PRIMARY KEY (id)
-- FOREIGN KEY (customer_id) REFERENCES customer(uid)
+- FOREIGN KEY (customer_uid) REFERENCES customer(uid)
 
 ### 8. carte_detail（カルテ詳細）
 
