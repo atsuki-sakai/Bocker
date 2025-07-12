@@ -134,7 +134,6 @@ export function LineChart({
                 left: 5,
                 bottom: 10,
               }}
-              className="outline-none"
             >
               {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />}
               <XAxis
