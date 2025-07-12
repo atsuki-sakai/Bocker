@@ -88,7 +88,7 @@ export function LineChart({
   // データが空の場合の表示
   if (!data || data.length === 0) {
     return (
-      <Card className={className}>
+      <Card className={className + ' border-none focus:outline-none focus-visible:ring-0'}>
         {(title || description) && (
           <CardHeader>
             {title && <CardTitle className="text-lg">{title}</CardTitle>}
@@ -112,7 +112,7 @@ export function LineChart({
   }
 
   return (
-    <Card className={className}>
+    <Card className={className + ' focus:outline-none focus-visible:ring-0'}>
       {(title || description) && (
         <CardHeader>
           {title && <CardTitle className="text-lg">{title}</CardTitle>}
@@ -129,21 +129,21 @@ export function LineChart({
             <RechartsLineChart
               data={data}
               margin={{
-                top: 20,
-                right: 30,
-                left: 20,
-                bottom: 20,
+                top: 10,
+                right: 5,
+                left: 5,
+                bottom: 10,
               }}
             >
               {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />}
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 12, fill: '#374151' }}
+                tick={{ fontSize: 10, fill: '#374151' }}
                 axisLine={{ stroke: '#d1d5db' }}
                 tickLine={{ stroke: '#d1d5db' }}
               />
               <YAxis
-                tick={{ fontSize: 12, fill: '#374151' }}
+                tick={{ fontSize: 10, fill: '#374151' }}
                 axisLine={{ stroke: '#d1d5db' }}
                 tickLine={{ stroke: '#d1d5db' }}
                 tickFormatter={(value) => `¥${value.toFixed(0)}`}
@@ -162,7 +162,7 @@ export function LineChart({
               {showLegend && (
                 <Legend
                   wrapperStyle={{
-                    fontSize: '12px',
+                    fontSize: '10px',
                     color: 'hsl(var(--foreground))',
                   }}
                 />
@@ -171,17 +171,17 @@ export function LineChart({
                 type="linear"
                 dataKey="value"
                 stroke={defaultLineColor}
-                strokeWidth={2}
+                strokeWidth={1}
                 dot={{
                   fill: '#5294FDFF',
                   stroke: '#3b82f6',
-                  strokeWidth: 2,
-                  r: 4,
+                  strokeWidth: 1,
+                  r: 2,
                 }}
                 activeDot={{
-                  r: 6,
+                  r: 4,
                   stroke: '#3b82f6',
-                  strokeWidth: 2,
+                  strokeWidth: 1,
                   fill: '#ffffff',
                 }}
                 connectNulls={false}
