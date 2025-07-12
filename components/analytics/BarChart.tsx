@@ -138,8 +138,8 @@ export function BarChart({
 
   // 横向きの場合のマージン調整
   const margin = horizontal
-    ? { top: 20, right: 30, left: 80, bottom: 20 }
-    : { top: 20, right: 30, left: 20, bottom: 60 }
+    ? { top: 10, right: 0, left: 0, bottom: 10 }
+    : { top: 0, right: 0, left: 0, bottom: 10 }
 
   return (
     <Card className={className}>
