@@ -1168,13 +1168,13 @@ ROLLBACK;
 - [x] `convex/reservation/action.ts`に予約データ移行関数追加
 - [x] `convex/reservation/action.ts`に売上集計更新関数追加  
 - [x] エラーハンドリング（Supabase障害時も予約完了成功）実装
-- [ ] ローカル環境でテスト実行
+- [x] ローカル環境でテスト実行
 
 ### Phase 2: Supabase集計基盤構築
 - [x] Supabase集計テーブル作成（マイグレーションファイル作成）
 - [x] RPC関数作成（マイグレーションファイル作成・重複防止機能付き）
 - [x] 手動実行用手順書作成
-- [ ] Supabase Dashboardから手動SQL実行（テーブル・RPC関数作成）
+- [x] Supabase Dashboardから手動SQL実行（テーブル・RPC関数作成）
 - [ ] RLS設定（既存設定活用）
 - [ ] 運用監視View作成
 
