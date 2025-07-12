@@ -192,22 +192,14 @@ export default async function PointPage({ params }: PointPageProps) {
               <div className="space-y-4">
                 {transactions.map((transaction) => {
                   const typeDisplay = getTransactionTypeDisplay(transaction.transaction_type)
-                  const Icon = typeDisplay.icon
                   const isPositive = (transaction.points || 0) > 0
 
                   return (
                     <div
                       key={transaction.id}
-                      className="flex items-center justify-between border-b pb-4 last:border-0"
+                      className="flex flex-col sm:flex-row  items-start sm:items-center justify-between border-b pb-4 last:border-0 "
                     >
                       <div className="flex items-start space-x-3">
-                        <div
-                          className={`p-2 rounded-full ${isPositive ? 'bg-accent-2' : 'bg-destructive'}`}
-                        >
-                          <Icon
-                            className={`h-4 w-4 ${isPositive ? 'text-accent-2' : 'text-destructive'}`}
-                          />
-                        </div>
                         <div>
                           <div className="flex items-center space-x-2">
                             <Badge variant={typeDisplay.variant}>{typeDisplay.label}</Badge>

@@ -120,6 +120,7 @@ export function ReservationDetailPageClient({
           staffId: res.staff_id || '',
           customerName: res.customer_name,
           staffName: res.staff_name || '',
+          isFreeNomination: res.is_free_nomination || false,
           status: res.status,
           paymentStatus: res.payment_status,
           date: res.date,
@@ -193,6 +194,7 @@ export function ReservationDetailPageClient({
             startTimeUnix: Number(reservation.start_time_unix),
             endTimeUnix: Number(reservation.end_time_unix),
             createdAt: new Date(reservation.created_at),
+            isFreeNomination: reservation.is_free_nomination || false,
             detail: detail
               ? {
                   menus: (detail.menus as ReservationMenu[]) || undefined,
@@ -364,7 +366,9 @@ export function ReservationDetailPageClient({
       (acc, option) => acc + option.price * option.quantity,
       0
     ) || 0
-  const extraCharge = reservationData.detail?.extraCharge || 0
+  const extraCharge = reservationData.isFreeNomination
+    ? 0
+    : reservationData.detail?.extraCharge || 0
   const subTotalPrice = menuPrice + optionPrice + extraCharge
 
   return (
@@ -413,7 +417,9 @@ export function ReservationDetailPageClient({
             <User className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
               <p className="text-sm text-muted-foreground">担当スタッフ</p>
-              <p className="font-medium">{reservationData.staffName}</p>
+              <p className="font-medium">
+                {reservationData.isFreeNomination ? '指名フリー' : reservationData.staffName}
+              </p>
             </div>
           </div>
 
@@ -422,7 +428,7 @@ export function ReservationDetailPageClient({
             <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
               <p className="text-sm text-muted-foreground">予約作成日時</p>
-              <p className="font-medium">
+              <p className="text-xs text-secondary-foreground">
                 {format(reservationData.createdAt, 'yyyy年M月d日 HH:mm', { locale: ja })}
               </p>
             </div>
@@ -504,7 +510,9 @@ export function ReservationDetailPageClient({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">指名料</span>
-                  <span className="text-sm text-primary">¥{extraCharge.toLocaleString()}</span>
+                  <span className="text-sm text-primary">
+                    ¥{reservationData.isFreeNomination ? 0 : (extraCharge || 0).toLocaleString()}
+                  </span>
                 </div>
               </div>
               <div className="flex justify-between">
@@ -530,7 +538,7 @@ export function ReservationDetailPageClient({
 
               <div className="flex justify-between font-bold text-lg">
                 <span>合計</span>
-                <span>¥{totalPrice.toLocaleString()}</span>
+                <span>¥{reservationData.detail?.totalPrice?.toLocaleString()}</span>
               </div>
 
               <div className="flex items-center justify-between text-sm text-muted-foreground">
