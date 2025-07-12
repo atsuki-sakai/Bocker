@@ -1165,15 +1165,17 @@ ROLLBACK;
 ## ✅ 8. 実装チェックリスト（修正版）
 
 ### Phase 1: Convex即座移行実装
-- [ ] `convex/reservation/action.ts`に予約データ移行関数追加
-- [ ] `convex/reservation/action.ts`に売上集計更新関数追加  
-- [ ] エラーハンドリング（Supabase障害時も予約完了成功）実装
+- [x] `convex/reservation/action.ts`に予約データ移行関数追加
+- [x] `convex/reservation/action.ts`に売上集計更新関数追加  
+- [x] エラーハンドリング（Supabase障害時も予約完了成功）実装
 - [ ] ローカル環境でテスト実行
 
 ### Phase 2: Supabase集計基盤構築
-- [ ] Supabase集計テーブル作成（マイグレーション実行）
+- [x] Supabase集計テーブル作成（マイグレーションファイル作成）
+- [x] RPC関数作成（マイグレーションファイル作成・重複防止機能付き）
+- [x] 手動実行用手順書作成
+- [ ] Supabase Dashboardから手動SQL実行（テーブル・RPC関数作成）
 - [ ] RLS設定（既存設定活用）
-- [ ] RPC関数作成（重複防止機能付き）
 - [ ] 運用監視View作成
 
 ### Phase 3: 最適化実装（オプション）
@@ -1189,11 +1191,26 @@ ROLLBACK;
 
 ## 🔄 実装ログ（修正版）
 
+### 2025-07-12
+- ✅ **Phase 1 完了**: 予約完了時のSupabase即座移行機能実装
+  - `migrateReservationToSupabase`関数実装（convex/reservation/action.ts:892-1034）
+  - `handleStatusSideEffects`に即座移行処理追加（行827-841）
+  - エラーハンドリング強化（Supabase障害時も予約完了継続）
+- ✅ **Phase 2 完了**: 売上集計更新機能実装
+  - `updateSupabaseSalesAggregation`関数実装（convex/reservation/action.ts:1036-1133）
+  - 日別・スタッフ別・メニュー別集計の並列更新
+  - 予約完了時の売上集計更新処理追加（行843-858）
+- ✅ **Phase 3 完了**: Supabase集計基盤マイグレーションファイル作成
+  - 集計テーブル作成マイグレーション（20250712000000_create_sales_summary_tables.sql）
+  - RPC関数作成マイグレーション（20250712000002_create_sales_summary_rpcs.sql）
+  - 重複防止機能付き統合RPC関数（increment_sales_with_guard）
+  - 手動実行用手順書作成（docs/technical/implementation/supabase-manual-migration-guide.md）
+- ⏳ **Next**: Supabase Dashboardから手動でSQL実行してテーブル・RPC関数作成
+
 ### 2025-07-10
 - ✅ **重要発見**: PostgreSQLトリガーが機能しない制約を確認
 - ✅ **アーキテクチャ修正**: Convex即座移行+Supabase集計方式に変更
 - ✅ **実装計画書更新**: 現実的な制約を反映した詳細計画完成
-- ⏳ **Next**: Convex予約完了処理の修正から開始
 
 ### 重要な変更点
 1. **PostgreSQLトリガー → Convex Action**: 予約データがConvex内のため
