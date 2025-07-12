@@ -55,6 +55,30 @@ export type Database = {
           sort_key: string | null
           tenant_id: string
           updated_at: string
+          // 🟢 顧客記入項目
+          prefer_silence: boolean | null
+          avoid_chemicals: string | null
+          has_sensitive_skin: boolean | null
+          sensitive_skin_detail: string | null
+          fragrance_sensitivity: boolean | null
+          use_contact_lenses: boolean | null
+          avoid_sales_talk: boolean | null
+          avoid_private_topics: boolean | null
+          daily_styling_time: number | null
+          allow_photo_sns: boolean | null
+          // 🔵 店舗記入項目
+          hair_thickness: 'fine' | 'medium' | 'coarse' | null
+          hair_volume: 'low' | 'medium' | 'high' | null
+          hair_wave_level: 'straight' | 'slight' | 'moderate' | 'strong' | null
+          hair_damage_tendency: boolean | null
+          poor_dye_perm_retention: boolean | null
+          quick_color_fade: boolean | null
+          hair_dryness: boolean | null
+          scalp_condition: 'normal' | 'dry' | 'oily' | 'sensitive' | null
+          scalp_trouble_detail: string | null
+          // 🟡 共通編集項目
+          prefer_hair_styling: boolean | null
+          use_styling_product: boolean | null
         }
         Insert: {
           allergy_history?: string | null
@@ -71,6 +95,30 @@ export type Database = {
           sort_key?: string | null
           tenant_id: string
           updated_at?: string
+          // 🟢 顧客記入項目
+          prefer_silence?: boolean | null
+          avoid_chemicals?: string | null
+          has_sensitive_skin?: boolean | null
+          sensitive_skin_detail?: string | null
+          fragrance_sensitivity?: boolean | null
+          use_contact_lenses?: boolean | null
+          avoid_sales_talk?: boolean | null
+          avoid_private_topics?: boolean | null
+          daily_styling_time?: number | null
+          allow_photo_sns?: boolean | null
+          // 🔵 店舗記入項目
+          hair_thickness?: 'fine' | 'medium' | 'coarse' | null
+          hair_volume?: 'low' | 'medium' | 'high' | null
+          hair_wave_level?: 'straight' | 'slight' | 'moderate' | 'strong' | null
+          hair_damage_tendency?: boolean | null
+          poor_dye_perm_retention?: boolean | null
+          quick_color_fade?: boolean | null
+          hair_dryness?: boolean | null
+          scalp_condition?: 'normal' | 'dry' | 'oily' | 'sensitive' | null
+          scalp_trouble_detail?: string | null
+          // 🟡 共通編集項目
+          prefer_hair_styling?: boolean | null
+          use_styling_product?: boolean | null
         }
         Update: {
           allergy_history?: string | null
@@ -87,6 +135,30 @@ export type Database = {
           sort_key?: string | null
           tenant_id?: string
           updated_at?: string
+          // 🟢 顧客記入項目
+          prefer_silence?: boolean | null
+          avoid_chemicals?: string | null
+          has_sensitive_skin?: boolean | null
+          sensitive_skin_detail?: string | null
+          fragrance_sensitivity?: boolean | null
+          use_contact_lenses?: boolean | null
+          avoid_sales_talk?: boolean | null
+          avoid_private_topics?: boolean | null
+          daily_styling_time?: number | null
+          allow_photo_sns?: boolean | null
+          // 🔵 店舗記入項目
+          hair_thickness?: 'fine' | 'medium' | 'coarse' | null
+          hair_volume?: 'low' | 'medium' | 'high' | null
+          hair_wave_level?: 'straight' | 'slight' | 'moderate' | 'strong' | null
+          hair_damage_tendency?: boolean | null
+          poor_dye_perm_retention?: boolean | null
+          quick_color_fade?: boolean | null
+          hair_dryness?: boolean | null
+          scalp_condition?: 'normal' | 'dry' | 'oily' | 'sensitive' | null
+          scalp_trouble_detail?: string | null
+          // 🟡 共通編集項目
+          prefer_hair_styling?: boolean | null
+          use_styling_product?: boolean | null
         }
         Relationships: [
           {
