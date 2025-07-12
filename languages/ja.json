@@ -351,10 +351,13 @@
         "title": "顧客カルテ",
         "backToSearch": "顧客検索に戻る",
         "customerNotFound": "顧客情報が見つかりません",
+        "totalReservationCount": "総来店回数",
         "edit": "編集する",
         "customerInfo": "顧客情報",
+        "customerEdit": "顧客情報を編集する",
         "name": "氏名",
         "age": "{age}歳",
+        "carteInfo": "カルテ情報",
         "totalPoints": "保有ポイント",
         "pointsUnit": "{points} pt",
         "skinType": "肌質",
@@ -382,7 +385,8 @@
           "completed": "完了",
           "cancelled": "キャンセル",
           "pending": "保留"
-        }
+        },
+        "notSet": "未設定"
       },
       "edit": {
         "title": "顧客カルテ編集",
@@ -394,6 +398,9 @@
         "saveError": "カルテの保存に失敗しました",
         "tabs": {
           "basic": "基本情報",
+          "customer": "顧客記入",
+          "store": "店舗記入",
+          "shared": "共通",
           "medical": "医療情報"
         },
         "basicInfo": {
@@ -403,7 +410,50 @@
           "hairType": "髪質",
           "skinTypePlaceholder": "肌質を選択",
           "hairTypePlaceholder": "髪質を選択",
-          "notSet": "未設定"
+          "notSet": "未設定",
+          "phone": "電話番号",
+          "totalReservationCount": "利用回数",
+          "phoneNotSet": "電話番号未設定",
+          "email": "メールアドレス",
+          "emailNotSet": "メールアドレス未設定",
+          "birthday": "誕生日 / 年齢",
+          "birthdayNotSet": "誕生日 / 年齢未設定",
+          "gender": "性別"
+        },
+        "customerPrefs": {
+          "title": "顧客の希望",
+          "preferSilence": "静かに過ごしたい",
+          "avoidChemicals": "避けたい薬剤・成分",
+          "avoidChemicalsPlaceholder": "特に避けたい薬剤や成分があれば入力してください",
+          "avoidSalesTalk": "セールストークは控えめにしてほしい",
+          "avoidPrivateTopics": "プライベートな話題は避けたい",
+          "allowPhotoSns": "施術後の写真撮影やSNS掲載を許可する",
+          "dailyStylingTime": "毎日のスタイリング時間",
+          "minutes": "分"
+        },
+        "storeAssessment": {
+          "title": "店舗の評価",
+          "hairThickness": "髪の太さ",
+          "hairVolume": "髪の量",
+          "hairWaveLevel": "髪のくせのレベル",
+          "hairDamageTendency": "髪が傷みやすい",
+          "poorDyePerm": "カラーやパーマがとれやすい",
+          "quickColorFade": "カラーが早く落ちやすい",
+          "hairDryness": "髪が乾燥しやすい",
+          "scalpCondition": "頭皮の状態",
+          "scalpTroubleDetail": "頭皮のトラブル詳細",
+          "scalpTroublePlaceholder": "具体的な頭皮のトラブルについて入力してください"
+        },
+        "sharedPrefs": {
+          "title": "共通の希望",
+          "preferHairStyling": "施術後のスタイリングを希望する",
+          "useStylingProduct": "スタイリング剤の使用を許可する",
+          "sensitivitySection": "敏感肌・アレルギー関連",
+          "hasSensitiveSkin": "敏感肌である",
+          "sensitiveSkinDetail": "敏感肌の詳細",
+          "sensitiveSkinPlaceholder": "どのような時に敏感になるかなど",
+          "fragranceSensitivity": "香りに敏感",
+          "useContactLenses": "コンタクトレンズを使用している"
         },
         "medicalInfo": {
           "title": "医療情報",
@@ -436,6 +486,28 @@
           "coily": "コイリー",
           "fine": "細い",
           "thick": "太い"
+        },
+        "hairThickness": {
+          "fine": "細い",
+          "medium": "普通",
+          "coarse": "太い"
+        },
+        "hairVolume": {
+          "low": "少ない",
+          "medium": "普通",
+          "high": "多い"
+        },
+        "hairWaveLevel": {
+          "straight": "直毛",
+          "slight": "少し",
+          "moderate": "中程度",
+          "strong": "強い"
+        },
+        "scalpCondition": {
+          "normal": "正常",
+          "dry": "乾燥",
+          "oily": "脂性",
+          "sensitive": "敏感"
         }
       }
     }

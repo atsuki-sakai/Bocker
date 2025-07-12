@@ -740,7 +740,9 @@
         "backToSearch": "Back to Customer Search",
         "customerNotFound": "Customer information not found",
         "edit": "Edit",
+        "totalReservationCount": "Total Reservation Count",
         "customerInfo": "Customer Information",
+        "customerEdit": "Edit Customer Information",
         "name": "Name",
         "age": "{age} years old",
         "totalPoints": "Total Points",
@@ -770,7 +772,8 @@
           "completed": "Completed",
           "cancelled": "Cancelled",
           "pending": "Pending"
-        }
+        },
+        "notSet": "Not set"
       },
       "edit": {
         "title": "Edit Customer Record",
@@ -782,6 +785,9 @@
         "saveError": "Failed to save customer record",
         "tabs": {
           "basic": "Basic Information",
+          "customer": "Customer Input",
+          "store": "Store Input",
+          "shared": "Shared",
           "medical": "Medical Information"
         },
         "basicInfo": {
@@ -789,9 +795,53 @@
           "customerName": "Customer Name",
           "skinType": "Skin Type",
           "hairType": "Hair Type",
+          "totalReservationCount": "Total Reservation Count",
           "skinTypePlaceholder": "Select skin type",
           "hairTypePlaceholder": "Select hair type",
-          "notSet": "Not set"
+          "notSet": "Not set",
+          "phone": "Phone",
+          "phoneNotSet": "Phone not set",
+          "email": "Email",
+          "emailNotSet": "Email not set",
+          "birthday": "Birthday / Age",
+          "birthdayNotSet": "Birthday / Age not set",
+          "gender": "Gender",
+          "genderNotSet": "Gender not set"
+        },
+        "customerPrefs": {
+          "title": "Customer Preferences",
+          "preferSilence": "Prefer to be quiet",
+          "avoidChemicals": "Chemicals/ingredients to avoid",
+          "avoidChemicalsPlaceholder": "Enter any chemicals or ingredients to avoid",
+          "avoidSalesTalk": "Prefer less sales talk",
+          "avoidPrivateTopics": "Prefer to avoid private topics",
+          "allowPhotoSns": "Allow photos and social media posting after treatment",
+          "dailyStylingTime": "Daily styling time",
+          "minutes": "minutes"
+        },
+        "storeAssessment": {
+          "title": "Store Assessment",
+          "hairThickness": "Hair Thickness",
+          "hairVolume": "Hair Volume",
+          "hairWaveLevel": "Hair Wave Level",
+          "hairDamageTendency": "Hair is prone to damage",
+          "poorDyePerm": "Color or perm fades easily",
+          "quickColorFade": "Color fades quickly",
+          "hairDryness": "Hair is prone to dryness",
+          "scalpCondition": "Scalp Condition",
+          "scalpTroubleDetail": "Scalp trouble details",
+          "scalpTroublePlaceholder": "Enter specific scalp troubles"
+        },
+        "sharedPrefs": {
+          "title": "Shared Preferences",
+          "preferHairStyling": "Desire post-treatment styling",
+          "useStylingProduct": "Allow use of styling products",
+          "sensitivitySection": "Sensitive skin & allergies",
+          "hasSensitiveSkin": "Has sensitive skin",
+          "sensitiveSkinDetail": "Sensitive skin details",
+          "sensitiveSkinPlaceholder": "e.g., when it becomes sensitive",
+          "fragranceSensitivity": "Sensitive to fragrances",
+          "useContactLenses": "Uses contact lenses"
         },
         "medicalInfo": {
           "title": "Medical Information",
@@ -824,6 +874,28 @@
           "coily": "Coily",
           "fine": "Fine",
           "thick": "Thick"
+        },
+        "hairThickness": {
+          "fine": "Fine",
+          "medium": "Medium",
+          "coarse": "Coarse"
+        },
+        "hairVolume": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        },
+        "hairWaveLevel": {
+          "straight": "Straight",
+          "slight": "Slight",
+          "moderate": "Moderate",
+          "strong": "Strong"
+        },
+        "scalpCondition": {
+          "normal": "Normal",
+          "dry": "Dry",
+          "oily": "Oily",
+          "sensitive": "Sensitive"
         }
       }
     }
