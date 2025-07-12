@@ -1056,7 +1056,7 @@ async function updateSupabaseSalesAggregation(reservation: Doc<'reservation'> & 
     console.log(`[updateSupabaseSalesAggregation] Starting aggregation update for reservation: ${reservation._id}`);
     
     // 営業日を算出（start_time_unixから日付を取得）
-    const businessDate = new Date(reservation.start_time_unix).toISOString().split('T')[0];
+    const businessDate = new Date(reservation.start_time_unix).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }).split('T')[0];
     const totalAmount = reservation.detail.total_price || 0;
     
     // 1. 日別集計更新
