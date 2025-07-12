@@ -9,9 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CardContent } from '@/components/ui/card'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Card, CardContent } from '@/components/ui/card'
 import { Clock, CreditCard, Eye, Pencil } from 'lucide-react'
 import {
   Command,
@@ -33,7 +33,6 @@ type TargetType = 'all' | 'first_time' | 'repeat'
 export const MenuList = memo(() => {
   const { tenantId, orgId } = useTenantAndOrganization()
   const t = useTranslations('menu')
-  const tCommon = useTranslations('common')
   const [selectedCategories, setSelectedCategories] = useState<MenuCategory[]>([])
   const [openCategoryPopover, setOpenCategoryPopover] = useState(false)
   // 性別とタイプの絞り込み状態を追加
@@ -102,11 +101,6 @@ export const MenuList = memo(() => {
     setSelectedCategories((prev) => prev.filter((c) => c !== category))
   }, [])
 
-  // すべてのカテゴリ選択をクリア
-  const clearCategoryFilter = useCallback(() => {
-    setSelectedCategories([])
-  }, [])
-
   // 性別とタイプのフィルター関数
   const toggleGender = useCallback((gender: TargetGender) => {
     setSelectedGender((prev) => (prev === gender ? null : gender))
@@ -143,7 +137,7 @@ export const MenuList = memo(() => {
     return (
       <div className="space-y-4">
         {menusToDisplay.map((menu: Doc<'menu'>) => (
-          <CardContent key={menu._id} className="p-4">
+          <div key={menu._id} className="p-4 border-b border-border">
             <div className="flex items-start gap-4 w-full">
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="relative h-16 w-16 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
@@ -241,7 +235,7 @@ export const MenuList = memo(() => {
                 </Link>
               </div>
             </div>
-          </CardContent>
+          </div>
         ))}
       </div>
     )
@@ -249,8 +243,8 @@ export const MenuList = memo(() => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex-1 space-y-2">
+      <Card className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <CardContent className="flex-1 space-y-2 p-4">
           {/* カテゴリフィルター */}
           <div className="grid grid-cols-2 gap-4 items-start">
             <div>
@@ -303,13 +297,6 @@ export const MenuList = memo(() => {
                     </Command>
                   </PopoverContent>
                 </Popover>
-
-                {selectedCategories.length > 0 && (
-                  <Button size="sm" className="h-9 px-2" onClick={clearCategoryFilter}>
-                    <X className="h-4 w-4 mr-1" />
-                    {tCommon('delete')}
-                  </Button>
-                )}
               </div>
               {/* 選択されたカテゴリの表示 */}
               {selectedCategories.length > 0 && (
@@ -317,7 +304,7 @@ export const MenuList = memo(() => {
                   {selectedCategories.map((category) => (
                     <Badge
                       key={category}
-                      variant="secondary"
+                      variant="default"
                       className="px-2 py-1 flex items-center gap-1"
                     >
                       {category}
@@ -477,8 +464,8 @@ export const MenuList = memo(() => {
               </Button>
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <div>
         {isLoadingData ? <div className="space-y-2">{renderSkeletons()}</div> : renderMenus()}

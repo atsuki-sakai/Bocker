@@ -279,7 +279,7 @@ export default function StaffAnalyticsPage() {
 
         {/* メインコンテンツ */}
         <Tabs defaultValue="ranking" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="flex w-fit overflow-x-auto space-x-2 p-1">
             <TabsTrigger value="ranking">売上ランキング</TabsTrigger>
             <TabsTrigger value="performance">パフォーマンス分析</TabsTrigger>
             <TabsTrigger value="comparison">期間比較</TabsTrigger>

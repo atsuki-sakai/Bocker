@@ -47,6 +47,7 @@ import {
 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Link } from '@/i18n/navigation'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface MenuAnalyticsSummary extends SalesSummary {
   topMenu: MenuSalesData | null
@@ -294,618 +295,646 @@ export default function MenuAnalyticsPage() {
           </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">総売上</CardTitle>
-              <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">
-                    {formatCurrency(summary?.totalAmount || 0)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">期間中の総メニュー売上</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+        {/* メインコンテンツ */}
+        <Tabs defaultValue="summary" className="space-y-4">
+          <TabsList className="flex w-fit overflow-x-auto space-x-2 p-1">
+            <TabsTrigger value="summary">サマリー</TabsTrigger>
+            <TabsTrigger value="performance">パフォーマンス分析</TabsTrigger>
+            <TabsTrigger value="price">価格帯分析</TabsTrigger>
+            <TabsTrigger value="ranking">詳細ランキング</TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">総予約数</CardTitle>
-              <ShoppingCartIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">
-                    {formatNumber(summary?.totalBookings || 0)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">期間中の総メニュー予約数</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          {/* サマリータブ */}
+          <TabsContent value="summary" className="space-y-4">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* 既存のサマリーカード */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">総売上</CardTitle>
+                  <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">
+                        {formatCurrency(summary?.totalAmount || 0)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">期間中の総メニュー売上</p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">平均客単価</CardTitle>
-              <UserIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">
-                    {formatCurrency(summary?.averageAmount || 0)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">1予約あたりの平均売上</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">総予約数</CardTitle>
+                  <ShoppingCartIcon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">
+                        {formatNumber(summary?.totalBookings || 0)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">期間中の総メニュー予約数</p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">アクティブメニュー数</CardTitle>
-              <BarChart3Icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">
-                    {formatNumber(summary?.activeMenuCount || 0)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">売上のあるメニュー数</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">平均客単価</CardTitle>
+                  <UserIcon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">
+                        {formatCurrency(summary?.averageAmount || 0)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">1予約あたりの平均売上</p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
-        {/* Top Menu */}
-        {summary?.topMenu && performanceAnalysis && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUpIcon className="h-5 w-5" />
-                パフォーマンス分析サマリー
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* トップメニュー */}
-                <div className="p-4 bg-palette-1 border border-palette-1 rounded-lg">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <TrendingUpIcon className="h-5 w-5 text-palette-1-foreground" />
-                      <h4 className="font-semibold text-palette-1-foreground">売上No.1メニュー</h4>
-                    </div>
-                    <Badge variant="default" className="bg-pop text-pop-foreground">
-                      No.1
-                    </Badge>
-                  </div>
-                  <h3 className="text-lg font-bold text-palette-1-foreground mb-2">
-                    {summary.topMenu.menu_name}
-                  </h3>
-                  <div className="space-y-1 text-sm text-palette-1-foreground">
-                    <p>
-                      <strong>売上:</strong> {formatCurrency(summary.topMenu.total_amount)}
-                    </p>
-                    <p>
-                      <strong>予約数:</strong> {formatNumber(summary.topMenu.booking_count)}件
-                    </p>
-                    <p>
-                      <strong>平均単価:</strong> {formatCurrency(summary.topMenu.average_amount)}
-                    </p>
-                  </div>
-                </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">アクティブメニュー数</CardTitle>
+                  <BarChart3Icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">
+                        {formatNumber(summary?.activeMenuCount || 0)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">売上のあるメニュー数</p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-                {/* 平均売上 */}
-                <div className="p-4 bg-palette-2 border border-palette-2 rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <DollarSignIcon className="h-5 w-5 text-palette-2-foreground" />
-                    <h4 className="font-semibold text-palette-2-foreground">平均売上</h4>
-                  </div>
-                  <p className="text-2xl font-bold text-palette-2-foreground mb-1">
-                    {formatCurrency(performanceAnalysis.averagePerformance.averageAmount)}
-                  </p>
-                  <p className="text-sm text-palette-2-foreground">1メニューあたりの平均売上</p>
-                </div>
-
-                {/* 平均予約数 */}
-                <div className="p-4 bg-palette-3 border border-palette-3 rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <ShoppingCartIcon className="h-5 w-5 text-palette-3-foreground" />
-                    <h4 className="font-semibold text-palette-3-foreground">平均予約数</h4>
-                  </div>
-                  <p className="text-2xl font-bold text-palette-3-foreground mb-1">
-                    {formatNumber(performanceAnalysis.averagePerformance.averageBookings)}
-                  </p>
-                  <p className="text-sm text-palette-3-foreground">1メニューあたりの平均予約数</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Menu Revenue Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3Icon className="h-5 w-5" />
-                メニュー別売上ランキング
-              </CardTitle>
-              <CardDescription>トップ10メニューの売上実績</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <Skeleton className="h-[300px]" />
-              ) : chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      type="number"
-                      tickFormatter={(value) => formatCurrency(value)}
-                      tick={{ fill: '#374151', fontSize: 10 }}
-                    />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      width={80}
-                      tick={{ fill: '#374151', fontSize: 6, fontWeight: 'bold' }}
-                    />
-                    <Tooltip
-                      formatter={(value: number) => [formatCurrency(value), '売上']}
-                      labelStyle={{ color: '#374151' }}
-                      contentStyle={{
-                        backgroundColor: '#ffffff',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '4px',
-                      }}
-                    />
-                    <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  データがありません
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Performance Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PieChartIcon className="h-5 w-5" />
-                メニューパフォーマンス分布
-              </CardTitle>
-              <CardDescription>売上実績による性能分類</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <Skeleton className="h-[300px]" />
-              ) : performanceAnalysis && getPerformanceDistributionData().length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* メニューリスト */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">📊 パフォーマンス別メニュー</h4>
-                    {(() => {
-                      const menusByPerformance = getMenusByPerformance()
-                      return (
-                        <div className="space-y-3 max-h-54 overflow-y-auto">
-                          {/* 高性能メニュー */}
-                          {menusByPerformance.high.length > 0 && (
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="w-3 h-3 rounded-full bg-success"></div>
-                                <span className="text-xs font-medium">
-                                  高性能 ({menusByPerformance.high.length}件)
-                                </span>
-                              </div>
-                              <div className="space-y-1">
-                                {menusByPerformance.high.slice(0, 2).map((menu, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex justify-between items-center p-1.5 bg-palette-3 rounded text-xs"
-                                  >
-                                    <span className="font-medium text-palette-3-foreground truncate text-xs">
-                                      {menu.menu_name || 'メニュー名不明'}
-                                    </span>
-                                    <span className="text-palette-3-foreground ml-1 text-xs">
-                                      {formatCurrency(menu.total_amount)}
-                                    </span>
-                                  </div>
-                                ))}
-                                {menusByPerformance.high.length > 2 && (
-                                  <div className="text-xs text-muted-foreground text-center">
-                                    +{menusByPerformance.high.length - 2}件
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* 中性能メニュー */}
-                          {menusByPerformance.medium.length > 0 && (
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="w-3 h-3 rounded-full bg-warning"></div>
-                                <span className="text-xs font-medium">
-                                  中性能 ({menusByPerformance.medium.length}件)
-                                </span>
-                              </div>
-                              <div className="space-y-1">
-                                {menusByPerformance.medium.slice(0, 2).map((menu, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex justify-between items-center p-1.5 bg-palette-1 rounded text-xs"
-                                  >
-                                    <span className="font-medium text-palette-1-foreground truncate text-xs">
-                                      {menu.menu_name || 'メニュー名不明'}
-                                    </span>
-                                    <span className="text-palette-1-foreground ml-1 text-xs">
-                                      {formatCurrency(menu.total_amount)}
-                                    </span>
-                                  </div>
-                                ))}
-                                {menusByPerformance.medium.length > 2 && (
-                                  <div className="text-xs text-muted-foreground text-center">
-                                    +{menusByPerformance.medium.length - 2}件
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* 低性能メニュー */}
-                          {menusByPerformance.low.length > 0 && (
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="w-3 h-3 rounded-full bg-destructive"></div>
-                                <span className="text-xs font-medium">
-                                  低性能 ({menusByPerformance.low.length}件)
-                                </span>
-                              </div>
-                              <div className="space-y-1">
-                                {menusByPerformance.low.slice(0, 2).map((menu, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex justify-between items-center p-1.5 bg-destructive-foreground rounded text-xs"
-                                  >
-                                    <span className="font-medium text-destructive truncate text-xs">
-                                      {menu.menu_name || 'メニュー名不明'}
-                                    </span>
-                                    <span className="text-destructive ml-1 text-xs">
-                                      {formatCurrency(menu.total_amount)}
-                                    </span>
-                                  </div>
-                                ))}
-                                {menusByPerformance.low.length > 2 && (
-                                  <div className="text-xs text-muted-foreground text-center">
-                                    +{menusByPerformance.low.length - 2}件
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
+            {/* Top Menu */}
+            {summary?.topMenu && performanceAnalysis && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUpIcon className="h-5 w-5" />
+                    パフォーマンス分析サマリー
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* トップメニュー */}
+                    <div className="p-4 bg-palette-1 border border-palette-1 rounded-lg">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <TrendingUpIcon className="h-5 w-5 text-palette-1-foreground" />
+                          <h4 className="font-semibold text-palette-1-foreground">
+                            売上No.1メニュー
+                          </h4>
                         </div>
-                      )
-                    })()}
+                        <Badge variant="default" className="bg-pop text-pop-foreground">
+                          No.1
+                        </Badge>
+                      </div>
+                      <h3 className="text-lg font-bold text-palette-1-foreground mb-2">
+                        {summary.topMenu.menu_name}
+                      </h3>
+                      <div className="space-y-1 text-sm text-palette-1-foreground">
+                        <p>
+                          <strong>売上:</strong> {formatCurrency(summary.topMenu.total_amount)}
+                        </p>
+                        <p>
+                          <strong>予約数:</strong> {formatNumber(summary.topMenu.booking_count)}件
+                        </p>
+                        <p>
+                          <strong>平均単価:</strong>{' '}
+                          {formatCurrency(summary.topMenu.average_amount)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 平均売上 */}
+                    <div className="p-4 bg-palette-2 border border-palette-2 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <DollarSignIcon className="h-5 w-5 text-palette-2-foreground" />
+                        <h4 className="font-semibold text-palette-2-foreground">平均売上</h4>
+                      </div>
+                      <p className="text-2xl font-bold text-palette-2-foreground mb-1">
+                        {formatCurrency(performanceAnalysis.averagePerformance.averageAmount)}
+                      </p>
+                      <p className="text-sm text-palette-2-foreground">1メニューあたりの平均売上</p>
+                    </div>
+
+                    {/* 平均予約数 */}
+                    <div className="p-4 bg-palette-3 border border-palette-3 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ShoppingCartIcon className="h-5 w-5 text-palette-3-foreground" />
+                        <h4 className="font-semibold text-palette-3-foreground">平均予約数</h4>
+                      </div>
+                      <p className="text-2xl font-bold text-palette-3-foreground mb-1">
+                        {formatNumber(performanceAnalysis.averagePerformance.averageBookings)}
+                      </p>
+                      <p className="text-sm text-palette-3-foreground">
+                        1メニューあたりの平均予約数
+                      </p>
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
-                  {/* 円グラフ */}
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={getPerformanceDistributionData()}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, value, percent }) =>
-                          `${name}: ${value}件 (${((percent ?? 0) * 100).toFixed(1)}%)`
-                        }
-                        outerRadius={40}
-                        fill="#8884d8"
-                        fontSize={8}
-                        dataKey="value"
-                      >
-                        {getPerformanceDistributionData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: number) => [value, 'メニュー数']}
-                        labelStyle={{ color: 'oklch(var(--foreground))' }}
-                        contentStyle={{
-                          backgroundColor: 'oklch(var(--card))',
-                          border: '1px solid oklch(var(--border))',
-                          borderRadius: '6px',
-                          color: 'oklch(var(--card-foreground))',
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  データがありません
-                </div>
-              )}
+          {/* パフォーマンス分析タブ */}
+          <TabsContent value="performance" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Menu Revenue Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3Icon className="h-5 w-5" />
+                    メニュー別売上ランキング
+                  </CardTitle>
+                  <CardDescription>トップ10メニューの売上実績</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <Skeleton className="h-[300px]" />
+                  ) : chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={chartData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis
+                          type="number"
+                          tickFormatter={(value) => formatCurrency(value)}
+                          tick={{ fill: '#374151', fontSize: 10 }}
+                        />
+                        <YAxis
+                          dataKey="name"
+                          type="category"
+                          width={80}
+                          tick={{ fill: '#374151', fontSize: 6, fontWeight: 'bold' }}
+                        />
+                        <Tooltip
+                          formatter={(value: number) => [formatCurrency(value), '売上']}
+                          labelStyle={{ color: '#374151' }}
+                          contentStyle={{
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '4px',
+                          }}
+                        />
+                        <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                      データがありません
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-              {/* 分類ルールの説明 */}
-              {performanceAnalysis &&
-                getPerformanceDistributionData().length > 0 &&
-                (() => {
-                  const menusByPerformance = getMenusByPerformance()
-                  return (
-                    <div className="mt-4">
-                      <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="item-1">
-                          <AccordionTrigger>
-                            <h4 className="text-sm font-medium">
-                              📊 パフォーマンス分類ルールと見方について
-                            </h4>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="space-y-3">
+              {/* Performance Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PieChartIcon className="h-5 w-5" />
+                    メニューパフォーマンス分布
+                  </CardTitle>
+                  <CardDescription>売上実績による性能分類</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <Skeleton className="h-[300px]" />
+                  ) : performanceAnalysis && getPerformanceDistributionData().length > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* メニューリスト */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium">📊 パフォーマンス別メニュー</h4>
+                        {(() => {
+                          const menusByPerformance = getMenusByPerformance()
+                          return (
+                            <div className="space-y-3 max-h-54 overflow-y-auto">
                               {/* 高性能メニュー */}
                               {menusByPerformance.high.length > 0 && (
                                 <div>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div
-                                      className="w-3 h-3 rounded-full"
-                                      style={{ backgroundColor: '#10b981' }}
-                                    ></div>
-                                    <span className="text-sm font-medium">
-                                      高性能メニュー ({menusByPerformance.high.length}件)
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <div className="w-3 h-3 rounded-full bg-success"></div>
+                                    <span className="text-xs font-medium">
+                                      高性能 ({menusByPerformance.high.length}件)
                                     </span>
                                   </div>
-                                  <p className="text-xs text-muted-foreground mb-2">
-                                    平均売上以上のメニュー（売上貢献度が高い人気商品）
-                                  </p>
+                                  <div className="space-y-1">
+                                    {menusByPerformance.high.slice(0, 2).map((menu, index) => (
+                                      <div
+                                        key={index}
+                                        className="flex justify-between items-center p-1.5 bg-palette-3 rounded text-xs"
+                                      >
+                                        <span className="font-medium text-palette-3-foreground truncate text-xs">
+                                          {menu.menu_name || 'メニュー名不明'}
+                                        </span>
+                                        <span className="text-palette-3-foreground ml-1 text-xs">
+                                          {formatCurrency(menu.total_amount)}
+                                        </span>
+                                      </div>
+                                    ))}
+                                    {menusByPerformance.high.length > 2 && (
+                                      <div className="text-xs text-muted-foreground text-center">
+                                        +{menusByPerformance.high.length - 2}件
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               )}
 
                               {/* 中性能メニュー */}
                               {menusByPerformance.medium.length > 0 && (
                                 <div>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div
-                                      className="w-3 h-3 rounded-full"
-                                      style={{ backgroundColor: '#f59e0b' }}
-                                    ></div>
-                                    <span className="text-sm font-medium">
-                                      中性能メニュー ({menusByPerformance.medium.length}件)
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <div className="w-3 h-3 rounded-full bg-warning"></div>
+                                    <span className="text-xs font-medium">
+                                      中性能 ({menusByPerformance.medium.length}件)
                                     </span>
                                   </div>
-                                  <p className="text-xs text-muted-foreground mb-2">
-                                    平均売上の50-100%のメニュー（標準的な売上）
-                                  </p>
+                                  <div className="space-y-1">
+                                    {menusByPerformance.medium.slice(0, 2).map((menu, index) => (
+                                      <div
+                                        key={index}
+                                        className="flex justify-between items-center p-1.5 bg-palette-1 rounded text-xs"
+                                      >
+                                        <span className="font-medium text-palette-1-foreground truncate text-xs">
+                                          {menu.menu_name || 'メニュー名不明'}
+                                        </span>
+                                        <span className="text-palette-1-foreground ml-1 text-xs">
+                                          {formatCurrency(menu.total_amount)}
+                                        </span>
+                                      </div>
+                                    ))}
+                                    {menusByPerformance.medium.length > 2 && (
+                                      <div className="text-xs text-muted-foreground text-center">
+                                        +{menusByPerformance.medium.length - 2}件
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               )}
 
                               {/* 低性能メニュー */}
                               {menusByPerformance.low.length > 0 && (
                                 <div>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div
-                                      className="w-3 h-3 rounded-full"
-                                      style={{ backgroundColor: '#ef4444' }}
-                                    ></div>
-                                    <span className="text-sm font-medium">
-                                      低性能メニュー ({menusByPerformance.low.length}件)
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <div className="w-3 h-3 rounded-full bg-destructive"></div>
+                                    <span className="text-xs font-medium">
+                                      低性能 ({menusByPerformance.low.length}件)
                                     </span>
                                   </div>
-                                  <p className="text-xs text-muted-foreground mb-2">
-                                    平均売上の50%未満のメニュー（改善検討対象）
-                                  </p>
+                                  <div className="space-y-1">
+                                    {menusByPerformance.low.slice(0, 2).map((menu, index) => (
+                                      <div
+                                        key={index}
+                                        className="flex justify-between items-center p-1.5 bg-destructive-foreground rounded text-xs"
+                                      >
+                                        <span className="font-medium text-destructive truncate text-xs">
+                                          {menu.menu_name || 'メニュー名不明'}
+                                        </span>
+                                        <span className="text-destructive ml-1 text-xs">
+                                          {formatCurrency(menu.total_amount)}
+                                        </span>
+                                      </div>
+                                    ))}
+                                    {menusByPerformance.low.length > 2 && (
+                                      <div className="text-xs text-muted-foreground text-center">
+                                        +{menusByPerformance.low.length - 2}件
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               )}
                             </div>
+                          )
+                        })()}
+                      </div>
 
-                            <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
-                              💡 <strong>活用方法</strong>:
-                              高性能メニューは積極的にプロモーション、低性能メニューは価格見直しや提供方法の改善を検討してください。
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
+                      {/* 円グラフ */}
+                      <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                          <Pie
+                            data={getPerformanceDistributionData()}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, value, percent }) =>
+                              `${name}: ${value}件 (${((percent ?? 0) * 100).toFixed(1)}%)`
+                            }
+                            outerRadius={40}
+                            fill="#8884d8"
+                            fontSize={8}
+                            dataKey="value"
+                          >
+                            {getPerformanceDistributionData().map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value: number) => [value, 'メニュー数']}
+                            labelStyle={{ color: 'oklch(var(--foreground))' }}
+                            contentStyle={{
+                              backgroundColor: '#ffffff',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '6px',
+                              fontSize: '10px',
+                              color: 'oklch(var(--card-foreground))',
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
                     </div>
-                  )
-                })()}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Price Tier Analysis */}
-        {priceTierAnalysis && priceTierAnalysis.priceTiers.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSignIcon className="h-5 w-5" />
-                価格帯別分析
-              </CardTitle>
-              <CardDescription>メニューの価格帯別パフォーマンス</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-4">価格帯別実績</h4>
-                  {loading ? (
-                    <Skeleton className="h-[200px]" />
                   ) : (
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={getPriceTierChartData()}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="name" tick={{ fill: '#374151', fontSize: 12 }} />
-                        <YAxis
-                          tickFormatter={(value) => formatCurrency(value)}
-                          tick={{ fill: '#374151', fontSize: 10 }}
-                        />
-                        <Tooltip
-                          formatter={(value: number, name: string) => {
-                            if (name === 'revenue') return [formatCurrency(value), '売上']
-                            if (name === 'bookings') return [value, '予約数']
-                            return [value, name]
-                          }}
-                          labelStyle={{ color: '#374151' }}
-                          contentStyle={{
-                            backgroundColor: '#ffffff',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '6px',
-                          }}
-                        />
-                        <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                      データがありません
+                    </div>
                   )}
 
-                  {/* チャートの見方説明 */}
-                  <div className="mt-4 p-3 bg-muted border border-muted rounded-lg">
-                    <h5 className="text-sm font-medium text-muted-foreground mb-2">
-                      📊 グラフの見方
-                    </h5>
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      <p>
-                        <strong>縦軸（金額）:</strong> 各価格帯での総売上金額
-                      </p>
-                      <p>
-                        <strong>横軸（価格帯）:</strong>{' '}
-                        低価格帯（～￥5,000）、中価格帯（￥5,000-10,000）、高価格帯（￥10,000～）
-                      </p>
-                      <p>
-                        <strong>棒の高さ:</strong> 高いほどその価格帯での売上が多い
-                      </p>
-                      <p>
-                        <strong>活用方法:</strong>{' '}
-                        売上の高い価格帯に注力したメニュー開発や、売上の少ない価格帯の改善策を検討できます
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-4">💡 価格戦略インサイト</h4>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-palette-3 border border-palette-3 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-palette-3-foreground rounded-full"></div>
-                        <span className="text-sm font-medium text-palette-3-foreground">
-                          売上No.1価格帯
-                        </span>
-                      </div>
-                      <div className="text-lg font-bold text-palette-3-foreground mb-1">
-                        {priceTierAnalysis.insights.mostProfitableTier}
-                      </div>
-                      <p className="text-xs text-palette-3-foreground">
-                        最も高い売上を上げている価格帯です。この価格帯のメニューを増やすか、他の価格帯をこのレベルに引き上げることを検討してください。
-                      </p>
-                    </div>
+                  {/* 分類ルールの説明 */}
+                  {performanceAnalysis &&
+                    getPerformanceDistributionData().length > 0 &&
+                    (() => {
+                      const menusByPerformance = getMenusByPerformance()
+                      return (
+                        <div className="mt-4">
+                          <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="item-1">
+                              <AccordionTrigger>
+                                <h4 className="text-sm font-medium">
+                                  📊 パフォーマンス分類ルールと見方について
+                                </h4>
+                              </AccordionTrigger>
+                              <AccordionContent>
+                                <div className="space-y-3">
+                                  {/* 高性能メニュー */}
+                                  {menusByPerformance.high.length > 0 && (
+                                    <div>
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <div
+                                          className="w-3 h-3 rounded-full"
+                                          style={{ backgroundColor: '#10b981' }}
+                                        ></div>
+                                        <span className="text-sm font-medium">
+                                          高性能メニュー ({menusByPerformance.high.length}件)
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground mb-2">
+                                        平均売上以上のメニュー（売上貢献度が高い人気商品）
+                                      </p>
+                                    </div>
+                                  )}
 
-                    <div className="p-4 bg-palette-2 border border-palette-2 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-palette-2-foreground rounded-full"></div>
-                        <span className="text-sm font-medium text-palette-2-foreground">
-                          人気No.1価格帯
-                        </span>
-                      </div>
-                      <div className="text-lg font-bold text-palette-2-foreground mb-1">
-                        {priceTierAnalysis.insights.mostPopularTier}
-                      </div>
-                      <p className="text-xs text-palette-2-foreground">
-                        最も予約数が多い価格帯です。お客様に受け入れられやすい価格設定の参考にしてください。
-                      </p>
-                    </div>
+                                  {/* 中性能メニュー */}
+                                  {menusByPerformance.medium.length > 0 && (
+                                    <div>
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <div
+                                          className="w-3 h-3 rounded-full"
+                                          style={{ backgroundColor: '#f59e0b' }}
+                                        ></div>
+                                        <span className="text-sm font-medium">
+                                          中性能メニュー ({menusByPerformance.medium.length}件)
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground mb-2">
+                                        平均売上の50-100%のメニュー（標準的な売上）
+                                      </p>
+                                    </div>
+                                  )}
 
-                    <div className="p-4 bg-palette-1 border border-palette-1 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-palette-1-foreground rounded-full"></div>
-                        <span className="text-sm font-medium text-palette-1-foreground">
-                          全メニュー価格の平均
-                        </span>
-                      </div>
-                      <div className="text-lg font-bold text-palette-1-foreground mb-1">
-                        {formatCurrency(priceTierAnalysis.insights.averageMenuPrice)}
-                      </div>
-                      <p className="text-xs text-palette-1-foreground">
-                        サロン全体のメニュー価格平均です。新メニューの価格設定の基準として活用してください。
-                      </p>
-                    </div>
-                  </div>
+                                  {/* 低性能メニュー */}
+                                  {menusByPerformance.low.length > 0 && (
+                                    <div>
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <div
+                                          className="w-3 h-3 rounded-full"
+                                          style={{ backgroundColor: '#ef4444' }}
+                                        ></div>
+                                        <span className="text-sm font-medium">
+                                          低性能メニュー ({menusByPerformance.low.length}件)
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground mb-2">
+                                        平均売上の50%未満のメニュー（改善検討対象）
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
 
-                  <div className="mt-4 p-3 bg-muted rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      <strong>💼 戦略提案:</strong>{' '}
-                      売上No.1と人気No.1が異なる場合は、人気価格帯のメニューを売上の高い価格帯にアップグレードする施策を検討してみてください。
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                                <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                                  💡 <strong>活用方法</strong>:
+                                  高性能メニューは積極的にプロモーション、低性能メニューは価格見直しや提供方法の改善を検討してください。
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
+                        </div>
+                      )
+                    })()}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
-        {/* Menu Ranking Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3Icon className="h-5 w-5" />
-              メニュー売上詳細ランキング
-            </CardTitle>
-            <CardDescription>全メニューの売上実績一覧</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : menuRanking.length > 0 ? (
-              <div className="space-y-3">
-                {menuRanking.map((item, index) => (
-                  <Link className="block" key={item.id} href={`/dashboard/menu/${item.id}`}>
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Badge variant={index < 3 ? 'default' : 'secondary'}>{index + 1}位</Badge>
-                        <div>
-                          <h4 className="font-semibold">{item.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            シェア: {item.percentage.toFixed(1)}%
+          {/* 価格帯分析タブ */}
+          <TabsContent value="price" className="space-y-4">
+            {priceTierAnalysis && priceTierAnalysis.priceTiers.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSignIcon className="h-5 w-5" />
+                    価格帯別分析
+                  </CardTitle>
+                  <CardDescription>メニューの価格帯別パフォーマンス</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-semibold mb-4">価格帯別実績</h4>
+                      {loading ? (
+                        <Skeleton className="h-[200px]" />
+                      ) : (
+                        <ResponsiveContainer width="100%" height={200}>
+                          <BarChart data={getPriceTierChartData()}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis dataKey="name" tick={{ fill: '#374151', fontSize: 12 }} />
+                            <YAxis
+                              tickFormatter={(value) => formatCurrency(value)}
+                              tick={{ fill: '#374151', fontSize: 10 }}
+                            />
+                            <Tooltip
+                              formatter={(value: number, name: string) => {
+                                if (name === 'revenue') return [formatCurrency(value), '売上']
+                                if (name === 'bookings') return [value, '予約数']
+                                return [value, name]
+                              }}
+                              labelStyle={{ color: '#374151' }}
+                              contentStyle={{
+                                backgroundColor: '#ffffff',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                              }}
+                            />
+                            <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+
+                      {/* チャートの見方説明 */}
+                      <div className="mt-4 p-3 bg-muted border border-muted rounded-lg">
+                        <h5 className="text-sm font-medium text-muted-foreground mb-2">
+                          📊 グラフの見方
+                        </h5>
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <p>
+                            <strong>縦軸（金額）:</strong> 各価格帯での総売上金額
+                          </p>
+                          <p>
+                            <strong>横軸（価格帯）:</strong>{' '}
+                            低価格帯（～￥5,000）、中価格帯（￥5,000-10,000）、高価格帯（￥10,000～）
+                          </p>
+                          <p>
+                            <strong>棒の高さ:</strong> 高いほどその価格帯での売上が多い
+                          </p>
+                          <p>
+                            <strong>活用方法:</strong>{' '}
+                            売上の高い価格帯に注力したメニュー開発や、売上の少ない価格帯の改善策を検討できます
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-semibold">{formatCurrency(item.value)}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {index < 3 && <TrendingUpIcon className="h-4 w-4 inline mr-1" />}
-                          トップランク
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-4">💡 価格戦略インサイト</h4>
+                      <div className="space-y-4">
+                        <div className="p-4 bg-palette-3 border border-palette-3 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 bg-palette-3-foreground rounded-full"></div>
+                            <span className="text-sm font-medium text-palette-3-foreground">
+                              売上No.1価格帯
+                            </span>
+                          </div>
+                          <div className="text-lg font-bold text-palette-3-foreground mb-1">
+                            {priceTierAnalysis.insights.mostProfitableTier}
+                          </div>
+                          <p className="text-xs text-palette-3-foreground">
+                            最も高い売上を上げている価格帯です。この価格帯のメニューを増やすか、他の価格帯をこのレベルに引き上げることを検討してください。
+                          </p>
+                        </div>
+
+                        <div className="p-4 bg-palette-2 border border-palette-2 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 bg-palette-2-foreground rounded-full"></div>
+                            <span className="text-sm font-medium text-palette-2-foreground">
+                              人気No.1価格帯
+                            </span>
+                          </div>
+                          <div className="text-lg font-bold text-palette-2-foreground mb-1">
+                            {priceTierAnalysis.insights.mostPopularTier}
+                          </div>
+                          <p className="text-xs text-palette-2-foreground">
+                            最も予約数が多い価格帯です。お客様に受け入れられやすい価格設定の参考にしてください。
+                          </p>
+                        </div>
+
+                        <div className="p-4 bg-palette-1 border border-palette-1 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 bg-palette-1-foreground rounded-full"></div>
+                            <span className="text-sm font-medium text-palette-1-foreground">
+                              全メニュー価格の平均
+                            </span>
+                          </div>
+                          <div className="text-lg font-bold text-palette-1-foreground mb-1">
+                            {formatCurrency(priceTierAnalysis.insights.averageMenuPrice)}
+                          </div>
+                          <p className="text-xs text-palette-1-foreground">
+                            サロン全体のメニュー価格平均です。新メニューの価格設定の基準として活用してください。
+                          </p>
                         </div>
                       </div>
+
+                      <div className="mt-4 p-3 bg-muted rounded-lg">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>💼 戦略提案:</strong>{' '}
+                          売上No.1と人気No.1が異なる場合は、人気価格帯のメニューを売上の高い価格帯にアップグレードする施策を検討してみてください。
+                        </p>
+                      </div>
                     </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">データがありません</div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          {/* 詳細ランキングタブ */}
+          <TabsContent value="ranking" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3Icon className="h-5 w-5" />
+                  メニュー売上詳細ランキング
+                </CardTitle>
+                <CardDescription>全メニューの売上実績一覧</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : menuRanking.length > 0 ? (
+                  <div className="space-y-3">
+                    {menuRanking.map((item, index) => (
+                      <Link className="block" key={item.id} href={`/dashboard/menu/${item.id}`}>
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <Badge variant={index < 3 ? 'default' : 'secondary'}>
+                              {index + 1}位
+                            </Badge>
+                            <div>
+                              <h4 className="font-semibold">{item.name}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                シェア: {item.percentage.toFixed(1)}%
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold">{formatCurrency(item.value)}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {index < 3 && <TrendingUpIcon className="h-4 w-4 inline mr-1" />}
+                              トップランク
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">データがありません</div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardSection>
   )
