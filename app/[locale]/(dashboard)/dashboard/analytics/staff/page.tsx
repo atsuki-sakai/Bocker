@@ -217,7 +217,7 @@ export default function StaffAnalyticsPage() {
     {
       name: '平均以上',
       value: performanceComparison.performanceDistribution.high,
-      fill: 'hsl(var(--chart-1))',
+      fill: '#10b981',
       percentage: performanceComparison.performanceDistribution.high / 
         (performanceComparison.performanceDistribution.high + 
          performanceComparison.performanceDistribution.medium + 
@@ -226,7 +226,7 @@ export default function StaffAnalyticsPage() {
     {
       name: '平均の50-100%',
       value: performanceComparison.performanceDistribution.medium,
-      fill: 'hsl(var(--chart-2))',
+      fill: '#f59e0b',
       percentage: performanceComparison.performanceDistribution.medium / 
         (performanceComparison.performanceDistribution.high + 
          performanceComparison.performanceDistribution.medium + 
@@ -235,7 +235,7 @@ export default function StaffAnalyticsPage() {
     {
       name: '平均の50%未満',
       value: performanceComparison.performanceDistribution.low,
-      fill: 'hsl(var(--chart-3))',
+      fill: '#ef4444',
       percentage: performanceComparison.performanceDistribution.low / 
         (performanceComparison.performanceDistribution.high + 
          performanceComparison.performanceDistribution.medium + 
@@ -244,14 +244,16 @@ export default function StaffAnalyticsPage() {
   ].filter(item => item.value > 0) : [];
 
   return (
-    <DashboardSection title="スタッフ別売上分析" backLink="/dashboard" backLinkTitle="ダッシュボード">
+    <DashboardSection
+      title="スタッフ別売上分析"
+      backLink="/dashboard"
+      backLinkTitle="ダッシュボード"
+    >
       <div className="space-y-6">
         {/* エラー表示 */}
         {error && (
           <Alert className="border-destructive">
-            <AlertDescription className="text-destructive">
-              {error}
-            </AlertDescription>
+            <AlertDescription className="text-destructive">{error}</AlertDescription>
           </Alert>
         )}
 
@@ -269,7 +271,7 @@ export default function StaffAnalyticsPage() {
         <SummaryCardGrid
           cards={summaryCards.map((card, index) => ({
             ...card,
-            id: `summary-card-${index}`
+            id: `summary-card-${index}`,
           }))}
           loading={loading}
           columns={4}
@@ -288,10 +290,10 @@ export default function StaffAnalyticsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* 棒グラフ */}
               <BarChart
-                data={staffRanking.slice(0, 10).map(item => ({
+                data={staffRanking.slice(0, 10).map((item) => ({
                   name: item.name,
                   value: item.value,
-                  label: `¥${item.value.toLocaleString()}`
+                  label: `¥${item.value.toLocaleString()}`,
                 }))}
                 title="スタッフ売上ランキング（Top 10）"
                 description="売上額でソートされたスタッフランキング"
@@ -311,10 +313,13 @@ export default function StaffAnalyticsPage() {
                 <CardContent>
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {staffRanking.map((staff, index) => (
-                      <div key={staff.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div
+                        key={staff.id}
+                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
+                      >
                         <div className="flex items-center gap-3">
-                          <Badge 
-                            variant={index < 3 ? "default" : "secondary"}
+                          <Badge
+                            variant={index < 3 ? 'default' : 'secondary'}
                             className="w-8 h-8 flex items-center justify-center rounded-full"
                           >
                             {index + 1}
@@ -350,6 +355,7 @@ export default function StaffAnalyticsPage() {
                   innerRadius={60}
                   showLabels={true}
                   showPercentage={true}
+                  valueFormatter={(value) => `${value}人`}
                 />
               )}
 
@@ -363,27 +369,42 @@ export default function StaffAnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {performanceComparison?.topPerformers?.slice(0, 5).map((staff: StaffSalesData) => (
-                      <div key={staff.staff_id} className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-sm">{staff.staff_name}</span>
-                          <span className="text-sm">¥{staff.total_amount.toLocaleString()}</span>
+                    {performanceComparison?.topPerformers
+                      ?.slice(0, 5)
+                      .map((staff: StaffSalesData) => (
+                        <div key={staff.staff_id} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-sm">{staff.staff_name}</span>
+                            <span className="text-sm">¥{staff.total_amount.toLocaleString()}</span>
+                          </div>
+                          <Progress
+                            value={
+                              performanceComparison.averagePerformance.averageAmount > 0
+                                ? ((staff.total_amount /
+                                    performanceComparison.averagePerformance.averageAmount) *
+                                    100) /
+                                  performanceComparison.topPerformers.length
+                                : 0
+                            }
+                            className="h-2"
+                          />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{staff.booking_count}件の予約</span>
+                            <span>
+                              全体の
+                              {performanceComparison.averagePerformance.averageAmount > 0
+                                ? (
+                                    ((staff.total_amount /
+                                      performanceComparison.averagePerformance.averageAmount) *
+                                      100) /
+                                    performanceComparison.topPerformers.length
+                                  ).toFixed(0)
+                                : 0}
+                              %
+                            </span>
+                          </div>
                         </div>
-                        <Progress 
-                          value={performanceComparison.averagePerformance.averageAmount > 0 ? 
-                            (staff.total_amount / performanceComparison.averagePerformance.averageAmount) * 100 : 0
-                          } 
-                          className="h-2"
-                        />
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>{staff.booking_count}件の予約</span>
-                          <span>平均の{
-                            performanceComparison.averagePerformance.averageAmount > 0 ? 
-                            ((staff.total_amount / performanceComparison.averagePerformance.averageAmount) * 100).toFixed(0) : 0
-                          }%</span>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </CardContent>
               </Card>
@@ -450,22 +471,34 @@ export default function StaffAnalyticsPage() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">差額</span>
-                      <span className={`font-medium ${
-                        periodComparison.current.total_amount >= periodComparison.previous.total_amount 
-                          ? 'text-success' 
-                          : 'text-destructive'
-                      }`}>
-                        {periodComparison.current.total_amount >= periodComparison.previous.total_amount ? '+' : ''}
-                        ¥{(periodComparison.current.total_amount - periodComparison.previous.total_amount).toLocaleString()}
+                      <span
+                        className={`font-medium ${
+                          periodComparison.current.total_amount >=
+                          periodComparison.previous.total_amount
+                            ? 'text-success'
+                            : 'text-destructive'
+                        }`}
+                      >
+                        {periodComparison.current.total_amount >=
+                        periodComparison.previous.total_amount
+                          ? '+'
+                          : ''}
+                        ¥
+                        {(
+                          periodComparison.current.total_amount -
+                          periodComparison.previous.total_amount
+                        ).toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">成長率</span>
-                      <span className={`font-medium ${
-                        periodComparison.growth.amount_percentage >= 0 
-                          ? 'text-success' 
-                          : 'text-destructive'
-                      }`}>
+                      <span
+                        className={`font-medium ${
+                          periodComparison.growth.amount_percentage >= 0
+                            ? 'text-success'
+                            : 'text-destructive'
+                        }`}
+                      >
                         {periodComparison.growth.amount_percentage >= 0 ? '+' : ''}
                         {periodComparison.growth.amount_percentage.toFixed(1)}%
                       </span>
@@ -492,22 +525,34 @@ export default function StaffAnalyticsPage() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">差</span>
-                      <span className={`font-medium ${
-                        periodComparison.current.booking_count >= periodComparison.previous.booking_count 
-                          ? 'text-success' 
-                          : 'text-destructive'
-                      }`}>
-                        {periodComparison.current.booking_count >= periodComparison.previous.booking_count ? '+' : ''}
-                        {(periodComparison.current.booking_count - periodComparison.previous.booking_count).toLocaleString()}件
+                      <span
+                        className={`font-medium ${
+                          periodComparison.current.booking_count >=
+                          periodComparison.previous.booking_count
+                            ? 'text-success'
+                            : 'text-destructive'
+                        }`}
+                      >
+                        {periodComparison.current.booking_count >=
+                        periodComparison.previous.booking_count
+                          ? '+'
+                          : ''}
+                        {(
+                          periodComparison.current.booking_count -
+                          periodComparison.previous.booking_count
+                        ).toLocaleString()}
+                        件
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">成長率</span>
-                      <span className={`font-medium ${
-                        periodComparison.growth.booking_percentage >= 0 
-                          ? 'text-success' 
-                          : 'text-destructive'
-                      }`}>
+                      <span
+                        className={`font-medium ${
+                          periodComparison.growth.booking_percentage >= 0
+                            ? 'text-success'
+                            : 'text-destructive'
+                        }`}
+                      >
                         {periodComparison.growth.booking_percentage >= 0 ? '+' : ''}
                         {periodComparison.growth.booking_percentage.toFixed(1)}%
                       </span>
@@ -520,5 +565,5 @@ export default function StaffAnalyticsPage() {
         </Tabs>
       </div>
     </DashboardSection>
-  );
+  )
 }

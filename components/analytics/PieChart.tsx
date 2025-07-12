@@ -112,7 +112,7 @@ const CustomLabel = ({
     <text 
       x={x} 
       y={y} 
-      fill="hsl(var(--background))"
+      fill="#ffffff"
       textAnchor={x > cx ? 'start' : 'end'} 
       dominantBaseline="central"
       fontSize={12}
@@ -141,18 +141,18 @@ export function PieChart({
   outerRadius,
   showPercentage = true
 }: PieChartProps) {
-  // デフォルトの色パレット（CSS custom propertiesから）
+  // デフォルトの色パレット（HEXカラー）
   const defaultColors = [
-    'hsl(var(--chart-1))',
-    'hsl(var(--chart-2))',
-    'hsl(var(--chart-3))',
-    'hsl(var(--chart-4))',
-    'hsl(var(--chart-5))',
-    'hsl(var(--palette-1-foreground))',
-    'hsl(var(--palette-2-foreground))',
-    'hsl(var(--palette-3-foreground))',
-    'hsl(var(--palette-4-foreground))',
-    'hsl(var(--palette-5-foreground))'
+    '#3b82f6',
+    '#10b981',
+    '#f59e0b',
+    '#ef4444',
+    '#8b5cf6',
+    '#06b6d4',
+    '#84cc16',
+    '#f97316',
+    '#ec4899',
+    '#6366f1'
   ];
 
   const pieColors = colors || defaultColors;
@@ -217,7 +217,7 @@ export function PieChart({
                 innerRadius={innerRadius}
                 fill="#8884d8"
                 dataKey="value"
-                stroke="hsl(var(--background))"
+                stroke="#ffffff"
                 strokeWidth={2}
               >
                 {data.map((entry, index) => (
@@ -238,7 +238,7 @@ export function PieChart({
                   height={36}
                   wrapperStyle={{
                     fontSize: '12px',
-                    color: 'hsl(var(--foreground))',
+                    color: '#374151',
                     paddingTop: '10px'
                   }}
                   formatter={(value, entry) => {

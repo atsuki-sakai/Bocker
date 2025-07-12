@@ -344,19 +344,48 @@ export class MenuSalesRepository extends AnalyticsRepository {
         };
       }
 
-      // 価格帯を計算（平均価格ベース）
+      // 価格帯を実際のメニューデータから自動計算
       const menuPrices = data.map(item => item.average_amount).filter(price => price > 0);
+      
+      if (menuPrices.length === 0) {
+        return {
+          priceTiers: [],
+          insights: {
+            mostProfitableTier: '',
+            mostPopularTier: '',
+            averageMenuPrice: 0
+          }
+        };
+      }
+
+      // 固定価格帯で分類
       const priceRanges = [
-        { tier: 'エコノミー', min: 0, max: 3000 },
-        { tier: 'スタンダード', min: 3000, max: 6000 },
-        { tier: 'プレミアム', min: 6000, max: 10000 },
-        { tier: 'ラグジュアリー', min: 10000, max: Infinity }
+        { 
+          tier: `低価格帯`, 
+          min: 0, 
+          max: 5000 
+        },
+        { 
+          tier: `中価格帯`, 
+          min: 5000, 
+          max: 10000 
+        },
+        { 
+          tier: `高価格帯`, 
+          min: 10000, 
+          max: Infinity 
+        }
       ];
 
-      const priceTiers = priceRanges.map(range => {
-        const tieredMenus = data.filter(menu => 
-          menu.average_amount >= range.min && menu.average_amount < range.max
-        );
+      const priceTiers = priceRanges.map((range, index) => {
+        const tieredMenus = data.filter(menu => {
+          // 最後の価格帯（高価格帯）は最大値を含む
+          if (index === priceRanges.length - 1) {
+            return menu.average_amount >= range.min && menu.average_amount <= range.max;
+          } else {
+            return menu.average_amount >= range.min && menu.average_amount < range.max;
+          }
+        });
 
         const totalAmount = tieredMenus.reduce((sum, menu) => sum + menu.total_amount, 0);
         const bookingCount = tieredMenus.reduce((sum, menu) => sum + menu.booking_count, 0);

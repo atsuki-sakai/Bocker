@@ -165,22 +165,24 @@ export class DailySalesRepository extends AnalyticsRepository {
     try {
       const salesData = await this.getDailySales(filters);
       
+      // 全曜日を初期化（日曜日=0 から 土曜日=6 まで）
       const weekdayStats: Record<number, { totalAmount: number; bookingCount: number }> = {};
+      for (let i = 0; i <= 6; i++) {
+        weekdayStats[i] = { totalAmount: 0, bookingCount: 0 };
+      }
       
+      // 実際のデータを集計
       salesData.forEach(item => {
         const date = parseISO(item.sale_date);
         const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ...
-        
-        if (!weekdayStats[dayOfWeek]) {
-          weekdayStats[dayOfWeek] = { totalAmount: 0, bookingCount: 0 };
-        }
         
         weekdayStats[dayOfWeek].totalAmount += item.total_amount;
         weekdayStats[dayOfWeek].bookingCount += item.booking_count;
       });
 
-      const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+      const dayNames = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
       
+      // 全曜日のデータを返す（0-6の順序で）
       return Object.entries(weekdayStats).map(([dayOfWeek, stats]) => ({
         dayOfWeek: parseInt(dayOfWeek),
         dayName: dayNames[parseInt(dayOfWeek)],

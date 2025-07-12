@@ -83,7 +83,7 @@ export function LineChart({
   labelFormatter
 }: LineChartProps) {
   // CSS custom propertyから色を取得
-  const defaultLineColor = lineColor || 'hsl(var(--chart-1))';
+  const defaultLineColor = lineColor || '#3b82f6'
 
   // データが空の場合の表示
   if (!data || data.length === 0) {
@@ -100,15 +100,15 @@ export function LineChart({
           </CardHeader>
         )}
         <CardContent>
-          <div 
-            className="flex items-center justify-center text-muted-foreground bg-muted/20 rounded-lg"
+          <div
+            className="flex items-center justify-center text-muted-foreground bg-muted rounded-lg"
             style={{ height: `${height}px` }}
           >
             <p className="text-sm">データがありません</p>
           </div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -135,30 +135,26 @@ export function LineChart({
                 bottom: 20,
               }}
             >
-              {showGrid && (
-                <CartesianGrid 
-                  strokeDasharray="3 3" 
-                  stroke="hsl(var(--border))"
-                  opacity={0.3}
-                />
-              )}
+              {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />}
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={{ stroke: 'hsl(var(--border))' }}
-                tickLine={{ stroke: 'hsl(var(--border))' }}
+                tick={{ fontSize: 12, fill: '#374151' }}
+                axisLine={{ stroke: '#d1d5db' }}
+                tickLine={{ stroke: '#d1d5db' }}
               />
               <YAxis
-                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={{ stroke: 'hsl(var(--border))' }}
-                tickLine={{ stroke: 'hsl(var(--border))' }}
-                tickFormatter={(value) => `¥${(value / 1000).toFixed(0)}k`}
+                tick={{ fontSize: 12, fill: '#374151' }}
+                axisLine={{ stroke: '#d1d5db' }}
+                tickLine={{ stroke: '#d1d5db' }}
+                tickFormatter={(value) => `¥${value.toFixed(0)}`}
               />
               <Tooltip
                 content={(props) => (
-                  <CustomTooltip 
+                  <CustomTooltip
                     {...props}
-                    valueFormatter={valueFormatter || ((value: number) => `¥${value.toLocaleString()}`)}
+                    valueFormatter={
+                      valueFormatter || ((value: number) => `¥${value.toLocaleString()}`)
+                    }
                     labelFormatter={labelFormatter || ((label: string) => label)}
                   />
                 )}
@@ -167,25 +163,26 @@ export function LineChart({
                 <Legend
                   wrapperStyle={{
                     fontSize: '12px',
-                    color: 'hsl(var(--foreground))'
+                    color: 'hsl(var(--foreground))',
                   }}
                 />
               )}
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="value"
                 stroke={defaultLineColor}
                 strokeWidth={2}
                 dot={{
-                  fill: defaultLineColor,
+                  fill: '#5294FDFF',
+                  stroke: '#3b82f6',
                   strokeWidth: 2,
-                  r: 4
+                  r: 4,
                 }}
                 activeDot={{
                   r: 6,
-                  stroke: defaultLineColor,
+                  stroke: '#3b82f6',
                   strokeWidth: 2,
-                  fill: 'hsl(var(--background))'
+                  fill: '#ffffff',
                 }}
                 connectNulls={false}
               />
@@ -194,7 +191,7 @@ export function LineChart({
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }
 
 export default LineChart;

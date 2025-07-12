@@ -25,11 +25,11 @@ import type {
   ChartDataPoint 
 } from '@/services/supabase/repositories/analytics/types';
 
-// 初期フィルター設定（過去30日間）
+// 初期フィルター設定（過去30日間、未来の日付は除外）
 const getInitialFilters = (tenantId: string, orgId: string): FilterOptions => ({
   dateRange: {
     from: subDays(new Date(), 29),
-    to: new Date()
+    to: subDays(new Date(), 1) // 昨日までに変更
   },
   tenantId,
   orgId
@@ -319,12 +319,15 @@ export default function DailyAnalyticsPage() {
               data={weekdayPerformance.map(item => ({
                 name: item.dayName,
                 value: item.totalAmount,
+                bookingCount: item.bookingCount,
                 label: `¥${item.totalAmount.toLocaleString()}`
               }))}
               title="曜日別売上分析"
               description="曜日ごとの売上パフォーマンス"
               height={400}
               showGrid={true}
+              valueFormatter={(value) => `¥${value.toLocaleString()}`}
+              labelFormatter={(label) => label}
             />
 
             {/* 曜日別詳細テーブル */}
