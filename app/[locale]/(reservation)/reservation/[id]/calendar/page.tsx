@@ -997,51 +997,46 @@ export default function CalendarPage() {
       try {
         setIsLoading(true)
 
-        // HTTPOnly Cookieの内容をAPIを経由して取得
-        const response = await fetch('/api/auth/session', {
-          method: 'GET',
-          credentials: 'include',
+        // 組織情報を取得して、テナントIDを設定
+        const orgData = await fetchQuery(api.organization.query.findByOrgId, {
+          org_id: orgId,
         })
 
+        if (!orgData) {
+          console.error('組織情報が見つかりません')
+          router.push('/reservation')
+          return
+        }
+
+        // セッションチェック（tenant_idとorg_idを含める）
+        const response = await fetch(
+          `/api/auth/session?tenantId=${encodeURIComponent(orgData.tenant_id)}&orgId=${encodeURIComponent(orgId)}`,
+          { credentials: 'include' }
+        )
+
         if (!response.ok) {
-          // セッションが見つからない場合はリダイレクト
           console.error('認証セッションが見つかりません。予約画面に戻ります。')
           router.push(`/reservation/${orgId}`)
           return
         }
 
-        console.log('response', response)
-
         const data = await response.json()
-        let sessionCustomer: SessionPayload | null = null
 
-        // APIから返されるsessionは既にデコード済みのオブジェクト
         if (data.session) {
-          sessionCustomer = data.session as SessionPayload
-          console.log('sessionCustomer', sessionCustomer)
-        }
-
-        setSessionCustomer(sessionCustomer)
-        if (sessionCustomer?.orgId) {
+          setSessionCustomer(data.session)
           try {
             const organizationComplete = await fetchQuery(api.organization.query.getRelations, {
-              tenant_id: sessionCustomer.tenantId,
-              org_id: sessionCustomer.orgId as Id<'organization'>,
+              tenant_id: data.session.tenantId,
+              org_id: data.session.orgId,
             })
 
             setOrganizationComplete(organizationComplete)
 
-            if (sessionCustomer.customerUid === undefined || sessionCustomer.orgId === undefined) {
-              // cookiesを明示的に削除
-              await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-              router.push(`/reservation/${sessionCustomer.orgId}`)
-            }
-
             const { customer, customerDetail, customerPoints } =
               await customerRepository.getCompleteCustomerData(
-                sessionCustomer.customerUid,
-                sessionCustomer.tenantId,
-                organizationComplete.organization._id as Id<'organization'>
+                data.session.customerUid,
+                data.session.tenantId,
+                organizationComplete.organization._id
               )
 
             setCustomerData({
@@ -1050,11 +1045,9 @@ export default function CalendarPage() {
               customerPoints,
             })
 
-            // 実際のポイント数をセット
             setAvailablePoints(customerPoints?.total_points || 0)
-
             setCustomerPhone(customer?.phone || null)
-            setIsPhoneValid(isValidPhoneNumber(customer?.phone || null)) // 初期値のバリデーション
+            setIsPhoneValid(isValidPhoneNumber(customer?.phone || null))
           } catch (error) {
             console.error('サロン情報の取得に失敗しました:', error)
             await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
@@ -1069,7 +1062,7 @@ export default function CalendarPage() {
         }
       } catch (error) {
         console.error('セッション取得中にエラーが発生しました:', error)
-        router.push(`/reservation/${sessionCustomer?.orgId}`)
+        router.push(`/reservation/${orgId}`)
       } finally {
         setIsLoading(false)
       }

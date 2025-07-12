@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { CustomerRepository } from '@/services/supabase/repositories/customer';
 import { verifyPassword } from '@/lib/auth/password';
 import { emailSchema } from '@/lib/validations/api/common';
 import { LOGIN_SESSION_KEY } from '@/services/line/constants';
 import { SessionPayload } from '@/lib/types';
 import { getEnv } from '@/lib/env-config';
+import { ActiveCustomerType } from '@/convex/types';
+import type { RowType } from '@/services/supabase/SupabaseService';
 
 export const runtime = 'nodejs';
 
@@ -18,11 +21,6 @@ const loginRequestSchema = z.object({
   tenantId: z.string().min(1),
   orgId: z.string().min(1),
 });
-
-// JWTペイロードの型
-
-
-// type LoginRequest = z.infer<typeof loginRequestSchema>;
 
 const APP_JWT_SECRET = getEnv('APP_JWT_SECRET');
 const JWT_EXPIRES_IN = '30d';
@@ -119,11 +117,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     console.log('[API /api/auth/session] Processing session retrieval request...');
 
-    // クッキーからトークンを取得
     const cookieStore = await cookies();
     const token = cookieStore.get(LOGIN_SESSION_KEY)?.value;
 
@@ -135,24 +132,126 @@ export async function GET() {
       );
     }
 
-    console.log('[API /api/auth/session] Verifying and returning session payload');
+    // URLからtenantIdとorgIdを取得
+    const { searchParams } = new URL(request.url);
+    const requestedTenantId = searchParams.get('tenantId');
+    const requestedOrgId = searchParams.get('orgId');
 
-    let payload: SessionPayload
-    try {
-      // JWTを検証し、ペイロードを取得
-      payload = jwt.verify(token, APP_JWT_SECRET) as SessionPayload
-    } catch (err) {
-      console.warn('[API /api/auth/session] Invalid session token:', err)
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
+    if (!requestedTenantId || !requestedOrgId) {
+      return NextResponse.json({ error: 'Missing store information' }, { status: 400 });
     }
 
-    // クライアントが扱いやすい形でペイロードを返却
-    return NextResponse.json(
-      {
-        session: payload,
-      },
-      { status: 200 }
-    );
+    let currentSession: SessionPayload;
+    try {
+      currentSession = jwt.verify(token, APP_JWT_SECRET) as SessionPayload;
+    } catch (err) {
+      console.warn('[API /api/auth/session] Invalid session token:', err);
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    }
+
+    // 同じ店舗の場合は現在のセッションを返す
+    if (currentSession.tenantId === requestedTenantId && currentSession.orgId === requestedOrgId) {
+      return NextResponse.json({ session: currentSession }, { status: 200 });
+    }
+
+    console.log('[API /api/auth/session] Store transition detected, creating new session...');
+
+    // 異なる店舗の場合、新しいセッションを作成
+    const customerRepo = new CustomerRepository();
+    let customer: RowType<'customer'> | null = null;
+
+    if (currentSession.lineUserId) {
+      // LINE認証ユーザーの場合
+      customer = await customerRepo.findByTenantAndOrgAndCustomerLineId(
+        requestedTenantId,
+        requestedOrgId,
+        currentSession.lineUserId
+      );
+
+      if (!customer) {
+        console.log('[API /api/auth/session] Creating new LINE customer for different store');
+        const result = await customerRepo.createCustomerWithDetailsAndPoints(
+          {
+            uid: uuidv4(),
+            tenant_id: requestedTenantId,
+            org_id: requestedOrgId,
+            line_id: currentSession.lineUserId,
+            line_user_name: currentSession.name,
+            email: currentSession.email,
+            customer_type: 'first_time'
+          },
+          {
+            email: currentSession.email || '',
+            gender: null,
+            birthday: null,
+            age: 0,
+            notes: 'LI'
+          },
+          0
+        );
+        customer = result.customer;
+      }
+    } else if (currentSession.email) {
+      // メール認証ユーザーの場合
+      customer = await customerRepo.findByTenantAndOrgAndCustomerEmail(
+        requestedTenantId,
+        requestedOrgId,
+        currentSession.email
+      );
+
+      if (!customer) {
+        console.log('[API /api/auth/session] Creating new email customer for different store');
+        const result = await customerRepo.createCustomerWithDetailsAndPoints(
+          {
+            uid: uuidv4(),
+            tenant_id: requestedTenantId,
+            org_id: requestedOrgId,
+            email: currentSession.email,
+            customer_type: 'first_time'
+          },
+          {
+            email: currentSession.email,
+            gender: null,
+            birthday: null,
+            age: 0,
+            notes: ''
+          },
+          0
+        );
+        customer = result.customer;
+      }
+    }
+
+    if (!customer) {
+      console.error('[API /api/auth/session] Failed to create or find customer for new store');
+      return NextResponse.json({ error: 'Customer creation failed' }, { status: 500 });
+    }
+
+    // 新しいセッションペイロードを作成
+    const newSessionPayload: SessionPayload = {
+      customerUid: customer.uid,
+      tenantId: requestedTenantId,
+      orgId: requestedOrgId,
+      email: customer.email || undefined,
+      lineUserId: customer.line_id || undefined,
+      name: customer.line_user_name || undefined,
+      target_type: customer.customer_type as ActiveCustomerType
+    };
+
+    // 新しいJWTトークンを生成
+    const newToken = jwt.sign(newSessionPayload, APP_JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+    // 新しいセッションクッキーを設定
+    cookieStore.set(LOGIN_SESSION_KEY, newToken, {
+      httpOnly: true,
+      secure: getEnv('NODE_ENV') === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30日
+    });
+
+    console.log('[API /api/auth/session] Successfully created new session for different store');
+    return NextResponse.json({ session: newSessionPayload }, { status: 200 });
 
   } catch (error) {
     console.error('[API /api/auth/session] Error during session retrieval:', error);
