@@ -469,6 +469,7 @@ async function handleCreateSideEffects(
     menus: ReservationMenu[];
     options: ReservationOption[];
     total_price: number;
+    use_points?: number;
     notes?: string;
   }, 
   coreResult: {
@@ -479,6 +480,36 @@ async function handleCreateSideEffects(
   
   const carteRepo = new CarteRepository(supabaseService);
   
+  // ポイント使用がある場合の減算処理
+  if (payload.use_points && payload.use_points > 0 && payload.customer_uid) {
+    try {
+      // 原子的なポイント減算とトランザクション作成
+      const { data, error } = await supabaseService.rpc('update_customer_points_atomic', {
+        p_customer_uid: payload.customer_uid,
+        p_tenant_id: payload.tenant_id,
+        p_org_id: payload.org_id,
+        p_points_delta: -payload.use_points, // 減算なので負の値
+        p_transaction_type: 'used',
+        p_description: `予約でのポイント利用 (予約ID: ${coreResult.reservationId})`,
+        p_reservation_id: coreResult.reservationId,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const result = data?.[0];
+      if (!result) {
+        throw new Error('ポイント更新処理でエラーが発生しました。');
+      }
+
+      console.log(`[handleCreateSideEffects] ポイント減算成功: ${payload.customer_uid}, 使用ポイント: ${payload.use_points}, 新残高: ${result.new_total_points}, トランザクションID: ${result.transaction_id}`);
+
+    } catch (pointError) {
+      console.error(`[handleCreateSideEffects] ポイント減算失敗 (予約ID: ${coreResult.reservationId}):`, pointError);
+      throw new Error(`ポイント減算処理でエラーが発生しました: ${pointError instanceof Error ? pointError.message : 'Unknown error'}`);
+    }
+  }
 
   // カルテ作成（現金決済の場合のみ）
   if (payload.payment_method === "cash" && payload.customer_uid) {
@@ -528,6 +559,38 @@ async function handleConfirmSideEffects(
   }
 ) {
   try {
+    const reservation = payload.reservation;
+    
+    // ポイント使用がある場合の減算処理
+    if (reservation?.detail?.use_points && reservation.detail.use_points > 0 && reservation.customer_uid) {
+      try {
+        // 原子的なポイント減算とトランザクション作成
+        const { data, error } = await supabaseService.rpc('update_customer_points_atomic', {
+          p_customer_uid: reservation.customer_uid,
+          p_tenant_id: reservation.tenant_id,
+          p_org_id: reservation.org_id,
+          p_points_delta: -reservation.detail.use_points, // 減算なので負の値
+          p_transaction_type: 'used',
+          p_description: `決済完了時のポイント利用 (予約ID: ${coreResult.reservationId})`,
+          p_reservation_id: coreResult.reservationId,
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        const result = data?.[0];
+        if (!result) {
+          throw new Error('ポイント更新処理でエラーが発生しました。');
+        }
+
+        console.log(`[handleConfirmSideEffects] ポイント減算成功: ${reservation.customer_uid}, 使用ポイント: ${reservation.detail.use_points}, 新残高: ${result.new_total_points}, トランザクションID: ${result.transaction_id}`);
+
+      } catch (pointError) {
+        console.error(`[handleConfirmSideEffects] ポイント減算失敗 (予約ID: ${coreResult.reservationId}):`, pointError);
+        throw new Error(`ポイント減算処理でエラーが発生しました: ${pointError instanceof Error ? pointError.message : 'Unknown error'}`);
+      }
+    }
 
     const { CarteRepository } = await import('@/services/supabase/repositories/carte');
   
@@ -599,6 +662,28 @@ async function handleCancelSideEffects(
       await carteDetailRepo.deleteRecord('id', carteDetail.id);
       console.log(`[handleCancelSideEffects] Deleted carte_detail record: ${carteDetail.id}`);
     }
+
+    // 2. ポイント返還処理
+    if (reservation.detail?.use_points && reservation.detail.use_points > 0) {
+      const { PointTransactionRepository } = await import('@/services/supabase/repositories/point');
+      const pointTransactionRepo = new PointTransactionRepository(supabaseService);
+      
+      try {
+        await pointTransactionRepo.refundPointsForCancellation({
+          customerUid: reservation.customer_uid,
+          reservationId: reservation._id,
+          refundPoints: reservation.detail.use_points,
+          tenantId: reservation.tenant_id,
+          orgId: reservation.org_id,
+        });
+        
+        console.log(`[handleCancelSideEffects] Refunded ${reservation.detail.use_points} points for reservation ${reservation._id}`);
+      } catch (pointError) {
+        console.error(`[handleCancelSideEffects] Failed to refund points for reservation ${reservation._id}:`, pointError);
+        // ポイント返還失敗はログに記録するが、キャンセル処理は継続
+      }
+    }
+
     if(reservation.status === "completed" && reservation.customer_uid) {
       await cancelForCompletedReservation(supabaseService, reservation);
     }
@@ -672,7 +757,7 @@ async function handleStatusSideEffects(
       }
       
       // 3. 顧客情報を取得・更新
-      const { customer, customerPoints } = await customerRepo.getCompleteCustomerData(
+      const { customer } = await customerRepo.getCompleteCustomerData(
         reservation.customer_uid,
         reservation.tenant_id,
         reservation.org_id
@@ -699,17 +784,10 @@ async function handleStatusSideEffects(
           reservation.org_id,
           updateData,
         );
-
-        // 6. ポイント使用時は顧客ポイントを更新する
+        
+        // ポイント減算は予約確定時に実行済みなので、ここではログのみ
         if (reservation.detail.use_points) {
-          const newTotalPoints = (customerPoints?.total_points || 0) - (reservation.detail.use_points || 0);
-          await customerRepo.updateCustomerPoints(
-            reservation.customer_uid,
-            reservation.tenant_id,
-            reservation.org_id,
-            newTotalPoints,
-            Math.floor(Date.now() / 1000),
-          );
+          console.log(`[handleStatusSideEffects] Points already deducted at reservation confirmation: ${reservation.detail.use_points} points for reservation ${reservation._id}`);
         }
 
         // 7. クーポン利用時はトランザクションを作成
@@ -770,6 +848,27 @@ async function handleStatusSideEffects(
       if (carteDetail) {
         await carteDetailRepo.deleteRecord('id', carteDetail.id);
         console.log(`[handleCancelSideEffects] Deleted carte_detail record: ${carteDetail.id}`);
+      }
+
+      // 2. ポイント返還処理
+      if (reservation.detail?.use_points && reservation.detail.use_points > 0) {
+        const { PointTransactionRepository } = await import('@/services/supabase/repositories/point');
+        const pointTransactionRepo = new PointTransactionRepository(supabaseService);
+        
+        try {
+          await pointTransactionRepo.refundPointsForCancellation({
+            customerUid: reservation.customer_uid,
+            reservationId: reservation._id,
+            refundPoints: reservation.detail.use_points,
+            tenantId: reservation.tenant_id,
+            orgId: reservation.org_id,
+          });
+          
+          console.log(`[handleStatusSideEffects] Refunded ${reservation.detail.use_points} points for cancelled reservation ${reservation._id}`);
+        } catch (pointError) {
+          console.error(`[handleStatusSideEffects] Failed to refund points for reservation ${reservation._id}:`, pointError);
+          // ポイント返還失敗はログに記録するが、キャンセル処理は継続
+        }
       }
 
       if(reservation.status === "completed" && reservation.customer_uid) {

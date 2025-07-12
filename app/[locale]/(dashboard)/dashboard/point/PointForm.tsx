@@ -18,13 +18,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from '@/components/ui/select'
+
 import { Switch } from '@/components/ui/switch'
 import { AlertCircle } from 'lucide-react'
 import { DollarSign, Percent } from 'lucide-react'
@@ -73,28 +67,29 @@ const createPointConfigSchema = (
           .optional()
       ),
       point_expiration_days: z.number().min(1).optional().default(POINT_EXPIRATION_DAYS[0].value),
+      minimum_charge_point: z.number().min(0).max(10000).optional().nullable().default(null),
     })
     .superRefine((data, ctx) => {
-      // ポイント機能が有効な場合のみ、入力必須チェックを行う
-      if (data.is_active) {
-        // 固定ポイントタイプの場合
-        if (data.is_fixed_point) {
-          if (data.fixed_point === null || data.fixed_point === undefined) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: t('validation.fixedPointRequired'),
-              path: ['fixed_point'],
-            })
-          }
-        } else {
-          // 率指定タイプの場合
-          if (data.point_rate === null || data.point_rate === undefined) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: t('validation.pointRateRequired'),
-              path: ['point_rate'],
-            })
-          }
+      // ポイント機能が無効な場合は、バリデーションをスキップ
+      if (!data.is_active) return
+
+      // 固定ポイントタイプの場合
+      if (data.is_fixed_point) {
+        if (data.fixed_point === null || data.fixed_point === undefined) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('validation.fixedPointRequired'),
+            path: ['fixed_point'],
+          })
+        }
+      } else {
+        // 率指定タイプの場合
+        if (data.point_rate === null || data.point_rate === undefined) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('validation.pointRateRequired'),
+            path: ['point_rate'],
+          })
         }
       }
     })
@@ -124,13 +119,6 @@ export default function PointForm() {
     formState: { isSubmitting, errors, isDirty },
   } = useZodForm(pointConfigSchema)
 
-  // const handleExpirationChange = (value: string) => {
-  //   setValue('point_expiration_days', parseInt(value), {
-  //     shouldValidate: true,
-  //     shouldDirty: true,
-  //   })
-  // }
-
   useEffect(() => {
     if (pointConfig) {
       reset({
@@ -139,6 +127,7 @@ export default function PointForm() {
         point_expiration_days: pointConfig.point_expiration_days ?? POINT_EXPIRATION_DAYS[0].value,
         is_fixed_point: pointConfig.is_fixed_point,
         is_active: pointConfig.is_active ?? false,
+        minimum_charge_point: pointConfig.minimum_charge_point ?? 1000,
       })
     }
   }, [pointConfig, reset])
@@ -154,12 +143,13 @@ export default function PointForm() {
       await upsertPointConfig({
         tenant_id: tenantId,
         org_id: orgId,
-        point_config_id: pointConfig?._id as Id<'point_config'>,
+        point_config_id: pointConfig?._id as Id<'point_config'> | undefined,
         point_rate: data.point_rate ?? undefined,
         fixed_point: data.fixed_point ?? undefined,
-        point_expiration_days: data.point_expiration_days ?? undefined,
+        point_expiration_days: data.point_expiration_days ?? 0,
         is_fixed_point: data.is_fixed_point ?? undefined,
         is_active: data.is_active ?? undefined,
+        minimum_charge_point: data.minimum_charge_point ?? 0,
       })
 
       toast.success(t('messages.settingsSaved'))
@@ -310,37 +300,36 @@ export default function PointForm() {
                   )}
                 </div>
               )}
-              {/* <div className="space-y-2">
-                <Label htmlFor="expiration" className=" font-medium">
-                  {t('basicSettings.expirationPeriod')}
+              <div>
+                <Label htmlFor="minimum_charge_point">
+                  {t('basicSettings.minimumChargePoint')}
                 </Label>
-                <Select
-                  value={
-                    watchedExpirationDays !== undefined
-                      ? String(watchedExpirationDays)
-                      : String(POINT_EXPIRATION_DAYS[0].value)
-                  }
-                  onValueChange={handleExpirationChange}
-                >
-                  <SelectTrigger id="expiration" className="w-full">
-                    <SelectValue placeholder={t('basicSettings.expirationPeriod')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {POINT_EXPIRATION_DAYS.map((data) => (
-                      <SelectItem key={data.value} value={String(data.value)}>
-                        {data.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-xs text-muted-foreground">
-                  {t('basicSettings.expirationDescription', {
-                    period:
-                      POINT_EXPIRATION_DAYS.find((d) => d.value === watchedExpirationDays)?.label ||
-                      POINT_EXPIRATION_DAYS[0].label,
-                  })}
-                </span>
-              </div> */}
+                <Input
+                  id="minimum_charge_point"
+                  type="number"
+                  placeholder={t('basicSettings.minimumChargePointPlaceholder')}
+                  step="1"
+                  min="0"
+                  max="10000"
+                  value={watch('minimum_charge_point') ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value ? Number(e.target.value) : null
+                    setValue('minimum_charge_point', value, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    })
+                  }}
+                />
+                {errors.minimum_charge_point && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle size={14} />
+                    {errors.minimum_charge_point.message as string}
+                  </p>
+                )}
+                <p className="text-xs mt-2 tracking-wide leading-relaxed bg-muted text-muted-foreground p-2 rounded-md">
+                  {t('basicSettings.minimumChargePointDescription')}
+                </p>
+              </div>
             </div>
           </div>
         </div>

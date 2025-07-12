@@ -4,6 +4,7 @@ import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { updateRecord } from '@/convex/utils/helpers';
 import { api } from '@/convex/_generated/api';
+import { internal } from '@/convex/_generated/api';
 
 /**
  * 決済成功時の予約受付処理
@@ -41,6 +42,39 @@ export const confirmPayment = mutation({
       payment_status: 'completed',
       stripe_payment_intent_id: stripe_payment_intent_id || reservation.stripe_payment_intent_id,
     });
+
+    // ポイント利用がある場合の減算処理とトランザクション作成
+    const reservationDetail = await ctx.db
+      .query('reservation_detail')
+      .withIndex('by_reservation_archive', (q) => 
+        q.eq('reservation_id', reservation_id).eq('is_archive', false)
+      )
+      .first();
+
+    if (reservationDetail?.use_points && reservationDetail.use_points > 0 && reservation.customer_uid) {
+      try {
+        // ポイント減算とトランザクション作成のためのアクションを予約する
+        // mutation内では外部APIを呼び出せないため、別のactionを予約実行する
+        await ctx.scheduler.runAfter(0, internal.reservation.action.performSideEffects, {
+          mode: 'confirm',
+          payload: {
+            reservation: {
+              ...reservation,
+              detail: reservationDetail,
+            },
+            pointConfig: null, // ポイント設定は不要（減算のみ）
+          },
+          coreResult: {
+            reservationId: reservation_id,
+          },
+        });
+
+        console.log(`[confirmPayment] ポイント減算処理を予約実行: ${reservationDetail.use_points}ポイント (予約ID: ${reservation_id})`);
+      } catch (pointError) {
+        console.error(`[confirmPayment] ポイント減算予約失敗 (予約ID: ${reservation_id}):`, pointError);
+        // ポイント処理が失敗しても決済成功は維持する（ログのみ）
+      }
+    }
 
     return true;
   },

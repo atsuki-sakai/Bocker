@@ -209,6 +209,9 @@
     },
     "basicSettings": {
       "title": "ポイント基本設定",
+      "minimumChargePoint": "ポイント利用時の最低保有ポイント",
+      "minimumChargePointDescription": "設定した値以上のポイントを保有している場合に顧客がポイントを利用できるように設定できます。例：1000に設定した場合、1000ポイント以上保有している場合にポイントを利用できるようになります。",
+      "minimumChargePointPlaceholder": "例: 1000",
       "description": "サロンを利用した顧客へのポイント付与方法を設定します。",
       "pointValue": "1ポイント = 1円",
       "pointStatusActive": "ポイント機能は有効",
@@ -304,6 +307,14 @@
     "myPage": "マイページ",
     "signOut": "ログアウト",
     "profile": "プロフィール"
+  },
+  "navigationGroups": {
+    "overview": "ダッシュボード",
+    "reservations": "予約管理",
+    "customerManagement": "顧客管理",
+    "serviceManagement": "サービス管理",
+    "staffOrganization": "スタッフ・組織",
+    "systemSupport": "システム・サポート"
   },
   "dashboard": {
     "title": "ダッシュボード",

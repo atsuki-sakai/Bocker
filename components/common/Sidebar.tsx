@@ -3,12 +3,12 @@
 import { ModeToggle } from './'
 import { useTranslations } from 'next-intl'
 import { usePathname, Link } from '@/i18n/navigation'
-import { useState, useEffect, useMemo, memo } from 'react'
+import { useState, useEffect, useMemo, memo, useCallback } from 'react'
 import { Separator } from '@/components/ui/separator'
 import { Loading } from './'
 import Image from 'next/image'
 import { Dialog, DialogBackdrop, DialogPanel, TransitionChild } from '@headlessui/react'
-import { MenuIcon, XIcon, CreditCard as CreditCardIcon } from 'lucide-react'
+import { MenuIcon, XIcon } from 'lucide-react'
 import { UserButton } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
 import { useTheme } from 'next-themes'
@@ -16,7 +16,13 @@ import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { hasAccess } from '@/lib/utils'
 import type { SubscriptionPlanName } from '@/convex/types'
-import { NAV_ITEMS, type NavItem } from '@/lib/constants'
+import { NAV_GROUPS, DASHBOARD_ITEM, type NavGroup } from '@/lib/constants'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { UserIcon } from 'lucide-react'
 import { Id } from '@/convex/_generated/dataModel'
 import { Role } from '@/convex/types'
@@ -80,22 +86,55 @@ SidebarHeader.displayName = 'SidebarHeader'
 // 共通コンポーネント: ナビゲーション部分
 const SidebarNavigation = memo(
   ({
-    filteredNav,
+    filteredGroups,
     staffId,
     role,
     pathname,
     isSubscriptionActive,
+    currentPlan,
     isMobile = false,
   }: {
-    filteredNav: NavItem[]
+    filteredGroups: NavGroup[]
     staffId: Id<'staff'> | null
     role: Role | null
     pathname: string
     isSubscriptionActive: boolean
+    currentPlan: SubscriptionPlanName
     isMobile?: boolean
   }) => {
     const t = useTranslations('sidebar')
     const tNav = useTranslations('navigation')
+    const tGroups = useTranslations('navigationGroups')
+
+    // 現在のパスに基づいてアクティブなグループを決定
+    const getActiveGroup = useCallback(() => {
+      return filteredGroups.find((group) => group.items.some((item) => pathname === item.href))
+    }, [filteredGroups, pathname])
+
+    // 現在のパスに基づいて開くグループを決定
+    const getOpenGroups = useCallback(() => {
+      const activeGroup = getActiveGroup()
+      return activeGroup ? [activeGroup.id] : []
+    }, [getActiveGroup])
+
+    // アコーディオンの開閉状態を管理
+    const [openGroups, setOpenGroups] = useState<string[]>(getOpenGroups())
+
+    // パスが変更されたらアクティブなグループを開く
+    useEffect(() => {
+      const newOpenGroups = getOpenGroups()
+      setOpenGroups(newOpenGroups)
+    }, [getOpenGroups])
+
+    // グループがアクティブかどうかを判定
+    const isGroupActive = useCallback(
+      (groupId: string) => {
+        const activeGroup = getActiveGroup()
+        return activeGroup?.id === groupId
+      },
+      [getActiveGroup]
+    )
+
     return (
       <nav className="flex flex-1 flex-col">
         {!isSubscriptionActive && (
@@ -107,100 +146,135 @@ const SidebarNavigation = memo(
             </p>
           </div>
         )}
-        <ul role="list" className={`flex flex-1 flex-col ${isMobile ? 'gap-y-1' : 'gap-y-7'}`}>
-          <li>
-            <ul role="list" className="-mx-2 space-y-1">
-              {staffId && (
-                <li>
-                  <Link
-                    href={`/dashboard/staff/${staffId}/my-page`}
+        <div className="flex flex-1 flex-col">
+          {/* マイページ */}
+          {staffId && (
+            <div className="mb-4">
+              <Link
+                href={`/dashboard/staff/${staffId}/my-page`}
+                className={classNames(
+                  pathname === `/dashboard/staff/${staffId}/my-page`
+                    ? 'text-accent-foreground bg-accent'
+                    : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                  'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                )}
+              >
+                <UserIcon
+                  aria-hidden="true"
+                  className={classNames(
+                    pathname === `/dashboard/staff/${staffId}/my-page`
+                      ? 'text-accent-foreground bg-accent'
+                      : 'text-primary',
+                    'size-4 shrink-0'
+                  )}
+                />
+                <p className="w-full text-nowrap">{tNav('myPage')}</p>
+                {pathname === `/dashboard/staff/${staffId}/my-page` && (
+                  <div className="w-full flex justify-end items-center pr-2">
+                    <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
+                  </div>
+                )}
+              </Link>
+            </div>
+          )}
+
+          {/* ダッシュボード（常に表示） */}
+          {hasAccess(role as Role, currentPlan, DASHBOARD_ITEM.minRole, DASHBOARD_ITEM.minPlan) && (
+            <div className="mb-2">
+              <Link
+                href={DASHBOARD_ITEM.href}
+                className={classNames(
+                  pathname === DASHBOARD_ITEM.href
+                    ? 'text-accent-foreground bg-accent'
+                    : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                  'w-full group flex gap-x-3 rounded-md p-2 border border-border items-center'
+                )}
+              >
+                <DASHBOARD_ITEM.icon
+                  aria-hidden="true"
+                  className={classNames(
+                    pathname === DASHBOARD_ITEM.href
+                      ? 'text-accent-foreground bg-accent'
+                      : 'text-primary',
+                    'size-4 shrink-0'
+                  )}
+                />
+                <p className="w-full text-nowrap">{tNav(DASHBOARD_ITEM.name)}</p>
+                {pathname === DASHBOARD_ITEM.href && (
+                  <div className="w-full flex justify-end items-center pr-2">
+                    <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
+                  </div>
+                )}
+              </Link>
+            </div>
+          )}
+
+          {/* アコーディオンナビゲーション */}
+          <Accordion
+            type="multiple"
+            value={openGroups}
+            onValueChange={setOpenGroups}
+            className="w-full space-y-2"
+          >
+            {filteredGroups.map((group) => {
+              const isActive = isGroupActive(group.id)
+              return (
+                <AccordionItem key={group.id} value={group.id} className="border-b-0">
+                  <AccordionTrigger
                     className={classNames(
-                      pathname === `/dashboard/staff/${staffId}/my-page`
+                      'hover:no-underline py-2 px-2 text-sm font-medium rounded-md transition-colors',
+                      isActive
                         ? 'text-accent-foreground bg-accent'
-                        : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                      'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
+                        : 'text-primary hover:bg-primary-foreground',
+                      isMobile ? 'text-base' : ''
                     )}
                   >
-                    <UserIcon
-                      aria-hidden="true"
-                      className={classNames(
-                        pathname === `/dashboard/staff/${staffId}/my-page`
-                          ? 'text-accent-foreground bg-accent'
-                          : 'text-primary',
-                        'size-4 shrink-0'
+                    <div className="flex items-center gap-2">
+                      {tGroups(group.name)}
+                      {isActive && (
+                        <div className="h-2 w-2 bg-accent-2 ring-border ring-1 rounded-full" />
                       )}
-                    />
-                    <p className="w-full text-nowrap">{tNav('myPage')}</p>
-                    {pathname === `/dashboard/staff/${staffId}/my-page` && (
-                      <div className="w-full flex justify-end items-center pr-2">
-                        <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
-                      </div>
-                    )}
-                  </Link>
-                </li>
-              )}
-              {filteredNav.map((item) => {
-                const isCurrent = pathname === item.href
-                return (
-                  <li key={item.name}>
-                    <Link
-                      href={item.href}
-                      className={classNames(
-                        isCurrent
-                          ? 'text-accent-foreground bg-accent'
-                          : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                        'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
-                      )}
-                    >
-                      <item.icon
-                        aria-hidden="true"
-                        className={classNames(
-                          isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
-                          'size-4 shrink-0'
-                        )}
-                      />
-                      <p className="w-full text-nowrap">{tNav(item.name)}</p>
-                      {isCurrent && (
-                        <div className="w-full flex justify-end items-center pr-2">
-                          <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
-                        </div>
-                      )}
-                    </Link>
-                  </li>
-                )
-              })}
-              {role === 'admin' && (
-                <li>
-                  <Link
-                    href={'/dashboard/subscription'}
-                    className={classNames(
-                      pathname === '/dashboard/subscription'
-                        ? 'text-accent-foreground bg-accent'
-                        : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                      'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
-                    )}
-                  >
-                    <CreditCardIcon
-                      aria-hidden="true"
-                      className={classNames(
-                        pathname === '/dashboard/subscription'
-                          ? 'text-accent-foreground bg-accent'
-                          : 'text-primary',
-                        'size-4 shrink-0'
-                      )}
-                    />
-                    <p className="w-full text-nowrap">{tNav('subscription')}</p>
-                    {pathname === '/dashboard/subscription' && (
-                      <div className="w-full flex justify-end items-center pr-2">
-                        <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
-                      </div>
-                    )}
-                  </Link>
-                </li>
-              )}
-            </ul>
-          </li>
-        </ul>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="space-y-2">
+                      {group.items.map((item) => {
+                        const isCurrent = pathname === item.href
+                        return (
+                          <li key={item.name}>
+                            <Link
+                              href={item.href}
+                              className={classNames(
+                                isCurrent
+                                  ? 'text-accent-foreground bg-accent'
+                                  : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                                'w-full group flex gap-x-3 p-2 text-sm items-center border border-border rounded-md'
+                              )}
+                            >
+                              <item.icon
+                                aria-hidden="true"
+                                className={classNames(
+                                  isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
+                                  'size-4 shrink-0'
+                                )}
+                              />
+                              <p className="w-full text-nowrap">{tNav(item.name)}</p>
+                              {isCurrent && (
+                                <div className="w-full flex justify-end items-center pr-2">
+                                  <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
+                                </div>
+                              )}
+                            </Link>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              )
+            })}
+          </Accordion>
+        </div>
       </nav>
     )
   }
@@ -222,9 +296,12 @@ export default function Sidebar({ children }: SidebarProps) {
   const currentPlan: SubscriptionPlanName = (subscription?.plan_name ??
     'UNKNOWN') as SubscriptionPlanName
 
-  const filteredNav = useMemo(() => {
+  const filteredGroups = useMemo(() => {
     if (!isLoaded || !role) return []
-    return NAV_ITEMS.filter((item) => hasAccess(role, currentPlan, item.minRole, item.minPlan))
+    return NAV_GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter((item) => hasAccess(role, currentPlan, item.minRole, item.minPlan)),
+    })).filter((group) => group.items.length > 0)
   }, [isLoaded, role, currentPlan])
   useEffect(() => {
     // パスが変更されたときにサイドバーを閉じる
@@ -280,8 +357,9 @@ export default function Sidebar({ children }: SidebarProps) {
                 staffId={staffId}
                 role={role}
                 pathname={pathname}
-                filteredNav={filteredNav}
+                filteredGroups={filteredGroups}
                 isSubscriptionActive={isSubscriptionActive}
+                currentPlan={currentPlan}
                 isMobile={true}
               />
               <LanguageSwitcher />
@@ -304,8 +382,9 @@ export default function Sidebar({ children }: SidebarProps) {
             staffId={staffId}
             role={role}
             pathname={pathname}
-            filteredNav={filteredNav}
+            filteredGroups={filteredGroups}
             isSubscriptionActive={isSubscriptionActive}
+            currentPlan={currentPlan}
             isMobile={false}
           />
         </div>

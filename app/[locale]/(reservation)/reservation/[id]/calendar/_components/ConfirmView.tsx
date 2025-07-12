@@ -37,6 +37,7 @@ type ConfirmViewProps = {
   orgId: Id<'organization'>
   availablePoints: number
   usePoints: number
+  minimumChargePoint: number
   onChangePointsAction: (points: number) => void
   selectedMenus: Doc<'menu'>[]
   selectedOptions: Doc<'option'>[]
@@ -58,6 +59,7 @@ export const ConfirmView = ({
   tenantId,
   orgId,
   availablePoints,
+  minimumChargePoint,
   usePoints,
   onChangePointsAction,
   selectedMenus,
@@ -88,10 +90,30 @@ export const ConfirmView = ({
 
   const totalAmount = menuTotalPrice + optionTotalPrice
   const maxUsablePoints = Math.min(availablePoints, totalAmount + extraCharge)
+  
   const handlePointsChange = (points: number[]) => {
-    const value = Math.min(points[0], maxUsablePoints)
-    onChangePointsAction(value)
+    // 現在の保有ポイントと最大利用可能ポイントの両方をチェック
+    const requestedPoints = points[0]
+    const actualMaxPoints = Math.min(availablePoints, totalAmount + extraCharge)
+    
+    if (requestedPoints > availablePoints) {
+      // 保有ポイントを超えた場合は警告
+      console.warn(`保有ポイント(${availablePoints})を超えるポイント(${requestedPoints})の利用はできません`)
+      onChangePointsAction(availablePoints)
+      return
+    }
+    
+    if (requestedPoints > actualMaxPoints) {
+      // 利用上限を超えた場合
+      console.warn(`利用上限(${actualMaxPoints})を超えるポイント(${requestedPoints})の利用はできません`)
+      onChangePointsAction(actualMaxPoints)
+      return
+    }
+    
+    onChangePointsAction(requestedPoints)
   }
+
+  console.log(maxUsablePoints, minimumChargePoint)
 
   // 施術時間の計算
   const calculateTotalTime = () => {
@@ -331,23 +353,57 @@ export const ConfirmView = ({
           <div className="text-sm text-muted-foreground ">
             現在保有しているポイント <span className="font-bold mx-1">{availablePoints}</span>P
           </div>
-          <div className="flex justify-between items-center">
-            <p className="text-base font-bold">使用ポイント: {usePoints}ポイント</p>
-            <p className="text-xs text-muted-foreground">最大 {maxUsablePoints}ポイント</p>
+          
+          {/* ポイント不足や上限超過の警告メッセージ */}
+          {usePoints > availablePoints && (
+            <div className="p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm text-destructive">
+                ⚠️ 保有ポイント（{availablePoints}P）を超えています
+              </p>
+            </div>
+          )}
+          
+          {usePoints > maxUsablePoints && usePoints <= availablePoints && (
+            <div className="p-2 bg-warning/10 border border-warning/20 rounded-md">
+              <p className="text-sm text-warning-foreground">
+                💡 今回の支払いで利用できる上限は{maxUsablePoints}Pです
+              </p>
+            </div>
+          )}
+          
+          <div className="flex flex-col md:flex-row gap-2 md:gap-0 justify-start md:justify-between items-start md:items-center">
+            <p
+              className={`text-base font-bold text-nowrap ${availablePoints >= minimumChargePoint ? '' : 'hidden'}`}
+            >
+              使用ポイント: {usePoints}P
+            </p>
+            <div>
+              <p
+                className={`text-xs text-muted-foreground ${availablePoints >= minimumChargePoint ? '' : 'hidden'}`}
+              >
+                一度に利用できる最大ポイント: {maxUsablePoints}P
+              </p>
+              <p
+                className={`text-xs text-muted-foreground ${availablePoints >= minimumChargePoint ? 'hidden' : 'p-2 bg-warning text-warning-foreground rounded-md'}`}
+              >
+                ポイント利用に必要な最低保有ポイント:<strong>{minimumChargePoint}</strong>P
+              </p>
+            </div>
           </div>
 
-          <div className="w-[90%] mx-auto">
-            <Slider
-              value={[usePoints]}
-              max={maxUsablePoints}
-              step={100}
-              onValueChange={handlePointsChange}
-            />
-          </div>
-
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>0</span>
-            <span>{maxUsablePoints}</span>
+          <div className={`${availablePoints >= minimumChargePoint ? '' : 'hidden'}`}>
+            <div className={`w-[90%] mx-auto`}>
+              <Slider
+                value={[usePoints]}
+                max={maxUsablePoints}
+                step={100}
+                onValueChange={handlePointsChange}
+              />
+            </div>
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>0</span>
+              <span>{maxUsablePoints}</span>
+            </div>
           </div>
         </div>
 

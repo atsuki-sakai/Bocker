@@ -700,6 +700,16 @@ export default function CalendarPage() {
         }
       }
 
+      // ポイント減算は予約作成時のaction側で実行するため、フロントエンドでは事前チェックのみ
+      if (usePoints > 0) {
+        // 保有ポイント不足チェック（念のため）
+        if (usePoints > availablePoints) {
+          setIsProcessingPayment(false)
+          throw new Error(`保有ポイント（${availablePoints}P）が不足しています。`)
+        }
+        console.log(`ポイント利用予定: ${usePoints}ポイント (action側で減算実行)`)
+      }
+
       // 予約データを準備 (handleConfirmReservation内ではstatusをまだ設定しない)
       const reservationBaseData = {
         org_id: organizationComplete.organization._id as Id<'organization'>,
@@ -857,6 +867,20 @@ export default function CalendarPage() {
           try {
             const mailSubject = `【${organizationComplete.organization.org_name}】ご予約内容の確認`
 
+            const menuTotal = selectedMenus.reduce(
+              (sum, menu) => sum + (menu.sale_price || menu.unit_price || 0),
+              0
+            )
+            const optionTotal = selectedOptions.reduce(
+              (sum, option) => sum + (option.sale_price || option.unit_price || 0),
+              0
+            )
+
+            const extraCharge =
+              selectedStaffCompleted.staff === 'free'
+                ? 0
+                : selectedStaffCompleted.staff.extra_charge || 0
+
             const emailTemplateProps = {
               customerName: sessionCustomer.name || customerData?.customer?.first_name || 'お客様',
               customerEmail: sessionCustomer.email,
@@ -891,7 +915,7 @@ export default function CalendarPage() {
                 price: option.salePrice || option.unitPrice || 0,
                 count: option.count,
               })),
-              subtotal: reservationBaseData.total_price,
+              subtotal: (menuTotal + optionTotal + extraCharge).toLocaleString(),
               pointsUsed: usePoints > 0 ? usePoints : undefined,
               couponDiscount: appliedDiscount.discount > 0 ? appliedDiscount.discount : undefined,
               totalAmount: calculateTotal(),
@@ -1525,6 +1549,7 @@ export default function CalendarPage() {
                       }
                       availablePoints={availablePoints ?? 0}
                       usePoints={usePoints}
+                      minimumChargePoint={pointConfig?.minimum_charge_point ?? 0}
                       selectedPaymentMethod={selectedPaymentMethod as PaymentMethod}
                       onChangePointsAction={(points: number) => setUsePoints(points)}
                       selectedDate={selectedDate}
