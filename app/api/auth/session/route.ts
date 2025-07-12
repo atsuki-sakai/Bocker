@@ -11,6 +11,7 @@ import { SessionPayload } from '@/lib/types';
 import { getEnv } from '@/lib/env-config';
 import { ActiveCustomerType } from '@/convex/types';
 import type { RowType } from '@/services/supabase/SupabaseService';
+import { Id } from '@/convex/_generated/dataModel';
 
 export const runtime = 'nodejs';
 
@@ -76,8 +77,8 @@ export async function POST(request: NextRequest) {
     const payload: SessionPayload = {
       customerUid: customer.uid,
       email: customer.email || '',
-      tenantId: validatedData.tenantId,
-      orgId: validatedData.orgId,
+      tenantId: validatedData.tenantId as Id<"tenant">,
+      orgId: validatedData.orgId as Id<"organization">,
       target_type: customer.customer_type as SessionPayload['target_type'],
     };
 
@@ -230,8 +231,8 @@ export async function GET(request: NextRequest) {
     // 新しいセッションペイロードを作成
     const newSessionPayload: SessionPayload = {
       customerUid: customer.uid,
-      tenantId: requestedTenantId,
-      orgId: requestedOrgId,
+      tenantId: requestedTenantId as Id<"tenant">,
+      orgId: requestedOrgId as Id<"organization">,
       email: customer.email || undefined,
       lineUserId: customer.line_id || undefined,
       name: customer.line_user_name || undefined,
