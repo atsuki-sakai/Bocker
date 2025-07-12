@@ -700,39 +700,14 @@ export default function CalendarPage() {
         }
       }
 
-      // ポイント使用がある場合、予約作成前に即時減算処理
+      // ポイント減算は予約作成時のaction側で実行するため、フロントエンドでは事前チェックのみ
       if (usePoints > 0) {
-        try {
-          const response = await fetch('/api/customer/points/use', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              tenantId: sessionCustomer.tenantId,
-              orgId: organizationComplete.organization._id,
-              customerUid: sessionCustomer.customerUid,
-              pointsToUse: usePoints,
-              description: `予約でのポイント利用`,
-            }),
-          })
-          
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}))
-            throw new Error(errorData.message || 'ポイントの減算に失敗しました。')
-          }
-          
-          const pointResult = await response.json()
-          console.log(`ポイント減算成功: ${usePoints}ポイント使用。残りポイント: ${pointResult.newTotalPoints}`)
-          
-          // UI上の保有ポイントを即座に更新
-          setAvailablePoints(pointResult.newTotalPoints)
-          
-        } catch (error) {
-          console.error('ポイント減算エラー:', error)
+        // 保有ポイント不足チェック（念のため）
+        if (usePoints > availablePoints) {
           setIsProcessingPayment(false)
-          throw new Error(error instanceof Error ? error.message : 'ポイントの利用に失敗しました。')
+          throw new Error(`保有ポイント（${availablePoints}P）が不足しています。`)
         }
+        console.log(`ポイント利用予定: ${usePoints}ポイント (action側で減算実行)`)
       }
 
       // 予約データを準備 (handleConfirmReservation内ではstatusをまだ設定しない)
