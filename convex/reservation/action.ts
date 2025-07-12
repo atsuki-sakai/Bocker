@@ -824,6 +824,22 @@ async function handleStatusSideEffects(
         }
       }
       
+      // 8. 予約データをSupabaseに即座移行
+      try {
+        await migrateReservationToSupabase(reservation);
+        console.log(`[handleStatusSideEffects] Reservation migrated to Supabase successfully: ${reservation._id}`);
+      } catch (migrationError) {
+        // Supabase移行エラーは予約完了処理を停止させない（ビジネス継続性優先）
+        const errorMessage = migrationError instanceof Error ? migrationError.message : 'Unknown migration error';
+        console.error(`[handleStatusSideEffects] Supabase migration failed but reservation completion continues: ${reservation._id}`, {
+          error: errorMessage,
+          reservation_id: reservation._id,
+          tenant_id: reservation.tenant_id,
+          org_id: reservation.org_id
+        });
+        // エラーログを記録するが処理は継続
+      }
+      
       console.log('[handleStatusSideEffects] Completed status side effects successfully');
     } catch (error) {
       console.error('[handleStatusSideEffects] Error in completed status side effects:', error);
@@ -882,6 +898,121 @@ async function handleStatusSideEffects(
     console.log('[handleStatusSideEffects] Confirmed status side effects');
   } else if (payload.status === 'pending' && reservation.customer_uid) {
     console.log('[handleStatusSideEffects] Pending status side effects');
+  }
+}
+
+/**
+ * 単一の予約データをConvexからSupabaseに移行する
+ * 予約完了時に即座に実行される
+ */
+async function migrateReservationToSupabase(reservation: Doc<'reservation'> & {
+  detail?: Doc<'reservation_detail'> | null;
+}) {
+  try {
+    // Supabase管理者クライアントを作成
+    const supabase = createClient(
+      getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+      getEnv('SUPABASE_SERVICE_ROLE_KEY')
+    );
+    
+    console.log(`[migrateReservationToSupabase] Starting migration for reservation: ${reservation._id}`);
+    
+    // 予約データの変換（migration/action.tsのロジックを参考）
+    const reservationPayload = {
+      tenant_id: reservation.tenant_id,
+      org_id: reservation.org_id,
+      customer_uid: reservation.customer_uid || null,
+      staff_id: reservation.staff_id,
+      customer_name: reservation.customer_name,
+      staff_name: reservation.staff_name || null,
+      status: reservation.status,
+      payment_status: reservation.payment_status,
+      stripe_checkout_session_id: reservation.stripe_checkout_session_id || null,
+      stripe_payment_intent_id: reservation.stripe_payment_intent_id || null,
+      date: reservation.date,
+      start_time_unix: reservation.start_time_unix,
+      end_time_unix: reservation.end_time_unix,
+      // フリー指名関連フィールド
+      is_free_nomination: reservation.is_free_nomination || false,
+      assigned_staff_id: reservation.assigned_staff_id || null,
+      assigned_staff_name: reservation.assigned_staff_name || null,
+      assignment_timestamp: reservation.assignment_timestamp || null,
+      last_staff_change: reservation.last_staff_change || null,
+      // キャンセル関連フィールド
+      cancelled_at: reservation.cancelled_at || null,
+      cancelled_by: reservation.cancelled_by || null,
+      cancel_reason: reservation.cancel_reason || null,
+      // リマインダー関連フィールド
+      reminder_sent: reservation.reminder_sent || false,
+      reminder_sent_at: reservation.reminder_sent_at || null,
+      pending_expiry: reservation.pending_expiry || null,
+      is_archive: reservation.is_archive || false,
+      _convex_id: reservation._id, // ConvexレコードIDを保持
+      _creation_time: Math.floor(reservation._creationTime) // 小数点を切り捨てて整数に変換
+    };
+    
+    // 予約データをSupabaseに挿入/更新
+    const { error: reservationError } = await supabase
+      .from('reservation')
+      .upsert(reservationPayload, { 
+        onConflict: '_convex_id'
+      });
+    
+    if (reservationError) {
+      throw new Error(`Reservation upsert error: ${reservationError.message}`);
+    }
+    
+    console.log(`[migrateReservationToSupabase] Reservation migrated successfully: ${reservation._id}`);
+    
+    // 予約詳細データがある場合は移行
+    if (reservation.detail) {
+      const detailPayload = {
+        tenant_id: reservation.tenant_id,
+        org_id: reservation.org_id,
+        reservation_id: reservation._id, // NOT NULL制約があるため必須
+        coupon_id: reservation.detail.coupon_id || null,
+        total_price: reservation.detail.total_price || null,
+        payment_method: reservation.detail.payment_method || 'cash',
+        menus: reservation.detail.menus || [],
+        options: reservation.detail.options || [],
+        extra_charge: reservation.detail.extra_charge || null,
+        use_points: reservation.detail.use_points || null,
+        coupon_discount: reservation.detail.coupon_discount || null,
+        featured_hair_images: reservation.detail.featured_hair_images || [],
+        notes: reservation.detail.notes || null,
+        cancellation_info: reservation.detail.cancellation_info || null,
+        is_archive: reservation.detail.is_archive || false,
+        _convex_id: reservation.detail._id,
+        _convex_reservation_id: reservation._id,
+        _creation_time: Math.floor(reservation.detail._creationTime)
+      };
+      
+      const { error: detailError } = await supabase
+        .from('reservation_detail')
+        .upsert(detailPayload, { 
+          onConflict: '_convex_id'
+        });
+      
+      if (detailError) {
+        throw new Error(`Reservation detail upsert error: ${detailError.message}`);
+      }
+      
+      console.log(`[migrateReservationToSupabase] Reservation detail migrated successfully: ${reservation.detail._id}`);
+    }
+    
+    console.log(`[migrateReservationToSupabase] Migration completed successfully for reservation: ${reservation._id}`);
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[migrateReservationToSupabase] Migration failed for reservation ${reservation._id}:`, {
+      error: errorMessage,
+      reservation_id: reservation._id,
+      tenant_id: reservation.tenant_id,
+      org_id: reservation.org_id
+    });
+    
+    // エラーを再スローして呼び出し元でハンドリングできるようにする
+    throw new Error(`Reservation migration failed: ${errorMessage}`);
   }
 }
 
