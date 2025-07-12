@@ -203,9 +203,7 @@ export default function DailyAnalyticsPage() {
         {/* エラー表示 */}
         {error && (
           <Alert className="border-destructive">
-            <AlertDescription className="text-destructive">
-              {error}
-            </AlertDescription>
+            <AlertDescription className="text-destructive">{error}</AlertDescription>
           </Alert>
         )}
 
@@ -219,15 +217,11 @@ export default function DailyAnalyticsPage() {
         />
 
         {/* サマリーカード */}
-        <SummaryCardGrid
-          cards={summaryCards}
-          loading={loading}
-          columns={4}
-        />
+        <SummaryCardGrid cards={summaryCards} loading={loading} columns={4} />
 
         {/* メインコンテンツ */}
         <Tabs defaultValue="trend" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="flex w-fit overflow-x-auto space-x-2 p-1">
             <TabsTrigger value="trend">売上推移</TabsTrigger>
             <TabsTrigger value="weekday">曜日別分析</TabsTrigger>
             <TabsTrigger value="monthly">月別分析</TabsTrigger>
@@ -267,11 +261,13 @@ export default function DailyAnalyticsPage() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">成長率</span>
-                      <span className={`font-medium ${
-                        periodComparison.growth.amount_percentage >= 0 
-                          ? 'text-green-600' 
-                          : 'text-red-600'
-                      }`}>
+                      <span
+                        className={`font-medium ${
+                          periodComparison.growth.amount_percentage >= 0
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}
+                      >
                         {periodComparison.growth.amount_percentage >= 0 ? '+' : ''}
                         {periodComparison.growth.amount_percentage.toFixed(1)}%
                       </span>
@@ -298,11 +294,13 @@ export default function DailyAnalyticsPage() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">成長率</span>
-                      <span className={`font-medium ${
-                        periodComparison.growth.booking_percentage >= 0 
-                          ? 'text-green-600' 
-                          : 'text-red-600'
-                      }`}>
+                      <span
+                        className={`font-medium ${
+                          periodComparison.growth.booking_percentage >= 0
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}
+                      >
                         {periodComparison.growth.booking_percentage >= 0 ? '+' : ''}
                         {periodComparison.growth.booking_percentage.toFixed(1)}%
                       </span>
@@ -316,11 +314,11 @@ export default function DailyAnalyticsPage() {
           {/* 曜日別分析タブ */}
           <TabsContent value="weekday" className="space-y-4">
             <BarChart
-              data={weekdayPerformance.map(item => ({
+              data={weekdayPerformance.map((item) => ({
                 name: item.dayName,
                 value: item.totalAmount,
                 bookingCount: item.bookingCount,
-                label: `¥${item.totalAmount.toLocaleString()}`
+                label: `¥${item.totalAmount.toLocaleString()}`,
               }))}
               title="曜日別売上分析"
               description="曜日ごとの売上パフォーマンス"
@@ -365,10 +363,10 @@ export default function DailyAnalyticsPage() {
           {/* 月別分析タブ */}
           <TabsContent value="monthly" className="space-y-4">
             <BarChart
-              data={monthlyData.map(item => ({
+              data={monthlyData.map((item) => ({
                 name: item.monthName,
                 value: item.totalAmount,
-                label: `¥${item.totalAmount.toLocaleString()}`
+                label: `¥${item.totalAmount.toLocaleString()}`,
               }))}
               title="月別売上分析"
               description="月ごとの売上推移"
@@ -410,5 +408,5 @@ export default function DailyAnalyticsPage() {
         </Tabs>
       </div>
     </DashboardSection>
-  );
+  )
 }
