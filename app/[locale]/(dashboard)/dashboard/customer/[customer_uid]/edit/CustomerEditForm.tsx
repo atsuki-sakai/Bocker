@@ -433,13 +433,12 @@ export default function CustomerEditForm() {
 
         <div>
           <TagInput
-            tags={watch('tags')}
+            tags={watch('tags') || []}
             setTagsAction={(tags) => {
               setValue('tags', tags, { shouldDirty: true })
             }}
             title={t('tags')}
-            register={register}
-            errors={errors}
+            errors={errors.tags}
           />
         </div>
 
