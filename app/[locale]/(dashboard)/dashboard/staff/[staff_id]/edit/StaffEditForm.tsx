@@ -638,8 +638,7 @@ export default function StaffEditForm() {
 
                           setValue('tags', tags, { shouldValidate: true })
                         }}
-                        register={register}
-                        errors={errors}
+                        errors={errors.tags}
                         title={t('staff.add.tagsTitle')}
                       />
 
