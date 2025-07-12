@@ -839,6 +839,23 @@ async function handleStatusSideEffects(
         });
         // エラーログを記録するが処理は継続
       }
+
+      // 9. 売上集計をリアルタイム更新
+      try {
+        await updateSupabaseSalesAggregation(reservation);
+        console.log(`[handleStatusSideEffects] Sales aggregation updated successfully: ${reservation._id}`);
+      } catch (aggregationError) {
+        // 売上集計エラーも予約完了処理を停止させない（ビジネス継続性優先）
+        const errorMessage = aggregationError instanceof Error ? aggregationError.message : 'Unknown aggregation error';
+        console.error(`[handleStatusSideEffects] Sales aggregation failed but reservation completion continues: ${reservation._id}`, {
+          error: errorMessage,
+          reservation_id: reservation._id,
+          tenant_id: reservation.tenant_id,
+          org_id: reservation.org_id,
+          total_price: reservation.detail?.total_price
+        });
+        // エラーログを記録するが処理は継続
+      }
       
       console.log('[handleStatusSideEffects] Completed status side effects successfully');
     } catch (error) {
@@ -1013,6 +1030,105 @@ async function migrateReservationToSupabase(reservation: Doc<'reservation'> & {
     
     // エラーを再スローして呼び出し元でハンドリングできるようにする
     throw new Error(`Reservation migration failed: ${errorMessage}`);
+  }
+}
+
+/**
+ * 予約完了時にSupabaseの売上集計テーブルを更新する
+ * RPC関数を呼び出してリアルタイム集計を実現
+ */
+async function updateSupabaseSalesAggregation(reservation: Doc<'reservation'> & {
+  detail?: Doc<'reservation_detail'> | null;
+}) {
+  // 予約詳細がない場合はスキップ
+  if (!reservation.detail) {
+    console.log(`[updateSupabaseSalesAggregation] No detail found for reservation: ${reservation._id}`);
+    return;
+  }
+
+  try {
+    // Supabase管理者クライアントを作成
+    const supabase = createClient(
+      getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+      getEnv('SUPABASE_SERVICE_ROLE_KEY')
+    );
+    
+    console.log(`[updateSupabaseSalesAggregation] Starting aggregation update for reservation: ${reservation._id}`);
+    
+    // 営業日を算出（start_time_unixから日付を取得）
+    const businessDate = new Date(reservation.start_time_unix).toISOString().split('T')[0];
+    const totalAmount = reservation.detail.total_price || 0;
+    
+    // 1. 日別集計更新
+    const { error: dailyError } = await supabase.rpc('increment_daily_sales', {
+      p_tenant_id: reservation.tenant_id,
+      p_org_id: reservation.org_id,
+      p_business_date: businessDate,
+      p_amount: totalAmount
+    });
+    
+    if (dailyError) {
+      throw new Error(`Daily sales aggregation error: ${dailyError.message}`);
+    }
+    
+    console.log(`[updateSupabaseSalesAggregation] Daily sales updated: ${businessDate}, amount: ${totalAmount}`);
+    
+    // 2. スタッフ別集計更新
+    if (reservation.staff_id) {
+      const { error: staffError } = await supabase.rpc('increment_staff_sales', {
+        p_tenant_id: reservation.tenant_id,
+        p_org_id: reservation.org_id,
+        p_staff_id: reservation.staff_id,
+        p_staff_name: reservation.staff_name || null,
+        p_amount: totalAmount,
+        p_date: businessDate
+      });
+      
+      if (staffError) {
+        throw new Error(`Staff sales aggregation error: ${staffError.message}`);
+      }
+      
+      console.log(`[updateSupabaseSalesAggregation] Staff sales updated: ${reservation.staff_id}, amount: ${totalAmount}`);
+    }
+    
+    // 3. メニュー別集計更新
+    if (reservation.detail.menus && Array.isArray(reservation.detail.menus)) {
+      for (const menu of reservation.detail.menus) {
+        const menuAmount = (menu.price || 0) * (menu.quantity || 1);
+        const menuCount = menu.quantity || 1;
+        
+        const { error: menuError } = await supabase.rpc('increment_menu_sales', {
+          p_tenant_id: reservation.tenant_id,
+          p_org_id: reservation.org_id,
+          p_menu_id: menu.id,
+          p_menu_name: menu.name || null,
+          p_amount: menuAmount,
+          p_count: menuCount
+        });
+        
+        if (menuError) {
+          throw new Error(`Menu sales aggregation error for menu ${menu.id}: ${menuError.message}`);
+        }
+        
+        console.log(`[updateSupabaseSalesAggregation] Menu sales updated: ${menu.id}, amount: ${menuAmount}, count: ${menuCount}`);
+      }
+    }
+    
+    console.log(`[updateSupabaseSalesAggregation] Aggregation update completed successfully for reservation: ${reservation._id}`);
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[updateSupabaseSalesAggregation] Aggregation update failed for reservation ${reservation._id}:`, {
+      error: errorMessage,
+      reservation_id: reservation._id,
+      tenant_id: reservation.tenant_id,
+      org_id: reservation.org_id,
+      total_price: reservation.detail?.total_price,
+      business_date: new Date(reservation.start_time_unix).toISOString().split('T')[0]
+    });
+    
+    // エラーを再スローして呼び出し元でハンドリングできるようにする
+    throw new Error(`Sales aggregation failed: ${errorMessage}`);
   }
 }
 
