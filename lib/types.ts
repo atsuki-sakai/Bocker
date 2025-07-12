@@ -6,11 +6,13 @@ import { Gender, ImageType, ActiveCustomerType } from "@/convex/types";
 
 export type SessionPayload = {
   customerUid: string;
-  email: string;
-  tenantId: string;
-  orgId: string;
-  target_type?: ActiveCustomerType | null | undefined;
-}
+  tenantId: Id<'tenant'>;
+  orgId: Id<'organization'>;
+  email?: string;
+  lineUserId?: string;
+  name?: string;
+  target_type: ActiveCustomerType;
+};
 
 export type StaffDisplay = {
   _id: Id<'staff'>
