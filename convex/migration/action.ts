@@ -280,6 +280,36 @@ async function migrateToSupabase(
   const migratedDetailIds: Id<'reservation_detail'>[] = [];
   
   try {
+    // Validate customer_uid references before insertion
+    const uniqueCustomerUids = [...new Set(
+      reservations
+        .map(r => r.customer_uid)
+        .filter((uid): uid is string => uid != null)
+    )];
+    
+    if (uniqueCustomerUids.length > 0) {
+      const { data: existingCustomers, error: customerCheckError } = await supabase
+        .from('customer')
+        .select('uid')
+        .in('uid', uniqueCustomerUids);
+      
+      if (customerCheckError) {
+        throw new Error(`Customer validation error: ${customerCheckError.message}`);
+      }
+      
+      const existingCustomerUids = new Set(existingCustomers?.map(c => c.uid) || []);
+      const invalidCustomerUids = uniqueCustomerUids.filter(uid => !existingCustomerUids.has(uid));
+      
+      if (invalidCustomerUids.length > 0) {
+        console.warn(`[Migration] Found ${invalidCustomerUids.length} invalid customer_uid references, setting to null:`, invalidCustomerUids.slice(0, 5));
+        // Set invalid customer_uid references to null instead of failing the entire batch
+        reservations.forEach(reservation => {
+          if (reservation.customer_uid && invalidCustomerUids.includes(reservation.customer_uid)) {
+            reservation.customer_uid = undefined;
+          }
+        });
+      }
+    }
     // 予約データの変換（フリー指名フィールド対応、_creationTimeは整数のBIGINTとして保存）
     const reservationPayloads = reservations.map(reservation => ({
       tenant_id: reservation.tenant_id,
