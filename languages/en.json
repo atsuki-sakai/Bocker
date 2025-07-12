@@ -627,6 +627,9 @@
     "dashboard": "Dashboard",
     "reservationCreate": "Create Reservation",
     "reservationList": "Reservation List",
+    "dailyAnalytics": "Daily Analytics",
+    "staffAnalytics": "Staff Analytics",
+    "menuAnalytics": "Menu Analytics",
     "reservationTimeline": "Reservation Timeline",
     "staffSchedule": "Staff Schedule",
     "reservationCollection": "Reservation List",
@@ -647,6 +650,7 @@
   "navigationGroups": {
     "overview": "Overview",
     "reservations": "Reservations",
+    "analytics": "Analytics",
     "customerManagement": "Customer Management",
     "serviceManagement": "Service Management",
     "staffOrganization": "Staff & Organization",
