@@ -143,7 +143,10 @@ export class PointTransactionRepository extends BaseRepository<'point_transactio
       customer_uid: customerUid 
     } as Partial<RowType<'point_transaction'>>;
     
-    return this.list({ ...options, filters });
+    // デフォルトで新しい順にソート
+    const orderBy = options?.orderBy || { column: 'transaction_date_unix', ascending: false };
+    
+    return this.list({ ...options, filters, orderBy });
   }
 
   /**

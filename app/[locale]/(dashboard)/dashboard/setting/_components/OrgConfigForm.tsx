@@ -379,6 +379,7 @@ export default function OrgConfigForm() {
               placeholderText={t('placeholders.storeImage')}
               limitFiles={1 || limits.maxSalonImageCount}
               hasSelected={currentFiles.length}
+              aspectType="landscape"
             />
             <Button
               onClick={handleSaveImg}

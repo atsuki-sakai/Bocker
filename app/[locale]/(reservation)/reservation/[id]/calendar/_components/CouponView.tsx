@@ -21,6 +21,11 @@ type CouponViewProps = {
   selectedCoupon: Id<'coupon'> | null
 }
 
+type CouponWithApplicableMenus = {
+  coupon: Doc<'coupon'>
+  applicableMenus: Doc<'menu'>[]
+}
+
 const CouponViewInner = ({
   tenantId,
   orgId,
@@ -29,7 +34,7 @@ const CouponViewInner = ({
   onSelectCoupon,
   selectedCoupon,
 }: CouponViewProps) => {
-  const [availableCoupons, setAvailableCoupons] = useState<Doc<'coupon'>[]>([])
+  const [availableCoupons, setAvailableCoupons] = useState<CouponWithApplicableMenus[]>([])
   const [loading, setLoading] = useState(true)
 
   const selectCoupon = useQuery(
@@ -49,6 +54,13 @@ const CouponViewInner = ({
     active_only: true,
   })
 
+
+  // 適用可能メニューを特定するヘルパー関数
+  const getApplicableMenus = (selectedMenus: Doc<'menu'>[], exclusionMenus: Doc<'coupon_exclusion_menu'>[]) => {
+    return selectedMenus.filter((menu) => 
+      !exclusionMenus.some((exclusion) => exclusion.menu_id === menu._id)
+    )
+  }
 
   useEffect(() => {
     const filterCoupons = async () => {
@@ -80,30 +92,31 @@ const CouponViewInner = ({
                 }),
               ])
 
-              // 選択中のメニューが除外対象に含まれているかチェック
-              const hasExcludedMenu = selectedMenus.some((menu) =>
-                exclusionMenus.some((exclusion) => exclusion.menu_id === menu._id)
-              )
+              // 適用可能メニューを特定
+              const applicableMenus = getApplicableMenus(selectedMenus, exclusionMenus)
+              
+              // 適用可能メニューが1つもない場合は無効
+              if (applicableMenus.length === 0) return { coupon, isValid: false, applicableMenus }
 
-              if (hasExcludedMenu) return { coupon, isValid: false }
-
-              if (!couponConfigData) return { coupon, isValid: false }
+              if (!couponConfigData) return { coupon, isValid: false, applicableMenus }
 
               // 顧客タイプによるフィルタリング
               const activeCustomerType = couponConfigData.active_customer_type
               const isValidCustomerType =
                 activeCustomerType === 'all' || activeCustomerType === sessionCustomerType
 
-              return { coupon, isValid: isValidCustomerType }
+              return { coupon, isValid: isValidCustomerType, applicableMenus }
             } catch (error) {
               console.error('クーポンフィルタリングエラー:', error)
-              return { coupon, isValid: false }
+              return { coupon, isValid: false, applicableMenus: [] }
             }
           })
         )
 
         // 有効なクーポンのみフィルタ
-        const validCoupons = couponChecks.filter(({ isValid }) => isValid).map(({ coupon }) => coupon)
+        const validCoupons = couponChecks
+          .filter(({ isValid }) => isValid)
+          .map(({ coupon, applicableMenus }) => ({ coupon, applicableMenus }))
 
         setAvailableCoupons(validCoupons)
       } catch (error) {
@@ -117,12 +130,25 @@ const CouponViewInner = ({
     filterCoupons()
   }, [couponsData, selectedMenus, sessionCustomerType, tenantId, orgId])
 
-  // 割引額を計算する関数
-  const calculateDiscount = (coupon: Doc<'coupon'>, totalAmount: number) => {
+  // 適用可能メニューの合計金額を計算する関数
+  const calculateApplicableMenusTotal = (applicableMenus: Doc<'menu'>[]) => {
+    return applicableMenus.reduce((total: number, menu: Doc<'menu'>) => {
+      try {
+        return total + (menu.sale_price ?? menu.unit_price ?? 0)
+      } catch (error) {
+        console.error('メニュー価格の計算でエラーが発生しました:', error, menu)
+        return total
+      }
+    }, 0)
+  }
+
+  // 割引額を計算する関数（適用可能メニューの金額のみ対象）
+  const calculateDiscount = (coupon: Doc<'coupon'>, applicableMenus: Doc<'menu'>[]) => {
     try {
+      const applicableTotal = calculateApplicableMenusTotal(applicableMenus)
       if (coupon.discount_type === 'percentage') {
         const percentage = coupon.percentage_discount_value ?? 0
-        return Math.floor((totalAmount * percentage) / 100)
+        return Math.floor((applicableTotal * percentage) / 100)
       } else {
         return coupon.fixed_discount_value ?? 0
       }
@@ -132,19 +158,10 @@ const CouponViewInner = ({
     }
   }
 
-  // メニュー合計金額
-  const menuTotalPrice = selectedMenus.reduce((total: number, menu: Doc<'menu'>) => {
-    try {
-      return total + (menu.sale_price ?? menu.unit_price ?? 0)
-    } catch (error) {
-      console.error('メニュー価格の計算でエラーが発生しました:', error, menu)
-      return total
-    }
-  }, 0)
 
-  const handleCouponSelect = (coupon: Doc<'coupon'>) => {
+  const handleCouponSelect = (coupon: Doc<'coupon'>, applicableMenus: Doc<'menu'>[]) => {
     try {
-      const discountAmount = calculateDiscount(coupon, menuTotalPrice)
+      const discountAmount = calculateDiscount(coupon, applicableMenus)
       onSelectCoupon(coupon, discountAmount)
     } catch (error) {
       console.error('クーポン選択でエラーが発生しました:', error)
@@ -189,36 +206,47 @@ const CouponViewInner = ({
         </div>
 
         {/* 選択中のクーポン表示 */}
-        {selectCoupon && (
-          <Card className="border-neon bg-neon-foreground">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center text-neon">
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  選択中のクーポン
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCouponDeselect}
-                  className="text-neon"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p className="font-medium text-neon">{selectCoupon.name}</p>
-                <p className="text-sm text-neon">
-                  {selectCoupon.discount_type === 'percentage'
-                    ? `¥ ${calculateDiscount(selectCoupon, menuTotalPrice).toLocaleString()} - OFF`
-                    : `¥ ${(selectCoupon.fixed_discount_value ?? 0).toLocaleString()} - OFF`}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {selectCoupon && (() => {
+          // 選択中のクーポンの適用可能メニューを取得
+          const selectedCouponData = availableCoupons.find(
+            item => item.coupon._id === selectCoupon._id
+          )
+          const applicableMenus = selectedCouponData?.applicableMenus || []
+          
+          return (
+            <Card className="border-neon bg-neon-foreground">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center text-neon">
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    選択中のクーポン
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCouponDeselect}
+                    className="text-neon"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="font-medium text-neon">{selectCoupon.name}</p>
+                  <p className="text-sm text-neon">
+                    ¥ {calculateDiscount(selectCoupon, applicableMenus).toLocaleString()} - OFF
+                  </p>
+                  {applicableMenus.length > 0 && (
+                    <p className="text-xs text-neon/80">
+                      適用対象: {applicableMenus.map(menu => menu.name).join(', ')}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })()}
 
         {/* 利用可能なクーポン一覧 */}
         {availableCoupons.length === 0 ? (
@@ -234,8 +262,8 @@ const CouponViewInner = ({
             <p className="text-base font-medium">
               利用可能なクーポン ({availableCoupons.length}件)
             </p>
-            {availableCoupons.map((coupon) => {
-              const discountAmount = calculateDiscount(coupon, menuTotalPrice)
+            {availableCoupons.map(({ coupon, applicableMenus }) => {
+              const discountAmount = calculateDiscount(coupon, applicableMenus)
               const isSelected = selectCoupon?._id === coupon._id
 
               return (
@@ -244,7 +272,7 @@ const CouponViewInner = ({
                   className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
                     isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
                   }`}
-                  onClick={() => handleCouponSelect(coupon)}
+                  onClick={() => handleCouponSelect(coupon, applicableMenus)}
                 >
                   <CardContent className=" p-4">
                     <div className="flex items-center justify-between">
@@ -261,6 +289,11 @@ const CouponViewInner = ({
                         <p className="text-sm text-primary font-medium mt-2">
                           この注文での割引額: ¥{discountAmount.toLocaleString()}
                         </p>
+                        {applicableMenus.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            適用対象: {applicableMenus.map(menu => menu.name).join(', ')}
+                          </p>
+                        )}
                       </div>
                       {isSelected ? (
                         <CheckCircle className="h-6 w-6 text-neon" />

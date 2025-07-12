@@ -322,7 +322,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
               <User className="w-5 h-5" />
               {tCarte('detail.customerInfo')}
             </CardTitle>
-            <div className="flex flex-col md:flex-row items-center gap-4">
+            <div className="flex flex-col md:flex-row items-end justify-end gap-4">
               <Button variant="default" size="sm" asChild>
                 <Link href={`/dashboard/customer/${customerUid}/edit`}>
                   {tCarte('detail.customerEdit')}
@@ -447,14 +447,14 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
 
         {/* カルテ情報 */}
         <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                {tCarte('detail.carteInfo')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {customerCarteData ? (
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              {tCarte('detail.carteInfo')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {customerCarteData ? (
               <Tabs defaultValue="customer" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="customer" className="text-xs">
@@ -767,13 +767,13 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                   </Card>
                 </TabsContent>
               </Tabs>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  {tCarte('detail.loadingCarteInfo')}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                {tCarte('detail.loadingCarteInfo')}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* 施術履歴 */}
         <Card>

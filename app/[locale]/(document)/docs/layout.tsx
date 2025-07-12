@@ -2,7 +2,7 @@
 
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Inter } from 'next/font/google'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
@@ -108,7 +108,7 @@ const docSections: DocSection[] = [
   },
 ]
 
-const SidebarContent = () => {
+const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => {
   const pathname = usePathname()
 
   console.log(pathname)
@@ -124,6 +124,7 @@ const SidebarContent = () => {
             <Link
               key={section.href}
               href={section.href}
+              onClick={onLinkClick}
               className={cn(
                 'group flex items-center justify-between p-3 rounded-lg text-sm transition-colors',
                 isActive
@@ -153,6 +154,12 @@ interface DocsLayoutProps {
 }
 
 export default function DocsLayout({ children }: DocsLayoutProps) {
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+
+  const handleSheetClose = () => {
+    setIsSheetOpen(false)
+  }
+
   return (
     <div className={cn('min-h-screen bg-background', inter.className)}>
       {/* Header */}
@@ -173,7 +180,7 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
               </Link>
             </Button>
             <div className="lg:hidden">
-              <Sheet>
+              <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetTrigger asChild>
                   <Button variant="outline" size="icon">
                     <MenuIcon className="h-6 w-6" />
@@ -183,7 +190,7 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
                 <SheetContent side="left" className="w-full max-w-xs sm:max-w-sm">
                   <SheetTitle className="sr-only">メニュー</SheetTitle>
                   <ScrollArea className="h-full pr-4">
-                    <SidebarContent />
+                    <SidebarContent onLinkClick={handleSheetClose} />
                   </ScrollArea>
                 </SheetContent>
               </Sheet>

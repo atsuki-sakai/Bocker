@@ -217,6 +217,7 @@ import {
   Gift as GiftIcon,
   Ticket as TicketIcon,
   Settings as SettingsIcon,
+  CreditCard as CreditCardIcon,
   type LucideIcon
 } from 'lucide-react';
 import type { Role, SubscriptionPlanName } from '@/convex/types';
@@ -227,6 +228,12 @@ export type NavItem = {
   icon: LucideIcon;
   minRole: Role;
   minPlan: SubscriptionPlanName;
+};
+
+export type NavGroup = {
+  id: string;
+  name: string;
+  items: NavItem[];
 };
 
 
@@ -323,5 +330,138 @@ export const NAV_ITEMS: NavItem[] = [
     icon: BookIcon,
     minRole: 'staff',
     minPlan: 'LITE',
+  },
+]
+
+// ダッシュボード項目（アコーディオン外で常に表示）
+export const DASHBOARD_ITEM: NavItem = {
+  name: 'dashboard',
+  href: `/dashboard`,
+  icon: HomeIcon,
+  minRole: 'staff',
+  minPlan: 'LITE',
+};
+
+export const NAV_GROUPS: NavGroup[] = [
+  {
+    id: 'reservations',
+    name: 'reservations',
+    items: [
+      {
+        name: 'reservationCreate',
+        href: `/dashboard/reservation/add`,
+        icon: BookIcon,
+        minRole: 'staff',
+        minPlan: 'LITE',
+      },
+      {
+        name: 'reservationList',
+        href: `/dashboard/reservation`,
+        icon: CalendarIcon,
+        minRole: 'staff',
+        minPlan: 'LITE',
+      },
+    ],
+  },
+  {
+    id: 'customerManagement',
+    name: 'customerManagement',
+    items: [
+      {
+        name: 'customers',
+        href: `/dashboard/customer`,
+        icon: UserCircleIcon,
+        minRole: 'manager',
+        minPlan: 'LITE',
+      },
+      {
+        name: 'customerCarte',
+        href: `/dashboard/carte`,
+        icon: CloudIcon,
+        minRole: 'staff',
+        minPlan: 'LITE',
+      },
+    ],
+  },
+  {
+    id: 'serviceManagement',
+    name: 'serviceManagement',
+    items: [
+      {
+        name: 'menu',
+        href: `/dashboard/menu`,
+        icon: FileIcon,
+        minRole: 'manager',
+        minPlan: 'LITE',
+      },
+      {
+        name: 'options',
+        href: `/dashboard/option`,
+        icon: MenuSquareIcon,
+        minRole: 'manager',
+        minPlan: 'LITE',
+      },
+      {
+        name: 'coupons',
+        href: `/dashboard/coupon`,
+        icon: GiftIcon,
+        minRole: 'manager',
+        minPlan: 'LITE',
+      },
+      {
+        name: 'pointSettings',
+        href: `/dashboard/point`,
+        icon: TicketIcon,
+        minRole: 'owner',
+        minPlan: 'LITE',
+      },
+    ],
+  },
+  {
+    id: 'staffOrganization',
+    name: 'staffOrganization',
+    items: [
+      {
+        name: 'staff',
+        href: `/dashboard/staff`,
+        icon: UsersIcon,
+        minRole: 'owner',
+        minPlan: 'LITE',
+      },
+      {
+        name: 'staffSchedule',
+        href: `/dashboard/staff-schedule`,
+        icon: TimerIcon,
+        minRole: 'manager',
+        minPlan: 'LITE',
+      },
+    ],
+  },
+  {
+    id: 'systemSupport',
+    name: 'systemSupport',
+    items: [
+      {
+        name: 'settings',
+        href: `/dashboard/setting`,
+        icon: SettingsIcon,
+        minRole: 'owner',
+        minPlan: 'LITE',
+      },
+      {
+        name: 'subscription',
+        href: `/dashboard/subscription`,
+        icon: CreditCardIcon,
+        minRole: 'admin',
+        minPlan: 'LITE',
+      },
+      {
+        name: 'document',
+        href: `/docs`,
+        icon: BookIcon,
+        minRole: 'staff',
+        minPlan: 'LITE',
+      },
+    ],
   },
 ]

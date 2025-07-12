@@ -194,34 +194,38 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
           const redirectUrl = `/${locale}/customer/${orgId}/${sessionData.session.customerUid}/profile`
           console.log('[onSubmit] Redirecting to:', redirectUrl)
           
-          // ローディング状態をリセット
-          setIsEmailLogin(false)
-          
           // router.pushを試行
           router.push(redirectUrl)
           
-          // フォールバック: 500ms後にwindow.locationでリダイレクト
+          // 200ms後にローディング状態をリセット（リダイレクトが開始されてから）
+          setTimeout(() => {
+            setIsEmailLogin(false)
+          }, 200)
+          
+          // フォールバック: 800ms後にwindow.locationでリダイレクト
           setTimeout(() => {
             if (window.location.pathname.includes('/auth/login')) {
               console.log('[onSubmit] Fallback redirect with window.location')
               window.location.href = redirectUrl
             }
-          }, 500)
+          }, 800)
         } else {
           // セッション取得失敗時はexistingCustomer.uidを使用
           console.log('[onSubmit] Session retry failed, using existingCustomer.uid')
           const fallbackUrl = `/${locale}/customer/${orgId}/${existingCustomer.uid}/profile`
           
-          // ローディング状態をリセット
-          setIsEmailLogin(false)
-          
           router.push(fallbackUrl)
+          
+          // 200ms後にローディング状態をリセット
+          setTimeout(() => {
+            setIsEmailLogin(false)
+          }, 200)
           
           setTimeout(() => {
             if (window.location.pathname.includes('/auth/login')) {
               window.location.href = fallbackUrl
             }
-          }, 500)
+          }, 800)
         }
       } else {
         // 新規ユーザーの場合はエラーを表示

@@ -819,6 +819,7 @@ const point_config = defineTable({
   point_rate: v.optional(v.number()),
   fixed_point: v.optional(v.number()),
   point_expiration_days: v.optional(v.number()),
+  minimum_charge_point: v.optional(v.number()),
   ...CommonFields,
 })
 .index('by_tenant_org_active_archive', ['tenant_id', 'org_id', 'is_active', 'is_archive']);

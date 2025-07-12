@@ -95,7 +95,7 @@ export function Header() {
             <Link href="/sign-up">
               <Button size="sm">{t('nav.signUp')}</Button>
             </Link>
-            <Link href="/sign-up">
+            <Link href="/sign-in">
               <Button size="sm">{t('nav.login')}</Button>
             </Link>
           </motion.nav>

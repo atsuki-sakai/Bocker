@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { FileImage, X } from 'lucide-react'
@@ -23,6 +23,7 @@ import {
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { AspectType } from '@/convex/types'
 interface MultiImageDropProps {
   currentFiles?: File[] // 現在選択されているファイル
   onFilesSelect?: (files: File[]) => void // ファイル選択時のコールバック
@@ -35,6 +36,7 @@ interface MultiImageDropProps {
   accept?: string // 受け入れるファイルタイプ
   limitFiles?: number // 最大選択可能枚数
   hasSelected?: number // 指定した数値の数だけファイルを選択済みとする
+  aspectType?: AspectType // アスペクト比
 }
 
 // null 除去のヘルパ
@@ -49,6 +51,7 @@ export default function MultiImageDrop({
   accept = 'image/*',
   limitFiles = 4,
   hasSelected = 0,
+  aspectType = 'square',
 }: MultiImageDropProps) {
   const t = useTranslations('common.imageDrop')
   /* ------------------------------------------------------------------
@@ -92,6 +95,16 @@ export default function MultiImageDrop({
 
     onFilesSelect?.(filterNonNull(newFiles))
   }
+
+  const gridCols = useMemo(() => {
+    if (aspectType === 'square') {
+      return `grid-cols-2`
+    } else if (aspectType === 'landscape') {
+      return `grid-cols-1`
+    } else {
+      return `grid-cols-2`
+    }
+  }, [aspectType])
 
   /* ------------------------------------------------------------------
    * 画像を削除する処理
@@ -197,10 +210,12 @@ export default function MultiImageDrop({
     id,
     index,
     handleRemoveImage,
+    aspectType = 'mobile',
   }: {
     id: string
     index: number
     handleRemoveImage: (index: number) => void
+    aspectType?: AspectType
   }) => {
     const {
       attributes,
@@ -217,13 +232,23 @@ export default function MultiImageDrop({
       touchAction: 'none', // 追加
     }
 
+    const aspectRatio =
+      aspectType === 'square'
+        ? 'aspect-[1/1]'
+        : aspectType === 'landscape'
+          ? 'aspect-[16/9]'
+          : 'aspect-[2/3]'
+
+    console.log(aspectType)
+    console.log(aspectRatio)
+
     return (
       <div
         ref={setNodeRef}
         style={style}
         {...attributes}
         {...listeners}
-        className="relative group aspect-[2/3] cursor-grab max-h-[150px]"
+        className={`relative group   ${aspectRatio} cursor-grab max-h-[150px] w-full`}
       >
         <Image
           src={id}
@@ -301,13 +326,14 @@ export default function MultiImageDrop({
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={previewImageUrls} strategy={horizontalListSortingStrategy}>
-              <div className="grid grid-cols-3 grid-flow-row-dense gap-2 p-2">
+              <div className={`grid ${gridCols} grid-flow-row-dense gap-2 p-2`}>
                 {previewImageUrls.map((url, idx) => (
                   <SortableThumb
                     key={url}
                     id={url}
                     index={idx}
                     handleRemoveImage={handleRemoveImage}
+                    aspectType={aspectType}
                   />
                 ))}
               </div>

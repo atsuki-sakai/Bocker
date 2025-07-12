@@ -1,7 +1,7 @@
 import { mutation } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { checkAuth } from '@/convex/utils/auth';
-import { createRecord, updateRecord, archiveRecord } from '../utils/helpers';
+import { createRecord, updateRecord } from '../utils/helpers';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
 
@@ -15,6 +15,7 @@ export const create = mutation({
     point_rate: v.optional(v.number()), // ポイント付与率  利用金額に対しての付与率 (例: 0.1なら10%)
     fixed_point: v.optional(v.number()), // 固定ポイント (例: 100円につき1ポイント)
     point_expiration_days: v.optional(v.number()), // ポイントの有効期限(日)
+    minimum_charge_point: v.optional(v.number()), // 最低利用ポイント
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -30,6 +31,7 @@ export const update = mutation({
     point_rate: v.optional(v.number()), // ポイント付与率  利用金額に対しての付与率 (例: 0.1なら10%)
     fixed_point: v.optional(v.number()), // 固定ポイント (例: 100円につき1ポイント)
     point_expiration_days: v.optional(v.number()), // ポイントの有効期限(日)
+    minimum_charge_point: v.optional(v.number()), // 最低利用ポイント
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
@@ -55,6 +57,7 @@ export const update = mutation({
       point_rate: args.point_rate,
       fixed_point: args.fixed_point,
       point_expiration_days: args.point_expiration_days,
+      minimum_charge_point: args.minimum_charge_point,
     });
   },
 })
@@ -66,16 +69,19 @@ export const upsert = mutation({
     point_config_id: v.optional(v.id('point_config')),
     is_active: v.optional(v.boolean()), // 有効/無効フラグ
     is_fixed_point: v.optional(v.boolean()), // 固定ポイントかどうか
-    point_rate: v.optional(v.number()), // ポイント付与率  利用金額に対しての付与率 (例: 0.1なら10%)
-    fixed_point: v.optional(v.number()), // 固定ポイント (例: 100円につき1ポイント)
-    point_expiration_days: v.optional(v.number()), // ポイントの有効期限(日)
+    point_rate: v.optional(v.float64()), // ポイント付与率  利用金額に対しての付与率 (例: 0.1なら10%)
+    fixed_point: v.optional(v.float64()), // 固定ポイント (例: 100円につき1ポイント)
+    point_expiration_days: v.optional(v.float64()), // ポイントの有効期限(日)
+    minimum_charge_point: v.optional(v.float64()), // 最低利用ポイント
   },
   returns: v.id('point_config'),
   handler: async (ctx, args) => {
     checkAuth(ctx);
     
-    if (args.point_config_id) {
-      const existing = await ctx.db.get(args.point_config_id);
+    if (args.org_id) {
+      const existing = await ctx.db.query('point_config').withIndex('by_tenant_org_active_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+      ).first();
       if (!existing) {
         throw new ConvexError({
           statusCode: ERROR_STATUS_CODE.NOT_FOUND,
@@ -95,6 +101,7 @@ export const upsert = mutation({
         point_rate: args.point_rate,
         fixed_point: args.fixed_point,
         point_expiration_days: args.point_expiration_days,
+        minimum_charge_point: args.minimum_charge_point,
       });
     } else {
       return await createRecord(ctx, 'point_config', {
@@ -105,9 +112,8 @@ export const upsert = mutation({
         point_rate: args.point_rate,
         fixed_point: args.fixed_point,
         point_expiration_days: args.point_expiration_days,
+        minimum_charge_point: args.minimum_charge_point,
       });
     }
-
-
   },
 });

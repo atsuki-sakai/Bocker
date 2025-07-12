@@ -700,6 +700,41 @@ export default function CalendarPage() {
         }
       }
 
+      // ポイント使用がある場合、予約作成前に即時減算処理
+      if (usePoints > 0) {
+        try {
+          const response = await fetch('/api/customer/points/use', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              tenantId: sessionCustomer.tenantId,
+              orgId: organizationComplete.organization._id,
+              customerUid: sessionCustomer.customerUid,
+              pointsToUse: usePoints,
+              description: `予約でのポイント利用`,
+            }),
+          })
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}))
+            throw new Error(errorData.message || 'ポイントの減算に失敗しました。')
+          }
+          
+          const pointResult = await response.json()
+          console.log(`ポイント減算成功: ${usePoints}ポイント使用。残りポイント: ${pointResult.newTotalPoints}`)
+          
+          // UI上の保有ポイントを即座に更新
+          setAvailablePoints(pointResult.newTotalPoints)
+          
+        } catch (error) {
+          console.error('ポイント減算エラー:', error)
+          setIsProcessingPayment(false)
+          throw new Error(error instanceof Error ? error.message : 'ポイントの利用に失敗しました。')
+        }
+      }
+
       // 予約データを準備 (handleConfirmReservation内ではstatusをまだ設定しない)
       const reservationBaseData = {
         org_id: organizationComplete.organization._id as Id<'organization'>,
@@ -857,6 +892,20 @@ export default function CalendarPage() {
           try {
             const mailSubject = `【${organizationComplete.organization.org_name}】ご予約内容の確認`
 
+            const menuTotal = selectedMenus.reduce(
+              (sum, menu) => sum + (menu.sale_price || menu.unit_price || 0),
+              0
+            )
+            const optionTotal = selectedOptions.reduce(
+              (sum, option) => sum + (option.sale_price || option.unit_price || 0),
+              0
+            )
+
+            const extraCharge =
+              selectedStaffCompleted.staff === 'free'
+                ? 0
+                : selectedStaffCompleted.staff.extra_charge || 0
+
             const emailTemplateProps = {
               customerName: sessionCustomer.name || customerData?.customer?.first_name || 'お客様',
               customerEmail: sessionCustomer.email,
@@ -891,7 +940,7 @@ export default function CalendarPage() {
                 price: option.salePrice || option.unitPrice || 0,
                 count: option.count,
               })),
-              subtotal: reservationBaseData.total_price,
+              subtotal: (menuTotal + optionTotal + extraCharge).toLocaleString(),
               pointsUsed: usePoints > 0 ? usePoints : undefined,
               couponDiscount: appliedDiscount.discount > 0 ? appliedDiscount.discount : undefined,
               totalAmount: calculateTotal(),
@@ -1525,6 +1574,7 @@ export default function CalendarPage() {
                       }
                       availablePoints={availablePoints ?? 0}
                       usePoints={usePoints}
+                      minimumChargePoint={pointConfig?.minimum_charge_point ?? 0}
                       selectedPaymentMethod={selectedPaymentMethod as PaymentMethod}
                       onChangePointsAction={(points: number) => setUsePoints(points)}
                       selectedDate={selectedDate}

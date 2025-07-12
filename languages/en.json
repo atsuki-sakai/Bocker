@@ -535,6 +535,9 @@
     },
     "basicSettings": {
       "title": "Basic Point Settings",
+      "minimumChargePoint": "Minimum Charge Point",
+      "minimumChargePointDescription": "You can set the minimum point to be used by customers. For example, if you set 1000, customers can use points if they have 1000 points or more.",
+      "minimumChargePointPlaceholder": "e.g. 1000",
       "description": "Configure how points are awarded to customers who use the salon.",
       "pointValue": "1 point = 1 yen",
       "pointStatusActive": "Point feature is enabled",
@@ -640,6 +643,14 @@
     "myPage": "My Page",
     "signOut": "Sign Out",
     "profile": "Profile"
+  },
+  "navigationGroups": {
+    "overview": "Overview",
+    "reservations": "Reservations",
+    "customerManagement": "Customer Management",
+    "serviceManagement": "Service Management",
+    "staffOrganization": "Staff & Organization",
+    "systemSupport": "System & Support"
   },
   "sidebar": {
     "tagline": "Make salon management easier.",
